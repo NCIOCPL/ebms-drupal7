@@ -1,0 +1,10 @@
+body { font-family: Verdana, Arial, sans-serif; }
+#wrapper { width: 980px; margin: 0 auto; padding: 20px; background: white; }
+#header { width: 980px; margin: 0 auto; background-color: #a90101; }
+#logo h1 { color: white; text-align: center; }
+#logo a { color: white; text-decoration: none; }
+#login-name { text-align: right; color: maroon; font-size: .9em; font-style: italic }
+#menu ul li a { color: white; background-color: #a90101; text-decoration: none; padding: 3px; font-size: .8em; font-weight: bold; margin: 0; }
+#menu ul li a { background-color: maroon; }
+#menu ul li a:hover { background-color: #ba1212; }
+#menu li { margin: 1px; padding: 0px; }

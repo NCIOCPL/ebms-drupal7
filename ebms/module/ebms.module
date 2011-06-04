@@ -1,0 +1,979 @@
+<?php
+
+// $Id$
+
+/*======================================================================*/
+/*                            CONSTANTS                                 */
+/*======================================================================*/
+define("EBMS_ARTICLE_WARRANTS_NO_CHANGES",     1 << 0);
+define("EBMS_ARTICLE_DESERVES_CITATION",       1 << 1);
+define("EBMS_ARTICLE_MERITS_REVISION_OF_TEXT", 1 << 2);
+define("EBMS_ARTICLE_MERITS_DISCUSSION",       1 << 3);
+
+/*======================================================================*/
+/*                          PERMISSIONS                                 */
+/*======================================================================*/
+function ebms_perm() {
+    return array(
+        'post ebms documents',
+        'assign ebms literature',
+        'post ebms message',
+        'view ebms documents',
+        'review ebms literature',
+    );
+}
+                
+/*======================================================================*/
+/*                            MAIN MENU                                 */
+/*======================================================================*/
+function ebms_menu() {
+    return array(
+        'home' => array(
+            'title' => 'PDQ Electronic Board Member System',
+            'page callback' => 'ebms_home',
+            'access callback' => TRUE,
+        ),
+/*
+        'meetings' => array(
+            'title' => 'Meetings',
+            'page callback' => 'ebms_meetings_page',
+            'access callback' => TRUE,
+            'menu_name' => 'primary-links',
+            'weight' => 1,
+        ),
+        'calendar' => array(
+            'title' => 'Calendar',
+            'page callback' => 'ebms_calendar_page',
+            'access callback' => TRUE,
+            'menu_name' => 'primary-links',
+            'weight' => 2,
+        ),
+*/
+        'add-doc' => array(
+            'title' => 'Add Document',
+            'page callback' => 'ebms_add_doc',
+            'access arguments' => array('post ebms documents'),
+            'menu_name' => 'primary-links',
+            'weight' => 3,
+        ),
+        'assign-lit' => array(
+            'title' => 'Assign Literature',
+            'page callback' => 'ebms_assign_lit',
+            'access arguments' => array('assign ebms literature'),
+            'menu_name' => 'primary-links',
+            'weight' => 4,
+        ),
+        'show-boards' => array(
+            'title' => 'Show PDQ Boards',
+            'page callback' => 'ebms_show_boards',
+            'menu_name' => 'primary-links',
+            'access arguments' => array('post ebms documents'),
+            'weight' => 5,
+        ),
+        'ad-hoc-groups' => array(
+            'title' => 'Ad-hoc Groups',
+            'page callback' => 'ebms_ad_hoc_groups',
+            'menu_name' => 'primary-links',
+            'access arguments' => array('post ebms documents'),
+            'weight' => 6,
+        ),
+        'review-lit' => array(
+            'title' => 'Review Literature',
+            'page callback' => 'ebms_review_lit',
+            'access arguments' => array('review ebms literature'),
+            'menu_name' => 'primary-links',
+            'weight' => 7,
+        ),
+    );
+}
+function ebms_home() {
+    if (user_is_logged_in()) {
+        return "<h2>Welcome to the EBMS!</h2>";
+    }
+    else {
+        drupal_goto('user');
+    }
+}
+
+/*======================================================================*/
+/*                                BOARDS                                */
+/*======================================================================*/
+function ebms_show_boards() {
+    $boards = load_ebms_boards();
+    $managers = load_ebms_users('board manager');
+    $members = load_ebms_users('board member');
+    $html = array('<ul>');
+    foreach ($boards as $boardId => $boardName) {
+        $rs = db_query("SELECT user_id
+                          FROM pdq_board_member
+                         WHERE board_id = %d", $boardId);
+        $boardMembers = array();
+        $boardManager = '';
+        while ($row = db_fetch_object($rs)) {
+            $uid = $row->user_id;
+            $manager = $managers[$uid];
+            if ($manager)
+                $boardManager = $manager;
+            else {
+                $member = $members[$uid];
+                if ($member)
+                    $boardMembers[] = $member;
+            }
+        }
+        $name = htmlspecialchars($boardName);
+        if ($boardManager)
+            $name .= ' (' . htmlspecialchars($boardManager) . ', manager)';
+        $html[] = "<li><b>$name Board</b></li><ul>";
+        sort($boardMembers);
+        foreach ($boardMembers as $member) {
+            $name = htmlspecialchars($member);
+            $html[] = "<li>$name</li>";
+        }
+        $subgroups = load_ebms_subgroups($boardId);
+        foreach ($subgroups as $sgId => $sgName) {
+            $name = htmlspecialchars($sgName);
+            $html[] = "<li><b>$name Subgroup</b></li>";
+            $sgMembers = array();
+            $rs = db_query("SELECT user_id
+                              FROM pdq_subgroup_member
+                             WHERE sg_id = %d", $sgId);
+            while ($row = db_fetch_object($rs)) {
+                $uid = $row->user_id;
+                $member = $members[$uid];
+                if ($member)
+                    $sgMembers[] = $member;
+            }
+            if ($sgMembers) {
+                sort($sgMembers);
+                $html[] = '<ul>';
+                foreach ($sgMembers as $member) {
+                    $name = htmlspecialchars($member);
+                    $html[] = "<li>$name</li>";
+                }
+                $html[] = '</ul>';
+            }
+        }
+        $html[] = '</ul>';
+    }
+    $html[] = '</ul>';
+    return implode('', $html);
+}
+
+function ebms_meetings_page() {
+    return "<h4>Meetings</h4><p>This is the page for EBMS meetings.</p>";
+}
+function ebms_calendar_page() {
+    return "<h4>Calendar</h4><p>This is the page for the EBMS calendar.</p>";
+}
+
+/*======================================================================*/
+/*                       POSTING DOCUMENTS                              */
+/*======================================================================*/
+function ebms_add_doc() {
+    return '<h3>Add Document</h3>' . drupal_get_form('ebms_add_doc_form');
+}
+function load_ebms_boards() {
+    $boards = array();
+    $rs = db_query("SELECT board_id, board_name
+                      FROM pdq_board
+                  ORDER BY board_name");
+    while ($row = db_fetch_object($rs))
+        $boards[$row->board_id] = $row->board_name;
+    return $boards;
+}
+function load_ebms_subgroups($boardId=0) {
+    $subgroups = array();
+    $where = $boardId ? "WHERE board_id = $boardId" : "";
+    $rs = db_query("SELECT sg_id, sg_name
+                      FROM pdq_subgroup
+                     $where
+                  ORDER BY sg_name");
+    while ($row = db_fetch_object($rs))
+        $subgroups[$row->sg_id] = $row->sg_name;
+    return $subgroups;
+}
+function load_ebms_users($role=null) {
+    $users = array();
+    if ($role)
+        $rs = db_query("SELECT u.uid, u.name
+                          FROM users u
+                          JOIN users_roles ur
+                            ON u.uid = ur.uid
+                          JOIN role r
+                            ON r.rid = ur.rid
+                         WHERE r.name = '%s'
+                      ORDER BY name", $role);
+    else
+        $rs = db_query('SELECT uid, name FROM users ORDER BY name');
+    while ($row = db_fetch_object($rs))
+        if ($row->name)
+            $users[$row->uid] = $row->name;
+    return $users;
+}
+function load_docs() {
+    $docs = array();
+    $rs = db_query("
+  SELECT d.doc_id, f.filename, d.when_posted
+    FROM ebms_doc d
+    JOIN files f
+      ON f.fid = d.file_id
+ORDER BY d.when_posted DESC");
+    while ($row = db_fetch_object($rs)) {
+        $posted = $row->when_posted;
+        $filename = $row->filename;
+        $docs[$row->doc_id] = "[$posted] $filename";
+    }
+    return $docs;
+}
+function load_ad_hoc_groups() {
+    $groups = array();
+    $rs = db_query("
+  SELECT group_id, group_name
+    FROM ebms_ad_hoc_group
+ORDER BY group_name");
+    while ($row = db_fetch_object($rs))
+        $groups[$row->group_id] = $row->group_name;
+    return $groups;
+}
+function load_pdq_topics() {
+    $topics = array();
+    $rs = db_query("
+  SELECT topic_id, topic_name
+    FROM pdq_topic
+ORDER BY topic_name");
+    while ($row = db_fetch_object($rs))
+        $topics[$row->topic_id] = $row->topic_name;
+    return $topics;
+}
+function load_review_cycles() {
+    $cycles = array();
+    $rs = db_query("
+  SELECT cycle_id, cycle_name
+    FROM lit_review_cycle
+ORDER BY cycle_id");
+    while ($row = db_fetch_object($rs))
+        $cycles[$row->cycle_id] = $row->cycle_name;
+    return $cycles;
+}
+function require_doc_file($element, &$form_state) {
+    if ($_FILES['files']['name']['doc_file'] == '') {
+        form_set_error('doc_file', t('Please select a document'));
+    }
+    //if (empty($element['#value'])) {
+    // form_error($element, t('This field is required.'));
+    // }
+}
+
+function ebms_add_doc_form() {
+    return array(
+        'doc_file' => array(
+            #'#title' => t('Upload document <span class="form-required" title="This field is required.">*</span>'),
+            '#title' => t('Upload document'),
+            '#type' => 'file',
+            '#required' => false,
+            '#element_validate' => array('require_doc_file'),
+            '#description' => t('Document cannot be larger than 20MB'),
+        ),
+        'brief_description' => array(
+            '#title' => t('Description'),
+            '#type' => 'textarea',
+            '#description' =>
+                t('Brief description, including bib. cit. for articles'),
+            '#cols' => 120,
+            '#rows' => 3,
+            '#resizable' => TRUE,
+            '#required' => TRUE,
+        ),
+/*
+        'all_users' => array(
+            '#title' => 'Global',
+            '#type' => 'checkbox',
+            '#description' => t('Is the document available to all users?'),
+        ),
+*/
+        'visibility' => array(
+            '#title' => t('Visibility'),
+            '#type' => 'fieldset',
+            '#description' => t('Who should see this document?'),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+            'boards' => array(
+                '#title' => 'Boards',
+                '#type' => 'select',
+                '#multiple' => TRUE,
+                '#options' => load_ebms_boards(),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+            ),
+            'subgroups' => array(
+                '#title' => 'Subgroups',
+                '#type' => 'select',
+                '#multiple' => TRUE,
+                '#options' => load_ebms_subgroups(),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+            ),
+            'users' => array(
+                '#title' => 'Users',
+                '#type' => 'select',
+                '#multiple' => TRUE,
+                '#options' => load_ebms_users(),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+            ),
+            'options' => array(
+                '#title' => t('Options'),
+                '#type' => 'checkboxes',
+                '#options' => array(
+                    'global' => t('Available to all users?'),
+                    #'foobar' => t('pay no attention')
+                ),
+            ),
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => t('Submit'),
+            '#submit' => array('store_doc'),
+        ),
+        '#attributes' => array(
+            'enctype' => 'multipart/form-data'
+        ),
+    );
+}
+function store_doc($form, &$form_state) {
+    $file = file_save_upload('doc_file');
+    if ($file) {
+        $now = date('c');
+        $desc = $form_state['values']['brief_description'];
+        $public = $form_state['values']['options']['global'] ? 1 : 0;
+        file_move($file);
+        file_set_status($file, FILE_STATUS_PERMANENT);
+        drupal_write_record('files', $file, 'fid');
+        db_query("
+INSERT INTO ebms_doc (file_id, when_posted, description, is_public)
+     VALUES (%d, '%s', '%s', %d)", $file->fid, $now, $desc, $public);
+        $docId = db_last_insert_id('ebms_doc', 'doc_id');
+        foreach ($form_state['values']['boards'] as $id => $val) {
+            db_query("
+INSERT INTO ebms_doc_board (doc_id, board_id) VALUES (%d, %d)",
+                     $docId, $id);
+        }
+        foreach ($form_state['values']['subgroups'] as $id => $val) {
+            db_query("
+INSERT INTO ebms_doc_subgroup (doc_id, sg_id) VALUES (%d, %d)",
+                     $docId, $id);
+        }
+        foreach ($form_state['values']['users'] as $id => $val) {
+            db_query("
+INSERT INTO ebms_doc_user (doc_id, user_id) VALUES (%d, %d)",
+                     $docId, $id);
+        }
+        $name = $file->filename;
+        drupal_set_message("<br /><b style='color: green'>Document $name saved.</b>");
+    }
+    else
+        drupal_set_message("<br /><b style='color: red'>Unable to store document!</b>");
+/*
+    $f = var_export($file, true);
+    $boards = implode('**', $form_state['values']['boards']);
+    $sg = var_export($form_state['values']['subgroups'], true);
+    $users = var_export($form_state['values']['users'], true);
+    drupal_set_message("<br /><b>description is $desc; boards is $boards; global is $global; sg is $sg; users is $users; file is $f</b>");
+*/
+}
+
+/*======================================================================*/
+/*                      LITERATURE PACKETS                              */
+/*======================================================================*/
+function ebms_assign_lit($command=NULL, $packetId=NULL) {
+    switch ($command) {
+    case 'delete':
+        $rs = db_query("
+SELECT c.cycle_name, t.topic_name
+  FROM lit_packet p
+  JOIN lit_review_cycle c
+    ON c.cycle_id = p. cycle_id
+  JOIN pdq_topic t
+    ON t.topic_id = p.topic_id
+ WHERE p.packet_id = %d", $packetId);
+        $cycleName = $topicName = '';
+        while ($row = db_fetch_object($rs)) {
+            $cycleName = $row->cycle_name;
+            $topicName = $row->topic_name;
+        }
+        drupal_set_message("Deletion of $cycleName $topicName packet requested");
+        break;
+    case 'add':
+        return drupal_get_form('ebms_packet_form');
+    case 'edit':
+        return drupal_get_form('ebms_packet_form', $packetId);
+    }
+    $html = array("<br />
+<a href='/ebms/assign-lit/add'><b>Create Packet</b></a>
+<br /><br />
+");
+    $rs = db_query("
+  SELECT p.packet_id, t.topic_name, c.cycle_name
+    FROM lit_packet p
+    JOIN lit_review_cycle c
+      ON c.cycle_id = p. cycle_id
+    JOIN pdq_topic t
+      ON t.topic_id = p.topic_id
+ORDER BY 2, 3");
+    while ($row = db_fetch_object($rs)) {
+        $cycleName = htmlspecialchars($row->cycle_name);
+        $topicName = htmlspecialchars($row->topic_name);
+        $id = $row->packet_id;
+        $html[] = "<a href='/ebms/assign-lit/edit/$id'>Edit</a>&nbsp;\n";
+        #$html[] = "<a href='/ebms/assign-lit/delete/$id'>Delete</a>&nbsp;\n";
+        $html[] = "$topicName - $cycleName<br />\n";
+    }
+    return implode('', $html);
+}
+function ebms_packet_form(&$form_state, $packetId=null) {
+    $reviewers = array();
+    $docs = array();
+    $topicId = $cycleId = '';
+    if ($packetId) {
+        $rs = db_query("
+SELECT cycle_id, topic_id
+  FROM lit_packet
+ WHERE packet_id = %d", $packetId);
+        while ($row = db_fetch_object($rs)) {
+            $topicId = $row->topic_id;
+            $cycleId = $row->cycle_id;
+        }
+        $rs = db_query("
+SELECT reviewer_id
+  FROM lit_packet_reviewer
+ WHERE packet_id = %d", $packetId);
+        while ($row = db_fetch_object($rs))
+            $reviewers[] = $row->reviewer_id;
+        $rs = db_query("
+SELECT doc_id
+  FROM lit_packet_article
+ WHERE packet_id = %d
+   AND drop_flag = 0", $packetId);
+        while ($row = db_fetch_object($rs))
+            $docs[] = $row->doc_id;
+    }
+    return array(
+        'packet_id' => array(
+            '#type' => 'hidden',
+            '#value' => $packetId ? $packetId : '',
+        ),
+        'topic' => array(
+            '#title' => t('Topic'),
+            '#type' => 'select',
+            '#required' => TRUE,
+            '#options' => load_pdq_topics(),
+            '#default_value' => $topicId,
+            '#description' => t('Select topic for review packet'),
+        ),
+        'cycle' => array(
+            '#title' => t('Cycle'),
+            '#type' => 'select',
+            '#required' => TRUE,
+            '#options' => load_review_cycles(),
+            '#default_value' => $cycleId,
+            '#description' => t('Select literature review cycle for packet'),
+        ),
+        'assignment' => array(
+            '#title' => t('Assigned To'),
+            '#type' => 'fieldset',
+            '#description' => t('Who will be reviewing this packet?'),
+            '#collapsible' => TRUE,
+            '#collapsed' => TRUE,
+            'boards' => array(
+                '#title' => 'Boards',
+                '#type' => 'select',
+                '#multiple' => TRUE,
+                '#options' => load_ebms_boards(),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+            ),
+            'subgroups' => array(
+                '#title' => 'Subgroups',
+                '#type' => 'select',
+                '#multiple' => TRUE,
+                '#options' => load_ebms_subgroups(),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+            ),
+            'adhocgroups' => array(
+                '#title' => 'Ad-hoc groups',
+                '#type' => 'select',
+                '#multiple' => TRUE,
+                '#options' => load_ad_hoc_groups(),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+            ),
+            'reviewers' => array(
+                '#title' => 'Individual reviewers',
+                '#type' => 'select',
+                '#multiple' => TRUE,
+                '#options' => load_ebms_users(),
+                '#default_value' => $reviewers,
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+            ),
+            /*
+            'options' => array(
+                '#title' => t('Options'),
+                '#type' => 'checkboxes',
+                '#options' => array(
+                    'global' => t('Available to all users?'),
+                    #'foobar' => t('pay no attention')
+                ),
+            ),
+            */
+        ),
+        'docs' => array(
+            '#title' => t('Articles'),
+            '#type' => 'select',
+            '#required' => TRUE,
+            '#multiple' => TRUE,
+            '#options' => load_docs(),
+            '#default_value' => $docs,
+            '#description' => t('Select articles to be reviewed'),
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => t('Submit'),
+            '#submit' => array('store_packet'),
+        ),
+    );
+}
+function ebms_resolve_groups($form_state) {
+    $reviewers = array();
+    foreach ($form_state['values']['boards'] as $id => $name) {
+        $rs = db_query("
+SELECT user_id
+  FROM pdq_board_member
+ WHERE board_id = %d", $id);
+        while ($row = db_fetch_object($rs))
+            $reviewers[] = $row->user_id;
+    }
+    foreach ($form_state['values']['subgroups'] as $id => $name) {
+        $rs = db_query("
+SELECT user_id
+  FROM pdq_subgroup_member
+ WHERE sg_id = %d", $id);
+        while ($row = db_fetch_object($rs))
+            $reviewers[] = $row->user_id;
+    }
+    foreach ($form_state['values']['adhocgroups'] as $id => $name) {
+        $rs = db_query("
+SELECT user_id
+  FROM ebms_ad_hoc_group_member
+ WHERE group_id = %d", $id);
+        while ($row = db_fetch_object($rs))
+            $reviewers[] = $row->user_id;
+    }
+    foreach ($form_state['values']['reviewers'] as $id => $name)
+        $reviewers[] = $id;
+    return array_unique($reviewers);
+}
+class EbmsPacketDoc {
+    function EbmsPacketDoc($docId, $articleId, $dropFlag) {
+        $this->docId = $docId;
+        $this->articleId = $articleId;
+        $this->dropped = $dropFlag ? true : false;
+    }
+}
+function find_docs_in_packet($packetId) {
+    $docs = array();
+    $rs = db_query("
+SELECT article_id, doc_id, drop_flag
+  FROM lit_packet_article
+ WHERE packet_id = %d", $packetId);
+    while ($row = db_fetch_object($rs))
+        $docs[$row->doc_id] = new EbmsPacketDoc($row->doc_id, $row->article_id,
+                                                $row->drop_flag);
+    return $docs;
+}
+function store_packet($form, &$form_state) {
+
+    // What does the manager want in the packet now?
+    $packetId = $form_state['values']['packet_id'];
+    $cycleId = $form_state['values']['cycle'];
+    $topicId = $form_state['values']['topic'];
+    $docs = array();
+    foreach ($form_state['values']['docs'] as $id => $desc)
+        $docs[] = $id;
+    $reviewers = ebms_resolve_groups($form_state);
+
+    // If the packet doesn't already exist, create it.
+    if (!$packetId) {
+        $docsToAdd = $docs;
+        global $user;
+        db_query("
+INSERT INTO lit_packet (cycle_id, topic_id, created_by)
+     VALUES (%d, %d, %d)", $cycleId, $topicId, $user->uid);
+        $packetId = db_last_insert_id('ebms_ad_hoc_group', 'group_id');
+    }
+    else {
+
+        // Which articles are in the package now?
+        $docsInPacket = find_docs_in_packet($packetId);
+        $docsToAdd = array();
+
+        // Add the articles the manager wants in the packet now.
+        foreach ($docs as $docId) {
+            $docInPacket = $docsInPacket[$docId];
+            if ($docInPacket) {
+
+                // If the article was there, then suppressed, unsuppress it.
+                if ($docInPacket->dropped)
+                    db_query("
+UPDATE lit_packet_article
+   SET drop_flag = 0
+ WHERE article_id = %d", $docInPacket->articleId);
+            }
+            else
+
+                // Wasn't ever in the packet; we'll add it below.
+                $docsToAdd[] = $docId;
+        }
+
+        // Mark articles the manager no longer wants in the packet.
+        // Doing it this way avoids trouble with articles that have
+        // already been reviewed.
+        foreach ($docsInPacket as $docInPacket) {
+            if (!$docInPacket->dropped)
+                if (!in_array($docInPacket->docId, $docs))
+                    db_query("
+UPDATE lit_packet_article
+   SET drop_flag = 1
+ WHERE article_id = %d", $docInPacket->articleId);
+        }
+        db_query("
+UPDATE lit_packet
+   SET cycle_id = %d,
+       topic_id = %d
+ WHERE packet_id = %d", $cycleId, $topicId, $packetId);
+
+        // We'll rebuild the list of reviewers; doesn't affect existing
+        // reviews of articles in the packet.
+        db_query("DELETE FROM lit_packet_reviewer WHERE packet_id = %d",
+                 $packetId);
+    }
+    foreach ($docsToAdd as $docId)
+        db_query("
+INSERT INTO lit_packet_article (packet_id, doc_id) VALUES (%d, %d)",
+                 $packetId, $docId);
+    foreach ($reviewers as $userId)
+        db_query("
+INSERT INTO lit_packet_reviewer (packet_id, reviewer_id) VALUES (%d, %d)",
+                 $packetId, $userId);
+    drupal_goto('assign-lit');
+}
+
+/*======================================================================*/
+/*                          AD-HOC GROUPS                               */
+/*======================================================================*/
+function ebms_ad_hoc_groups($command=NULL, $groupId=NULL) {
+    switch ($command) {
+    case 'delete':
+        $rs = db_query("
+SELECT group_name
+  FROM ebms_ad_hoc_group
+ WHERE group_id = %d", $groupId);
+        $name = db_result($rs);
+        db_query("DELETE FROM ebms_ad_hoc_group_member WHERE group_id = %d",
+                 $groupId);
+        db_query("DELETE FROM ebms_ad_hoc_group WHERE group_id = %d",
+                 $groupId);
+        drupal_set_message("Group $name deleted");
+        break;
+    case 'add':
+        return drupal_get_form('ebms_ad_hoc_group_form');
+    case 'edit':
+        return drupal_get_form('ebms_ad_hoc_group_form', $groupId);
+    }
+    $html = array("<br />
+<a href='/ebms/ad-hoc-groups/add'><b>Add New Group</b></a>
+<br /><br />
+");
+    $rs = db_query("
+  SELECT group_id, group_name
+    FROM ebms_ad_hoc_group
+ORDER BY group_name");
+    while ($row = db_fetch_object($rs)) {
+        $name = htmlspecialchars($row->group_name);
+        $id = $row->group_id;
+        $html[] = "<a href='/ebms/ad-hoc-groups/edit/$id'>Edit</a>&nbsp;\n";
+        $html[] = "<a href='/ebms/ad-hoc-groups/delete/$id'>Delete</a>&nbsp;\n";
+        $html[] = "$name<br />\n";
+    }
+    return implode('', $html);
+}
+function store_ad_hoc_group($form, &$form_state) {
+    $groupId = $form_state['values']['group_id'];
+    if (!$groupId) {
+        global $user;
+        db_query("
+INSERT INTO ebms_ad_hoc_group (group_name, created_by)
+     VALUES ('%s', %d)", $form_state['values']['group_name'], $user->uid);
+        $groupId = db_last_insert_id('ebms_ad_hoc_group', 'group_id');
+    }
+    else {
+        db_query("DELETE FROM ebms_ad_hoc_group_member WHERE group_id = %d",
+                 $groupId);
+    }
+    foreach ($form_state['values']['members'] as $id => $val) {
+        db_query("
+INSERT INTO ebms_ad_hoc_group_member (user_id, group_id) VALUES (%d, %d)",
+                 $id, $groupId);
+    }
+    drupal_goto('ad-hoc-groups');
+    #return "AD HOC GROUP STORED (JK)";
+}
+function ebms_ad_hoc_group_form(&$form_state, $groupId=null) {
+    $members = array();
+    $name = '';
+    if ($groupId) {
+        $rs = db_query("
+SELECT group_name
+  FROM ebms_ad_hoc_group
+ WHERE group_id = %d", $groupId);
+        $name = db_result($rs);
+        $rs = db_query("
+SELECT user_id
+  FROM ebms_ad_hoc_group_member
+ WHERE group_id = %d", $groupId);
+        while ($row = db_fetch_object($rs))
+            $members[] = $row->user_id;
+    }
+        
+    return array(
+        'group_name' => array(
+            '#title' => t('Group Name'),
+            '#default_value' => $name,
+            '#type' => 'textfield',
+            '#required' => TRUE,
+            '#description' => t('Pick a unique name for the ad-hoc group'),
+        ),
+        'members' => array(
+            '#title' => 'Members',
+            '#type' => 'select',
+            '#multiple' => TRUE,
+            '#default_value' => $members,
+            '#description' => t('Control+click to add multiple members'),
+            '#options' => load_ebms_users(),
+#            '#collapsible' => TRUE,
+#            '#collapsed' => TRUE,
+        ),
+        'group_id' => array(
+            '#type' => 'hidden',
+            '#value' => $groupId ? $groupId : '',
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => t('Save'),
+            '#submit' => array('store_ad_hoc_group'),
+        ),
+    );
+}
+
+/*======================================================================*/
+/*                        LITERATURE REVIEWS                            */
+/*======================================================================*/
+class EbmsArticle {
+    function EbmsArticle($articleId) {
+        $this->articleId = $articleId;
+        $rs = db_query("
+  SELECT a.doc_id, d.description, f.filename, f.filepath, f.filemime,
+         f.filesize
+    FROM lit_packet_article a
+    JOIN ebms_doc d
+      ON d.doc_id = a.doc_id
+    JOIN files f
+      ON f.fid = d.file_id
+   WHERE a.article_id = %d
+ORDER BY f.filename", $articleId);
+        while ($row = db_fetch_object($rs)) {
+            $this->docId = $row->doc_id;
+            $this->description = $row->description;
+            $this->filename = $row->filename;
+            $this->filepath = $row->filepath;
+            $this->filemime = $row->filemime;
+            $this->filesize = $row->filesize;
+        }
+    }
+}
+function ebms_review_lit($command=null, $itemId=null) {
+    switch ($command) {
+    case 'packet':
+        $rs = db_query("
+SELECT c.cycle_name, t.topic_name
+  FROM lit_packet p
+  JOIN lit_review_cycle c
+    ON c.cycle_id = p.cycle_id
+  JOIN pdq_topic t
+    ON t.topic_id = p.topic_id
+ WHERE p.packet_id = %d", $itemId);
+        $cycleName = $topicName = '';
+        while ($row = db_fetch_object($rs)) {
+            $cycleName = htmlspecialchars($row->cycle_name);
+            $topicName = htmlspecialchars($row->topic_name);
+        }
+        $html = array("<h2>$cycleName $topicName Packet</h2>");
+        $docsInPacket = find_docs_in_packet($itemId);
+        if (count($docsInPacket) == 0) {
+            $html[] = "<b>No Articles In Packet</b>";
+            return implode('', $html);
+        }
+        $html[] = '<ol>';
+        foreach ($docsInPacket as $docInPacket) {
+            $articleId = $docInPacket->articleId;
+            if (!$docInPacket->dropped) {
+                $article = new EbmsArticle($articleId);
+                $title = htmlspecialchars($article->description);
+                $name = htmlspecialchars($article->filename);
+                $url = "/ebms/review-lit/article/$articleId";
+                $html[] = "<li><a href=\"$url\" title=\"$title\">$name</li>";
+            }
+        }
+        $html[] = '</ol>';
+        return implode('', $html);
+    case 'article':
+        $article = new EbmsArticle($itemId);
+        $url = file_create_url($article->filepath);
+        $name = htmlspecialchars($article->filename);
+        $desc = htmlspecialchars($article->description);
+        return "<br /><a href=\"$url\">$name</a><br /><br /><b>Description:</b><br />$desc" . drupal_get_form('ebms_review_lit_form', $articleId);
+    default:
+        global $user;
+        $rs = db_query("
+  SELECT p.packet_id, c.cycle_name, t.topic_name
+    FROM lit_packet p
+    JOIN lit_review_cycle c
+      ON c.cycle_id = p.cycle_id
+    JOIN pdq_topic t
+      ON t.topic_id = p.topic_id
+    JOIN lit_packet_reviewer r
+      ON r.packet_id = p.packet_id
+   WHERE r.reviewer_id = %d
+ORDER BY c.cycle_id", $user->uid);
+        $packets = array();
+        while ($row = db_fetch_object($rs))
+            $packets[] = $row;
+        if (count($packets) == 0)
+            return '<p><b>You currently have no literature packets to review.</b></p>';
+        $html = array('<h2>Literature Packets</h2><ol>');
+        foreach ($packets as $packet) {
+            $packetId = $packet->packet_id;
+            $cycleName = htmlspecialchars($packet->cycle_name);
+            $topicName = htmlspecialchars($packet->topic_name);
+            $url = "/ebms/review-lit/packet/$packetId";
+            $html[] = "<li><a href=\"$url\">$topicName ($cycleName)</a></li>";
+        }
+        $html[] = '</ol>';
+        return implode('', $html);
+    }
+}
+function ebms_review_lit_form(&$form_state, $articleId) {
+    global $user;
+    $reviewId = $comments = $loeInfo = '';
+    $options = array();
+    $rs = db_query("
+SELECT review_id, review_flags, comments, loe_info
+  FROM article_review
+ WHERE article_id = %d
+   AND reviewer_id = %d", $articleId, $user->uid);
+    while ($row = db_fetch_object($rs)) {
+        $reviewId = $row->review_id;
+        $comments = $row->comments;
+        $loeInfo = $row->loe_info;
+        $flags = $row->flags;
+        if ($row->flags & EBMS_ARTICLE_WARRANTS_NO_CHANGES)
+            $options[] = EBMS_ARTICLE_WARRANTS_NO_CHANGES;
+        if ($row->flags & EBMS_ARTICLE_DESERVES_CITATION)
+            $options[] = EBMS_ARTICLE_DESERVES_CITATION;
+        if ($row->flags & EBMS_ARTICLE_MERITS_REVISION_OF_TEXT)
+            $options[] = EBMS_ARTICLE_MERITS_REVISION_OF_TEXT;
+        if ($row->flags & EBMS_ARTICLE_MERITS_DISCUSSION)
+            $options[] = EBMS_ARTICLE_MERITS_DISCUSSION;
+    }
+    return array(
+        'review_id' => array(
+            '#type' => 'hidden',
+            '#value' => $reviewId ? $reviewId : '',
+        ),
+        'article_id' => array(
+            '#type' => 'hidden',
+            '#value' => $articleId,
+        ),
+        'options' => array(
+            '#title' => t('Disposition'),
+            '#type' => 'checkboxes',
+            '#required' => TRUE,
+            '#options' => array(
+                EBMS_ARTICLE_WARRANTS_NO_CHANGES =>
+                t('Warrants no changes to the summary.'),
+                EBMS_ARTICLE_DESERVES_CITATION =>
+                t('Deserves citation in the summary (indicate placement in the summary document).'),
+                EBMS_ARTICLE_MERITS_REVISION_OF_TEXT =>
+                t('Merits revision of the text (indicate changes in the summary document).'),
+                EBMS_ARTICLE_MERITS_DISCUSSION =>
+                t('Merits discussion.')
+            ),
+            '#default_value' => $options,
+            '#description' => t('Choose your poison'),
+        ),
+        'comments' => array(
+            '#title' => t('Comments'),
+            '#type' => 'textarea',
+            '#required' => TRUE,
+            '#cols' => 120,
+            '#rows' => 3,
+            '#resizable' => TRUE,
+            '#required' => TRUE,
+            '#default_value' => $comments,
+            '#description' => t('Put your blah-blah here'),
+        ),
+        'loe' => array(
+            '#title' => t('LOE information'),
+            '#type' => 'textarea',
+            '#description' => t('Levels of evidence'),
+            '#resizable' => TRUE,
+            '#cols' => 120,
+            '#rows' => 3,
+            '#required' => TRUE,
+            '#default_value' => $loeInfo,
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => t('Submit'),
+            '#submit' => array('ebms_store_review'),
+        ),
+    );
+}
+function ebms_store_review($form, &$form_state) {
+
+    // What does the manager want in the packet now?
+    $reviewId = $form_state['values']['review_id'];
+    $comments = $form_state['values']['comments'];
+    $loeInfo = $form_state['values']['loe'];
+    $flags = var_export($form_state['values']['options'], true);
+    drupal_set_message("comments=$comments; loe=$loeInfo; options=$flags");
+    /*
+    // If the packet doesn't already exist, create it.
+    if (!$packetId) {
+        $docsToAdd = $docs;
+        global $user;
+        db_query("
+INSERT INTO lit_packet (cycle_id, topic_id, created_by)
+     VALUES (%d, %d, %d)", $cycleId, $topicId, $user->uid);
+        $packetId = db_last_insert_id('ebms_ad_hoc_group', 'group_id');
+    }
+    else {
+
+        // Which articles are in the package now?
+        $docsInPacket = find_docs_in_packet($packetId);
+        $docsToAdd = array();
+
+        // Add the articles the manager wants in the packet now.
+        */
+}
