@@ -49,16 +49,20 @@ function ebms_perm() {
 /*                         GENERAL UTILITY FUNCTIONS                    */
 /*======================================================================*/
 function ebms_debug($where, $what) {
+    $now = date('c');
     file_put_contents('/tmp/ebms.debug',
-                      "$where\n" . print_r($what, TRUE), FILE_APPEND);
+                      "$now $where\n" . print_r($what, TRUE) .
+                      "\n", FILE_APPEND);
 }
 
 /**
  * Helper function; creates and returns a dictionary of board names indexed
  * by the board ID (primary key from the ebms_board table).
  */
-function load_ebms_boards() {
+function load_ebms_boards($includePrompt=false) {
     $boards = array();
+    if ($includePrompt)
+        $boards[0] = 'Select';
     $rs = db_query('
   SELECT board_id, board_name
     FROM {ebms_board}
@@ -133,12 +137,16 @@ ORDER BY group_name');
     return $groups;
 }
 
-function ebms_load_topics() {
+function ebms_load_topics($boardId=null, $addPrompt=false) {
     $topics = array();
-    $rs = db_query('
+    if ($addPrompt)
+        $topics[0] = 'Select';
+    $where = $boardId ? "WHERE board_id = $boardId" : '';
+    $rs = db_query("
   SELECT topic_id, topic_name
     FROM {ebms_topic}
-ORDER BY topic_name');
+   $where
+ORDER BY topic_name");
     while ($row = db_fetch_object($rs))
         $topics[$row->topic_id] = $row->topic_name;
     return $topics;
@@ -315,6 +323,49 @@ function ebms_menu() {
             #'access arguments' => array('post ebms documents'),
             'access callback' => TRUE,
             'weight' => 20,
+        ),
+        'upload-pdfs' => array(
+            'title' => 'Upload PDFs',
+            'page callback' => 'ebms_upload_pdfs',
+            'access callback' => TRUE,
+        ),
+        'upload-rtfs' => array(
+            'title' => 'Upload RTFs',
+            'page callback' => 'ebms_upload_rtfs',
+            'access callback' => TRUE,
+        ),
+        'packet' => array(
+            'title' => 'Create A Packet',
+            'type' => MENU_CALLBACK,
+            'page callback' => 'ebms_hand_packet',
+            #'page callback' => 'drupal_get_form',
+            #'page arguments' => array('ebms_packet_form'),
+            'access callback' => TRUE,
+        ),
+        'packet-board-ahah' => array(
+            'type' => MENU_CALLBACK,
+            'page callback' => 'ebms_packet_board_ahah',
+            'access callback' => TRUE,
+        ),
+        'packet-topic-ahah' => array(
+            'type' => MENU_CALLBACK,
+            'page callback' => 'ebms_packet_topic_ahah',
+            'access callback' => TRUE,
+        ),
+        'load-board-topics' => array(
+            'type' => MENU_CALLBACK,
+            'page callback' => 'ebms_load_board_topics',
+            'access callback' => TRUE,
+        ),
+        'finish-packet-form' => array(
+            'type' => MENU_CALLBACK,
+            'page callback' => 'ebms_finish_packet_form',
+            'access callback' => TRUE,
+        ),
+        'adjust-reviewers' => array(
+            'type' => MENU_CALLBACK,
+            'page callback' => 'ebms_adjust_reviewers',
+            'access callback' => TRUE,
         ),
         'roster' => array(
             'title' => 'Roster',
@@ -849,6 +900,7 @@ function ebms_add_doc_form() {
 function ebms_store_doc($form, &$form_state) {
     $file = file_save_upload('doc_file');
     if ($file) {
+        // drupal_set_message(print_r($file, true));
         $now = date('c');
         $desc = $form_state['values']['brief_description'];
         $public = $form_state['values']['options']['global'] ? 1 : 0;
@@ -1009,7 +1061,7 @@ SELECT c.cycle_name, t.topic_name
         drupal_set_message("Deletion of $cycleName $topicName packet requested");
         break;
     case 'edit':
-        return drupal_get_form('ebms_packet_form', $packetId);
+        return drupal_get_form('ebms_old_packet_form', $packetId);
     }
     /*
     $html = array("<br />
@@ -1049,11 +1101,11 @@ ORDER BY 2, 3');
 }
 
 function ebms_add_packet() {
-    return drupal_get_form('ebms_packet_form');
+    return drupal_get_form('ebms_old_packet_form');
 }
 
 function ebms_edit_packet($packetId) {
-    return drupal_get_form('ebms_packet_form', $packetId);
+    return drupal_get_form('ebms_old_packet_form', $packetId);
 }
 
 function ebms_get_packet_reviewers_string($packetId) {
@@ -1082,7 +1134,627 @@ ORDER BY u.name', $packetId);
     return $reviewers;
 }
 
+function ebms_packet_board_ahah() {
+    $form_state = array('storage' => NULL, 'submitted' => FALSE);
+    $form_build_id = $_POST['form_build_id'];
+    $boardId = $_POST['ahah-wrapper']['board'];
+    ebms_debug('ebms_packet_board_ahah', "$form_build_id - $boardId");
+
+    # Step #4.
+    $form = form_get_cache($form_build_id, $form_state);
+
+    # Preparing for #5.
+    $args = $form['#parameters'];
+    $form_id = array_shift($args);
+    $form_state['post'] = $form['#post'] = $_POST;
+    $form['#programmed'] = $form['#redirect'] = FALSE;
+
+    # Step #5.
+    drupal_process_form($form_id, $form, $form_state);
+
+    # Step #6 and #7 and #8.
+    $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
+
+    # Step #9.
+    #ebms_debug('ebms_packet_topics $form', $form);
+    $wrapper = $form['ahah-wrapper'];
+    unset($wrapper['reviewers'], $wrapper['articles']);
+    if (!$boardId)
+        unset($wrapper['topic'], $wrapper['board']['#default_value']);
+    else {
+        $wrapper['board']['#default_value'] = $boardId;
+        $wrapper['topic'] = array(
+            '#type' => 'select',
+            '#title' => 'Topic',
+            '#options' => ebms_load_topics($boardId, true),
+            '#ahah' => array(
+                'path' => 'ebms-packet-topic-ahah',
+                'method' => 'replace',
+                'effect' => 'fade',
+                'wrapper' => 'ahah-wrapper',
+            ),
+        );
+    }
+    unset($wrapper['#prefix'], $wrapper['#suffix']);
+    $output = drupal_render($wrapper);
+    #ebms_debug('ebms_packet_callback', $output);
+
+    // Final rendering callback.
+    drupal_json(array('status' => TRUE, 'data' => $output));
+}
+
+function ebms_load_topic_articles($topicId) {
+    //ebms_debug('ebms_load_topic_articles', $topicId);
+    $rs = db_query('
+  SELECT a.article_id, a.art_title, a.art_pmid, a.art_journal, c.cycle_name,
+         a.art_authors
+    FROM {ebms_article} a
+    JOIN {ebms_article_topic} t
+      ON t.article_id = a.article_id
+    JOIN {ebms_lit_review_cycle} c
+      ON c.cycle_id = t.cycle_id
+   WHERE t.topic_id = %d
+ORDER BY c.cycle_id DESC, a.art_journal, a.article_id DESC
+   LIMIT 2000', $topicId);
+    $articles = array();
+    while ($row = db_fetch_object($rs)) {
+        $id = $row->article_id;
+        $key = "article-$id";
+        $title = htmlspecialchars($row->art_title);
+        $pmid = $row->art_pmid;
+        $citation = $row->art_journal;
+        @preg_match('/(.+)\. (\d{4})[-:; ]/', $citation, $matches);
+        $journal = htmlspecialchars($matches[1]);
+        $year = $matches[2];
+        $names = explode(' ', $row->art_authors);
+        $authors = htmlspecialchars($row->art_authors);
+        $author = htmlspecialchars($names[0]);
+        $cycle = $row->cycle_name;
+        $url = "http://www.ncbi.nlm.nih.gov/pubmed/$pmid";
+        $link = "<a href='$url' target='_blank'>$pmid</a>";
+        $display = "$author; $journal; $year; $link [$cycle]";
+        $authTitle = "$authors: $title";
+        $span = "<span title='$authTitle'>$display</span>";
+        $articles[$id] = $span;
+    }
+    #    $articles[] = $row;
+    /*
+        $articleId = $row->article_id;
+        $title = $row->art_title;
+        $pmid = $row->art_pmid;
+        $cite = $row->art_journal;
+        $cycle = $row->cycle_name;
+        $display = "<span title='$title'>$pmid - $cite</span> ($cycle)";
+        $articles[$articleId] = $display;
+    }
+    ebms_debug('ebms_load_topic_articles', $articles);
+    */
+    return $articles;
+}
+
+function ebms_load_topic_reviewers($topicId, $entireBoard=false) {
+    //ebms_debug('ebms_load_topic_reviewers', array($topicId, $entireBoard));
+    if ($entireBoard)
+        $rs = db_query('
+  SELECT u.uid, u.name
+    FROM {users} u
+    JOIN {ebms_board_member} m
+      ON m.user_id = u.uid
+    JOIN {ebms_topic} t
+      ON t.board_id = m.board_id
+    JOIN {users_roles} ur
+      ON ur.uid = u.uid
+    JOIN {role} r
+      ON r.rid = ur.rid
+   WHERE t.topic_id = %d
+     AND r.name = \'board member\'
+ORDER BY u.name', $topicId);
+    else
+        $rs = db_query('
+  SELECT u.uid, u.name
+    FROM {users} u
+    JOIN {ebms_topic_reviewer} r
+      ON r.user_id = u.uid
+   WHERE r.topic_id = %d
+ORDER BY u.name', $topicId);
+    $reviewers = array();
+    while ($row = db_fetch_object($rs))
+        $reviewers[$row->uid] = $row->name;
+    return $reviewers;
+}
+
+function ebms_packet_topic_ahah() {
+    $form_state = array('storage' => NULL, 'submitted' => FALSE);
+    $form_build_id = $_POST['form_build_id'];
+    $topicId = $_POST['ahah-wrapper']['topic'];
+    $boardId = $_POST['ahah-wrapper']['board'];
+
+    # Step #4.
+    $form = form_get_cache($form_build_id, $form_state);
+
+    # Preparing for #5.
+    $args = $form['#parameters'];
+    $form_id = array_shift($args);
+    $form_state['post'] = $form['#post'] = $_POST;
+    $form['#programmed'] = $form['#redirect'] = FALSE;
+
+    # Step #5.
+    drupal_process_form($form_id, $form, $form_state);
+
+    # Step #6 and #7 and #8.
+    $form = drupal_rebuild_form($form_id, $form_state, $args, $form_build_id);
+
+    # Step #9.
+    $articles = $form['articles'];
+    $wrapper = $form['ahah-wrapper'];
+    $wrapper['board']['#default_value'] = $boardId;
+    if (!$topicId)
+        unset($wrapper['reviewers'], $wrapper['articles'],
+              $wrapper['topic']['#default_value']);
+    else {
+        $wrapper['topic']['#default_value'] = $topicId;
+        $wrapper['articles'] = array(
+            '#type' => 'checkboxes',
+            '#title' => 'Articles',
+            '#options' => ebms_load_topic_articles($topicId),
+        );
+        $wrapper['all-board-flag'] = array(
+            '#type' => 'checkbox',
+            '#name' => 'all-board-flag',
+            '#id' => 'all-board-flag',
+            '#title' => 'Show all board members?'
+        );
+        $wrapper['reviewers'] = array(
+            '#type' => 'checkboxes',
+            '#title' => 'Reviewers',
+            '#options' => ebms_load_topic_reviewers($topicId),
+        );
+    }
+    #ebms_debug('ebms_packet_articles articles before', $articles);
+    #if ($topicId) {
+    #    $articles['#options'] = ebms_load_topic_articles($topicId);
+    #    ebms_debug('ebms_packet_articles articles after', $articles);
+    #}
+    #else
+    #    $articles['#options'] = array(0 => 'Choose a Topic First!');
+    #$articles['#type'] = 'checkboxes';
+    #$articles['#title'] = 'Articles';
+    #$articles['#multiple'] = true;
+    unset($wrapper['#prefix'], $wrapper['#suffix']);
+    /*
+    $topicArticles = ebms_load_topic_articles($topicId);
+    foreach ($topicArticles as $article) {
+        $id = $article->article_id;
+        $key = "article-$id";
+        $title = $article->art_title;
+        $pmid = $article->art_pmid;
+        $citation = $article->art_journal;
+        $cycle = $article->cycle_name;
+        $authTitle = "$article->art_authors: $article->art_title";
+        $articles[$key] = array(
+            '#name' => 'arts',
+            '#type' => 'checkbox',
+            '#id' => $key,
+            '#title' => "$citation ($cycle cycle)",
+            '#return_value' => $article->article_id,
+            '#attributes' => array('title' => $authTitle),
+        );
+    }
+    */
+    $output = drupal_render($wrapper);
+    #ebms_debug('ebms_packet_topic_ahah', $output);
+
+    // Final rendering callback.
+    drupal_json(array('status' => TRUE, 'data' => $output));
+}
+
+function ebms_load_board_topics($boardId) {
+    drupal_set_header('Content-Type: application/json');
+    if ($boardId < 1) {
+        drupal_json(array('status' => 0, 'data' => '&nbsp;'));
+        return;
+    }
+    $topics = ebms_load_topics($boardId, true);
+    $html = array('
+<label for="edit-packet-topic">Topic:
+<span class="form-required" title="This field is required.">*</span>
+</label>
+<select name="topic" class="form-select required" id="edit-packet-topic"
+        onchange="javascript:ebmsLoadRestOfForm(this)">
+');
+    foreach ($topics as $id => $name) {
+        $rs = db_query('
+SELECT COUNT(*)
+  FROM {ebms_article_topic}
+ WHERE topic_id = %d', $id);
+        $count = db_result($rs);
+        if ($count > 0 || $id == 0) {
+            $name = htmlspecialchars($name);
+            $html[] = "<option value=\"$id\">$name</option>\n";
+        }
+        #else
+        #    $html[] = "<option value=\"$id\">BLOCKED $name</option>\n";
+    }
+    $html[] = '
+</select>
+<div class="description">Select the topic for which this packet is to be created.</div>
+<div id="rest-of-form-div"></div>
+';
+    drupal_json(array('status' => 0, 'data' => implode('', $html)));
+}
+function ebms_load_topic_summaries($topicId) {
+    $rs = db_query('
+  SELECT d.doc_id, d.when_posted, d.description
+    FROM {ebms_doc} d
+    JOIN {ebms_doc_topic} t
+      ON d.doc_id = t.doc_id
+    JOIN {ebms_doc_tag} dtag
+      ON dtag.doc_id = d.doc_id
+    JOIN {ebms_tag} tag
+      ON tag.tag_id = dtag.tag_id
+   WHERE tag.tag_name = \'summary\'
+     AND t.topic_id = %d
+ORDER BY d.when_posted DESC', $topicId);
+    $summaries = array();
+    while ($row = db_fetch_object($rs))
+        $summaries[$row->doc_id] = $row->description;
+    return $summaries;
+}
+
+function ebms_get_topic_name($topicId) {
+    $rs = db_query('SELECT topic_name FROM {ebms_topic} WHERE topic_id = %d',
+                   $topicId);
+    return db_result($rs);
+}
+
+function ebms_core_packet_fields($topicId) {
+    if (!$topicId)
+        return '';
+    $topic = htmlspecialchars(ebms_get_topic_name($topicId));
+    $articles = ebms_load_topic_articles($topicId);
+    $html = array('
+<div id="edit-packet-articles-wrapper" class="form-item">
+<label for="edit-packet-articles">Articles:
+<span class="form-required" title="At least one article must be selected.">*</span>
+</label>
+<div class="description">Which articles should be reviewed for this packet?</div>
+<div class="form-checkboxes">
+');
+    foreach ($articles as $id => $desc) {
+        #$desc = htmlspecialchars($desc);
+        $html[] = "
+<div class='form-item' id='edit-articles-$id-wrapper'>
+<label class='option' for='edit-articles-$id'>
+<input type='checkbox' name='articles[$id]' id='edit-articles-$id' value='$id'
+       checked='checked' class='form-checkbox ebms-article' /> $desc</label>
+</div>
+";
+    }
+    $html[] = '
+</div>
+</div>
+';
+    $summaries = ebms_load_topic_summaries($topicId);
+    $html[] = '
+<div id="edit-packet-summaries-wrapper" class="form-item">
+<label for="edit-packet-summaries">Summary Documents:</label>
+<div class="description">Optionally identify one or more summaries associated with this packet.</div>
+<div class="form-checkboxes">
+';
+    foreach ($summaries as $id => $desc) {
+        $desc = htmlspecialchars($desc);
+        $html[] = "
+<div class='form-item' id='edit-summaries-$id-wrapper'>
+<label class='option' for='edit-summaries-$id'>
+<input type='checkbox' name='summaries[$id]' id='edit-summaries-$id'
+       value='$id' class='form-checkbox' /> $desc</label>
+</div>
+";
+    }
+    $html[] = '
+</div>
+</div>
+';
+    $html[] = '<div id="edit-packet-reviewers-wrapper" class="form-item">';
+    $html[] = ebms_make_packet_reviewers_html($topicId, false, array(), true);
+    $html[] = '
+</div>
+<div class="form-item" id="edit-packet-title-wrapper">
+ <label for="edit-packet-title">Packet title: <span class="form-required" title="This field is required.">*</span></label>
+ <input type="text" maxlength="128" name="title" id="edit-packet-title" size="60" value="' . $topic . '" class="form-text required" />
+ <div class="description">How should the packet be identified in lists?</div>
+</div>
+<input type="button" name="op" id="edit-packet-submit" class="form-submit"
+          value="Save" onclick="javascript:ebmsPacketSave()"/>
+';
+    return implode('', $html);
+}
+
+function ebms_finish_packet_form($topicId) {
+    drupal_set_header('Content-Type: application/json');
+    if (!$topicId) {
+        drupal_json(array('status' => 0, 'data' => ''));
+        return;
+    }
+    $html = ebms_core_packet_fields($topicId);
+    drupal_json(array('status' => 0, 'data' => $html));
+}
+
+function ebms_adjust_reviewers($topicId, $all, $reviewers) {
+    if ($reviewers == 'none')
+        $reviewers = '';
+    ebms_debug('ebms_adjust_reviewers', array($topicId, $all, $reviewers));
+    $reviewers = explode('|', $reviewers);
+    drupal_set_header('Content-Type: application/json');
+    $html = ebms_make_packet_reviewers_html($topicId, $all == 'yes',
+                                            $reviewers);
+    drupal_json(array('status' => 0, 'data' => $html));
+}
+
+function ebms_make_packet_reviewers_html($topicId, $all, $checked,
+                                         $first=false) {
+    $c = $all ? ' checked="checked"' : '';
+    $html = array('
+<label for="edit-packet-reviewers">Reviewers:
+<span class="form-required" title="At least one reviewer must be selected.">*</span>
+</label>
+<div class="description">Assign responsibility for reviewing the articles in this packet.</div>
+<div class="form-checkboxes">
+<div class="form-item" id="adjust-reviewers-wrapper">
+<label class="option" for="adjust-reviewers">
+<input type="checkbox" name="adjust-reviewers" id="adjust-reviewers"
+       onclick="javascript:ebmsAdjustReviewers(' . $topicId . ')"
+       class="form-checkbox"' . $c . '/> Show all board members?</label>
+</div>
+');
+    $reviewers = ebms_load_topic_reviewers($topicId, $all);
+    foreach ($reviewers as $id => $name) {
+        $on = '';
+        if ($first || in_array($id, $checked))
+            $on = ' checked="checked"';
+        $name = htmlspecialchars($name);
+        $html[] = "
+<div class='form-item' id='edit-reviewers-$id-wrapper'>
+<label class='option' for='edit-reviewers-$id'>
+<input type='checkbox' name='reviewers[$id]' id='edit-reviewers-$id'
+       value='$id' class='form-checkbox ebms-reviewer'$on /> $name</label>
+</div>
+";
+    }
+    $html[] = "</div>\n";
+    $html = implode('', $html);
+    #ebms_debug('emprh', $html);
+    return $html;
+}
+
+function ebms_hand_packet($packetId=null) {
+    ebms_debug('ebms_hand_packet', $_POST);
+    /*
+Array
+(
+    [board] => 2
+    [topic] => 10
+    [articles] => Array
+        (
+            [760] => 760
+        )
+
+    [summaries] => Array
+        (
+            [203] => 203
+        )
+
+    [reviewers] => Array
+        (
+            [133] => 133
+        )
+
+    [title] => Anal Cancer
+)
+    */
+         if ($_POST['action'] == 'save')
+             drupal_set_message('Saving this baby!');
+    $html = array('
+  <form action="/ebms/packet" accept-charset="UTF-8" 
+        method="post" id="ebms-packet-form">
+   <input type="hidden" name="action" id="ebms-packet-action" />
+   <div class="form-item" id="edit-packet-board-wrapper">
+    <label for="edit-packet-board">Board:
+     <span class="form-required" title="This field is required.">*</span>
+    </label>
+    <select name="board" class="form-select required" id="edit-packet-board"
+            onchange="javascript:ebmsLoadTopics(this)">
+');
+    $boards = load_ebms_boards(true);
+    foreach ($boards as $id => $name) {
+        $name = htmlspecialchars($name);
+        $html[] = "     <option value=\"$id\">$name</option>\n";
+    }
+    $html[] = '
+    </select>
+    <div class="description">Select the board for which this packet is to be created.</div>
+   </div>
+   <div id="edit-packet-topic-wrapper" class="form-item"></div>
+  </form>
+';
+    drupal_add_js('
+    $.ajaxSetup({ cache: false });
+    function ebmsDebug(obj) {
+        var show = ""
+        for (p in obj)
+            show += "obj["+p+"]="+obj[p]+"\n";
+        window.alert(show);
+    }
+    function ebmsLoadRestOfForm(obj) {
+        $("#ebms-error-messages").remove();
+        var selected = obj.value * 1;
+        //window.alert("Topic " + selected + " selected!");
+        if (true) {
+            var loadUrl = "/ebms/finish-packet-form/" + selected;
+            $.ajax({
+                url: loadUrl,
+                dataType: "json",
+                success: function(result) {
+                    $("#rest-of-form-div").html(result.data);
+                }
+            });
+        }
+    }
+    function ebmsLoadTopics(obj) {
+        $("#ebms-error-messages").remove();
+        //ebmsDebug(obj);
+        var selected = obj.value * 1;
+        if (true) {
+            //window.alert(selected);
+            var loadUrl = "/ebms/load-board-topics/" + selected;
+            $.ajax({
+                url: loadUrl,
+                dataType: "json",
+                success: function(result) {
+//ebmsDebug(result);
+                    $("#edit-packet-topic-wrapper").html(result.data);
+                }
+            });
+        }
+    }
+    function ebmsAdjustReviewers(topicId) {
+        var checked = $("#adjust-reviewers:checked").val();
+        var reviewers = new Array();
+        $(".ebms-reviewer:checked").each(function() {
+            reviewers.push($(this).val());
+        });
+        
+        var yn = checked ? "yes" : "no";
+        var r = reviewers.join("|");
+        if (!r)
+            r = "none";
+        var u = "/ebms/adjust-reviewers/" + topicId + "/" + yn + "/" + r;
+        $.ajax({
+            url: u,
+            dataType: "json",
+            success: function(result) {
+                //window.alert(u);
+                $("#edit-packet-reviewers-wrapper").html(result.data);
+            }
+        });
+        //window.alert(url);
+    }
+    function ebmsPacketSave() {
+        var errors = new Array();
+        if ($(".ebms-article:checked").length == 0)
+            errors.push("Packet must contain at least one article.");
+        if ($(".ebms-reviewer:checked").length == 0)
+            errors.push("Packet must be assigned to at least one reviewer.");
+        if (!$("#edit-packet-title").val()) {
+            errors.push("Packet title field is required.");
+            $("#edit-packet-title").addClass("error");
+        }
+        else
+            $("#edit-packet-title").removeClass("error");
+        if (errors.length == 0) {
+            $("#ebms-error-messages").remove();
+            //window.alert("no errors");
+            $("#ebms-packet-action").val("save");
+            $("#ebms-packet-form").submit();
+            return true;
+        }
+        if ($("#ebms-error-messages").length == 0)
+            $(".post").before("<div id=\'ebms-error-messages\' " +
+                              "class=\'messages error\' />");
+        var messages = "";
+        if (errors.length > 1) {
+            messages = "<ul>";
+            for (i in errors)
+                messages += "<li>" + errors[i] + "</li>";
+        }
+        else
+            messages = errors[0];
+        $("#ebms-error-messages").html(messages);
+        return false;
+    }
+', $type='inline');
+    return implode('', $html);
+}
+
 function ebms_packet_form(&$form_state, $packetId=null) {
+    $form = array();
+    ahah_helper_register($form, $form_state);
+    $boardId = $topicId = 0;
+    if (isset($form_state['storage']['packet']['board']))
+        $boardId = $form_state['storage']['packet']['board'];
+    if (isset($form_state['storage']['packet']['topic']))
+        $topicId = $form_state['storage']['packet']['topic'];
+    ebms_debug('ebms_packet_form', $form_state);#"$boardId/$packetId");
+    $form['packet'] = array(
+        '#type' => 'markup',
+        '#tree' => true,
+        '#prefix' => '<div id="packet-wrapper">',
+        '#suffix' => '</div>'
+    );
+    $form['packet']['board'] = array(
+        '#type' => 'select',
+        '#title' => t('Board'),
+        '#options' => load_ebms_boards(true),
+        '#default_value' => $boardId,
+        '#ahah' => array(
+            'path' => ahah_helper_path(array('packet')),
+            'method' => 'replace',
+            'effect' => 'fade',
+            'wrapper' => 'packet-wrapper',
+        ),
+    );
+    $form['packet']['update_board'] = array(
+        '#type' => 'submit',
+        '#value' => t('Update Board'),
+        '#submit' => array('ahah_helper_generic_submit'),
+        #'#attributes' => array('class' => 'no-js'),
+    );
+    if ($boardId) {
+        $form['packet']['topic'] = array(
+            '#type' => 'select',
+            '#title' => 'Topic',
+            '#options' => ebms_load_topics($boardId, true),
+            '#default_value' => $topicId,
+            '#ahah' => array(
+                'path' => ahah_helper_path(array('packet')),
+                'method' => 'replace',
+                'effect' => 'fade',
+                'wrapper' => 'packet-wrapper',
+            ),
+        );
+        $form['packet']['update_topic'] = array(
+            '#type' => 'submit',
+            '#value' => t('Update Topic'),
+            '#submit' => array('ahah_helper_generic_submit'),
+            #'#attributes' => array('class' => 'no-js'),
+        );
+        if ($topicId) {
+            $form['packet']['articles'] = array(
+                '#type' => 'checkboxes',
+                '#title' => 'Articles',
+                '#options' => ebms_load_topic_articles($topicId),
+            );
+            $form['packet']['all-board-flag'] = array(
+                '#type' => 'checkbox',
+                '#name' => 'all-board-flag',
+                '#id' => 'all-board-flag',
+                '#title' => 'Show all board members?',
+            );
+            $form['packet']['reviewers'] = array(
+                '#type' => 'checkboxes',
+                '#title' => 'Reviewers',
+                '#options' => ebms_load_topic_reviewers($topicId),
+            );
+        }
+        else
+            unset($form['packet']['articles'],
+                  $form['packet']['all-board-flag'],
+                  $form['packet']['reviewers']);
+    }
+    return $form;
+}
+
+function ebms_old_packet_form(&$form_state, $packetId=null) {
     $reviewers = array();
     $selectedDocs = array();
     $docs = ebms_load_docs();
@@ -1264,6 +1936,24 @@ SELECT article_id, doc_id, drop_flag
         $docs[$row->doc_id] = new EbmsPacketDoc($row->doc_id, $row->article_id,
                                                 $row->drop_flag);
     return $docs;
+}
+
+function ebms_save_packet() {
+    $packetId = $_POST['packet'];
+    $topicId = $_POST['topic'];
+    $title = $_POST['title'];
+    if (!$packetId) {
+        global $user;
+        db_query('
+INSERT INTO {ebms_packet} (topic_id, created_by, packet_title)
+     VALUES (%d, %d, \'%s\')', $topicId, $user->uid, $title);
+        $packetId = db_last_insert_id('ebms_packet', 'packet_id');
+    }
+    else
+        db_query('
+UPDATE {ebms_packet}
+   SET packet_title = \'%s\'
+ WHERE packet_id = %d', $title, $packetId);
 }
 
 function ebms_store_packet($form, &$form_state) {
@@ -1908,6 +2598,15 @@ ORDER BY b.board_name', $user->uid);
       ON c.cycle_id = p.cycle_id
     JOIN {ebms_topic} t
       ON t.topic_id = p.topic_id
+   WHERE t.board_id = %d
+ORDER BY c.cycle_id, t.topic_name', $board->board_id);
+            $rs = db_query('
+  SELECT COUNT(*) as num_reviews, p.packet_id, c.cycle_name, t.topic_name
+    FROM {ebms_lit_packet} p
+    JOIN {ebms_lit_review_cycle} c
+      ON c.cycle_id = p.cycle_id
+    JOIN {ebms_topic} t
+      ON t.topic_id = p.topic_id
     JOIN {ebms_lit_packet_article} a
       ON a.packet_id = p.packet_id
     JOIN {ebms_article_review} r
@@ -1925,12 +2624,28 @@ ORDER BY c.cycle_id, t.topic_name', $board->board_id);
             foreach ($packets as $row) {
                 $count = $row->num_reviews;
                 $packetId = $row->packet_id;
-                $cycleName = htmlspecialchars($row->cycle_name);
-                $topicName = htmlspecialchars($row->topic_name);
+                $cycle = htmlspecialchars($row->cycle_name);
+                $topic = htmlspecialchars($row->topic_name);
                 $reviewers = ebms_get_packet_reviewers_string($packetId);
+                $rs = db_query('
+SELECT COUNT(*)
+  FROM {ebms_lit_packet} p
+  JOIN {ebms_lit_packet_article} a
+    ON a.packet_id = p.packet_id
+  JOIN {ebms_article_review} r
+    ON r.article_id = a.article_id
+ WHERE p.packet_id = %d
+   AND (p.last_seen IS NULL
+    OR p.last_seen <= r.when_posted)', $packetId);
+                $new = db_result($rs);
                 $url = "/ebms/reviews/$packetId";
-                $html[] = "<a href='$url'>$topicName - $cycleName - $reviewers</a>";
-                $html[] = " ($count reviews)<br />";
+                $html[] = "<a href='$url'>$topic - $cycle - $reviewers</a>";
+                $html[] = " ($count reviews";
+                if ($new) {
+                    $url = "/ebms/reviews/$packetId/new";
+                    $html[] = " - <a href='$url'>$new new</a>";
+                }
+                $html[] = ')<br />';
             }
         }
     }
@@ -1953,7 +2668,17 @@ SELECT c.cycle_name, t.topic_name
         $html[] = "<h4><i>Assigned to $reviewers</i></h4>";
 
         $lastDocId = 0;
-        $rs = db_query('
+        if ($new) {
+            $rs = db_query('
+SELECT last_seen
+  FROM {ebms_lit_packet}
+ WHERE packet_id = %d', $packetId);
+            $lastSeen = db_result($rs);
+            $and = $lastSeen ? "AND r.when_posted >= '$lastSeen'" : '';
+        }
+        else
+            $and = '';
+        $rs = db_query("
   SELECT f.filename, d.description, u.name, r.when_posted, r.review_flags,
          r.comments, r.loe_info, a.doc_id
     FROM {ebms_article_review} r
@@ -1965,8 +2690,8 @@ SELECT c.cycle_name, t.topic_name
       ON f.fid = d.file_id
     JOIN {users} u
       ON u.uid = r.reviewer_id
-   WHERE a.packet_id = %d
-ORDER BY f.filename, a.doc_id, r.when_posted', $packetId);
+   WHERE a.packet_id = %d $and
+ORDER BY f.filename, a.doc_id, r.when_posted", $packetId);
         while ($row = db_fetch_object($rs)) {
             if ($row->doc_id != $lastDocId) {
                 $filename = htmlspecialchars($row->filename);
@@ -2037,8 +2762,11 @@ ORDER BY d.when_posted DESC', $packetId);
             }
             $html[] = '</table>';
         }
+        db_query('
+UPDATE {ebms_lit_packet}
+   SET last_seen = NOW()
+ WHERE packet_id = %d', $packetId);
     }
-
     return implode('', $html);
 }
 
@@ -3698,4 +4426,100 @@ function ebms_reimbursement_report_form_validate($form, $form_state) {
 //     if ($desc && !$items)
 //         form_set_error('options',
 //                        t('Can\'t show item description without line items'));
+}
+
+/*======================================================================*/
+/*                               UTILITY                                */
+/*======================================================================*/
+class EbmsCitationPdf {
+    function EbmsCitationPdf($path, $uid) {
+        $this->uid = $uid;
+        $this->filepath = $path;
+        $this->filename = basename($path);
+        $this->filesize = filesize($path);
+        $this->timestamp = time();
+        $this->status = 1;
+        $this->filemime = 'application/pdf';
+    }
+}
+
+class EbmsCitationRtf {
+    function EbmsCitationRtf($path, $uid) {
+        $this->uid = $uid;
+        $this->filepath = $path;
+        $this->filename = basename($path);
+        $this->filesize = filesize($path);
+        $this->timestamp = time();
+        $this->status = 1;
+        $this->filemime = 'application/rtf';
+    }
+}
+
+function ebms_upload_rtfs() {
+    return '<p>It\'s already been done</p>';
+    global $user;
+    $paths = file('/tmp/rtfpaths');
+    $html = array('<ul>');
+    foreach ($paths as $path) {
+        $r = new EbmsCitationRtf(trim($path), $user->uid);
+        file_copy($r);
+        drupal_write_record('files', $r);
+        //drupal_set_message(print_r($p, true));
+        $html[] = "<li>$r->filepath</li>";
+    }
+    $html[] = '</ul>';
+    return implode('', $html);
+}
+
+function ebms_upload_pdfs() {
+    return '<p>It\'s already been done</p>';
+    global $user;
+    $paths = file('/tmp/pdfpaths');
+    $html = array('<ul>');
+    foreach ($paths as $path) {
+        $p = new EbmsCitationPdf(trim($path), $user->uid);
+        file_copy($p);
+        drupal_write_record('files', $p);
+        //drupal_set_message(print_r($p, true));
+        $html[] = "<li>$p->filepath</li>";
+    }
+    $html[] = '</ul>';
+    return implode('', $html);
+        /*
+        $now = date('c');
+        $desc = $form_state['values']['brief_description'];
+        $public = $form_state['values']['options']['global'] ? 1 : 0;
+        file_move($file);
+        file_set_status($file, FILE_STATUS_PERMANENT);
+        drupal_write_record('files', $file, 'fid');
+        db_query('
+INSERT INTO {ebms_doc} (file_id, when_posted, description, is_public)
+     VALUES (%d, \'%s\', \'%s\', %d)', $file->fid, $now, $desc, $public);
+        $docId = db_last_insert_id('ebms_doc', 'doc_id');
+        foreach ($form_state['values']['boards'] as $id => $val) {
+            db_query('
+INSERT INTO {ebms_doc_board} (doc_id, board_id) VALUES (%d, %d)',
+                     $docId, $id);
+        }
+        foreach ($form_state['values']['subgroups'] as $id => $val) {
+            db_query('
+INSERT INTO {ebms_doc_subgroup} (doc_id, sg_id) VALUES (%d, %d)',
+                     $docId, $id);
+        }
+        foreach ($form_state['values']['users'] as $id => $val) {
+            db_query('
+INSERT INTO {ebms_doc_user} (doc_id, user_id) VALUES (%d, %d)',
+                     $docId, $id);
+        }
+        $name = $file->filename;
+        drupal_set_message("<b class='success'>Document $name saved.</b>");
+    }
+    else
+        drupal_set_message('<b class="error">Unable to store document!</b>');
+    $f = var_export($file, true);
+    $boards = implode('**', $form_state['values']['boards']);
+    $sg = var_export($form_state['values']['subgroups'], true);
+    $users = var_export($form_state['values']['users'], true);
+    drupal_set_message("<br /><b>description is $desc; boards is $boards; global is $global; sg is $sg; users is $users; file is $f</b>");
+*/
 }
