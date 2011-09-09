@@ -1,4 +1,4 @@
-/* Id: */
+/* $Id$ */
 
 /*
  * Panels of oncology specialists who maintain the PDQ summaries.
