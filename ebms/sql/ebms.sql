@@ -23,8 +23,8 @@ loe_guidelines INTEGER          NULL,
  */
 DROP TABLE IF EXISTS ebms_board_member;
 CREATE TABLE ebms_board_member
-    (user_id INTEGER NOT NULL,
-    board_id INTEGER NOT NULL,
+    (user_id INTEGER UNWIGNED NOT NULL,
+    board_id INTEGER          NOT NULL,
  PRIMARY KEY (user_id, board_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid),
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
@@ -54,8 +54,8 @@ CREATE TABLE ebms_subgroup
  */
 DROP TABLE IF EXISTS ebms_subgroup_member;
 CREATE TABLE ebms_subgroup_member
-    (user_id INTEGER NOT NULL,
-       sg_id INTEGER NOT NULL,
+    (user_id INTEGER UNSIGNED NOT NULL,
+       sg_id INTEGER          NOT NULL,
  PRIMARY KEY (user_id, sg_id),
  FOREIGN KEY (user_id) REFERENCES users (uid),
  FOREIGN KEY (sg_id)   REFERENCES ebms_subgroup (sg_id))
@@ -71,10 +71,10 @@ CREATE TABLE ebms_subgroup_member
  */
 DROP TABLE IF EXISTS ebms_doc;
 CREATE TABLE ebms_doc
-     (doc_id INTEGER  NOT NULL AUTO_INCREMENT PRIMARY KEY,
-     file_id INTEGER  NOT NULL,
- when_posted DATETIME NOT NULL,
- description TEXT     NOT NULL,
+     (doc_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     file_id INTEGER UNSIGNED NOT NULL,
+ when_posted DATETIME         NOT NULL,
+ description TEXT             NOT NULL,
  FOREIGN KEY (file_id) REFERENCES files (fid))
       ENGINE=InnoDB;
 
@@ -134,9 +134,9 @@ CREATE TABLE ebms_doc_board
  */
 DROP TABLE IF EXISTS ebms_ad_hoc_group;
 CREATE TABLE ebms_ad_hoc_group
-   (group_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  group_name VARCHAR(255) NOT NULL UNIQUE,
-  created_by INTEGER      NOT NULL,
+   (group_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  group_name VARCHAR(255)     NOT NULL UNIQUE,
+  created_by INTEGER UNSIGNED NOT NULL,
  FOREIGN KEY (created_by) REFERENCES users (uid))
       ENGINE=InnoDB;
 
@@ -149,8 +149,8 @@ CREATE TABLE ebms_ad_hoc_group
  */
 DROP TABLE IF EXISTS ebms_ad_hoc_group_member;
 CREATE TABLE ebms_ad_hoc_group_member
-    (user_id INTEGER NOT NULL,
-    group_id INTEGER NOT NULL,
+    (user_id INTEGER UNSIGNED NOT NULL,
+    group_id INTEGER          NOT NULL,
  PRIMARY KEY (user_id, group_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid),
  FOREIGN KEY (group_id) REFERENCES ebms_ad_hoc_group (group_id))
@@ -209,8 +209,8 @@ CREATE TABLE ebms_doc_topic
  */
 DROP TABLE IF EXISTS ebms_topic_reviewer;
 CREATE TABLE ebms_topic_reviewer
-   (topic_id INTEGER NOT NULL,
-     user_id INTEGER NOT NULL,
+   (topic_id INTEGER          NOT NULL,
+     user_id INTEGER UNSIGNED NOT NULL,
  PRIMARY KEY (topic_id, user_id),
  FOREIGN KEY (topic_id) REFERENCES ebms_topic (topic_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid))
@@ -243,7 +243,7 @@ CREATE TABLE ebms_article
      art_pub VARCHAR(64)  NOT NULL,
     art_pmid VARCHAR(20)  NOT NULL,
 art_abstract TEXT             NULL,
-    art_file INTEGER          NULL,
+    art_file INTEGER UNSIGNED NULL,
  FOREIGN KEY (art_file) REFERENCES files (fid))
       ENGINE=InnoDB;
 
@@ -318,11 +318,11 @@ CREATE TABLE ebms_article_topic
  */
 DROP TABLE IF EXISTS ebms_packet;
 CREATE TABLE ebms_packet
-  (packet_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    topic_id INTEGER      NOT NULL,
-  created_by INTEGER      NOT NULL,
-packet_title VARCHAR(255) NOT NULL,
-   last_seen DATETIME         NULL,
+  (packet_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    topic_id INTEGER          NOT NULL,
+  created_by INTEGER UNSIGNED NOT NULL,
+packet_title VARCHAR(255)     NOT NULL,
+   last_seen DATETIME             NULL,
  FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
  FOREIGN KEY (created_by) REFERENCES users (uid))
       ENGINE=InnoDB;
@@ -357,8 +357,8 @@ CREATE TABLE ebms_packet_summary
  */
 DROP TABLE IF EXISTS ebms_packet_reviewer;
 CREATE TABLE ebms_packet_reviewer
-  (packet_id INTEGER      NOT NULL,
- reviewer_id INTEGER      NOT NULL,
+  (packet_id INTEGER          NOT NULL,
+ reviewer_id INTEGER UNSIGNED NOT NULL,
  PRIMARY KEY (packet_id, reviewer_id),
  FOREIGN KEY (packet_id)  REFERENCES ebms_packet (packet_id),
  FOREIGN KEY (reviewer_id) REFERENCES users (uid))
@@ -409,14 +409,14 @@ CREATE TABLE ebms_packet_article
  */
 DROP TABLE IF EXISTS ebms_article_review;
 CREATE TABLE ebms_article_review
-  (review_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-   packet_id INTEGER      NOT NULL,
-  article_id INTEGER      NOT NULL,
- reviewer_id INTEGER      NOT NULL,
- when_posted DATETIME     NOT NULL,
-review_flags INTEGER      NOT NULL,
-    comments TEXT             NULL,
-    loe_info TEXT             NULL,
+  (review_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+   packet_id INTEGER          NOT NULL,
+  article_id INTEGER          NOT NULL,
+ reviewer_id INTEGER UNSIGNED NOT NULL,
+ when_posted DATETIME         NOT NULL,
+review_flags INTEGER          NOT NULL,
+    comments TEXT                 NULL,
+    loe_info TEXT                 NULL,
   UNIQUE KEY ebms_art_review_idx (article_id, reviewer_id),
  FOREIGN KEY (packet_id,
               article_id)  REFERENCES ebms_packet_article (packet_id,
@@ -445,14 +445,14 @@ review_flags INTEGER      NOT NULL,
  */
 DROP TABLE IF EXISTS ebms_reviewer_doc;
 CREATE TABLE ebms_reviewer_doc
-     (doc_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-     file_id INTEGER      NOT NULL,
- reviewer_id INTEGER      NOT NULL,
-   packet_id INTEGER      NOT NULL,
-   drop_flag INTEGER      NOT NULL DEFAULT 0,
- when_posted DATETIME     NOT NULL,
-   doc_title VARCHAR(256) NOT NULL,
- description TEXT             NULL,
+     (doc_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     file_id INTEGER UNSIGNED NOT NULL,
+ reviewer_id INTEGER UNSIGNED NOT NULL,
+   packet_id INTEGER          NOT NULL,
+   drop_flag INTEGER          NOT NULL DEFAULT 0,
+ when_posted DATETIME         NOT NULL,
+   doc_title VARCHAR(256)     NOT NULL,
+ description TEXT                 NULL,
  FOREIGN KEY (file_id)     REFERENCES files (fid),
  FOREIGN KEY (reviewer_id) REFERENCES users (uid),
  FOREIGN KEY (packet_id)   REFERENCES ebms_packet (packet_id))
@@ -477,11 +477,11 @@ CREATE TABLE ebms_reviewer_doc
  */
 DROP TABLE IF EXISTS ebms_message;
 CREATE TABLE ebms_message
- (message_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-   sender_id INTEGER      NOT NULL,
- when_posted DATETIME     NOT NULL,
- msg_subject VARCHAR(256) NOT NULL,
-    msg_body TEXT         NOT NULL,
+ (message_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+   sender_id INTEGER UNSIGNED NOT NULL,
+ when_posted DATETIME         NOT NULL,
+ msg_subject VARCHAR(256)     NOT NULL,
+    msg_body TEXT             NOT NULL,
  FOREIGN KEY (sender_id) REFERENCES users (uid))
       ENGINE=InnoDB;
 
@@ -495,9 +495,9 @@ CREATE TABLE ebms_message
  */
 DROP TABLE IF EXISTS ebms_message_recipient;
 CREATE TABLE ebms_message_recipient
- (message_id INTEGER      NOT NULL,
-    recip_id INTEGER      NOT NULL,
-   when_read DATETIME         NULL,
+ (message_id INTEGER          NOT NULL,
+    recip_id INTEGER UNSIGNED NOT NULL,
+   when_read DATETIME             NULL,
  PRIMARY KEY (message_id, recip_id),
  FOREIGN KEY (message_id) REFERENCES ebms_message (message_id),
  FOREIGN KEY (recip_id)   REFERENCES users (uid))
@@ -517,14 +517,14 @@ CREATE TABLE ebms_message_recipient
  */
 DROP TABLE IF EXISTS ebms_hotel_request;
 CREATE TABLE ebms_hotel_request
- (request_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-requestor_id INTEGER      NOT NULL,
-   submitted DATETIME     NOT NULL,
-     meeting VARCHAR(128) NOT NULL,
-checkin_date VARCHAR(128) NOT NULL,
-      nights VARCHAR(128) NOT NULL,
-   processed DATETIME         NULL,
-       notes TEXT             NULL,
+ (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+requestor_id INTEGER UNSIGNED NOT NULL,
+   submitted DATETIME         NOT NULL,
+     meeting VARCHAR(128)     NOT NULL,
+checkin_date VARCHAR(128)     NOT NULL,
+      nights VARCHAR(128)     NOT NULL,
+   processed DATETIME             NULL,
+       notes TEXT                 NULL,
  FOREIGN KEY (requestor_id) REFERENCES users (uid))
       ENGINE=InnoDB;
 
@@ -540,12 +540,12 @@ checkin_date VARCHAR(128) NOT NULL,
  */
 DROP TABLE IF EXISTS ebms_reimbursement_request;
 CREATE TABLE ebms_reimbursement_request
- (request_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-requestor_id INTEGER      NOT NULL,
-   submitted DATETIME     NOT NULL,
-     meeting VARCHAR(128) NOT NULL,
-   processed DATETIME         NULL,
-       notes TEXT             NULL,
+ (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+requestor_id INTEGER UNSIGNED NOT NULL,
+   submitted DATETIME         NOT NULL,
+     meeting VARCHAR(128)     NOT NULL,
+   processed DATETIME             NULL,
+       notes TEXT                 NULL,
  FOREIGN KEY (requestor_id) REFERENCES users (uid))
       ENGINE=InnoDB;
 
@@ -577,9 +577,9 @@ expense_date VARCHAR(128) NOT NULL,
  */
 DROP TABLE IF EXISTS ebms_reimbursement_receipts;
 CREATE TABLE ebms_reimbursement_receipts
- (receipt_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  request_id INTEGER      NOT NULL,
-     file_id INTEGER      NOT NULL,
+ (receipt_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  request_id INTEGER          NOT NULL,
+     file_id INTEGER UNSIGNED NOT NULL,
  FOREIGN KEY (request_id) REFERENCES ebms_reimbursement_request (request_id),
  FOREIGN KEY (file_id)    REFERENCES files (fid))
       ENGINE=InnoDB;
@@ -595,11 +595,11 @@ CREATE TABLE ebms_reimbursement_receipts
  */
 DROP TABLE IF EXISTS ebms_report_request;
 CREATE TABLE ebms_report_request
- (request_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
- report_name VARCHAR(40) NOT NULL,
-requestor_id INTEGER     NOT NULL,
-   submitted DATETIME    NOT NULL,
-  parameters TEXT        NOT NULL,
+ (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ report_name VARCHAR(40)      NOT NULL,
+requestor_id INTEGER UNSIGNED NOT NULL,
+   submitted DATETIME         NOT NULL,
+  parameters TEXT             NOT NULL,
  FOREIGN KEY (requestor_id) REFERENCES users (uid))
       ENGINE=InnoDB;
 
@@ -615,12 +615,12 @@ requestor_id INTEGER     NOT NULL,
  */
 DROP TABLE IF EXISTS ebms_agenda;
  CREATE TABLE ebms_agenda
-    (event_id INTEGER  NOT NULL PRIMARY KEY,
-   agenda_doc LONGTEXT NOT NULL,
-  when_posted DATETIME NOT NULL,
-    posted_by INTEGER  NOT NULL,
-last_modified DATETIME     NULL,
-  modified_by INTEGER      NULL,
+    (event_id INTEGER  UNSIGNED NOT NULL PRIMARY KEY,
+   agenda_doc LONGTEXT          NOT NULL,
+  when_posted DATETIME          NOT NULL,
+    posted_by INTEGER  UNSIGNED NOT NULL,
+last_modified DATETIME              NULL,
+  modified_by INTEGER  UNSIGNED     NULL,
   FOREIGN KEY (event_id)    REFERENCES node (nid),
   FOREIGN KEY (posted_by )  REFERENCES users (uid),
   FOREIGN KEY (modified_by) REFERENCES users (uid))
