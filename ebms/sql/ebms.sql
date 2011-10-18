@@ -602,3 +602,26 @@ requestor_id INTEGER     NOT NULL,
   parameters TEXT        NOT NULL,
  FOREIGN KEY (requestor_id) REFERENCES users (uid))
       ENGINE=InnoDB;
+
+/*
+ * Meeting agenda.
+ *
+ * event_id       primary key and foreign key into node table for event node
+ * agenda_doc     rich text document for agenda
+ * when_posted    date/time agenda was first created
+ * posted_by      foreign key into Drupal's users table
+ * last_modified  optional date/time of last agenda changes
+ * modified_by    foreign key into Drupal's users table (optionl)
+ */
+DROP TABLE IF EXISTS ebms_agenda;
+ CREATE TABLE ebms_agenda
+    (event_id INTEGER  NOT NULL PRIMARY KEY,
+   agenda_doc LONGTEXT NOT NULL,
+  when_posted DATETIME NOT NULL,
+    posted_by INTEGER  NOT NULL,
+last_modified DATETIME     NULL,
+  modified_by INTEGER      NULL,
+  FOREIGN KEY (event_id)    REFERENCES node (nid),
+  FOREIGN KEY (posted_by )  REFERENCES users (uid),
+  FOREIGN KEY (modified_by) REFERENCES users (uid))
+       ENGINE=InnoDB;
