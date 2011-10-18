@@ -625,3 +625,93 @@ last_modified DATETIME              NULL,
   FOREIGN KEY (posted_by )  REFERENCES users (uid),
   FOREIGN KEY (modified_by) REFERENCES users (uid))
        ENGINE=InnoDB;
+
+/*
+ * Summary secondary page.
+ *
+ * page_id        automatically generated primary key
+ * board_id       foreign key into ebms_board table
+ * page_name      string identifying page content
+ */
+DROP TABLE IF EXISTS ebms_summary_page;
+CREATE TABLE ebms_summary_page
+    (page_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    board_id INTEGER      NOT NULL,
+   page_name VARCHAR(255) NOT NULL,
+ FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
+      ENGINE=InnoDB;
+
+/*
+ * Link to HP summary on Cancer.gov.
+ *
+ * link_id        automatically generated primary key
+ * page_id        foreign key into embs_summary_page table
+ * link_url       URL for the Cancer.gov page
+ * link_label     display text for the link
+ */
+DROP TABLE IF EXISTS ebms_summary_link;
+CREATE TABLE ebms_summary_link
+    (link_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     page_id INTEGER      NOT NULL,
+    link_url VARCHAR(255) NOT NULL,
+  link_label VARCHAR(255) NOT NULL,
+ FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id))
+      ENGINE=InnoDB;
+
+/*
+ * Summary supporting document.  Listed in table at the bottom of the
+ * primary summary landing page for the board.
+ *
+ * board_id       foreign key into ebms_board table
+ * doc_id         foreign key into ebms_doc table
+ * archived       date/time document was suppressed from display
+ * notes          optional comments on the posted document
+ */
+DROP TABLE IF EXISTS ebms_summary_supporting_doc;
+CREATE TABLE ebms_summary_supporting_doc
+   (board_id INTEGER  NOT NULL,
+      doc_id INTEGER  NOT NULL,
+    archived DATETIME     NULL,
+       notes TEXT         NULL,
+ PRIMARY KEY (board_id, doc_id),
+ FOREIGN KEY (board_id) REFERENCES ebms_board (board_id),
+ FOREIGN KEY (doc_id)   REFERENCES ebms_doc (doc_id))
+      ENGINE=InnoDB;
+
+/*
+ * Document posted by board manager for secondary summary page.
+ *
+ * page_id        foreign key into ebms_summary_page table
+ * doc_id         foreign key into ebms_doc table
+ * archived       date/time document was suppressed from display
+ * notes          optional comments on the posted document
+ */
+DROP TABLE IF EXISTS ebms_summary_posted_doc;
+CREATE TABLE ebms_summary_posted_doc
+    (page_id INTEGER  NOT NULL,
+      doc_id INTEGER  NOT NULL,
+    archived DATETIME     NULL,
+       notes TEXT         NULL,
+ PRIMARY KEY (page_id, doc_id),
+ FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id),
+ FOREIGN KEY (doc_id)  REFERENCES ebms_doc (doc_id))
+      ENGINE=InnoDB;
+
+/*
+ * Document posted by board member for secondary summary page.
+ *
+ * page_id        foreign key into ebms_summary_page table
+ * doc_id         foreign key into ebms_doc table
+ * archived       date/time document was suppressed from display
+ * notes          optional comments on the posted document
+ */
+DROP TABLE IF EXISTS ebms_summary_returned_doc;
+CREATE TABLE ebms_summary_returned_doc
+    (page_id INTEGER  NOT NULL,
+      doc_id INTEGER  NOT NULL,
+    archived DATETIME     NULL,
+       notes TEXT         NULL,
+ PRIMARY KEY (page_id, doc_id),
+ FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id),
+ FOREIGN KEY (doc_id)  REFERENCES ebms_doc (doc_id))
+      ENGINE=InnoDB;
