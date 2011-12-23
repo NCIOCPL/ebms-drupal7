@@ -1,6 +1,23 @@
 /* $Id$ */
 
 /*
+ * Uploaded documents (does not include PubMed articles).
+ *
+ * doc_id         automatically generated primary key
+ * file_id        foreign key into Drupal's files table
+ * when_posted    date/time the user uploaded the documents
+ * description    how the poster wants the document represented in lists
+ */
+DROP TABLE IF EXISTS ebms_doc;
+CREATE TABLE ebms_doc
+     (doc_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     file_id INTEGER UNSIGNED NOT NULL,
+ when_posted DATETIME         NOT NULL,
+ description TEXT             NOT NULL,
+ FOREIGN KEY (file_id) REFERENCES files (fid))
+      ENGINE=InnoDB;
+
+/*
  * Panels of oncology specialists who maintain the PDQ summaries.
  *
  * board_id       automatically generated primary key
@@ -59,23 +76,6 @@ CREATE TABLE ebms_subgroup_member
  PRIMARY KEY (user_id, sg_id),
  FOREIGN KEY (user_id) REFERENCES users (uid),
  FOREIGN KEY (sg_id)   REFERENCES ebms_subgroup (sg_id))
-      ENGINE=InnoDB;
-
-/*
- * Uploaded documents (does not include PubMed articles).
- *
- * doc_id         automatically generated primary key
- * file_id        foreign key into Drupal's files table
- * when_posted    date/time the user uploaded the documents
- * description    how the poster wants the document represented in lists
- */
-DROP TABLE IF EXISTS ebms_doc;
-CREATE TABLE ebms_doc
-     (doc_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
-     file_id INTEGER UNSIGNED NOT NULL,
- when_posted DATETIME         NOT NULL,
- description TEXT             NOT NULL,
- FOREIGN KEY (file_id) REFERENCES files (fid))
       ENGINE=InnoDB;
 
 /*
