@@ -520,12 +520,13 @@ CREATE TABLE ebms_hotel_request
  (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
 requestor_id INTEGER UNSIGNED NOT NULL,
    submitted DATETIME         NOT NULL,
-     meeting VARCHAR(128)     NOT NULL,
-checkin_date VARCHAR(128)     NOT NULL,
+     meeting INTEGER UNSIGNED NOT NULL,
+checkin_date DATE             NOT NULL,
       nights VARCHAR(128)     NOT NULL,
    processed DATETIME             NULL,
        notes TEXT                 NULL,
- FOREIGN KEY (requestor_id) REFERENCES users (uid))
+ FOREIGN KEY (requestor_id) REFERENCES users (uid),
+ FOREIGN KEY (meeting)      REFERENCES node (nid))
       ENGINE=InnoDB;
 
 /*
@@ -543,10 +544,11 @@ CREATE TABLE ebms_reimbursement_request
  (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
 requestor_id INTEGER UNSIGNED NOT NULL,
    submitted DATETIME         NOT NULL,
-     meeting VARCHAR(128)     NOT NULL,
+     meeting INTEGER UNSIGNED NOT NULL,
    processed DATETIME             NULL,
        notes TEXT                 NULL,
- FOREIGN KEY (requestor_id) REFERENCES users (uid))
+ FOREIGN KEY (requestor_id) REFERENCES users (uid),
+ FOREIGN KEY (meeting)      REFERENCES node (nid))
       ENGINE=InnoDB;
 
 /*
@@ -562,7 +564,7 @@ DROP TABLE IF EXISTS ebms_reimbursement_item;
 CREATE TABLE ebms_reimbursement_item
     (item_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
   request_id INTEGER      NOT NULL,
-expense_date VARCHAR(128) NOT NULL,
+expense_date DATE         NOT NULL,
       amount VARCHAR(128) NOT NULL,
  description VARCHAR(128) NOT NULL,
  FOREIGN KEY (request_id) REFERENCES ebms_reimbursement_request (request_id))
@@ -619,6 +621,7 @@ DROP TABLE IF EXISTS ebms_agenda;
    agenda_doc LONGTEXT          NOT NULL,
   when_posted DATETIME          NOT NULL,
     posted_by INTEGER  UNSIGNED NOT NULL,
+    published INTEGER           NOT NULL,
 last_modified DATETIME              NULL,
   modified_by INTEGER  UNSIGNED     NULL,
   FOREIGN KEY (event_id)    REFERENCES node (nid),
