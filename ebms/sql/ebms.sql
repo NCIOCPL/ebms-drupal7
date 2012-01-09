@@ -1,4 +1,16 @@
-/* $Id$ */
+-- /* $Id$ */
+
+-- XXX FOR TEST ONLY
+SET FOREIGN_KEY_CHECKS=0;
+/*******
+use test;
+drop table if exists users;
+create table users (uid int unsigned primary key) engine InnoDB;
+drop table if exists files;
+create table files (fid int unsigned primary key) engine InnoDB;
+drop table if exists node;
+create table node  (nid int unsigned primary key) engine InnoDB;
+*******/
 
 /*
  * Uploaded documents (does not include PubMed articles).
@@ -40,7 +52,7 @@ loe_guidelines INTEGER          NULL,
  */
 DROP TABLE IF EXISTS ebms_board_member;
 CREATE TABLE ebms_board_member
-    (user_id INTEGER UNWIGNED NOT NULL,
+    (user_id INTEGER UNSIGNED NOT NULL,
     board_id INTEGER          NOT NULL,
  PRIMARY KEY (user_id, board_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid),
@@ -168,14 +180,26 @@ CREATE TABLE ebms_ad_hoc_group_member
  * topic_id       automatically generated primary key
  * topic_name     unique name for the topic
  * board_id       foreign key into the ebms_board table
+ * active_status  can only associate articles with active topics.  Old
+ *                  topics remain in the database because articles may
+ *                  be linked to them.
  */
 DROP TABLE IF EXISTS ebms_topic;
 CREATE TABLE ebms_topic
-   (topic_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  topic_name VARCHAR(255) NOT NULL UNIQUE,
-    board_id INTEGER      NOT NULL,
+     (topic_id INTEGER         NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    topic_name VARCHAR(255)    NOT NULL UNIQUE,
+      board_id INTEGER         NOT NULL,
+ -- XXX I think topics have (rarely) been deleted in the past
+ active_status ENUM ('A', 'I') NOT NULL DEFAULT 'A',
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
       ENGINE=InnoDB;
+
+   -- XXX Should we name the other 'ebms_all_topic' and this 'ebms_topic'?
+   DROP VIEW IF EXISTS ebms_active_topic;
+   CREATE VIEW ebms_active_topic AS
+          SELECT topic_id, topic_name, board_id
+            FROM ebms_topic
+           WHERE active_status = 'A';
 
 /*
  * Assignment of topics to posted documents.
@@ -217,7 +241,8 @@ CREATE TABLE ebms_topic_reviewer
       ENGINE=InnoDB;
 
 /*
- * PubMed articles about cancer and related topics.
+ * Articles about cancer and related topics.  Initially, all are from 
+ * Pubmed but other sources could be added.
  *
  * These articles to through a series of steps to weed out the ones which
  * do not need to be passed on to the PDQ boards.  The rest are reviewed
@@ -226,26 +251,123 @@ CREATE TABLE ebms_topic_reviewer
  * which make it to these later stages of processing will have a full text
  * copy retrieved and stored as a PDF file.
  *
- * article_id     automatically generated primary key
- * article_title  full title of the article
- * art_journal    citation identifying the journal, year, pagination
- * art_pub        indication of when the article was published (free text)
- * art_pmid       the unique PubMed ID of the article
- * art_abstract   summary of the contents of the article
- * art_file       foreign key into the Drupal files table
+ *  article_id      Automatically generated primary key
+ *  source          Name of source, 'Pubmed' predominates.
+ *  source_id       ID used by source for this article, e.g., PMID
+ *  source_jrnl_id  If source = 'Pubmed': then NLM unique journal id
+ *                    Else: to be determined
+ *  source_status   Source organization's status assignment to the record
+ *                    Enables us to identify, e.g., records that are 
+ *                    "In-Process", etc., and need future update.
+ *  article_title   Full title of the article
+ *  jrnl_title      Full journal title at time of import or update
+ *  brf_jrnl_title  Journal title abbreviation found in article record.
+ *                    Normally this is the NLM title abbreviation.
+ *  brf_citation    Citation identifying journal, year, vol, issue, pages, or
+ *                    however we wish show the article on a single line.
+ *  abstract        Abstract, currently always English.
+ *  published_date  Indication of when the article was published (free text)
+ *                    Can't use SQL datetime since some articles have dates like
+ *                    "Spring 2011".
+ *  import_date     Datetime of first import.
+ *  update_date     Datetime of last replacement from NLM or other source.
+ *  source_data     Unmodified XML or whatever downloaded from the source.
+ *                    We'll assume it's always there and make it not null
+ *                    changing that only if there's a real use case.
+ *  full_text_id    Foreign key into the Drupal files table for PDF of article.
+ *  active_status   Provides a way to mark a citation to never be used for
+ *                    any active purpose.  This is like the CDR 'D'eleted
+ *                    status, not 'I'nactive.  We only use it if the 
+ *                    citation should never ever have been imported at all.
+ *                    Hopefully we'll never need to use this.
+ *                    Values: 'A'ctive, 'D'eleted.
  */
 DROP TABLE IF EXISTS ebms_article;
-CREATE TABLE ebms_article
- (article_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-   art_title VARCHAR(512) NOT NULL,
- art_authors VARCHAR(256) NOT NULL,
- art_journal VARCHAR(128) NOT NULL,
-     art_pub VARCHAR(64)  NOT NULL,
-    art_pmid VARCHAR(20)  NOT NULL,
-art_abstract TEXT             NULL,
-    art_file INTEGER UNSIGNED NULL,
- FOREIGN KEY (art_file) REFERENCES files (fid))
+CREATE TABLE ebms_article (
+  article_id        INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  source            VARCHAR(32) NOT NULL,
+  source_id         VARCHAR(32) NOT NULL,
+  source_jrnl_id    VARCHAR(32) NOT NULL,
+  source_status     VARCHAR(32) NULL,
+  article_title     VARCHAR(512) NOT NULL,
+  jrnl_title        VARCHAR(512) NOT NULL,
+  brf_jrnl_title    VARCHAR(127) NULL,
+  brf_citation      VARCHAR(255) NOT NULL,
+  abstract          TEXT NULL,
+  published_date    VARCHAR(64) NOT NULL,
+  import_date       DATETIME NOT NULL,
+  update_date       DATETIME NULL,
+  source_data       TEXT NULL,
+  full_text_id      INTEGER UNSIGNED NULL,
+  active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
+  FOREIGN KEY (full_text_id) REFERENCES files (fid)
+)
       ENGINE=InnoDB;
+
+/*
+ * Authors of articles.
+ *
+ * These are as they appear in the XML records.  Name strings are not
+ * unique and searches for an author may retrieve cites by different people
+ * with the same names in Pubmed.
+ *
+ *  author_id       Unique ID for this character string, auto generated.
+ *  last_name       Surname, called LastName in NLM XML.
+ *  forename        Usually first name + optional middle initial.
+ *                    But NLM can put other things in this field, e.g.:
+ *                      "R Bryan",  "Deborah Ks",  "J"
+ *                      "Maria del Refugio"
+ *  initials        Usually first letter of first name + optional first letter
+ *                    of middle name.  But again there are outliers:
+ *                      "Mdel R" for Maria del Refugio Gonzales-Losa
+ *                      "Nde S" for Nicholas de Saint Aubain Somerhausen
+ *
+ * Searching will be tricky and noisy.
+ */
+DROP TABLE IF EXISTS ebms_article_author;
+CREATE TABLE ebms_article_author (
+    author_id       INT AUTO_INCREMENT PRIMARY KEY,
+    last_name       VARCHAR(128) NOT NULL,
+    forename        VARCHAR(128),
+    initials        CHAR(5)
+)
+    ENGINE = InnoDB;
+
+    -- Two ways to search, use last + first name, or last + initials
+    CREATE UNIQUE INDEX ebms_author_full_index 
+           ON ebms_article_author (last_name, forename);
+    CREATE UNIQUE INDEX ebms_author_initials_index 
+           ON ebms_article_author (last_name, initials);
+
+/*
+ * Join the authors with the citations.
+ *
+ *  article_id      Unique ID in article table.
+ *  author_id       Unique ID in author table.
+ *  cite_order      Order of this author in article , e.g., first author,
+ *                   second author, etc.  Origin 1.
+ *
+ * Notes:
+ *  Use the primary key to find all authors of an article, in the order
+ *  they appeared in the article citation.
+ *
+ *  It's important to cite authors in the correct order of their
+ *  appearance in an article.
+ */
+DROP TABLE IF EXISTS ebms_article_author_cite;
+CREATE TABLE ebms_article_author_cite (
+    article_id      INT NOT NULL,
+    cite_order      INT NOT NULL,
+    author_id       INT NOT NULL,
+    PRIMARY KEY (article_id, cite_order, author_id),
+    FOREIGN KEY (author_id) REFERENCES ebms_article_author(author_id),
+    FOREIGN KEY (article_id) REFERENCES ebms_article(article_id)
+)
+    ENGINE = InnoDB;
+
+    -- Finds all articles by an author
+    CREATE INDEX ebms_author_article_index
+              ON ebms_article_author_cite (author_id, article_id);
 
 /*
  * Periods of time used to batch articles associated with a given topic.
@@ -260,14 +382,180 @@ art_abstract TEXT             NULL,
  * carry an association with a cycle, and that cycle will be displayed
  * when the review packet is being created.
  *
- * cycle_id       automatically generated primary key
- * cycle_name     unique name for the cycle (e.g., 'November 2011')
+ * cycle_id       Automatically generated primary key
+ * cycle_name     Unique name for the cycle (e.g., 'November 2011')
+ * start_date     Datetime of start.  Always order by start_date to guarantee
+ *                 retrieval in date order since cycle_ids could be created
+ *                 out of order due to conversion from old CMS or 
+ *                 for other reasons.
+ *
+ * Note:
+ *   This table is so small that a date index might not actually optimize it.
  */
-DROP TABLE IF EXISTS ebms_cycle
+DROP TABLE IF EXISTS ebms_cycle;
 CREATE TABLE ebms_cycle
    (cycle_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  cycle_name VARCHAR(40) NOT NULL UNIQUE)
+  cycle_name VARCHAR(40) NOT NULL UNIQUE,
+  start_date DATETIME    NOT NULL UNIQUE)
       ENGINE=InnoDB;
+
+/*
+ * Identifies journals that are known to be poor sources of info.  Articles
+ * from these journals are not further reviewed.
+ *
+ * If a journal has been found to be generally useless, an authorized
+ * staff member can add it to a "NOT list".
+ *
+ * Maintenance of NOT lists inside the CiteMS is much simpler than 
+ * attempting to modify every PubMed search to exclude every journal that
+ * is not desirable.
+ *
+ * NOT lists will probably only ever be used on Pubmed imports, but we've
+ * allowed for other sources.
+ *
+ * --XXX There's no history here.  If a journal comes off a not list, we
+ * --XXX  we remove it from this table.  If it's listed again, we add it
+ * --XXX  back again.
+ * --XXX Is that reasonable?
+ *
+ *  source          Name of a source related to source_jrnl_id, normally
+ *                   'Pubmed'.
+ *  source_jrnl_id  The unique id for this journal assigned by the source.
+ *                   Using source + source_jrnl_id is more robust than 
+ *                   using the title because titles can change.
+ *                   There's no EBMS authority file for this.  The IDs are
+ *                   maintained by the source, i.e. NLM.
+ *  board_id        ID of the board for which the journal is NOT listed.
+ *                  We might use the value NULL to mean "all boards".
+ *                  A journal_id may appear multiple times, once for each
+ *                  of several boards.
+ *  start_date      Date time when the journal was NOT listed.
+ *  user_id         ID of the user adding this NOT list entry.
+ */
+DROP TABLE IF EXISTS ebms_not_list;
+CREATE TABLE ebms_not_list (
+    source          VARCHAR(32) NOT NULL,
+    source_jrnl_id  VARCHAR(32) NOT NULL,
+    board_id        INT NULL,
+    start_date      DATETIME NOT NULL,
+    user_id         INT UNSIGNED NOT NULL,
+    PRIMARY KEY (source, source_jrnl_id, board_id),
+    FOREIGN KEY (board_id) REFERENCES ebms_board(board_id),
+    FOREIGN KEY (user_id) REFERENCES users(uid)
+)
+    ENGINE = InnoDB;
+
+    CREATE INDEX ebms_not_journal_index 
+        ON ebms_not_list(board_id, source, source_jrnl_id);
+
+/*
+ * ebms_import_disposition
+ * 
+ * Control table for import_action.disposition.  This is a static set
+ * of values that describe what happened to an article that was presented
+ * to the system in an import batch.  It might have been:
+ *
+ *   imported
+ *   rejected as a duplicate
+ *   assigned a new summary topic to an article already in the system
+ *   etc.
+ * 
+ *  disposition_id  Unique ID of the citation.
+ *  name            Human readable display name.
+ *  description     Fuller human readable explanation of disposition.
+ *  active_status   'A'ctive or 'I'nactive - don't use any more.
+ */
+DROP TABLE IF EXISTS ebms_import_disposition;
+CREATE TABLE ebms_import_disposition (
+    disposition_id  INT AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(32) NOT NULL UNIQUE,
+    description     VARCHAR(2048) NOT NULL,
+    active_status   ENUM ('A', 'I') NOT NULL DEFAULT 'A'
+)
+    ENGINE = InnoDB;
+
+    -- XXX Maybe we should add these right here, with descriptions?
+    INSERT INTO ebms_import_disposition (name) values ('Imported');
+    INSERT INTO ebms_import_disposition (name) values ('Rejected NOT listed');
+    INSERT INTO ebms_import_disposition (name) values ('Rejected duplicate');
+    INSERT INTO ebms_import_disposition (name) values ('Summary topic added');
+    INSERT INTO ebms_import_disposition (name) values ('Review cycle added');
+    INSERT INTO ebms_import_disposition (name) values ('Replaced');
+    INSERT INTO ebms_import_disposition (name) values ('Error');
+
+/*
+ * One row for each batch of imported citations.
+ *
+ * Contains information describing a specific import action.  A full
+ * picture of what happens in an import uses this table in combination
+ * with other tables that track information about each citation that
+ * is linked to a row in this table.
+ *
+ * Data written to this table should never be modified.
+ *
+ *  import_batch_id Unique ID of the import batch.
+ *  topic_id        The topic under which the batch was imported.
+ *  source          Name of source, 'Pubmed' predominates.
+ *  import_date     Datetime of the import.
+ *  cycle_id        Unique ID of a review cycle for the import batch.
+ *  user_id         Unique ID of user running the import.
+ *  summary_id      Unique ID of the summary for which this was an import.
+ *                  Might be NULL in special cases?
+ */
+DROP TABLE IF EXISTS ebms_import_batch;
+CREATE TABLE ebms_import_batch (
+    import_batch_id INT AUTO_INCREMENT PRIMARY KEY,
+    topic_id        INT NULL,
+    source          VARCHAR(32) NOT NULL,
+    import_date     DATETIME NOT NULL,
+    cycle_id        INT NOT NULL,
+    user_id         INT UNSIGNED NOT NULL,
+    FOREIGN KEY (topic_id) REFERENCES ebms_topic(topic_id),
+    FOREIGN KEY (cycle_id) REFERENCES ebms_cycle(cycle_id),
+    FOREIGN KEY (user_id)  REFERENCES users(uid)
+)
+    ENGINE = InnoDB;
+
+/* 
+ * One row for each disposition of a citation in an import batch.
+ * See ebms_import_disposition.
+ *
+ * A single article might have more than one import disposition.  For example,
+ * a record imported from NLM might already be in the database but not with
+ * the same topic as used in this import batch, and with a different cycle_id.
+ * It might also be a later record from NLM.  In such a case there are
+ * three import disposition values - Summry topic added, Review cycle added,
+ * Replaced.
+ * 
+ *  source_id       Unique ID of the citation within the source database.
+ *                    We don't always have an article_id here because some 
+ *                    articles in a batch may not have actually been imported.
+ *  article_id      Unique ID of article row, if we have one.
+ *  import_batch_id Unique ID of the batch.
+ *  disposition_id  What was done with the imported cite, a code or ID
+ *                  to be interpreted as one of:
+ *                      Imported as new
+ *                      Rejected as a duplicate
+ *                      Duplicate but new summary topic added, no new review
+ *                          cycle.
+ *                      Duplicate but new summary topic added, new review
+ *                          cycle added.
+ */
+DROP TABLE IF EXISTS ebms_import_action;
+CREATE TABLE ebms_import_action (
+    source_id          VARCHAR(32) NOT NULL,
+    article_id         INT NULL,
+    import_batch_id    INT NOT NULL,
+    disposition_id     INT NOT NULL,
+    FOREIGN KEY (article_id) 
+        REFERENCES ebms_article(article_id),
+    FOREIGN KEY (import_batch_id)
+        REFERENCES ebms_import_batch(import_batch_id),
+    FOREIGN KEY (disposition_id)
+        REFERENCES ebms_import_disposition(disposition_id)
+)
+    ENGINE = InnoDB;
+
 
 /*
  * Association of articles to topics.
@@ -282,20 +570,143 @@ CREATE TABLE ebms_cycle
  * but special types of review packets (e.g., comprehensive review
  * packets) may bypass this restriction.
  *
+ * This table just tells us if an article is currently associated with a
+ * topic.  If there is a row in the table, the association is current.  If
+ * the association is broken (because someone decided that the association
+ * was an error), the row is removed.
+ *
+ * For information about who assigned a topic or when, or whether a topic
+ * that is not now associated with a topic was ever so associated, etc.,
+ * see the ebms_event table.
+ *
  * article_id     foreign key into the ebms_article table
- * topic_id       foreign key into the ebme_topic table
- * cycle_id       foreign key into the ebms_cycle table
+ * topic_id       foreign key into the ebms_topic table
+ * event_id       foreign key into the ebms_article_event table.  This
+ *                  event is the one that created the association.
  */
 DROP TABLE IF EXISTS ebms_article_topic;
 CREATE TABLE ebms_article_topic
- (article_id INTEGER NOT NULL,
-    topic_id INTEGER NOT NULL,
-    cycle_id INTEGER NOT NULL,
+ (article_id              INTEGER NOT NULL,
+    topic_id              INTEGER NOT NULL,
+    article_event_id      INTEGER NOT NULL,
  PRIMARY KEY (topic_id, article_id),
  FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
  FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
- FOREIGN KEY (cycle_id)   REFERENCES ebms_cycle (cycle_id))
+ FOREIGN KEY (article_event_id)   
+                          REFERENCES ebms_article_event (article_event_id))
       ENGINE=InnoDB;
+
+    CREATE INDEX topic_article ON ebms_article_topic(article_id, topic_id);
+
+/*
+ * Control values used in recording events.
+ * 
+ * This should be a relatively static table, changed only when there is a
+ * significant change in software.
+ * 
+ *  event_type_id       Unique ID.
+ *  name                Human readable name for brief display.
+ *  description         Human readable description for help display and
+ *                        documentation.
+ *  active_status       'A'ctive or 'I'nactive.  We need this in case
+ *                        we ever wish to stop using a particular event_type
+ *                        but don't want to invalidate past events of that
+ *                        type.
+ */
+DROP TABLE IF EXISTS ebms_event_type;
+CREATE TABLE ebms_event_type (
+    event_type_id       INT AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(32) NOT NULL,
+    description         VARCHAR(2048) NOT NULL,
+    active_status       ENUM('A', 'I') DEFAULT 'A'
+)
+    ENGINE=InnoDB;
+
+/*
+ * event_type specific control values used in recording events.  Some
+ * event_types have different values.  For example there is an event_type
+ * for tagging an article to attach comments and/or to support special
+ * kinds of searching.  The ebms_event_val rows for this event_type are
+ * the specific tags that are legal to attach to a tag event.
+ * 
+ * This should be a relatively static table, changed only when there 
+ * is a change in operating procedures.  For example, a tag value may
+ * added.
+ * 
+ *  event_type_id       Unique ID.
+ *  event_val_id        Unique ID of the value within the type.
+ *  name                Human readable name for brief display.
+ *  description         Human readable description for help display and
+ *                        documentation.
+ *  active_status       'A'ctive or 'I'nactive.  We need this in case
+ *                        we ever wish to stop using a particular event value
+ *                        but don't want to invalidate past events that use
+ *                        that value.
+ */
+DROP TABLE IF EXISTS ebms_event_val;
+CREATE TABLE ebms_event_val (
+    event_type_id       INT,
+    event_val_id        INT AUTO_INCREMENT PRIMARY KEY,
+    name                VARCHAR(32) NOT NULL,
+    description         VARCHAR(2048) NOT NULL,
+    active_status       ENUM('A', 'I') DEFAULT 'A',
+    -- XXX Maybe better to put active_status first?
+    UNIQUE KEY event_val_index (event_type_id, event_val_id, active_status),
+    FOREIGN KEY (event_type_id) REFERENCES ebms_event_type(event_type_id)
+)
+    ENGINE=InnoDB;
+
+/*
+ * A history of the events relating to an article.
+ * 
+ * One row in the table represents some action that was taken regarding
+ * a particular article.  It can be used to reconstruct a history of
+ * the actions that occurred.
+ * 
+ *  article_event_id    Unique ID of this article_event row.
+ *  article_id          Article undergoing the event.
+ *  topic_id            Summary topic, if applicable, may be null.
+ *  event_type_id       What kind of event was this?
+ *                        Import/update
+ *                        Review status change
+ *                        Tag/comment added
+ *                        etc.
+ *  event_val_id        Is it a particular kind of import, review, tag, etc.?
+ *  prev_event_id       Is this threaded to a previous event, e.g., a comment
+ *                        on a previous comment?
+ *  user_id             Who did this.
+ *  dt                  Datetime of event.
+ *  comment             Free text from user or program generating event.
+ *  active_status       Is this event info still active for this article?
+ *                        'A'ctive   - event applies.
+ *                        'I'nactive - event was superseded, rendered inactive.
+ *                        'D'eleted  - this was a mistake, it should never 
+ *                                     have happened.  Ignore it.
+ */
+DROP TABLE IF EXISTS ebms_article_event;
+CREATE TABLE ebms_article_event (
+     article_event_id  INT AUTO_INCREMENT PRIMARY KEY,
+     article_id        INT NOT NULL,
+     topic_id          INT NULL,
+     event_type_id     INT NOT NULL,
+     event_val_id      INT NULL,
+     prev_event_id     INT NULL,
+     user_id           INT UNSIGNED NOT NULL,
+     dt                DATETIME NOT NULL,
+     comment           TEXT NULL,
+     active_status     ENUM('A', 'I', 'D'),
+     FOREIGN KEY (event_type_id)
+          REFERENCES ebms_event_type(event_type_id),
+     FOREIGN KEY (article_id)
+          REFERENCES ebms_article(article_id),
+     FOREIGN KEY (topic_id)
+          REFERENCES ebms_topic(topic_id),
+     FOREIGN KEY (event_type_id, event_val_id)
+          REFERENCES ebms_event_val(event_type_id, event_val_id),
+     FOREIGN KEY (user_id)
+          REFERENCES users(uid)
+)
+     ENGINE=InnoDB; 
 
 /*
  * Collection of articles on a given topic assigned for board member review.
@@ -417,7 +828,7 @@ CREATE TABLE ebms_article_review
 review_flags INTEGER          NOT NULL,
     comments TEXT                 NULL,
     loe_info TEXT                 NULL,
-  UNIQUE KEY ebms_art_review_idx (article_id, reviewer_id),
+  UNIQUE KEY ebms_art_review_index (article_id, reviewer_id),
  FOREIGN KEY (packet_id,
               article_id)  REFERENCES ebms_packet_article (packet_id,
                                                            article_id),
@@ -510,7 +921,7 @@ CREATE TABLE ebms_message_recipient
  * requestor_id   foreign key into Drupal's users table
  * submitted      date/time the request was posted
  * meeting        meeting the user will be attending
- * checkin_date   free text identification of when reservation should start
+ * checkin_date   identification of when reservation should start
  * nights         free text explanation of how many nights are needed
  * processed      date/time request was processed (not currently used)
  * notes          optional additional information
@@ -612,6 +1023,7 @@ requestor_id INTEGER UNSIGNED NOT NULL,
  * agenda_doc     rich text document for agenda
  * when_posted    date/time agenda was first created
  * posted_by      foreign key into Drupal's users table
+ * published      XXX
  * last_modified  optional date/time of last agenda changes
  * modified_by    foreign key into Drupal's users table (optionl)
  */
@@ -718,3 +1130,6 @@ CREATE TABLE ebms_summary_returned_doc
  FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id),
  FOREIGN KEY (doc_id)  REFERENCES ebms_doc (doc_id))
       ENGINE=InnoDB;
+
+-- XXX Reset from test conditions
+SET FOREIGN_KEY_CHECKS=1;
