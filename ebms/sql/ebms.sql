@@ -921,24 +921,23 @@ CREATE TABLE ebms_message_recipient
  * requestor_id   foreign key into Drupal's users table
  * submitted      date/time the request was posted
  * meeting        meeting the user will be attending
- * checkin_date   identification of when reservation should start
- * nights         free text explanation of how many nights are needed
+ * checkin_date   date when reservation should start
+ * checkout_date  date member will leave the hotel
  * processed      date/time request was processed (not currently used)
  * notes          optional additional information
  */
 DROP TABLE IF EXISTS ebms_hotel_request;
-CREATE TABLE ebms_hotel_request
- (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
-requestor_id INTEGER UNSIGNED NOT NULL,
-   submitted DATETIME         NOT NULL,
-     meeting INTEGER UNSIGNED NOT NULL,
-checkin_date DATE             NOT NULL,
-      nights VARCHAR(128)     NOT NULL,
-   processed DATETIME             NULL,
-       notes TEXT                 NULL,
- FOREIGN KEY (requestor_id) REFERENCES users (uid),
- FOREIGN KEY (meeting)      REFERENCES node (nid))
-      ENGINE=InnoDB;
+ CREATE TABLE ebms_hotel_request
+  (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ requestor_id INTEGER UNSIGNED NOT NULL,
+    submitted DATETIME         NOT NULL,
+      meeting VARCHAR(128)     NOT NULL,
+ checkin_date DATE             NOT NULL,
+checkout_date DATE             NOT NULL,
+    processed DATETIME             NULL,
+        notes TEXT                 NULL,
+  FOREIGN KEY (requestor_id) REFERENCES users (uid))
+       ENGINE=InnoDB;
 
 /*
  * Request for reimbursement of expenses associated with a board meeting.
