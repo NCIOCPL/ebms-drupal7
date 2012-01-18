@@ -1,16 +1,58 @@
 -- /* $Id$ */
 
--- XXX FOR TEST ONLY
-SET FOREIGN_KEY_CHECKS=0;
-/*******
-use test;
-drop table if exists users;
-create table users (uid int unsigned primary key) engine InnoDB;
-drop table if exists files;
-create table files (fid int unsigned primary key) engine InnoDB;
-drop table if exists node;
-create table node  (nid int unsigned primary key) engine InnoDB;
-*******/
+/********************************************************
+ * Drop all tables in reverse order to any references.
+ ********************************************************/
+DROP TABLE IF EXISTS ebms_summary_returned_doc;
+DROP TABLE IF EXISTS ebms_summary_posted_doc;
+DROP TABLE IF EXISTS ebms_summary_supporting_doc;
+DROP TABLE IF EXISTS ebms_summary_link;
+DROP TABLE IF EXISTS ebms_summary_page;
+DROP TABLE IF EXISTS ebms_agenda;
+DROP TABLE IF EXISTS ebms_report_request;
+DROP TABLE IF EXISTS ebms_reimbursement_receipts;
+DROP TABLE IF EXISTS ebms_reimbursement_item;
+DROP TABLE IF EXISTS ebms_reimbursement_request;
+DROP TABLE IF EXISTS ebms_hotel_request;
+DROP TABLE IF EXISTS ebms_message_recipient;
+DROP TABLE IF EXISTS ebms_message;
+DROP TABLE IF EXISTS ebms_reviewer_doc;
+DROP TABLE IF EXISTS ebms_article_review;
+DROP TABLE IF EXISTS ebms_packet_article;
+DROP TABLE IF EXISTS ebms_packet_reviewer;
+DROP TABLE IF EXISTS ebms_packet_summary;
+DROP TABLE IF EXISTS ebms_packet;
+-- DROP TABLE IF EXISTS ebms_article_topic;
+DROP VIEW IF EXISTS ebms_article_topic;
+DROP TABLE IF EXISTS ebms_article_event;
+DROP TABLE IF EXISTS ebms_event_val;
+DROP TABLE IF EXISTS ebms_event_type;
+DROP TABLE IF EXISTS ebms_import_action;
+DROP TABLE IF EXISTS ebms_import_disposition;
+DROP TABLE IF EXISTS ebms_import_batch;
+DROP TABLE IF EXISTS ebms_not_list;
+DROP TABLE IF EXISTS ebms_cycle;
+DROP TABLE IF EXISTS ebms_article_author_cite;
+DROP TABLE IF EXISTS ebms_article_author;
+DROP TABLE IF EXISTS ebms_article;
+DROP TABLE IF EXISTS ebms_topic_reviewer;
+DROP TABLE IF EXISTS ebms_doc_topic;
+DROP VIEW IF EXISTS ebms_active_topic;
+DROP TABLE IF EXISTS ebms_topic;
+DROP TABLE IF EXISTS ebms_ad_hoc_group_member;
+DROP TABLE IF EXISTS ebms_ad_hoc_group;
+DROP TABLE IF EXISTS ebms_doc_board;
+DROP TABLE IF EXISTS ebms_doc_tag;
+DROP TABLE IF EXISTS ebms_tag;
+DROP TABLE IF EXISTS ebms_subgroup_member;
+DROP TABLE IF EXISTS ebms_subgroup;
+DROP TABLE IF EXISTS ebms_board_member;
+DROP TABLE IF EXISTS ebms_board;
+DROP TABLE IF EXISTS ebms_doc;
+
+/********************************************************
+ * Create all tables that are not standard Drupal tables.
+ ********************************************************/
 
 /*
  * Uploaded documents (does not include PubMed articles).
@@ -20,7 +62,6 @@ create table node  (nid int unsigned primary key) engine InnoDB;
  * when_posted    date/time the user uploaded the documents
  * description    how the poster wants the document represented in lists
  */
-DROP TABLE IF EXISTS ebms_doc;
 CREATE TABLE ebms_doc
      (doc_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
      file_id INTEGER UNSIGNED NOT NULL,
@@ -36,7 +77,6 @@ CREATE TABLE ebms_doc
  * board_name     unique string for the board's name
  * loe_guidelines optional foreign key into ebms_doc for board's LOE guidelines
  */
-DROP TABLE IF EXISTS ebms_board;
   CREATE TABLE ebms_board
      (board_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
     board_name VARCHAR(255) NOT NULL UNIQUE,
@@ -50,7 +90,6 @@ loe_guidelines INTEGER          NULL,
  * user_id        foreign key into Drupal's users table
  * board_id       foreign key into our ebms_board table
  */
-DROP TABLE IF EXISTS ebms_board_member;
 CREATE TABLE ebms_board_member
     (user_id INTEGER UNSIGNED NOT NULL,
     board_id INTEGER          NOT NULL,
@@ -66,7 +105,6 @@ CREATE TABLE ebms_board_member
  * sg_name        name of the subgroup, unique for each board
  * board_id       foreign key into the ebms_board table
  */
-DROP TABLE IF EXISTS ebms_subgroup;
 CREATE TABLE ebms_subgroup
       (sg_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
      sg_name VARCHAR(255) NOT NULL,
@@ -81,7 +119,6 @@ CREATE TABLE ebms_subgroup
  * user_id        foreign key into Drupal's users table
  * sg_id          foreign key into the ebms_subgroup table
  */
-DROP TABLE IF EXISTS ebms_subgroup_member;
 CREATE TABLE ebms_subgroup_member
     (user_id INTEGER UNSIGNED NOT NULL,
        sg_id INTEGER          NOT NULL,
@@ -97,7 +134,6 @@ CREATE TABLE ebms_subgroup_member
  * tag_name       unique name of the tag
  * tag_comment    optional description of what the tag is used for
  */
-DROP TABLE IF EXISTS ebms_tag;
 CREATE TABLE ebms_tag
      (tag_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
     tag_name VARCHAR(64)  NOT NULL UNIQUE,
@@ -110,7 +146,6 @@ CREATE TABLE ebms_tag
  * doc_id         foreign key into the ebms_doc table
  * tag_id         foreign key into the ebms_tag table
  */
-DROP TABLE IF EXISTS ebms_doc_tag;
 CREATE TABLE ebms_doc_tag
      (doc_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
@@ -125,7 +160,6 @@ CREATE TABLE ebms_doc_tag
  * doc_id         foreign key into the ebms_doc table
  * board_id       foreign key into the ebms_board table
  */
-DROP TABLE IF EXISTS ebms_doc_board;
 CREATE TABLE ebms_doc_board
      (doc_id INTEGER NOT NULL,
     board_id INTEGER NOT NULL,
@@ -144,7 +178,6 @@ CREATE TABLE ebms_doc_board
  * group_name     unique name of the ad-hoc group
  * created_by     foreign key into Drupal's users table
  */
-DROP TABLE IF EXISTS ebms_ad_hoc_group;
 CREATE TABLE ebms_ad_hoc_group
    (group_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
   group_name VARCHAR(255)     NOT NULL UNIQUE,
@@ -159,7 +192,6 @@ CREATE TABLE ebms_ad_hoc_group
  * user_id        foreign key into Drupal's users table
  * group_id       foreign key into the ebms_ad_hoc_group table
  */
-DROP TABLE IF EXISTS ebms_ad_hoc_group_member;
 CREATE TABLE ebms_ad_hoc_group_member
     (user_id INTEGER UNSIGNED NOT NULL,
     group_id INTEGER          NOT NULL,
@@ -184,18 +216,14 @@ CREATE TABLE ebms_ad_hoc_group_member
  *                  topics remain in the database because articles may
  *                  be linked to them.
  */
-DROP TABLE IF EXISTS ebms_topic;
 CREATE TABLE ebms_topic
      (topic_id INTEGER         NOT NULL AUTO_INCREMENT PRIMARY KEY,
     topic_name VARCHAR(255)    NOT NULL UNIQUE,
       board_id INTEGER         NOT NULL,
- -- XXX I think topics have (rarely) been deleted in the past
  active_status ENUM ('A', 'I') NOT NULL DEFAULT 'A',
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
       ENGINE=InnoDB;
 
-   -- XXX Should we name the other 'ebms_all_topic' and this 'ebms_topic'?
-   DROP VIEW IF EXISTS ebms_active_topic;
    CREATE VIEW ebms_active_topic AS
           SELECT topic_id, topic_name, board_id
             FROM ebms_topic
@@ -206,12 +234,11 @@ CREATE TABLE ebms_topic
  *
  * Each posted document can have zero or more topics associated with it.
  * This assignment is used, for example, to restrict the contents of the
- * picklist of posted summary documents 
+ * picklist of posted summary documents.
  *
  * topic_id       foreign key into the ebms_topic table
  * doc_id         foreign key into the ebms_doc table
  */
-DROP TABLE IF EXISTS ebms_doc_topic;
 CREATE TABLE ebms_doc_topic
    (topic_id INTEGER NOT NULL,
       doc_id INTEGER NOT NULL,
@@ -231,7 +258,6 @@ CREATE TABLE ebms_doc_topic
  * topic_id       foreign key into the ebms_topic table
  * user_id        foreign key into Drupal's users table
  */
-DROP TABLE IF EXISTS ebms_topic_reviewer;
 CREATE TABLE ebms_topic_reviewer
    (topic_id INTEGER          NOT NULL,
      user_id INTEGER UNSIGNED NOT NULL,
@@ -269,8 +295,6 @@ CREATE TABLE ebms_topic_reviewer
  *  published_date  Indication of when the article was published (free text)
  *                    Can't use SQL datetime since some articles have dates like
  *                    "Spring 2011".
- *  import_date     Datetime of first import.
- *  update_date     Datetime of last replacement from NLM or other source.
  *  source_data     Unmodified XML or whatever downloaded from the source.
  *                    We'll assume it's always there and make it not null
  *                    changing that only if there's a real use case.
@@ -282,7 +306,6 @@ CREATE TABLE ebms_topic_reviewer
  *                    Hopefully we'll never need to use this.
  *                    Values: 'A'ctive, 'D'eleted.
  */
-DROP TABLE IF EXISTS ebms_article;
 CREATE TABLE ebms_article (
   article_id        INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
   source            VARCHAR(32) NOT NULL,
@@ -295,8 +318,6 @@ CREATE TABLE ebms_article (
   brf_citation      VARCHAR(255) NOT NULL,
   abstract          TEXT NULL,
   published_date    VARCHAR(64) NOT NULL,
-  import_date       DATETIME NOT NULL,
-  update_date       DATETIME NULL,
   source_data       TEXT NULL,
   full_text_id      INTEGER UNSIGNED NULL,
   active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
@@ -324,7 +345,6 @@ CREATE TABLE ebms_article (
  *
  * Searching will be tricky and noisy.
  */
-DROP TABLE IF EXISTS ebms_article_author;
 CREATE TABLE ebms_article_author (
     author_id       INT AUTO_INCREMENT PRIMARY KEY,
     last_name       VARCHAR(128) NOT NULL,
@@ -354,7 +374,6 @@ CREATE TABLE ebms_article_author (
  *  It's important to cite authors in the correct order of their
  *  appearance in an article.
  */
-DROP TABLE IF EXISTS ebms_article_author_cite;
 CREATE TABLE ebms_article_author_cite (
     article_id      INT NOT NULL,
     cite_order      INT NOT NULL,
@@ -392,7 +411,6 @@ CREATE TABLE ebms_article_author_cite (
  * Note:
  *   This table is so small that a date index might not actually optimize it.
  */
-DROP TABLE IF EXISTS ebms_cycle;
 CREATE TABLE ebms_cycle
    (cycle_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
   cycle_name VARCHAR(40) NOT NULL UNIQUE,
@@ -432,7 +450,6 @@ CREATE TABLE ebms_cycle
  *  start_date      Date time when the journal was NOT listed.
  *  user_id         ID of the user adding this NOT list entry.
  */
-DROP TABLE IF EXISTS ebms_not_list;
 CREATE TABLE ebms_not_list (
     source          VARCHAR(32) NOT NULL,
     source_jrnl_id  VARCHAR(32) NOT NULL,
@@ -460,28 +477,41 @@ CREATE TABLE ebms_not_list (
  *   assigned a new summary topic to an article already in the system
  *   etc.
  * 
- *  disposition_id  Unique ID of the citation.
- *  name            Human readable display name.
- *  description     Fuller human readable explanation of disposition.
- *  active_status   'A'ctive or 'I'nactive - don't use any more.
+ *  disposition_id   Unique ID of the citation.
+ *  disposition_name Human readable display name.
+ *  description      Fuller human readable explanation of disposition.
+ *  active_status    'A'ctive or 'I'nactive - don't use any more.
  */
-DROP TABLE IF EXISTS ebms_import_disposition;
 CREATE TABLE ebms_import_disposition (
-    disposition_id  INT AUTO_INCREMENT PRIMARY KEY,
-    name            VARCHAR(32) NOT NULL UNIQUE,
-    description     VARCHAR(2048) NOT NULL,
-    active_status   ENUM ('A', 'I') NOT NULL DEFAULT 'A'
+    disposition_id   INT AUTO_INCREMENT PRIMARY KEY,
+    disposition_name VARCHAR(32) NOT NULL UNIQUE,
+    description      VARCHAR(2048) NOT NULL,
+    active_status    ENUM ('A', 'I') NOT NULL DEFAULT 'A'
 )
     ENGINE = InnoDB;
 
-    -- XXX Maybe we should add these right here, with descriptions?
-    INSERT INTO ebms_import_disposition (name) values ('Imported');
-    INSERT INTO ebms_import_disposition (name) values ('Rejected NOT listed');
-    INSERT INTO ebms_import_disposition (name) values ('Rejected duplicate');
-    INSERT INTO ebms_import_disposition (name) values ('Summary topic added');
-    INSERT INTO ebms_import_disposition (name) values ('Review cycle added');
-    INSERT INTO ebms_import_disposition (name) values ('Replaced');
-    INSERT INTO ebms_import_disposition (name) values ('Error');
+    -- The required disposition values
+    INSERT ebms_import_disposition (disposition_name, description) VALUES 
+     ('Imported', 
+      'First time import into the database');
+    INSERT ebms_import_disposition (disposition_name, description) VALUES
+     ('NOT listed',
+      'Imported but automatically rejected because the journal was NOT listed');
+    INSERT ebms_import_disposition (disposition_name, description) VALUES 
+     ('Duplicate, not imported', 
+      'Article already in database with same topic.  Not re-imported.');
+    INSERT ebms_import_disposition (disposition_name, description) VALUES 
+     ('Summary topic added',
+      'Article already in database.  New summary topic added.');
+    INSERT ebms_import_disposition (disposition_name, description) VALUES 
+     ('Topic/Review cycle added',
+      'Article already in database.  New topic and review cycle added');
+    INSERT ebms_import_disposition (disposition_name, description) VALUES 
+     ('Replaced',
+      'Article record replaced from updated, newly downloaded, source record');
+    INSERT ebms_import_disposition (disposition_name, description) VALUES 
+     ('Error',
+      'An error occurred in locating or parsing the record.  Not imported.');
 
 /*
  * One row for each batch of imported citations.
@@ -502,7 +532,6 @@ CREATE TABLE ebms_import_disposition (
  *  summary_id      Unique ID of the summary for which this was an import.
  *                  Might be NULL in special cases?
  */
-DROP TABLE IF EXISTS ebms_import_batch;
 CREATE TABLE ebms_import_batch (
     import_batch_id INT AUTO_INCREMENT PRIMARY KEY,
     topic_id        INT NULL,
@@ -541,7 +570,6 @@ CREATE TABLE ebms_import_batch (
  *                      Duplicate but new summary topic added, new review
  *                          cycle added.
  */
-DROP TABLE IF EXISTS ebms_import_action;
 CREATE TABLE ebms_import_action (
     source_id          VARCHAR(32) NOT NULL,
     article_id         INT NULL,
@@ -558,54 +586,13 @@ CREATE TABLE ebms_import_action (
 
 
 /*
- * Association of articles to topics.
- *
- * Each article imported into the system will have at least one topic
- * assigned to it.  Articles can have more than one topic assigned.
- * When a review packet is assembled, the packet is assigned one of
- * the topics, and only articles which have been associated with
- * that topic can be added to the review packet.  In the normal case
- * only those articles which have not already been added to another
- * packet for the topic assigned to the packet being assembled,
- * but special types of review packets (e.g., comprehensive review
- * packets) may bypass this restriction.
- *
- * This table just tells us if an article is currently associated with a
- * topic.  If there is a row in the table, the association is current.  If
- * the association is broken (because someone decided that the association
- * was an error), the row is removed.
- *
- * For information about who assigned a topic or when, or whether a topic
- * that is not now associated with a topic was ever so associated, etc.,
- * see the ebms_event table.
- *
- * article_id     foreign key into the ebms_article table
- * topic_id       foreign key into the ebms_topic table
- * event_id       foreign key into the ebms_article_event table.  This
- *                  event is the one that created the association.
- */
-DROP TABLE IF EXISTS ebms_article_topic;
-CREATE TABLE ebms_article_topic
- (article_id              INTEGER NOT NULL,
-    topic_id              INTEGER NOT NULL,
-    article_event_id      INTEGER NOT NULL,
- PRIMARY KEY (topic_id, article_id),
- FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
- FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
- FOREIGN KEY (article_event_id)   
-                          REFERENCES ebms_article_event (article_event_id))
-      ENGINE=InnoDB;
-
-    CREATE INDEX topic_article ON ebms_article_topic(article_id, topic_id);
-
-/*
  * Control values used in recording events.
  * 
  * This should be a relatively static table, changed only when there is a
  * significant change in software.
  * 
  *  event_type_id       Unique ID.
- *  name                Human readable name for brief display.
+ *  event_type_name     Human readable name for brief display.
  *  description         Human readable description for help display and
  *                        documentation.
  *  active_status       'A'ctive or 'I'nactive.  We need this in case
@@ -613,14 +600,28 @@ CREATE TABLE ebms_article_topic
  *                        but don't want to invalidate past events of that
  *                        type.
  */
-DROP TABLE IF EXISTS ebms_event_type;
 CREATE TABLE ebms_event_type (
     event_type_id       INT AUTO_INCREMENT PRIMARY KEY,
-    name                VARCHAR(32) NOT NULL,
+    event_type_name     VARCHAR(32) NOT NULL,
     description         VARCHAR(2048) NOT NULL,
     active_status       ENUM('A', 'I') DEFAULT 'A'
 )
     ENGINE=InnoDB;
+
+    -- Some required event types for the software to work
+    -- There will be more
+    INSERT ebms_event_type (event_type_name, description) VALUES 
+     ('Import',
+      'Import or update to the article bibliographic data');
+    INSERT ebms_event_type (event_type_name, description) VALUES 
+     ('Topic',
+      'Assign or unassign a summary topic to an article');
+    INSERT ebms_event_type (event_type_name, description) VALUES 
+     ('Status',
+      'Create or update article review or processing status');
+    INSERT ebms_event_type (event_type_name, description) VALUES 
+     ('Tag',
+      'Create or update optional, searchable, descriptive tag for article');
 
 /*
  * event_type specific control values used in recording events.  Some
@@ -635,7 +636,7 @@ CREATE TABLE ebms_event_type (
  * 
  *  event_type_id       Unique ID.
  *  event_val_id        Unique ID of the value within the type.
- *  name                Human readable name for brief display.
+ *  event_val_name      Human readable name for brief display.
  *  description         Human readable description for help display and
  *                        documentation.
  *  active_status       'A'ctive or 'I'nactive.  We need this in case
@@ -643,14 +644,12 @@ CREATE TABLE ebms_event_type (
  *                        but don't want to invalidate past events that use
  *                        that value.
  */
-DROP TABLE IF EXISTS ebms_event_val;
 CREATE TABLE ebms_event_val (
     event_type_id       INT,
     event_val_id        INT AUTO_INCREMENT PRIMARY KEY,
-    name                VARCHAR(32) NOT NULL,
+    event_val_name      VARCHAR(32) NOT NULL,
     description         VARCHAR(2048) NOT NULL,
     active_status       ENUM('A', 'I') DEFAULT 'A',
-    -- XXX Maybe better to put active_status first?
     UNIQUE KEY event_val_index (event_type_id, event_val_id, active_status),
     FOREIGN KEY (event_type_id) REFERENCES ebms_event_type(event_type_id)
 )
@@ -683,7 +682,6 @@ CREATE TABLE ebms_event_val (
  *                        'D'eleted  - this was a mistake, it should never 
  *                                     have happened.  Ignore it.
  */
-DROP TABLE IF EXISTS ebms_article_event;
 CREATE TABLE ebms_article_event (
      article_event_id  INT AUTO_INCREMENT PRIMARY KEY,
      article_id        INT NOT NULL,
@@ -709,6 +707,82 @@ CREATE TABLE ebms_article_event (
      ENGINE=InnoDB; 
 
 /*
+ * Association of articles to topics.
+ *
+ * Each article imported into the system will have at least one topic
+ * assigned to it.  Articles can have more than one topic assigned.
+ * When a review packet is assembled, the packet is assigned one of
+ * the topics, and only articles which have been associated with
+ * that topic can be added to the review packet.  In the normal case
+ * only those articles which have not already been added to another
+ * packet for the topic assigned to the packet being assembled,
+ * but special types of review packets (e.g., comprehensive review
+ * packets) may bypass this restriction.
+ *
+ * This table just tells us if an article is currently associated with a
+ * topic.  If there is a row in the table, the association is current.  If
+ * the association is broken (because someone decided that the association
+ * was an error), the row is removed.
+ *
+ * For information about who assigned a topic or when, or whether a topic
+ * that is not now associated with a topic was ever so associated, etc.,
+ * see the ebms_event table.
+ *
+ * article_id     foreign key into the ebms_article table
+ * topic_id       foreign key into the ebms_topic table
+ * event_id       foreign key into the ebms_article_event table.  This
+ *                  event is the one that created the association.
+ */
+ /*
+CREATE TABLE ebms_article_topic
+ (article_id              INTEGER NOT NULL,
+    topic_id              INTEGER NOT NULL,
+    article_event_id      INTEGER NOT NULL,
+ PRIMARY KEY (topic_id, article_id),
+ FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
+ FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
+ FOREIGN KEY (article_event_id)   
+                          REFERENCES ebms_article_event (article_event_id))
+      ENGINE=InnoDB;
+
+    CREATE INDEX topic_article ON ebms_article_topic(article_id, topic_id);
+ */
+ /*
+  * Alternative approach, using a view.
+  *
+  * Presents the following columns:
+  *  article_id - article
+  *  topic_id   - summary topic
+  *  topic_name - summary topic name
+  *  dt         - date of assignment
+  *  comment    - optional comment recorded during assignment
+  *
+  * The only rows in this view are for currently active topic assignments,
+  * one row per article / topic combination.
+  *
+  * Note that inactive topics, though not inactive events, are included.  
+  * That's intentional.  If an article was once assigned to "toenail cancer"
+  * but we now use "foot cancer" instead, it's still true that the article
+  * was assigned to "toenail cancer" and should be identified as such.
+  *
+  * If, and only if, it was de-assigned to "toenail cancer" and re-assigned 
+  * to "foot cancer", would the article will be identified as "foot cancer".
+  */
+CREATE VIEW ebms_article_topic AS
+    SELECT event.article_id, event.topic_id, 
+           topic.topic_name, event.dt, event.comment
+      FROM ebms_article_event event
+      JOIN ebms_topic topic
+        ON event.topic_id = topic.topic_id
+      JOIN ebms_event_type etype
+        ON event.event_type_id = etype.event_type_id
+       AND etype.event_type_name = 'Topic'
+      JOIN ebms_event_val eval
+        ON etype.event_type_id = eval.event_type_id
+       AND eval.event_val_name = 'Assign'
+     WHERE event.active_status = 'A';
+
+/*
  * Collection of articles on a given topic assigned for board member review.
  *
  * Board members are regulary assigned sets of published articles to review
@@ -727,7 +801,6 @@ CREATE TABLE ebms_article_event (
  * packet_title   how the packet should be identified in lists of packets
  * last_seen      when the board manager last saw the feedback for the packet
  */
-DROP TABLE IF EXISTS ebms_packet;
 CREATE TABLE ebms_packet
   (packet_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     topic_id INTEGER          NOT NULL,
@@ -751,7 +824,6 @@ packet_title VARCHAR(255)     NOT NULL,
  * packet_id      foreign key into the ebms_packet table
  * doc_id         foreign key into the ebms_doc table
  */
-DROP TABLE IF EXISTS ebms_packet_summary;
 CREATE TABLE ebms_packet_summary
   (packet_id INTEGER      NOT NULL,
       doc_id INTEGER      NOT NULL,
@@ -766,7 +838,6 @@ CREATE TABLE ebms_packet_summary
  * packet_id      foreign key into the ebms_packet table
  * reviewer_id    foreign key into Drupal's users table
  */
-DROP TABLE IF EXISTS ebms_packet_reviewer;
 CREATE TABLE ebms_packet_reviewer
   (packet_id INTEGER          NOT NULL,
  reviewer_id INTEGER UNSIGNED NOT NULL,
@@ -788,7 +859,6 @@ CREATE TABLE ebms_packet_reviewer
  * packet_id      foreign key into the ebms_packet table
  * drop_flag      should the article be omitted from the review work queue?
  */
-DROP TABLE IF EXISTS ebms_packet_article;
 CREATE TABLE ebms_packet_article
  (article_id INTEGER      NOT NULL,
    packet_id INTEGER      NOT NULL,
@@ -818,7 +888,6 @@ CREATE TABLE ebms_packet_article
  *                found in the article; free text, but following the
  *                guidelines used by the board for LOE
  */
-DROP TABLE IF EXISTS ebms_article_review;
 CREATE TABLE ebms_article_review
   (review_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
    packet_id INTEGER          NOT NULL,
@@ -854,7 +923,6 @@ review_flags INTEGER          NOT NULL,
  * doc_title      how the document should be identified in lists
  * description    optional notes accompanying the posted document
  */
-DROP TABLE IF EXISTS ebms_reviewer_doc;
 CREATE TABLE ebms_reviewer_doc
      (doc_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
      file_id INTEGER UNSIGNED NOT NULL,
@@ -886,7 +954,6 @@ CREATE TABLE ebms_reviewer_doc
  * msg_subject    what the announcement is about
  * msg_body       the announcement's text
  */
-DROP TABLE IF EXISTS ebms_message;
 CREATE TABLE ebms_message
  (message_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
    sender_id INTEGER UNSIGNED NOT NULL,
@@ -904,7 +971,6 @@ CREATE TABLE ebms_message
  * when_read      date/time the recipient read the message in the EBMS
  *                (not his/her email client)
  */
-DROP TABLE IF EXISTS ebms_message_recipient;
 CREATE TABLE ebms_message_recipient
  (message_id INTEGER          NOT NULL,
     recip_id INTEGER UNSIGNED NOT NULL,
@@ -926,8 +992,7 @@ CREATE TABLE ebms_message_recipient
  * processed      date/time request was processed (not currently used)
  * notes          optional additional information
  */
-DROP TABLE IF EXISTS ebms_hotel_request;
- CREATE TABLE ebms_hotel_request
+CREATE TABLE ebms_hotel_request
   (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
  requestor_id INTEGER UNSIGNED NOT NULL,
     submitted DATETIME         NOT NULL,
@@ -949,7 +1014,6 @@ checkout_date DATE             NOT NULL,
  * processed      date/time request was processed (not currently used)
  * notes          optional additional information
  */
-DROP TABLE IF EXISTS ebms_reimbursement_request;
 CREATE TABLE ebms_reimbursement_request
  (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
 requestor_id INTEGER UNSIGNED NOT NULL,
@@ -970,7 +1034,6 @@ requestor_id INTEGER UNSIGNED NOT NULL,
  * amount         text amount of expense
  * description    what the expense was for
  */
-DROP TABLE IF EXISTS ebms_reimbursement_item;
 CREATE TABLE ebms_reimbursement_item
     (item_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
   request_id INTEGER      NOT NULL,
@@ -987,7 +1050,6 @@ expense_date DATE         NOT NULL,
  * request_id     foreign key into the ebms_reimbursement_request table
  * file_id        foreign key into Drupal's files table
  */
-DROP TABLE IF EXISTS ebms_reimbursement_receipts;
 CREATE TABLE ebms_reimbursement_receipts
  (receipt_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
   request_id INTEGER          NOT NULL,
@@ -1005,7 +1067,6 @@ CREATE TABLE ebms_reimbursement_receipts
  * submitted      date/time the request was posted
  * parameters     information needed to generated the report, json-encoded
  */
-DROP TABLE IF EXISTS ebms_report_request;
 CREATE TABLE ebms_report_request
  (request_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
  report_name VARCHAR(40)      NOT NULL,
@@ -1026,7 +1087,6 @@ requestor_id INTEGER UNSIGNED NOT NULL,
  * last_modified  optional date/time of last agenda changes
  * modified_by    foreign key into Drupal's users table (optionl)
  */
-DROP TABLE IF EXISTS ebms_agenda;
  CREATE TABLE ebms_agenda
     (event_id INTEGER  UNSIGNED NOT NULL PRIMARY KEY,
    agenda_doc LONGTEXT          NOT NULL,
@@ -1047,7 +1107,6 @@ last_modified DATETIME              NULL,
  * board_id       foreign key into ebms_board table
  * page_name      string identifying page content
  */
-DROP TABLE IF EXISTS ebms_summary_page;
 CREATE TABLE ebms_summary_page
     (page_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
     board_id INTEGER      NOT NULL,
@@ -1063,7 +1122,6 @@ CREATE TABLE ebms_summary_page
  * link_url       URL for the Cancer.gov page
  * link_label     display text for the link
  */
-DROP TABLE IF EXISTS ebms_summary_link;
 CREATE TABLE ebms_summary_link
     (link_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
      page_id INTEGER      NOT NULL,
@@ -1081,7 +1139,6 @@ CREATE TABLE ebms_summary_link
  * archived       date/time document was suppressed from display
  * notes          optional comments on the posted document
  */
-DROP TABLE IF EXISTS ebms_summary_supporting_doc;
 CREATE TABLE ebms_summary_supporting_doc
    (board_id INTEGER  NOT NULL,
       doc_id INTEGER  NOT NULL,
@@ -1100,7 +1157,6 @@ CREATE TABLE ebms_summary_supporting_doc
  * archived       date/time document was suppressed from display
  * notes          optional comments on the posted document
  */
-DROP TABLE IF EXISTS ebms_summary_posted_doc;
 CREATE TABLE ebms_summary_posted_doc
     (page_id INTEGER  NOT NULL,
       doc_id INTEGER  NOT NULL,
@@ -1119,7 +1175,6 @@ CREATE TABLE ebms_summary_posted_doc
  * archived       date/time document was suppressed from display
  * notes          optional comments on the posted document
  */
-DROP TABLE IF EXISTS ebms_summary_returned_doc;
 CREATE TABLE ebms_summary_returned_doc
     (page_id INTEGER  NOT NULL,
       doc_id INTEGER  NOT NULL,
@@ -1129,6 +1184,3 @@ CREATE TABLE ebms_summary_returned_doc
  FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id),
  FOREIGN KEY (doc_id)  REFERENCES ebms_doc (doc_id))
       ENGINE=InnoDB;
-
--- XXX Reset from test conditions
-SET FOREIGN_KEY_CHECKS=1;
