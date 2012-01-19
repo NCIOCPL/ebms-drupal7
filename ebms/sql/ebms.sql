@@ -876,11 +876,6 @@ CREATE TABLE ebms_packet_article
  * article_id     foreign key into the ebms_article table
  * reviewer_id    foreign key into Drupal's users table
  * when_posted    date/time the feedback was posted
- * review_flags   bit flags indicating whether:
- *                  - the article warrants no changes to any summaries
- *                  - the article should be cite in at least one summary
- *                  - the article merits revision of text in a summary
- *                  - the article should be discussed collectively
  * comments       free text elaboration of how the reviewer feels the
  *                article's findings should be incorporated into the
  *                PDQ summaries (or why it shouldn't be)
@@ -894,7 +889,6 @@ CREATE TABLE ebms_article_review
   article_id INTEGER          NOT NULL,
  reviewer_id INTEGER UNSIGNED NOT NULL,
  when_posted DATETIME         NOT NULL,
-review_flags INTEGER          NOT NULL,
     comments TEXT                 NULL,
     loe_info TEXT                 NULL,
   UNIQUE KEY ebms_art_review_index (article_id, reviewer_id),
@@ -902,6 +896,115 @@ review_flags INTEGER          NOT NULL,
               article_id)  REFERENCES ebms_packet_article (packet_id,
                                                            article_id),
  FOREIGN KEY (reviewer_id) REFERENCES users (uid))
+      ENGINE=InnoDB;
+
+/*
+ * Lookup table for decisions a reviewer can make about an article
+ * (s)he is reviewing.  More than one value can be chosen by the
+ * reviewer for the article.
+ *
+ * value_id       automatically generated primary key
+ * value_name     string used to represent the disposition's value
+ * value_pos      integer specifying position for the user interface
+ * instructions   optional additional string for the user interface
+ */
+CREATE TABLE ebms_review_disposition_value
+   (value_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  value_name VARCHAR(64) NOT NULL UNIQUE,
+   value_pos INTEGER     NOT NULL,
+instructions VARCHAR(64)     NULL)
+      ENGINE=InnoDB;
+
+INSERT INTO ebms_review_disposition_value (value_name, value_pos)
+     VALUES ('Warrants no changes to the summary', 1);
+INSERT INTO ebms_review_disposition_value (value_name, value_pos, instructions)
+     VALUES ('Deserves citation in the summary', 2,
+             'indicate placement in the summary document');
+INSERT INTO ebms_review_disposition_value (value_name, value_pos, instructions)
+     VALUES ('Merits revision of the text', 3,
+             'indicate changes in the summary document');
+INSERT INTO ebms_review_disposition_value (value_name, value_pos)
+     VALUES ('Merits discussion', 4);
+
+/*
+ * Lookup table for reasons a reviewer can give for indicating that
+ * an article merits no changes to the summary.
+ *
+ * value_id       automatically generated primary key
+ * value_name     string used to represent the reason
+ * value_pos      integer specifying position for the user interface
+ * extra_info     optional additional explanation for the user interface
+ */
+CREATE TABLE ebms_review_rejection_value
+   (value_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  value_name VARCHAR(64) NOT NULL UNIQUE,
+   value_pos INTEGER     NOT NULL,
+  extra_info VARCHAR(64)     NULL)
+      ENGINE=InnoDB;
+
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Not relevant to PDQ summary topic', 1);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Already cited in PDQ summary', 2);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Review/expert opinion/commentary', 3, 'no new primary data');
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Provides no new information/novel findings', 4);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Inappropriate study design', 5);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Inadequate study population', 6,
+       'small number of patients; underpowered study; accrual target not met');
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Randomized trial with flawed or insufficiently described randomization process', 7);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Unvalidated outcome measure(s) used', 8,
+             'e.g., unvalidated surrogate endpoint[s]');
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Missing/incomplete outcome data; major protocol deviations', 9);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Inadequate follow-up', 10);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Inappropriate statistical analysis', 11,
+             'incorrect tests; lack of intent to treat analysis');
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Inappropriate interpretation of subgroup analyses', 12);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Preliminary findings; need confirmation', 13);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Findings not clinically important', 14);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Other', 15, 'specify reason(s) in the Comments field');
+
+/*
+ * Assignment of disposition to an article in a specific packet by
+ * a reviewer.
+ *
+ * review_id      foreign key into ebms_article_review table
+ * value_id       foreign key into ebms_review_disposition_value table
+ */
+CREATE TABLE ebms_review_disposition
+  (review_id INTEGER NOT NULL,
+    value_id INTEGER NOT NULL,
+ PRIMARY KEY (review_id, value_id),
+ FOREIGN KEY (review_id) REFERENCES ebms_article_review (review_id),
+ FOREIGN KEY (value_id)  REFERENCES ebms_review_disposition_value (value_id))
+      ENGINE=InnoDB;
+
+/*
+ * Identification of a reason why the reviewer decided an article in
+ * a review packet did not merit inclusion in the summary.  More than
+ * one reason can be specified for the decision.
+ *
+ * review_id      foreign key into ebms_article_review table
+ * value_id       foreign key into ebms_review_rejection_value table
+ */
+CREATE TABLE ebms_review_rejection_reason
+  (review_id INTEGER NOT NULL,
+    value_id INTEGER NOT NULL,
+ PRIMARY KEY (review_id, value_id),
+ FOREIGN KEY (review_id) REFERENCES ebms_article_review (review_id),
+ FOREIGN KEY (value_id)  REFERENCES ebms_review_rejecttion_value (value_id))
       ENGINE=InnoDB;
 
 /*
