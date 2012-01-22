@@ -17,13 +17,19 @@ DROP TABLE IF EXISTS ebms_hotel_request;
 DROP TABLE IF EXISTS ebms_message_recipient;
 DROP TABLE IF EXISTS ebms_message;
 DROP TABLE IF EXISTS ebms_reviewer_doc;
+DROP TABLE IF EXISTS ebms_review_rejection_reason;
+DROP TABLE IF EXISTS ebms_review_disposition;
+DROP TABLE IF EXISTS ebms_review_rejection_value;
+DROP TABLE IF EXISTS ebms_review_disposition_value;
 DROP TABLE IF EXISTS ebms_article_review;
 DROP TABLE IF EXISTS ebms_packet_article;
 DROP TABLE IF EXISTS ebms_packet_reviewer;
 DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
--- DROP TABLE IF EXISTS ebms_article_topic;
-DROP VIEW IF EXISTS ebms_article_topic;
+DROP TABLE IF EXISTS ebms_article_state;
+DROP TABLE IF EXISTS ebms_article_state_type;
+DROP TABLE IF EXISTS ebms_article_topic;
+-- DROP VIEW IF EXISTS ebms_article_topic;
 DROP TABLE IF EXISTS ebms_article_event;
 DROP TABLE IF EXISTS ebms_event_val;
 DROP TABLE IF EXISTS ebms_event_type;
@@ -279,26 +285,28 @@ CREATE TABLE ebms_topic_reviewer
  *
  *  article_id      Automatically generated primary key
  *  source          Name of source, 'Pubmed' predominates.
- *  source_id       ID used by source for this article, e.g., PMID
- *  source_jrnl_id  If source = 'Pubmed': then NLM unique journal id
- *                    Else: to be determined
+ *  source_id       ID used by source for this article, e.g., PMID.
+ *  source_jrnl_id  If source = 'Pubmed': then NLM unique journal id.
+ *                    Else: to be determined.
  *  source_status   Source organization's status assignment to the record
  *                    Enables us to identify, e.g., records that are 
  *                    "In-Process", etc., and need future update.
- *  article_title   Full title of the article
- *  jrnl_title      Full journal title at time of import or update
+ *  article_title   Full title of the article.
+ *  jrnl_title      Full journal title at time of import or update.
  *  brf_jrnl_title  Journal title abbreviation found in article record.
  *                    Normally this is the NLM title abbreviation.
  *  brf_citation    Citation identifying journal, year, vol, issue, pages, or
  *                    however we wish show the article on a single line.
  *  abstract        Abstract, currently always English.
- *  published_date  Indication of when the article was published (free text)
- *                    Can't use SQL datetime since some articles have dates like
- *                    "Spring 2011".
+ *  published_date  Indication of when the article was published (free text).
+ *                    Can't use SQL datetime since some articles have dates 
+ *                    like "Spring 2011".
  *  source_data     Unmodified XML or whatever downloaded from the source.
  *                    We'll assume it's always there and make it not null
  *                    changing that only if there's a real use case.
  *  full_text_id    Foreign key into the Drupal files table for PDF of article.
+ *                    Full text is actually stored in the file system.  The
+ *                    files table tells us where.
  *  active_status   Provides a way to mark a citation to never be used for
  *                    any active purpose.  This is like the CDR 'D'eleted
  *                    status, not 'I'nactive.  We only use it if the 
@@ -477,40 +485,40 @@ CREATE TABLE ebms_not_list (
  *   assigned a new summary topic to an article already in the system
  *   etc.
  * 
- *  disposition_id   Unique ID of the citation.
- *  disposition_name Human readable display name.
- *  description      Fuller human readable explanation of disposition.
- *  active_status    'A'ctive or 'I'nactive - don't use any more.
+ *  disposition_id              Unique ID of the citation.
+ *  disposition_name            Human readable display name.
+ *  disposition_description     Fuller explanation of disposition.
+ *  active_status               'A'ctive or 'I'nactive - don't use any more.
  */
 CREATE TABLE ebms_import_disposition (
-    disposition_id   INT AUTO_INCREMENT PRIMARY KEY,
-    disposition_name VARCHAR(32) NOT NULL UNIQUE,
-    description      VARCHAR(2048) NOT NULL,
-    active_status    ENUM ('A', 'I') NOT NULL DEFAULT 'A'
+    disposition_id          INTEGER AUTO_INCREMENT PRIMARY KEY,
+    disposition_name        VARCHAR(32) NOT NULL UNIQUE,
+    disposition_description VARCHAR(2048) NOT NULL,
+    active_status           ENUM ('A', 'I') NOT NULL DEFAULT 'A'
 )
     ENGINE = InnoDB;
 
     -- The required disposition values
-    INSERT ebms_import_disposition (disposition_name, description) VALUES 
-     ('Imported', 
+    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+      VALUES ('Imported', 
       'First time import into the database');
-    INSERT ebms_import_disposition (disposition_name, description) VALUES
-     ('NOT listed',
+    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+      VALUES ('NOT listed',
       'Imported but automatically rejected because the journal was NOT listed');
-    INSERT ebms_import_disposition (disposition_name, description) VALUES 
-     ('Duplicate, not imported', 
+    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+      VALUES ('Duplicate, not imported', 
       'Article already in database with same topic.  Not re-imported.');
-    INSERT ebms_import_disposition (disposition_name, description) VALUES 
-     ('Summary topic added',
+    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+      VALUES ('Summary topic added',
       'Article already in database.  New summary topic added.');
-    INSERT ebms_import_disposition (disposition_name, description) VALUES 
-     ('Topic/Review cycle added',
+    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+      VALUES ('Topic/Review cycle added',
       'Article already in database.  New topic and review cycle added');
-    INSERT ebms_import_disposition (disposition_name, description) VALUES 
-     ('Replaced',
+    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+      VALUES ('Replaced',
       'Article record replaced from updated, newly downloaded, source record');
-    INSERT ebms_import_disposition (disposition_name, description) VALUES 
-     ('Error',
+    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+      VALUES ('Error',
       'An error occurred in locating or parsing the record.  Not imported.');
 
 /*
@@ -593,7 +601,7 @@ CREATE TABLE ebms_import_action (
  * 
  *  event_type_id       Unique ID.
  *  event_type_name     Human readable name for brief display.
- *  description         Human readable description for help display and
+ *  event_type_description Human readable description for help display and
  *                        documentation.
  *  active_status       'A'ctive or 'I'nactive.  We need this in case
  *                        we ever wish to stop using a particular event_type
@@ -601,25 +609,25 @@ CREATE TABLE ebms_import_action (
  *                        type.
  */
 CREATE TABLE ebms_event_type (
-    event_type_id       INT AUTO_INCREMENT PRIMARY KEY,
-    event_type_name     VARCHAR(32) NOT NULL,
-    description         VARCHAR(2048) NOT NULL,
-    active_status       ENUM('A', 'I') DEFAULT 'A'
+    event_type_id           INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    event_type_name         VARCHAR(32) NOT NULL,
+    event_type_description  VARCHAR(2048) NOT NULL,
+    active_status           ENUM('A', 'I') DEFAULT 'A'
 )
     ENGINE=InnoDB;
 
     -- Some required event types for the software to work
     -- There will be more
-    INSERT ebms_event_type (event_type_name, description) VALUES 
+    INSERT ebms_event_type (event_type_name, event_type_description) VALUES 
      ('Import',
       'Import or update to the article bibliographic data');
-    INSERT ebms_event_type (event_type_name, description) VALUES 
+    INSERT ebms_event_type (event_type_name, event_type_description) VALUES 
      ('Topic',
       'Assign or unassign a summary topic to an article');
-    INSERT ebms_event_type (event_type_name, description) VALUES 
+    INSERT ebms_event_type (event_type_name, event_type_description) VALUES 
      ('Status',
       'Create or update article review or processing status');
-    INSERT ebms_event_type (event_type_name, description) VALUES 
+    INSERT ebms_event_type (event_type_name, event_type_description) VALUES 
      ('Tag',
       'Create or update optional, searchable, descriptive tag for article');
 
@@ -728,25 +736,34 @@ CREATE TABLE ebms_article_event (
  * that is not now associated with a topic was ever so associated, etc.,
  * see the ebms_event table.
  *
- * article_id     foreign key into the ebms_article table
- * topic_id       foreign key into the ebms_topic table
- * event_id       foreign key into the ebms_article_event table.  This
- *                  event is the one that created the association.
+ *  article_id      Unique ID of the article
+ *  topic_id        Unique ID of the summary topic
+ *  user_id         Unique ID of the user responsible for the assignment
+ *  article_topic_dt Datetime of the assignment
+ *  method          Method of assignment, import program or user action.
+ *                  Most topic assignments are made by the import program
+ *                    as a result of a search for articles on that topic.
+ *                    Such assignments are probably less reliable than those
+ *                    made individually by a human looking at this record.
+ *                  Values:
+ *                   'P'rogram - assigned by the import of a search result.
+ *                   'H'uman   - assigned individually by a person.
  */
- /*
-CREATE TABLE ebms_article_topic
- (article_id              INTEGER NOT NULL,
+CREATE TABLE ebms_article_topic (
+    article_id            INTEGER NOT NULL,
     topic_id              INTEGER NOT NULL,
-    article_event_id      INTEGER NOT NULL,
- PRIMARY KEY (topic_id, article_id),
- FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
- FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
- FOREIGN KEY (article_event_id)   
-                          REFERENCES ebms_article_event (article_event_id))
-      ENGINE=InnoDB;
+    user_id               INTEGER UNSIGNED NOT NULL,
+    article_topic_dt      DATETIME NOT NULL,
+    method                ENUM ('P','H') NOT NULL DEFAULT 'P',
+    PRIMARY KEY (article_id, topic_id),
+    FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
+    FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
+    FOREIGN KEY (user_id)    REFERENCES users(uid)
+)
+    ENGINE InnoDB;
+    CREATE UNIQUE INDEX ebms_topic_article_index
+           ON ebms_article_topic (topic_id, article_id);
 
-    CREATE INDEX topic_article ON ebms_article_topic(article_id, topic_id);
- */
  /*
   * Alternative approach, using a view.
   *
@@ -768,6 +785,7 @@ CREATE TABLE ebms_article_topic
   * If, and only if, it was de-assigned to "toenail cancer" and re-assigned 
   * to "foot cancer", would the article will be identified as "foot cancer".
   */
+  /*
 CREATE VIEW ebms_article_topic AS
     SELECT event.article_id, event.topic_id, 
            topic.topic_name, event.dt, event.comment
@@ -781,6 +799,51 @@ CREATE VIEW ebms_article_topic AS
         ON etype.event_type_id = eval.event_type_id
        AND eval.event_val_name = 'Assign'
      WHERE event.active_status = 'A';
+  */
+
+/*
+ * Control values for recording processing states in the ebms_article_state
+ * table.
+ *
+ *  article_state_id    Unique ID of the state value.
+ *  state_name          Human readable name.
+ *  state_description   Longer, descriptive help text.
+ *  sequence            The sequence order of states in workflows.
+ *  active_status       'A'ctive or 'I'nactive.
+ */
+CREATE TABLE ebms_article_state_type (
+    state_id            INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    state_name          VARCHAR(32) NOT NULL UNIQUE,
+    state_description   VARCHAR(2048),
+    sequence            INTEGER NOT NULL,
+    active_status       ENUM('A','I') NOT NULL DEFAULT 'A'
+)
+    ENGINE=InnoDB;
+
+/*
+ * Processing states that an article is, or has been, in.
+ *
+ *  article_id      Unique ID in article table.
+ *  topic_id        The summary topic for which this article state is set.
+ *  state_id        ID of the state that this row records.
+ *  user_id         ID of the user that put the article in this state.
+ *  status_dt       Date and time the row/state was created.
+ *  comments        Free text.
+ */
+CREATE TABLE ebms_article_state (
+    article_id      INTEGER NOT NULL,
+    topic_id        INTEGER NOT NULL,
+    state_id        INTEGER NOT NULL,
+    user_id         INTEGER UNSIGNED NOT NULL,
+    status_dt       DATETIME NOT NULL,
+    comments        VARCHAR(2048) NULL,
+    PRIMARY KEY (article_id, topic_id),
+    FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
+    FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
+    FOREIGN KEY (state_id)   REFERENCES ebms_article_state_type(state_id),
+    FOREIGN KEY (user_id)    REFERENCES users(uid)
+)
+    ENGINE InnoDB;
 
 /*
  * Collection of articles on a given topic assigned for board member review.
@@ -892,9 +955,9 @@ CREATE TABLE ebms_article_review
     comments TEXT                 NULL,
     loe_info TEXT                 NULL,
   UNIQUE KEY ebms_art_review_index (article_id, reviewer_id),
- FOREIGN KEY (packet_id,
-              article_id)  REFERENCES ebms_packet_article (packet_id,
-                                                           article_id),
+   FOREIGN KEY (packet_id,
+                article_id)  REFERENCES ebms_packet_article (packet_id,
+                                                             article_id),
  FOREIGN KEY (reviewer_id) REFERENCES users (uid))
       ENGINE=InnoDB;
 
@@ -946,25 +1009,25 @@ INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Not relevant to PDQ summary topic', 1);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Already cited in PDQ summary', 2);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Review/expert opinion/commentary', 3, 'no new primary data');
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Provides no new information/novel findings', 4);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Inappropriate study design', 5);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Inadequate study population', 6,
        'small number of patients; underpowered study; accrual target not met');
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Randomized trial with flawed or insufficiently described randomization process', 7);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Unvalidated outcome measure(s) used', 8,
              'e.g., unvalidated surrogate endpoint[s]');
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Missing/incomplete outcome data; major protocol deviations', 9);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Inadequate follow-up', 10);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Inappropriate statistical analysis', 11,
              'incorrect tests; lack of intent to treat analysis');
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
@@ -973,7 +1036,7 @@ INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Preliminary findings; need confirmation', 13);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Findings not clinically important', 14);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Other', 15, 'specify reason(s) in the Comments field');
 
 /*
@@ -1004,7 +1067,7 @@ CREATE TABLE ebms_review_rejection_reason
     value_id INTEGER NOT NULL,
  PRIMARY KEY (review_id, value_id),
  FOREIGN KEY (review_id) REFERENCES ebms_article_review (review_id),
- FOREIGN KEY (value_id)  REFERENCES ebms_review_rejecttion_value (value_id))
+ FOREIGN KEY (value_id)  REFERENCES ebms_review_rejection_value (value_id))
       ENGINE=InnoDB;
 
 /*
