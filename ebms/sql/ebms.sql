@@ -972,10 +972,10 @@ CREATE TABLE ebms_article_review
  * instructions   optional additional string for the user interface
  */
 CREATE TABLE ebms_review_disposition_value
-   (value_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  value_name VARCHAR(64) NOT NULL UNIQUE,
-   value_pos INTEGER     NOT NULL,
-instructions VARCHAR(64)     NULL)
+   (value_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  value_name VARCHAR(80)  NOT NULL UNIQUE,
+   value_pos INTEGER      NOT NULL,
+instructions VARCHAR(255)     NULL)
       ENGINE=InnoDB;
 
 INSERT INTO ebms_review_disposition_value (value_name, value_pos)
@@ -999,10 +999,10 @@ INSERT INTO ebms_review_disposition_value (value_name, value_pos)
  * extra_info     optional additional explanation for the user interface
  */
 CREATE TABLE ebms_review_rejection_value
-   (value_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  value_name VARCHAR(64) NOT NULL UNIQUE,
-   value_pos INTEGER     NOT NULL,
-  extra_info VARCHAR(64)     NULL)
+   (value_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  value_name VARCHAR(80)  NOT NULL UNIQUE,
+   value_pos INTEGER      NOT NULL,
+  extra_info VARCHAR(255)     NULL)
       ENGINE=InnoDB;
 
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
