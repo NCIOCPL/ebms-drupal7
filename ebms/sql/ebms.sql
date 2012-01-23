@@ -64,7 +64,7 @@ DROP TABLE IF EXISTS ebms_doc;
  * Uploaded documents (does not include PubMed articles).
  *
  * doc_id         automatically generated primary key
- * file_id        foreign key into Drupal's files table
+ * file_id        foreign key into Drupal's file managment table
  * when_posted    date/time the user uploaded the documents
  * description    how the poster wants the document represented in lists
  */
@@ -73,7 +73,7 @@ CREATE TABLE ebms_doc
      file_id INTEGER UNSIGNED NOT NULL,
  when_posted DATETIME         NOT NULL,
  description TEXT             NOT NULL,
- FOREIGN KEY (file_id) REFERENCES files (fid))
+ FOREIGN KEY (file_id) REFERENCES file_managed (fid))
       ENGINE=InnoDB;
 
 /*
@@ -304,9 +304,9 @@ CREATE TABLE ebms_topic_reviewer
  *  source_data     Unmodified XML or whatever downloaded from the source.
  *                    We'll assume it's always there and make it not null
  *                    changing that only if there's a real use case.
- *  full_text_id    Foreign key into the Drupal files table for PDF of article.
- *                    Full text is actually stored in the file system.  The
- *                    files table tells us where.
+ *  full_text_id    Foreign key into the Drupal file mgt table for PDF of 
+ *                    article.  Full text is actually stored in the file 
+ *                    system.  The file_managed table tells us where.
  *  active_status   Provides a way to mark a citation to never be used for
  *                    any active purpose.  This is like the CDR 'D'eleted
  *                    status, not 'I'nactive.  We only use it if the 
@@ -329,7 +329,7 @@ CREATE TABLE ebms_article (
   source_data       TEXT NULL,
   full_text_id      INTEGER UNSIGNED NULL,
   active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
-  FOREIGN KEY (full_text_id) REFERENCES files (fid)
+  FOREIGN KEY (full_text_id) REFERENCES file_managed (fid)
 )
       ENGINE=InnoDB;
 
@@ -1081,7 +1081,7 @@ CREATE TABLE ebms_review_rejection_reason
  * system.
  *
  * doc_id         automatically generated primary key
- * file_id        foreign key into Drupal's files table
+ * file_id        foreign key into Drupal's file_managed table
  * reviewer_id    foreign key into Drupal's users table
  * packet_id      foreign key into the ebms_packet table
  * drop_flag      has the posting of the document been retracted?
@@ -1098,7 +1098,7 @@ CREATE TABLE ebms_reviewer_doc
  when_posted DATETIME         NOT NULL,
    doc_title VARCHAR(256)     NOT NULL,
  description TEXT                 NULL,
- FOREIGN KEY (file_id)     REFERENCES files (fid),
+ FOREIGN KEY (file_id)     REFERENCES file_managed (fid),
  FOREIGN KEY (reviewer_id) REFERENCES users (uid),
  FOREIGN KEY (packet_id)   REFERENCES ebms_packet (packet_id))
       ENGINE=InnoDB;
@@ -1214,14 +1214,14 @@ expense_date DATE         NOT NULL,
  *
  * receipt_id     automatically generated primary key
  * request_id     foreign key into the ebms_reimbursement_request table
- * file_id        foreign key into Drupal's files table
+ * file_id        foreign key into Drupal's file_managed table
  */
 CREATE TABLE ebms_reimbursement_receipts
  (receipt_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
   request_id INTEGER          NOT NULL,
      file_id INTEGER UNSIGNED NOT NULL,
  FOREIGN KEY (request_id) REFERENCES ebms_reimbursement_request (request_id),
- FOREIGN KEY (file_id)    REFERENCES files (fid))
+ FOREIGN KEY (file_id)    REFERENCES file_managed (fid))
       ENGINE=InnoDB;
 
 /*
