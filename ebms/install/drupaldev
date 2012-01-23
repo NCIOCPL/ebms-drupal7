@@ -1,0 +1,77 @@
+# EBMS=ebms
+EBMS=ebmsdev
+HOST=verdi.nci.nih.gov
+ROOT=/var/www/html/$EBMS
+DRUPALVER=7.9
+wget http://ftp.drupal.org/files/projects/drupal-{$DRUPALVER}.tar.gz
+tar xvzf drupal-{$DRUPALVER}.tar.gz
+sudo mv drupal-{$DRUPALVER} /var/www/html/{$EBMS}
+cd /var/www/html/{$EBMS}/sites
+cp default/default.settings.php default/settings.php
+chmod 666 default/settings.php
+chmod a+w default
+mysql -u root -p mysql
+mysql> CREATE DATABASE $EBMS CHARACTER SET utf8
+mysql> GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER,
+    -> CREATE TEMPORARY TABLES, LOCK TABLES ON {$EBMS}.*
+    -> TO '{$EBMS}'@'localhost' IDENTIFIED BY '***REMOVED***';
+sudo yum install php53-xml
+Add to /etc/httpd/conf/httpd.conf:
+  <Directory /var/www/html/$NAME>
+    AllowOverride All
+    RewriteEngine on
+    RewriteBase /$NAME
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !=/favicon.ico
+    RewriteRule ^(.*)$ index.php?q=$1 [L,QSA]
+  </Directory>
+
+sudo /etc/init.d/httpd restart
+Point browser at http://{$HOST}/{$EBMS}
+  profile: minimal
+  site name: EBMS
+  site email {$EBMS}@cancer.gov
+  admin user (admin), email (ebmsadmin@cancer.gov), password (***REMOVED***)
+  default country: United States
+  default time zone: America/New York
+
+Roll back privileges
+  cd /var/www/html/$EBMS/sites
+  chmod 644 default/settings.php
+  chmod 755 default
+
+Disable navigation menu (Administration > Structure > Blocks)
+Turn off "Users can set their own time zone"
+  (Administration > Configuration > Regional and language > Regional settings)
+Set default front page to home
+  (Administration > Configuration > System > Site information)
+
+Disable navigation menu (Administration > Structure > Blocks)
+Turn off "Users can set their own time zone"
+  (Administration > Configuration > Regional and language > Regional settings)
+Set default front page to home
+  (Administration > Configuration > System > Site information)
+
+Install $ROOT/rebuild-menus.php
+Install $ROOT/sites/all/modules/custom/ebms
+Install $ROOT/sites/all/themes/custom/ebms
+
+Add to the bottom of $BASE/sites/default/settings.php:
+
+  error_reporting(-1);
+  $conf['error_level'] = 2;
+  ini_set('display_errors', true);
+  ini_set('display_startup_errors', true);
+
+  (comment these out when we go into production)
+
+Enable ebms module (Administration > Modules)
+
+Disable navigation menu (Administration > Structure > Blocks)
+Turn off "Users can set their own time zone"
+  (Administration > Configuration > Regional and language > Regional settings)
+Set default front page to home
+  (Administration > Configuration > System > Site information)
+
+Invoke http://$HOST/$EBMS/rebuild-menus.php early and often!
