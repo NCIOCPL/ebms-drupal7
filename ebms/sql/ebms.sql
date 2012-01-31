@@ -291,7 +291,7 @@ CREATE TABLE ebms_topic_reviewer
  *  source_status   Source organization's status assignment to the record
  *                    Enables us to identify, e.g., records that are 
  *                    "In-Process", etc., and need future update.
- *  article_title   Full title of the article.
+ *  article_title   Full title of the article, converted to ASCII for searching.
  *  jrnl_title      Full journal title at time of import or update.
  *  brf_jrnl_title  Journal title abbreviation found in article record.
  *                    Normally this is the NLM title abbreviation.
@@ -324,7 +324,7 @@ CREATE TABLE ebms_article (
   source_id         VARCHAR(32) NOT NULL,
   source_jrnl_id    VARCHAR(32) NOT NULL,
   source_status     VARCHAR(32) NULL,
-  article_title     VARCHAR(512) NOT NULL,
+  article_title     VARCHAR(512) CHARACTER SET ASCII NOT NULL,
   jrnl_title        VARCHAR(512) NOT NULL,
   brf_jrnl_title    VARCHAR(127) NULL,
   brf_citation      VARCHAR(255) NOT NULL,
@@ -338,6 +338,8 @@ CREATE TABLE ebms_article (
   FOREIGN KEY (full_text_id) REFERENCES file_managed (fid)
 )
       ENGINE=InnoDB;
+
+CREATE INDEX article_title_index ON ebms_article (article_title);
 
 /*
  * Authors of articles.
@@ -361,15 +363,15 @@ CREATE TABLE ebms_article (
  */
 CREATE TABLE ebms_article_author (
     author_id       INT AUTO_INCREMENT PRIMARY KEY,
-    last_name       VARCHAR(128) NOT NULL,
-    forename        VARCHAR(128),
-    initials        CHAR(5)
+    last_name       VARCHAR(128) CHARACTER SET ASCII NOT NULL,
+    forename        VARCHAR(128) CHARACTER SET ASCII NOT NULL,
+    initials        VARCHAR(128) CHARACTER SET ASCII NOT NULL
 )
     ENGINE = InnoDB;
 
     -- Two ways to search, use last + first name, or last + initials
-    CREATE INDEX ebms_author_full_index 
-           ON ebms_article_author (last_name, forename);
+    CREATE UNIQUE INDEX ebms_author_full_index 
+           ON ebms_article_author (last_name, forename, initials);
     CREATE INDEX ebms_author_initials_index 
            ON ebms_article_author (last_name, initials);
 
