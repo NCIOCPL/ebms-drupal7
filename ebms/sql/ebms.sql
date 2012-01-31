@@ -325,7 +325,7 @@ CREATE TABLE ebms_article (
   source_jrnl_id    VARCHAR(32) NOT NULL,
   source_status     VARCHAR(32) NULL,
   article_title     VARCHAR(512) CHARACTER SET ASCII NOT NULL,
-  jrnl_title        VARCHAR(512) NOT NULL,
+  jrnl_title        VARCHAR(512) CHARACTER SET ASCII NOT NULL,
   brf_jrnl_title    VARCHAR(127) NULL,
   brf_citation      VARCHAR(255) NOT NULL,
   abstract          TEXT NULL,
@@ -339,7 +339,19 @@ CREATE TABLE ebms_article (
 )
       ENGINE=InnoDB;
 
-CREATE INDEX article_title_index ON ebms_article (article_title);
+      -- Searchable fields
+      CREATE INDEX ebms_article_source_id_index
+             ON ebms_article(source, source_id);
+      CREATE INDEX ebms_article_source_jrnl_id_index
+             ON ebms_article(source, source_jrnl_id);
+      CREATE INDEX ebms_article_source_status_index
+             ON ebms_article(source, source_status);
+      CREATE INDEX ebms_article_title_index
+             ON ebms_article(article_title);
+      CREATE INDEX ebms_article_jrnl_title_index
+             ON ebms_article(jrnl_title);
+      CREATE INDEX ebms_article_brf_jrnl_title_index
+             ON ebms_article(brf_jrnl_title);
 
 /*
  * Authors of articles.
