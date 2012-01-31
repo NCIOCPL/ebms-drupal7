@@ -301,6 +301,10 @@ CREATE TABLE ebms_topic_reviewer
  *  published_date  Indication of when the article was published (free text).
  *                    Can't use SQL datetime since some articles have dates 
  *                    like "Spring 2011".
+ *  import_date     Datetime of the first appearance of this article in our
+ *                    database.
+ *  update_date     Datetime of the most recent replacement of the article
+ *                    with updated data.  Null if never replaced.
  *  source_data     Unmodified XML or whatever downloaded from the source.
  *                    We'll assume it's always there and make it not null
  *                    changing that only if there's a real use case.
@@ -326,6 +330,8 @@ CREATE TABLE ebms_article (
   brf_citation      VARCHAR(255) NOT NULL,
   abstract          TEXT NULL,
   published_date    VARCHAR(64) NOT NULL,
+  import_date       DATETIME NOT NULL,
+  update_date       DATETIME NULL,
   source_data       TEXT NULL,
   full_text_id      INTEGER UNSIGNED NULL,
   active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
@@ -362,9 +368,9 @@ CREATE TABLE ebms_article_author (
     ENGINE = InnoDB;
 
     -- Two ways to search, use last + first name, or last + initials
-    CREATE UNIQUE INDEX ebms_author_full_index 
+    CREATE INDEX ebms_author_full_index 
            ON ebms_article_author (last_name, forename);
-    CREATE UNIQUE INDEX ebms_author_initials_index 
+    CREATE INDEX ebms_author_initials_index 
            ON ebms_article_author (last_name, initials);
 
 /*
