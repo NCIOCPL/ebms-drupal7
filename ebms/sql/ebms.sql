@@ -354,6 +354,24 @@ CREATE TABLE ebms_article (
              ON ebms_article(brf_jrnl_title);
 
 /*
+ * Make it possible to match up records from the old CiteMS system
+ * with those in the new system.  Populated by the conversion software,
+ * after which nothing needs to be done with this table.  History has
+ * show that it will likely be useful to dig back into the old data
+ * to troubleshoot mysteries which pop up, and this table will make
+ * that process simpler.
+ *
+ * legacy_id        Primary key of the record in the CiteMS system
+ * article_id       Foreign key into the ebms_article table
+ */
+CREATE TABLE ebms_legacy_article_id (
+    legacy_id       INTEGER NOT NULL PRIMARY KEY,
+    article_id      INTEGER NOT NULL,
+    FOREIGN KEY (article_id) REFERENCES ebms_article (article_id)
+)
+    ENGINE=InnoDB;
+
+/*
  * Authors of articles.
  *
  * These are as they appear in the XML records.  Name strings are not
