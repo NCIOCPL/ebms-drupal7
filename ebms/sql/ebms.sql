@@ -550,9 +550,6 @@ CREATE TABLE ebms_import_disposition (
       VALUES ('Summary topic added',
       'Article already in database.  New summary topic added.');
     INSERT ebms_import_disposition (disposition_name, disposition_description) 
-      VALUES ('Topic/Review cycle added',
-      'Article already in database.  New topic and review cycle added');
-    INSERT ebms_import_disposition (disposition_name, disposition_description) 
       VALUES ('Replaced',
       'Article record replaced from updated, newly downloaded, source record');
     INSERT ebms_import_disposition (disposition_name, disposition_description) 
