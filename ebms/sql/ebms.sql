@@ -29,21 +29,18 @@ DROP TABLE IF EXISTS ebms_packet;
 DROP TABLE IF EXISTS ebms_article_state;
 DROP TABLE IF EXISTS ebms_article_state_type;
 DROP TABLE IF EXISTS ebms_article_topic;
--- DROP VIEW IF EXISTS ebms_article_topic;
-DROP TABLE IF EXISTS ebms_article_event;
-DROP TABLE IF EXISTS ebms_event_val;
-DROP TABLE IF EXISTS ebms_event_type;
 DROP TABLE IF EXISTS ebms_import_action;
-DROP TABLE IF EXISTS ebms_import_disposition;
 DROP TABLE IF EXISTS ebms_import_batch;
+DROP TABLE IF EXISTS ebms_import_disposition;
 DROP TABLE IF EXISTS ebms_not_list;
 DROP TABLE IF EXISTS ebms_cycle;
 DROP TABLE IF EXISTS ebms_article_author_cite;
 DROP TABLE IF EXISTS ebms_article_author;
+DROP TABLE IF EXISTS ebms_legacy_article_id;
 DROP TABLE IF EXISTS ebms_article;
 DROP TABLE IF EXISTS ebms_topic_reviewer;
 DROP TABLE IF EXISTS ebms_doc_topic;
-DROP VIEW IF EXISTS ebms_active_topic;
+DROP VIEW  IF EXISTS ebms_active_topic;
 DROP TABLE IF EXISTS ebms_topic;
 DROP TABLE IF EXISTS ebms_ad_hoc_group_member;
 DROP TABLE IF EXISTS ebms_ad_hoc_group;
@@ -523,36 +520,36 @@ CREATE TABLE ebms_not_list (
  *   assigned a new summary topic to an article already in the system
  *   etc.
  * 
- *  disposition_id              Unique ID of the citation.
- *  disposition_name            Human readable display name.
- *  disposition_description     Fuller explanation of disposition.
- *  active_status               'A'ctive or 'I'nactive - don't use any more.
+ *  disposition_id          Unique ID of the citation.
+ *  disposition_name        Human readable display name.
+ *  description             Fuller explanation of disposition.
+ *  active_status           'A'ctive or 'I'nactive - don't use any more.
  */
 CREATE TABLE ebms_import_disposition (
     disposition_id          INTEGER AUTO_INCREMENT PRIMARY KEY,
     disposition_name        VARCHAR(32) NOT NULL UNIQUE,
-    disposition_description VARCHAR(2048) NOT NULL,
+    description             VARCHAR(2048) NOT NULL,
     active_status           ENUM ('A', 'I') NOT NULL DEFAULT 'A'
 )
     ENGINE = InnoDB;
 
     -- The required disposition values
-    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+    INSERT ebms_import_disposition (disposition_name, description) 
       VALUES ('Imported', 
       'First time import into the database');
-    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+    INSERT ebms_import_disposition (disposition_name, description) 
       VALUES ('NOT listed',
       'Imported but automatically rejected because the journal was NOT listed');
-    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+    INSERT ebms_import_disposition (disposition_name, description) 
       VALUES ('Duplicate, not imported', 
       'Article already in database with same topic.  Not re-imported.');
-    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+    INSERT ebms_import_disposition (disposition_name, description) 
       VALUES ('Summary topic added',
       'Article already in database.  New summary topic added.');
-    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+    INSERT ebms_import_disposition (disposition_name, description) 
       VALUES ('Replaced',
       'Article record replaced from updated, newly downloaded, source record');
-    INSERT ebms_import_disposition (disposition_name, disposition_description) 
+    INSERT ebms_import_disposition (disposition_name, description) 
       VALUES ('Error',
       'An error occurred in locating or parsing the record.  Not imported.');
 
@@ -629,127 +626,6 @@ CREATE TABLE ebms_import_action (
 
 
 /*
- * Control values used in recording events.
- * 
- * This should be a relatively static table, changed only when there is a
- * significant change in software.
- * 
- *  event_type_id       Unique ID.
- *  event_type_name     Human readable name for brief display.
- *  event_type_description Human readable description for help display and
- *                        documentation.
- *  active_status       'A'ctive or 'I'nactive.  We need this in case
- *                        we ever wish to stop using a particular event_type
- *                        but don't want to invalidate past events of that
- *                        type.
- */
-CREATE TABLE ebms_event_type (
-    event_type_id           INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    event_type_name         VARCHAR(32) NOT NULL,
-    event_type_description  VARCHAR(2048) NOT NULL,
-    active_status           ENUM('A', 'I') DEFAULT 'A'
-)
-    ENGINE=InnoDB;
-
-    -- Some required event types for the software to work
-    -- There will be more
-    INSERT ebms_event_type (event_type_name, event_type_description) VALUES 
-     ('Import',
-      'Import or update to the article bibliographic data');
-    INSERT ebms_event_type (event_type_name, event_type_description) VALUES 
-     ('Topic',
-      'Assign or unassign a summary topic to an article');
-    INSERT ebms_event_type (event_type_name, event_type_description) VALUES 
-     ('Status',
-      'Create or update article review or processing status');
-    INSERT ebms_event_type (event_type_name, event_type_description) VALUES 
-     ('Tag',
-      'Create or update optional, searchable, descriptive tag for article');
-
-/*
- * event_type specific control values used in recording events.  Some
- * event_types have different values.  For example there is an event_type
- * for tagging an article to attach comments and/or to support special
- * kinds of searching.  The ebms_event_val rows for this event_type are
- * the specific tags that are legal to attach to a tag event.
- * 
- * This should be a relatively static table, changed only when there 
- * is a change in operating procedures.  For example, a tag value may
- * added.
- * 
- *  event_type_id       Unique ID.
- *  event_val_id        Unique ID of the value within the type.
- *  event_val_name      Human readable name for brief display.
- *  description         Human readable description for help display and
- *                        documentation.
- *  active_status       'A'ctive or 'I'nactive.  We need this in case
- *                        we ever wish to stop using a particular event value
- *                        but don't want to invalidate past events that use
- *                        that value.
- */
-CREATE TABLE ebms_event_val (
-    event_type_id       INT,
-    event_val_id        INT AUTO_INCREMENT PRIMARY KEY,
-    event_val_name      VARCHAR(32) NOT NULL,
-    description         VARCHAR(2048) NOT NULL,
-    active_status       ENUM('A', 'I') DEFAULT 'A',
-    UNIQUE KEY event_val_index (event_type_id, event_val_id, active_status),
-    FOREIGN KEY (event_type_id) REFERENCES ebms_event_type(event_type_id)
-)
-    ENGINE=InnoDB;
-
-/*
- * A history of the events relating to an article.
- * 
- * One row in the table represents some action that was taken regarding
- * a particular article.  It can be used to reconstruct a history of
- * the actions that occurred.
- * 
- *  article_event_id    Unique ID of this article_event row.
- *  article_id          Article undergoing the event.
- *  topic_id            Summary topic, if applicable, may be null.
- *  event_type_id       What kind of event was this?
- *                        Import/update
- *                        Review status change
- *                        Tag/comment added
- *                        etc.
- *  event_val_id        Is it a particular kind of import, review, tag, etc.?
- *  prev_event_id       Is this threaded to a previous event, e.g., a comment
- *                        on a previous comment?
- *  user_id             Who did this.
- *  dt                  Datetime of event.
- *  comment             Free text from user or program generating event.
- *  active_status       Is this event info still active for this article?
- *                        'A'ctive   - event applies.
- *                        'I'nactive - event was superseded, rendered inactive.
- *                        'D'eleted  - this was a mistake, it should never 
- *                                     have happened.  Ignore it.
- */
-CREATE TABLE ebms_article_event (
-     article_event_id  INT AUTO_INCREMENT PRIMARY KEY,
-     article_id        INT NOT NULL,
-     topic_id          INT NULL,
-     event_type_id     INT NOT NULL,
-     event_val_id      INT NULL,
-     prev_event_id     INT NULL,
-     user_id           INT UNSIGNED NOT NULL,
-     dt                DATETIME NOT NULL,
-     comment           TEXT NULL,
-     active_status     ENUM('A', 'I', 'D'),
-     FOREIGN KEY (event_type_id)
-          REFERENCES ebms_event_type(event_type_id),
-     FOREIGN KEY (article_id)
-          REFERENCES ebms_article(article_id),
-     FOREIGN KEY (topic_id)
-          REFERENCES ebms_topic(topic_id),
-     FOREIGN KEY (event_type_id, event_val_id)
-          REFERENCES ebms_event_val(event_type_id, event_val_id),
-     FOREIGN KEY (user_id)
-          REFERENCES users(uid)
-)
-     ENGINE=InnoDB; 
-
-/*
  * Association of articles to topics.
  *
  * Each article imported into the system will have at least one topic
@@ -774,7 +650,11 @@ CREATE TABLE ebms_article_event (
  *  article_id      Unique ID of the article
  *  topic_id        Unique ID of the summary topic
  *  user_id         Unique ID of the user responsible for the assignment
+ *  cycle_id        Unique ID of the review cycle when topic was assigned
  *  article_topic_dt Datetime of the assignment
+ *                   Datetime and cycle_id are in the ebms_import_batch
+ *                   table, but not all topic assignments are made at import
+ *                   time.  Hence we need to store them here too
  *  method          Method of assignment, import program or user action.
  *                  Most topic assignments are made by the import program
  *                    as a result of a search for articles on that topic.
@@ -788,12 +668,14 @@ CREATE TABLE ebms_article_topic (
     article_id            INTEGER NOT NULL,
     topic_id              INTEGER NOT NULL,
     user_id               INTEGER UNSIGNED NOT NULL,
+    cycle_id              INT NOT NULL,
     article_topic_dt      DATETIME NOT NULL,
     method                ENUM ('P','H') NOT NULL DEFAULT 'P',
     PRIMARY KEY (article_id, topic_id),
     FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
     FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
-    FOREIGN KEY (user_id)    REFERENCES users(uid)
+    FOREIGN KEY (user_id)    REFERENCES users(uid),
+    FOREIGN KEY (cycle_id)   REFERENCES ebms_cycle(cycle_id)
 )
     ENGINE InnoDB;
     CREATE UNIQUE INDEX ebms_topic_article_index
@@ -842,18 +724,67 @@ CREATE VIEW ebms_article_topic AS
  *
  *  article_state_id    Unique ID of the state value.
  *  state_name          Human readable name.
- *  state_description   Longer, descriptive help text.
+ *  description         Longer, descriptive help text.
  *  sequence            The sequence order of states in workflows.
+ *  completed           'Y' = article in this state requires no further
+ *                        processing.
  *  active_status       'A'ctive or 'I'nactive.
  */
 CREATE TABLE ebms_article_state_type (
     state_id            INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     state_name          VARCHAR(32) NOT NULL UNIQUE,
-    state_description   VARCHAR(2048),
+    description         VARCHAR(2048),
     sequence            INTEGER NOT NULL,
+    completed           ENUM('Y', 'N'),
     active_status       ENUM('A','I') NOT NULL DEFAULT 'A'
 )
     ENGINE=InnoDB;
+
+    -- States that an article can be in in the review process
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Imported', 'Imported into the database', 1, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Rejected by NOT list', 
+        'Article appeared in a "NOT listed" journal, rejected without review',
+        2, 'Y');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Rejected in initial review', 
+        'Rejected in initial review, before publication to board managers,', 
+        3, 'Y');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Passed initial review', 
+        'Article "published" for board manager review,', 4, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Rejected by Board Manager', 
+        'Board manager rejected article', 5, 'Y');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Passed Board Manager', 
+        'Board manager accepted article for further review', 6, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Requested full text', 
+        'Board manager has requested retrieval of full text', 7, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Full text retrieved', 
+        'Full text is available, awaiting further review by Board manager', 
+        8, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Rejected after full text review',
+        'Full text examined at OCE, article rejected', 9, 'Y');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Passed full text review',
+        'Full text examined at OCE, article approved for board member review', 
+        10, 'N');
+
 
 /*
  * Processing states that an article is, or has been, in.
