@@ -26,6 +26,7 @@ DROP TABLE IF EXISTS ebms_packet_article;
 DROP TABLE IF EXISTS ebms_packet_reviewer;
 DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
+DROP TABLE IF EXISTS ebms_article_board_decision;
 DROP TABLE IF EXISTS ebms_article_state;
 DROP TABLE IF EXISTS ebms_article_state_type;
 DROP TABLE IF EXISTS ebms_article_topic;
@@ -52,6 +53,16 @@ DROP TABLE IF EXISTS ebms_subgroup;
 DROP TABLE IF EXISTS ebms_board_member;
 DROP TABLE IF EXISTS ebms_board;
 DROP TABLE IF EXISTS ebms_doc;
+SET sql_mode='NO_AUTO_VALUE_ON_ZERO';
+
+/********************************************************
+ * Clear out EBMS rows from Drupal tables.
+ ********************************************************/
+DELETE FROM users_roles;
+
+DELETE FROM users WHERE uid > 3;
+
+DELETE FROM role WHERE name NOT IN ('anonymous user', 'authenticated user');
 
 /********************************************************
  * Create all tables that are not standard Drupal tables.
@@ -142,6 +153,23 @@ CREATE TABLE ebms_tag
     tag_name VARCHAR(64)  NOT NULL UNIQUE,
  tag_comment TEXT             NULL)
       ENGINE=InnoDB;
+INSERT INTO ebms_tag (tag_name, tag_comment)
+     VALUES ('about',
+             CONCAT('Used for documents which should appear in the ',
+                    '"General Information" block of the "About PDQ" page'));
+INSERT INTO ebms_tag (tag_name, tag_comment)
+     VALUES ('agenda', 'Documents linkable from a meeting agenda node');
+INSERT INTO ebms_tag (tag_name, tag_comment)
+     VALUES ('minutes', 'Documents linkable from a meeting minutes node');
+INSERT INTO ebms_tag (tag_name, tag_comment)
+     VALUES ('roster', 'Document which should appear on the Roster page');
+INSERT INTO ebms_tag (tag_name, tag_comment)
+     VALUES ('summary', 'Documents linkable from the Summaries pages');
+INSERT INTO ebms_tag (tag_name, tag_comment)
+     VALUES ('support',
+             CONCAT('Used by board managers in combination with the "summary"',
+                    ' tag for general-information documents to appear on the',
+                    'Summaries pages'));
 
 /*
  * Assignment of tags to posted documents.
@@ -329,7 +357,7 @@ CREATE TABLE ebms_article (
   published_date    VARCHAR(64) NOT NULL,
   import_date       DATETIME NOT NULL,
   update_date       DATETIME NULL,
-  source_data       TEXT NULL,
+  source_data       LONGTEXT NULL,
   full_text_id      INTEGER UNSIGNED NULL,
   active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
   FOREIGN KEY (full_text_id) REFERENCES file_managed (fid)
@@ -390,7 +418,7 @@ CREATE TABLE ebms_legacy_article_id (
  */
 CREATE TABLE ebms_article_author (
     author_id       INT AUTO_INCREMENT PRIMARY KEY,
-    last_name       VARCHAR(128) CHARACTER SET ASCII NOT NULL,
+    last_name       VARCHAR(255) CHARACTER SET ASCII NOT NULL,
     forename        VARCHAR(128) CHARACTER SET ASCII NOT NULL,
     initials        VARCHAR(128) CHARACTER SET ASCII NOT NULL
 )
@@ -722,28 +750,34 @@ CREATE VIEW ebms_article_topic AS
  * Control values for recording processing states in the ebms_article_state
  * table.
  *
- *  article_state_id    Unique ID of the state value.
+ *  state_id            Unique ID of the state value.
  *  state_name          Human readable name.
  *  description         Longer, descriptive help text.
- *  sequence            The sequence order of states in workflows.
  *  completed           'Y' = article in this state requires no further
  *                        processing.
+ *  board_required      'Y' = rows with this state must have a non-NULL
+ *                        board_id
+ *  topic_required      'Y' = rows with this state must have a non-NULL
+ *                        topic_id
  *  active_status       'A'ctive or 'I'nactive.
+ *  sequence            The sequence order of states in workflows.
  */
 CREATE TABLE ebms_article_state_type (
     state_id            INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     state_name          VARCHAR(32) NOT NULL UNIQUE,
-    description         VARCHAR(2048),
-    sequence            INTEGER NOT NULL,
-    completed           ENUM('Y', 'N'),
-    active_status       ENUM('A','I') NOT NULL DEFAULT 'A'
+    description         VARCHAR(2048) NOT NULL,
+    completed           ENUM('Y', 'N') NOT NULL DEFAULT 'N',
+    board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'Y',
+    topic_required      ENUM('Y', 'N') NOT NULL DEFAULT 'Y',
+    active_status       ENUM('A','I') NOT NULL DEFAULT 'A',
+    sequence            INTEGER NULL
 )
     ENGINE=InnoDB;
 
     -- States that an article can be in in the review process
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
-        VALUES ('Imported', 'Imported into the database', 1, 'N');
+        VALUES ('Imported', 'Imported into the database', 1, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected by NOT list', 
@@ -772,42 +806,107 @@ CREATE TABLE ebms_article_state_type (
         'Board manager has requested retrieval of full text', 7, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
+        VALUES ('Full text retrieval failed', 
+        'Staff were unable to obtain a copy of the article', 8, 'Y');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
         VALUES ('Full text retrieved', 
         'Full text is available, awaiting further review by Board manager', 
-        8, 'N');
+        9, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected after full text review',
-        'Full text examined at OCE, article rejected', 9, 'Y');
+        'Full text examined at OCE, article rejected', 10, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed full text review',
         'Full text examined at OCE, article approved for board member review', 
-        10, 'N');
+        11, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Flagged as FYI',
+        'Article is being sent out without being linked to a specific topic',
+        12, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Rejected for agenda',
+        'Decision after board member review is do not discuss',
+        13, 'Y');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Queued for later assignment to agenda',
+        'Board will take this up at some future meeting',
+        14, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Approved for agenda',
+        'Show this on the picklist of articles that can be added to agenda',
+        15, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('On agenda',
+        'Article is on the agenda for an upcoming meeting',
+        16, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Final board decision',
+        'Article was discussed at a board meeting and a decision was reached',
+        17, 'Y');
 
 
 /*
  * Processing states that an article is, or has been, in.
  *
- *  article_id      Unique ID in article table.
- *  topic_id        The summary topic for which this article state is set.
- *  state_id        ID of the state that this row records.
- *  user_id         ID of the user that put the article in this state.
- *  status_dt       Date and time the row/state was created.
- *  comments        Free text.
+ *  article_state_id   Automatically generated primary key
+ *  article_id         Unique ID in article table.
+ *  topic_id           The summary topic for which this article state is set.
+ *  state_id           ID of the state that this row records.
+ *  user_id            ID of the user that put the article in this state.
+ *  status_dt          Date and time the row/state was created.
+ *  active_status      Set to 'I' if the state row was a mistake, or no
+ *                      longer applicable because of later events
+ *  comments           Free text.
  */
 CREATE TABLE ebms_article_state (
-    article_id      INTEGER NOT NULL,
-    topic_id        INTEGER NOT NULL,
-    state_id        INTEGER NOT NULL,
-    user_id         INTEGER UNSIGNED NOT NULL,
-    status_dt       DATETIME NOT NULL,
-    comments        VARCHAR(2048) NULL,
-    PRIMARY KEY (article_id, topic_id),
+    article_state_id  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    article_id        INTEGER NOT NULL,
+    state_id          INTEGER NOT NULL,
+    user_id           INTEGER UNSIGNED NOT NULL,
+    status_dt         DATETIME NOT NULL,
+    active_status     ENUM('A','I') NOT NULL DEFAULT 'A',
+    board_id          INTEGER NULL,
+    topic_id          INTEGER NULL,
+    comments          VARCHAR(2048) NULL,
     FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
+    FOREIGN KEY (board_id)   REFERENCES ebms_board(board_id),
     FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
     FOREIGN KEY (state_id)   REFERENCES ebms_article_state_type(state_id),
     FOREIGN KEY (user_id)    REFERENCES users(uid)
+)
+    ENGINE InnoDB;
+
+/*
+ * Record of the ultimate disposition of a journal article with respect
+ * to a specific topic.  See the corresponding row in the ebms_article_state
+ * table for comments and date.  This table really only exists to record
+ * the meeting date.  Otherwise we would have split the 'Final board
+ * decision' state into two states ('Rejected at board meeting' and
+ * 'Accepted at board meeting').
+ *
+ *  article_id      Unique ID in article table.
+ *  topic_id        The summary topic for which this decision was made
+ *  accepted        Flag (0 or 1)
+ *  meeting_date    Foreign key into the ebms_cycle table
+ */
+CREATE TABLE ebms_article_board_decision (
+    article_id      INTEGER NOT NULL,
+    topic_id        INTEGER NOT NULL,
+    accepted        INTEGER NOT NULL,
+    meeting_date    INTEGER NULL,
+    PRIMARY KEY (article_id, topic_id),
+    FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
+    FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
+    FOREIGN KEY (meeting_date)  REFERENCES ebms_cycle(cycle_id)
 )
     ENGINE InnoDB;
 
@@ -920,7 +1019,7 @@ CREATE TABLE ebms_article_review
  when_posted DATETIME         NOT NULL,
     comments TEXT                 NULL,
     loe_info TEXT                 NULL,
-  UNIQUE KEY ebms_art_review_index (article_id, reviewer_id),
+  UNIQUE KEY ebms_art_review_index (article_id, reviewer_id, packet_id),
    FOREIGN KEY (packet_id,
                 article_id)  REFERENCES ebms_packet_article (packet_id,
                                                              article_id),
