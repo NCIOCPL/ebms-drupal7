@@ -27,6 +27,7 @@ DROP TABLE IF EXISTS ebms_packet_reviewer;
 DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
 DROP TABLE IF EXISTS ebms_article_board_decision;
+DROP TABLE IF EXISTS ebms_article_board_decision_value;
 DROP TABLE IF EXISTS ebms_article_state;
 DROP TABLE IF EXISTS ebms_article_state_type;
 DROP TABLE IF EXISTS ebms_article_topic;
@@ -886,6 +887,33 @@ CREATE TABLE ebms_article_state (
     ENGINE InnoDB;
 
 /*
+ * Values used to represent the board's final disposition regarding
+ * an article for a specific topic.
+ *
+ * value_id       automatically generated primary key
+ * value_name     display string for the value
+ */
+CREATE TABLE ebms_article_board_decision_value (
+    value_id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    value_name    VARCHAR(64) NOT NULL UNIQUE
+)
+    ENGINE InnoDB;
+INSERT INTO ebms_article_board_decision_value (value_name)
+     VALUES ('Cited (citation only)');
+INSERT INTO ebms_article_board_decision_value (value_name)
+     VALUES ('Cited (legacy)');
+INSERT INTO ebms_article_board_decision_value (value_name)
+     VALUES ('Not cited');
+INSERT INTO ebms_article_board_decision_value (value_name)
+     VALUES ('Text approved');
+INSERT INTO ebms_article_board_decision_value (value_name)
+     VALUES ('Text needs to be written');
+INSERT INTO ebms_article_board_decision_value (value_name)
+     VALUES ('Text needs to be revised');
+INSERT INTO ebms_article_board_decision_value (value_name)
+     VALUES ('Hold');
+
+/*
  * Record of the ultimate disposition of a journal article with respect
  * to a specific topic.  See the corresponding row in the ebms_article_state
  * table for comments and date.  This table really only exists to record
@@ -893,19 +921,22 @@ CREATE TABLE ebms_article_state (
  * decision' state into two states ('Rejected at board meeting' and
  * 'Accepted at board meeting').
  *
- *  article_id      Unique ID in article table.
- *  topic_id        The summary topic for which this decision was made
- *  accepted        Flag (0 or 1)
- *  meeting_date    Foreign key into the ebms_cycle table
+ *  article_state_id   foreign key into ebms_article_state table
+ *  decision_value_id  foreign key into ebms_article_board_decision_value table
+ *  meeting_date       foreign key into the ebms_cycle table for the meeting
+ *                       at which the article was discussed
+ *  discussed          'Y' if the article was discussed
  */
 CREATE TABLE ebms_article_board_decision (
-    article_id      INTEGER NOT NULL,
-    topic_id        INTEGER NOT NULL,
-    accepted        INTEGER NOT NULL,
-    meeting_date    INTEGER NULL,
-    PRIMARY KEY (article_id, topic_id),
-    FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
-    FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
+    article_state_id  INTEGER NOT NULL,
+    decision_value_id INTEGER NOT NULL,
+    meeting_date      INTEGER NULL,
+    discussed         ENUM('Y', 'N') NULL,
+    PRIMARY KEY (article_state_id, decision_value_id),
+    FOREIGN KEY (article_state_id)
+        REFERENCES ebms_article_state(article_state_id),
+    FOREIGN KEY (decision_value_id)
+        REFERENCES ebms_article_board_decision_value(value_id),
     FOREIGN KEY (meeting_date)  REFERENCES ebms_cycle(cycle_id)
 )
     ENGINE InnoDB;
