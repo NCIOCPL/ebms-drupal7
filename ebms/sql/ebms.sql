@@ -30,7 +30,6 @@ DROP TABLE IF EXISTS ebms_article_board_decision;
 DROP TABLE IF EXISTS ebms_article_board_decision_value;
 DROP TABLE IF EXISTS ebms_article_state;
 DROP TABLE IF EXISTS ebms_article_state_type;
-DROP TABLE IF EXISTS ebms_article_topic;
 DROP TABLE IF EXISTS ebms_import_action;
 DROP TABLE IF EXISTS ebms_import_batch;
 DROP TABLE IF EXISTS ebms_import_disposition;
@@ -653,99 +652,6 @@ CREATE TABLE ebms_import_action (
 )
     ENGINE = InnoDB;
 
-
-/*
- * Association of articles to topics.
- *
- * Each article imported into the system will have at least one topic
- * assigned to it.  Articles can have more than one topic assigned.
- * When a review packet is assembled, the packet is assigned one of
- * the topics, and only articles which have been associated with
- * that topic can be added to the review packet.  In the normal case
- * only those articles which have not already been added to another
- * packet for the topic assigned to the packet being assembled,
- * but special types of review packets (e.g., comprehensive review
- * packets) may bypass this restriction.
- *
- * This table just tells us if an article is currently associated with a
- * topic.  If there is a row in the table, the association is current.  If
- * the association is broken (because someone decided that the association
- * was an error), the row is removed.
- *
- * For information about who assigned a topic or when, or whether a topic
- * that is not now associated with a topic was ever so associated, etc.,
- * see the ebms_event table.
- *
- *  article_id      Unique ID of the article
- *  topic_id        Unique ID of the summary topic
- *  user_id         Unique ID of the user responsible for the assignment
- *  cycle_id        Unique ID of the review cycle when topic was assigned
- *  article_topic_dt Datetime of the assignment
- *                   Datetime and cycle_id are in the ebms_import_batch
- *                   table, but not all topic assignments are made at import
- *                   time.  Hence we need to store them here too
- *  method          Method of assignment, import program or user action.
- *                  Most topic assignments are made by the import program
- *                    as a result of a search for articles on that topic.
- *                    Such assignments are probably less reliable than those
- *                    made individually by a human looking at this record.
- *                  Values:
- *                   'P'rogram - assigned by the import of a search result.
- *                   'H'uman   - assigned individually by a person.
- */
-CREATE TABLE ebms_article_topic (
-    article_id            INTEGER NOT NULL,
-    topic_id              INTEGER NOT NULL,
-    user_id               INTEGER UNSIGNED NOT NULL,
-    cycle_id              INT NOT NULL,
-    article_topic_dt      DATETIME NOT NULL,
-    method                ENUM ('P','H') NOT NULL DEFAULT 'P',
-    PRIMARY KEY (article_id, topic_id),
-    FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
-    FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
-    FOREIGN KEY (user_id)    REFERENCES users(uid),
-    FOREIGN KEY (cycle_id)   REFERENCES ebms_cycle(cycle_id)
-)
-    ENGINE InnoDB;
-    CREATE UNIQUE INDEX ebms_topic_article_index
-           ON ebms_article_topic (topic_id, article_id);
-
- /*
-  * Alternative approach, using a view.
-  *
-  * Presents the following columns:
-  *  article_id - article
-  *  topic_id   - summary topic
-  *  topic_name - summary topic name
-  *  dt         - date of assignment
-  *  comment    - optional comment recorded during assignment
-  *
-  * The only rows in this view are for currently active topic assignments,
-  * one row per article / topic combination.
-  *
-  * Note that inactive topics, though not inactive events, are included.  
-  * That's intentional.  If an article was once assigned to "toenail cancer"
-  * but we now use "foot cancer" instead, it's still true that the article
-  * was assigned to "toenail cancer" and should be identified as such.
-  *
-  * If, and only if, it was de-assigned to "toenail cancer" and re-assigned 
-  * to "foot cancer", would the article will be identified as "foot cancer".
-  */
-  /*
-CREATE VIEW ebms_article_topic AS
-    SELECT event.article_id, event.topic_id, 
-           topic.topic_name, event.dt, event.comment
-      FROM ebms_article_event event
-      JOIN ebms_topic topic
-        ON event.topic_id = topic.topic_id
-      JOIN ebms_event_type etype
-        ON event.event_type_id = etype.event_type_id
-       AND etype.event_type_name = 'Topic'
-      JOIN ebms_event_val eval
-        ON etype.event_type_id = eval.event_type_id
-       AND eval.event_val_name = 'Assign'
-     WHERE event.active_status = 'A';
-  */
 
 /*
  * Control values for recording processing states in the ebms_article_state
