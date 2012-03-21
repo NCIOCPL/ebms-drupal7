@@ -684,25 +684,31 @@ CREATE TABLE ebms_article_state_type (
     -- States that an article can be in in the review process
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
-        VALUES ('Imported', 'Imported into the database', 1, 'Y');
+        VALUES ('Imported', 'Imported into the database', 1, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Ready for initial review', 
+        'Article is associated with a summary topic, '
+        'typically by a new import or an attempted import of a duplicate.  '
+        'It is now ready for initial review', 2, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected by NOT list', 
         'Article appeared in a "NOT listed" journal, rejected without review',
-        2, 'Y');
+        3, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected in initial review', 
         'Rejected in initial review, before publication to board managers,', 
-        3, 'Y');
+        5, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed initial review', 
-        'Article "published" for board manager review,', 4, 'N');
+        'Article "published" for board manager review,', 5, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected by Board Manager', 
-        'Board manager rejected article', 5, 'Y');
+        'Board manager rejected article', 6, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed Board Manager', 
@@ -728,37 +734,37 @@ CREATE TABLE ebms_article_state_type (
         (state_name, description, sequence, completed)
         VALUES ('Passed full text review',
         'Full text examined at OCE, article approved for board member review', 
-        11, 'N');
+        10, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Flagged as FYI',
         'Article is being sent out without being linked to a specific topic',
-        12, 'N');
+        11, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected for agenda',
         'Decision after board member review is do not discuss',
-        13, 'Y');
+        12, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Queued for later assignment to agenda',
         'Board will take this up at some future meeting',
-        14, 'N');
+        13, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Approved for agenda',
         'Show this on the picklist of articles that can be added to agenda',
-        15, 'N');
+        14, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('On agenda',
         'Article is on the agenda for an upcoming meeting',
-        16, 'N');
+        15, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Final board decision',
         'Article was discussed at a board meeting and a decision was reached',
-        17, 'Y');
+        16, 'Y');
 
 
 /*
