@@ -671,7 +671,7 @@ CREATE TABLE ebms_import_action (
  */
 CREATE TABLE ebms_article_state_type (
     state_id            INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    state_name          VARCHAR(32) NOT NULL UNIQUE,
+    state_name          VARCHAR(64) NOT NULL UNIQUE,
     description         VARCHAR(2048) NOT NULL,
     completed           ENUM('Y', 'N') NOT NULL DEFAULT 'N',
     board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'Y',
@@ -699,12 +699,12 @@ CREATE TABLE ebms_article_state_type (
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected in initial review', 
-        'Rejected in initial review, before publication to board managers,', 
+        'Rejected in initial review, before publication to board managers', 
         5, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed initial review', 
-        'Article "published" for board manager review,', 5, 'N');
+        'Article "published" for board manager review', 5, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected by Board Manager', 
