@@ -597,8 +597,9 @@ CREATE TABLE ebms_import_disposition (
  *  import_date     Datetime of the import.
  *  cycle_id        Unique ID of a review cycle for the import batch.
  *  user_id         Unique ID of user running the import.
- *  summary_id      Unique ID of the summary for which this was an import.
- *                  Might be NULL in special cases?
+ *  article_count   Number of unique article IDs.  May be less than the
+ *                   number of import_action rows referencing this row
+ *                   because one article can appear in multiple categories.
  *  comment         Optional comment, e.g., if the batch was a special
  *                   import, why it was imported.
  */
@@ -609,6 +610,7 @@ CREATE TABLE ebms_import_batch (
     import_date     DATETIME NOT NULL,
     cycle_id        INT NOT NULL,
     user_id         INT UNSIGNED NOT NULL,
+    article_count   INT NOT NULL,
     comment         VARCHAR(2048) NULL,
     FOREIGN KEY (topic_id) REFERENCES ebms_topic(topic_id),
     FOREIGN KEY (cycle_id) REFERENCES ebms_cycle(cycle_id),
@@ -703,71 +705,80 @@ CREATE TABLE ebms_article_state_type (
         (state_name, description, sequence, completed)
         VALUES ('Rejected in initial review', 
         'Rejected in initial review, before publication to board managers', 
-        5, 'Y');
+        4, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed initial review', 
-        'Article "published" for board manager review', 5, 'N');
+        'Article "published" for board manager review', 4, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected by Board Manager', 
-        'Board manager rejected article', 6, 'Y');
+        'Board manager rejected article', 5, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed Board Manager', 
-        'Board manager accepted article for further review', 6, 'N');
+        'Board manager accepted article for further review', 5, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Requested full text', 
-        'Board manager has requested retrieval of full text', 7, 'N');
+        'Board manager has requested retrieval of full text', 6, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Full text retrieval failed', 
-        'Staff were unable to obtain a copy of the article', 8, 'Y');
+        'Staff were unable to obtain a copy of the article', 7, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Full text retrieved', 
         'Full text is available, awaiting further review by Board manager', 
-        9, 'N');
+        7, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected after full text review',
-        'Full text examined at OCE, article rejected', 10, 'Y');
+        'Full text examined at OCE, article rejected', 8, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed full text review',
         'Full text examined at OCE, article approved for board member review', 
-        10, 'N');
+        8, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Flagged as FYI',
         'Article is being sent out without being linked to a specific topic',
-        11, 'Y');
+        9, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
-        VALUES ('Rejected for agenda',
-        'Decision after board member review is do not discuss',
-        12, 'Y');
+        VALUES ('No further action',
+        'Decision after board member review is do not discuss.  '
+        'Do not put on agenda.',
+        10, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
-        VALUES ('Queued for later assignment to agenda',
-        'Board will take this up at some future meeting',
-        13, 'N');
+        VALUES ('Changes not for agenda',
+        'Changes may be made to summary but no board meeting required.  '
+        'Do not put on agenda.',
+        10, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
-        VALUES ('Approved for agenda',
-        'Show this on the picklist of articles that can be added to agenda',
-        14, 'N');
+        VALUES ('For future agenda (with changes)',
+        'Show this on the picklist of articles that can be added to agenda.  '
+        'Summary changes have been proposed.',
+        10, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('For future agenda (discussion only)',
+        'Show this on the picklist of articles that can be added to agenda.  '
+        'No summary changes have been proposed.',
+        10, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('On agenda',
-        'Article is on the agenda for an upcoming meeting',
-        15, 'N');
+        'Article is on the agenda for an upcoming meeting.',
+        11, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Final board decision',
         'Article was discussed at a board meeting and a decision was reached',
-        16, 'Y');
+        12, 'Y');
 
 
 /*
@@ -800,6 +811,19 @@ CREATE TABLE ebms_article_state (
     FOREIGN KEY (user_id)    REFERENCES users(uid)
 )
     ENGINE InnoDB;
+
+    -- Search for articles by article, state, board, or topic
+    CREATE INDEX ebms_article_state_article_index
+           ON ebms_article_state(article_id, state_id, active_status);
+    CREATE INDEX ebms_article_state_state_index
+           ON ebms_article_state(state_id, board_id, topic_id, article_id, 
+                           active_status);
+    CREATE INDEX ebms_article_state_board_index
+           ON ebms_article_state(board_id, state_id, topic_id, article_id, 
+                           active_status);
+    CREATE INDEX ebms_article_state_topic_index
+           ON ebms_article_state(topic_id, state_id, board_id, article_id, 
+                           active_status);
 
 /*
  * Values used to represent the board's final disposition regarding
