@@ -599,6 +599,8 @@ CREATE TABLE ebms_import_disposition (
  *  user_id         Unique ID of user running the import.
  *  summary_id      Unique ID of the summary for which this was an import.
  *                  Might be NULL in special cases?
+ *  comment         Optional comment, e.g., if the batch was a special
+ *                   import, why it was imported.
  */
 CREATE TABLE ebms_import_batch (
     import_batch_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -607,6 +609,7 @@ CREATE TABLE ebms_import_batch (
     import_date     DATETIME NOT NULL,
     cycle_id        INT NOT NULL,
     user_id         INT UNSIGNED NOT NULL,
+    comment         VARCHAR(2048) NULL,
     FOREIGN KEY (topic_id) REFERENCES ebms_topic(topic_id),
     FOREIGN KEY (cycle_id) REFERENCES ebms_cycle(cycle_id),
     FOREIGN KEY (user_id)  REFERENCES users(uid)
