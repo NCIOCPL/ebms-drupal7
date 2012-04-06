@@ -28,6 +28,7 @@ DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
 DROP TABLE IF EXISTS ebms_article_board_decision;
 DROP TABLE IF EXISTS ebms_article_board_decision_value;
+DROP TABLE IF EXISTS ebms_article_state_comment;
 DROP TABLE IF EXISTS ebms_article_state;
 DROP TABLE IF EXISTS ebms_article_state_type;
 DROP TABLE IF EXISTS ebms_import_action;
@@ -648,10 +649,8 @@ CREATE TABLE ebms_import_action (
     article_id         INT NULL,
     import_batch_id    INT NOT NULL,
     disposition_id     INT NOT NULL,
-    FOREIGN KEY (article_id) 
-        REFERENCES ebms_article(article_id),
-    FOREIGN KEY (import_batch_id)
-        REFERENCES ebms_import_batch(import_batch_id),
+    FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
+    FOREIGN KEY (import_batch_id) REFERENCES ebms_import_batch(import_batch_id),
     FOREIGN KEY (disposition_id)
         REFERENCES ebms_import_disposition(disposition_id)
 )
@@ -792,7 +791,6 @@ CREATE TABLE ebms_article_state_type (
  *  status_dt          Date and time the row/state was created.
  *  active_status      Set to 'I' if the state row was a mistake, or no
  *                      longer applicable because of later events
- *  comments           Free text.
  */
 CREATE TABLE ebms_article_state (
     article_state_id  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -803,7 +801,6 @@ CREATE TABLE ebms_article_state (
     active_status     ENUM('A','I') NOT NULL DEFAULT 'A',
     board_id          INTEGER NULL,
     topic_id          INTEGER NULL,
-    comments          VARCHAR(2048) NULL,
     FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
     FOREIGN KEY (board_id)   REFERENCES ebms_board(board_id),
     FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
@@ -824,6 +821,37 @@ CREATE TABLE ebms_article_state (
     CREATE INDEX ebms_article_state_topic_index
            ON ebms_article_state(topic_id, state_id, board_id, article_id, 
                            active_status);
+
+/*
+ * One or more optional comments can be associated with an 
+ * ebms_article_state row.
+ *
+ * Comments are immutable.  To change one's mind about the contents of
+ * a comment, a user can post another comment on the same state row.
+ *
+ *  comment_id          Unique auto-generated row ID of this comment.
+ *  article_state_id    Of the article state row this comments on.
+ *  user_id             Of user posting the comment.
+ *  comment_dt          Datetime comment was recorded.
+ *  comment             Free text.
+ */
+CREATE TABLE ebms_article_state_comment (
+    comment_id          INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    article_state_id    INTEGER NOT NULL,
+    user_id             INTEGER UNSIGNED NOT NULL,
+    comment_dt          DATETIME NOT NULL,
+    comment            TEXT NOT NULL,
+
+    FOREIGN KEY (article_state_id) REFERENCES
+                ebms_article_state(article_state_id),
+    FOREIGN KEY (user_id) REFERENCES users(uid)
+)
+    ENGINE InnoDB;
+
+    -- Usually retrieved in association with state row, in date order
+    CREATE INDEX ebms_article_state_comment_state_index ON
+           ebms_article_state_comment(article_state_id, comment_dt);
+
 
 /*
  * Values used to represent the board's final disposition regarding
@@ -1319,7 +1347,7 @@ CREATE TABLE ebms_summary_page
  * Link to HP summary on Cancer.gov.
  *
  * link_id        automatically generated primary key
- * page_id        foreign key into embs_summary_page table
+ * page_id        foreign key into ebms_summary_page table
  * link_url       URL for the Cancer.gov page
  * link_label     display text for the link
  */
