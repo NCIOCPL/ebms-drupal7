@@ -635,20 +635,16 @@ CREATE TABLE ebms_import_batch (
  *                    articles in a batch may not have actually been imported.
  *  article_id      Unique ID of article row, if we have one.
  *  import_batch_id Unique ID of the batch.
- *  disposition_id  What was done with the imported cite, a code or ID
- *                  to be interpreted as one of:
- *                      Imported as new
- *                      Rejected as a duplicate
- *                      Duplicate but new summary topic added, no new review
- *                          cycle.
- *                      Duplicate but new summary topic added, new review
- *                          cycle added.
+ *  disposition_id  What was done with the imported cite, one of the
+ *                    ebms_import_disposition.disposition_id values.
+ *  message         Probably only used for error messages on failed imports.
  */
 CREATE TABLE ebms_import_action (
     source_id          VARCHAR(32) NOT NULL,
     article_id         INT NULL,
     import_batch_id    INT NOT NULL,
     disposition_id     INT NOT NULL,
+    message            VARCHAR(400) NULL,
     FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
     FOREIGN KEY (import_batch_id) REFERENCES ebms_import_batch(import_batch_id),
     FOREIGN KEY (disposition_id)
