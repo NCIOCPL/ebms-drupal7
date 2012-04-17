@@ -627,8 +627,7 @@ CREATE TABLE ebms_import_batch (
  * a record imported from NLM might already be in the database but not with
  * the same topic as used in this import batch, and with a different cycle_id.
  * It might also be a later record from NLM.  In such a case there are
- * three import disposition values - Summry topic added, Review cycle added,
- * Replaced.
+ * two import disposition values - "Summry topic added" and "Replaced".
  * 
  *  source_id       Unique ID of the citation within the source database.
  *                    We don't always have an article_id here because some 
