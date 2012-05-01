@@ -838,7 +838,7 @@ CREATE TABLE ebms_article_state_comment (
     article_state_id    INTEGER NOT NULL,
     user_id             INTEGER UNSIGNED NOT NULL,
     comment_dt          DATETIME NOT NULL,
-    comment            TEXT NOT NULL,
+    comment             TEXT NOT NULL,
 
     FOREIGN KEY (article_state_id) REFERENCES
                 ebms_article_state(article_state_id),
