@@ -244,16 +244,19 @@ CREATE TABLE ebms_ad_hoc_group_member
  * topic_id       automatically generated primary key
  * topic_name     unique name for the topic
  * board_id       foreign key into the ebms_board table
+ * nci_reviewer   NCI staff member primarily responsible for the topic
  * active_status  can only associate articles with active topics.  Old
  *                  topics remain in the database because articles may
  *                  be linked to them.
  */
 CREATE TABLE ebms_topic
-     (topic_id INTEGER         NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    topic_name VARCHAR(255)    NOT NULL UNIQUE,
-      board_id INTEGER         NOT NULL,
- active_status ENUM ('A', 'I') NOT NULL DEFAULT 'A',
- FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
+     (topic_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    topic_name VARCHAR(255)     NOT NULL UNIQUE,
+      board_id INTEGER          NOT NULL,
+  nci_reviewer INTEGER UNSIGNED NOT NULL,
+ active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
+ FOREIGN KEY (board_id) REFERENCES ebms_board (board_id),
+ FOREIGN KEY (nci_reviewer) REFERENCES users (uid))
       ENGINE=InnoDB;
 
    CREATE VIEW ebms_active_topic AS
@@ -919,6 +922,7 @@ CREATE TABLE ebms_article_board_decision (
  * packet_id      automatically generated primary key
  * topic_id       foreign key into the ebms_topic table
  * created_by     foreign key into Drupal's users table
+ * created_at     date/time the packet came into existence
  * packet_title   how the packet should be identified in lists of packets
  * last_seen      when the board manager last saw the feedback for the packet
  */
@@ -926,6 +930,7 @@ CREATE TABLE ebms_packet
   (packet_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     topic_id INTEGER          NOT NULL,
   created_by INTEGER UNSIGNED NOT NULL,
+  created_at DATETIME         NOT NULL,
 packet_title VARCHAR(255)     NOT NULL,
    last_seen DATETIME             NULL,
  FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
