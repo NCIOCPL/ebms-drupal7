@@ -9,6 +9,14 @@
 
 namespace Ebms;
 
+define('Ebms\APP_DIR', '/ebmsdev');
+define('Ebms\THEME_DIR', APP_DIR . '/' .
+    drupal_get_path('theme', 'ebms'));
+define('Ebms\IMAGES_DIR', THEME_DIR . '/images');
+define('Ebms\MODULE_DIR', drupal_get_path('module', 'ebms'));
+define('Ebms\JS_DIR', MODULE_DIR . '/js');
+define('Ebms\FROM', 'PDQ Editorial Board Management System <ebms@cancer.gov>');
+
 class Util {
     private static $u2aMapping = array(
         160 => ' ',
@@ -252,6 +260,12 @@ class Util {
         65279 => '',
         65308 => '<',
     );
+
+    /**
+     * Create a version of a string which replaces non-ascii characters
+     * with ascii equivalents more likely to be entered by users
+     * searching for titles or authors of articles.
+     */
     public static function utf8ToAscii($utf8) {
         $ucs2 = iconv("utf-8", "UCS-2", $utf8);
         $ascii = array();
@@ -269,5 +283,61 @@ class Util {
                 $ascii[] = '?';
         }
         return implode('', $ascii);
+    }
+
+    /**
+     * Pulls a parameter from a request without letting in parameters
+     * from cookies (which we'd get from $_REQUEST).
+     */
+    public static function get_request_value($name, $default='') {
+        if (array_key_exists($name, $_POST))
+            return $_POST[$name];
+        if (array_key_exists($name, $_GET))
+            return $_GET[$name];
+        return $default;
+    }
+
+    /**
+     * Replace with Alan's version.
+     */
+    public static function get_full_citation($article_id) {
+        $xml = db_select('ebms_article', 'a')
+            ->fields('a', array('source_data'))
+            ->condition('a.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+        $doc = new \SimpleXMLElement($xml);
+        $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
+        $article = $doc->MedlineCitation->Article;
+        $title = $article->ArticleTitle;
+        $pgn = $article->Pagination->MedlinePgn;
+        $year = $article->Journal->JournalIssue->PubDate->Year;
+        $issue = $article->Journal->JournalIssue->Issue;
+        $vol = $article->Journal->JournalIssue->Volume;
+        $authors = array();
+        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
+        {
+            if (sizeof($authors) == 3) {
+                $authors[] = 'et al.';
+                break;
+            }
+            $name = $author->LastName;
+            if ($author->Initials)
+                $name .= ' ' . $author->Initials;
+            $authors[] = $name;
+        }
+        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+        $pmid = $doc->MedlineCitation->PMID;
+        return implode(', ', $authors) . ': ' . $title . ' ' . $ta . ' ' .
+            $vol . '(' . $issue . '): ' . $pgn . ', ' . $year . '. PMID: ' .
+            $pmid;
+    }
+
+    /**
+     * Prepare an address for a system email message.
+     */
+    public static function format_email_address($email, $name) {
+        $name = addslashes(mime_header_encode($name));
+        return "\"$name\" <$email>";
     }
 }
