@@ -31,6 +31,9 @@ DROP TABLE IF EXISTS ebms_article_board_decision_value;
 DROP TABLE IF EXISTS ebms_article_state_comment;
 DROP TABLE IF EXISTS ebms_article_state;
 DROP TABLE IF EXISTS ebms_article_state_type;
+DROP TABLE IF EXISTS ebms_article_tag_comment;
+DROP TABLE IF EXISTS ebms_article_tag;
+DROP TABLE IF EXISTS ebms_article_tag_type;
 DROP TABLE IF EXISTS ebms_import_action;
 DROP TABLE IF EXISTS ebms_import_batch;
 DROP TABLE IF EXISTS ebms_import_disposition;
@@ -783,22 +786,25 @@ CREATE TABLE ebms_article_state_type (
  *
  *  article_state_id   Automatically generated primary key
  *  article_id         Unique ID in article table.
- *  topic_id           The summary topic for which this article state is set.
  *  state_id           ID of the state that this row records.
+ *  board_id           Optional (depending on state type) board for which this
+ *                      state is set.
+ *  topic_id           Optional (depending on state type) summary topic for 
+ *                      which this article state is set.
  *  user_id            ID of the user that put the article in this state.
  *  status_dt          Date and time the row/state was created.
  *  active_status      Set to 'I' if the state row was a mistake, or no
- *                      longer applicable because of later events
+ *                      longer applicable because of later events.
  */
 CREATE TABLE ebms_article_state (
     article_state_id  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     article_id        INTEGER NOT NULL,
     state_id          INTEGER NOT NULL,
+    board_id          INTEGER NULL,
+    topic_id          INTEGER NULL,
     user_id           INTEGER UNSIGNED NOT NULL,
     status_dt         DATETIME NOT NULL,
     active_status     ENUM('A','I') NOT NULL DEFAULT 'A',
-    board_id          INTEGER NULL,
-    topic_id          INTEGER NULL,
     FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
     FOREIGN KEY (board_id)   REFERENCES ebms_board(board_id),
     FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
@@ -849,6 +855,115 @@ CREATE TABLE ebms_article_state_comment (
     -- Usually retrieved in association with state row, in date order
     CREATE INDEX ebms_article_state_comment_state_index ON
            ebms_article_state_comment(article_state_id, comment_dt);
+
+
+/*
+ * Control values for recording descriptive tags in the ebms_article_tag
+ * table.
+ *
+ *  tag_id              Unique ID of the tag value.
+ *  tag_name            Human readable name.
+ *  description         Longer, descriptive help text.
+ *  board_required      'Y' = rows with this state must have a non-NULL
+ *                        board_id.
+ *                      We don't allow topics at all here, but boards are
+ *                        a useful discriminator for searching.
+ *  active_status       'A'ctive or 'I'nactive.
+ */
+CREATE TABLE ebms_article_tag_type (
+    tag_id              INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    tag_name            VARCHAR(64) NOT NULL UNIQUE,
+    description         VARCHAR(2048) NOT NULL,
+    board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'N',
+    active_status       ENUM('A','I') NOT NULL DEFAULT 'A'
+)
+    ENGINE=InnoDB;
+
+    /* These are partly for illustration.  They may not last */
+    INSERT ebms_article_tag_type 
+        (tag_name, description, board_required)
+        VALUES ('Questionable search',
+        'This article was imported as a result of a search, but the article '
+        'appears to be out of scope and the search '
+        'criteria may have been too broad.', 'N');
+    INSERT ebms_article_tag_type 
+        (tag_name, description, board_required)
+        VALUES ('Borderline initial review',
+        'This was examined in initial review but no judgment made.  It was a '
+        'borderline case.  Look at it again later.', 'N');
+    INSERT ebms_article_tag_type 
+        (tag_name, description, board_required)
+        VALUES ('Borderline board manager review',
+        'This was examined by a board manager but no judgment made.  It was a '
+        'borderline case.  Look at it again later.  A specific board must '
+        'be identified.', 'Y');
+
+/*
+ * Descriptive tags that have been attached to an article.
+ *
+ *  article_tag_id     Automatically generated primary key
+ *  article_id         Unique ID in article table.
+ *  tag_id             ID of the tag that this row records.
+ *  board_id           Optional (depending on tag type) board for which this
+ *                      tag was assigned.
+ *  user_id            ID of the user who attached the tag to this article.
+ *  tag_dt             Date and time the row/tag was created.
+ *  active_status      Set to 'I' if the tag assignment was a mistake, or no
+ *                      longer applicable because of later events.
+ */
+CREATE TABLE ebms_article_tag (
+    article_tag_id    INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    article_id        INTEGER NOT NULL,
+    tag_id            INTEGER NOT NULL,
+    board_id          INTEGER NULL,
+    user_id           INTEGER UNSIGNED NOT NULL,
+    tag_dt            DATETIME NOT NULL,
+    active_status     ENUM('A','I') NOT NULL DEFAULT 'A',
+    FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
+    FOREIGN KEY (tag_id)     REFERENCES ebms_article_tag_type(tag_id),
+    FOREIGN KEY (board_id)   REFERENCES ebms_board(board_id),
+    FOREIGN KEY (user_id)    REFERENCES users(uid)
+)
+    ENGINE InnoDB;
+
+    -- Search for articles by article, tag, or board
+    CREATE INDEX ebms_article_tag_article_index
+           ON ebms_article_tag(article_id, tag_id, active_status);
+    CREATE INDEX ebms_article_tag_tag_index
+           ON ebms_article_tag(tag_id, board_id, article_id, active_status);
+    CREATE INDEX ebms_article_tag_board_index
+           ON ebms_article_tag(board_id, tag_id, article_id, active_status);
+
+/*
+ * One or more optional comments can be associated with an 
+ * ebms_article_tag row.  The structure and concepts are identical to
+ * article_state_comments.
+ *
+ * Comments are immutable.  To change one's mind about the contents of
+ * a comment, a user can post another comment on the same tag row.  To
+ * eliminate all comments, mark the ebms_article_tag row inactive.
+ *
+ *  comment_id          Unique auto-generated row ID of this comment.
+ *  article_tag_id      Of the article tag row this comments on.
+ *  user_id             Of user posting the comment.
+ *  comment_dt          Datetime comment was recorded.
+ *  comment             Free text.
+ */
+CREATE TABLE ebms_article_tag_comment (
+    comment_id          INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    article_tag_id      INTEGER NOT NULL,
+    user_id             INTEGER UNSIGNED NOT NULL,
+    comment_dt          DATETIME NOT NULL,
+    comment             TEXT NOT NULL,
+
+    FOREIGN KEY (article_tag_id) REFERENCES ebms_article_tag(article_tag_id),
+    FOREIGN KEY (user_id)        REFERENCES users(uid)
+)
+    ENGINE InnoDB;
+
+    -- Usually retrieved in association with article_tag row, in date order
+    CREATE INDEX ebms_article_tag_comment_tag_index ON
+           ebms_article_tag_comment(article_tag_id, comment_dt);
 
 
 /*
