@@ -20,6 +20,39 @@
  *   - request forms (e.g., hotel reservations, reimbursements)
  */
 
+require_once('common.inc');
+
+/**
+ * Permissions granted to EBMS users.  Implementation of hook_permission().
+ */
+function ebms_permission() {
+    return array(
+        'administer' => array(
+            'title' => t('Perform Administrative Tasks'),
+            'description' =>
+            t('Post documents, manage groups, send messages, etc.'),
+        ),
+        'manage citations' => array(
+            'title' => t('Manage Citations'),
+            'description' =>
+            t('Import and screen journal articles, and set their statuses'),
+        ),
+        'manage boards' => array(
+            'title' => t('Manage Boards'),
+            'description' =>
+            t('Make final determination of status for journal articles, ' .
+                'and assign literature for review'),
+        ),
+        'review literature' => array(
+            'title' => t('Review Literature'),
+            'description' =>
+            t('Review journal articles on cancer and make recommendations ' .
+                'for incorporation information from those articles into ' .
+                'PDQ Cancer Summaries'),
+        ),
+    );
+}
+
 /**
  *
  * Implements hook_menu.
@@ -29,14 +62,40 @@
 function ebms_menu() {
     return array(
 
+        // CUSTOM LOGIN PAGE
+        'login' => array(
+            'title' => 'Please Log In',
+            'page callback' => 'pdq_ebms_login',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // REQUEST FOR NEW PASSWORD
+        'password' => array(
+            'title' => 'New Password Request',
+            'page callback' => 'pdq_ebms_password',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
         // LANDING PAGE
         'home' => array(
             'title' => 'Home',
             'page callback' => 'pdq_ebms_home',
             'file' => 'home.inc',
             'access callback' => true,
-            #'menu_name' => 'main-menu',
             'weight' => 1,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // CITATION MANAGEMENT
+        'citations' => array(
+            'title' => 'Citation Management',
+            'page callback' => 'pdq_ebms_citations',
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            'menu_name' => 'main-menu',
+            'weight' => -1200,
         ),
 
         // CALENDAR
@@ -44,39 +103,19 @@ function ebms_menu() {
             'title' => 'Calendar',
             'page callback' => 'pdq_ebms_calendar',
             'file' => 'calendar.inc',
-            'access callback' => true,
+            'access callback' => 'user_is_logged_in',
             'menu_name' => 'main-menu',
-            'weight' => 2,
+            'weight' => -1000,
         ),
 
-        // POSTING DOCUMENTS
-        'docs' => array(
-            'title' => 'Docs',
-            'page callback' => 'pdq_ebms_docs',
-            'file' => 'docs.inc',
-            'access callback' => true,
-            'menu_name' => 'main-menu',
-            'weight' => 3,
-        ),
-
-        // TRAVEL
-        'travel' => array(
-            'title' => 'Travel',
-            'page callback' => 'pdq_ebms_travel',
-            'file' => 'travel.inc',
-            'access callback' => true,
-            'menu_name' => 'main-menu',
-            'weight' => 4,
-        ),
-
-        // REVIEW
+        // LITERATURE REVIEW
         'review' => array(
-            'title' => 'Review',
+            'title' => 'Literature',
             'page callback' => 'pdq_ebms_review',
             'file' => 'review.inc',
-            'access callback' => true,
+            'access callback' => 'user_is_logged_in',
             'menu_name' => 'main-menu',
-            'weight' => 5,
+            'weight' => -800,
         ),
 
         // SUMMARIES
@@ -84,9 +123,19 @@ function ebms_menu() {
             'title' => 'Summaries',
             'page callback' => 'pdq_ebms_summaries',
             'file' => 'summaries.inc',
-            'access callback' => true,
+            'access callback' => 'user_is_logged_in',
             'menu_name' => 'main-menu',
-            'weight' => 6,
+            'weight' => -600,
+        ),
+
+        // TRAVEL
+        'travel' => array(
+            'title' => 'Travel',
+            'page callback' => 'pdq_ebms_travel',
+            'file' => 'travel.inc',
+            'access callback' => 'user_is_logged_in',
+            'menu_name' => 'main-menu',
+            'weight' => -400,
         ),
 
         // FORUMS
@@ -94,49 +143,623 @@ function ebms_menu() {
             'title' => 'Discussion',
             'page callback' => 'pdq_ebms_forum',
             'file' => 'forum.inc',
-            'access callback' => true,
+            'access callback' => 'user_is_logged_in',
             'menu_name' => 'main-menu',
-            'weight' => 7,
+            'weight' => -200,
         ),
 
-        // ROSTER
-        'roster' => array(
-            'title' => 'Roster',
-            'page callback' => 'pdq_ebms_roster',
-            'file' => 'roster.inc',
-            'access callback' => true,
-            'menu_name' => 'main-menu',
-            'weight' => 8,
+        // POSTING DOCUMENTS
+        'docs' => array(
+            'title' => 'About',
+            'page callback' => 'pdq_ebms_docs',
+            'file' => 'docs.inc',
+            'access arguments' => array('administer'),
+            'type' => MENU_CALLBACK,
         ),
 
-        // REPORTS
+        // CITATION MANAGEMENT
         'reports' => array(
             'title' => 'Reports',
             'page callback' => 'pdq_ebms_reports',
             'file' => 'reports.inc',
-            'access callback' => true,
-            'menu_name' => 'main-menu',
-            'weight' => 9,
+            'access arguments' => array('administer'),
+            'type' => MENU_CALLBACK,
         ),
 
-        // Testing article search
+        // CUSTOM 403 PAGE
+        'access-denied' => array(
+            'title' => 'Access Denied',
+            'page callback' => 'pdq_ebms_403',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // CUSTOM 404 PAGE
+        'not-found' => array(
+            'title' => 'Page Not Found',
+            'page callback' => 'pdq_ebms_404',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        /*
+        // TESTING ARTICLE SEARCH
         'articlesearch' => array(
             'title' => 'Search for Articles',
             'page callback' => 'pdq_ebms_artsearch',
             'file' => 'art_search.inc',
-            'access callback' => true,
+            'access callback' => 'user_is_logged_in',
             'menu_name' => 'main-menu',
             'weight' => 6,
-        ),
-        // Testing for Alan
+        ),*/
+
+        // TESTING FOR ALAN
         'alantest' => array(
             'title' => 'AlanTest',
             'page callback' => 'pdq_ebms_alantest',
             'file' => 'alan.inc',
             'access callback' => true,
-            'menu_name' => 'main-menu',
-            'weight' => 20,
+            //'menu_name' => 'main-menu',
+            //'weight' => 20,
         ),
 
+        // AJAX CALLBACK FOR THE NEW PASSWORD FORM.
+        'account-email-status' => array(
+            'page callback' => 'pdq_ebms_account_email_status',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // USED ONLY BY DEVELOPER.
+        'upload-files' => array(
+            'title' => 'Upload Files',
+            'page callback' => 'pdq_ebms_upload_files',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
     );
+}
+
+/**
+ * Custom login page.  Page gets a second form for requesting a new
+ * password.  This second form is hidden and is only displayed when
+ * the user explicitly requests it (and only if Javascript is enabled).
+ */
+function pdq_ebms_login() {
+
+    // First assemble the basic login form.
+    $form = drupal_get_form('pdq_ebms_login_form');
+
+    // Then fold in the hidden form for the password reset dialog.
+    drupal_add_library('system', 'ui.dialog');
+    drupal_add_js(Ebms\JS_DIR . '/ebms.js');
+    $dialog = drupal_get_form('pdq_ebms_password_form');
+    $dialog['#prefix'] = '<div id="forgot-password-form-js">';
+    $dialog['#suffix'] = '</div>';
+    $page = array('form' => $form, 'hidden-form' => $dialog);
+    return $page;
+}
+
+/**
+ * Custom login page.
+ */
+function pdq_ebms_login_form($form, &$form_state) {
+    $url = 'password';
+    $title = 'Forgot user name or password?';
+    $id = 'forgot-password';
+    $prompt = 'Can\'t access your account?';
+    $pw_request = "<a href='$url' title='$title' id='$id'>$prompt</a>";
+    return array(
+        'name' => array(
+            '#type' => 'textfield',
+            '#title' => 'Username',
+        ),
+        'pass' => array(
+            '#type' => 'password',
+            '#title' => 'Password',
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'LOGIN',
+            '#suffix' => $pw_request,
+            '#submit' => array('pdq_ebms_login_form_submit'),
+        ),
+        '#validate' => array('pdq_ebms_login_form_validate'),
+    );
+}
+
+/**
+ * Verify that the user credentials are present and valid.  Most of the
+ * work done here is for thwarting hackers.
+ */
+function pdq_ebms_login_form_validate($form, &$form_state) {
+
+    // Check for the simple stuff: empty user name and/or password field.
+    $name = $form_state['values']['name'];
+    $pass = $form_state['values']['pass'];
+    $name_empty = empty($name);
+    $pass_empty = empty($pass);
+    if ($name_empty || $pass_empty) {
+        if ($name_empty)
+            form_set_error('name', 'Username field is required.');
+        if ($pass_empty)
+            form_set_error('pass', 'Password field is required.');
+        return;
+    }
+
+    // Make sure the user hasn't been blocked.
+    if (user_is_blocked($name)) {
+        form_set_error('name', 'User account is blocked');
+        return;
+    }
+
+    // Prevent flooding attacks from this IP address.
+    $new_password_url = url('user/password');
+    $new_password_text = 'request a new password';
+    $new_password_link = "<a href='$new_password_url'>$new_password_text</a>";
+    $try_later = "Please try again later or $new_password_link.";
+    $attack_name = 'failed_login_attempt_ip';
+    $limit = variable_get('user_failed_login_ip_limit', 50);
+    $window = variable_get('user_failed_login_ip_window', 3600);
+    if (!flood_is_allowed($attack_name, $limit, $window)) {
+        $form_state['flood_control_triggered'] = 'ip';
+        flood_register_event($attack_name, $window);
+        $msg = 'Sorry, too many failed login attempts from this location.';
+        form_set_error('name', "$msg $try_later.");
+        return;
+    }
+
+    // Verify that this user name is valid.
+    $pass = trim($pass);
+    $uid = db_select('users', 'u')
+        ->fields('u', array('uid'))
+        ->condition('u.name', $name)
+        ->execute()
+        ->fetchField();
+    $error = 'YOUR USERNAME AND/OR PASSWORD IS INCORRECT.<br />' .
+        'Please try again (make sure your caps lock is off).';
+    if (!$uid) {
+        form_set_error('name', $error);
+        watchdog('user', "Login attempt failed for $name.");
+        return;
+    }
+
+    // Prevent flooding attacks for this account.
+    if (variable_get('user_failed_login_identifier_uid_only', false))
+        $identifier = $uid;
+    else
+        $identifier = $uid . '-' . ip_address();
+    $form_state['flood_control_user_identifier'] = $identifier;
+    $attack_name = 'failed_login_attempt_user';
+    $limit = variable_get('user_failed_login_user_limit', 5);
+    $window = variable_get('user_failed_login_user_window', 21600);
+    if (!flood_is_allowed($attack_name, $limit, $window, $identifier)) {
+        $form_state['flood_control_triggered'] = 'user';
+        flood_register_event($attack_name, $window, $identifier);
+        $msg = 'Sorry, too many failed login attempts for this account.';
+        form_set_error('name', "$msg $try_later.");
+        return;
+    }
+
+    // Validate password against the DB.
+    $form_state['uid'] = user_authenticate($name, $pass);
+    if (!$form_state['uid']) {
+        form_set_error('name', $error);
+        watchdog('user', "Login attempt failed for $name.");
+        return;
+    }
+
+    // Clear flood control for this user.
+    flood_clear_event($attack_name, $identifier);
+}
+
+/**
+ * Record the login action and make sure the user is dropped on the home
+ * page.  By the time we get here, the validation callback has already
+ * taken care of actually logging the user in.
+ */
+function pdq_ebms_login_form_submit($form, &$form_state) {
+    global $user;
+    $user = user_load($form_state['uid']);
+    $form_state['redirect'] = 'home';
+    watchdog('user', "Session opened for {$user->name}.");
+
+    $user->login = REQUEST_TIME;
+    db_update('users')
+        ->fields(array('login' => $user->login))
+        ->condition('uid', $user->uid)
+        ->execute();
+    drupal_session_regenerate();
+}
+
+/**
+ * Put up a page for requesting a new password.  This will only be
+ * invoked by users without Javascript enabled.  Normally the form
+ * will be displayed in a popup window hidden inside the login
+ * page.
+ */
+function pdq_ebms_password() {
+    return drupal_get_form('pdq_ebms_password_form');
+}
+
+/**
+ * Ask the user what she has forgotten, and get her account's email address.
+ */
+function pdq_ebms_password_form() {
+    return array(
+        'forgot' => array(
+            '#type' => 'radios',
+            '#options' => array(
+                'username' => 'Username',
+                'password' => 'Password',
+                'both' => 'Both'),
+            '#title' => 'Forgot My',
+        ),
+        'email' => array(
+            '#type' => 'textfield',
+            '#suffix' => '<p>Please enter the email address associated with ' .
+            'your EBMS account.</p>',
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+    );
+}
+
+/**
+ * Make sure the required fields have been taken care of, and that
+ * the email address matches that of a current user.  On successful
+ * validation, the account information will be loaded in the 'account'
+ * value of the $form_state hash.
+ */
+function pdq_ebms_password_form_validate($form, &$form_state) {
+    $address = $form_state['values']['email'];
+    $form_state['account'] = null;
+    $errors = 0;
+    if (empty($form_state['values']['forgot'])) {
+        form_set_error('forgot',
+            'You must indicate which elements have been forgotten.');
+        $errors++;
+    }
+    if (empty($address)) {
+        form_set_error('email', 'Email address is required.');
+        $errors++;
+    }
+    else {
+        $account = user_load_by_mail($address);
+        if (empty($account)) {
+            form_set_error('email',
+                'That email address is registered with no accounts.');
+            $errors++;
+        }
+    }
+    if (!$errors)
+        $form_state['account'] = $account;
+}
+
+/**
+ * Mail the user the information she has forgotten, replacing the old
+ * password with a new one if the password was one of the things
+ * forgotten.
+ */
+function pdq_ebms_password_form_submit($form, &$form_state) {
+    global $language;
+    $account = $form_state['account'];
+    $forgot = $form_state['values']['forgot'];
+    $subject = 'EBMS Account Information';
+    $to = Ebms\Util::format_email_address($account->mail, $account->name);
+    if ($forgot == 'username' || $forgot == 'both')
+        $message = array("Your EBMS login name is {$account->name}.\n");
+    if ($forgot == 'password' || $forgot == 'both') {
+        $new_pw = user_password();
+        $message[] = "Your new password is $new_pw.\n";
+        $message[] = 'Please log in and change your password at your ';
+        $message[] = "earliest convenience.\n";
+        # user_save($account, array('pass' => $new_pw);
+    }
+    $message[] = url('login', array('absolute' => true)) . "\n";
+    $message = array(implode($message));
+    $params = array('body' => $message, 'subject' => $subject);
+    $key = 'newpw';
+    drupal_mail('ebms', $key, $to, $language, $params, Ebms\FROM);
+    drupal_set_message('Further instructions have been mailed to you.');
+    drupal_goto('login');
+}
+
+/**
+ * Ajax callback to verify for the Javascript code that the email address
+ * specified represents a valid, active account.
+ */
+function pdq_ebms_account_email_status() {
+    $address = $_GET['email'];
+    $name = 'nobody';
+    $status = 'missing';
+    if (!empty($address)) {
+        $account = user_load_by_mail($address);
+        if (!empty($account)) {
+            if ($account->status != 1)
+                $status = "blocked";
+            else {
+                $name = $account->name;
+                $status = 'valid';
+            }
+        }
+    }
+    drupal_json_output(array('name' => $name, 'status' => $status));
+}
+
+/**
+ * Our module's implementation of hook_mail().
+ */
+function ebms_mail($key, &$message, $params) {
+    $message['subject'] = $params['subject'];
+    $message['body'] = $params['body'];
+    if (isset($params['reply-to']))
+        $message['headers']['Reply-to'] = $params['reply-to'];
+    if (isset($params['boundary'])) {
+        $boundary = $params['boundary'];
+        $message['headers']['MIME-Version'] = '1.0';
+        $message['headers']['Content-Type'] =
+            "multipart/alternative; boundary=\"$boundary\"";
+        $message['headers']['Content-Transfer-Encoding'] = '8Bit';
+        $message['headers']['X-Mailer'] = 'Drupal Mailer';
+    }
+}
+
+/**
+ * Custom page for pages the user isn't allowed to see.
+ */
+function pdq_ebms_403() {
+    global $user;
+    if (!user_is_logged_in()) {
+        drupal_set_title('Please Log In');
+        return drupal_get_form('pdq_ebms_login_form');
+    }
+    return '<p>Sorry, you are not authorized to visit this page.</p>';
+}
+
+/**
+ * Message we show when a request comes in for a page that doesn't exist.
+ */
+function pdq_ebms_404() {
+    global $user;
+    if (!user_is_logged_in()) {
+        drupal_set_title('Please Log In');
+        return drupal_get_form('pdq_ebms_login_form');
+    }
+    return '<p>You have requested a page which does not exist.</p>';
+}
+function pdq_ebms_admin_on_front_page() {
+    //drupal_set_message(drupal_is_front_page() ? 'front page' : 'back page');
+    //drupal_set_message(user_access('administer') ? 'admin' : 'peon');
+    return drupal_is_front_page() && user_access('administer');
+}
+
+function pdq_ebms_board_member_on_front_page() {
+    return drupal_is_front_page() && user_access('review literature');
+}
+
+function xebms_block_info() {
+    return array(
+        'featured' => array(
+            'info' => t('Featured'),
+            'weight' => 0,
+            'status' => 1,
+            'visibility' => BLOCK_VISIBILITY_LISTED,
+            'region' => 'content',
+            'pages' => '<front>',
+        ),
+        'recent activity' => array(
+            'info' => t('Recent Activity'),
+            'weight' => 1,
+            'status' => 1,
+            'visibility' => BLOCK_VISIBILITY_LISTED,
+            'region' => 'content',
+            'pages' => '<front>',
+        ),
+        'pdq board rosters (member)' => array(
+            'info' => t('PDQ Board Rosters (Board Member)'),
+            'weight' => 2,
+            'status' => 1,
+            'visibility' => BLOCK_VISIBILITY_PHP,
+            'pages' =>
+            '<?php return pdq_ebms_board_member_on_front_page(); ?>',
+            'region' => 'content',
+        ),
+        'administrative tasks' => array(
+            'info' => t('Administrative Tasks'),
+            'weight' => 3,
+            'status' => 1,
+            'visibility' => BLOCK_VISIBILITY_PHP,
+            'pages' => '<?php return pdq_ebms_admin_on_front_page(); ?>',
+            'region' => 'content',
+        ),
+        'alerts' => array(
+            'info' => t('Alerts'),
+            'weight' => 0,
+            'status' => 1,
+            'visibility' => BLOCK_VISIBILITY_LISTED,
+            'pages' => '<front>',
+            'region' => 'sidebar_second',
+        ),
+        'next meeting' => array(
+            'info' => t('Next Meeting'),
+            'weight' => 1,
+            'status' => 1,
+            'visibility' => BLOCK_VISIBILITY_LISTED,
+            'pages' => '<front>',
+            'region' => 'sidebar_second',
+        ),
+        'home calendar' => array(
+            'info' => t('Calendar'),
+            'weight' => 2,
+            'status' => 1,
+            'visibility' => BLOCK_VISIBILITY_LISTED,
+            'pages' => '<front>',
+            'region' => 'sidebar_second',
+        ),
+        'pdq board rosters (admin)' => array(
+            'info' => t('PDQ Board Rosters (Admin)'),
+            'weight' => 3,
+            'status' => 1,
+            'visibility' => BLOCK_VISIBILITY_PHP,
+            'pages' => '<?php return pdq_ebms_admin_on_front_page(); ?>',
+            'region' => 'sidebar_second',
+        ),
+    );
+}
+
+class EbmsFeaturesLinks {
+    public $title, $links;
+    public function __construct($title, $links) {
+        $this->title = $title;
+        $this->links = $links;
+    }
+}
+
+function pdq_ebms_features_content() {
+    $data = array(
+        'admin' => array(
+            '1' => new EbmsFeaturesLinks(
+                'Citation Management',
+                array(
+                    l('Search Database', '#'),
+                    l('Review Abstracts', '#'),
+                    l('Add Citation', '#'),
+                )
+            ),
+            '2' => new EbmsFeaturesLinks(
+                'Literature Surveillance',
+                array(
+                    l('Create A Literature Surveillance Packet', 'review'),
+                    l('Edit a Literature Surveillance Packet', 'review'),
+                    l('Review Responses to a Literature Surveillance Packet',
+                        'review'),
+                )
+            ),
+            '3' => new EbmsFeaturesLinks(
+                'Summaries',
+                array(
+                    l('Post Summary Document', 'summaries'),
+                    l('Download and Review Summaries', 'summaries'),
+                )
+            ),
+            '4' => new EbmsFeaturesLinks(
+                'Reports',
+                array(
+                    l('Literature Surveillance Review Report', '#'),
+                    l('Travel Reports', '#'),
+                )
+            ),
+        ),
+        'member' => array(
+            '1' => new EbmsFeaturesLinks(
+                'Literature Surveillance',
+                array(
+                    l('Review the Latest Literature Surveillance', 'review'),
+                )
+            ),
+            '2' => new EbmsFeaturesLinks(
+                'Summaries',
+                array(
+                    l('Download and Review Summaries', 'summaries'),
+                    l('Submit Summaries with Changes', 'summaries'),
+                )
+            ),
+            '3' => new EbmsFeaturesLinks(
+                'Travel',
+                array(
+                    l('Hotel Reservations', 'travel'),
+                    l('Directions to NCI', 'travel'),
+                    l('Reimbursements', 'travel'),
+                )
+            )
+        )
+    );
+    $feature = Ebms\Util::get_request_value('feature', '1');
+    $role = user_access('administer') ? 'admin' : 'member';
+    $data = $data[$role][$feature];
+    $id = "featured-$role-$feature";
+    $markup = array("<div class='ebms-featured-block' id='$id'><div>");
+    $markup[] = "<p class='feature-links-title'>{$data->title}</p>";
+    foreach ($data->links as $link)
+        $markup[] = "<p>$link</p>";
+    $markup[] = "</div></div>";
+    return implode($markup);
+    return implode(
+        array(
+            '<div class="ebms-featured-block" id="featured-admin-1">',
+            '<div>',
+            '<p class="feature-links-title">CITATION MANAGEMENT</p>',
+            '<p><a href="#">Foo</a></p>',
+            '<p><a href="#">Bar</a></p>',
+            '<p><a href="#">Baz</a></p>',
+            '</div></div>',
+        )
+    );
+}
+/*
+array(
+                    '#prefix' => "<div class=id='$id'>",
+                    '#suffix' => '</div>',
+                    'links' => array(
+                        '#theme' => 'links',
+                        
+                    ),
+                ),
+#                '<img src="/ebmsdev/sites/all/themes/custom/ebms/images/featured-manager-1.jpg" />',
+                */
+function ebms_block_view($delta = '') {
+    switch ($delta) {
+        case 'featured':
+            return array(
+                'subject' => null,
+                'content' => pdq_ebms_features_content(),
+            );
+        default:
+            return array(
+                'subject' => ucwords($delta),
+                'content' => '<ul><li>One</li><li>Two</li><li>Three</li></ul>',
+            );
+    }
+}
+
+/**
+ * XXX Everything below here will be jettisoned once we're in production.
+ */
+class EbmsUploadFile extends stdClass {
+    function EbmsUploadFile($path, $mimetype, $uid) {
+        $this->uid = $uid;
+        $this->uri = $path; //'public://' . $path;
+        $this->filename = basename($path);
+        $this->filesize = filesize($path);
+        $this->timestamp = time();
+        $this->status = 1;
+        $this->filemime = $mimetype;
+    }
+}
+
+function pdq_ebms_upload_files() {
+    return '<p>Already done</p>';
+    global $user;
+    $files = file('/tmp/upload-file-list');
+    $html = array('<ul>');
+    foreach ($files as $line) {
+        $line = trim($line);
+        $list = explode(' ', $line, 2);
+        $mimetype = $list[0];
+        $path = $list[1];
+        $f = new EbmsUploadFile($path, $mimetype, $user->uid);
+        $html[] = '<li>' . $path . ' (' . $mimetype . ')</li>';
+        file_copy($f, 'public://' . $f->filename);
+    }
+    return '<p>Uploaded:</p>' . implode('', $html);
+}
+
+function pdq_ebms_debug($where, $what) {
+    $now = date('c');
+    file_put_contents('/tmp/ebms.debug',
+                      "$now $where\n" . print_r($what, TRUE) .
+                      "\n", FILE_APPEND);
 }
