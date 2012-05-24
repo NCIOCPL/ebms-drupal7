@@ -407,8 +407,22 @@ CREATE TABLE ebms_legacy_article_id (
  * Authors of articles.
  *
  * These are as they appear in the XML records.  Name strings are not
- * unique and searches for an author may retrieve cites by different people
- * with the same names in Pubmed.
+ * unique in the NLM data (or in real life) and searches for an author 
+ * may retrieve cites by different people with the same names in Pubmed.
+ *
+ * One real person may also have more than one entry in this table,
+ * depending on how the person was cited in his publications and by Pubmed.
+ * For example:
+ *     Doe, John A
+ *     Doe J
+ *     Doe JA
+ *
+ * An author should always have either a collective_name (for a corporate
+ * author) or a last_name (for a personal author).  However, the data
+ * does contain occasional surprises and there may sometimes be an author
+ * with a forename but no last_name.  Rather than throw exceptions and/or
+ * require NCI staff to correct Pubmed data, we'll just accept whatever
+ * we get.
  *
  *  author_id       Unique ID for this character string, auto generated.
  *  last_name       Surname, called LastName in NLM XML.
@@ -420,14 +434,19 @@ CREATE TABLE ebms_legacy_article_id (
  *                    of middle name.  But again there are outliers:
  *                      "Mdel R" for Maria del Refugio Gonzales-Losa
  *                      "Nde S" for Nicholas de Saint Aubain Somerhausen
+ *  collective_name Corporate name alternative to personal names.
  *
- * Searching will be tricky and noisy.
+ * Searching will be tricky and noisy.  All text will be converted to plain
+ * ASCII and search expressions should be converted the same way.  This
+ * is to assist users with regular American keyboards who are not necessarily
+ * familiar with multiple language techniques.
  */
 CREATE TABLE ebms_article_author (
     author_id       INT AUTO_INCREMENT PRIMARY KEY,
-    last_name       VARCHAR(255) CHARACTER SET ASCII NOT NULL,
-    forename        VARCHAR(128) CHARACTER SET ASCII NOT NULL,
-    initials        VARCHAR(128) CHARACTER SET ASCII NOT NULL
+    last_name       VARCHAR(255) CHARACTER SET ASCII NULL,
+    forename        VARCHAR(128) CHARACTER SET ASCII NULL,
+    initials        VARCHAR(128) CHARACTER SET ASCII NULL,
+    collective_name VARCHAR(1023) CHARACTER SET ASCII NULL
 )
     ENGINE = InnoDB;
 
@@ -436,6 +455,11 @@ CREATE TABLE ebms_article_author (
            ON ebms_article_author (last_name, forename, initials);
     CREATE INDEX ebms_author_initials_index 
            ON ebms_article_author (last_name, initials);
+
+    -- Collective names are separate searchable
+    CREATE UNIQUE INDEX ebms_author_collective_index 
+           ON ebms_article_author (collective_name);
+
 
 /*
  * Join the authors with the citations.
@@ -875,7 +899,7 @@ CREATE TABLE ebms_article_tag_type (
     tag_name            VARCHAR(64) NOT NULL UNIQUE,
     description         VARCHAR(2048) NOT NULL,
     board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'N',
-    active_status       ENUM('A','I') NOT NULL DEFAULT 'A'
+    active_status       ENUM('A', 'I') NOT NULL DEFAULT 'A'
 )
     ENGINE=InnoDB;
 
