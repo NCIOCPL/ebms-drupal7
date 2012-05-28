@@ -92,7 +92,7 @@ function ebms_menu() {
         // FORM FOR MANAGING USER'S PROFILE
         'profile' => array(
             'page callback' => 'pdq_ebms_profile',
-            'access callback' => true,
+            'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
 
