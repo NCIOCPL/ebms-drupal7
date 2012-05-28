@@ -11,11 +11,300 @@ namespace Ebms;
 
 define('Ebms\APP_DIR', '/ebmsdev');
 define('Ebms\THEME_DIR', APP_DIR . '/' .
-    drupal_get_path('theme', 'ebms'));
+    drupal_get_path('theme', 'ebmstheme'));
 define('Ebms\IMAGES_DIR', THEME_DIR . '/images');
 define('Ebms\MODULE_DIR', drupal_get_path('module', 'ebms'));
 define('Ebms\JS_DIR', MODULE_DIR . '/js');
 define('Ebms\FROM', 'PDQ Editorial Board Management System <ebms@cancer.gov>');
+
+/**
+ * Initial implementation of discussion forums has one general forum
+ * visible to all users, and one forum for each of the PDQ boards.
+ * Later on we may add forums for at least some of the subgroups.
+ * XXX The Discussions pages haven't been implemented yet.  This
+ * initial work was done in order to build the main and sub menus
+ * for the home page stories.
+ *
+ * Forums in the contributed Drupal "Forum" module are registered
+ * using the Drupal taxonomy tables.  For now the code below relies
+ * on the naming convention that the forums for the EBMS boards
+ * are named by concatenating the name of the board (stored in
+ * the board_name column of the ebms_board table) with the string
+ * " Forum"; shouldn't be hard to change if this convention needs
+ * to be altered.
+ */
+class Forum {
+    public
+        $id,
+        $name,
+        $board,
+        $subgroup;
+    static $forums;
+
+    /**
+     * Object to store the Forum name and ID, as well as the
+     * board or subgroup which has access to it.  The name of
+     * the forum is passed to the constructor and the ID is
+     * pulled from the taxonomy_term_data database table.
+     * The $board or $subgroup parameter is passed as a hash
+     * with "id" and "name" members.
+     */
+    public function __construct($name, $board=null, $subgroup=null) {
+        $this->name = $name;
+        $this->board = $board;
+        $this->subgroup = $subgroup;
+        $this->id = db_select('taxonomy_term_data', 't')
+            ->fields('t', array('tid'))
+            ->condition('t.name', $name)
+            ->execute()
+            ->fetchField();
+    }
+
+    /**
+     * Build the static array of EBMS forums.  Right now that's one
+     * general discussion group open to everyone and one for each
+     * board.  Cache the array for future access during the life of
+     * the current request.
+     */
+    public static function init() {
+        $results = db_select('ebms_board', 'b')
+            ->fields('b', array('board_id', 'board_name'))
+            ->orderBy('b.board_name')
+            ->execute();
+        $forum_name = 'General Forum';
+        self::$forums[$forum_name] = new Forum($forum_name);
+        foreach ($results as $result) {
+            $forum_name = $result->board_name . ' Forum';
+            $board = array(
+                'id' => $result->board_id,
+                'name' => $result->board_name,
+            );
+            self::$forums[$forum_name] = new Forum($forum_name, $board);
+        }
+    }
+
+    /**
+     * Retrieve the static array of forums.  Build the array first if
+     * that hasn't been done already.
+     */
+    public static function forums() {
+        if (empty(self::$forums))
+            self::init();
+        // pdq_ebms_debug('FORUMS', self::$forums);
+        return self::$forums;
+    }
+
+    /**
+     * Returns a Boolean indicating whether the forum represented by
+     * this object is accessble to the current user.
+     */
+    public function visible() {
+        global $user;
+        if (!user_is_logged_in())
+            return false;
+        if (isset($this->board))
+            return in_array($this->board['id'], $user->ebms_boards);
+        if (isset($this->subgroup))
+            return in_array($this->subgroup['id'], $user->ebms_subgroups);
+        return true;
+    }
+}
+
+/**
+ * As a result of bugs in the Superfish menu module, poor documentation
+ * of the Drupal Menu API, unreliable behavior of the Drupal menu
+ * caching mechanism, and other factors (for example, Drupal did not
+ * always honor the weights stored in the array returned by ebms_menu())
+ * we decided to implement our own menu theming.  We use Drupal's
+ * Menu API for routing and as a first line of defense in checking
+ * access permissions for the pages, but our own module is doing the
+ * rest.
+ */
+class Menu {
+
+    public
+        $label,
+        $path,
+        $children;
+    static $menus;
+
+    /**
+     * Object representing a single item in the EBMS menu.  At a
+     * minimum, we store the string displayed for the item and
+     * the path to the item (relative to the root of the site;
+     * Drupal will create the necessary URL when we pass the
+     * label and path to the l() API function).  The object
+     * can also include an array of child menu items.  The
+     * EBMS menu structures have only a single level of nesting.
+     */
+    public function __construct($label, $path, $children=null) {
+        $this->label = $label;
+        $this->path = $path;
+        $this->children = $children ? $children : array();
+    }
+
+    /**
+     * Generate the Drupal 'render array' for this menu item,
+     * ready for processing by our custom theming callback.
+     * Called for the top-level menu items; children are handled
+     * here, without recursion.
+     */
+    public function render_array() {
+        $ra = array('data' => l($this->label, $this->path));
+        $children = array();
+        foreach ($this->children as $child)
+            $children[] = l($child->label, $child->path);
+        if (!empty($children))
+            $ra['children'] = $children;
+        return $ra;
+    }
+
+    /**
+     * Retrieve the static array of forums.  Build the array first if
+     * that hasn't been done already.  Do nothing if the user isn't
+     * logged in.
+     */
+    public static function menus() {
+        if (!user_is_logged_in())
+            return array();
+        if (empty(self::$menus))
+            self::init();
+        return self::$menus;
+    }
+
+    /**
+     * Build the menu structures dynamically, based on the current
+     * user's EBMS roles, as well as the boards and subgroups of
+     * which she is a member.
+     */
+    public static function init() {
+        // XXX Slice the roles finer as development evolves.
+        $role = user_access('administer') ? 'admin' : 'member';
+        global $user;
+        switch ($role) {
+            case 'admin':
+                self::$menus = array(
+                    Menu::citations(),
+                    Menu::calendar($role),
+                    Menu::literature($role),
+                    Menu::summaries(),
+                    Menu::travel($role),
+                    Menu::forums($user),
+                    Menu::about(),
+                );
+                break;
+            case 'member':
+                self::$menus = array(
+                    Menu::calendar($role),
+                    Menu::literature($role),
+                    Menu::summaries(),
+                    Menu::travel($role),
+                    Menu::forums($user),
+                    Menu::about(),
+                );
+        }
+    }
+
+    /**
+     * Build the EBMS menu information for Citation management.
+     */
+    public static function citations() {
+        return new Menu(
+            'Citation Management', 'citations', array(
+                new Menu('Search Database', 'citations/search'),
+                new Menu('Review Abstracts', 'citations/review'),
+                new Menu('Add Citation', 'citations/add'),
+                new Menu('System Help', 'citations/help'),
+                new Menu('Administrator Tool', 'citations/admin'),
+            )
+        );
+    }
+
+    /**
+     * Build the EBMS menu information for the calendar pages.
+     */
+    public static function calendar($role) {
+        $menu = new Menu('Calendar', 'calendar');
+        if ($role == 'admin')
+            $menu->children = array(
+                new Menu('View', 'calendar/view'),
+                new Menu('Create Event', 'calendar/create'),
+            );
+        return $menu;
+    }
+
+    /**
+     * Build the EBMS menu information for literature review.
+     */
+    public static function literature($role) {
+        $menu = new Menu('Literature', 'review');
+        if ($role == 'admin')
+            $menu->children = array(
+                new Menu('Assigned Packets', 'review/assigned'),
+                new Menu('Create Packet', 'review/create'),
+            );
+        if ($role == 'member')
+            $menu->children = array(
+                new Menu('Assigned Packets', 'review/assigned'),
+            );
+        return $menu;
+    }
+
+    /**
+     * Build the EBMS menu information for the Summaries pages.
+     */
+    public static function summaries() {
+        return new Menu('Summaries', 'summaries');
+    }
+
+    /**
+     * Build the EBMS menu information for the Travel pages.
+     */
+    public static function travel($role) {
+        $menu = new Menu(
+            'Travel', 'travel', array(
+                new Menu('Travel Information', 'travel/info'),
+                new Menu('Hotel Request', 'travel/hotel'),
+                new Menu('Reimbursement Request', 'travel/reimbursement'),
+            )
+        );
+        if ($role == 'admin')
+            $menu->children[] =
+                new Menu('Travel Reports', 'travel/reports');
+        return $menu;
+    }
+
+    /**
+     * Build the EBMS menu information for the Discussion forum
+     * pages.
+     */
+    public static function forums($user) {
+        $children = array();
+        $forums = Forum::forums();
+        //pdq_ebms_debug('MENU FORUMS', $forums);
+        foreach ($forums as $forum) {
+            if ($forum->visible()) {
+                $url = "discussion/{$forum->id}";
+                $children[] = new Menu($forum->name, $url);
+            }
+        }
+        $url = $children[0]->path;
+        return new Menu('Forums', $url, $children);
+    }
+
+    /**
+     * Build the EBMS menu information for general information pages.
+     */
+    public static function about() {
+        $reg = drupal_convert_to_utf8("\xAE", 'latin1');
+        return new Menu(
+            'About', 'about', array(
+                new Menu('General Information', 'about/info'),
+                new Menu("PDQ$reg Editorial Boards", 'about/boards'),
+            )
+        );
+    }
+}
 
 class Util {
     private static $u2aMapping = array(
@@ -286,6 +575,31 @@ class Util {
     }
 
     /**
+     * Create a version of a string specialized for indexing in one of
+     * several ways:
+     *
+     *  @param string $text     String to convert.
+     *  @param bool $ascii      True = convert string to ascii.
+     *  @param bool $trim       True = trim whitespace from ends.
+     *  @param int  $maxLen     Max chars to pass through, truncate if more.
+     *                           Null = no max.
+     *
+     *  @return                 (Possibly) transformed string
+     */
+    public static function indexify($text, $ascii, $trim, $maxLen) {
+
+        if ($ascii && $text)
+            $text = Util::utf8ToAscii($text);
+        if ($trim && $text)
+            $text = trim($text);
+        if ($maxLen && $text)
+            $text = substr($text, 0, $maxLen);
+
+        return $text;
+    }
+
+
+    /**
      * Pulls a parameter from a request without letting in parameters
      * from cookies (which we'd get from $_REQUEST).
      */
@@ -339,5 +653,21 @@ class Util {
     public static function format_email_address($email, $name) {
         $name = addslashes(mime_header_encode($name));
         return "\"$name\" <$email>";
+    }
+
+    /**
+     * Get user ID of current user, if not passed.
+     *
+     *  @param int $chkUserId   If non-null, return this, else current user.
+     *                          Saves caller making his own check.
+     *
+     *  @return                 User ID.
+     */
+    public static function getUserId($chkUserId) {
+        if (is_null($chkUserId)) {
+            global $user;
+            return $user->uid;
+        }
+        return $chkUserId;
     }
 }
