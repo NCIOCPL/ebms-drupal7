@@ -77,7 +77,6 @@ function ebms_menu() {
 
         // CUSTOM LOGIN PAGE
         'login' => array(
-            #'title' => 'Please Log In',
             'page callback' => 'pdq_ebms_login',
             'access callback' => true,
             'type' => MENU_CALLBACK,
@@ -85,7 +84,6 @@ function ebms_menu() {
 
         // REQUEST FOR NEW PASSWORD
         'password' => array(
-            #'title' => 'New Password Request',
             'page callback' => 'pdq_ebms_password',
             'access callback' => true,
             'type' => MENU_CALLBACK,
@@ -93,7 +91,6 @@ function ebms_menu() {
 
         // LANDING PAGE
         'home' => array(
-            #'title' => 'Home',
             'page callback' => 'pdq_ebms_home',
             'file' => 'home.inc',
             'access callback' => true,
@@ -102,274 +99,182 @@ function ebms_menu() {
 
         // CITATION MANAGEMENT
         'citations' => array(
-            #'title' => 'Citation Management',
             'page callback' => 'pdq_ebms_citations',
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => -1200,
             'type' => MENU_CALLBACK,
         ),
 
         // SEARCH DATABASE
         'citations/search' => array(
-            #'title' => 'Search Database',
             'page callback' => 'pdq_ebms_citations',
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // SEARCH DATABASE
         'citations/review' => array(
-            #'title' => 'Review Abstracts',
             'page callback' => 'pdq_ebms_citations',
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 2,
             'type' => MENU_CALLBACK,
         ),
 
         // SEARCH DATABASE
         'citations/add' => array(
-            #'title' => 'Add Citation',
             'page callback' => 'pdq_ebms_citations',
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 3,
             'type' => MENU_CALLBACK,
         ),
 
         // SYSTEM HELP
         'citations/help' => array(
-            #'title' => 'System Help',
             'page callback' => 'pdq_ebms_citations',
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 4,
             'type' => MENU_CALLBACK,
         ),
 
         // CITATIONS ADMIN
         'citations/admin' => array(
-            #'title' => 'Administrator Tool',
             'page callback' => 'pdq_ebms_citations',
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 5,
             'type' => MENU_CALLBACK,
         ),
 
         // CALENDAR
         'calendar' => array(
-            #'title' => 'Calendar',
             'page callback' => 'pdq_ebms_calendar',
             'file' => 'calendar.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => -1000,
             'type' => MENU_CALLBACK,
         ),
 
         // VIEW CALENDAR
         'calendar/view' => array(
-            #'title' => 'View',
             'page callback' => 'pdq_ebms_calendar',
             'file' => 'calendar.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // CREATE EVENT
         'calendar/create' => array(
-            #'title' => 'Create Event',
             'page callback' => 'pdq_ebms_calendar',
             'file' => 'calendar.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // LITERATURE REVIEW
         'review' => array(
-            #'title' => 'Literature',
             'page callback' => 'pdq_ebms_review',
             'file' => 'review.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => -800,
             'type' => MENU_CALLBACK,
         ),
 
         // ASSIGNED PACKETS
         'review/assigned' => array(
-            #'title' => 'Assigned Packets',
             'page callback' => 'pdq_ebms_review',
             'file' => 'review.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // CREATE PACKET
         'review/create' => array(
-            #'title' => 'Create Packet',
             'page callback' => 'pdq_ebms_review',
             'file' => 'review.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 2,
             'type' => MENU_CALLBACK,
         ),
 
         // SUMMARIES
         'summaries' => array(
-            #'title' => 'Summaries',
             'page callback' => 'pdq_ebms_summaries',
             'file' => 'summaries.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => -600,
             'type' => MENU_CALLBACK,
         ),
 
         // TRAVEL
         'travel' => array(
-            #'title' => 'Travel',
             'page callback' => 'pdq_ebms_travel',
             'file' => 'travel.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => -400,
             'type' => MENU_CALLBACK,
         ),
 
         // TRAVEL INFO
         'travel/info' => array(
-            #'title' => 'Travel Information',
             'page callback' => 'pdq_ebms_travel',
             'file' => 'travel.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // HOTEL REQUEST
         'travel/hotel' => array(
-            #'title' => 'Hotel Request',
             'page callback' => 'pdq_ebms_travel',
             'file' => 'travel.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // REIMBURSEMENT REQUEST
         'travel/reimbursement' => array(
-            #'title' => 'Reimbursement Request',
             'page callback' => 'pdq_ebms_travel',
             'file' => 'travel.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // TRAVEL REPORTS
         'travel/reports' => array(
-            #'title' => 'Travel Reports',
             'page callback' => 'pdq_ebms_travel',
             'file' => 'travel.inc',
             'access arguments' => array('manage citations'),
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // FORUMS
         'discussion' => array(
-            #'title' => 'Forums',
             'page callback' => 'pdq_ebms_forum',
             'file' => 'forum.inc',
-            #'access callback' => 'pdq_ebms_forum_visible',
-            #'access arguments' => array('Cancer Genetics Forum'),
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => 2,
             'type' => MENU_CALLBACK,
         ),
 
-        /*
-        // GENERAL FORUM
-        'discussion/2' => array(
-            'title' => 'Cancer Genetics Forum',
-            'page callback' => 'pdq_ebms_forum',
-            'file' => 'forum.inc',
-            'access callback' => 'pdq_ebms_forum_visible',
-            'access arguments' => array('Cancer Genetics Forum'),
-            'menu_name' => 'main-menu',
-            'weight' => 2,
-        ),
-        'discussion/4' => array(
-            'title' => 'Pediatric Treatment Forum',
-            'page callback' => 'pdq_ebms_forum',
-            'file' => 'forum.inc',
-            'access callback' => 'pdq_ebms_forum_visible',
-            'access arguments' => array('Pediatric Treatment Forum'),
-            'menu_name' => 'main-menu',
-            'weight' => 4,
-        ),
-        */
-
         // ABOUT
         'about' => array(
-            #'title' => 'About',
             'page callback' => 'pdq_ebms_about',
             'file' => 'about.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => 200,
             'type' => MENU_CALLBACK,
         ),
 
         // GENERAL INFORMATION ABOUT EBMS
         'about/info' => array(
-            #'title' => 'General Information',
             'page callback' => 'pdq_ebms_about',
             'file' => 'about.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // Information on PDQ Boards
         'about/boards' => array(
-            #'title' =>
-            #drupal_convert_to_utf8("PDQ\xAE Editorial Boards", 'latin1'),
             'page callback' => 'pdq_ebms_about',
             'file' => 'about.inc',
             'access callback' => 'user_is_logged_in',
-            #'menu_name' => 'main-menu',
-            #'weight' => 2,
             'type' => MENU_CALLBACK,
         ),
 
         // POSTING DOCUMENTS
         'docs' => array(
-            #'title' => 'Docs',
             'page callback' => 'pdq_ebms_docs',
             'file' => 'docs.inc',
             'access arguments' => array('administer'),
@@ -378,7 +283,6 @@ function ebms_menu() {
 
         // CITATION MANAGEMENT
         'reports' => array(
-            #'title' => 'Reports',
             'page callback' => 'pdq_ebms_reports',
             'file' => 'reports.inc',
             'access arguments' => array('administer'),
@@ -470,12 +374,6 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
     );
-}
-function pdq_ebms_forum_visible($name) {
-    return false;
-    return true;
-    return $name == 'Cancer Genetics Forum';
-    return Ebms\Forum::visible($name);
 }
 
 /**
@@ -789,36 +687,6 @@ function pdq_ebms_404() {
 }
 
 /**
- * We won't need this in production, but it certainly
- * comes in handy during development.  Hooked in temporarily
- * to a link in the footer.
- */
-function pdq_ebms_clear_theme_cache() {
-    drupal_theme_rebuild();
-    return '<p>Theme cache cleared ' . date('c') . '.</p>';
-}
-
-/**
- * We won't need this in production, but it certainly
- * comes in handy during development.  Hooked in temporarily
- * to a link in the footer.
- */
-function pdq_ebms_rebuild_menus() {
-    menu_rebuild();
-    return '<p>Caches cleared ' . date('c') . '.</p>';
-}
-
-/**
- * We won't need this in production, but it certainly
- * comes in handy during development.  Hooked in temporarily
- * to a link in the footer.
- */
-function pdq_ebms_clear_all_caches() {
-    cache_clear_all();
-    return '<p>Caches cleared ' . date('c') . '.</p>';
-}
-
-/**
  * Register our callback to perform custom theming of the
  * data structures used to build our main menu and submenus.
  *
@@ -1045,4 +913,34 @@ function pdq_ebms_demo_form_1_submit($form, $form_state) {
 function testform_validation($form, &$form_state) {
     form_set_error('desc', $form_state['values']['name'] . ' is bad.');
     drupal_set_message(print_r($form_state, true));
+}
+
+/**
+ * We won't need this in production, but it certainly
+ * comes in handy during development.  Hooked in temporarily
+ * to a link in the footer.
+ */
+function pdq_ebms_clear_theme_cache() {
+    drupal_theme_rebuild();
+    return '<p>Theme cache cleared ' . date('c') . '.</p>';
+}
+
+/**
+ * We won't need this in production, but it certainly
+ * comes in handy during development.  Hooked in temporarily
+ * to a link in the footer.
+ */
+function pdq_ebms_rebuild_menus() {
+    menu_rebuild();
+    return '<p>Caches cleared ' . date('c') . '.</p>';
+}
+
+/**
+ * We won't need this in production, but it certainly
+ * comes in handy during development.  Hooked in temporarily
+ * to a link in the footer.
+ */
+function pdq_ebms_clear_all_caches() {
+    cache_clear_all();
+    return '<p>Caches cleared ' . date('c') . '.</p>';
 }
