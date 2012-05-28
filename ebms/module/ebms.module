@@ -89,6 +89,13 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // FORM FOR MANAGING USER'S PROFILE
+        'profile' => array(
+            'page callback' => 'pdq_ebms_profile',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
         // LANDING PAGE
         'home' => array(
             'page callback' => 'pdq_ebms_home',
@@ -374,6 +381,14 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
     );
+}
+
+/**
+ * Stub for page to manage one's own profile.
+ */
+function pdq_ebms_profile() {
+    drupal_set_title('Profile');
+    return '<p>Stub for user profile form page</p>';
 }
 
 /**
