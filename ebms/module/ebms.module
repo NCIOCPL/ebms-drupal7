@@ -58,13 +58,26 @@ function ebms_permission() {
  * Implements hook_menu.
  *
  * Creates our custom menus and other addressable pages.
+ *
+ * The Drupal Menu API is only being used for routing and the first
+ * layer of permission checking.  We are unable to use that API
+ * for construction of the rendered menu itself.  This is because
+ * we are required to implement fly-out dynamic submenus, and the
+ * contributed Drupal module generally used for this functionality
+ * has a bug which prevents it from honoring the permissions
+ * callback function registered with the API.  In the end it
+ * turned out to be more efficient to handle menu building in our
+ * own Menu class, implemented in common.inc.  As it turned out,
+ * is was less trouble to wrap the jquery Superfish package with
+ * our own theming, so we were able to dispense with the use of
+ * the Drupal Superfish module altogether.
  */
 function ebms_menu() {
     return array(
 
         // CUSTOM LOGIN PAGE
         'login' => array(
-            'title' => 'Please Log In',
+            #'title' => 'Please Log In',
             'page callback' => 'pdq_ebms_login',
             'access callback' => true,
             'type' => MENU_CALLBACK,
@@ -72,7 +85,7 @@ function ebms_menu() {
 
         // REQUEST FOR NEW PASSWORD
         'password' => array(
-            'title' => 'New Password Request',
+            #'title' => 'New Password Request',
             'page callback' => 'pdq_ebms_password',
             'access callback' => true,
             'type' => MENU_CALLBACK,
@@ -80,77 +93,283 @@ function ebms_menu() {
 
         // LANDING PAGE
         'home' => array(
-            'title' => 'Home',
+            #'title' => 'Home',
             'page callback' => 'pdq_ebms_home',
             'file' => 'home.inc',
             'access callback' => true,
-            'weight' => 1,
             'type' => MENU_CALLBACK,
         ),
 
         // CITATION MANAGEMENT
         'citations' => array(
-            'title' => 'Citation Management',
+            #'title' => 'Citation Management',
             'page callback' => 'pdq_ebms_citations',
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
-            'menu_name' => 'main-menu',
-            'weight' => -1200,
+            #'menu_name' => 'main-menu',
+            #'weight' => -1200,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // SEARCH DATABASE
+        'citations/search' => array(
+            #'title' => 'Search Database',
+            'page callback' => 'pdq_ebms_citations',
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // SEARCH DATABASE
+        'citations/review' => array(
+            #'title' => 'Review Abstracts',
+            'page callback' => 'pdq_ebms_citations',
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 2,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // SEARCH DATABASE
+        'citations/add' => array(
+            #'title' => 'Add Citation',
+            'page callback' => 'pdq_ebms_citations',
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 3,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // SYSTEM HELP
+        'citations/help' => array(
+            #'title' => 'System Help',
+            'page callback' => 'pdq_ebms_citations',
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 4,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // CITATIONS ADMIN
+        'citations/admin' => array(
+            #'title' => 'Administrator Tool',
+            'page callback' => 'pdq_ebms_citations',
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 5,
+            'type' => MENU_CALLBACK,
         ),
 
         // CALENDAR
         'calendar' => array(
-            'title' => 'Calendar',
+            #'title' => 'Calendar',
             'page callback' => 'pdq_ebms_calendar',
             'file' => 'calendar.inc',
             'access callback' => 'user_is_logged_in',
-            'menu_name' => 'main-menu',
-            'weight' => -1000,
+            #'menu_name' => 'main-menu',
+            #'weight' => -1000,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // VIEW CALENDAR
+        'calendar/view' => array(
+            #'title' => 'View',
+            'page callback' => 'pdq_ebms_calendar',
+            'file' => 'calendar.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // CREATE EVENT
+        'calendar/create' => array(
+            #'title' => 'Create Event',
+            'page callback' => 'pdq_ebms_calendar',
+            'file' => 'calendar.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
         ),
 
         // LITERATURE REVIEW
         'review' => array(
-            'title' => 'Literature',
+            #'title' => 'Literature',
             'page callback' => 'pdq_ebms_review',
             'file' => 'review.inc',
             'access callback' => 'user_is_logged_in',
-            'menu_name' => 'main-menu',
-            'weight' => -800,
+            #'menu_name' => 'main-menu',
+            #'weight' => -800,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // ASSIGNED PACKETS
+        'review/assigned' => array(
+            #'title' => 'Assigned Packets',
+            'page callback' => 'pdq_ebms_review',
+            'file' => 'review.inc',
+            'access callback' => 'user_is_logged_in',
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // CREATE PACKET
+        'review/create' => array(
+            #'title' => 'Create Packet',
+            'page callback' => 'pdq_ebms_review',
+            'file' => 'review.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 2,
+            'type' => MENU_CALLBACK,
         ),
 
         // SUMMARIES
         'summaries' => array(
-            'title' => 'Summaries',
+            #'title' => 'Summaries',
             'page callback' => 'pdq_ebms_summaries',
             'file' => 'summaries.inc',
             'access callback' => 'user_is_logged_in',
-            'menu_name' => 'main-menu',
-            'weight' => -600,
+            #'menu_name' => 'main-menu',
+            #'weight' => -600,
+            'type' => MENU_CALLBACK,
         ),
 
         // TRAVEL
         'travel' => array(
-            'title' => 'Travel',
+            #'title' => 'Travel',
             'page callback' => 'pdq_ebms_travel',
             'file' => 'travel.inc',
             'access callback' => 'user_is_logged_in',
-            'menu_name' => 'main-menu',
-            'weight' => -400,
+            #'menu_name' => 'main-menu',
+            #'weight' => -400,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // TRAVEL INFO
+        'travel/info' => array(
+            #'title' => 'Travel Information',
+            'page callback' => 'pdq_ebms_travel',
+            'file' => 'travel.inc',
+            'access callback' => 'user_is_logged_in',
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // HOTEL REQUEST
+        'travel/hotel' => array(
+            #'title' => 'Hotel Request',
+            'page callback' => 'pdq_ebms_travel',
+            'file' => 'travel.inc',
+            'access callback' => 'user_is_logged_in',
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // REIMBURSEMENT REQUEST
+        'travel/reimbursement' => array(
+            #'title' => 'Reimbursement Request',
+            'page callback' => 'pdq_ebms_travel',
+            'file' => 'travel.inc',
+            'access callback' => 'user_is_logged_in',
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // TRAVEL REPORTS
+        'travel/reports' => array(
+            #'title' => 'Travel Reports',
+            'page callback' => 'pdq_ebms_travel',
+            'file' => 'travel.inc',
+            'access arguments' => array('manage citations'),
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
         ),
 
         // FORUMS
-        'forum' => array(
-            'title' => 'Discussion',
+        'discussion' => array(
+            #'title' => 'Forums',
             'page callback' => 'pdq_ebms_forum',
             'file' => 'forum.inc',
+            #'access callback' => 'pdq_ebms_forum_visible',
+            #'access arguments' => array('Cancer Genetics Forum'),
             'access callback' => 'user_is_logged_in',
+            #'menu_name' => 'main-menu',
+            #'weight' => 2,
+            'type' => MENU_CALLBACK,
+        ),
+
+        /*
+        // GENERAL FORUM
+        'discussion/2' => array(
+            'title' => 'Cancer Genetics Forum',
+            'page callback' => 'pdq_ebms_forum',
+            'file' => 'forum.inc',
+            'access callback' => 'pdq_ebms_forum_visible',
+            'access arguments' => array('Cancer Genetics Forum'),
             'menu_name' => 'main-menu',
-            'weight' => -200,
+            'weight' => 2,
+        ),
+        'discussion/4' => array(
+            'title' => 'Pediatric Treatment Forum',
+            'page callback' => 'pdq_ebms_forum',
+            'file' => 'forum.inc',
+            'access callback' => 'pdq_ebms_forum_visible',
+            'access arguments' => array('Pediatric Treatment Forum'),
+            'menu_name' => 'main-menu',
+            'weight' => 4,
+        ),
+        */
+
+        // ABOUT
+        'about' => array(
+            #'title' => 'About',
+            'page callback' => 'pdq_ebms_about',
+            'file' => 'about.inc',
+            'access callback' => 'user_is_logged_in',
+            #'menu_name' => 'main-menu',
+            #'weight' => 200,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // GENERAL INFORMATION ABOUT EBMS
+        'about/info' => array(
+            #'title' => 'General Information',
+            'page callback' => 'pdq_ebms_about',
+            'file' => 'about.inc',
+            'access callback' => 'user_is_logged_in',
+            #'menu_name' => 'main-menu',
+            #'weight' => 1,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // Information on PDQ Boards
+        'about/boards' => array(
+            #'title' =>
+            #drupal_convert_to_utf8("PDQ\xAE Editorial Boards", 'latin1'),
+            'page callback' => 'pdq_ebms_about',
+            'file' => 'about.inc',
+            'access callback' => 'user_is_logged_in',
+            #'menu_name' => 'main-menu',
+            #'weight' => 2,
+            'type' => MENU_CALLBACK,
         ),
 
         // POSTING DOCUMENTS
         'docs' => array(
-            'title' => 'About',
+            #'title' => 'Docs',
             'page callback' => 'pdq_ebms_docs',
             'file' => 'docs.inc',
             'access arguments' => array('administer'),
@@ -159,7 +378,7 @@ function ebms_menu() {
 
         // CITATION MANAGEMENT
         'reports' => array(
-            'title' => 'Reports',
+            #'title' => 'Reports',
             'page callback' => 'pdq_ebms_reports',
             'file' => 'reports.inc',
             'access arguments' => array('administer'),
@@ -217,7 +436,46 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
+
+        // PLACEHOLDER DURING DEVELOPMENT
+        'stub' => array(
+            'title' => 'Place Holder',
+            'page callback' => 'pdq_ebms_stub',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // TEMPLATE USED FOR PUTTING UP TEST FORMS
+        'testform' => array(
+            'title' => 'Test Form',
+            'page callback' => 'pdq_ebms_testform',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+            'file' => 'testform.inc',
+        ),
+
+        // CLEAR THEME CACHE
+        'clear-theme-cache' => array(
+            'title' => 'Clear Theme Cache',
+            'page callback' => 'pdq_ebms_clear_theme_cache',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // CLEAR ALL CACHES
+        'clear-all-caches' => array(
+            'title' => 'Clear Theme Cache',
+            'page callback' => 'pdq_ebms_clear_all_caches',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
     );
+}
+function pdq_ebms_forum_visible($name) {
+    return false;
+    return true;
+    return $name == 'Cancer Genetics Forum';
+    return Ebms\Forum::visible($name);
 }
 
 /**
@@ -232,7 +490,6 @@ function pdq_ebms_login() {
 
     // Then fold in the hidden form for the password reset dialog.
     drupal_add_library('system', 'ui.dialog');
-    drupal_add_js(Ebms\JS_DIR . '/ebms.js');
     $dialog = drupal_get_form('pdq_ebms_password_form');
     $dialog['#prefix'] = '<div id="forgot-password-form-js">';
     $dialog['#suffix'] = '</div>';
@@ -532,6 +789,169 @@ function pdq_ebms_404() {
 }
 
 /**
+ * We won't need this in production, but it certainly
+ * comes in handy during development.  Hooked in temporarily
+ * to a link in the footer.
+ */
+function pdq_ebms_clear_theme_cache() {
+    drupal_theme_rebuild();
+    return '<p>Theme cache cleared ' . date('c') . '.</p>';
+}
+
+/**
+ * We won't need this in production, but it certainly
+ * comes in handy during development.  Hooked in temporarily
+ * to a link in the footer.
+ */
+function pdq_ebms_rebuild_menus() {
+    menu_rebuild();
+    return '<p>Caches cleared ' . date('c') . '.</p>';
+}
+
+/**
+ * We won't need this in production, but it certainly
+ * comes in handy during development.  Hooked in temporarily
+ * to a link in the footer.
+ */
+function pdq_ebms_clear_all_caches() {
+    cache_clear_all();
+    return '<p>Caches cleared ' . date('c') . '.</p>';
+}
+
+/**
+ * Register our callback to perform custom theming of the
+ * data structures used to build our main menu and submenus.
+ *
+ * Implements hook_theme().
+ */
+function ebms_theme() {
+    return array(
+        'ebms_menu_item_list' => array(
+            'variables' => array(
+                'items' => array(),
+                'attributes' => array(),
+            ),
+        ),
+    );
+}
+
+/**
+ * Custom theming of the menu items.  Most of the work
+ * is to enable the jQuery Superfish package to show
+ * submenus dynamically.  This callback is registered
+ * in ebms_theme() above.
+ */
+function theme_ebms_menu_item_list($variables) {
+    $markup = array();
+    $items = $variables['items'];
+    if (!empty($items)) {
+        if (!empty($variables['level']))
+            $variables['attributes']['class'][] = 'ebms-submenu';
+        $attributes = drupal_attributes($variables['attributes']);
+        $num_items = count($items);
+        $markup[] = "<ul$attributes>";
+        foreach ($items as $i => $item) {
+            $attributes = array();
+            $children = array();
+            $data = '';
+            if (is_array($item)) {
+                foreach ($item as $key => $value) {
+                    switch ($key) {
+                        case 'data':
+                            $data = $value;
+                            break;
+                        case 'children':
+                            $children = $value;
+                            break;
+                        default:
+                            $attributes[$key] = $value;
+                            break;
+                    }
+                }
+            }
+            else
+                $data = $item;
+            if (empty($variables['level'])) {
+                $data .= '<div class="ebms-menu-left-divider"></div>';
+                $data .= '<div class="ebms-menu-right-divider"></div>';
+            }
+            if (count($children) > 0) {
+                $data .= '<div class="ebms-menu-border-blur"></div>';
+                $data .= '<div class="ebms-menu-restore-pixel"></div>';
+                $data .= theme_ebms_menu_item_list(
+                    array(
+                        'items' => $children,
+                        'attributes' => $attributes,
+                        'level' => 'child',
+                    )
+                );
+            }
+            if ($i == 0)
+                $attributes['class'][] = 'first';
+            if ($i == $num_items - 1)
+                $attributes['class'][] = 'last';
+            $attributes = drupal_attributes($attributes);
+            $markup[] = "<li$attributes>$data</li>";
+        }
+        $markup[] = "</ul>";
+    }
+    $markup = implode($markup);
+    return $markup;
+}
+
+/**
+ * Populate the ebms_menu block.  See note above in the
+ * comments for our implementation of hook_menu about
+ * why we do this.
+ */
+function ebms_page_build(&$page) {
+    $menus = Ebms\Menu::menus();
+    $items = array();
+    foreach ($menus as $m)
+        $items[] = $m->render_array();
+    $page['ebms_menu'] = array(
+        '#attributes' => array(
+            'class' => array('sf-menu'),
+            'id' => 'ebms-menu',
+        ),
+        '#theme' => 'ebms_menu_item_list',
+        '#items' => $items,
+    );
+}
+
+/**
+ * Load the libraries we'll need for advanced display
+ * functionality, and populate the $user object with
+ * information specific to the EBMS (i.e., board and
+ * subgroup membership).
+ *
+ * Implementation of hook_init().
+ */
+function ebms_init() {
+    global $user;
+    $sflib = libraries_get_path('superfish');
+    drupal_add_js("$sflib/superfish.js");
+    drupal_add_js("$sflib/supersubs.js");
+    drupal_add_js(Ebms\JS_DIR . '/ebms.js');
+    drupal_add_css("$sflib/css/superfish.css");
+    if ($user->uid) {
+        $result = db_select('ebms_board_member', 'm')
+            ->fields('m', array('board_id'))
+            ->condition('m.user_id', $user->uid)
+            ->execute();
+        $user->ebms_boards = array();
+        foreach ($result as $record)
+            $user->ebms_boards[] = $record->board_id;
+        $result = db_select('ebms_subgroup_member', 'm')
+            ->fields('m', array('sg_id'))
+            ->condition('m.user_id', $user->uid)
+            ->execute();
+        $user->ebms_subgroups = array();
+        foreach ($result as $record)
+            $user->ebms_subgroups[] = $record->sg_id;
+    }
+}
+/**
  * XXX Everything below here will be jettisoned once we're in production.
  */
 class EbmsUploadFile extends stdClass {
@@ -568,4 +988,61 @@ function pdq_ebms_debug($where, $what) {
     file_put_contents('/tmp/ebms.debug',
                       "$now $where\n" . print_r($what, TRUE) .
                       "\n", FILE_APPEND);
+}
+
+function pdq_ebms_stub() {
+    return '<h2>Placeholder</h2>' .
+        '<p>Stub used while functionality is being developed!</p>';
+    return drupal_get_form('pdq_ebms_demo_form_1',
+        array(
+            'foo' => 1234,
+            'bar' => array(
+                'buzz' => 'lightyear',
+                'prince' => 'hamlet',
+            ),
+        )
+    );
+}
+
+/**
+ * Form template for Alan.
+ */
+function pdq_ebms_demo_form_1($form, &$form_state, $extra) {
+    return array(
+        'name' => array(
+            '#title' => 'Name',
+            '#type' => 'textfield',
+            '#description' => 'Use the format <i>Surname, First Names(s)</i>',
+        ),
+        'desc' => array(
+            '#title' => 'Notes',
+            '#type' => 'textarea',
+            '#description' => 'Tell me everything you know about him/her.',
+        ),
+        'gender' => array(
+            '#title' => 'Gender',
+            '#type' => 'checkboxes',
+            '#options' => array('Male', 'Female', 'Other'),
+            '#description' => 'Check all that apply',
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Initiate Test',
+            '#submit' => array('pdq_ebms_demo_form_1_submit'),
+        ),
+        '#validate' => array('testform_validation'),
+        'foo' => array(
+            '#type' => 'hidden',
+            '#value' => $extra['bar']['prince'],
+        ),
+    );
+}
+
+function pdq_ebms_demo_form_1_submit($form, $form_state) {
+    drupal_set_message('wrong name', 'error');
+    return '<p>Your test failed.</p>';
+}
+function testform_validation($form, &$form_state) {
+    form_set_error('desc', $form_state['values']['name'] . ' is bad.');
+    drupal_set_message(print_r($form_state, true));
 }
