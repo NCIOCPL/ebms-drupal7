@@ -485,7 +485,6 @@ class EbmsReview {
             'p' => 'WHEN POSTED'
         );
         $options = array('query' => $this->query_parms());
-        pdq_ebms_debug('col headers 1', $options);
         $i = 1;
         $headers = array();
         foreach ($sort_cols as $key => $label) {
@@ -494,7 +493,6 @@ class EbmsReview {
             else
                 $options['query']['sort-dir'] = 'a';
             $options['query']['sort-col'] = $key;
-        pdq_ebms_debug('col headers 2', $options);
             $headers[] = array(
                 'data' => l($label, 'review', $options),
                 'class' => array('c' . $i++),
