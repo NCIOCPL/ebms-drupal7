@@ -11,8 +11,8 @@
 /**
  * Callback registered for /review pages.
  */
-function pdq_ebms_review() {
-    $review = new EbmsReview();
+function pdq_ebms_review($action=null, $packet_id=0) {
+    $review = new EbmsReview($action, $packet_id);
     return $review->run();
 }
 
@@ -32,37 +32,281 @@ class EbmsReview {
         $expanded,
         $sort_col,
         $sort_dir,
-        $url;
+        $action,
+        $reviewed,
+        $pager;
+    public static $url = 'review';
 
     /**
      * Passing settings in the URL instead of in $_SESSION in order
      * to avoid dependency on Javascript being enabled on the user's
      * browser.
      */
-    public function __construct() {
+    public function __construct($action, $packet_id) {
         global $user;
         $this->user         = $user;
-        $this->packet_id    = Ebms\Util::get_request_value('packet');
+        $this->packet_id    = Ebms\Util::get_request_value('packet',
+                              $packet_id);
         $this->article_id   = Ebms\Util::get_request_value('article');
         $this->expanded     = Ebms\Util::get_request_value('expanded');
         $this->sort_col     = Ebms\Util::get_request_value('sort-col', 'f');
         $this->sort_dir     = Ebms\Util::get_request_value('sort-dir', 'a');
-        $this->action       = Ebms\Util::get_request_value('action');
-        $this->packet_title = $this->fetch_packet_title($this->packet_id);
-        $this->url          = 'review';
+        #$this->action       = Ebms\Util::get_request_value('action', $action);
+        $this->action = $action;
+        $this->reviewed     = Ebms\Util::get_request_value('reviewed');
+        $this->pager        = Ebms\Util::get_request_value('pager');
+        $this->packet_title = EbmsPacket::fetch_title($this->packet_id);
     }
 
     /**
      * Select the version of the page appropriate the user's role.
      */
     public function run() {
+        $this->add_js();
+        Ebms\Menu::$active = 'Literature';
         if (in_array('board member', $this->user->roles)) {
             if ($this->action == 'reviewer-upload') {
                 return $this->reviewer_upload_page();
             }
             return $this->choose_member_review_page();
         }
+        return $this->choose_manager_review_page();
+        // XXX STUB
         return '<i>Stub for manager literature review page</i>';
+    }
+
+    /**
+     * Pick the page for the board manager.
+     */
+    private function choose_manager_review_page() {
+        if (false)
+            pdq_ebms_debug('SWITCHER', $this->action);
+        if ($this->action == 'packets')
+            return $this->manager_packets();
+        if ($this->action == 'reviews')
+            return $this->manager_reviews();
+        if ($this->action == 'add')
+            return drupal_get_form('pdq_ebms_edit_packet_form');
+        if ($this->action == 'edit')
+            return drupal_get_form('pdq_ebms_edit_packet_form',
+                $this->packet_id);
+        if ($this->action == 'delete') {
+            return $this->delete_packet();
+            return drupal_get_form('pdq_ebms_packet_delete_confirm',
+                $this->packet_id);
+        }
+        return $this->manager_literature_landing_page();
+    }
+
+    private function delete_packet() {
+        $title = EbmsPacket::fetch_title($this->packet_id);
+        $title = str_replace(' [Legacy]', '', $title);
+        $updated = db_update('ebms_packet')
+            ->fields(array('active_status' => 'I'))
+            ->condition('packet_id', $this->packet_id)
+            ->execute();
+        if ($updated == 1)
+            drupal_set_message("Packet '$title' has been deleted.");
+        else
+            drupal_set_message("Failure deleting packet '$title'.", "error");
+        $opts = array('query' => drupal_get_query_parameters());
+        drupal_goto(EbmsReview::$url . '/packets', $opts);
+    }
+
+    /**
+     * Show the page a board manager uses to choose between managing
+     * packets and reviewing board member feedback.
+     */
+    private function manager_literature_landing_page() {
+        drupal_set_breadcrumb(array('Literature'));
+        return array(
+            'packets' => array(
+                '#type' => 'markup',
+                '#markup' => l('Literature Surveillance Packets',
+                           EbmsReview::$url . '/packets'),
+                '#prefix' => '<h2>',
+                '#suffix' => '</h2>',
+            ),
+            'reviews' => array(
+                '#type' => 'markup',
+                '#markup' => l('Literature Surveillance Reviews',
+                           EbmsReview::$url . '/reviews'),
+                '#prefix' => '<h2 class="end-of-short-page">',
+                '#suffix' => '</h2>',
+            ),
+        );
+    }
+
+    private function manager_packets_view_toggle($options) {
+        if ($this->reviewed) {
+            unset($options['query']['reviewed']);
+            $label = 'All';
+        }
+        else {
+            $options['query']['reviewed'] = true;
+            $label = 'Reviewed';
+        }
+        $down_arrow = array(
+            '#type' => 'markup',
+            '#prefix' => 'View <span class="view-toggle-arrow">',
+            '#markup' => Ebms\DOWN_ARROW,
+            '#suffix' => '</span>',
+        );
+        $render_array = array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'manager-packets-view-toggle'),
+            'under' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'view-toggle-under'),
+                'over' => array(
+                    '#type' => 'container',
+                    '#attributes' => array('id' => 'view-toggle-over'),
+                    'view' => array(
+                        '#type' => 'markup',
+                        'down-arrow' => $down_arrow,
+                    ),
+                    'link' => array(
+                        '#type' => 'markup',
+                        '#markup' =>
+                        l($label, EbmsReview::$url . '/packets', $options),
+                    ),
+                ),
+                'down-arrow' => $down_arrow,
+            ),
+        );
+        return render($render_array);
+    }
+
+    /**
+     * Show the packets associated with the manager who's logged in.
+     * Another Drupal bug: the render array for a page callback is
+     * not handled correctly when used as a page callback if the
+     * top-level '#type' attribute is 'container'; there are no
+     * plans to back-port any fixes for this bug to Drupal 7.
+     * See http://drupal.org/node/1300290#comment-5093234.
+     */
+    private function manager_packets() {
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                'Literature Surveillance Packets',
+            )
+        );
+        $headers = array(
+            array(
+                'data' => 'Packet Name',
+                'field' => 'p.packet_title',
+            ),
+            array(
+                'data' => 'Board',
+                'field' => 'b.board_name',
+            ),
+            array(
+                'data' => 'Uploaded By',
+                'field' => 'u.name',
+            ),
+            array(
+                'data' => 'Actions',
+                'class' => array('col-4'),
+            ),
+        );
+        $query = db_select('ebms_packet', 'p');
+        if ($this->pager != 'off')
+            $query = $query->extend('PagerDefault')->limit(6);
+        $query = $query->extend('TableSort');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
+        $query->join('ebms_board_member', 'm', 'm.board_id = b.board_id');
+        $query->join('users', 'u', 'u.uid = p.created_by');
+        if ($this->reviewed) {
+            $query->join('ebms_article_review', 'r',
+                'r.packet_id = p.packet_id');
+            $query->distinct();
+        }
+        $query->fields('p', array('packet_id', 'packet_title'));
+        $query->fields('b', array('board_name'));
+        $query->fields('u', array('name'));
+        $query->condition('m.user_id', $this->user->uid);
+        $query->condition('p.active_status', 'A');
+        $query->orderByHeader($headers);
+        $packets = $query->execute();
+        $divider = '<span class="action-divider">|</span>';
+        $opts = array('query' => drupal_get_query_parameters());
+        $main_url = EbmsReview::$url;
+        $del_func = 'javascript:window.ebms.delete_packet';
+        foreach ($packets as $p) {
+            #$options = array('query' => array('packet' => $p->packet_id));
+            #$options['query']['action'] = 'edit';
+            $edit_link = l('EDIT', "$main_url/edit/{$p->packet_id}", $opts);
+            $del_parm = url("$main_url/delete/{$p->packet_id}", $opts);
+            $del_url = "$del_func('$del_parm');";
+            $del_link = '<a href="' . $del_url . '">DELETE</a>';
+            $title = str_replace(' [Legacy]', '', $p->packet_title);
+            $data = array(
+                htmlspecialchars($title),
+                htmlspecialchars($p->board_name),
+                htmlspecialchars($p->name),
+                "$edit_link $divider $del_link",
+            );
+            $rows[] = array(
+                'data' => $data,
+                'no_striping' => true,
+            );
+        }
+        $view = $this->manager_packets_view_toggle($opts);
+        $add = l('Add New', EbmsReview::$url . '/add', $opts);
+        $title = 'Literature Surveillance Packets';
+        $id = 'manager-packets-page-title';
+        $table = array(
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => "<h2 id='$id'>$title $add $view</h2>",
+            ),
+            'table' => array(
+                '#attributes' => array('id' => 'manager-packets-table'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+            'delete-confirm' => array(
+                '#type' => 'container',
+                '#attributes' => array(
+                    'id' => 'confirm-packet-delete',
+                    'title' => 'Delete Packet?',
+                ),
+                'confirm-message' => array(
+                    '#type' => 'markup',
+                    '#markup' =>
+                    '<p>Are you sure you want to delete this packet?</p>',
+                ),
+            ),
+        );
+        if ($this->pager != 'off')
+            $table['pager'] = array('#theme' => 'pager');
+        else {
+            unset($opts['query']['pager']);
+            $url = url(EbmsReview::$url, $opts);
+            $link = l('VIEW PAGES', EbmsReview::$url . '/packets', $opts);
+            $table['pager'] = array(
+                '#type' => 'markup',
+                '#markup' => "<div id='pager-view-pages'>$link</div>",
+            );
+        }
+        return $table;
+    }
+
+    /**
+     * Show the reviews for this board manager's packets.
+     */
+    private function manager_reviews() {
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                'Literature Surveillance Reviews',
+            )
+        );
+        return '<p>Implementation of this page will be done as part of ' .
+            'Iteration II, as part of the Reports stories.</p>';
     }
 
     /**
@@ -70,7 +314,6 @@ class EbmsReview {
      */
     private function choose_member_review_page() {
 
-        $this->add_js();
         if ($this->article_id) {
             if (!$this->already_reviewed())
                 return $this->member_review();
@@ -95,8 +338,8 @@ class EbmsReview {
         unset($options['query']['article']);
         drupal_set_breadcrumb(
             array(
-                l('Literature', 'review'),
-                l($this->packet_title, 'review', $options),
+                l('Literature', EbmsReview::$url),
+                l($this->packet_title, EbmsReview::$url, $options),
                 "REVIEW",
             )
         );
@@ -117,7 +360,7 @@ class EbmsReview {
             '#suffix' => '</div>',
         );
         $options = array('html' => true);
-        $url = 'review';
+        $url = EbmsReview::$url;
         foreach ($packets as $p) {
             $options['query'] = array('packet' => $p->packet_id);
             $packet_link = l($p->packet_title, $url, $options);
@@ -156,7 +399,12 @@ class EbmsReview {
 
         // Override Drupal's breadcrumbs.
         $title = htmlspecialchars($this->packet_title);
-        drupal_set_breadcrumb(array(l('Literature', 'review'), $title));
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                $title,
+            )
+        );
 
         // Build the page content.
         $page = array(
@@ -164,7 +412,7 @@ class EbmsReview {
             '#suffix' => '</div>',
             'packet-title' => array(
                 '#type' => 'markup',
-                '#markup' => "<h2>{$this->packet_title}</h2>"
+                '#markup' => "<h2>{$this->packet_title}</h2>",
             ),
         );
 
@@ -187,7 +435,8 @@ class EbmsReview {
         // If the section is collapsed, just show the link to expand it.
         if (strpos($this->expanded, 's') === FALSE) {
             $options['query']['expanded'] = $this->expanded . 's';
-            $link = l('Summary Documents &nbsp; +', 'review', $options);
+            $link = l('Summary Documents &nbsp; +', EbmsReview::$url,
+                    $options);
             $page['summaries'] = array(
                 '#type' => 'markup',
                 '#markup' => "<h3>$link</h3><br />",
@@ -199,7 +448,7 @@ class EbmsReview {
             $expanded = str_replace('s', '', $this->expanded);
             $options['query']['expanded'] = $expanded;
             $label = 'Summary Documents &nbsp <span>&ndash;</span>';
-            $link = l($label, 'review', $options);
+            $link = l($label, EbmsReview::$url, $options);
             $page['summaries']['heading'] = array(
                 '#type' => 'markup',
                 '#markup' => "<h3 class='expanded'>$link</h3>",
@@ -233,7 +482,7 @@ class EbmsReview {
         // If the section is collapsed, just show the link to expand it.
         if (strpos($this->expanded, 'a') === FALSE) {
             $options['query']['expanded'] = $this->expanded . 'a';
-            $link = l('Articles &nbsp; +', 'review', $options);
+            $link = l('Articles &nbsp; +', EbmsReview::$url, $options);
             $page['articles'] = array(
                 '#type' => 'markup',
                 '#markup' => "<h3>$link</h3><br />",
@@ -252,7 +501,7 @@ class EbmsReview {
             $expanded = str_replace('a', '', $this->expanded);
             $options['query']['expanded'] = $expanded;
             $label = 'Articles &nbsp <span>&ndash;</span>';
-            $collapse_link = l($label, 'review', $options);
+            $collapse_link = l($label, EbmsReview::$url, $options);
 
             // Restore article expansion for the review links.
             $options['query']['expanded'] = $expanded . 'a';
@@ -266,7 +515,6 @@ class EbmsReview {
                 $ft_link = l('download full text', $ft_url, $target);
                 $links = "$pm_link &nbsp; | &nbsp; $ft_link";
                 $citation = Ebms\Util::get_full_citation($article->article_id);
-                $citation = htmlspecialchars($citation);
                 $options['query']['article'] = $article->article_id;
                 $rows[] = array(
                     'data' => array(
@@ -275,7 +523,7 @@ class EbmsReview {
                             'class' => array('c1'),
                         ),
                         array(
-                            'data' => l('review', 'review', $options),
+                            'data' => l('Review', EbmsReview::$url, $options),
                             'class' => array('c2'),
                             'valign' => 'bottom',
                         ),
@@ -312,7 +560,7 @@ class EbmsReview {
         // If the section is collapsed, just show the link to expand it.
         if (strpos($this->expanded, 'u') === FALSE) {
             $options['query']['expanded'] = $this->expanded . 'u';
-            $link = l('Reviewer Uploads &nbsp; +', 'review', $options);
+            $link = l('Reviewer Uploads &nbsp; +', EbmsReview::$url, $options);
             $page['uploads'] = array(
                 '#type' => 'markup',
                 '#markup' => "<h3 id='reviewer-uploads-h3'>$link</h3><br />",
@@ -329,7 +577,7 @@ class EbmsReview {
             $expanded = str_replace('u', '', $this->expanded);
             $options['query']['expanded'] = $expanded;
             $label = 'Reviewer Uploads &nbsp; <span>&ndash;</span>';
-            $collapse_link = l($label, 'review', $options);
+            $collapse_link = l($label, EbmsReview::$url, $options);
 
             // Restore the expanded option.
             $options['query']['expanded'] .= 'u';
@@ -349,7 +597,7 @@ class EbmsReview {
             $uploaded_docs = $this->fetch_reviewer_uploads();
             foreach ($uploaded_docs as $doc) {
                 $url = file_create_url($doc->uri);
-                $posted = date("y-m-d", strtotime($doc->when_posted));
+                $posted = date("m/d/Y", strtotime($doc->when_posted));
                 $rows[] = array(
                     'data' => array(
                         array(
@@ -380,7 +628,8 @@ class EbmsReview {
                 ),
                 'post link' => array(
                     '#type' => 'markup',
-                    '#markup' => l('post document', 'review', $options),
+                    '#markup' => l('post document', EbmsReview::$url,
+                               $options),
                     '#prefix' => '<p id="reviewer-post-button">',
                     '#suffix' => '</p>',
                 ),
@@ -407,8 +656,8 @@ class EbmsReview {
         $options = array('query' => $this->query_parms());
         drupal_set_breadcrumb(
             array(
-                l('Literature', 'review'),
-                l($this->packet_title, 'review', $options),
+                l('Literature', EbmsReview::$url),
+                l($this->packet_title, EbmsReview::$url, $options),
                 "UPLOAD",
             )
         );
@@ -474,8 +723,8 @@ class EbmsReview {
 
     /**
      * Create the top row for the table displaying documents the reviewer
-     * has uploaded.  We're not using the Drupal "#header" technique
-     * because we are not able to  take advantage of their styling, and
+     * has uploaded.  We're not using the Drupal "header" technique
+     * because we are not able to take advantage of their styling, and
      * their mechanism for sorting columns makes the URLs too ugly.
      */
     private function reviewer_docs_column_headers() {
@@ -494,7 +743,7 @@ class EbmsReview {
                 $options['query']['sort-dir'] = 'a';
             $options['query']['sort-col'] = $key;
             $headers[] = array(
-                'data' => l($label, 'review', $options),
+                'data' => l($label, EbmsReview::$url, $options),
                 'class' => array('c' . $i++),
             );
         }
@@ -559,11 +808,12 @@ class EbmsReview {
                 array(
                     'r.article_id = a.article_id',
                     'r.reviewer_id = m.reviewer_id',
-                    'r.packet_id = p.packet_id'
+                    'r.packet_id = p.packet_id',
                 )
             )
         );
         $query->condition('m.reviewer_id', $this->user->uid);
+        $query->condition('p.active_status', 'A');
         $query->isNull('r.article_id');
         $query->distinct();
         $query->orderBy('t.topic_name');
@@ -613,19 +863,6 @@ class EbmsReview {
     }
 
     /**
-     * Retrieve the title for the current packet from the database.
-     */
-    private static function fetch_packet_title($packet_id) {
-        if (!$packet_id)
-            return null;
-        return db_select('ebms_packet', 'p')
-            ->fields('p', array('packet_title'))
-            ->condition('p.packet_id', $packet_id)
-            ->execute()
-            ->fetchField();
-    }
-
-    /**
      * Build the URL for the LOE guidelines document used by the board
      * for which the current packet was created.
      */
@@ -665,6 +902,260 @@ class EbmsReview {
             if ($value)
                 $parms[$name] = $value;
         return $parms;
+    }
+
+    /**
+     * XXX Replace with Alan's version when API is ready.
+     */
+    private static function brief_citation($article_id) {
+        return db_select('ebms_article', 'a')
+            ->fields('a', array('brf_citation'))
+            ->condition('a.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+    }
+
+    /**
+     * XXX Replace with Alan's API call to ....
+     */
+    public static function topics_for_board($board_id, $state_id) {
+        /* Won't work; Drupal's DB API isn't sophisticated enough to
+           handle nested correlated queries.
+        $subquery = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_id'))
+            ->condition('p.topic_id', 's.topic_id')
+            ->condition('p.active_status', 'A');
+        $subquery = db_select('ebms_packet_article', 'a')
+            ->fields('a', array('article_id'))
+            ->condition('a.drop_flag', 0)
+            ->condition('a.packet_id', $subquery, 'IN')
+            ->distinct();
+        $query = db_select('ebms_topic', 't');
+        $query->fields('t', array('topic_id', 'topic_name'));
+        $query->join('ebms_article_state', 's', 's.topic_id = t.topic_id');
+        $query->condition('s.active_status', 'A');
+        $query->condition('s.state_id', $state_id);
+        $query->condition('t.board_id', $board);
+        $query->condition('s.article_id', $subquery, 'NOT IN');
+        dpq($query);
+        $results = $query->execute(); */
+        $query = "
+SELECT DISTINCT t.topic_id, t.topic_name
+           FROM ebms_topic t
+           JOIN ebms_article_state s
+             ON t.topic_id = s.topic_id
+          WHERE s.active_status = 'A'
+            AND s.state_id = $state_id
+            AND t.board_id = $board_id
+            AND s.article_id NOT IN
+   (SELECT DISTINCT article_id
+               FROM ebms_packet_article
+              WHERE drop_flag = 0
+                AND packet_id IN
+       (SELECT packet_id
+          FROM ebms_packet
+         WHERE topic_id = s.topic_id
+           AND active_status = 'A'))";
+        pdq_ebms_debug('TOPICS FOR BOARD QUERY', $query);
+        $results = db_query($query);
+        $topics = array();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+        return $topics;
+    }
+    /**
+     * Find the articles which have passed full text review for the
+     * selected topic and which have not already been assigned to
+     * a packet.
+     */
+    public static function articles_for_topic(
+        $topic_id, $state_id, $packet_id=0
+    ) {
+        if (!$topic_id)
+            return array();
+        if (false)
+            pdq_ebms_debug('ARTICLES FOR TOPIC', array($topic, $state_id));
+        $subquery = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_id'))
+            ->condition('p.active_status', 'A')
+            ->condition('p.topic_id', $topic_id);
+        // Don't need this, with the UNION below.
+        //if ($packet_id)
+        //    $subquery->condition('p.packet_id', $packet_id, '<>');
+        $subquery = db_select('ebms_packet_article', 'a')
+            ->fields('a', array('article_id'))
+            ->condition('a.packet_id', $subquery, 'IN')
+            ->condition('a.drop_flag', 0)
+            ->distinct();
+        $query = db_select('ebms_article_state', 's')
+            ->fields('s', array('article_id'))
+            ->condition('s.topic_id', $topic_id)
+            ->condition('s.active_status', 'A')
+            ->condition('s.state_id', $state_id)
+            ->condition('s.article_id', $subquery, 'NOT IN')
+            ->distinct();
+        if ($packet_id) {
+            $union = db_select('ebms_packet_article', 'pa')
+                ->fields('pa', array('article_id'))
+                ->condition('pa.packet_id', $packet_id)
+                ->condition('pa.drop_flag', 0);
+            $query->union($union);
+        }
+        if (false)
+            dpq($query);
+        if (false)
+            pdq_ebms_debug(
+                'ARTICLE QUERY', array(
+                    'query' => $query->__toString(),
+                    'topic' => $topic_id,
+                    'passed full text review status' => $state_id,
+                )
+            );
+        $results = $query->execute();
+        $articles = array();
+        foreach ($results as $result) {
+            $id = $result->article_id;
+            $articles[$id] = EbmsReview::brief_citation($id);
+        }
+        natsort($articles);
+        return $articles;
+    }
+
+
+
+    public static function summaries_for_topic($topic_id, $packet_id=0) {
+        $query = db_select('ebms_doc', 'd');
+        $query->fields('d', array('doc_id', 'description'));
+        $query->join('ebms_doc_topic', 't', 't.doc_id = d.doc_id');
+        $query->join('ebms_doc_tag', 'dt', 'dt.doc_id = d.doc_id');
+        $query->join('ebms_tag', 'tg', 'tg.tag_id = dt.tag_id');
+        $query->condition('tg.tag_name', 'summary');
+        $query->condition('t.topic_id', $topic_id);
+        if ($packet_id) {
+            $union = db_select('ebms_doc', 'd2');
+            $union->fields('d2', array('doc_id', 'description'));
+            $union->join('ebms_packet_summary', 's', 's.doc_id = d2.doc_id');
+            $union->condition('s.packet_id', $packet_id);
+            $query->union($union);
+        }
+        $results = $query->execute();
+        $docs = array();
+        foreach ($results as $result)
+            $docs[$result->doc_id] = htmlspecialchars($result->description);
+        natsort($docs);
+        return $docs;
+    }
+    public static function reviewers_for_topic(
+        $topic_id, $board_id, $packet_id=0
+    ) {
+        if (false)
+            pdq_ebms_debug("REVIEWERS FOR TOPIC", array(
+                               "TOPIC ID" => $topic_id,
+                               "BOARD ID" => $board_id,
+                               "PACKET ID" => $packet_id));
+        if (!$topic_id && !$board_id)
+            return array();
+        $query = db_select('users', 'u');
+        $query->fields('u', array('uid', 'name'));
+        if ($board_id) {
+            $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+            $query->join('users_roles', 'ur', 'ur.uid = u.uid');
+            $query->join('role', 'r', 'r.rid = ur.rid');
+            $query->condition('m.board_id', $board_id);
+            $query->condition('r.name', 'board member');
+        }
+        else {
+            $query->join('ebms_topic_reviewer', 'r', 'r.user_id = u.uid');
+            $query->condition('r.topic_id', $topic_id);
+        }
+        if ($packet_id) {
+            $union = db_select('users', 'u2');
+            $union->fields('u2', array('uid', 'name'));
+            $union->join('ebms_packet_reviewer', 'pr',
+                'pr.reviewer_id = u2.uid');
+            $union->condition('pr.packet_id', $packet_id);
+            $query->union($union);
+        }
+        if (false)
+            pdq_ebms_debug("DPQ", dpq($query, true));
+        $results = $query->execute();
+        $reviewers = array();
+        foreach ($results as $result)
+            $reviewers[$result->uid] = $result->name;
+        natsort($reviewers);
+        if (false)
+            pdq_ebms_debug("REVIEWERS", $reviewers);
+        return $reviewers;
+    }
+}
+
+/**
+ * EBMS packet called up for editing.
+ */
+class EbmsPacket {
+    public
+        $id,
+        $title,
+        $reviewers,
+        $articles,
+        $summaries;
+    public function __construct($packet_id) {
+        $this->id = $packet_id;
+        $this->reviewers = EbmsPacket::fetch_reviewers($packet_id);
+        $this->summaries = EbmsPacket::fetch_summaries($packet_id);
+        $this->articles = EbmsPacket::fetch_articles($packet_id);
+        $query = db_select('ebms_packet', 'p');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->fields('p', array('packet_title', 'topic_id'));
+        $query->fields('t', array('board_id'));
+        $query->condition('p.packet_id', $packet_id);
+        $results = $query->execute();
+        foreach ($results as $result) {
+            $this->title = $result->packet_title;
+            $this->topic_id = $result->topic_id;
+            $this->board_id = $result->board_id;
+        }
+    }
+    /**
+     * Retrieve the title for the current packet from the database.
+     */
+    public static function fetch_title($packet_id) {
+        if (!$packet_id)
+            return null;
+        return db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_title'))
+            ->condition('p.packet_id', $packet_id)
+            ->execute()
+            ->fetchField();
+    }
+    public static function fetch_reviewers($packet_id) {
+        $results = db_select('ebms_packet_reviewer', 'r')
+            ->fields('r', array('reviewer_id'))
+            ->condition('r.packet_id', $packet_id)
+            ->execute();
+        foreach ($results as $result)
+            $reviewers[] = $result->reviewer_id;
+        return $reviewers;
+    }
+    public static function fetch_articles($packet_id) {
+        $results = db_select('ebms_packet_article', 'a')
+            ->fields('a', array('article_id'))
+            ->condition('a.packet_id', $packet_id)
+            ->condition('a.drop_flag', 0)
+            ->execute();
+        foreach ($results as $result)
+            $articles[] = $result->article_id;
+        return $articles;
+    }
+    public static function fetch_summaries($packet_id) {
+        $results = db_select('ebms_packet_summary', 's')
+            ->fields('s', array('doc_id'))
+            ->condition('s.packet_id', $packet_id)
+            ->execute();
+        $summaries = array();
+        foreach ($results as $result)
+            $summaries[] = $result->doc_id;
+        return $summaries;
     }
 }
 
@@ -754,7 +1245,7 @@ function pdq_ebms_store_review($form, &$form_state) {
                 ->fields(
                     array(
                         'review_id' => $review_id,
-                        'value_id' => $id
+                        'value_id' => $id,
                     )
                 )
                 ->execute();
@@ -766,7 +1257,7 @@ function pdq_ebms_store_review($form, &$form_state) {
                 ->fields(
                     array(
                         'review_id' => $review_id,
-                        'value_id' => $id
+                        'value_id' => $id,
                     )
                 )
                 ->execute();
@@ -777,10 +1268,10 @@ function pdq_ebms_store_review($form, &$form_state) {
             'packet' => $packet_id,
             'expanded' => $expanded,
             'sort-col' => $sort_col,
-            'sort-dir' => $sort_dir
+            'sort-dir' => $sort_dir,
         ),
     );
-    drupal_goto('review', $options);
+    drupal_goto(EbmsReview::$url, $options);
 }
 
 /**
@@ -806,7 +1297,7 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
     $ft_link = l('VIEW ABSTRACT', $ft_url, $attrs);
     $pm_link = l('DOWNLOAD FULL TEXT', $pm_url, $attrs);
     $article_id = $review->article_id;
-    $cite = htmlspecialchars(Ebms\Util::get_full_citation($article_id));
+    $cite = Ebms\Util::get_full_citation($article_id);
     return array(
         '#id' => 'member-review',
         'packet-title' => array(
@@ -983,7 +1474,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
         $file = file_save($file);
         if (!$filenotes)
             $filenotes = null;
-        $docId = db_insert('ebms_reviewer_doc')
+        $doc_id = db_insert('ebms_reviewer_doc')
             ->fields(
                 array(
                     'file_id' => $file->fid,
@@ -991,7 +1482,8 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
                     'packet_id' => $packet_id,
                     'when_posted' => $now,
                     'doc_title' => $file->filename,
-                    'description' => $filenotes)
+                    'description' => $filenotes,
+                )
             )
             ->execute();
         drupal_set_message('Posted document ' . $file->filename . '.');
@@ -1003,8 +1495,472 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
             'packet' => $packet_id,
             'expanded' => $expanded,
             'sort-col' => $sort_col,
-            'sort-dir' => $sort_dir
+            'sort-dir' => $sort_dir,
         ),
     );
-    drupal_goto('review', $options);
+    drupal_goto(EbmsReview::$url, $options);
+}
+
+function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
+
+    // Collect all of the form's values.
+    $packet_id = $form_state['values']['packet'];
+    $articles = array();
+    $reviewers = array();
+    $summaries = array();
+    foreach ($form_state['values']['articles'] as $id => $value)
+        if ($value)
+            $articles[$value] = $value;
+    foreach ($form_state['values']['reviewers'] as $id => $value)
+        if ($value)
+            $reviewers[$value] = $value;
+    foreach ($form_state['values']['summaries'] as $id => $value)
+        if ($value)
+            $summaries[$value] = $value;
+
+    // If this is a new packet, create a row (and packet ID) for it.
+    if (!$packet_id) {
+        global $user;
+        $articles_to_add = $articles;
+        $topic_id = $form_state['values']['topic'];
+        $name = $form_state['values']['name'];
+        $now = date('Y-m-d H:i:s');
+        $packet_id = db_insert('ebms_packet')
+            ->fields(
+                array(
+                    'topic_id' => $topic_id,
+                    'created_by' => $user->uid,
+                    'created_at' => $now,
+                    'packet_title' => $name,
+                )
+            )
+            ->execute();
+    }
+    else {
+
+        // Which articles are in the packet already?
+        $rows = db_select('ebms_packet_article', 'a')
+            ->fields('a', array('article_id', 'drop_flag'))
+            ->condition('a.packet_id', $packet_id)
+            ->execute();
+        $in_packet = array();
+        foreach ($rows as $row)
+            $in_packet[$row->article_id] = $row->drop_flag ? true : false;
+
+        // Add the articles the manager wants in the packet now.
+        $articles_to_add = array();
+        foreach ($articles as $article_id) {
+            if (array_key_exists($article_id, $in_packet)) {
+
+                // If the article was there, then suppressed, unsuppress it.
+                if ($in_packet[$article_id])
+                    db_update('ebms_packet_article')
+                        ->fields(array('drop_flag' => 0))
+                        ->condition('article_id', $article_id)
+                        ->execute();
+            }
+            else
+
+                // Wasn't ever in the packet; we'll add it below.
+                $articles_to_add[] = $article_id;
+        }
+
+        // Mark articles the manager no longer wants in the packet.
+        // Doing it this way avoids trouble with articles that have
+        // already been reviewed.
+        foreach ($in_packet as $article_id => $dropped) {
+            if (!$dropped)
+                if (!array_key_exists($article_id, $articles))
+                    db_update('ebms_packet_article')
+                        ->fields(array('drop_flag' => 1))
+                        ->condition('article_id', $article_id)
+                        ->execute();
+        }
+
+        // We'll rebuild the list of reviewers; doesn't affect existing
+        // reviews of articles in the packet.
+        db_delete('ebms_packet_reviewer')
+            ->condition('packet_id', $packet_id)
+            ->execute();
+
+        // Same approach for summary documents.
+        db_delete('ebms_packet_summary')
+            ->condition('packet_id', $packet_id)
+            ->execute();
+    }
+
+    // Add the articles which aren't in the table already.
+    foreach ($articles_to_add as $article_id) {
+        db_insert('ebms_packet_article')
+            ->fields(
+                array(
+                    'packet_id' => $packet_id,
+                    'article_id' => $article_id,
+                )
+            )
+            ->execute();
+    }
+
+    // ... and the reviewers:
+    foreach ($reviewers as $reviewer_id) {
+        db_insert('ebms_packet_reviewer')
+            ->fields(
+                array(
+                    'packet_id' => $packet_id,
+                    'reviewer_id' => $reviewer_id,
+                )
+            )
+            ->execute();
+    }
+
+    // ... and the summaries:
+    foreach ($summaries as $doc_id) {
+        db_insert('ebms_packet_summary')
+            ->fields(
+                array(
+                    'packet_id' => $packet_id,
+                    'doc_id' => $doc_id,
+                )
+            )
+            ->execute();
+    }
+}
+
+function pdq_ebms_edit_packet_form_validate($form, &$form_state) {
+    $packet_id = $form_state['values']['packet'];
+    if (!$packet_id) {
+        $name = trim($form_state['values']['name']);
+        if (!$form_state['values']['board'])
+            form_set_error('board', 'Board selection is required.');
+        if (!$form_state['values']['topic'])
+            form_set_error('topic', 'Topic selection is required.');
+        if (!$name)
+            form_set_error('name', 'Packet must be given a name.');
+    }
+    $article_count = $reviewer_count = 0;
+    $articles = $form_state['values']['articles'];
+    foreach ($articles as $id => $val)
+        if ($val)
+            $article_count++;
+    $reviewers = $form_state['values']['reviewers'];
+    foreach ($reviewers as $id => $val)
+        if ($val)
+            $reviewer_count++;
+    if (!$article_count)
+        form_set_error('articles', 'At least one article must be selected.');
+    if (!$reviewer_count)
+        form_set_error('reviewers', 'At least one reviewer must be selected.');
+        $form_state['redirect'] = array(
+            EbmsReview::$url . '/packets',
+            'query' => drupal_get_query_parameters(),
+        );
+}
+
+/**
+ * Create the form used by a board manager to create a new literature
+ * review packet.  We show the parts of the form incrementally, as
+ * lower portions depend on the selections made in the upper portions.
+ */
+function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
+    if (false)
+        pdq_ebms_debug('EDIT PACKET FORM', array('FORM' => $form,
+                'FORM STATE' => $form_state));
+
+    // We'll use this more than once, so fetch and save it now.
+    $state_id = Ebms\Util::get_state_id('Passed full text review');
+
+    // If we're editing an existing packet, we already know board and topic.
+    if ($packet_id) {
+        $packet = new EbmsPacket($packet_id);
+        $board_id = $packet->board_id;
+        $topic_id = $packet->topic_id;
+        $packet_header = 'Edit Packet - ' . htmlspecialchars($packet->title);
+    }
+    else {
+
+        // See if the board and topic have already been selected.
+        $board_id = $topic_id = 0;
+        if (!empty($form_state['values']['board']))
+            $board_id = $form_state['values']['board'];
+        if (!empty($form_state['values']['topic']))
+            $topic_id = $form_state['values']['topic'];
+        $packet_header = 'Add New Literature Surveillance Packet';
+
+        // Make sure we don't have a stale topic ID (i.e., board changed).
+        $topics = EbmsReview::topics_for_board($board_id, $state_id);
+        if (!array_key_exists($topic_id, $topics))
+            $topic_id = null;
+
+        // Collapse topic field if no topics available; otherwise expand.
+        if (count($topics)) {
+            $topic_title = 'Topic &ndash;';
+            $topic_desc = 'You may select only one topic.';
+        }
+        else {
+            $topic_title = 'Topic +';
+            $topic_desc = null;
+        }
+    }
+
+    // Override the Drupal breadcrumb mechanism to match requirements.
+    drupal_set_breadcrumb(
+        array(
+            l('Literature', EbmsReview::$url),
+            $packet_header,
+        )
+    );
+
+    // Check the state of the toggle for showing all board members.
+    $all_reviewers = false;
+    if (!empty($form_state['values']['all-reviewers']))
+        $all_reviewers = $form_state['values']['all-reviewers'];
+    if ($all_reviewers)
+        $all_reviewers_title = 'Show Only Topic Reviewers &ndash;';
+    else
+        $all_reviewers_title = 'Show All Board Members +';
+
+    // Initialize default arrays (replaced below as appropriate).
+    $article_defaults = $summary_defaults = $reviewer_defaults = array();
+
+    // Set up the fields which depend on having a topic selected.
+    if ($topic_id) {
+        $articles_title = 'Articles &ndash;';
+        $summaries_title = 'Summary Documents (Optional) &ndash;';
+        $reviewers_title = 'Reviewers &ndash;';
+        $all_reviewers_class = 'all-reviewers-visible';
+        $articles = EbmsReview::articles_for_topic($topic_id, $state_id,
+                    $packet_id);
+        $summaries = EbmsReview::summaries_for_topic($topic_id, $packet_id);
+        $reviewers = EbmsReview::reviewers_for_topic($topic_id,
+                     $all_reviewers ? $board_id : null, $packet_id);
+        $articles_desc =
+            'Selected articles will be included in the packet.  ' .
+            'You may unselect any articles that you do not want ' .
+            'to be included.';
+        $summaries_desc = 'You may select more than one summary document.';
+        $reviewers_desc =
+            'Selected reviewers will receive this packet to review.  ' .
+            'You may unselect these reviewers and/or ' .
+            'select additional Board members to review this packet.';
+
+        // Are we editing an existing packet?
+        if ($packet_id) {
+            $article_defaults = $packet->articles;
+            $reviewer_defaults = $packet->reviewers;
+            $summary_defaults = $packet->summaries;
+            $articles_desc =
+                'You may select any articles that you want to add to this ' .
+                'packet or unselect any articles that you want to remove ' .
+                'from this packet.';
+            $reviewers_desc =
+                'You may select any reviewers that you want to add to this ' .
+                'packet or unselect any reviewers that you want to remove ' .
+                'from this packet.';
+        }
+        else
+            $article_defaults = array_keys($articles);
+    }
+    else {
+
+        // Don't have a topic yet; collapse dependent fields.
+        $all_reviewers_class = 'all-reviewers-hidden';
+        $articles_title = 'Articles +';
+        $summaries_title = 'Summary Documents (Optional) +';
+        $reviewers_title = 'Reviewers +';
+        $articles_desc = $summaries_desc = $reviewers_desc = '';
+        $articles = $summaries = $reviewers = $article_defaults =
+            $summary_defaults = $reviewer_defaults = array();
+        $all_reviewers = false;
+    }
+
+    // Assemble the common portions of the form (both editing and creation).
+    $form_id = 'pdq-ebms-edit-packet-form';
+    $heading_field = array(
+        '#type' => 'markup',
+        '#markup' => "<h2>$packet_header</h2>",
+    );
+    $packet_id_field = array(
+        '#type' => 'hidden',
+        '#value' => $packet_id,
+    );
+    $articles_field = array(
+        '#type' => 'checkboxes',
+        '#title' => $articles_title,
+        '#description' => $articles_desc,
+        '#options' => $articles,
+        '#default_value' => $article_defaults,
+    );
+    $summaries_field = array(
+        '#type' => 'checkboxes',
+        '#title' => $summaries_title,
+        '#description' => $summaries_desc,
+        '#options' => $summaries,
+        '#default_value' => $summary_defaults,
+    );
+    $reviewers_div = array(
+        '#prefix' => '<div id="reviewers">',
+        '#suffix' => '</div>',
+        'reviewers' => array(
+            '#type' => 'checkboxes',
+            '#title' => $reviewers_title,
+            '#description' => $reviewers_desc,
+            '#options' => $reviewers,
+            '#default_value' => $reviewer_defaults,
+        ),
+        'all-reviewers' => array(
+            '#prefix' => "<div class='$all_reviewers_class'>",
+            '#suffix' => '</div>',
+            '#type' => 'checkbox',
+            '#title' => $all_reviewers_title,
+            '#ajax' => array(
+                'callback' => 'pdq_ebms_packet_reviewers_ajax',
+                'wrapper' => 'reviewers',
+            ),
+        ),
+    );
+    $submit_field = array(
+        '#type' => 'submit',
+        '#value' => $packet_id ? 'Save Changes' : 'Upload Packet',
+    );
+
+    // Put up the form for an existing packet.
+    if ($packet_id)
+        return array(
+            '#id' => $form_id,
+            'heading' => $heading_field,
+            'packet' => $packet_id_field,
+            'board' => array(
+                '#type' => 'hidden',
+                '#value' => $packet->board_id,
+            ),
+            'board-specific-fields' => array(
+                'topic' => array(
+                    '#type' => 'hidden',
+                    '#value' => $packet->topic_id,
+                ),
+                'topic-specific-fields' => array(
+                    'articles' => $articles_field,
+                    'summaries' => $summaries_field,
+                    'reviewers-div' => $reviewers_div,
+                ),
+            ),
+            'submit' => $submit_field,
+        );
+
+    // Build the render array for the form for a new packet.  Note that
+    // there is a Drupal bug which causes our default checking of the
+    // articles to be ignored (http://drupal.org/node/1100170).
+    return array(
+        '#id' => 'pdq-ebms-edit-packet-form',
+        'packet' => $packet_id_field,
+        'board' => array(
+            '#type' => 'radios',
+            '#title' => 'Board',
+            '#description' => 'You may select only one board.',
+            '#options' => Ebms\Util::boards(),
+            '#ajax' => array(
+                'callback' => 'pdq_ebms_packet_board_ajax',
+                'wrapper' => 'board-specific-fields',
+            ),
+        ),
+        'board-specific-fields' => array(
+            '#prefix' => '<div id="board-specific-fields">',
+            '#suffix' => '</div>',
+            'topic' => array(
+                '#type' => 'radios',
+                '#title' => $topic_title,
+                '#description' => $topic_desc,
+                '#options' => $topics,
+                '#ajax' => array(
+                    'callback' => 'pdq_ebms_packet_topic_ajax',
+                    'wrapper' => 'topic-specific-fields',
+                ),
+            ),
+            'topic-specific-fields' => array(
+                '#prefix' => '<div id="topic-specific-fields">',
+                '#suffix' => '</div>',
+                'articles' => $articles_field,
+                'preselect_articles' => array(
+                    '#type' => 'hidden',
+                    '#value' => 1
+                ),
+                'summaries' => $summaries_field,
+                'reviewers-div' => $reviewers_div,
+            ),
+        ),
+        'name' => array(
+            '#type' => 'textfield',
+            '#title' => 'Packet Name',
+        ),
+        'submit' => $submit_field,
+    );
+}
+
+function pdq_ebms_packet_board_ajax($form, $form_state) {
+    return $form['board-specific-fields'];
+}
+
+function pdq_ebms_packet_topic_ajax($form, $form_state) {
+    $subform = $form['board-specific-fields']['topic-specific-fields'];
+    foreach ($subform['articles'] as $k => $v) {
+        if (isset($v['#type']) and $v['#type'] == 'checkbox') {
+            $subform['articles'][$k]['#checked'] = 'checked';
+        }
+    }
+    return $subform;
+}
+
+function pdq_ebms_packet_reviewers_ajax($form, $form_state) {
+    return $form['board-specific-fields']['topic-specific-fields']
+        ['reviewers-div'];
+}
+
+function pdq_ebms_packet_delete_confirm($form, &$form_state, $packet_id) {
+    drupal_set_breadcrumb(
+        array(
+            l('Literature', EbmsReview::$url),
+            'Literature Surveillance Packets',
+        )
+    );
+    $question = '<strong>Do you really want to delete packet <em><strong>' .
+        htmlspecialchars(EbmsPacket::fetch_title($packet_id)) .
+        '</strong></em>?</strong>';
+    $warning = 'This action cannot be undone.';
+    $form['question'] = array(
+        '#type' => 'markup',
+        #'#markup' => '<h2>Do you really want to delete this packet?</h2>',
+        '#markup' => "<p>$question<br />$warning</p>",
+    );
+    $form['packet_id'] = array(
+        '#type' => 'value',
+        '#value' => $packet_id,
+    );
+    //$params = drupal_get_query_parameters();
+    $path = array(
+        'path' => EbmsReview::$url . '/packets',
+        'query' => drupal_get_query_parameters(),
+    );
+    // drupal_set_message(print_r($path, true));
+    //$params['path'] = EbmsReview::url . '/packets';
+    return confirm_form($form, 'Do you really want to delete this packet?',
+        $path, '', 'Delete', 'Cancel');
+}
+
+function pdq_ebms_packet_delete_confirm_submit($form, &$form_state) {
+    if ($form_state['values']['confirm']) {
+        $packet_id = $form_state['values']['packet_id'];
+        $title = EbmsPacket::fetch_title($packet_id);
+        $updated = db_update('ebms_packet')
+            ->fields(array('active_status' => 'I'))
+            ->condition('packet_id', $packet_id)
+            ->execute();
+        if ($updated == 1)
+            drupal_set_message("Packet $title has been deleted.");
+        else
+            drupal_set_message("Failure deleting packet $title.", "error");
+        $form_state['redirect'] = array(
+            EbmsReview::$url . '/packets',
+            'query' => drupal_get_query_parameters(),
+        );
+    }
 }
