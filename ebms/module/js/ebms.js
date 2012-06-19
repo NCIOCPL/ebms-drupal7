@@ -385,102 +385,21 @@ ebmsscript.password_check = function() {
         jQuery("#match-check").css('color', '#a90101');
     }
 };
-                 
-ebmsscript.show_picture_upload_button = function(p) {
-    var a = p.split("\\");
-    var n = a[a.length-1];
-    jQuery("#filename").text(n).show();
-    jQuery("#submit-box").show();
-    jQuery("#filepath").attr("readonly", true);
-    jQuery("#choose-file").addClass("disabled");
-    jQuery("#choose-file label").css("color", "#bbb");
-    jQuery("#choose-file label").css("border-color", "#bbb");
-    jQuery("#choose-file label").unbind("click");
-    jQuery("#filepath").click(function() { return false; });
-};
 
 /**
- * Once the user has specified a profile picture, enable the rest of the
- * form and disable the "Choose Photo" button.
+ * Initialize client-side scripting support for the EBMS profile pages.
  */
-ebmsscript.profile_picture_chosen = function() {
-    var p = jQuery("#filepath").val();
-if (false)
-    jQuery.ajax({
-        url: ebmsscript.site_root + "/presave-profile-picture",
-        data: { path: p },
-        dataType: "json",
-        success: function(result) {
-            if (result.error)
-                alert(result.error);
-            else {
-alert("url="+result.url+" width="+result.width+" height="+result.height+" target="+result.target);
-                jQuery("#cropbox img").attr("src", result.url);
-                jQuery("#cropbox").dialog("open");
-            }
-        },
-        error: function(a,b,c) { alert("Internal error: a="+a+" b="+b+" c="+c); }
-    });
-    ebmsscript.show_picture_upload_button(p);
-    return false;
-};
-
-ebmsscript.capture_crop_coordinates = function(c) {
-    jQuery("input[name='x']").val(c.x);
-    jQuery("input[name='y']").val(c.y);
-    jQuery("input[name='w']").val(c.w);
-    jQuery("input[name='h']").val(c.h);
-}
-
 ebmsscript.init_profile_page = function() {
-    if (jQuery("#cropbox").length == 1) {
-        var width = jQuery("input[name='width']").val();
-        var height = jQuery("input[name='height']").val();
-        var ratio = width / height;
-        var box_width = width;
-        var box_height = height;
-        if (box_width > 500) {
-            box_width = 500;
-            box_height = box_width / ratio;
-        }
-        if (box_height > 500) {
-            box_height = 500;
-            box_width = box_height * ratio;
-        }
-        var dialog_width = box_width * 1 + 35;
-        var dialog_height = box_height * 1 + 150;
-        var init_dim = (height > width) ? width * .5 : height * .5;
-        if (init_dim < 135)
-            init_dim = 135;
-        var init_x1 = (width - init_dim) / 2;
-        var init_y1 = (height - init_dim) / 2;
-        var init_x2 = init_x1 * 1 + init_dim;
-        var init_y2 = init_y1 * 1 + init_dim;
-        //var boxW = width > 600 ? 600 : width;
-        //var boxH = height > 600 ? 600 : height;
-//alert("w:"+width+" h:"+height+" x:"+init_x+" y:"+init_y+" b:"+box_width+"x"+box_height+" dialog:"+dialog_width+"x"+dialog_height);
-        jQuery("#cropbox").dialog({
-            autoOpen: true,
-            width: dialog_width,
-            height: dialog_height,
-            modal: true,
-            draggable: true,
-            resizable: true,
-            title: "CROP PICTURE"
-        });
-        jQuery("#cropbox img").Jcrop({
-            aspectRatio: 1,
-            setSelect: [init_x1, init_y1, init_x2, init_y2],
-            minSize: [135, 135],
-            boxWidth: box_width,
-            boxHeight: box_height,
-            onSelect: ebmsscript.capture_crop_coordinates
-        });
-        jQuery("#cropbox #edit-submit").css("margin-left",
-           (dialog_width / 2 - 50 ) + "px");
-    }
+
+    // This is a separate form from the general profile form.
+    if (jQuery("#cropbox").length == 1)
+        ebmsscript.show_cropbox();
+
+    // Nothing else to do if we're not on the general profile form page.
     if (jQuery("#profile-form").length != 1)
         return;
+
+    // Set up support for the form to set a new password.
     if (jQuery("#edit-new2").length == 1) {
         var edit_new = jQuery("#edit-new");
         var edit_new2 = jQuery("#edit-new2");
@@ -491,16 +410,20 @@ ebmsscript.init_profile_page = function() {
         edit_new2.blur(function() { ebmsscript.password_check(); });
         edit_new2.keyup(function() { ebmsscript.password_check(); });
     }
+
+    // Initialize the form for uploaded a new profile picture.
     if (jQuery("td.edit-picture-cell").length > 0) {
-        //jQuery.ajaxSetup({ cache: false });
+
+        // Let the server side know we've got scripting on the client side.
         jQuery("#js").val(1);
-        //jQuery("input[name='picurl']").change(function() {
-        //    alert("picurl changed");
-        //});
         jQuery("#picture-fields").addClass("with-js");
+
+        // Register the handler to show the rest of the form.
         jQuery("#choose-file #filepath").change(function() {
             ebmsscript.profile_picture_chosen();
         });
+
+        // Different browsers handle event bubbling differently.
         if (!jQuery.browser.msie) {
             jQuery("#choose-file label").click(function() {
                 jQuery("#choose-file #filepath").click();
@@ -509,6 +432,99 @@ ebmsscript.init_profile_page = function() {
         }
     }
 }
+
+/**
+ * Constructs a hovering dialog window for the form used to
+ * crop a new profile picture down to the right shape.
+ */
+ebmsscript.show_cropbox = function() {
+
+    // Capture the original dimensions of the uploaded image.
+    var width = jQuery("input[name='width']").val();
+    var height = jQuery("input[name='height']").val();
+    var ratio = width / height;
+
+    // Constrain the cropping box size to reasonable dimensions.
+    var box_width = width;
+    var box_height = height;
+    if (box_width > 500) {
+        box_width = 500;
+        box_height = box_width / ratio;
+    }
+    if (box_height > 500) {
+        box_height = 500;
+        box_width = box_height * ratio;
+    }
+
+    // Match the dimensions of the dialog window to the cropping box size.
+    var dialog_width = box_width * 1 + 35;
+    var dialog_height = box_height * 1 + 150;
+
+    // Calculate a reasonable default for the cropping selection.
+    var init_dim = (height > width) ? width * .5 : height * .5;
+    if (init_dim < 135)
+        init_dim = 135;
+    var init_x1 = (width - init_dim) / 2;
+    var init_y1 = (height - init_dim) / 2;
+    var init_x2 = init_x1 * 1 + init_dim;
+    var init_y2 = init_y1 * 1 + init_dim;
+
+    // Construct the dialog window object, which opens immediately.
+    jQuery("#cropbox").dialog({
+        autoOpen: true,
+        width: dialog_width,
+        height: dialog_height,
+        modal: true,
+        draggable: true,
+        resizable: true,
+        title: "CROP PICTURE"
+    });
+
+    // Construct the cropping widget.
+    jQuery("#cropbox img").Jcrop({
+        aspectRatio: 1,
+        setSelect: [init_x1, init_y1, init_x2, init_y2],
+        minSize: [135, 135],
+        boxWidth: box_width,
+        boxHeight: box_height,
+        onSelect: ebmsscript.capture_crop_coordinates
+    });
+
+    // Tweak the horizontal positioning of the submit button.
+    var margin_left = dialog_width / 2 - 50;
+    jQuery("#cropbox #edit-submit").css("margin-left", margin_left + "px");
+};
+
+/**
+ * Callback registered with the cropping widget above.  Stores the
+ * cropping coordinates in the hidden fields provided on the form
+ * for this purpose.
+ */
+ebmsscript.capture_crop_coordinates = function(c) {
+    jQuery("input[name='x']").val(c.x);
+    jQuery("input[name='y']").val(c.y);
+    jQuery("input[name='w']").val(c.w);
+    jQuery("input[name='h']").val(c.h);
+}
+
+/**
+ * Once the user has specified a profile picture, enable the rest of the
+ * form and disable the "Choose Photo" button.
+ */
+ebmsscript.profile_picture_chosen = function() {
+    var p = jQuery("#filepath").val();
+    var a = p.split("\\");
+    var n = a[a.length-1];
+    jQuery("#filename").text(n).show();
+    jQuery("#submit-box").show();
+    jQuery("#filepath").attr("readonly", true);
+    jQuery("#choose-file").addClass("disabled");
+    jQuery("#choose-file label").css("color", "#bbb");
+    jQuery("#choose-file label").css("border-color", "#bbb");
+    jQuery("#choose-file label").unbind("click");
+    jQuery("#filepath").click(function() { return false; });
+    return false;
+};
 
 /**
  * Initialization housekeeping which can only be performed after we're
@@ -521,6 +537,4 @@ jQuery(function() {
     ebmsscript.init_superfish();
     ebmsscript.init_manager_packets_page();
     ebmsscript.init_profile_page();
-    //jQuery("#pdq-ebms-edit-packet-form input[name='topic']").change(
-    //    function() { alert("topic change"); });
 });
