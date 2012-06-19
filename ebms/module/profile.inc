@@ -144,6 +144,8 @@ class EbmsProfile {
             else
                 $photo = '';
             $email = htmlspecialchars($u->mail);
+
+            // XXX Temporary code; remove for production.
             if (strpos($email, 'bkline+ebmsdev') !== false) {
                 $email = '<span title="For right now we\'re using ' .
                     htmlspecialchars($u->mail) . ' to prevent ' .
@@ -867,70 +869,4 @@ function pdq_ebms_profile_picture_crop_form_submit($form, &$form_state) {
         user_save($account, array('picture' => $file));
     }
     drupal_goto(EbmsProfile::$url . '/view/' . $user_id);
-}
-
-/**
- * Ajax callback to save the user's profile picture in a temporary location
- * so that it can be validated and (if necessary) scaled and/cropped.
- */
-function pdq_ebms_presave_profile_picture() {
-    global $user;
-    $height = $width = 0;
-    $error = $url = '';
-    $path = $_GET['path'];
-    $info = image_get_info($path);
-    pdq_ebms_debug('PICTURE PATH', $_GET);
-    if (!$info)
-        $error = 'Uploaded file is not a valid image.';
-    else {
-        $height = $info['height'];
-        $width = $info['width'];
-        if ($height < Ebms\PICTURE_SIZE || $width < Ebms\PICTURE_SIZE)
-            $error = 'Picture must be at least ' . Ebms\PICTURE_SIZE .
-                ' pixels square.';
-        else {
-            $name = trim(drupal_basename($path, '.'));
-            $dest = file_destination("temporary://$name", FILE_EXISTS_RENAME);
-            $file = new stdClass();
-            $file->uid = $user->uid;
-            $file->status = 0;
-            $file->filename = $name;
-            $file->filemime = $info['mime_type'];
-            $file->filesize = $info['file_size'];
-            $file->source = $path;
-            $file->destination = $file->uri = $dest;
-            if (!drupal_move_uploaded_file($path, $dest))
-                $error = 'Could not move uploaded file.';
-            else {
-                drupal_chmod($file->uri);
-                $file = file_save($file);
-                $url = file_create_url($file->uri);
-            }
-        }
-    }
-    $result = array(
-        'error' => $error,
-        'height' => $height,
-        'width' => $width,
-        'url' => $url,
-        'target' => Ebms\PICTURE_SIZE,
-    );
-    //pdq_ebms_debug('PROFILE PIC AJAX', $result);
-    drupal_json_output($result);
-}
-
-function pdq_ebms_picture_chosen_ajax($form, $form_state) {
-    return array(
-        '#type' => 'container',
-        '#attributes' => array('id' => 'cropbox'),
-        'upload' => array(
-            '#type' => 'markup',
-            '#markup' => '<img src="" alt="" />',
-        ),
-    );
-}
-
-function xtheme_pdq_ebms_profile_email_form($variables) {
-    return '<p>Here we are!</p>';
-    return drupal_render($form);
 }
