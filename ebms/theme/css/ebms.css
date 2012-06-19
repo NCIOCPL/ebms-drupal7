@@ -49,6 +49,18 @@ p { padding-left: 11px; padding-right: 11px; }
 }
 #message-wrapper div.status { margin-bottom: 30px; }
 
+/* STATUS AND ERROR MESSAGES */
+body.not-logged-in div.messages { margin-top: 30px; }
+div.messages {
+    margin-left: 11px; width: auto; border-radius: 7px;
+    border: 3px solid #be7; 
+    background-image: none; padding-left: 12px; padding-right: 12px;
+}
+div.messages.error {
+    background-color: #fad2d2; color: #2d2c28;
+    border: 3px solid #d2817d;
+}
+
 /* BANNER */
 #banner {
     background-color: #f2f1f1;
@@ -62,9 +74,7 @@ p { padding-left: 11px; padding-right: 11px; }
 
 /* HEADER */
 #header { height: 120px; }
-/* #header > div { position: relative; } */
 #name-and-slogan { float: left; margin-left: 10px; }
-/*#name-and-slogan { position: absolute; }*/
 #site-name { margin-top: 28px; }
 #site-name a { font-size: 36px; }
 #site-slogan { line-height: 16px; font-size: 20px; }
@@ -78,7 +88,9 @@ p { padding-left: 11px; padding-right: 11px; }
 #user-photo { display: inline; position: relative; padding-right: 10px; }
 #user-photo #picture { position: relative; top: 15px; }
 #user-photo #picframe { position: absolute; top: -15px; left: 0;}
-#user-name { display: inline; padding-right: 18px; border-right: solid 1px #696559; }
+#user-name {
+    display: inline; padding-right: 18px; border-right: solid 1px #696559;
+}
 #profile-and-logout { display: inline; position: relative; }
 #profile-and-logout-marker { margin: 0 12px; font-size: .8em; }
 #profile-and-logout-menu {
@@ -299,7 +311,6 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
 }
 .ui-widget-overlay { background: #2d2c28; opacity: .55; }
 
-
 /* LOGIN */
 #login-image-wrapper img { padding-left: 12px; }
 #pdq-ebms-login-form { padding-left: 12px; }
@@ -325,17 +336,8 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
 }
 #pdq-ebms-login-form input#edit-pass.form-text { margin-bottom: 0 }
 #pdq-ebms-login-form div.form-type-password { margin-bottom: 0; }
-body.not-logged-in div.messages { margin-top: 30px; }
-div.messages {
-    margin-left: 11px; width: auto; border-radius: 7px;
-    border: 3px solid #be7; 
-    background-image: none; padding-left: 12px; padding-right: 12px;
-}
-div.messages.error {
-    background-color: #fad2d2; color: #2d2c28;
-    border: 3px solid #d2817d;
-}
 
+/* PASSWORD RESET FORM */
 #pdq-ebms-password-form #edit-forgot.form-radios { margin-top: 10px; }
 #pdq-ebms-password-form #edit-forgot.form-radios .form-type-radio {
     display: inline; margin-left: 8px;
@@ -548,7 +550,7 @@ body.front #next-meeting span { font-weight: bold; }
 #file-upload-form-js #add-notes label {
     font-weight: normal; margin-left: 14px;
 }
-#charcount {
+#file-upload-form-js #charcount {
     display: none; text-align: right; padding-top: 2px; margin-top: 0
 }
 #file-upload-form-js #choose-file #filepath {
@@ -612,25 +614,6 @@ body.front #next-meeting span { font-weight: bold; }
 }
 #pdq-ebms-edit-packet-form:not(#foo) .all-reviewers-visible { display: block; }
 #pdq-ebms-edit-packet-form:not(#foo) .all-reviewers-hidden { display: none; }
-/*
-.form-type-radio, .form-type-checkbox {
-    display: block; position: relative; overflow: hidden;
-}
-.form-radio, .form-checkbox  {
-    height: 22px; width: 22px; float: left;
-    position: absolute; left: 12px; bottom: 0; opacity: 0;
-}
-.form-item.form-type-radio label,
-.form-item.form-type-checkbox label {
-    background: url("../images/checkbox-unchecked.png") 0 0 no-repeat;
-    float: left; line-height: 22px; padding: 0 0 0 35px;
-    margin: 0 0 5px 0;
-}
-.form-type-radio input.form-radio:checked + label,
-.form-type-checkbox input.form-checkbox:checked + label {
-    background-image: url("../images/checkbox-checked.png");
-}
-*/
 
 form.confirmation a#edit-cancel {
     border: 1px solid #696559; border-radius: 7px; text-transform: uppercase;
@@ -725,7 +708,8 @@ h2.tight-below { margin-bottom: 0px; }
     position: absolute; left: 175px; top: 15px; display: none;
 }
 #user-account-settings #picture-fields #edit-submit {
-    display: block; border: solid 1px #696559; padding: 10px; margin-left: 10px;
+    display: block; border: solid 1px #696559; padding: 10px;
+    margin-left: 10px;
 }
 #user-account-settings #picture-fields #edit-submit:hover {
     border-color: #a90101; cursor: pointer;
@@ -735,7 +719,9 @@ h2.tight-below { margin-bottom: 0px; }
 }
 
 #user-account-settings .with-js #choose-file { height: 45px; }
-#user-account-settings .with-js #choose-file .form-item:hover { color: #a90101; }
+#user-account-settings .with-js #choose-file .form-item:hover {
+    color: #a90101;
+}
 #user-account-settings #picture-fields.with-js #choose-file label {
     display: block; border: solid 1px #696559; padding: 10px;
     border-radius: 7px; width: auto;
@@ -763,7 +749,7 @@ h2.tight-below { margin-bottom: 0px; }
 #cropbox { display: none; }
 #cropbox #edit-submit { margin-top: 15px; }
 
-
+/* PAGE LISTING ALL USER ACCOUNTS */
 #user-accounts { margin-left: 12px; width: 948px; }
 #user-accounts * { font-size: 13px; }
 #user-accounts td {
