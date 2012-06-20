@@ -580,12 +580,14 @@ CREATE TABLE ebms_not_list (
  *   etc.
  * 
  *  disposition_id          Unique ID of the citation.
+ *  text_id                 Human readable invariant name for code refs.
  *  disposition_name        Human readable display name.
  *  description             Fuller explanation of disposition.
  *  active_status           'A'ctive or 'I'nactive - don't use any more.
  */
 CREATE TABLE ebms_import_disposition (
     disposition_id          INTEGER AUTO_INCREMENT PRIMARY KEY,
+    text_id                 VARCHAR(16) NOT NULL UNIQUE,
     disposition_name        VARCHAR(32) NOT NULL UNIQUE,
     description             VARCHAR(2048) NOT NULL,
     active_status           ENUM ('A', 'I') NOT NULL DEFAULT 'A'
@@ -593,23 +595,23 @@ CREATE TABLE ebms_import_disposition (
     ENGINE = InnoDB;
 
     -- The required disposition values
-    INSERT ebms_import_disposition (disposition_name, description) 
-      VALUES ('Imported', 
+    INSERT ebms_import_disposition (text_id, disposition_name, description) 
+      VALUES ('imported', 'Imported', 
       'First time import into the database');
-    INSERT ebms_import_disposition (disposition_name, description) 
-      VALUES ('NOT listed',
+    INSERT ebms_import_disposition (text_id, disposition_name, description) 
+      VALUES ('notListed', 'NOT listed',
       'Imported but automatically rejected because the journal was NOT listed');
-    INSERT ebms_import_disposition (disposition_name, description) 
-      VALUES ('Duplicate, not imported', 
+    INSERT ebms_import_disposition (text_id, disposition_name, description) 
+      VALUES ('duplicate', 'Duplicate, not imported', 
       'Article already in database with same topic.  Not re-imported.');
-    INSERT ebms_import_disposition (disposition_name, description) 
-      VALUES ('Summary topic added',
+    INSERT ebms_import_disposition (text_id, disposition_name, description) 
+      VALUES ('topicAdded', 'Summary topic added',
       'Article already in database.  New summary topic added.');
-    INSERT ebms_import_disposition (disposition_name, description) 
-      VALUES ('Replaced',
+    INSERT ebms_import_disposition (text_id, disposition_name, description) 
+      VALUES ('replaced', 'Replaced',
       'Article record replaced from updated, newly downloaded, source record');
-    INSERT ebms_import_disposition (disposition_name, description) 
-      VALUES ('Error',
+    INSERT ebms_import_disposition (text_id, disposition_name, description) 
+      VALUES ('error', 'Error',
       'An error occurred in locating or parsing the record.  Not imported.');
 
 /*
