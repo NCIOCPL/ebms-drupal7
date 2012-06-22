@@ -888,6 +888,7 @@ CREATE TABLE ebms_article_state_comment (
  * table.
  *
  *  tag_id              Unique ID of the tag value.
+ *  text_id             Human readable invariant name for code refs.
  *  tag_name            Human readable name.
  *  description         Longer, descriptive help text.
  *  board_required      'Y' = rows with this state must have a non-NULL
@@ -898,6 +899,7 @@ CREATE TABLE ebms_article_state_comment (
  */
 CREATE TABLE ebms_article_tag_type (
     tag_id              INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    text_id             VARCHAR(16) NOT NULL UNIQUE,
     tag_name            VARCHAR(64) NOT NULL UNIQUE,
     description         VARCHAR(2048) NOT NULL,
     board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'N',
@@ -907,19 +909,19 @@ CREATE TABLE ebms_article_tag_type (
 
     /* These are partly for illustration.  They may not last */
     INSERT ebms_article_tag_type 
-        (tag_name, description, board_required)
-        VALUES ('Questionable search',
+        (text_id, tag_name, description, board_required)
+        VALUES ('q_search', 'Questionable search',
         'This article was imported as a result of a search, but the article '
         'appears to be out of scope and the search '
         'criteria may have been too broad.', 'N');
     INSERT ebms_article_tag_type 
-        (tag_name, description, board_required)
-        VALUES ('Borderline initial review',
+        (text_id, tag_name, description, board_required)
+        VALUES ('q_init_review', 'Borderline initial review',
         'This was examined in initial review but no judgment made.  It was a '
         'borderline case.  Look at it again later.', 'N');
     INSERT ebms_article_tag_type 
-        (tag_name, description, board_required)
-        VALUES ('Borderline board manager review',
+        (text_id, tag_name, description, board_required)
+        VALUES ('q_bm_review', 'Borderline board manager review',
         'This was examined by a board manager but no judgment made.  It was a '
         'borderline case.  Look at it again later.  A specific board must '
         'be identified.', 'Y');
