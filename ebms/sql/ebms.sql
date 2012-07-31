@@ -308,7 +308,7 @@ CREATE TABLE ebms_topic_reviewer
  * Articles about cancer and related topics.  Initially, all are from 
  * Pubmed but other sources could be added.
  *
- * These articles to through a series of steps to weed out the ones which
+ * These articles go through a series of steps to weed out the ones which
  * do not need to be passed on to the PDQ boards.  The rest are reviewed
  * by the boards to determine what changes to the PDQ summaries are
  * warranted to reflect the findings reported by those articles.  Articles
@@ -1052,7 +1052,7 @@ CREATE TABLE ebms_article_board_decision (
 /*
  * Collection of articles on a given topic assigned for board member review.
  *
- * Board members are regulary assigned sets of published articles to review
+ * Board members are regularly assigned sets of published articles to review
  * for determination whether the information contained in those articles
  * should be used to modify one or more of the PDQ summaries.  These sets
  * of articles are referred to as "review packets," and will typically
