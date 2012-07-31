@@ -1,4 +1,15 @@
 <?php
+
+namespace Ebms;
+
+// Maximum author elements, truncate if necessary
+define('Ebms\MAX_COLLECTNAME', 1023);
+define('Ebms\MAX_SURNAME', 255);
+define('Ebms\MAX_FORENAME', 128);
+define('Ebms\MAX_INITIALS', 128);
+define('Ebms\MAX_ART_TITLE', 512);
+define('Ebms\MAX_JRNL_TITLE', 512);
+
 /**
  * One article / topic association
  */
@@ -8,20 +19,15 @@ class EbmsArticleTopic {
         $topic_id,      // ID of topic
         $topic_name,    // Human readable name
         $board_id,      // Board that owns this topic
-        $board_name,    // Human readable name
-        $cycle_id,      // Review cycle when assigned
-        $cycle_name,    // Name of cycle, e.g., 'January 2012'
-        $dt;            // Date of the association
+        $board_name;    // Human readable name
 
     public function __toString() {
-        // $term = "\n";
-        $term = "<br />\n";
+        $term  = "<br />\n";
         $text  = "article_id: {$this->article_id}$term";
         $text .= "  topic_id: {$this->topic_id}$term";
         $text .= "topic_name: {$this->topic_name}$term";
         $text .= "  board_id: {$this->board_id}$term";
         $text .= "board_name: {$this->board_name}$term";
-        $text .= "        dt: {$this->dt}$term";
 
         return $text;
     }
@@ -36,34 +42,50 @@ class EbmsArticleAuthor {
      * Constructor
      *
      *  @param int    $aId          - Row ID in ebms_article_author or null.
+     *  @param string $collectName  - CollectiveName.
      *  @param string $lastName     - Surname.
      *  @param string $foreName     - First name(s), may be null.
      *  @param string $inits        - First and optional more initials.
      */
 
-    function __construct($aId, $lastName, $foreName, $inits) {
+    function __construct($aId, $collectName, $lastName, $foreName, $inits) {
 
         // Translate any utf-8 characters using routine in this module
         require_once('common.inc');
 
+        $this->msg = null;
+
+        // Empty strings are not allowed.  Use nulls.  Otherwise we
+        //  will violate our unique index constraints.
+        if (!$collectName) $collectName = null;
+        if (!$lastName)    $lastName    = null;
+        if (!$foreName)    $foreName    = null;
+        if (!$inits)       $inits       = null;
+
+        // CollectiveName should not appear with the others but, if it
+        //   does, we will accept it
+        if ($collectName)
+            $collectName = Util::indexify($collectName, true, true,
+                                          MAX_COLLECTNAME);
+
         // Normalize and validate data
-        $lastName = trim(Ebms\Util::utf8ToAscii($lastName));
-        if (!$lastName)
-            throw new Exception(
-                    "EbmsArticleAuthor.__construct: Author missing last name");
+        $lastName = Util::indexify($lastName, true, true, MAX_SURNAME);
+        $foreName = Util::indexify($foreName, true, true, MAX_FORENAME);
+        $initials = Util::indexify($inits, true, true, MAX_INITIALS);
 
-        $foreName = trim(Ebms\Util::utf8ToAscii($foreName));
-        if (!$foreName)
-            $foreName = '';
+        if (!$lastName && !$collectName) {
+            // Initially, this could happen due to not including
+            // CollectiveName in the database design and conversion
+            // In any case, let's not throw an exception
+            $this->msg =
+                "Article ID=$aId has author with no Collective or Last Name";
+        }
 
-        $initials = trim(Ebms\Util::utf8ToAscii($inits));
-        if (!$initials)
-            $initials = '';
-
-        $this->author_id  = $aId;
-        $this->last_name  = $lastName;
-        $this->forename   = $foreName;
-        $this->initials   = $inits;
+        $this->author_id       = $aId;
+        $this->last_name       = $lastName;
+        $this->forename        = $foreName;
+        $this->initials        = $initials;
+        $this->collective_name = $collectName;
     }
 }
 
@@ -104,7 +126,8 @@ class EbmsArticle {
      * by article_id, or data from NLM in Pubmed XML article format.  Other
      * formats to be supported if and when they are required.
      *
-     *  @param string $xmlStr       Serial XML.
+     *  @param int    $articleId    Article ID, if constructing from the DB.
+     *  @param string $xmlStr       Serial XML, if constructing from a string.
      *  @param string $sourceFmt    Source format.  The only one currently
      *                                supported is 'Pubmed', and only the
      *                                format for journal articles, not
@@ -117,13 +140,13 @@ class EbmsArticle {
 
         // Must provide either an ID or xml
         if (is_null($articleId) && is_null($xmlStr))
-            throw new Exception(
+            throw new \Exception(
                     "EbmsArticle constructor: Must pass either " .
                     "one of articleId or xmlStr");
 
         // And not both
         if ($articleId && $xmlStr)
-            throw new Exception(
+            throw new \Exception(
                     "EbmsArticle constructor: Must pass either " .
                     "articleId or xmlStr, not both");
 
@@ -138,7 +161,7 @@ class EbmsArticle {
         else {
             // Only supporting Pubmed
             if ($sourceFmt != 'Pubmed')
-                throw new Exception(
+                throw new \Exception(
                     "EbmsArticle constructor: unsupported format $sourceFmt");
 
             // Load it
@@ -158,18 +181,28 @@ class EbmsArticle {
      */
     public function loadFromId($articleId) {
 
-        // Only loads what's in the row, get other stuff lazily
-        $row = db_query(
-                "SELECT *
+        // Only loads what is in the row, get other stuff lazily
+        $result = db_query(
+                'SELECT *
                    FROM {ebms_article}
-                  WHERE article_id = :artId",
-               array('artId' => $articleId))->fetchObject();
+                  WHERE article_id = :artId',
+                array(':artId' => $articleId));
 
-        // Caller should not be using an internal ID that doesn't exist
-        if (count($row) == 0) {
+        // Caller should not be using an internal ID that doesn not exist
+        $row = $result->fetchObject();
+        if (!$row) {
             // Record error and throw exception
             $msg = 'EbmsArticle.__construct(id): ' .
                    "No database row found for article ID=$articleId";
+            $this->addError($msg, true);
+        }
+
+        // Can not be more than one
+        $noRow = $result->fetchObject();
+        if ($noRow) {
+            // Record error and throw exception
+            $msg = 'EbmsArticle.__construct(id): ' .
+                   "$rowCount database rows found for article ID=$articleId";
             $this->addError($msg, true);
         }
 
@@ -195,26 +228,26 @@ class EbmsArticle {
     }
 
     /**
-     * Clear all values from a Citation object.
+     * Clear all values from an EbmsArticle object.
      */
     public function clear() {
-      $this->article_id     = NULL;
-      $this->source         = NULL;
-      $this->source_id      = NULL;
-      $this->source_jrnl_id = NULL;
-      $this->source_status  = NULL;
-      $this->article_title  = NULL;
-      $this->jrnl_title     = NULL;
-      $this->brf_jrnl_title = NULL;
-      $this->import_date    = NULL;
-      $this->update_date    = NULL;
-      $this->abstract       = NULL;
-      $this->published_date = NULL;
-      $this->brf_citation   = NULL;
-      $this->authors        = NULL;
-      $this->source_data    = NULL;
-      $this->full_text_id   = NULL;
-      $this->errorMsgs      = NULL;
+        $this->article_id     = null;
+        $this->source         = null;
+        $this->source_id      = null;
+        $this->source_jrnl_id = null;
+        $this->source_status  = null;
+        $this->article_title  = null;
+        $this->jrnl_title     = null;
+        $this->brf_jrnl_title = null;
+        $this->import_date    = null;
+        $this->update_date    = null;
+        $this->abstract       = null;
+        $this->published_date = null;
+        $this->brf_citation   = null;
+        $this->authors        = null;
+        $this->source_data    = null;
+        $this->full_text_id   = null;
+        $this->errorMsgs      = null;
     }
 
     /**
@@ -228,15 +261,35 @@ class EbmsArticle {
     public function getArticleTitle() { return $this->jrnl_article_title; }
     public function getJrnlTitle()    { return $this->jrnl_title; }
     public function getBrfJrnlTitle() { return $this->brf_jrnl_title; }
+    public function getBrfCite()      { return $this->brf_citation; }
     public function getAbstract()     { return $this->abstract; }
     public function getPubDate()      { return $this->published_date; }
     public function getImportDate()   { return $this->import_date; }
     public function getUpdateDate()   { return $this->update_date; }
 
     /**
-     * This one doesn't come from the database.
+     * Set the article_id.
+     *
+     * For a new record, this is done in store().  For an existing record
+     * it is done in the constructor.  But when we bring down a duplicate
+     * of an existing record from NLM, we need to identify downloaded version
+     * by reference to the article it replaces or duplicates.
+     *
+     * @param int $articleId    ID of the existing record that this duplicates.
      */
-    public function getErrorMsgs(){ return $this->errorMsgs; }
+    public function setArticleId($articleId) {
+        $this->article_id = $articleId;
+    }
+
+    /**
+     * This one is a bit more complicated.  It returns a string of
+     * all message, or null.
+     */
+    public function getErrorMsgs() {
+        if (count($this->errorMsgs) == 0)
+            return null;
+        return implode('; ', $this->errorMsgs);
+    }
 
     /**
      * Retrieve authors.  Uses cache if available, else goes to the DB.
@@ -245,6 +298,7 @@ class EbmsArticle {
      *                                     If negative, fetch from end.
      *
      *  @return array(EbmsArticleAuthor) - Retrieved authors as objects.
+     *                                     Null if there are no authors.
      *
      *  @throws Exception                - On database or other error.
      */
@@ -254,19 +308,21 @@ class EbmsArticle {
         if (!$maxAuthors)
             $maxAuthors = 99999;
 
-        // If we don't already have them, get them
+        // If we do not already have them, get them
         if (!$this->authors) {
             // If no authors and no database article ID, something bad happened
             if (!$this->article_id)
-                throw new Exception("EbmsArticle.getAuthors: " .
-                  "Attempted to retrieve authors when no article ID present.");
+                throw new \Exception("EbmsArticle->getAuthors: " .
+                  "Attempted to retrieve authors when none present" .
+                  " and no article ID present.");
 
             // Fetch all of them, otherwise caching defeats us if next
             //  caller wants more than we got.
-            // This might get more than we need but we'll only optimize
+            // This might get more than we need but we will only optimize
             //  if experience shows the need
             $result = db_query("
-             SELECT a.author_id, a.last_name, a.forename, a.initials
+             SELECT a.author_id, a.collective_name,
+                    a.last_name, a.forename, a.initials
                FROM {ebms_article_author} a
                JOIN {ebms_article_author_cite} c
                  ON a.author_id = c.author_id
@@ -274,11 +330,20 @@ class EbmsArticle {
               ORDER BY c.cite_order",
                   array(':artId' => $this->article_id))->fetchAll();
 
+            if (count($result) == 0)
+                // It turns out that a very few articles don't have any
+                //  in the record
+                return null;
+
             // Copy each stdClass object to an Author object
             foreach ($result as $row) {
                 $a = new EbmsArticleAuthor($row->author_id,
-                        $row->last_name, $row->forename, $row->initials);
-                $this->authors[] = $a;
+                        $row->collective_name, $row->last_name,
+                        $row->forename, $row->initials);
+                if ($a->msg)
+                    $this->addError($a->msg);
+                else
+                    $this->authors[] = $a;
             }
         }
 
@@ -316,8 +381,8 @@ class EbmsArticle {
 
             else
                 // Source data should ALWAYS be present
-                throw new Exception(
-                 "EbmsArticle.getSourceData: no source data, can't happen.");
+                throw new \Exception(
+                 "EbmsArticle.getSourceData: no source data, cannot happen.");
         }
         return $this->source_data;
     }
@@ -342,39 +407,68 @@ class EbmsArticle {
      * Initially, this will always be for a PDF doc, but conceptually it
      * could be anything such as a Word, XML, or text document.
      *
-     *  @param unsigned int $fullTextFileId - An ID key into the Drupal
+     * Note: Nothing happens in the database unless $this->store() is called.
+     *       For immediate storage of an already existing record, call
+     *       storeArticleFullText() instead.
+     *
+     *  @param unsigned int $fullTextFileId   An ID key into the Drupal
      *                                         "file_managed" table.
      *
      *  @return void.
      *
      */
     public function setFullText($fullTextFileId) {
-
-        // UNTESTED
-
         $this->full_text_id = $fullTextFileId;
+    }
 
-        /* TODO:
-         *  If there is an article_id, update the row in the ebms_article
-         *    table to have the file ID.
-         *  Else
-         *    Just put the ID in the object and wait for a store() to save it.
-         */
+    /**
+     * EbmsArticle interface to setArticleState(), q.v.
+     *
+     *
+     *  @param string $stateName - Name used in preference to ID.  The code is
+     *                              less efficient but caller's code is more
+     *                              self-documenting.
+     *  @param int $topicId      - Sometimes optional topic identifier.  See
+     *                              ebms_article_state_type table.
+     *  @param int $boardId      - Sometimes optional board identifier. If null,
+     *                              if topic is present, board id is inferred.
+     *  @param int $comment      - Optional user or program supplied comment.
+     *  @param int $userId       - User setting the state.  If null use current.
+     *  @param int $dateTime     - Date time of action.  If null, use now.
+     *
+     *  @return - int article_state_id.  This is the id of the new row
+     *            in the ebms_article_state table, not the type table.
+     *
+     *  @throws Exception if invalid parameters  or lower level error.
+     */
+    public function setArticleState($stateName, $topicId=null,
+        $boardId=null, $comment=null, $userId=null, $dateTime=null) {
+
+        return setArticleState($this->article_id, $stateName, $topicId,
+            $boardId=null, $comment=null, $userId=null, $dateTime=null);
     }
 
     /**
      * Append an error message.
      *
-     *  @param string $msg   - Error message.  Should include source func name.
+     *  @param string $msg   - Error message.  Should be unique in code.
+     *                         If it's an error, add each msg individually
      *  @param bool   $throw - True = also throw exception.
      */
     private function addError($msg, $throw=false) {
+
         if (is_null($this->errorMsgs))
             $this->errorMsgs = array();
-        $this->errorMsgs[] = $msg;
+
+        if (is_array($msg)) {
+            foreach ($msg as $m)
+                $this->errorMsgs[] = $msg;
+        }
+        else
+            $this->errorMsgs[] = $msg;
 
         if ($throw)
-            throw new Exception($msg);
+            throw new \Exception($msg);
     }
 
     /**
@@ -390,33 +484,43 @@ class EbmsArticle {
 
         $pmaTag = $pma->getname();
         if ($pmaTag != 'PubmedArticle') {
-            $errMsg = "Citation::loadPubmedXml: Wrong node passed " .
+            $errMsg = "loadPubmedXml: Wrong node passed " .
                       "Expected \"PubmedArticle\". Got: \"$pmaTag\"\n";
             // XXX Log them, then throw exception
-            throw new Exception($errMsg);
+            throw new \Exception($errMsg);
         }
         // Find the top of the record
-        $mc                   = $pma->MedlineCitation;
-        $article              = $mc->Article;
+        $mc      = $pma->MedlineCitation;
+        $article = $mc->Article;
 
         // There are other Pubmed data types besides "Article" but, for
         //   now at least, only Article is supported.
         if (!$article) {
+            logw("===>FOUND NON-ARTICLE in pmid=$mc->PMID");
             $msg = 'EbmsArticle.loadPubmedXml: ' .
                    'Record does not appear to be a Pubmed journal article.';
-            $this->addError(msg);
-            throw new Exception (msg);
+            // XXX Maybe we should not throw this exception but instead return
+            // XXX  an empty EbmsArticle?
+            $this->addError(msg, true);
+
+            // There's no point going on with this article
+            return;
         }
 
+        // XXX - Is there a better way to convert SimpleXMLElement to string?
+        // Note: some of the fields must be plain ascii for indexing
         $journal              = $mc->Article->Journal;
         $this->source         = 'Pubmed';
-        $this->source_id      = $mc->PMID;
-        $this->source_jrnl_id = $mc->MedlineJournalInfo->NlmUniqueID;
-        $this->source_status  = $mc['Status'];
-        $this->article_title  = $article->ArticleTitle;
-        $this->jrnl_title     = $journal->Title;
-        $this->brf_jrnl_title = $mc->MedlineJournalInfo->MedlineTA;
-        $this->abstract       = $this->loadAbstract($article->Abstract[0]);
+        $this->source_id      = (string) $mc->PMID;
+        $this->source_jrnl_id = (string) $mc->MedlineJournalInfo->NlmUniqueID;
+        $this->source_status  = (string) $mc['Status'];
+        $this->article_title  = Util::indexify((string) $article->ArticleTitle,
+                                    true, true, MAX_ART_TITLE);
+        $this->jrnl_title     = Util::indexify((string) $journal->Title,
+                                    true, true, MAX_JRNL_TITLE);
+        $this->brf_jrnl_title = (string) $mc->MedlineJournalInfo->MedlineTA;
+        $this->abstract       = (string) $this->loadAbstract(
+                                            $article->Abstract[0]);
         $this->authors        = $this->loadAuthors($article->AuthorList[0]);
 
         // Published date and brief citation set here
@@ -434,12 +538,9 @@ class EbmsArticle {
      *  @return void.
      *
      *  @throws Exception     - If parser or xml error.
-     *
-     * TODO: All strings need to be utf-8 filtered to plain ASCII.
-     * NOTE: One way is to invoke the filter to create a filtered copy of the
-     *       entire XML record, then parse the copy.  Fast, simple, complete.
      */
     public function loadPubmedXmlStr($xmlStr) {
+
         // Manage errors ourselves
         libxml_use_internal_errors(true);
 
@@ -449,13 +550,21 @@ class EbmsArticle {
         // Parse xml
         $topElem = simplexml_load_string($xmlStr);
         if (!$topElem) {
-            $errMsg="Citation::loadPubmedXmlStr: Failure parsing xml string:\n";
-            foreach (libxml_get_errors() as $error) {
-                $errMsg += "  " + $error + "\n";
-                $this->addError('EbmsArticle.loadPubmedXmlString: ' . $errMsg);
+            // logw($xmlStr);
+            $errMsg="loadPubmedXmlStr: Failure parsing xml string:\n";
+            $errors = libxml_get_errors();
+            logw("===>count of errors:");
+            logw(count($errors));
+            foreach ($errors as $error) {
+                logw("===>libxml error:");
+                logw($error);
+                $errMsg .= "\nLine: $error->line";
+                $errMsg .= "\n Col: $error->column";
+                $errMsg .= "\n Msg: $error->message";
+                $this->addError("\n$errMsg");
             }
-            // XXX Log them, then throw exception
-            throw new Exception($errMsg);
+            // Log them, then throw exception
+            $this->addError($errMsg, true);
         }
 
         // Extract all of the elements
@@ -532,17 +641,38 @@ class EbmsArticle {
      */
     protected function loadAuthors($authorList) {
 
+        // A very few articles have no authors in the record
+        if (is_null($authorList))
+            return null;
+
+logw("Entering loadAuthors()");
         // Array of arrays
         $arrayList = array();
 
+logw("Count of elements in authorList={count($authorList)}");
+$aType = gettype($authorList);
+$aClass = get_class($authorList);
+logw("Type / class of authorList = $aType / $aClass");
         foreach ($authorList->Author as $author) {
+if (gettype($authorList->Author != 'object')) {
+    $aType = gettype($authorList->Author);
+    $a2Type = gettype($author);
+    logw("The type of authorList->Author = $aType / $a2Type");
+    $aClass = get_class($authorList->Author);
+    logw("Class of authorList->Author = '$aClass'");
+}
             // authorId is null unless/until record is/was stored
-            $oneAuth = new EbmsArticleAuthor(null,
+            $oneAuth = new EbmsArticleAuthor(null, $author->CollectiveName,
                $author->LastName, $author->ForeName, $author->Initials);
+logw("oneAuth follows:");
+logw(print_r($oneAuth, true));
 
-            // Append this author to the list of authors
+            // If no error, append this author to the list of authors
             // Note: order is significant, first author, second, etc.
-            $arrayList[] = $oneAuth;
+            if ($oneAuth->msg)
+                $this->addError($oneAuth->msg);
+            else
+                $arrayList[] = $oneAuth;
         }
 
         return $arrayList;
@@ -561,7 +691,7 @@ class EbmsArticle {
      */
     public function loadAbstract($abstract) {
         if (!$abstract)
-            return NULL;
+            return null;
 
         $abs = '';
         foreach ($abstract->AbstractText as $text) {
@@ -606,13 +736,21 @@ class EbmsArticle {
         $text .= "       Authors:$term";
 
         // Authors
-        foreach ($this->authors as $auth) {
-            $text .= "          " .
-                $auth->author_id . ': ' . $auth->last_name . ', ' .
-                $auth->forename . " (" . $auth->initials . ")$term";
+        if ($this->authors) {
+            foreach ($this->authors as $auth) {
+                $text .= "          " . $auth->author_id . ': ';
+                if ($collectName)
+                    $text .= $collectName;
+                else
+                    $text .= $auth->last_name . ', ' .
+                    $auth->forename . " (" . $auth->initials . ")";
+                $text .= $term;
+            }
         }
+        else
+            $text .= "          No authors$term";
 
-        // Just indicate whether this are present or not
+        // Just indicate whether this is present or not
         if ($this->source_data)
             $text .= "   source_data: is populated" . $term;
         else
@@ -664,19 +802,18 @@ class EbmsArticle {
      * Stores bibliographic data, source xml, authors.
      * Caller must separately make the association with a Summary Topic.
      *
-     *  @param int $userId       - ID of authorized user.
      *  @param string $storeDate - Date to assign to all dates,
      *                             'YYYY-MM-DD HH:MM:SS'.
      *                Else use now().  Specifying the same date
      *                for a batch avoids having a different datetime on
-     *                each record in the batch.
+     *                each record in the batch, though that may be better
+     *                than allowing random dates.
      *
      *  @return void.
      *
-     * Throws:
-     *   Exception on database error.
+     *  @throws Exception on database error.
      */
-    public function store($userId, $storeDate=null) {
+    public function store($storeDate=null) {
 
         // TODO: Check authorization
 
@@ -686,17 +823,12 @@ class EbmsArticle {
 
         // Is this a new record or an update?
         $newRec = true;
-        if ($this->article_id) {
+        if ($this->article_id)
             $newRec = false;
-            $this->update_date = $storeDate;
-        }
-        else {
-            $this->import_date = $storeDate;
-            $this->update_date = null;
-        }
 
         // Here are the fields we'll store
-        //   article_id handled separately for new and replace records
+        //   article_id and dates handled separately for new
+        //   and replace records
         $fields = array(
             'source'         => $this->source,
             'source_id'      => $this->source_id,
@@ -705,8 +837,6 @@ class EbmsArticle {
             'article_title'  => $this->article_title,
             'jrnl_title'     => $this->jrnl_title,
             'brf_jrnl_title' => $this->brf_jrnl_title,
-            'import_date'    => $this->import_date,
-            'update_date'    => $this->update_date,
             'abstract'       => $this->abstract,
             'published_date' => $this->published_date,
             'brf_citation'   => $this->brf_citation,
@@ -714,33 +844,45 @@ class EbmsArticle {
             'full_text_id'   => $this->full_text_id
         );
 
-        // TODO: Wrap this in a transaction?
+        // Wrap this in a transaction
+        $txn = db_transaction();
+        try {
 
-        // If we're inserting a new record with store
-        if ($newRec) {
+            // If we're inserting a new record with store
+            if ($newRec) {
 
-            $query = db_insert('ebms_article');
-            $query->fields($fields);
-            $article_id = $query->execute();
+                // Insert a new record
+                $query = db_insert('ebms_article');
+                $fields['import_date'] = $storeDate;
+                $fields['update_date'] = null;
+                $query->fields($fields);
+                $article_id = $query->execute();
 
-            // Make id available
-            $this->article_id = $article_id;
+                // Make id available
+                $this->article_id = $article_id;
+            }
+            else {
+                // Update existing record with new update_date
+                $query = db_update('ebms_article');
+                $fields['update_date'] = $storeDate;
+                $query->fields($fields);
+                $query->condition('article_id', $this->article_id);
+                $query->execute();
+
+                // Delete any author associations.  We'll replace them
+                $this->unlinkAuthors();
+            }
+
+            // Store the authors in the record and associate them with article
+            $this->storeAuthors();
+        } catch (\Exception $e) {
+            $txn->rollback();
+            throw $e;
         }
-        else {
-            $query = db_update('ebms_article');
-            $query->fields($fields);
-            $query->condition('article_id', $this->article_id);
-            $query->execute();
 
-            // Delete any author associations.  We'll replace them
-            $this->unlinkAuthors();
-        }
-
-        // Store the authors in the record and associate them with article
-        $this->storeAuthors();
-
-        // TODO: Commit transaction?
+        // $txn goes out of scope here and transaction commits
     }
+
 
     /**
      * Store authors in the ebms_article_author and ebms_article_author_cite
@@ -749,9 +891,15 @@ class EbmsArticle {
      * Authorization checking is not required since the only way to get to
      * this function is through an authorized function.
      *
-     * Helper function for store() and replace().
+     * Helper function for store().
+     *
+     * Higher level store() performs transaction management.
      */
     private function storeAuthors() {
+
+        // Is there anything to store?
+        if (!$this->authors)
+            return;
 
         // Author order in the article is important
         $citeOrder = 1;
@@ -768,29 +916,33 @@ class EbmsArticle {
                 // Generic searches will still find the author (and noise too)
                 $query = db_select('ebms_article_author', 'a');
                 $query->fields('a', array('author_id'));
+
+                // Search for last and collective name - both, just in case
                 $query->condition('a.last_name', $author->last_name);
+                $query->condition('a.collective_name',
+                                   $author->collective_name);
                 if ($author->forename)
                     $query->condition('a.forename', $author->forename);
                 else
-                    $query->condition('a.forename', '');
+                    $query->isNull('a.forename');
                 if ($author->initials)
                     $query->condition('a.initials', $author->initials);
                 else
-                    $query->condition('a.initials', '');
+                    $query->isNull('a.initials');
                 $result = $query->execute();
                 if (count($result) > 0) {
                     // This author is known already
                     $author->author_id = $result->fetchField();
                 }
-
                 if (!$author->author_id) {
 
                     // Still no author_id. Create an author record
                     $query = db_insert('ebms_article_author')
                      ->fields(array(
-                        'last_name' => $author->last_name,
-                        'forename'  => $author->forename,
-                        'initials'  => $author->initials));
+                        'last_name'       => $author->last_name,
+                        'forename'        => $author->forename,
+                        'initials'        => $author->initials,
+                        'collective_name' => $author->collective_name));
 
                     // Execute query, getting back the last insert ID
                     $author->author_id = $query->execute();
@@ -800,6 +952,7 @@ class EbmsArticle {
                         $this->addError(
                                 "EbmsArticle.storeAuthors: " .
                                 "Could not create author record for " .
+                                $author->collective_name . ':' .
                                 $author->last_name . ', ' .
                                 $author->fore_name . ' ' .
                                 $author->initials);
@@ -830,34 +983,26 @@ class EbmsArticle {
      *  We can replace faster if we compare new and old authors and only
      *  drop those that are in the old but not new, only add those that
      *  are in the new and not old.
-     *  In many (most?) cases the author lists will be identical.
+     *  In many (most?) cases the author lists will be identical.  But
+     *  optimization may be unimportant here.
      */
     private function unlinkAuthors() {
 
         // UNTESTED
-
         // First delete all associations between authors and article
-        $result = db_query(
-            "DELETE {ebms_article_author_cite}
-              WHERE article_id = :articleId",
-            array('articleId'=>$this->article_id));
+        $delQry = db_delete('ebms_article_author_cite')
+            ->condition('article_id', $this->article_id)
+            ->execute();
 
-        // That may leave some authors with no citations
-        // Delete them
-        $result = db_query(
-            "DELETE {ebms_article_author}
-              WHERE TODO XXX"
-            );
-
-
-        // Get a list of all authors of the article
-        $authorList = $this->getAuthors();
-
-        // TODO: Incomplete - finish this and delete article_author if need
-        // Delete all of their associations with the article
-        // $query = db_update('ebms_article_author_cite', 'a')
-        //  ->condition('a.article_id', $this->article_id);
-        // $query->execute();
+        // TODO: Delete article_author if no cites left for him.
+        //       Don't know if this is needed or not.
+        // Alternative approaches:
+        //   Delete author where id not in select author_id from cites
+        //     This took 10 seconds in my test on verdi!
+        //     Could do it once a day or week?
+        //   Get author list for article and delete each one if no cites
+        //     Probably faster for most articles.
+        //     Not comprehensive as the other method is
 
         // XXX - ERROR CHECK?
     }
@@ -871,45 +1016,13 @@ class EbmsArticle {
      */
     public function getTopics() {
 
-        // Get the topic info from the database
-        $result = db_query(
-            "SELECT at.topic_id as topic_id,
-                    t.topic_name as topic_name,
-                    t.board_id as board_id,
-                    b.board_name as board_name,
-                    at.cycle_id as cycle_id,
-                    c.cycle_name as cycle_name,
-                    at.article_topic_dt as dt
-               FROM {ebms_article_topic} at
-               JOIN {ebms_topic} t
-                 ON at.topic_id = t.topic_id
-               JOIN {ebms_board} b
-                 ON t.board_id = b.board_id
-               JOIN {ebms_cycle} c
-                 ON at.cycle_id = c.cycle_id
-              WHERE at.article_id = :artId
-              ORDER BY b.board_name, t.topic_name",
-             array('artId' => $this->article_id));
-
-        // Copy them into object(s) for return
-        $retTopics = array();
-        foreach ($result as $row) {
-            $at             = new EbmsArticleTopic;
-            $at->article_id = $this->article_id;
-            $at->topic_id   = $row->topic_id;
-            $at->topic_name = $row->topic_name;
-            $at->board_id   = $row->board_id;
-            $at->board_name = $row->board_name;
-            $at->cycle_id   = $row->cycle_id;
-            $at->cycle_name = $row->cycle_name;
-            $at->dt         = $row->dt;
-
-            $retTopics[] = $at;
-        }
-
-        return $retTopics;
+        return getTopics($this->article_id);
     }
 
+
+    /**
+     * Simple routine to just get topic IDs
+     */
 
     /**
      * Associate an article with a summary topic.
@@ -928,6 +1041,7 @@ class EbmsArticle {
      *
      *  @throws Exception if key constraint or other DBMS error.
      */
+    /* XXX NEEDS CHANGE, NOW DONE BY SETTING A STATE
     public function addTopic($topicId, $userId, $cycleId,
                              $addDt=null, $method='P') {
 
@@ -936,13 +1050,14 @@ class EbmsArticle {
             $addDt = db_query('SELECT NOW()')->fetchField();
 
         // Check if topic already present
+        // Must always return something, may be 0
         $result = db_query(
             "SELECT COUNT(*)
                FROM {ebms_article_topic}
               WHERE article_id = :artId
                 AND topic_id   = :topId",
-            array('artId' => $this->article_id,
-                  'topId' => $topicId));
+            array(':artId' => $this->article_id,
+                  ':topId' => $topicId));
         $count = $result->fetchField();
 
         if ($count > 0)
@@ -961,5 +1076,1278 @@ class EbmsArticle {
 
         return True;
     }
+    */
 }
+
+/**
+ * Add a row to the state table for an article.
+ *
+ * This is implemented as a free standing function rather than an
+ * EbmsArticle class member because it is likely to be needed when
+ * no EbmsArticle object is otherwise required.
+ *
+ *  @param int $articleId    - Article whose state has changed.
+ *  @param string $stateName - Name used in preference to ID.  The code is
+ *                              less efficient but caller's code is more
+ *                              self-documenting.
+ *  @param int $topicId      - Sometimes optional topic identifier.  See
+ *                              ebms_article_state_type table.
+ *  @param int $boardId      - Sometimes optional board identifier.  If null,
+ *                              if topic is present, board id is inferred.
+ *  @param int $comment      - Optional user or program supplied comment.
+ *  @param int $userId       - User setting the state.  If null use current.
+ *  @param int $dateTime     - Date time of action.  If null, use now.
+ *
+ *  @return - int article_state_id.  This is the id of the new row
+ *            in the ebms_article_state table, not the type table.
+ *
+ *  @throws Exception if invalid parameters  or lower level error.
+ */
+function setArticleState($articleId, $stateName, $topicId=null,
+        $boardId=null, $comment=null, $userId=null, $dateTime=null) {
+
+    // Get everything we know about this state
+    $result = db_query(
+        'SELECT state_id, board_required, topic_required, sequence
+           FROM {ebms_article_state_type}
+          WHERE state_name = :state_name',
+         array(':state_name' => $stateName));
+
+    $stateType = $result->fetchObject();
+
+    // Must be one
+    if (!$stateType)
+        throw new \Exception("setArticleState: Unknown state type $stateName");
+
+    // Get defaul user from global if not passed
+    $userId = Util::getUserId($userId);
+
+    // Check topic/board consistency
+    if ($topicId) {
+        $topicBoardId = getTopicBoard($topicId);
+
+        if ($boardId && $boardId != $topicBoardId)
+            throw new \Exception("setArticleState: boardId=$boardId does not" .
+                                " match topicId=$topicId");
+
+        // Derive board from topic if needed
+        if (!$boardId)
+            $boardId = $topicBoardId;
+    }
+
+    // Required board or topic passed?
+    if (!$boardId && $stateType->board_required == 'Y')
+        throw new \Exception("setArticleState: required boardId not passed");
+    if (!$topicId && $stateType->topic_required == 'Y')
+        throw new \Exception("setArticleState: required topicId not passed");
+    if (!$boardId)
+        $boardId = null;
+    if (!$topicId)
+        $topicId = null;
+
+    // Get datetime from database if needed
+    if (is_null($dateTime))
+        $dateTime = db_query('SELECT NOW()')->fetchField();
+
+    // Prepare to insert the new row
+    $insFields = array(
+        'article_id'   => $articleId,
+        'state_id'     => $stateType->state_id,
+        'user_id'      => $userId,
+        'status_dt'    => $dateTime,
+        'active_status'=> 'A',
+        'board_id'     => $boardId,
+        'topic_id'     => $topicId
+    );
+    $insQry = db_insert('ebms_article_state')
+        ->fields($insFields);
+
+    // Prepare to inactivate any rows with >= sequence number
+    $checkInactivation = False;
+
+    // Start a transaction
+    $txn = db_transaction();
+
+    // Create try block to catch any exceptions while in transaction
+    $rowId = Null;
+    try {
+        // Find equal or higher sequenced active states needing inactivation
+        if ($stateType->sequence) {
+            $seqQry = db_select('ebms_article_state', 'state');
+            $seqQry->join('ebms_article_state_type', 'stype',
+                     'state.state_id = stype.state_id');
+            $seqQry->fields('state', array('article_state_id'));
+            $seqQry->condition('state.article_id', $articleId)
+                   ->condition('stype.sequence', $stateType->sequence, '>=')
+                   ->condition('state.active_status', 'A');
+
+            // Add clauses for topic and board if needed
+            if ($topicId)
+                $seqQry->condition('topic_id', $topicId);
+            if ($boardId)
+                $seqQry->condition('board_id', $boardId);
+
+            $result = $seqQry->execute();
+
+            // Get all article_state_id for all rows
+            $stateRowIds = $result->fetchCol(0);
+
+            // If there were any equal or higher sequenced states in the table
+            if (count($stateRowIds) > 0) {
+
+                // Setup to inactivate all of the rows
+                $inactiveUpd = db_update('ebms_article_state')
+                  ->fields(array('active_status' => 'I'))
+                  ->condition('article_state_id', $stateRowIds, 'IN');
+
+                // Same clauses regarding topic and board
+                if ($topicId)
+                    $inactiveUpd->condition('topic_id', $topicId);
+                if ($boardId)
+                    $inactiveUpd->condition('board_id', $boardId);
+
+                $inactiveUpd->execute();
+
+                // Add a comment to each inactive row
+                $inactiveComment =
+                  "State inactivated by setting \"$stateName\" at $dateTime";
+                foreach ($stateRowIds as $updId)
+                    addArticleStateComment($updId, $inactiveComment,
+                                           $userId, $dateTime);
+            }
+        }
+
+        // Now insert row
+        $rowId = $insQry->execute();
+
+        // If there was a comment, insert it too
+        if (!is_null($comment))
+            addArticleStateComment($rowId, $comment, $userId, $dateTime);
+
+    } catch (\Exception $e) {
+        // Something didn't work, cancel all updates and re-throw
+        $txn->rollback();
+        throw $e;
+    }
+
+    // Success, transaction will commit when $txn goes out of scope
+    return $rowId;
+}
+
+
+/**
+ * Add a comment to a row in the state table.
+ *
+ *  @param int $articleStateId  Article state row ID to comment upon.
+ *  @param string $comment      Comment text.
+ *  @param int $userId          User making the comment, current user if null.
+ *  @param int $commentDt       Datetime, current datetime if null.
+ *
+ *  @return int                 New auto_increment ID for comment row.
+ *
+ *  @throws Exception           If database or other serious error.
+ */
+function addArticleStateComment($articleStateId, $comment,
+                                $userId=null, $commentDt=null) {
+
+    // Resolve defaulted args
+    $userId = Util::getUserId($userId);
+    if (is_null($commentDt))
+        $commentDt = db_query('SELECT NOW()')->fetchField();
+
+logw("articleStateId=$articleStateId, commentDt=$commentDt");
+    $commentIns = db_insert('ebms_article_state_comment')
+      ->fields(array(
+        'article_state_id' => $articleStateId,
+        'user_id'          => $userId,
+        'comment_dt'       => $commentDt,
+        'comment'          => $comment));
+
+    $commentRowId = $commentIns->execute();
+
+    return $commentRowId;
+}
+
+
+/**
+ * Get the current state of an article where current is the one with
+ * the highest active sequence number.
+ *
+ *  @param int $article_id  Of article for which to get the current state.
+ *  @param int $topic_id    If not null, only consider this topic.
+ *  @param int $board_id    If not null, only consider this board.
+ *                           Board ID ignored if topic ID passed.
+ *
+ *  @return int             State type (state_id, state_name) of highest
+ *                           sequenced state.
+ *                           Returns null if no active entry in the state
+ *                           table for this article.
+ *
+ *  @throws Exception       If bad parameters or database error.
+ *
+ * XXX - ISSUE
+ *  What does the caller want when board and/or topic are null?
+ *   1. Last state matching criteria?
+ *   2. All last states matching criteria, e.g., 2 boards + 3 topics
+ *
+ */
+function getCurrentState($article_id, $topic_id=null, $board_id=null) {
+
+    $qry = db_select('ebms_article_state', 'state');
+    $qry->join('ebms_article_state_type', 'type',
+               'state.state_id = type.state_id');
+    $qry->join('users', 'user', 'state.user_id = user.uid');
+    $qry->leftJoin('ebms_board', 'board', 'state.board_id = board.board_id');
+    $qry->leftJoin('ebms_topic', 'topic', 'state.topic_id = topic.topic_id');
+    $qry->fields(array(
+            'state->article_state_id',
+            'state->state_id',
+            'type->state_name',
+            'state->user_id',
+            'user->user_name',
+            'state->board_id',
+            'board->board_name',
+            'state->topic_id',
+            'topic->topic_name',
+            'state->status_dt'));
+    $qry->condition('state.article_id', $article_id)
+        ->condition('state.active_status', 'A');
+
+    // Limit by board or topic
+    if ($topic_id)
+        $qry->condition('state.topic_id', $topicId);
+    if ($board_id)
+        $qry->condition('state.board_id', $boardId);
+
+    // Get the highest sequence numbered state that qualifies
+    // XXX status_dt should not be needed, but data was dirty in old DB
+    $qry->orderBy('type.sequence', 'DESC');
+    $qry->orderBy('state.status_dt', 'DESC');
+    $qry->range(1);
+
+    /* XXX Here is what I am trying to achieve - Remove after debugging
+ SELECT state.article_state_id, state.state_id, type.state_name,
+        state.status_dt, state.user_id, type.completed
+   FROM ebms_article_state state
+   JOIN ebms_article_state_type type
+     ON state.state_id = type.state_id
+  WHERE state.article_id = ?
+    AND state.topic_id = ?
+    AND state.board_id = ?
+    AND state.active_status = 'A'
+  ORDER BY type.sequence DESC
+  LIMIT 1
+    */
+
+    // Get it
+    $result = $qry->execute()->fetchArray();
+
+    // If we got any - which should happen unless there is a bad article ID
+    if ($result) {
+        // Load an associative array
+        // Doing this instead of fetchObject to document names here in code
+        $retArray = array(
+            'article_state_id' => $result[0],
+            'state_id'         => $result[1],
+            'state_name'       => $result[2],
+            'user_id'          => $result[3],
+            'user_name'        => $result[4],
+            'board_id'         => $result[5],
+            'board_name'       => $result[6],
+            'topic_id'         => $result[7],
+            'topic_name'       => $result[8],
+            'status_dt'        => $result[9]
+        );
+
+        return $retArray;
+    }
+
+    // No hits - rare but conceivable
+    return null;
+}
+
+
+/**
+ * Container for status or tag comments.  Same class for both.
+ */
+class ArticleComment {
+    public
+        $comment_id,    // Row ID in status or tag comment table
+        $references_id, // Row ID in ebms_article_state or _tag table
+        $user_id,       // User creating the comment
+        $user_name,     // His/her name
+        $dt,            // Date comment recorded
+        $text;          // Text of the comment
+
+    /**
+     * Produce HTML for one row of a table for this ArticleComment object.
+     *
+     *  @param string $class    Class attribute to add to the row.
+     *                           See ArticleStatus->toHtml().
+     *  @param int $cols        Number of columns in the table, used to
+     *                           produce reasonable looking tables that
+     *                           interleave status or tags + comments.
+     *
+     *  @return                 One <tr>...</tr> string.
+     */
+    public function toHtml($cols=1, $class='activeStat') {
+
+        // Comments will spread across the table
+        $spanAttr = ($cols < 1) ? '' : " colspan='$cols'";
+
+        // Create compact display
+        $html = <<<EOS
+<tr class='$class'>
+ <td$spanAttr>Comment: $this->comment_id State: $this->references_id
+Date: $this->dt User: $this->user_name<br />$this->text</td>
+</tr>
+EOS;
+        return $html;
+ //<td>$this->comment_id / $this->references_id<br />$this->dt</td>
+ //<td>$this->user_name<br />$this->user_id</td>
+    }
+}
+
+
+/**
+ * Container object for one state that an article has been in.
+ */
+class ArticleStatus {
+    public
+        $article_id,       // EBMS article id
+        $article_state_id, // Row ID in ebms_article_state
+        $dt,               // Date time status row was created
+        $type_id,          // Row ID in ebms_article_state_type
+        $type_name,        // Name of the state type
+        $type_sequence,    // Sequence number in the type table
+        $user_id,          // User assigning this state
+        $user_name,        // His/her name
+        $board_id,         // Editorial board ID
+        $board_name,       // String form board name
+        $topic_id,         // Summary topic ID
+        $topic_name,       // String form topic name
+        $active_status,    // 'A' = Active, 'I' = Inactive
+        $comments;         // Array of 0 or more EbmsComents
+
+    /**
+     * Produce HTML for one row of a table for this ArticleStatus object.
+     *
+     *  @return             One <tr>...</tr> string.
+     */
+    public function toHtml() {
+
+        // Distinguish active from inactive rows
+        $active = ($this->active_status == 'A') ? 'activeStat' : 'inactiveStat';
+
+        // Construct the row
+        $html = <<<EOS
+<tr class='$active'>
+ <td>$this->dt<br />$this->article_id / $this->article_state_id</td>
+ <td>$this->type_name<br />$this->type_id / $this->type_sequence</td>
+ <td>$this->user_name<br />$this->user_id</td>
+ <td>$this->board_name<br />$this->board_id</td>
+ <td>$this->topic_name<br />$this->topic_id</td>
+</tr>
+EOS;
+
+        // If there are comments, add more rows
+        if (count($this->comments) > 0) {
+            foreach ($this->comments as $cmt)
+                $html .= $cmt->toHtml(5, $active);
+        }
+
+        return $html;
+    }
+}
+
+
+/**
+ * Get all status history for an article.
+ *
+ *  @param int $articleId       Unique article ID
+ *  @param int $boardId         If present, get status info that has no board
+ *                               (i.e. all boards) or the specified board ID.
+ *                               If null, and no topic specified, get all
+ *                               status for all boards.
+ *                               Default null.
+ *  @param int $topicId         If present, get status info that has the
+ *                               specified topic, or the specified or implied
+ *                               board with no topic (i.e., all topics for
+ *                               that board), or that has no board
+ *                               information at all (i.e., all boards).
+ *                               Default null.
+ *  @param bool $incComments       True = include comments.
+ *                               False = no comments.
+ *                               Default = true.
+ *  @param bool $inactive       True = get all history, including inactive.
+ *                               False = only active status.
+ *                               Default = false.
+ *  @param string $order        Sort order for states, a string containing
+ *                               a single letter code for each sort key:
+ *                               'D' = Date
+ *                               'S' = Sequence number in type table
+ *                               'B' = Board name
+ *                               'T' = Summary topic name
+ *                               'U' = User name (firstname lastname)
+ *                              Default = "DSBT".
+ *
+ *  @return array of ArticleStatus objects with all info.
+ *
+ *  @throws Exception if invalid board/topic combo, or other error.
+ */
+function getStatusHistory($articleId, $boardId=null, $topicId=null,
+                          $incComments=true, $inactive=false, $order='DBST') {
+
+    // Check board/topic congruence
+    if ($topicId) {
+        $topicBoardId = getTopicBoard($topicId);
+        if (is_null($boardId))
+            $boardId = $topicBoardId;
+        else {
+            if ($topicBoardId != $boardId)
+                throw new \Exception(
+           "getStatusHistory: mismatched boardId=$boardId, topicId=$topicId");
+        }
+    }
+
+    // Join five tables
+    $qry = db_select('ebms_article_state', 'state');
+    $qry->join('ebms_article_state_type', 'stype',
+               'state.state_id = stype.state_id');
+    $qry->leftjoin('users', 'usr',
+               'state.user_id = usr.uid');
+    $qry->leftjoin('ebms_board', 'board',
+               'state.board_id = board.board_id');
+    $qry->leftjoin('ebms_topic', 'topic',
+               'state.topic_id = topic.topic_id');
+    $qry->fields('state', array('article_state_id', 'state_id', 'user_id',
+                      'status_dt', 'board_id', 'topic_id', 'active_status'))
+        ->fields('stype', array('state_name', 'sequence'))
+        ->fields('usr',   array('name'))
+        ->fields('board', array('board_name'))
+        ->fields('topic', array('topic_name'));
+
+    $qry->condition('state.article_id', $articleId);
+    if ($topicId) {
+        // If there's a topic, we want anything with this topic, this board
+        //  but no topic, or no board.
+        // WHERE state.topic_id = $topicId
+        //    OR (state.board_id = $boardId AND state.topic_id IS NULL)
+        //    OR (state.board_id IS NULL)
+        $qry->where(
+             "    state.topic_id = $topicId
+              OR (state.board_id = $boardId AND state.topic_id IS NULL
+              OR (state.board_id IS NULL))");
+    }
+    else if (!is_null($boardId)) {
+        // With no topic, get everything for this board, or that has
+        //  no board specificity
+        $qry->condition(
+            db_or()->condition('state.board_id', $boardId)
+                   ->isNull('state.board_id'));
+    }
+    // else No topic or board specified, just get everything
+
+    // Eliminate inactive rows unless they are requested
+    if (!$inactive)
+        $qry->condition('state.active_status', 'A');
+
+    // Construct desired sort/retrieval order
+    for ($i=0; $i<strlen($order); $i++) {
+        switch ($order[$i]) {
+            case 'D': $fld = 'state.status_dt';   break;
+            case 'S': $fld = 'stype.sequence';    break;
+            case 'B': $fld = 'board.board_name';  break;
+            case 'T': $fld = 'topic.topic_name';  break;
+            case 'U': $fld = 'usr.name';          break;
+            default:
+                throw new \Exception(
+                    "getStatusHistory: Invalid sort order token '$order[$i]'");
+        }
+        $qry->orderBy($fld);
+    }
+
+    // Get everything into an associate array keyed by date
+    $stateData = $qry->execute()->fetchAllAssoc('article_state_id');
+
+    // Build an array of well known objects
+    $states = array();
+    foreach ($stateData as $sd) {
+        $st = new ArticleStatus();
+        $st->article_id       = $articleId;
+        $st->article_state_id = $sd->article_state_id;
+        $st->dt               = $sd->status_dt;
+        $st->type_id          = $sd->state_id;
+        $st->type_name        = $sd->state_name;
+        $st->type_sequence    = $sd->sequence;
+        $st->user_id          = $sd->user_id;
+        $st->user_name        = $sd->name;
+        $st->board_id         = $sd->board_id;
+        $st->board_name       = $sd->board_name;
+        $st->topic_id         = $sd->topic_id;
+        $st->topic_name       = $sd->topic_name;
+        $st->active_status    = $sd->active_status;
+        $st->comments         = array();
+
+        // Save it, indexed by state row ID
+        $states[$st->article_state_id] = $st;
+    }
+
+    // If comments are required, have to fetch them and add them in
+    if (count($states) > 0 && $incComments) {
+
+        // Construct string of article state IDs for IN statement
+        $stateIdList = implode(',', array_keys($states));
+
+        // Locate all of the comments for those
+        $qry = db_select('ebms_article_state_comment', 'comment');
+        $qry->leftjoin('users', 'usr', 'comment.user_id = usr.uid');
+        $qry->fields('comment', array('article_state_id', 'comment_id',
+                                      'user_id', 'comment_dt', 'comment'))
+            ->fields('usr', array('uid', 'name'))
+            ->where("comment.article_state_id IN ($stateIdList)")
+            ->orderBy('comment.article_state_id', 'DESC')
+            ->orderBy('comment.comment_dt', 'ASC');
+
+        $comments = $qry->execute()->fetchAllAssoc('comment_id');
+
+        // Construct a comment object and interpolate into the state data
+        foreach ($comments as $cm) {
+            // Construct fields
+            $cmt = new ArticleComment();
+            $cmt->comment_id    = $cm->comment_id;
+            $cmt->references_id = $cm->article_state_id;
+            $cmt->user_id       = $cm->user_id;
+            $cmt->user_name     = $cm->name;
+            $cmt->dt            = $cm->comment_dt;
+            $cmt->text          = $cm->comment;
+
+            // Append it to the correct status record comment array
+            $states[$cm->article_state_id]->comments[] = $cmt;
+        }
+    }
+
+    // Return the whole shebang
+    // logw("The whole shebang follows");
+    // logw(print_r($states, true));
+    return $states;
+}
+
+/**
+ * Convert the results of getStatusHistory() to HTML for test/debug.
+ *
+ *  @param array $history   Return from getStatusHistory();
+ *
+ *  @return string          HTML.
+ */
+function statusHistoryToHtml($history) {
+
+    // Convert the array of objects to an array of strings
+    $histHtmlArray = array();
+    foreach ($history as $st)
+        $histHtmlArray[] = $st->toHtml();
+
+    // Convert the array to a single string
+    $html = <<<EOS
+<style type='text/css'>
+#table { border: 5 px; }
+ .inactiveStat { color: grey; }
+ .activeStat   { color: blue; }
+#testresults {
+ width: 80%;
+ margin-left: 10%;
+ margin-right: 10%;
+}
+</style>
+
+<div id='testresults'>
+<h3>Status History</h3>
+<p class="activeStat">Active records shown in this color.<br />
+<span class="inactiveStat">Inactivated records are in this color.</span></p>
+<table class='debug' border='1'>
+ <tr>
+  <th>DateTime<br />ArtID/StateID</th>
+  <th>TypeName<br />TypeID / TypeSeq</th>
+  <th>UserName<br />UserID</th>
+  <th>BoardName<br />BoardID</th>
+  <th>TopicName<br />TopicID</th>
+ </tr>
+EOS;
+    $html .= implode('', $histHtmlArray) . "</table>\n</div>\n";
+
+    return $html;
+}
+
+
+/**
+ * Container object for a descriptive tag attached to an article.
+ */
+class EbmsArticleTag {
+    public
+        $article_id,       // EBMS article id
+        $article_tag_id,   // Row ID in the ebms_article_tag table
+        $dt,               // Date time status row was created
+        $type_id,          // Row ID in ebms_article_tag_type
+        $type_text_id,     // Internal human readable name of tag type
+        $type_name,        // External human readable name of tag type
+        $user_id,          // User assigning this tag
+        $user_name,        // His/her name
+        $board_id,         // Editorial board ID
+        $board_name,       // String form board name
+        $active_status,    // 'A' = Active, 'I' = Inactive
+        $comments;         // Array of 0 or more EbmsComents
+
+    /**
+     * Produce HTML for one row of a table for this ArticleStatus object.
+     *
+     *  @return             One <tr>...</tr> string.
+     */
+    public function toHtml() {
+
+        // Distinguish active from inactive rows
+        $active = ($this->active_status == 'A') ? 'activeStat' : 'inactiveStat';
+
+        // Construct the row
+        $html = <<<EOS
+<tr class='$active'>
+ <td>$this->dt<br />$this->article_id / $this->article_tag_id</td>
+ <td class='tagname'>$this->type_name<br />$this->type_text_id / $this->type_id</td>
+ <td>$this->user_name<br />$this->user_id</td>
+ <td>$this->board_name<br />$this->board_id</td>
+</tr>
+EOS;
+
+        // If there are comments, add more rows
+        if (count($this->comments) > 0) {
+            foreach ($this->comments as $cmt)
+                $html .= $cmt->toHtml(5, $active);
+        }
+
+        return $html;
+    }
+}
+
+
+/**
+ * Add a descriptive tag to an article.
+ *
+ *  @param string $tagIdStr Unique name of the tag to add.
+ *  @param int $articleId   Unique ID of the article.
+ *  @param int $boardId     Optional unique ID of an editorial board
+ *  @param string $comment  Optional comment to associate with the tag.
+ *  @param int $userId      Optional user ID, default=current user.
+ *
+ *  @return                 Unique row ID of the descriptive tag.
+ *
+ *  @throws Exception       If serious parameter error.
+ */
+function addArticleTag($tagIdStr, $articleId, $boardId=null,
+                       $comment=null, $userId=null) {
+
+    // Check parms
+    $result = db_query(
+        'SELECT *
+           FROM {ebms_article_tag_type}
+          WHERE text_id = :text_id',
+         array(':text_id' => $tagIdStr));
+
+    // Must be a type
+    $tagType = $result->fetchObject();
+    if (!$tagType)
+        throw new \Exception("addArticleTag: Unknown tag type $tagIdStr");
+
+    // If board ID is required, is it present?
+    if (is_null($boardId) && $tagType->board_required == 'Y')
+        throw new \Exception("addArticleTag: '$tagIdStr' requires board ID");
+
+    // Get default user from global if not passed
+    if (!$userId)
+        $userId = Util::getUserId($userId);
+    $tagDt  = db_query('SELECT NOW()')->fetchField();
+
+    // Create the tag row in the database
+    $qry = db_insert('ebms_article_tag');
+    $qry->fields(array('article_id' => $articleId,
+                       'tag_id'     => $tagType->tag_id,
+                       'board_id'   => $boardId,
+                       'user_id'    => $userId,
+                       'tag_dt'     => $tagDt));
+    $articleTagId = $qry->execute();
+
+    // If there's a comment, insert it
+    if ($comment)
+        addTagComment($articleTagId, $comment, $userId);
+
+    return $articleTagId;
+}
+
+
+/**
+ * Inactivate a tag.  Marks the tag so that it won't be selected
+ * be default for most displays.
+ *
+ *  @param int $articleTagId    Row ID for the tag to inactivate.
+ *                               We're looking for the row ID of the tag
+ *                               record, not the ID of the tag type.  There
+ *                               could be multiple rows with the same tag
+ *                               type.
+ *
+ *  @throws exception           if bad row id.
+ */
+function inactivateArticleTag($articleTagId) {
+
+    // Check tag exists and needs inactivation
+    $aStatus = db_query('SELECT active_status
+                           FROM {ebms_article_tag}
+                          WHERE article_tag_id = :artTagId',
+                        array(':artTagId' => $articleTagId))->fetchField();
+    if (!$aStatus)
+        throw new \Exception(
+            "inactivateArticleTag(): can't find article_tag_id=$articleTagId");
+
+    // Do it if we need to
+    if ($aStatus == 'A') {
+        $qry = db_update('ebms_article_tag');
+        $qry->fields(array('active_status' => 'I'));
+        $qry->condition('article_tag_id', $articleTagId);
+        $qry->execute();
+    }
+}
+
+
+/**
+ * Append a comment to the list of zero more comments on this tag instance.
+ *
+ *  @param int $articleTagId    DB row ID for the tag to comment on.
+ *  #param string $comment      Text of the comment.
+ *  @param int $userId          User ID of person doing it.  Null=current user.
+ *
+ *  @return int                 DB row ID of the new comment.
+ *
+ *  @throws exception           if bad row id.
+ */
+function addTagComment($articleTagId, $comment, $userId=null) {
+
+    // If no user, get current user
+    if (!$userId)
+        $userId = Util::getUserId($userId);
+    $commentDt = db_query('SELECT NOW()')->fetchField();
+
+    // Insert it
+    $qry = db_insert('ebms_article_tag_comment');
+    $qry->fields(array(
+        'article_tag_id' => $articleTagId,
+        'user_id'        => $userId,
+        'comment_dt'     => $commentDt,
+        'comment'        => $comment));
+
+    $commentId = $qry->execute();
+
+    if (!$commentId) {
+        throw new \Exception(<<<"EOS"
+addTagComment(): Unable to add comment to article_tagid=$articleTagId,
+user=$userId, comment='$comment'
+EOS
+        );
+    }
+
+    return $commentId;
+}
+
+
+/**
+ * Retrieve the complete tag history for an article.
+ *
+ *  @param int $articleId       Unique article ID
+ *  @param int $boardId         If present, get tag info that has no board
+ *                               (i.e. all boards) or the specified board ID.
+ *                               Default null.
+ *  @param string $tagIdStr     Text identifier of tag.  If null, get all tags.
+ *                               Default null.
+ *  @param bool $incComments       True = include comments.
+ *                               False = no comments.
+ *                               Default = true.
+ *  @param bool $inactive       True = get all history, including inactive.
+ *                               False = only active status.
+ *                               Default = false.
+ *  @param string $order        Sort order for tags, a string containing
+ *                               a single letter code for each sort key:
+ *                               'D' = Date
+ *                               'B' = Board name
+ *                               'N' = Tag name
+ *                               'T' = Tag text ID
+ *                               'U' = User name (firstname lastname)
+ *                              Default = 'ND'.
+ *
+ *  @return array of ArticleStatus objects with all info.
+ *
+ *  @throws Exception if invalid board/topic combo, or other error.
+ */
+function getTagHistory($articleId, $boardId=null, $tagIdStr=null,
+                       $incComments=true, $inactive=false, $order='TD') {
+
+    // Create the query
+    $qry = db_select('ebms_article_tag', 'tag');
+    $qry->join('ebms_article_tag_type', 'ttype',
+               'tag.tag_id = ttype.tag_id');
+    $qry->leftjoin('users', 'usr',
+                   'tag.user_id = usr.uid');
+    $qry->leftjoin('ebms_board', 'board',
+                   'tag.board_id = board.board_id');
+    $qry->fields('tag', array('article_tag_id', 'tag_id', 'board_id',
+                 'user_id', 'tag_dt', 'active_status'))
+        ->fields('ttype', array('tag_name', 'text_id'))
+        ->fields('board', array('board_name'))
+        ->fields('usr', array('name'));
+
+    // Selection critera
+    $qry->condition('tag.article_id', $articleId);
+    if ($boardId) {
+        // Get everything for this board, or with no board identified
+        // Otherwise, no bard restrictions at all
+        $qry->condition(
+            db_or()->condition('tag.board_id', $boardId)
+                   ->isNull('tag.board_id'));
+    }
+    if (!$inactive)
+        $qry->condition('tag.active_status', 'A');
+
+    // Sort order
+    for ($i=0; $i<strlen($order); $i++) {
+        switch ($order[$i]) {
+            case 'D': $fld = 'tag.tag_dt';       break;
+            case 'B': $fld = 'board.board_name'; break;
+            case 'N': $fld = 'ttype.tag_name';   break;
+            case 'T': $fld = 'ttype.text_id';    break;
+            case 'U': $fld = 'usr.name';         break;
+            default:
+                throw new \Exception(
+                    "getTagHistory: Invalid sort order token '$order[$i]'");
+        }
+        $qry->orderBy($fld);
+    }
+
+    // Get it all
+    $tagData = $qry->execute()->fetchAllAssoc('article_tag_id');
+
+    // Build array of objects
+    $tags = array();
+    foreach ($tagData as $td) {
+        $tt = new EbmsArticleTag();
+        $tt->article_id     = $articleId;
+        $tt->article_tag_id = $td->article_tag_id;
+        $tt->dt             = $td->tag_dt;
+        $tt->type_id        = $td->tag_id;
+        $tt->type_text_id   = $td->text_id;
+        $tt->type_name      = $td->tag_name;
+        $tt->user_id        = $td->user_id;
+        $tt->user_name      = $td->name;
+        $tt->board_id       = $td->board_id;
+        $tt->board_name     = $td->board_name;
+        $tt->active_status  = $td->active_status;
+        $comments           = array();
+
+        // Save it, indexed by tag row ID
+        $tags[$tt->article_tag_id] = $tt;
+    }
+
+    // Add comments if requested
+    if (count($tags) > 0 && $incComments) {
+
+        // Construct string of article state IDs for IN statement
+        $tagIdList = implode(',', array_keys($tags));
+
+        // Locate comments for all of them
+        $qry = db_select('ebms_article_tag_comment', 'comment');
+        $qry->leftjoin('users', 'usr', 'comment.user_id = usr.uid');
+        $qry->fields('comment', array('article_tag_id', 'comment_id',
+                                      'user_id', 'comment_dt', 'comment'))
+            ->fields('usr', array('uid', 'name'))
+            ->where("comment.article_tag_id IN ($tagIdList)")
+            ->orderBy('comment.article_tag_id', 'DESC')
+            ->orderBy('comment.comment_dt', 'ASC');
+
+        $comments = $qry->execute()->fetchAllAssoc('comment_id');
+
+        // Construct a comment object and interpolate into the state data
+        foreach ($comments as $cm) {
+            // Construct fields
+            $cmt = new ArticleComment();
+            $cmt->comment_id    = $cm->comment_id;
+            $cmt->references_id = $cm->article_tag_id;
+            $cmt->user_id       = $cm->user_id;
+            $cmt->user_name     = $cm->name;
+            $cmt->dt            = $cm->comment_dt;
+            $cmt->text          = $cm->comment;
+
+            // Interpolate into the correct status record comment array
+            $tags[$cm->article_tag_id]->comments[] = $cmt;
+        }
+    }
+
+    return $tags;
+}
+
+/**
+ * Render a tag history array as HTML.
+ *
+ *  @param array $tagHistory    Return from getTagHistory().
+ *
+ *  @return string              HTML.
+ */
+function tagHistoryToHtml($tagHistory) {
+
+    // Convert array of objects to array of strings
+    $histHtmlArray = array();
+    foreach ($tagHistory as $th)
+        $histHtmlArray[] = $th->toHtml();
+
+    // Convert the array to a single string
+    $html = <<<EOS
+<style type='text/css'>
+#table { border: 2px; }
+ .inactiveStat { color: grey; }
+ .activeStat   { color: blue; }
+#testresults {
+ width: 80%;
+ margin-left: 10%;
+ margin-right: 10%;
+}
+</style>
+
+<div id='testresults'>
+<h3>Tag History</h3>
+<p class="activeStat">Active records shown in this color.<br />
+<span class="inactiveStat">Inactivated records are in this color.</span></p>
+<table class='debug' border='3'>
+ <tr>
+  <th>DateTime<br />ArtID/TagID</th>
+  <th>TypeName<br />TagTextID / TypeTypeId</th>
+  <th>UserName<br />UserID</th>
+  <th>BoardName<br />BoardID</th>
+ </tr>
+EOS;
+    $html .= implode('', $histHtmlArray) . "</table>\n</div>\n";
+
+    return $html;
+}
+
+
+/**
+ * Store the file ID in the Drupal file table for article full text.
+ *
+ *  @param int $articleId       Unique internal ID of the article.
+ *  @param int $fullTextId      Unique fid of the full text.
+ *
+ *  @throws Exception           From database if error.
+ */
+function storeArticleFullTextId($articleId, $fullTextId) {
+
+    $qry = db_update('ebms_article');
+    $qry->fields(array('full_text_id'));
+    $qry->condition('article_id', $this->article_id);
+    $qry->execute();
+}
+
+/**
+ * Get all topics associated with an article.
+ *
+ *  @param int $articleId   Unique internal ID of article.
+ *
+ *  @return array of EbmsArticleTopic objects.
+ *
+ *  @throws Exception if database error.
+ */
+function getTopics($articleId) {
+
+    // Get the topic info from the database
+    $result = db_query(
+       'SELECT DISTINCT state.topic_id as topic_id,
+               topic.topic_name as topic_name,
+               topic.board_id as board_id,
+               board.board_name as board_name
+          FROM ebms_article_state state
+          JOIN ebms_topic topic
+            ON state.topic_id = topic.topic_id
+          JOIN ebms_board board
+            ON topic.board_id = board.board_id
+         WHERE state.article_id = :artId
+           AND state.active_status = :active
+         ORDER BY board.board_name, topic.topic_name',
+         array(':artId'=>$articleId, ':active'=>'A'));
+
+    // Copy them into object(s) for return
+    // Is it better to just return a "standard" object?
+    $retTopics = array();
+    foreach ($result as $row) {
+        $at             = new EbmsArticleTopic;
+        $at->article_id = $articleId;
+        $at->topic_id   = $row->topic_id;
+        $at->topic_name = $row->topic_name;
+        $at->board_id   = $row->board_id;
+        $at->board_name = $row->board_name;
+
+        $retTopics[] = $at;
+    }
+
+    return $retTopics;
+}
+
+
+/**
+ * Get the name of an editorial board from its internal ID.
+ *
+ *  @param int $boardId     Internal board ID.
+ *
+ *  @return string          Human readable name.
+ *
+ *  @throws Exception       If no board found.
+ */
+function getBoardNameById($boardId) {
+
+    $boardName = db_query(
+        'SELECT board_name FROM {ebms_board} WHERE board_id = :boardId',
+        array(':boardId' => $boardId))->fetchField();
+    if (is_null($boardName))
+        throw new \Exception("getBoardNameById: no board with id=$boardId");
+
+    return $boardName;
+}
+
+
+/**
+ * Get the ID of an editorial board from its human readable name.
+ *
+ *  @param int $boardName   Internal board ID.
+ *
+ *  @return string          Human readable name.
+ *
+ *  @throws Exception       If no board found.
+ */
+function getBoardIdByName($boardName) {
+
+    $boardName = db_query(
+        'SELECT board_id FROM {ebms_board} WHERE board_name = :boardName',
+        array(':boardName' => $boardName))->fetchField();
+    if (is_null($boardName))
+        throw new \Exception("getBoardNameById: no board with name=$boardName");
+
+    return $boardName;
+}
+
+
+/**
+ * Get the name of a state from its internal ID.
+ *
+ *  @param int $stateId     Internal state ID.
+ *
+ *  @return string          Human readable name.
+ *
+ *  @throws Exception       If no state found.
+ */
+function getStateNameById($stateId) {
+
+    $stateName = db_query(
+        'SELECT state_name
+           FROM {ebms_article_state_type}
+          WHERE state_id = :stateId',
+        array(':stateId' => $stateId))->fetchField();
+
+    if (is_null($stateName))
+        throw new \Exception("getStateNameById: no state with id=$stateId");
+
+    return $stateName;
+}
+
+
+/**
+ * Get the ID of a state from its human readable name.
+ *
+ *  @param int $stateName   Internal state ID.
+ *
+ *  @return string          Human readable name.
+ *
+ *  @throws Exception       If no state found.
+ */
+function getStateIdByName($stateName) {
+
+    $stateName = db_query(
+        'SELECT state_id
+           FROM {ebms_article_state_type}
+          WHERE state_name = :stateName',
+        array(':stateName' => $stateName))->fetchField();
+
+    if (is_null($stateId))
+        throw new \Exception("getStateIdByName: no state with name=$stateName");
+
+    return $stateName;
+}
+
+
+/**
+ * Get the name of a summary topic from its internal ID.
+ *
+ *  @param int $topicId     Internal topic ID.
+ *
+ *  @return string          Human readable name.
+ *
+ *  @throws Exception       If no topic found.
+ */
+function getTopicNameById($topicId) {
+
+    $topicName = db_query(
+        'SELECT topic_name FROM {ebms_topic} WHERE topic_id = :topicId',
+        array(':topicId' => $topicId))->fetchField();
+
+    if (is_null($topicName))
+        throw new \Exception("getTopicNameById: no topic with id=$topicId");
+
+    return $topicName;
+}
+
+
+/**
+ * Get the ID of a summary topic from its human readable name.
+ *
+ *  @param int $topicName   Internal topic ID.
+ *
+ *  @return string          Human readable name.
+ *
+ *  @throws Exception       If no topic found.
+ */
+function getTopicIdByName($topicName) {
+
+    $topicName = db_query(
+        'SELECT topic_id FROM {ebms_topic} WHERE topic_name = :topicName',
+        array(':topicName' => $topicName))->fetchField();
+
+    if (is_null($topicName))
+        throw new \Exception("getTopicIdByName: no topic with name=$topicName");
+
+    return $topicName;
+}
+
+/**
+ * Get the ID of a descriptive tag from its human readable name.
+ *
+ *  @param int $tagName   Internal tag ID.
+ *
+ *  @return string        Human readable name.
+ *
+ *  @throws Exception     If no tag found.
+ */
+function getTagIdByName($tagName) {
+
+    $tagId = db_query(
+        'SELECT tag_id FROM {ebms_articletag_type} WHERE tag_name = :tagName',
+        array(':tagName' => $tagName))->fetchField();
+
+    if (is_null($tagId))
+        throw new \Exception("getTagIdByName: no tag with name=$tagName");
+
+    return $tagId;
+}
+
+/**
+ * Get the text_id of a descriptive tag from its human readable name.
+ *
+ *  @param int $tagName   Internal tag ID.
+ *
+ *  @return string          Human readable name.
+ *
+ *  @throws Exception       If no tag found.
+ */
+function getTagTextIdByName($tagName) {
+
+    $tagTextId = db_query(
+        'SELECT text_id FROM {ebms_article_tag_type} WHERE tag_name = :tagName',
+        array(':tagName' => $tagName))->fetchField();
+
+    if (is_null($tagTextId))
+        throw new \Exception("getTagTextIdByName: no tag with name=$tagName");
+
+    return $tagTextId;
+}
+
+
+/**
+ * Get the EBMS internal article ID by a source ID (usually Pubmed).
+ *
+ *  @param string $sourceIdStr  ID assigned by original article source.
+ *  @param string $source       Only 'Pubmed' in initial EBMS.
+ *
+ *  @return int                 Internal EBMS ID.
+ *                              Returns null if not found.  A typical cause
+ *                               is that the source (e.g. Pubmed) has the
+ *                               article but we never imported it.
+ */
+function getArticleIdBySourceId($sourceIdStr, $source='Pubmed') {
+
+    // Search
+    $articleId = db_query(
+        'SELECT article_id
+           FROM {ebms_article}
+          WHERE source_id = :sourceId
+            AND source = :source',
+         array(':sourceId'=>$sourceIdStr, ':source'=>$source))->fetchField();
+
+    // Return result, which may be null
+    return $articleId;
+}
+
+
+/**
+ * Verify that an internal EBMS article ID exists in the database.
+ *
+ *  @param int $articleId   Verify this number.
+ *
+ *  @return bool            True = ID found.  False = not found.
+ */
+function verifyArticleId($articleId) {
+
+    // Search
+    $idCount = db_query('
+         SELECT COUNT(0)
+           FROM {ebms_article}
+          WHERE article_id = :artId',
+        array(':artId' => $articleId))->fetchField();
+
+    // Will be exactly one if found
+    if ($idCount == 1)
+        return true;
+    if ($idCount > 1) {
+        throw new \Exception(
+       "verifyArticleId: $idCount articles with ID=$articleId. Can't happen!");
+    }
+
+    return false;
+}
+
+
+/**
+ * Get the boardId for a topicId.  Utility function.
+ *
+ *  @param int $topicId     Topic for which to find the board.
+ *
+ *  @return int $boardId    Board owning this topic.
+ *
+ *  @throws Exception if database error or topic not found.
+ */
+function getTopicBoard ($topicId) {
+
+    // Check the topic
+    $result = db_query(
+        'SELECT board_id
+           FROM {ebms_topic}
+          WHERE topic_id = :topId',
+         array(':topId' => $topicId));
+    $boardId = $result->fetchField();
+
+    // Must be there or caller has a big problem
+    if (!$boardId)
+        throw new \Exception("getTopicBoard: No topic numbered '$topicId'");
+
+    return $boardId;
+}
+
 ?>
