@@ -57,6 +57,7 @@ DROP TABLE IF EXISTS ebms_subgroup;
 DROP TABLE IF EXISTS ebms_board_member;
 DROP TABLE IF EXISTS ebms_board;
 DROP TABLE IF EXISTS ebms_doc;
+DROP TABLE IF EXISTS ebms_user;
 SET sql_mode='NO_AUTO_VALUE_ON_ZERO';
 
 /********************************************************
@@ -71,6 +72,18 @@ DELETE FROM role WHERE name NOT IN ('anonymous user', 'authenticated user');
 /********************************************************
  * Create all tables that are not standard Drupal tables.
  ********************************************************/
+
+/*
+ * Additional user information not stored in Drupal users table.
+ *
+ * user_id           foreign key into Drupal's users table
+ * password_changed  date/time the user last changed his/her password
+ */
+     CREATE TABLE ebms_user
+         (user_id INTEGER UNSIGNED NOT NULL PRIMARY KEY,
+ password_changed DATETIME         NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users (uid))
+      ENGINE=InnoDB;
 
 /*
  * Uploaded documents (does not include PubMed articles).
@@ -248,7 +261,7 @@ CREATE TABLE ebms_ad_hoc_group_member
  * topic_name     unique name for the topic
  * board_id       foreign key into the ebms_board table
  * nci_reviewer   NCI staff member primarily responsible for the topic
- * active_status  can only associate articles with active topics.  Old
+ * active_status  can only associate articles with active topics; old
  *                  topics remain in the database because articles may
  *                  be linked to them.
  */
@@ -412,10 +425,7 @@ CREATE TABLE ebms_legacy_article_id (
  *
  * One real person may also have more than one entry in this table,
  * depending on how the person was cited in his publications and by Pubmed.
- * For example:
- *     Doe, John A
- *     Doe J
- *     Doe JA
+ * Some examples: "Doe, John A"; "Doe J"; "Doe JA"
  *
  * An author should always have either a collective_name (for a corporate
  * author) or a last_name (for a personal author).  However, the data
@@ -423,6 +433,11 @@ CREATE TABLE ebms_legacy_article_id (
  * with a forename but no last_name.  Rather than throw exceptions and/or
  * require NCI staff to correct Pubmed data, we'll just accept whatever
  * we get.
+ *
+ * Searching will be tricky and noisy.  All text will be converted to plain
+ * ASCII and search expressions should be converted the same way.  This
+ * is to assist users with regular American keyboards who are not necessarily
+ * familiar with multiple language techniques.
  *
  *  author_id       Unique ID for this character string, auto generated.
  *  last_name       Surname, called LastName in NLM XML.
@@ -432,14 +447,9 @@ CREATE TABLE ebms_legacy_article_id (
  *                      "Maria del Refugio"
  *  initials        Usually first letter of first name + optional first letter
  *                    of middle name.  But again there are outliers:
- *                      "Mdel R" for Maria del Refugio Gonzales-Losa
+ *                      "Mdel R" for Maria del Refugio Gonzales-Losa;
  *                      "Nde S" for Nicholas de Saint Aubain Somerhausen
  *  collective_name Corporate name alternative to personal names.
- *
- * Searching will be tricky and noisy.  All text will be converted to plain
- * ASCII and search expressions should be converted the same way.  This
- * is to assist users with regular American keyboards who are not necessarily
- * familiar with multiple language techniques.
  */
 CREATE TABLE ebms_article_author (
     author_id       INT AUTO_INCREMENT PRIMARY KEY,
@@ -464,17 +474,17 @@ CREATE TABLE ebms_article_author (
 /*
  * Join the authors with the citations.
  *
- *  article_id      Unique ID in article table.
- *  author_id       Unique ID in author table.
- *  cite_order      Order of this author in article , e.g., first author,
- *                   second author, etc.  Origin 1.
- *
  * Notes:
  *  Use the primary key to find all authors of an article, in the order
  *  they appeared in the article citation.
  *
  *  It's important to cite authors in the correct order of their
  *  appearance in an article.
+ *
+ *  article_id      Unique ID in article table.
+ *  cite_order      Order of this author in article , e.g., first author,
+ *                   second author, etc.  Origin 1.
+ *  author_id       Unique ID in author table.
  */
 CREATE TABLE ebms_article_author_cite (
     article_id      INT NOT NULL,
@@ -503,15 +513,15 @@ CREATE TABLE ebms_article_author_cite (
  * carry an association with a cycle, and that cycle will be displayed
  * when the review packet is being created.
  *
+ * Note:
+ *   This table is so small that a date index might not actually optimize it.
+ *
  * cycle_id       Automatically generated primary key
  * cycle_name     Unique name for the cycle (e.g., 'November 2011')
  * start_date     Datetime of start.  Always order by start_date to guarantee
  *                 retrieval in date order since cycle_ids could be created
  *                 out of order due to conversion from old CMS or 
  *                 for other reasons.
- *
- * Note:
- *   This table is so small that a date index might not actually optimize it.
  */
 CREATE TABLE ebms_cycle
    (cycle_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -534,9 +544,9 @@ CREATE TABLE ebms_cycle
  * allowed for other sources.
  *
  * --XXX There's no history here.  If a journal comes off a not list, we
- * --XXX  we remove it from this table.  If it's listed again, we add it
- * --XXX  back again.
- * --XXX Is that reasonable?
+ *       remove it from this table.  If it's listed again, we add it back
+ *       again.
+ *       Is that reasonable?
  *
  *  source          Name of a source related to source_jrnl_id, normally
  *                   'Pubmed'.
@@ -572,12 +582,9 @@ CREATE TABLE ebms_not_list (
  * 
  * Control table for import_action.disposition.  This is a static set
  * of values that describe what happened to an article that was presented
- * to the system in an import batch.  It might have been:
- *
- *   imported
- *   rejected as a duplicate
- *   assigned a new summary topic to an article already in the system
- *   etc.
+ * to the system in an import batch.  It might have been: (1) imported,
+ * (2) rejected as a duplicate; (3) assigned a new summary topic to an
+ * article already in the system; etc.
  * 
  *  disposition_id          Unique ID of the citation.
  *  text_id                 Human readable invariant name for code refs.
@@ -659,8 +666,9 @@ CREATE TABLE ebms_import_batch (
  * a record imported from NLM might already be in the database but not with
  * the same topic as used in this import batch, and with a different cycle_id.
  * It might also be a later record from NLM.  In such a case there are
- * two import disposition values - "Summry topic added" and "Replaced".
- * 
+ * two import disposition values - "Summary topic added" and "Replaced".
+ *
+ *  action_id       Automatically generated primary key.
  *  source_id       Unique ID of the citation within the source database.
  *                    We don't always have an article_id here because some 
  *                    articles in a batch may not have actually been imported.
@@ -671,6 +679,7 @@ CREATE TABLE ebms_import_batch (
  *  message         Probably only used for error messages on failed imports.
  */
 CREATE TABLE ebms_import_action (
+    action_id          INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     source_id          VARCHAR(32) NOT NULL,
     article_id         INT NULL,
     import_batch_id    INT NOT NULL,
@@ -1068,17 +1077,19 @@ CREATE TABLE ebms_article_board_decision (
  * created_at     date/time the packet came into existence
  * packet_title   how the packet should be identified in lists of packets
  * last_seen      when the board manager last saw the feedback for the packet
+ * active_status  'A'ctive or 'I'nactive.
  */
-CREATE TABLE ebms_packet
-  (packet_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    topic_id INTEGER          NOT NULL,
-  created_by INTEGER UNSIGNED NOT NULL,
-  created_at DATETIME         NOT NULL,
-packet_title VARCHAR(255)     NOT NULL,
-   last_seen DATETIME             NULL,
- FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
- FOREIGN KEY (created_by) REFERENCES users (uid))
-      ENGINE=InnoDB;
+ CREATE TABLE ebms_packet
+   (packet_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+     topic_id INTEGER          NOT NULL,
+   created_by INTEGER UNSIGNED NOT NULL,
+   created_at DATETIME         NOT NULL,
+ packet_title VARCHAR(255)     NOT NULL,
+    last_seen DATETIME             NULL,
+active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
+  FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
+  FOREIGN KEY (created_by) REFERENCES users (uid))
+       ENGINE=InnoDB;
 
 /*
  * PDQ summary document related to the articles in a review packet.
@@ -1212,36 +1223,36 @@ CREATE TABLE ebms_review_rejection_value
       ENGINE=InnoDB;
 
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Not relevant to PDQ summary topic', 1);
+     VALUES ('Already cited in the PDQ summary', 1);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Already cited in PDQ summary', 2);
+     VALUES ('Not relevant to the PDQ summary topic', 2);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Findings not clinically important', 3);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Preliminary findings; need confirmation', 4);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Provides no new information/novel findings', 5);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
-     VALUES ('Review/expert opinion/commentary', 3, 'no new primary data');
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Provides no new information/novel findings', 4);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Inappropriate study design', 5);
+     VALUES ('Review/expert opinion/commentary', 6, 'no new primary data');
 INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
-     VALUES ('Inadequate study population', 6,
+     VALUES ('Inadequate study population', 7,
        'small number of patients; underpowered study; accrual target not met');
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Randomized trial with flawed or insufficiently described randomization process', 7);
+     VALUES ('Inadequate follow-up', 8);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Inappropriate interpretation of subgroup analyses', 9);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
-     VALUES ('Unvalidated outcome measure(s) used', 8,
+     VALUES ('Inappropriate statistical analysis', 10,
+             'incorrect tests; lack of intent-to-treat analysis');
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Inappropriate study design', 11);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Missing/incomplete outcome data; major protocol deviations', 12);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('Randomized trial with flawed or insufficiently described randomization process', 13);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
+     VALUES ('Unvalidated outcome measure(s) used', 14,
              'e.g., unvalidated surrogate endpoint[s]');
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Missing/incomplete outcome data; major protocol deviations', 9);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Inadequate follow-up', 10);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
-     VALUES ('Inappropriate statistical analysis', 11,
-             'incorrect tests; lack of intent to treat analysis');
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Inappropriate interpretation of subgroup analyses', 12);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Preliminary findings; need confirmation', 13);
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('Findings not clinically important', 14);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Other', 15, 'specify reason(s) in the Comments field');
 
@@ -1455,20 +1466,20 @@ requestor_id INTEGER UNSIGNED NOT NULL,
  * agenda_doc     rich text document for agenda
  * when_posted    date/time agenda was first created
  * posted_by      foreign key into Drupal's users table
- * published      XXX
+ * published      when the board manager made the agenda visible
  * last_modified  optional date/time of last agenda changes
- * modified_by    foreign key into Drupal's users table (optionl)
+ * modified_by    foreign key into Drupal's users table (optional)
  */
  CREATE TABLE ebms_agenda
     (event_id INTEGER  UNSIGNED NOT NULL PRIMARY KEY,
    agenda_doc LONGTEXT          NOT NULL,
   when_posted DATETIME          NOT NULL,
     posted_by INTEGER  UNSIGNED NOT NULL,
-    published INTEGER           NOT NULL,
+    published DATETIME              NULL,
 last_modified DATETIME              NULL,
   modified_by INTEGER  UNSIGNED     NULL,
   FOREIGN KEY (event_id)    REFERENCES node (nid),
-  FOREIGN KEY (posted_by )  REFERENCES users (uid),
+  FOREIGN KEY (posted_by)   REFERENCES users (uid),
   FOREIGN KEY (modified_by) REFERENCES users (uid))
        ENGINE=InnoDB;
 
@@ -1484,6 +1495,20 @@ CREATE TABLE ebms_summary_page
     board_id INTEGER      NOT NULL,
    page_name VARCHAR(255) NOT NULL,
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
+      ENGINE=InnoDB;
+
+/*
+ * Topic for summary secondary page.
+ *
+ * page_id        foreign key into ebms_summary_page table
+ * topic_id       foreign key into ebms_topic table
+ */
+CREATE TABLE ebms_summary_page_topic
+    (page_id INTEGER      NOT NULL,
+    topic_id INTEGER      NOT NULL,
+ PRIMARY KEY (page_id, topic_id),
+ FOREIGN KEY (page_id)  REFERENCES ebms_summary_page (page_id),
+ FOREIGN KEY (topic_id) REFERENCES ebms_topic (topic_id))
       ENGINE=InnoDB;
 
 /*
