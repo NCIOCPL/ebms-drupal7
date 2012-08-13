@@ -7,6 +7,7 @@ DROP TABLE IF EXISTS ebms_summary_returned_doc;
 DROP TABLE IF EXISTS ebms_summary_posted_doc;
 DROP TABLE IF EXISTS ebms_summary_supporting_doc;
 DROP TABLE IF EXISTS ebms_summary_link;
+DROP TABLE IF EXISTS ebms_summary_page_topic;
 DROP TABLE IF EXISTS ebms_summary_page;
 DROP TABLE IF EXISTS ebms_agenda;
 DROP TABLE IF EXISTS ebms_report_request;
@@ -63,11 +64,13 @@ SET sql_mode='NO_AUTO_VALUE_ON_ZERO';
 /********************************************************
  * Clear out EBMS rows from Drupal tables.
  ********************************************************/
-DELETE FROM users_roles;
+DELETE FROM users_roles WHERE uid > 1;
 
-DELETE FROM users WHERE uid > 3;
+DELETE FROM users WHERE uid > 1;
 
-DELETE FROM role WHERE name NOT IN ('anonymous user', 'authenticated user');
+DELETE FROM role WHERE name NOT IN ('anonymous user',
+                                    'authenticated user',
+                                    'administrator');
 
 /********************************************************
  * Create all tables that are not standard Drupal tables.
@@ -83,7 +86,7 @@ DELETE FROM role WHERE name NOT IN ('anonymous user', 'authenticated user');
          (user_id INTEGER UNSIGNED NOT NULL PRIMARY KEY,
  password_changed DATETIME         NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Uploaded documents (does not include PubMed articles).
@@ -98,8 +101,9 @@ CREATE TABLE ebms_doc
      file_id INTEGER UNSIGNED NOT NULL,
  when_posted DATETIME         NOT NULL,
  description TEXT             NOT NULL,
+   drop_flag INTEGER          NOT NULL DEFAULT 0,
  FOREIGN KEY (file_id) REFERENCES file_managed (fid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Panels of oncology specialists who maintain the PDQ summaries.
@@ -113,7 +117,7 @@ CREATE TABLE ebms_doc
     board_name VARCHAR(255) NOT NULL UNIQUE,
 loe_guidelines INTEGER          NULL,
    FOREIGN KEY (loe_guidelines) REFERENCES ebms_doc (doc_id))
-        ENGINE=InnoDB;
+        ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Members of the PDQ boards, including their managers (distinguished by role).
@@ -127,7 +131,7 @@ CREATE TABLE ebms_board_member
  PRIMARY KEY (user_id, board_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid),
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Working subsets of the PDQ boards; not all boards have them.
@@ -142,7 +146,7 @@ CREATE TABLE ebms_subgroup
     board_id INTEGER      NOT NULL,
   UNIQUE KEY sg_name_index (board_id, sg_name),
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Joins users to subgroups.
@@ -156,7 +160,7 @@ CREATE TABLE ebms_subgroup_member
  PRIMARY KEY (user_id, sg_id),
  FOREIGN KEY (user_id) REFERENCES users (uid),
  FOREIGN KEY (sg_id)   REFERENCES ebms_subgroup (sg_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Tags associated with posted documents to indicate intended use.
@@ -169,7 +173,7 @@ CREATE TABLE ebms_tag
      (tag_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
     tag_name VARCHAR(64)  NOT NULL UNIQUE,
  tag_comment TEXT             NULL)
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 INSERT INTO ebms_tag (tag_name, tag_comment)
      VALUES ('about',
              CONCAT('Used for documents which should appear in the ',
@@ -200,7 +204,7 @@ CREATE TABLE ebms_doc_tag
  PRIMARY KEY (tag_id, doc_id),
  FOREIGN KEY (doc_id) REFERENCES ebms_doc (doc_id),
  FOREIGN KEY (tag_id) REFERENCES ebms_tag (tag_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Association of a posted document with one of the PDQ boards.
@@ -214,7 +218,7 @@ CREATE TABLE ebms_doc_board
  PRIMARY KEY (doc_id, board_id),
  FOREIGN KEY (doc_id)   REFERENCES ebms_doc (doc_id),
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Group created on the fly.
@@ -231,7 +235,7 @@ CREATE TABLE ebms_ad_hoc_group
   group_name VARCHAR(255)     NOT NULL UNIQUE,
   created_by INTEGER UNSIGNED NOT NULL,
  FOREIGN KEY (created_by) REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 /*
@@ -246,7 +250,7 @@ CREATE TABLE ebms_ad_hoc_group_member
  PRIMARY KEY (user_id, group_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid),
  FOREIGN KEY (group_id) REFERENCES ebms_ad_hoc_group (group_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Cancer topic reviewed by one of the PDQ boards.
@@ -273,7 +277,7 @@ CREATE TABLE ebms_topic
  active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id),
  FOREIGN KEY (nci_reviewer) REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
    CREATE VIEW ebms_active_topic AS
           SELECT topic_id, topic_name, board_id
@@ -296,7 +300,7 @@ CREATE TABLE ebms_doc_topic
  PRIMARY KEY (topic_id, doc_id),
  FOREIGN KEY (topic_id)  REFERENCES ebms_topic (topic_id),
  FOREIGN KEY (doc_id)    REFERENCES ebms_doc (doc_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Reviewers who review specific topic by default.
@@ -315,7 +319,7 @@ CREATE TABLE ebms_topic_reviewer
  PRIMARY KEY (topic_id, user_id),
  FOREIGN KEY (topic_id) REFERENCES ebms_topic (topic_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Articles about cancer and related topics.  Initially, all are from 
@@ -382,7 +386,7 @@ CREATE TABLE ebms_article (
   active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
   FOREIGN KEY (full_text_id) REFERENCES file_managed (fid)
 )
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
       -- Searchable fields
       CREATE INDEX ebms_article_source_id_index
@@ -414,7 +418,7 @@ CREATE TABLE ebms_legacy_article_id (
     article_id      INTEGER NOT NULL,
     FOREIGN KEY (article_id) REFERENCES ebms_article (article_id)
 )
-    ENGINE=InnoDB;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Authors of articles.
@@ -456,9 +460,9 @@ CREATE TABLE ebms_article_author (
     last_name       VARCHAR(255) CHARACTER SET ASCII NULL,
     forename        VARCHAR(128) CHARACTER SET ASCII NULL,
     initials        VARCHAR(128) CHARACTER SET ASCII NULL,
-    collective_name VARCHAR(1023) CHARACTER SET ASCII NULL
+    collective_name VARCHAR(767) CHARACTER SET ASCII NULL
 )
-    ENGINE = InnoDB;
+    ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
     -- Two ways to search, use last + first name, or last + initials
     CREATE UNIQUE INDEX ebms_author_full_index 
@@ -494,7 +498,7 @@ CREATE TABLE ebms_article_author_cite (
     FOREIGN KEY (author_id) REFERENCES ebms_article_author(author_id),
     FOREIGN KEY (article_id) REFERENCES ebms_article(article_id)
 )
-    ENGINE = InnoDB;
+    ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
     -- Finds all articles by an author
     CREATE INDEX ebms_author_article_index
@@ -527,7 +531,7 @@ CREATE TABLE ebms_cycle
    (cycle_id INTEGER     NOT NULL AUTO_INCREMENT PRIMARY KEY,
   cycle_name VARCHAR(40) NOT NULL UNIQUE,
   start_date DATETIME    NOT NULL UNIQUE)
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Identifies journals that are known to be poor sources of info.  Articles
@@ -572,7 +576,7 @@ CREATE TABLE ebms_not_list (
     FOREIGN KEY (board_id) REFERENCES ebms_board(board_id),
     FOREIGN KEY (user_id) REFERENCES users(uid)
 )
-    ENGINE = InnoDB;
+    ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
     CREATE INDEX ebms_not_journal_index 
         ON ebms_not_list(board_id, source, source_jrnl_id);
@@ -599,7 +603,7 @@ CREATE TABLE ebms_import_disposition (
     description             VARCHAR(2048) NOT NULL,
     active_status           ENUM ('A', 'I') NOT NULL DEFAULT 'A'
 )
-    ENGINE = InnoDB;
+    ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
     -- The required disposition values
     INSERT ebms_import_disposition (text_id, disposition_name, description) 
@@ -656,7 +660,7 @@ CREATE TABLE ebms_import_batch (
     FOREIGN KEY (cycle_id) REFERENCES ebms_cycle(cycle_id),
     FOREIGN KEY (user_id)  REFERENCES users(uid)
 )
-    ENGINE = InnoDB;
+    ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 /* 
  * One row for each disposition of a citation in an import batch.
@@ -690,7 +694,7 @@ CREATE TABLE ebms_import_action (
     FOREIGN KEY (disposition_id)
         REFERENCES ebms_import_disposition(disposition_id)
 )
-    ENGINE = InnoDB;
+    ENGINE = InnoDB DEFAULT CHARSET=utf8;
 
 
 /*
@@ -716,10 +720,10 @@ CREATE TABLE ebms_article_state_type (
     completed           ENUM('Y', 'N') NOT NULL DEFAULT 'N',
     board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'Y',
     topic_required      ENUM('Y', 'N') NOT NULL DEFAULT 'Y',
-    active_status       ENUM('A','I') NOT NULL DEFAULT 'A',
+    active_status       ENUM('A', 'I') NOT NULL DEFAULT 'A',
     sequence            INTEGER NULL
 )
-    ENGINE=InnoDB;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
     -- States that an article can be in in the review process
     INSERT ebms_article_state_type 
@@ -846,7 +850,7 @@ CREATE TABLE ebms_article_state (
     FOREIGN KEY (state_id)   REFERENCES ebms_article_state_type(state_id),
     FOREIGN KEY (user_id)    REFERENCES users(uid)
 )
-    ENGINE InnoDB;
+    ENGINE InnoDB DEFAULT CHARSET=utf8;
 
     -- Search for articles by article, state, board, or topic
     CREATE INDEX ebms_article_state_article_index
@@ -885,7 +889,7 @@ CREATE TABLE ebms_article_state_comment (
                 ebms_article_state(article_state_id),
     FOREIGN KEY (user_id) REFERENCES users(uid)
 )
-    ENGINE InnoDB;
+    ENGINE InnoDB DEFAULT CHARSET=utf8;
 
     -- Usually retrieved in association with state row, in date order
     CREATE INDEX ebms_article_state_comment_state_index ON
@@ -914,7 +918,7 @@ CREATE TABLE ebms_article_tag_type (
     board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'N',
     active_status       ENUM('A', 'I') NOT NULL DEFAULT 'A'
 )
-    ENGINE=InnoDB;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
     /* These are partly for illustration.  They may not last */
     INSERT ebms_article_tag_type 
@@ -961,7 +965,7 @@ CREATE TABLE ebms_article_tag (
     FOREIGN KEY (board_id)   REFERENCES ebms_board(board_id),
     FOREIGN KEY (user_id)    REFERENCES users(uid)
 )
-    ENGINE InnoDB;
+    ENGINE InnoDB DEFAULT CHARSET=utf8;
 
     -- Search for articles by article, tag, or board
     CREATE INDEX ebms_article_tag_article_index
@@ -996,7 +1000,7 @@ CREATE TABLE ebms_article_tag_comment (
     FOREIGN KEY (article_tag_id) REFERENCES ebms_article_tag(article_tag_id),
     FOREIGN KEY (user_id)        REFERENCES users(uid)
 )
-    ENGINE InnoDB;
+    ENGINE InnoDB DEFAULT CHARSET=utf8;
 
     -- Usually retrieved in association with article_tag row, in date order
     CREATE INDEX ebms_article_tag_comment_tag_index ON
@@ -1014,7 +1018,7 @@ CREATE TABLE ebms_article_board_decision_value (
     value_id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     value_name    VARCHAR(64) NOT NULL UNIQUE
 )
-    ENGINE InnoDB;
+    ENGINE InnoDB DEFAULT CHARSET=utf8;
 INSERT INTO ebms_article_board_decision_value (value_name)
      VALUES ('Cited (citation only)');
 INSERT INTO ebms_article_board_decision_value (value_name)
@@ -1056,7 +1060,7 @@ CREATE TABLE ebms_article_board_decision (
         REFERENCES ebms_article_board_decision_value(value_id),
     FOREIGN KEY (meeting_date)  REFERENCES ebms_cycle(cycle_id)
 )
-    ENGINE InnoDB;
+    ENGINE InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Collection of articles on a given topic assigned for board member review.
@@ -1089,7 +1093,7 @@ CREATE TABLE ebms_article_board_decision (
 active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
   FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
   FOREIGN KEY (created_by) REFERENCES users (uid))
-       ENGINE=InnoDB;
+       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * PDQ summary document related to the articles in a review packet.
@@ -1110,7 +1114,7 @@ CREATE TABLE ebms_packet_summary
  PRIMARY KEY (packet_id, doc_id),
  FOREIGN KEY (packet_id) REFERENCES ebms_packet (packet_id),
  FOREIGN KEY (doc_id)    REFERENCES ebms_doc (doc_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Board member assigned to review the articles in a review packet.
@@ -1124,7 +1128,7 @@ CREATE TABLE ebms_packet_reviewer
  PRIMARY KEY (packet_id, reviewer_id),
  FOREIGN KEY (packet_id)  REFERENCES ebms_packet (packet_id),
  FOREIGN KEY (reviewer_id) REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Article assigned for review in a review packet.
@@ -1146,7 +1150,7 @@ CREATE TABLE ebms_packet_article
  PRIMARY KEY (packet_id, article_id),
  FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
  FOREIGN KEY (packet_id)  REFERENCES ebms_packet (packet_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Feedback from a reviewer on an article in a review packet.
@@ -1176,7 +1180,7 @@ CREATE TABLE ebms_article_review
                 article_id)  REFERENCES ebms_packet_article (packet_id,
                                                              article_id),
  FOREIGN KEY (reviewer_id) REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Lookup table for decisions a reviewer can make about an article
@@ -1193,7 +1197,7 @@ CREATE TABLE ebms_review_disposition_value
   value_name VARCHAR(80)  NOT NULL UNIQUE,
    value_pos INTEGER      NOT NULL,
 instructions VARCHAR(255)     NULL)
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 INSERT INTO ebms_review_disposition_value (value_name, value_pos)
      VALUES ('Warrants no changes to the summary', 1);
@@ -1220,7 +1224,7 @@ CREATE TABLE ebms_review_rejection_value
   value_name VARCHAR(80)  NOT NULL UNIQUE,
    value_pos INTEGER      NOT NULL,
   extra_info VARCHAR(255)     NULL)
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 INSERT INTO ebms_review_rejection_value (value_name, value_pos)
      VALUES ('Already cited in the PDQ summary', 1);
@@ -1269,7 +1273,7 @@ CREATE TABLE ebms_review_disposition
  PRIMARY KEY (review_id, value_id),
  FOREIGN KEY (review_id) REFERENCES ebms_article_review (review_id),
  FOREIGN KEY (value_id)  REFERENCES ebms_review_disposition_value (value_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Identification of a reason why the reviewer decided an article in
@@ -1285,7 +1289,7 @@ CREATE TABLE ebms_review_rejection_reason
  PRIMARY KEY (review_id, value_id),
  FOREIGN KEY (review_id) REFERENCES ebms_article_review (review_id),
  FOREIGN KEY (value_id)  REFERENCES ebms_review_rejection_value (value_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Document posted by a reviewer to a packet.
@@ -1318,7 +1322,7 @@ CREATE TABLE ebms_reviewer_doc
  FOREIGN KEY (file_id)     REFERENCES file_managed (fid),
  FOREIGN KEY (reviewer_id) REFERENCES users (uid),
  FOREIGN KEY (packet_id)   REFERENCES ebms_packet (packet_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * An announcement message sent to one or more users of the system.
@@ -1344,7 +1348,7 @@ CREATE TABLE ebms_message
  msg_subject VARCHAR(256)     NOT NULL,
     msg_body TEXT             NOT NULL,
  FOREIGN KEY (sender_id) REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Recipients designated to receive specific announcement messages.
@@ -1361,7 +1365,7 @@ CREATE TABLE ebms_message_recipient
  PRIMARY KEY (message_id, recip_id),
  FOREIGN KEY (message_id) REFERENCES ebms_message (message_id),
  FOREIGN KEY (recip_id)   REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Requests for hotel reservations.
@@ -1385,7 +1389,7 @@ checkout_date DATE             NOT NULL,
     processed DATETIME             NULL,
         notes TEXT                 NULL,
   FOREIGN KEY (requestor_id) REFERENCES users (uid))
-       ENGINE=InnoDB;
+       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Request for reimbursement of expenses associated with a board meeting.
@@ -1406,7 +1410,7 @@ requestor_id INTEGER UNSIGNED NOT NULL,
        notes TEXT                 NULL,
  FOREIGN KEY (requestor_id) REFERENCES users (uid),
  FOREIGN KEY (meeting)      REFERENCES node (nid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Line item for reimbursement request.
@@ -1424,7 +1428,7 @@ expense_date DATE         NOT NULL,
       amount VARCHAR(128) NOT NULL,
  description VARCHAR(128) NOT NULL,
  FOREIGN KEY (request_id) REFERENCES ebms_reimbursement_request (request_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Attached file of documentation for expenses.
@@ -1439,7 +1443,7 @@ CREATE TABLE ebms_reimbursement_receipts
      file_id INTEGER UNSIGNED NOT NULL,
  FOREIGN KEY (request_id) REFERENCES ebms_reimbursement_request (request_id),
  FOREIGN KEY (file_id)    REFERENCES file_managed (fid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Information about a requested report.
@@ -1457,7 +1461,7 @@ requestor_id INTEGER UNSIGNED NOT NULL,
    submitted DATETIME         NOT NULL,
   parameters TEXT             NOT NULL,
  FOREIGN KEY (requestor_id) REFERENCES users (uid))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Meeting agenda.
@@ -1481,7 +1485,7 @@ last_modified DATETIME              NULL,
   FOREIGN KEY (event_id)    REFERENCES node (nid),
   FOREIGN KEY (posted_by)   REFERENCES users (uid),
   FOREIGN KEY (modified_by) REFERENCES users (uid))
-       ENGINE=InnoDB;
+       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Summary secondary page.
@@ -1495,7 +1499,7 @@ CREATE TABLE ebms_summary_page
     board_id INTEGER      NOT NULL,
    page_name VARCHAR(255) NOT NULL,
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Topic for summary secondary page.
@@ -1509,7 +1513,7 @@ CREATE TABLE ebms_summary_page_topic
  PRIMARY KEY (page_id, topic_id),
  FOREIGN KEY (page_id)  REFERENCES ebms_summary_page (page_id),
  FOREIGN KEY (topic_id) REFERENCES ebms_topic (topic_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Link to HP summary on Cancer.gov.
@@ -1525,7 +1529,7 @@ CREATE TABLE ebms_summary_link
     link_url VARCHAR(255) NOT NULL,
   link_label VARCHAR(255) NOT NULL,
  FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Summary supporting document.  Listed in table at the bottom of the
@@ -1544,7 +1548,7 @@ CREATE TABLE ebms_summary_supporting_doc
  PRIMARY KEY (board_id, doc_id),
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id),
  FOREIGN KEY (doc_id)   REFERENCES ebms_doc (doc_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Document posted by board manager for secondary summary page.
@@ -1562,7 +1566,7 @@ CREATE TABLE ebms_summary_posted_doc
  PRIMARY KEY (page_id, doc_id),
  FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id),
  FOREIGN KEY (doc_id)  REFERENCES ebms_doc (doc_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Document posted by board member for secondary summary page.
@@ -1580,4 +1584,4 @@ CREATE TABLE ebms_summary_returned_doc
  PRIMARY KEY (page_id, doc_id),
  FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id),
  FOREIGN KEY (doc_id)  REFERENCES ebms_doc (doc_id))
-      ENGINE=InnoDB;
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
