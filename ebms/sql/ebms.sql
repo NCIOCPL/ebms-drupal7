@@ -610,6 +610,9 @@ CREATE TABLE ebms_import_disposition (
       VALUES ('imported', 'Imported', 
       'First time import into the database');
     INSERT ebms_import_disposition (text_id, disposition_name, description) 
+      VALUES ('reviewReady', 'Ready for review',
+      'Imported as ready for review');
+    INSERT ebms_import_disposition (text_id, disposition_name, description) 
       VALUES ('notListed', 'NOT listed',
       'Imported but automatically rejected because the journal was NOT listed');
     INSERT ebms_import_disposition (text_id, disposition_name, description) 
