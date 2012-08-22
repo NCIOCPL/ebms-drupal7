@@ -333,7 +333,7 @@ class ImportBatch {
     // Categories tracked in an import
     // These must EXACTLY match text_ids in ebms_import_disposition table
     static $categories = array('imported', 'notListed', 'duplicate',
-                               'topicAdded', 'replaced', 'error');
+                'reviewReady', 'topicAdded', 'replaced', 'error');
 
     /**
      *  Can load it from the database or from new import (expected to only
@@ -642,12 +642,17 @@ class ImportBatch {
      */
     public function dumpHtml() {
 
+        // Some values to display that are derived, not stored
+        $topicName = getTopicNameById($this->topicId);
+        $boardName = getBoardNameById(getTopicBoard($this->topicId));
+
         $html = <<<EOS
 <hr />
 <h3>Summary of Batch Import</h3>
 <table border='1'>
  <tr><th>batchId</th><td>$this->batchId</td></tr>
- <tr><th>topicId</th><td>$this->topicId</td></tr>
+ <tr><th>boardName</th><td>$boardName</td>
+ <tr><th>topicName</th><td>$topicName</td>
  <tr><th>source</th><td>$this->source</td></tr>
  <tr><th>dateTime</th><td>$this->dateTime</td></tr>
  <tr><th>cycleId</th><td>$this->cycleId</td></tr>
@@ -837,6 +842,9 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
             $topicObjs = array();
             $msgs      = null;
 
+            // Article has no discovered state yet
+            $oldTopicState = null;
+
             // XXX ISSUE: Do we want this?  Or should the user interface
             //  just hyperlink pmids to Pubmed?
             $brfCite = $rec->getBrfCite();
@@ -856,6 +864,9 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 // Brand this new downloaded article with internal ID
                 $rec->setArticleId($foundId);
 
+                // Did it have any state under this topic ID?
+                $oldTopicState = getCurrentState($foundId, $topicId);
+
                 // Find out what topics we stored this under
                 $topicObjs = getTopics($foundId);
 
@@ -872,10 +883,10 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 $ib->addArticle('duplicate', $pmid, $foundId, $msgs);
 
                 // Have we got a new topic, not seen in this article before?
-                $newTopic = True;
+                $newTopic = true;
                 foreach ($topicObjs as $top) {
                     if ($top->topic_id == $topicId) {
-                        $newTopic = False;
+                        $newTopic = false;
                         break;
                     }
                 }
@@ -889,25 +900,40 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 }
             }
             else {
-                if (!$useNotList ||
-                    !array_key_exists($nlmJrnlId, $notList)) {
+                if ($mode == 'live') {
+                    // Save it, populating the articleId
+                    $rec->store();
+                    $rec->setArticleState('Imported', $topicId, $boardId,
+                                      $comment, $userId, $pi->constantDt);
+                }
+                $ib->addArticle('imported', $pmid, $rec->getId(), null);
+
+                // If not marking it for not list, mark it ready for review
+                if (!$useNotList || !array_key_exists($nlmJrnlId, $notList)) {
                     if ($mode == 'live') {
-                        // Save it, populating the articleId
-                        $rec->store();
-                        $rec->setArticleState('Imported', $topicId, $boardId,
-                                          $comment, $userId, $pi->constantDt);
-                        // We decided to also always do this
                         $rec->setArticleState('Ready for initial review',
                                $topicId, $boardId, $comment, $userId,
                                $pi->constantDt);
                     }
-                    $ib->addArticle('imported', $pmid, $rec->getId(), null);
+                    $ib->addArticle('reviewReady', $pmid, $rec->getId(), null);
                 }
             }
 
-            // Is it not listed?  Report this regardless of other actions
-            if (array_key_exists($nlmJrnlId, $notList))
-                $ib->addArticle('notListed', $pmid, $rec->getId(), $msgs);
+            // Is it not listed?
+            if ($useNotList && array_key_exists($nlmJrnlId, $notList)) {
+
+                // If it was previously processed for this topic,
+                //   we don't want to reject it now.  That could override
+                //   a human's decision.
+                if (is_null($oldTopicState)) {
+                    if ($mode == 'live') {
+                        $rec->setArticleState('Rejected by NOT list',
+                               $topicId, $boardId, $comment, $userId,
+                               $pi->constantDt);
+                    }
+                    $ib->addArticle('notListed', $pmid, $rec->getId(), $msgs);
+                }
+            }
 
             // Done with this article, do the next
         }
