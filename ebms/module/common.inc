@@ -9,13 +9,19 @@
 
 namespace Ebms;
 
-define('Ebms\APP_DIR', '/ebmsdev');
-define('Ebms\THEME_DIR', APP_DIR . '/' .
-    drupal_get_path('theme', 'ebmstheme'));
+define('Ebms\APP_DIR', base_path());
+define('Ebms\THEME_NAME', 'ebmstheme');
+define('Ebms\THEME_DIR', APP_DIR . drupal_get_path('theme', THEME_NAME));
 define('Ebms\IMAGES_DIR', THEME_DIR . '/images');
 define('Ebms\MODULE_DIR', drupal_get_path('module', 'ebms'));
 define('Ebms\JS_DIR', MODULE_DIR . '/js');
 define('Ebms\FROM', 'PDQ Editorial Board Management System <ebms@cancer.gov>');
+define('Ebms\LEFT_ARROW', "\xe2\x97\x80");
+define('Ebms\RIGHT_ARROW', "\xe2\x96\xb6");
+define('Ebms\UP_ARROW', "\xe2\x96\xb2");
+define('Ebms\DOWN_ARROW', "\xe2\x96\xbc");
+define('Ebms\ELLIPSIS', "\xe2\x80\xa6");
+define('Ebms\PICTURE_SIZE', 135);
 
 /**
  * Initial implementation of discussion forums has one general forum
@@ -125,8 +131,10 @@ class Menu {
     public
         $label,
         $path,
+        $action,
         $children;
     static $menus;
+    static $active = '';
 
     /**
      * Object representing a single item in the EBMS menu.  At a
@@ -151,6 +159,8 @@ class Menu {
      */
     public function render_array() {
         $ra = array('data' => l($this->label, $this->path));
+        if ($this->label == Menu::$active)
+            $ra['class'] = array('active');
         $children = array();
         foreach ($this->children as $child)
             $children[] = l($child->label, $child->path);
@@ -179,12 +189,26 @@ class Menu {
      */
     public static function init() {
         // XXX Slice the roles finer as development evolves.
-        $role = user_access('administer') ? 'admin' : 'member';
         global $user;
+        if (in_array('medical librarian', $user->roles))
+            $role = 'librarian';
+        elseif (in_array('board member', $user->roles))
+            $role = 'member';
+        else
+            $role = 'admin';
         switch ($role) {
+            case 'librarian':
+                self::$menus = array(
+                    Menu::citations($role),
+                    Menu::reports(),
+                    Menu::admin_tool(),
+                    Menu::calendar($role),
+                    Menu::about(),
+                );
+                break;
             case 'admin':
                 self::$menus = array(
-                    Menu::citations(),
+                    Menu::citations($role),
                     Menu::calendar($role),
                     Menu::literature($role),
                     Menu::summaries(),
@@ -206,18 +230,53 @@ class Menu {
     }
 
     /**
-     * Build the EBMS menu information for Citation management.
+     * Build the EBMS menu information for reports.
      */
-    public static function citations() {
+    public static function reports() {
         return new Menu(
-            'Citation Management', 'citations', array(
-                new Menu('Search Database', 'citations/search'),
-                new Menu('Review Abstracts', 'citations/review'),
-                new Menu('Add Citation', 'citations/add'),
-                new Menu('System Help', 'citations/help'),
-                new Menu('Administrator Tool', 'citations/admin'),
+            'Reports', 'reports', array(
+                new Menu('Citation Management System Reports', 'reports/cite'),
+                new Menu('Not List Reports', 'reports/not-list'),
             )
         );
+    }
+
+    /**
+     * Build the EBMS administrator tool menu.
+     */
+    public static function admin_tool() {
+        return new Menu(
+            'Administrator Tool', 'admin-tool', array(
+                new Menu('Manage Summary Topics', 'admin-tool/topics'),
+                new Menu('Add Review Cycle', 'admin-tool/add-cycle'),
+            )
+        );
+    }
+
+    /**
+     * Build the EBMS menu information for Citation management.
+     */
+    public static function citations($role) {
+        switch ($role) {
+            case 'librarian':
+                $children = array(
+                    new Menu('Import Citations', 'citations/import'),
+                    new Menu('Review Citations', 'citations/review'),
+                    new Menu('Find/Edit a record', 'citations/search'),
+                    new Menu('Add New Journal', 'citations/add-journal'),
+                );
+                break;
+            default:
+                $children = array(
+                    new Menu('Search Database', 'citations/search'),
+                    new Menu('Review Abstracts', 'citations/review'),
+                    new Menu('Add Citation', 'citations/add'),
+                    new Menu('System Help', 'citations/help'),
+                    new Menu('Administrator Tool', 'citations/admin'),
+                );
+                break;
+        }
+        return new Menu('Citation Management', 'citations', $children);
     }
 
     /**
@@ -225,7 +284,7 @@ class Menu {
      */
     public static function calendar($role) {
         $menu = new Menu('Calendar', 'calendar');
-        if ($role == 'admin')
+        if ($role == 'admin' || $role == 'librarian')
             $menu->children = array(
                 new Menu('View', 'calendar/view'),
                 new Menu('Create Event', 'calendar/create'),
@@ -240,8 +299,8 @@ class Menu {
         $menu = new Menu('Literature', 'review');
         if ($role == 'admin')
             $menu->children = array(
-                new Menu('Assigned Packets', 'review/assigned'),
-                new Menu('Create Packet', 'review/create'),
+                new Menu('Assigned Packets', 'review/packets'),
+                new Menu('Create Packet', 'review/add'),
             );
         if ($role == 'member')
             $menu->children = array(
@@ -306,6 +365,9 @@ class Menu {
     }
 }
 
+/**
+ * Common utility functions used throughout the EBMS.
+ */
 class Util {
     private static $u2aMapping = array(
         160 => ' ',
@@ -612,7 +674,7 @@ class Util {
     }
 
     /**
-     * Replace with Alan's version.
+     * XXX Replace with Alan's version.
      */
     public static function get_full_citation($article_id) {
         $xml = db_select('ebms_article', 'a')
@@ -623,11 +685,11 @@ class Util {
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = $article->ArticleTitle;
-        $pgn = $article->Pagination->MedlinePgn;
+        $title = htmlspecialchars($article->ArticleTitle);
+        $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
-        $issue = $article->Journal->JournalIssue->Issue;
-        $vol = $article->Journal->JournalIssue->Volume;
+        $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
+        $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
         $authors = array();
         foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
         {
@@ -638,13 +700,21 @@ class Util {
             $name = $author->LastName;
             if ($author->Initials)
                 $name .= ' ' . $author->Initials;
-            $authors[] = $name;
+            $authors[] = htmlspecialchars($name);
         }
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+        $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
-        return implode(', ', $authors) . ': ' . $title . ' ' . $ta . ' ' .
-            $vol . '(' . $issue . '): ' . $pgn . ', ' . $year . '. PMID: ' .
-            $pmid;
+        $pieces = array(implode(',', $authors), ': <em>', $title, '</em> ',
+                  $ta, ' ', $vol);
+        if ($issue)
+            $pieces[] = "($issue)";
+        if ($pgn)
+            $pieces[] = ": $pgn";
+        if ($year)
+            $pieces[] = ", $year";
+        $pieces[] = ". $pmid";
+        return implode($pieces);
     }
 
     /**
@@ -669,5 +739,60 @@ class Util {
             return $user->uid;
         }
         return $chkUserId;
+    }
+
+    /**
+     * Fetch ID representing an article state from the database.
+     */
+    public static function get_state_id($state_name) {
+        return db_select('ebms_article_state_type', 't')
+            ->fields('t', array('state_id'))
+            ->condition('t.state_name', $state_name)
+            ->execute()
+            ->fetchField();
+    }
+
+    /*
+     * Load the Javascript libraries we need.
+     */
+    public static function add_js() {
+        drupal_add_library('system', 'ui.dialog');
+        drupal_add_js(JS_DIR . '/ebms.js');
+    }
+
+    /**
+     * Load the URI for a managed Drupal file.
+     */
+    public static function get_file_uri($file_id) {
+        return db_select('file_managed', 'f')
+            ->fields('f', array('uri'))
+            ->condition('f.fid', $file_id)
+            ->execute()
+            ->fetchField();
+    }
+
+    /**
+     * Build a dictionary of the PDQ boards.  The keys are the board
+     * IDs and the values are the board names.
+     */
+    public static function boards() {
+        $results = db_select('ebms_board', 'b')
+            ->fields('b', array('board_id', 'board_name'))
+            ->orderBy('b.board_name')
+            ->execute();
+        foreach ($results as $result)
+            $boards[$result->board_id] = $result->board_name;
+        return $boards;
+    }
+
+    /**
+     * Fetch the name of one of the PDQ boards, given its ID.
+     */
+    public static function get_board_name($board_id) {
+        return db_select('ebms_board', 'b')
+            ->fields('b', array('board_name'))
+            ->condition('b.board_id', $board_id)
+            ->execute()
+            ->fetchField();
     }
 }

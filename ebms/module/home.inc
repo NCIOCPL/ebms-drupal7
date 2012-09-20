@@ -46,7 +46,9 @@ class EbmsHomePage {
         $this->focus = Ebms\Util::get_request_value('focus', '1');
         $this->cal = Ebms\Util::get_request_value('cal', $current_month);
         $this->role = user_access('administer') ? 'admin' : 'member';
-        $this->url = Ebms\APP_DIR . '/home';
+        $this->url = 'home';
+        if (in_array('medical librarian', $user->roles))
+            $this->role = 'librarian';
     }
 
     /**
@@ -90,6 +92,8 @@ class EbmsHomePage {
      */
     private function main_panel() {
         switch ($this->role) {
+            case 'librarian':
+                return array('featured' => $this->featured());
             case 'member':
                 return array(
                     'featured' => $this->featured(),
@@ -112,6 +116,12 @@ class EbmsHomePage {
      * is based on the role(s) of the current user.
      */
     private function right_panel() {
+        if ($this->role == 'librarian')
+            return array(
+                'alerts' => $this->alerts(),
+                'calendar' => $this->calendar(),
+                'admin tasks' => $this->admin(),
+            );
         $blocks = array(
             'alerts' => $this->alerts(),
             'next meeting' => $this->next_meeting(),
@@ -163,19 +173,30 @@ class EbmsHomePage {
         $url = Ebms\IMAGES_DIR . "/$id.jpg";
         $img = "<img src='$url' usemap='#featured-map' alt='' />";
         $map = array('<map id="featured-map" name="featured-map">');
-        if ($this->role == 'admin')
-            $alts = array(
-                'Citation Management',
-                'Literature Surveillance',
-                'Summaries',
-                'Reports',
-            );
-        else
-            $alts = array(
-                'Literature Surveillance',
-                'Summaries',
-                'Travel',
-            );
+        switch ($this->role) {
+            case 'admin':
+                $alts = array(
+                    'Citation Management',
+                    'Literature Surveillance',
+                    'Summaries',
+                    'Reports',
+                );
+                break;
+            case 'librarian':
+                $alts = array(
+                    'Citation Management',
+                    'Reports',
+                    'Administrator Tool',
+                );
+                break;
+            default:
+                $alts = array(
+                    'Literature Surveillance',
+                    'Summaries',
+                    'Travel',
+                );
+                break;
+        }
         $shape = 'shape="rect"';
         $base = "{$this->url}?cal={$this->cal}&focus=";
         for ($i = 0; $i < count($alts); ++$i) {
@@ -221,11 +242,26 @@ class EbmsHomePage {
      *     have been implemented.
      */
     private function admin() {
-        $items = array(
-            l('Post a Document', 'docs'),
-            l('Manage Groups', 'stub'),
-            l('Send a Message', 'stub'),
-        );
+        switch ($this->role) {
+            case 'librarian':
+                $items = array(
+                    l('Send a Message', 'stub'),
+                    l('Search Database', 'stub'),
+                    l('Find/Edit a Record', 'stub'),
+                    l('Manage Journals', 'stub'),
+                    l('Import Citations', 'stub'),
+                    l('Review Citations', 'stub'),
+                    l('Publish Citations', 'stub'),
+                );
+                break;
+            default:
+                $items = array(
+                    l('Post a Document', 'docs'),
+                    l('Manage Groups', 'groups'),
+                    l('Send a Message', 'stub'),
+                );
+                break;
+        }
         $title = 'Administrative Tasks';
         $id = 'admin';
         return $this->list_block($title, $id, $items, true);
@@ -237,15 +273,31 @@ class EbmsHomePage {
      *     loaded.
      */
     private function rosters($middle=false) {
-        $items = array(
-            l('Adult Treatment', 'stub'),
-            l('Pediatric Treatment', 'stub'),
-            l('Supportive and Palliative Care', 'stub'),
-            l('Screening and Prevention', 'stub'),
-            l('Cancer Genetics', 'stub'),
-            l('Cancer Complementary and Alternative Medicine', 'stub'),
-            l('Genetics Board Working Groups', 'stub'),
+        $base = 'http://www.cancer.gov/cancertopics/pdq/';
+        $attrs = array('attributes' => array('target' => '_blank'));
+        $boards = array(
+            array('Adult Treatment', 'adult-treatment-board'),
+            array('Pediatric Treatment', 'pediatric-treatment-board'),
+            array('Supportive and Palliative Care', 'supportive-care-board'),
+            array('Screening and Prevention', 'screening-prevention-board'),
+            array('Cancer Genetics', 'cancer-genetics-board'),
+            array('Cancer Complementary and Alternative Medicine',
+                'cancer-cam-board'),
         );
+        foreach ($boards as $board)
+            $items[] = l($board[0], $base . $board[1], $attrs);
+        $query = db_select('file_managed', 'f');
+        $query->join('ebms_doc', 'd', 'd.file_id = f.fid');
+        $query->join('ebms_doc_tag', 't', 't.doc_id = d.doc_id');
+        $query->join('ebms_tag', 'r', 'r.tag_id = t.tag_id');
+        $query->fields('f', array('uri', 'filename'));
+        $query->fields('d', array('description'));
+        $query->condition('r.tag_name', 'roster');
+        $query->condition('d.drop_flag', 0);
+        $query->orderBy('d.description');
+        $results = $query->execute();
+        foreach ($results as $result)
+            $items[] = l($result->description, file_create_url($result->uri));
         $title = 'PDQ&reg; Board Rosters';
         $id = 'board-rosters';
         return $this->list_block($title, $id, $items, $middle);
@@ -269,12 +321,13 @@ class EbmsHomePage {
      *     system have been implemented.
      */
     private function alerts() {
-        $title = "Alerts <span class='alert-count'>12</span>";
-        $items = array(
-            EbmsHomePage::alert('stub', 'Messages', 1),
-            EbmsHomePage::alert('forum', 'Forum', 5),
-            EbmsHomePage::alert('review', 'Reviews', 6),
-        );
+        $total = $this->role == 'librarian' ? 1 : 12;
+        $title = "Alerts <span class='alert-count'>$total</span>";
+        $items = array(EbmsHomePage::alert('stub', 'Messages', 1));
+        if ($this->role != 'librarian') {
+            $items[] = EbmsHomePage::alert('forum', 'Forum', 5);
+            $items[] = EbmsHomePage::alert('review', 'Reviews', 6);
+        }
         return $this->list_block($title, 'alerts', $items);
     }
 
@@ -330,7 +383,7 @@ class EbmsHomePage {
                     );
                 elseif (rand(1, 5) == 1 && $is_weekday)
                     $row[] = array(
-                        'data' => "<a href='stub'>$day</a>",
+                        'data' => l($day, 'calendar'),#"<a href='stub'>$day</a>",
                         'class' => array('day-has-events'),
                     );
                 else
@@ -391,6 +444,30 @@ class EbmsHomePage {
      */
     private static function featured_info($role, $focus) {
         $info = array(
+            'librarian' => array(
+                '1' => array(
+                    'title' => 'Citation Management',
+                    'links' => array(
+                        l('Import Citation', 'stub'),
+                        l('Find/Edit a Record', 'stub'),
+                        l('Review Citations', 'stub'),
+                    ),
+                ),
+                '2' => array(
+                    'title' => 'Reports',
+                    'links' => array(
+                        l('Citation Management System Reports', 'stub'),
+                        l('Not List Reports', 'stub'),
+                    ),
+                ),
+                '3' => array(
+                    'title' => 'Administrator Tool',
+                    'links' => array(
+                        l('Add New Review Cycle', 'stub'),
+                        l('Manage Summary Topics', 'stub'),
+                    ),
+                ),
+            ),
             'admin' => array(
                 '1' => array(
                     'title' => 'Citation Management',
@@ -403,8 +480,10 @@ class EbmsHomePage {
                 '2' => array(
                     'title' => 'Literature Surveillance',
                     'links' => array(
-                        l('Create A Literature Surveillance Packet', 'review'),
-                        l('Edit a Literature Surveillance Packet', 'review'),
+                        l('Create A Literature Surveillance Packet',
+                            'review/add'),
+                        l('Edit a Literature Surveillance Packet',
+                            'review/packets'),
                         l('Review Responses to a Literature Surveillance ' .
                             'Packet', 'review'),
                     ),

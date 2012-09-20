@@ -52,14 +52,14 @@ ebmsscript.submit_new_password_request = function() {
         alert("You must indicate which elements have been forgotten.");
         return false;
     }
-    $email = jQuery("#pdq-ebms-password-form #edit-email").val();
-    if (!$email || $email == 'Email Address') {
+    var email = jQuery("#pdq-ebms-password-form #edit-email").val();
+    if (!email || email == 'Email Address') {
         alert("Email address is required.");
         return false;
     }
     jQuery.ajax({
         url: ebmsscript.site_root + "/account-email-status",
-        data: { email: $email },
+        data: { email: email },
         dataType: "json",
         success: function(result) {
              if (result.status == "valid")
@@ -171,11 +171,13 @@ ebmsscript.monitor_chars = function() {
  * file.
  */
 ebmsscript.file_chosen = function() {
-    var p = jQuery("#filepath").val();
-    var a = p.split("\\");
-    p = a[a.length-1];
-    jQuery("#filename").text(p).show();
-    jQuery("#choose-file label").css("color", "#2d2c28");
+    if (jQuery("#filepath").length == 1) {
+        var p = jQuery("#filepath").val();
+        var a = p.split("\\");
+        p = a[a.length-1];
+        jQuery("#filename").text(p).show();
+        jQuery("#choose-file label").css("color", "#2d2c28");
+    }
     if (jQuery("#add-notes").length == 1) {
         jQuery("#add-notes label").css("color", "#a90101");
         if (!ebmsscript.file_upload_textarea_open) {
@@ -185,6 +187,11 @@ ebmsscript.file_chosen = function() {
         }
     }
 };
+
+ebmsscript.file_unselected = function() {
+    jQuery("#charcount").hide();
+    jQuery("#filenotes").hide();
+}
 
 /**
  * Common cleanup performed when we close the popup file upload form,
@@ -201,11 +208,19 @@ ebmsscript.clear_file_upload_form = function() {
  * Open the popup file upload form.
  */
 ebmsscript.show_reviewer_document_post_form = function() {
+    ebmsscript.show_doc_post_form();
+};
+
+/**
+ * Extracted common code used by document posting form from multiple
+ * places.
+ */
+ebmsscript.show_doc_post_form = function() {
     ebmsscript.clear_file_upload_form();
     jQuery("#file-upload-form-js").dialog("open");
     jQuery("#filepath").focus();
     jQuery("#choose-file label").css("color", "#2d2c28");
-    jQuery("#upload-file").css("color", "#2d2c28");
+    //jQuery("#upload-file").css("color", "#2d2c28");
     jQuery("#add-notes label").css("color", "#2d2c28");
     ebmsscript.file_upload_textarea_open = false;
 };
@@ -215,7 +230,7 @@ ebmsscript.show_reviewer_document_post_form = function() {
  */
 ebmsscript.submit_file = function() {
     if (jQuery("#filepath").val()) {
-        jQuery("#reviewer-upload-form").submit();
+        jQuery("#file-upload-form-js form").submit();
         return true;
     }
     else {
@@ -242,20 +257,22 @@ ebmsscript.init_literature_review_form = function() {
         ebmsscript.disp_check(true);
     });
 }
-    
+
 /**
  * Initialization needed for reviewer document file upload form.
  */
 ebmsscript.init_reviewer_file_upload_form = function() {
 
+    var dialog_id = "file-upload-form-js";
+
     // Optimize away the work of this function if not needed for this page.
-    if (jQuery("#file-upload-form-js").length != 1) {
+    if (jQuery("#" + dialog_id).length != 1) {
         return;
     }
     if (jQuery("form#reviewer-upload-form").length != 1) {
         return;
     }
-    jQuery("#file-upload-form-js").dialog({
+    jQuery("#" + dialog_id).dialog({
         autoOpen: false,
         width: 800,
         modal: true,
@@ -268,6 +285,8 @@ ebmsscript.init_reviewer_file_upload_form = function() {
         "javascript:ebmsscript.show_reviewer_document_post_form()"
     );
     ebmsscript.clear_file_upload_form();
+    ebmsscript.register_file_upload_form_event_handlers();
+    /* REPLACED BY COMMON CODE IN FUNCTION INVOKED ABOVE ...^
     jQuery("#file-upload-form-js").bind("dialogclose", function(event) {
          ebmsscript.file_upload_textarea_open = false;
          ebmsscript.clear_file_upload_form();
@@ -292,19 +311,32 @@ ebmsscript.init_reviewer_file_upload_form = function() {
         jQuery("#upload-file").css("color", "#2d2c28");
         jQuery("#add-notes label").css("color", "#a90101");
     });
-    jQuery("#filenotes").change(function() { ebmsscript.monitor_chars(); });
-    jQuery("#filenotes").blur(function() { ebmsscript.monitor_chars(); });
-    jQuery("#filenotes").keyup(function() { ebmsscript.monitor_chars(); });
     jQuery("#upload-file").click(function() {
-        return ebmsscript.submit_file();
+        return ebmsscript.submit_file(dialog_id);
     });
     jQuery("#file-upload-form-js h2").hide();
+    ebmsscript.setup_filenote_monitoring();
+    */
+};
+
+ebmsscript.setup_filenote_monitoring = function() {
+    jQuery("#filenotes").change(function() { ebmsscript.monitor_chars(); });
+    jQuery("#filenotes").blur(function() {
+        ebmsscript.monitor_chars();
+        jQuery("#charcount").css("color", "#2d2c28");
+        jQuery("#filenotes").css("border-color", "#2d2c28");
+    });
+    jQuery("#filenotes").focus(function() { 
+        jQuery("#charcount").css("color", "#a90101");
+        jQuery("#filenotes").css("border-color", "#a90101");
+    });
+    jQuery("#filenotes").keyup(function() { ebmsscript.monitor_chars(); });
 };
 
 /**
  * Hook fancy handling of submenus into our main menu bar.
  */
-ebmsscript.init_superfish = function () {
+ebmsscript.init_superfish = function() {
     var selector = "#ebms-menu";
     var ss_opts = { minWidth: 12, maxWidth: 55, extraWidth: 1 };
     var sf_opts = {
@@ -526,6 +558,355 @@ ebmsscript.profile_picture_chosen = function() {
     return false;
 };
 
+ebmsscript.show_new_summaries_page_form = function() {
+    jQuery("#new-summary-page-form").dialog("open");
+    jQuery("#edit-title").blur();
+}
+ebmsscript.show_new_cg_summary_form = function() {
+    jQuery("#new-cg-summary-form").dialog("open");
+    jQuery("#edit-title").blur();
+    jQuery("#edit-url").blur();
+}
+
+ebmsscript.init_summaries_page = function() {
+    if (jQuery("#new-summary-page-form").length == 1) {
+        jQuery("#new-summary-page-form").dialog({
+            autoOpen: false,
+            width: 530,
+            modal: true,
+            draggable: true,
+            resizable: false,
+            title: "ADD NEW SUBPAGE"
+        });
+        jQuery("#edit-title").blur(function() {
+            ebmsscript.summaries_subpage_title_field_blur();
+        });
+        jQuery("#edit-title").focus(function() {
+            ebmsscript.summaries_subpage_title_field_focus();
+        });
+        //ebmsscript.summaries_subpage_title_field_blur();
+        jQuery("#new-summary-page-form .form-submit").click(function() {
+            return ebmsscript.new_summaries_subpage_submit();
+        });
+    }
+    if (jQuery("#post-summary-sd-form").length == 1) {
+        jQuery("#post-summary-sd-form").dialog({
+            autoOpen: false,
+            width: 800,
+            modal: true,
+            draggable: true,
+            resizable: false,
+            title: "POST DOCUMENT"
+        });
+        jQuery("#post-summary-sd-form .form-submit").click(function() {
+            return ebmsscript.post_summary_sd_submit();
+        });
+        jQuery("#post-summary-sd-form #edit-doc").change(function() {
+            ebmsscript.doc_picklist_changed();
+        });
+        ebmsscript.setup_filenote_monitoring();
+    }
+    if (jQuery("#new-cg-summary-form").length == 1) {
+        jQuery("#new-cg-summary-form").dialog({
+            autoOpen: false,
+            width: 390,
+            modal: true,
+            draggable: true,
+            resizable: false,
+            title: "ADD NEW CANCER.GOV LINK"
+        });
+        jQuery("#new-cg-summary-form .form-submit").click(function() {
+            return ebmsscript.new_cg_summary_submit();
+        });
+        jQuery("#edit-url").blur(function() {
+            ebmsscript.field_blur("edit-url", "Link Url");
+        });
+        jQuery("#edit-url").focus(function() {
+            ebmsscript.field_focus("edit-url", "Link Url");
+        });
+        jQuery("#edit-title").blur(function() {
+            ebmsscript.field_blur("edit-title", "Link Title");
+        });
+        jQuery("#edit-title").focus(function() {
+            ebmsscript.field_focus("edit-title", "Link Title");
+        });
+    }
+    if (jQuery("#post-summary-nd-form").length == 1) {
+        jQuery("#post-summary-nd-form").dialog({
+            autoOpen: false,
+            width: 800,
+            modal: true,
+            draggable: true,
+            resizable: false,
+            title: "POST DOCUMENT"
+        });
+        jQuery("#post-summary-nd-form .form-submit").click(function() {
+            return ebmsscript.post_summary_nd_submit();
+        });
+        jQuery("#post-summary-nd-form #edit-doc").change(function() {
+            ebmsscript.doc_picklist_changed();
+        });
+        ebmsscript.setup_filenote_monitoring();
+    }
+
+    /* Make sure we don't do this twice for the Literature page. */
+    if (jQuery("body.page-summaries").length != 1)
+        return;
+    var dialog_id = "file-upload-form-js";
+    if (jQuery("#" + dialog_id).length == 1) {
+        jQuery("#" + dialog_id).dialog({
+            autoOpen: false,
+            width: 800,
+            modal: true,
+            draggable: true,
+            resizable: false,
+            title: "POST DOCUMENT"
+        });
+        jQuery("#member-docs-block a.button").attr(
+            "href",
+            "javascript:ebmsscript.show_member_summary_doc_post_form()"
+        );
+        ebmsscript.clear_file_upload_form();
+        ebmsscript.register_file_upload_form_event_handlers();
+    }        
+};
+
+ebmsscript.register_file_upload_form_event_handlers = function() {
+    jQuery("#file-upload-form-js").bind("dialogclose", function(event) {
+         ebmsscript.file_upload_textarea_open = false;
+         ebmsscript.clear_file_upload_form();
+    });
+    jQuery("#choose-file #filepath").change(function() {
+        ebmsscript.file_chosen();
+    });
+    jQuery("#choose-file label").click(function() {
+        jQuery("#choose-file label").css("color", "#a90101");
+        //jQuery("#upload-file").css("color", "#2d2c28");
+        jQuery("#add-notes label").css("color", "#2d2c28");
+        if (!jQuery.browser.msie) {
+            jQuery("#choose-file #filepath").click();
+            return false;
+        }
+    });
+    jQuery("#upload-file").focus(function() {
+        jQuery("#choose-file label").css("color", "#2d2c28");
+        //jQuery("#upload-file").css("color", "#a90101");
+        jQuery("#add-notes label").css("color", "#2d2c28");
+    });
+    jQuery("#filenotes").focus(function() {
+        jQuery("#choose-file label").css("color", "#2d2c28");
+        //jQuery("#upload-file").css("color", "#2d2c28");
+        jQuery("#add-notes label").css("color", "#a90101");
+    });
+    jQuery("#upload-file").click(function() {
+        return ebmsscript.submit_file();
+    });
+    jQuery("#file-upload-form-js h2").hide();
+    ebmsscript.setup_filenote_monitoring();
+};
+
+/**
+ * Open the popup file upload form for the literature page
+ */
+ebmsscript.show_member_summary_doc_post_form = function() {
+    ebmsscript.show_doc_post_form("file-upload-form-js");
+};
+
+
+ebmsscript.doc_picklist_changed = function() {
+    if (ebmsscript.picklist_value_selected("edit-doc"))
+        ebmsscript.file_chosen();
+    else
+        ebmsscript.file_unselected();
+};
+
+ebmsscript.picklist_value_selected = function(id) {
+    var selector = "#" + id + " option:selected";
+    var answer = false;
+    jQuery(selector).each(function() {
+        if (jQuery(this).val() != 0)
+            answer = true;
+    });
+    return answer;
+};
+
+ebmsscript.new_summaries_subpage_submit = function() {
+    var title = jQuery.trim(jQuery("#edit-title").val());
+    if (!title || title == 'Subpage Title') {
+        alert("Title is required for new subpage.");
+        return false;
+    }
+    if (jQuery("#edit-topics option:selected").length < 1) {
+        alert("You must associate at least one topic with the new subpage.");
+        return false;
+    }
+    jQuery("#pdq-ebms-new-summary-page-form").submit();
+    return true;
+};
+ebmsscript.new_cg_summary_submit = function() {
+    var url = jQuery.trim(jQuery("#edit-url").val());
+    if (!url || url == "Link Url") {
+        alert("URL field is required.");
+        return false;
+    }
+    var title = jQuery.trim(jQuery("#edit-title").val());
+    if (!title || title == "Link Title") {
+        alert("Title field is required.");
+        return false;
+    }
+    jQuery("#pdq-ebms-new-cg-summary-form").submit();
+    return true;
+}    
+ebmsscript.post_summary_nd_submit = function() {
+    if (ebmsscript.picklist_value_selected("edit-doc")) {
+        jQuery("#pdq-ebms-post-summary-sd-form").submit();
+        return true;
+    }
+    alert("No document has been selected.");
+    return false;
+};
+
+ebmsscript.post_summary_sd_submit = function() {
+    if (ebmsscript.picklist_value_selected("edit-doc")) {
+        jQuery("#pdq-ebms-post-summary-sd-form").submit();
+        return true;
+    }
+    alert("No document has been selected.");
+    return false;
+};
+
+ebmsscript.field_blur = function(field_id, prompt) {
+    var field = jQuery("#" + field_id);
+    if (!field.val())
+        field.val(prompt);
+    if (field.val() == prompt)
+        field.css(ebmsscript.init_field_css);
+    else
+        field.css(ebmsscript.normal_field_css);
+};
+ebmsscript.field_focus = function(field_id, prompt) {
+    var field = jQuery("#" + field_id);
+    if (field.val() == prompt)
+        field.val("");
+    field.css(ebmsscript.normal_field_css);
+}
+
+/**
+ * Put the prompt in the Summaries Subpage Title field if it's empty and
+ * apply custom styling.
+ */
+ebmsscript.summaries_subpage_title_field_blur = function() {
+    var field = jQuery("#edit-title");
+    if (!field.val())
+        field.val("Subpage Title");
+    if (field.val() == "Subpage Title")
+        field.css(ebmsscript.init_field_css);
+    else
+        field.css(ebmsscript.normal_field_css);
+};
+
+/**
+ * Clear out the prompt and reset the style for the subpage title field.
+ */
+ebmsscript.summaries_subpage_title_field_focus = function() {
+    var field = jQuery("#edit-title");
+    if (field.val() == "Subpage Title")
+        field.val("");
+    field.css(ebmsscript.normal_field_css);
+}
+
+ebmsscript.show_post_summaries_sd_form = function() {
+    jQuery("#post-summary-sd-form").dialog("open");
+};
+
+ebmsscript.show_post_nci_doc_form = function() {
+    jQuery("#post-summary-nd-form").dialog("open");
+};
+
+/**
+ * Confirm marking a document as inactive.  The URL which will route
+ * control to the server function which handles the action is
+ * passed in as the only argument.  We store this URL somewhere
+ * where the dialog window we open can find it.
+ */
+ebmsscript.delete_doc = function(doc_delete_url, doc_delete_name) {
+    ebmsscript.doc_delete_url = doc_delete_url;
+    jQuery("#confirmation-filename").text(doc_delete_name);
+    jQuery("#confirm-doc-delete").dialog("open");
+};
+
+ebmsscript.init_docs_page = function() {
+    if (jQuery("body.page-docs").length != 1) {
+        return;
+    }
+    if (jQuery("#confirm-doc-delete").length == 1) {
+        jQuery("#confirm-doc-delete").dialog({
+            resizable: false,
+            autoOpen: false,
+            modal: true,
+            buttons: {
+                "Yes, Delete": function() {
+                    jQuery(this).dialog("close");
+                    window.location.href = ebmsscript.doc_delete_url;
+                },
+                "Cancel": function() {
+                    jQuery(this).dialog("close");
+                }
+            }
+        });
+    }
+    if (jQuery("#choose-file").length == 1) {
+        jQuery("#choose-file #filepath").change(function() {
+            ebmsscript.file_chosen();
+        });
+        jQuery("#choose-file label").click(function() {
+            if (!jQuery.browser.msie) {
+                jQuery("#choose-file #filepath").click();
+                return false;
+            }
+        });
+    }
+};
+
+ebmsscript.delete_group = function(group_delete_url, group_delete_name) {
+    ebmsscript.group_delete_url = group_delete_url;
+    jQuery("#confirmation-groupname").text(group_delete_name);
+    jQuery("#confirm-group-delete").dialog("open");
+};
+
+ebmsscript.init_groups_page = function() {
+    if (jQuery("body.page-groups").length != 1)
+        return;
+    if (jQuery("#confirm-group-delete").length == 1) {
+        jQuery("#confirm-group-delete").dialog({
+            resizable: false,
+            autoOpen: false,
+            modal: true,
+            buttons: {
+                "Yes, Delete": function() {
+                    jQuery(this).dialog("close");
+                    window.location.href = ebmsscript.group_delete_url;
+                },
+                "Cancel": function() {
+                    jQuery(this).dialog("close");
+                }
+            }
+        });
+    }
+/*
+    if (jQuery("#edit-members").length == 1) {
+        jQuery("#edit-members").focus(function() {
+            jQuery("#edit-members").css("height", "6em");
+            jQuery("#member-instructions").show();
+        });
+        jQuery("#edit-members").blur(function() {
+            jQuery("#edit-members").css("height", "1.5em");
+            jQuery("#member-instructions").hide();
+        });
+    }
+*/
+};
+
 /**
  * Initialization housekeeping which can only be performed after we're
  * sure the document has been loaded.
@@ -537,4 +918,7 @@ jQuery(function() {
     ebmsscript.init_superfish();
     ebmsscript.init_manager_packets_page();
     ebmsscript.init_profile_page();
+    ebmsscript.init_summaries_page();
+    ebmsscript.init_docs_page();
+    ebmsscript.init_groups_page();
 });

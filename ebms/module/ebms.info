@@ -1,6 +1,6 @@
 ; $Id$
 name = EBMS
 description = Customization for Electronic Board Member Site (EBMS)
-core = 6.x
+core = 7.x
 version = "1.0"
 package = EBMS

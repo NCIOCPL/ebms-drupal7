@@ -56,6 +56,7 @@ class EbmsProfile {
         }
         switch ($this->action) {
             case 'all':
+            case 'active':
                 return $this->show_all();
                 break;
             case 'view':
@@ -102,10 +103,12 @@ class EbmsProfile {
 
         // Pull the information from the database tables.
         $query = db_select('users', 'u');
-        $query->join('ebms_user', 'e', 'e.user_id = u.uid');
+        $query->leftJoin('ebms_user', 'e', 'e.user_id = u.uid');
         $query->fields('u', array('uid', 'name', 'mail', 'picture'));
         $query->fields('e', array('password_changed'));
         $query->condition('u.uid', 1, '>');
+        if ($this->action == 'active')
+            $query->condition('u.status', 1);
         $query->orderBy('u.name');
         $users = $query->execute();
 
@@ -153,10 +156,15 @@ class EbmsProfile {
                     ' from getting test messages while we\'re ' .
                     'developing.">Bogus address</span>';
             }
+            $link = l($u->name, EbmsProfile::$url . '/view/' . $u->uid);
+            if ($u->password_changed)
+                $pw_changed = date('m/d/y', strtotime($u->password_changed));
+            else
+                $pw_changed = '&mdash;';
             $rows[] = array(
                 'data' => array(
                     array(
-                        'data' => htmlspecialchars($u->name),
+                        'data' => $link,
                         'class' => array('c1'),
                     ),
                     array(
@@ -165,8 +173,7 @@ class EbmsProfile {
                     ),
                     array(
                         'data' => htmlspecialchars($u->mail),
-                        'data' => date('m/d/y',
-                                strtotime($u->password_changed)),
+                        'data' => $pw_changed,
                         'class' => array('c3'),
                     ),
                     array(
@@ -308,14 +315,18 @@ class EbmsProfile {
             );
         }
         else {
+            if ($this->user->password_changed)
+                $pwc = 'Password last updated on ' .
+                    date('m/d/y', strtotime($this->user->password_changed));
+            else
+                $pwc = 'Password not yet updated';
             $data = array(
                 array(
                     'data' => 'Password',
                     'class' => array('c1'),
                 ),
                 array(
-                    'data' => 'Password last updated on ' .
-                    date('m/d/y', strtotime($this->user->password_changed)),
+                    'data' => $pwc,
                     'class' => array('c2'),
                 ),
                 array(

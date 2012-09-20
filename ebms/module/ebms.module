@@ -92,6 +92,7 @@ function ebms_menu() {
         // FORM FOR MANAGING USER'S PROFILE
         'profile' => array(
             'page callback' => 'pdq_ebms_profile',
+            'file' => 'profile.inc',
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
@@ -296,6 +297,14 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // AD-HOC GROUPS
+        'groups' => array(
+            'page callback' => 'pdq_ebms_groups',
+            'file' => 'groups.inc',
+            'access arguments' => array('administer'),
+            'type' => MENU_CALLBACK,
+        ),
+
         // CUSTOM 403 PAGE
         'access-denied' => array(
             'title' => 'Access Denied',
@@ -325,10 +334,22 @@ function ebms_menu() {
 
         // TESTING FOR ALAN
         'alantest' => array(
+            'title' => 'Article API Testing',
+            'page callback' => 'pdq_ebms_alantest',
+            'file' => 'alan.inc',
+            'access callback' => true,
+            'theme callback' => 'pdq_ebms_tester_theme',
+            //'menu_name' => 'main-menu',
+            //'weight' => 20,
+        ),
+
+        // TESTING FOR ALAN
+        'admin/apitest' => array(
             'title' => 'AlanTest',
             'page callback' => 'pdq_ebms_alantest',
             'file' => 'alan.inc',
             'access callback' => true,
+            'theme callback' => 'pdq_ebms_tester_theme',
             //'menu_name' => 'main-menu',
             //'weight' => 20,
         ),
@@ -381,14 +402,6 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
     );
-}
-
-/**
- * Stub for page to manage one's own profile.
- */
-function pdq_ebms_profile() {
-    drupal_set_title('Profile');
-    return '<p>Stub for user profile form page</p>';
 }
 
 /**
@@ -626,7 +639,13 @@ function pdq_ebms_password_form_submit($form, &$form_state) {
         $message[] = "Your new password is $new_pw.\n";
         $message[] = 'Please log in and change your password at your ';
         $message[] = "earliest convenience.\n";
-        # user_save($account, array('pass' => $new_pw);
+        $user_id = $account->uid;
+        user_save($account, array('pass' => $new_pw));
+        $now = date('Y-m-d H:i:s');
+        db_update('ebms_user')
+            ->fields(array('password_changed' => $now))
+            ->condition('user_id', $user_id)
+            ->execute();
     }
     $message[] = url('login', array('absolute' => true)) . "\n";
     $message = array(implode($message));
@@ -714,6 +733,9 @@ function ebms_theme() {
                 'items' => array(),
                 'attributes' => array(),
             ),
+        ),
+        'pdq_ebms_profile_email_form' => array(
+            'render element' => 'form',
         ),
     );
 }
@@ -834,6 +856,33 @@ function ebms_init() {
             $user->ebms_subgroups[] = $record->sg_id;
     }
 }
+
+/**
+ * Add EBMS-specific information to the $user objects.  Implements
+ * hook_user_load().  WARNING: The Drupal documentation doesn't say
+ * this, but this hook isn't used when loading the global $user object.
+ * It only happens when user_load($uid) is invoked directly!
+ */
+function ebms_user_load($users) {
+    foreach ($users as $uid => $user) {
+        $users[$uid]->password_changed = null;
+        $results = db_select('ebms_board_member', 'm')
+            ->fields('m', array('board_id'))
+            ->condition('m.user_id', $uid)
+            ->execute();
+        $boards = array();
+        foreach ($results as $result)
+            $boards[] = $result->board_id;
+        $users[$uid]->boards = $boards;
+    }
+    $results = db_select('ebms_user', 'u')
+        ->fields('u', array('user_id', 'password_changed'))
+        ->condition('u.user_id', array_keys($users), 'IN')
+        ->execute();
+    foreach ($results as $record)
+        $users[$record->user_id]->password_changed = $record->password_changed;
+}
+
 /**
  * XXX Everything below here will be jettisoned once we're in production.
  */
@@ -959,3 +1008,5 @@ function pdq_ebms_clear_all_caches() {
     cache_clear_all();
     return '<p>Caches cleared ' . date('c') . '.</p>';
 }
+
+function pdq_ebms_tester_theme() { return 'apitest'; }
