@@ -1,0 +1,13 @@
+; $Id$
+name = PDQ Boards
+description = Custom theme for PDQ Board Member web site.
+core = 7.x
+engine = phptemplate
+stylesheets[all][] = css/ebms.css
+regions[header] = Header
+regions[ebms_menu] = EBMS Menu
+regions[content] = Main Content
+regions[footer] = Footer
+regions[sidebar_first] = Left Sidebar
+regions[sidebar_second] = Right Sidebar
+regions[highlighted] Highlighted

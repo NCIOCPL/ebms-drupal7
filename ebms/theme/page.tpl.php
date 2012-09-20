@@ -70,7 +70,9 @@ $images = Ebms\IMAGES_DIR;
 $user_name = $user_photo = '';
 $menu_class = 'anon';
 if ($logged_in) {
-    if (in_array('board member', $user->roles))
+    if (in_array('medical librarian', $user->roles))
+        $menu_class = 'librarian';
+    elseif (in_array('board member', $user->roles))
         $menu_class = 'member';
     else
         $menu_class = 'manager';

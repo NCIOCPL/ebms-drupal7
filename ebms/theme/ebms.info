@@ -1,6 +1,0 @@
-; $Id$
-name = PDQ Boards
-description = Custom theme for PDQ Board Member web site.
-version = 6.x-1.0
-core = 6.x
-engine = phptemplate
