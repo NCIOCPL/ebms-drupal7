@@ -194,7 +194,7 @@ class EbmsArticle {
             // Record error and throw exception
             $msg = 'EbmsArticle.__construct(id): ' .
                    "No database row found for article ID=$articleId";
-            $this->addError($msg, true);
+            $this->addError($msg, WATCHDOG_ERROR, true);
         }
 
         // Can not be more than one
@@ -203,7 +203,7 @@ class EbmsArticle {
             // Record error and throw exception
             $msg = 'EbmsArticle.__construct(id): ' .
                    "$rowCount database rows found for article ID=$articleId";
-            $this->addError($msg, true);
+            $this->addError($msg, WATCHDOG_ERROR, true);
         }
 
         // Load the object from the row
@@ -266,6 +266,12 @@ class EbmsArticle {
     public function getPubDate()      { return $this->published_date; }
     public function getImportDate()   { return $this->import_date; }
     public function getUpdateDate()   { return $this->update_date; }
+
+    /**
+     * Complex method of getting brief citation.
+     *
+     * XXX TO BE DONE XXX
+     */
 
     /**
      * Set the article_id.
@@ -453,19 +459,27 @@ class EbmsArticle {
      *
      *  @param string $msg   - Error message.  Should be unique in code.
      *                         If it's an error, add each msg individually
+     *  @param const $level  - Drupal watchdog() severity level.
+     *                          Null=Do not log anything via watchdog.
      *  @param bool   $throw - True = also throw exception.
      */
-    private function addError($msg, $throw=false) {
+    private function addError($msg, $level=null, $throw=false) {
 
+        // Messages are appeneded to the array for this article
         if (is_null($this->errorMsgs))
             $this->errorMsgs = array();
 
+        // Combine strings if required
         if (is_array($msg)) {
             foreach ($msg as $m)
                 $this->errorMsgs[] = $msg;
         }
         else
             $this->errorMsgs[] = $msg;
+
+        // Write to Drupal watchdog log
+        if (!is_null($level))
+            watchdog('EbmsArticle', $msg, null, $level);
 
         if ($throw)
             throw new \Exception($msg);
@@ -496,12 +510,9 @@ class EbmsArticle {
         // There are other Pubmed data types besides "Article" but, for
         //   now at least, only Article is supported.
         if (!$article) {
-            logw("===>FOUND NON-ARTICLE in pmid=$mc->PMID");
             $msg = 'EbmsArticle.loadPubmedXml: ' .
                    'Record does not appear to be a Pubmed journal article.';
-            // XXX Maybe we should not throw this exception but instead return
-            // XXX  an empty EbmsArticle?
-            $this->addError(msg, true);
+            $this->addError(msg, WATCHDOG_NOTICE, false);
 
             // There's no point going on with this article
             return;
@@ -550,21 +561,17 @@ class EbmsArticle {
         // Parse xml
         $topElem = simplexml_load_string($xmlStr);
         if (!$topElem) {
-            // logw($xmlStr);
             $errMsg="loadPubmedXmlStr: Failure parsing xml string:\n";
             $errors = libxml_get_errors();
-            logw("===>count of errors:");
-            logw(count($errors));
             foreach ($errors as $error) {
-                logw("===>libxml error:");
-                logw($error);
                 $errMsg .= "\nLine: $error->line";
                 $errMsg .= "\n Col: $error->column";
                 $errMsg .= "\n Msg: $error->message";
                 $this->addError("\n$errMsg");
             }
-            // Log them, then throw exception
-            $this->addError($errMsg, true);
+            // Add them to the list and log it
+            $this->addError($errMsg, WATCHDOG_ERROR, true);
+
         }
 
         // Extract all of the elements
@@ -645,32 +652,18 @@ class EbmsArticle {
         if (is_null($authorList))
             return null;
 
-logw("Entering loadAuthors()");
         // Array of arrays
         $arrayList = array();
 
-logw("Count of elements in authorList={count($authorList)}");
-$aType = gettype($authorList);
-$aClass = get_class($authorList);
-logw("Type / class of authorList = $aType / $aClass");
         foreach ($authorList->Author as $author) {
-if (gettype($authorList->Author != 'object')) {
-    $aType = gettype($authorList->Author);
-    $a2Type = gettype($author);
-    logw("The type of authorList->Author = $aType / $a2Type");
-    $aClass = get_class($authorList->Author);
-    logw("Class of authorList->Author = '$aClass'");
-}
             // authorId is null unless/until record is/was stored
             $oneAuth = new EbmsArticleAuthor(null, $author->CollectiveName,
                $author->LastName, $author->ForeName, $author->Initials);
-logw("oneAuth follows:");
-logw(print_r($oneAuth, true));
 
             // If no error, append this author to the list of authors
             // Note: order is significant, first author, second, etc.
             if ($oneAuth->msg)
-                $this->addError($oneAuth->msg);
+                $this->addError($oneAuth->msg, WATCHDOG_WARNING);
             else
                 $arrayList[] = $oneAuth;
         }
@@ -955,7 +948,8 @@ logw(print_r($oneAuth, true));
                                 $author->collective_name . ':' .
                                 $author->last_name . ', ' .
                                 $author->fore_name . ' ' .
-                                $author->initials);
+                                $author->initials,
+                            WATCHDOG_ERROR);
                 }
             }
 
@@ -1255,7 +1249,6 @@ function addArticleStateComment($articleStateId, $comment,
     if (is_null($commentDt))
         $commentDt = db_query('SELECT NOW()')->fetchField();
 
-logw("articleStateId=$articleStateId, commentDt=$commentDt");
     $commentIns = db_insert('ebms_article_state_comment')
       ->fields(array(
         'article_state_id' => $articleStateId,
