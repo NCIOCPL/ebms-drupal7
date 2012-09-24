@@ -116,6 +116,7 @@ function ebms_menu() {
         // SEARCH DATABASE
         'citations/search' => array(
             'page callback' => 'pdq_ebms_citations',
+            'page arguments' => array(1),
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
@@ -124,6 +125,7 @@ function ebms_menu() {
         // SEARCH DATABASE
         'citations/review' => array(
             'page callback' => 'pdq_ebms_citations',
+            'page arguments' => array(1),
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
@@ -132,6 +134,7 @@ function ebms_menu() {
         // SEARCH DATABASE
         'citations/add' => array(
             'page callback' => 'pdq_ebms_citations',
+            'page arguments' => array(1),
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
@@ -140,6 +143,7 @@ function ebms_menu() {
         // SYSTEM HELP
         'citations/help' => array(
             'page callback' => 'pdq_ebms_citations',
+            'page arguments' => array(1),
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
@@ -148,11 +152,21 @@ function ebms_menu() {
         // CITATIONS ADMIN
         'citations/admin' => array(
             'page callback' => 'pdq_ebms_citations',
+            'page arguments' => array(1),
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
 
+        // CITATIONS NOT LIST
+        'citations/not-list' => array(
+            'page callback' => 'pdq_ebms_citations',
+            'page arguments' => array(1),
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+        
         // CALENDAR
         'calendar' => array(
             'page callback' => 'pdq_ebms_calendar',
@@ -289,14 +303,14 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        // CITATION MANAGEMENT
+        // REPORTS
         'reports' => array(
             'page callback' => 'pdq_ebms_reports',
             'file' => 'reports.inc',
             'access arguments' => array('administer'),
             'type' => MENU_CALLBACK,
         ),
-
+        
         // AD-HOC GROUPS
         'groups' => array(
             'page callback' => 'pdq_ebms_groups',
