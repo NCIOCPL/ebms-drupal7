@@ -1266,12 +1266,23 @@ function addArticleStateComment($articleStateId, $comment,
  * Get the current state of an article where current is the one with
  * the highest active sequence number.
  *
+ * WARNING:
+ *  If passed topic ID is null and article has identical highest
+ *  states in two different topics, this function returns the most
+ *  recent state assigned, irrespective of topic.  Ditto for two
+ *  boards.  In other words, the choice among the two topics or two
+ *  boards is determinate, but not necessarily useful.
+ *
+ *  Is that really what you want?  If not, suggest a better approach, or
+ *  always pass a topic ID.
+ *
  *  @param int $article_id  Of article for which to get the current state.
  *  @param int $topic_id    If not null, only consider this topic.
  *  @param int $board_id    If not null, only consider this board.
- *                           Board ID ignored if topic ID passed.
+ *                           Board ID is ignored if topic ID passed.  It
+ *                           is implied by the topic ID.
  *
- *  @return int             State type (state_id, state_name) of highest
+ *  @return array           Associative array of all info known about highest
  *                           sequenced state.
  *                           Returns null if no active entry in the state
  *                           table for this article.
@@ -1292,31 +1303,26 @@ function getCurrentState($article_id, $topic_id=null, $board_id=null) {
     $qry->join('users', 'user', 'state.user_id = user.uid');
     $qry->leftJoin('ebms_board', 'board', 'state.board_id = board.board_id');
     $qry->leftJoin('ebms_topic', 'topic', 'state.topic_id = topic.topic_id');
-    $qry->fields(array(
-            'state->article_state_id',
-            'state->state_id',
-            'type->state_name',
-            'state->user_id',
-            'user->user_name',
-            'state->board_id',
-            'board->board_name',
-            'state->topic_id',
-            'topic->topic_name',
-            'state->status_dt'));
+    $qry->fields('state', array('article_state_id', 'state_id', 'user_id',
+                                'board_id', 'topic_id', 'status_dt'));
+    $qry->fields('type', array('state_name'));
+    $qry->fields('user', array('name'));
+    $qry->fields('board', array('board_name'));
+    $qry->fields('topic', array('topic_name'));
     $qry->condition('state.article_id', $article_id)
         ->condition('state.active_status', 'A');
 
     // Limit by board or topic
     if ($topic_id)
-        $qry->condition('state.topic_id', $topicId);
+        $qry->condition('state.topic_id', $topic_id);
     if ($board_id)
-        $qry->condition('state.board_id', $boardId);
+        $qry->condition('state.board_id', $board_id);
 
     // Get the highest sequence numbered state that qualifies
     // XXX status_dt should not be needed, but data was dirty in old DB
     $qry->orderBy('type.sequence', 'DESC');
     $qry->orderBy('state.status_dt', 'DESC');
-    $qry->range(1);
+    $qry->range(0, 1);
 
     /* XXX Here is what I am trying to achieve - Remove after debugging
  SELECT state.article_state_id, state.state_id, type.state_name,
@@ -1333,29 +1339,13 @@ function getCurrentState($article_id, $topic_id=null, $board_id=null) {
     */
 
     // Get it
-    $result = $qry->execute()->fetchArray();
+    $result = $qry->execute()->fetchAssoc();
 
-    // If we got any - which should happen unless there is a bad article ID
-    if ($result) {
-        // Load an associative array
-        // Doing this instead of fetchObject to document names here in code
-        $retArray = array(
-            'article_state_id' => $result[0],
-            'state_id'         => $result[1],
-            'state_name'       => $result[2],
-            'user_id'          => $result[3],
-            'user_name'        => $result[4],
-            'board_id'         => $result[5],
-            'board_name'       => $result[6],
-            'topic_id'         => $result[7],
-            'topic_name'       => $result[8],
-            'status_dt'        => $result[9]
-        );
+    // If we got any
+    if ($result)
+        return $result;
 
-        return $retArray;
-    }
-
-    // No hits - rare but conceivable
+    // No hits - happens if wrong article, board or topic IDs passed
     return null;
 }
 
@@ -1560,7 +1550,7 @@ function getStatusHistory($articleId, $boardId=null, $topicId=null,
         $qry->orderBy($fld);
     }
 
-    // Get everything into an associate array keyed by date
+    // Get everything into an associative array keyed by date
     $stateData = $qry->execute()->fetchAllAssoc('article_state_id');
 
     // Build an array of well known objects
@@ -1624,6 +1614,29 @@ function getStatusHistory($articleId, $boardId=null, $topicId=null,
     // logw("The whole shebang follows");
     // logw(print_r($states, true));
     return $states;
+}
+
+/**
+ * Convert the results of getCurrentState() to HTML for test/debug.
+ *
+ *  @param array $curStatus Return from getCurrentState();
+ *
+ *  @return string          HTML.
+ */
+function currentStatusToHtml($curStatus) {
+
+    // Simple, dumb table for debugging
+    $html = '
+<table border="1">
+ <tr><th>Field</th><th>Value</th></tr>
+';
+    if (is_array($curStatus)) {
+        foreach ($curStatus as $key => $value)
+            $html .= " <tr><td>$key</td><td>$value</td></tr>";
+        $html .= " </tr>\n</table>\n";
+        return $html;
+    }
+    return 'No status found for this article/board/topic combination';
 }
 
 /**
