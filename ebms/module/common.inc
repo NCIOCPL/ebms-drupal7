@@ -264,6 +264,7 @@ class Menu {
                     new Menu('Review Citations', 'citations/review'),
                     new Menu('Find/Edit a record', 'citations/search'),
                     new Menu('Add New Journal', 'citations/add-journal'),
+                    new Menu('Not List Maintenance', 'citations/not-list'),
                 );
                 break;
             default:
