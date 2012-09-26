@@ -13,6 +13,7 @@ define('Ebms\APP_DIR', base_path());
 define('Ebms\THEME_NAME', 'ebmstheme');
 define('Ebms\THEME_DIR', APP_DIR . drupal_get_path('theme', THEME_NAME));
 define('Ebms\IMAGES_DIR', THEME_DIR . '/images');
+define('Ebms\CSS_DIR', THEME_DIR . '/css');
 define('Ebms\MODULE_DIR', drupal_get_path('module', 'ebms'));
 define('Ebms\JS_DIR', MODULE_DIR . '/js');
 define('Ebms\FROM', 'PDQ Editorial Board Management System <ebms@cancer.gov>');
