@@ -718,14 +718,14 @@ EOS;
  * NOT lists are source specific.
  *
  *  @param int $boardId     Board controlling this NOT list.
- *  @param string $source   Generally 'Medline'.
+ *  @param string $source   Generally 'Pubmed'.
  *
  *  @return array of journal IDs.  Could be empty if no journals on this
  *                                 not list or source unknown.
  *
  *  @throws Exception if database error.
  */
-function loadNotList ($boardId, $source='Medline') {
+function loadNotList ($boardId, $source='Pubmed') {
 
     // Creates an array of jrnlId => 1
     $result = db_query (
@@ -810,7 +810,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
     // Load not list if needed
     $notList = array();
     if ($useNotList && !is_null($boardId))
-        $notList = loadNotList($boardId, 'Medline');
+        $notList = loadNotList($boardId, 'Pubmed');
 
     // Instantiate a PubmedInterface to talk to NLM
     $pi = new PubmedInterface($articleIds);
