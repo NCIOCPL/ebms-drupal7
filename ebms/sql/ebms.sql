@@ -3,6 +3,7 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_search;
 DROP TABLE IF EXISTS ebms_summary_returned_doc;
 DROP TABLE IF EXISTS ebms_summary_posted_doc;
 DROP TABLE IF EXISTS ebms_summary_supporting_doc;
@@ -401,6 +402,8 @@ CREATE TABLE ebms_article (
              ON ebms_article(jrnl_title);
       CREATE INDEX ebms_article_brf_jrnl_title_index
              ON ebms_article(brf_jrnl_title);
+      CREATE INDEX ebms_article_published_date
+             ON ebms_article(published_date);
 
 /*
  * Make it possible to match up records from the old CiteMS system
@@ -1588,3 +1591,19 @@ CREATE TABLE ebms_summary_returned_doc
  FOREIGN KEY (page_id) REFERENCES ebms_summary_page (page_id),
  FOREIGN KEY (doc_id)  REFERENCES ebms_doc (doc_id))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Database search.
+ *
+ * search_id      automatically generated primary key
+ * when_searched  date/time search was submitted
+ * searched_by    foreign key into Drupal's users table
+ * search_spec    JSON encoded search criteria
+ */
+ CREATE TABLE ebms_search
+   (search_id INTEGER           NOT NULL AUTO_INCREMENT PRIMARY KEY,
+when_searched DATETIME          NOT NULL,
+  searched_by INTEGER  UNSIGNED NOT NULL,
+  search_spec LONGTEXT          NOT NULL,
+  FOREIGN KEY (searched_by)   REFERENCES users (uid))
+       ENGINE=InnoDB DEFAULT CHARSET=utf8;
