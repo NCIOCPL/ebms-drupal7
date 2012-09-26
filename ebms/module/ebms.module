@@ -115,9 +115,9 @@ function ebms_menu() {
 
         // SEARCH DATABASE
         'citations/search' => array(
-            'page callback' => 'pdq_ebms_citations',
+            'page callback' => 'pdq_ebms_search',
             'page arguments' => array(1),
-            'file' => 'citations.inc',
+            'file' => 'search.inc',
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
