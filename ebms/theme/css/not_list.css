@@ -1,0 +1,115 @@
+/* 
+    Document   : not_list
+    Created on : Sep 26, 2012, 2:37:10 PM
+    Author     : youngdr
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+/* Not List */
+.not-list-input-div > .form-item > label {
+    text-transform: uppercase !important;
+    float: right !important;
+    width: 20% !important;
+    min-width: 175px;
+    margin: auto;
+}
+
+.not-list-input-div > .form-item.form-type-checkbox > label {
+   padding-left: 9% !important;
+}
+
+.not-list-input-div {
+    clear: both;
+}
+
+.not-list-input-div input,
+.not-list-input-div select{
+    width: 70% !important;
+}
+
+#not-list-form-div {
+    width: 75%;
+}
+
+#not-list-results-div .results-count{
+    color: #696559;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+#not-list-table-div {
+    clear: both;
+    display: table;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+#not-list-buttons-div {
+    width: 50%;
+    float: left;
+    margin-bottom: 20px;
+}
+
+#not-list-buttons-div input{
+    margin: 5px;
+    padding: 7px 10px;
+}
+
+#not-list-results-div .item-list {
+    width: 40%;
+    float: right;
+}
+
+#not-list-results-div .pager {
+    margin: 10px 0px;
+}
+
+.not-list-header {
+    text-transform: uppercase;
+}
+
+.not-list-row,
+.not-list-header {
+    display: table-row;
+}
+
+.not-list-cell {
+    display: table-cell;
+    padding: 0px 10px;
+}
+
+.not-list-row > .not-list-cell {
+    padding-top: 20px;
+}
+
+.not-list-cell:not(.not-check){
+    border-right: 1px #696559 solid;
+}
+
+.not-list-cell:not(.brief_title){
+    padding-left: 5px;
+}
+
+/*
+.not-list-cell.brief-title{
+    width: 25%;
+}
+
+.not-list-cell.full-title{
+    width: 45%;
+}*/
+
+.not-list-cell.id{
+    min-width: 100px;
+}
+
+.not-list-cell.not-check{
+    min-width: 75px;
+}
+
+.not-list-cell.not-check > .form-item{
+    margin: auto;
+    top: 10px;
+}
+
