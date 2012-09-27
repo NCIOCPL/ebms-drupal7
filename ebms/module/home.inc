@@ -246,7 +246,7 @@ class EbmsHomePage {
             case 'librarian':
                 $items = array(
                     l('Send a Message', 'stub'),
-                    l('Search Database', 'stub'),
+                    l('Search Database', 'citations/search'),
                     l('Find/Edit a Record', 'stub'),
                     l('Manage Journals', 'stub'),
                     l('Import Citations', 'stub'),
