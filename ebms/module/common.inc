@@ -22,6 +22,8 @@ define('Ebms\RIGHT_ARROW', "\xe2\x96\xb6");
 define('Ebms\UP_ARROW', "\xe2\x96\xb2");
 define('Ebms\DOWN_ARROW', "\xe2\x96\xbc");
 define('Ebms\ELLIPSIS', "\xe2\x80\xa6");
+define('Ebms\STAR', "\xe2\x98\x86");
+define('Ebms\BLACK_STAR', "\xe2\x98\x85");
 define('Ebms\PICTURE_SIZE', 135);
 
 /**
