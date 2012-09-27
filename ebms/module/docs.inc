@@ -26,6 +26,7 @@ class EbmsDocs {
 
     public
         $user,
+        $request,
         $doc_id,
         $parms;
     public static $url = 'docs';
