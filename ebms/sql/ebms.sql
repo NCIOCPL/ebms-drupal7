@@ -754,76 +754,80 @@ CREATE TABLE ebms_article_state_type (
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed initial review', 
-        'Article "published" for board manager review', 4, 'N');
+        'Article ready for "publishing" for board manager review', 4, 'N');
+    INSERT ebms_article_state_type 
+        (state_name, description, sequence, completed)
+        VALUES ('Published', 
+        'Article "published" for board manager review', 5, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected by Board Manager', 
-        'Board manager rejected article', 5, 'Y');
+        'Board manager rejected article', 6, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed Board Manager', 
-        'Board manager accepted article for further review', 5, 'N');
+        'Board manager accepted article for further review', 6, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Requested full text', 
-        'Board manager has requested retrieval of full text', 6, 'N');
+        'Board manager has requested retrieval of full text', 7, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Full text retrieval failed', 
-        'Staff were unable to obtain a copy of the article', 7, 'Y');
+        'Staff were unable to obtain a copy of the article', 8, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Full text retrieved', 
         'Full text is available, awaiting further review by Board manager', 
-        7, 'N');
+        8, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Rejected after full text review',
-        'Full text examined at OCE, article rejected', 8, 'Y');
+        'Full text examined at OCE, article rejected', 9, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Passed full text review',
         'Full text examined at OCE, article approved for board member review', 
-        8, 'N');
+        9, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Flagged as FYI',
         'Article is being sent out without being linked to a specific topic',
-        9, 'Y');
+        10, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('No further action',
         'Decision after board member review is do not discuss.  '
         'Do not put on agenda.',
-        10, 'Y');
+        11, 'Y');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Changes not for agenda',
         'Changes may be made to summary but no board meeting required.  '
         'Do not put on agenda.',
-        10, 'N');
+        11, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('For future agenda (with changes)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'Summary changes have been proposed.',
-        10, 'N');
+        11, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('For future agenda (discussion only)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'No summary changes have been proposed.',
-        10, 'N');
+        11, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('On agenda',
         'Article is on the agenda for an upcoming meeting.',
-        11, 'N');
+        12, 'N');
     INSERT ebms_article_state_type 
         (state_name, description, sequence, completed)
         VALUES ('Final board decision',
         'Article was discussed at a board meeting and a decision was reached',
-        12, 'Y');
+        13, 'Y');
 
 
 /*
