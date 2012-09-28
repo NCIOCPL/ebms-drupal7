@@ -7,11 +7,14 @@
 
 jQuery(document).ready(function () {
     
+    jQuery('input[name=submit_source]').val('');
+    
     // strip any pager query when the search is performed
     jQuery('input#edit-search-button').click(function () {
         form = jQuery(this).closest('form');
         if(form.length == 0) return false;
         form.attr('action', '/citations/not-list');
+        jQuery('input[name=submit_source]').val('Search');
         form.submit();
         return false;
     })
@@ -21,6 +24,7 @@ jQuery(document).ready(function () {
         form = jQuery(this).closest('form');
         if(form.length == 0) return false;
         form.attr('action', this.getAttribute('href'));
+        jQuery('input[name=submit_source]').val('Pager');
         form.submit();
         return false;
     })
