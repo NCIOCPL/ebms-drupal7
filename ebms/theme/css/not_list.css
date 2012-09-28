@@ -7,6 +7,14 @@
 */
 
 /* Not List */
+#not-list-form-div > input {
+    margin: 0 12px;
+}
+
+#not-list-form-div {
+    margin-left: 250px;
+}
+
 .not-list-input-div > .form-item > label {
     text-transform: uppercase !important;
     float: right !important;
@@ -20,7 +28,7 @@
 }
 
 .not-list-input-div {
-    clear: both;
+    /*clear: both;*/
 }
 
 .not-list-input-div input,
@@ -28,8 +36,9 @@
     width: 70% !important;
 }
 
-#not-list-form-div {
-    width: 75%;
+#not-list-results-div {
+    clear: both;
+    padding-top: 20px;
 }
 
 #not-list-results-div .results-count{
@@ -111,5 +120,6 @@
 .not-list-cell.not-check > .form-item{
     margin: auto;
     top: 10px;
+    padding-left: 10px;
 }
 
