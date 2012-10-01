@@ -268,9 +268,8 @@ function pdq_ebms_write_not_list($values) {
 						'start_date' => $timestamp,
 						'user_id' => $user->uid,
 					);
-					$query = db_insert('ebms_not_list')
-						->fields($record)
-						->execute();
+					db_insert('ebms_not_list')
+						->fields($record)->execute();
 				}
 			}
 		}

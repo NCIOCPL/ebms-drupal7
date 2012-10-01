@@ -818,8 +818,8 @@ class Util {
             array('Find/Edit Citations', 'stub', 'full'),
             array('Review Citations', 'stub', 'full'),
             array('Publish Citations', 'stub', 'full'),
-            array('Manage Journals', 'stub', 'always'),
-			array('Not List Maintentance', 'citations/not-list', 'always'),
+			array('Not List Maintentance', 'citations/not-list', 'full'),
+			array('Manage Journals', 'stub', 'always'),			
         );
         $items = array();
         foreach ($links as $link_info) {
