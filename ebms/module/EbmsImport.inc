@@ -2,7 +2,7 @@
 
 namespace Ebms;
 
-require_once EbmsArticle.inc;
+require_once('EbmsArticle.inc');
 
 /**
  * Constants
@@ -898,7 +898,9 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                             $topicId, $boardId, $comment, $userId,
                             $pi->constantDt);
                     }
+
                     $ib->addArticle('topicAdded', $pmid, $foundId, $msgs);
+                    $ib->addArticle('reviewReady', $pmid, $foundId, $msgs);
                 }
             }
             else {
@@ -1179,5 +1181,3 @@ function testFindPubmedIDsInXML($fname) {
     foreach($pmids as $pmid)
         print("$pmid\n");
 }
-
-?>
