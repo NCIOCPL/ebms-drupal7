@@ -2183,7 +2183,7 @@ function getStateIdByName($stateName) {
           WHERE state_name = :stateName',
         array(':stateName' => $stateName))->fetchField();
 
-    if (is_null($stateId))
+    if (is_null($stateName))
         throw new \Exception("getStateIdByName: no state with name=$stateName");
 
     return $stateName;
