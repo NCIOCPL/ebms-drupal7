@@ -258,7 +258,7 @@ class EbmsArticle {
     public function getSourceId()     { return $this->source_id; }
     public function getSourceJrnlId() { return $this->source_jrnl_id; }
     public function getSourceStatus() { return $this->source_status; }
-    public function getArticleTitle() { return $this->jrnl_article_title; }
+    public function getArticleTitle() { return $this->article_title; }
     public function getJrnlTitle()    { return $this->jrnl_title; }
     public function getBrfJrnlTitle() { return $this->brf_jrnl_title; }
     public function getBrfCite()      { return $this->brf_citation; }
