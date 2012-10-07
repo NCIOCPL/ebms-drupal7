@@ -647,6 +647,7 @@ CREATE TABLE ebms_import_disposition (
  *  import_date     Datetime of the import.
  *  cycle_id        Unique ID of a review cycle for the import batch.
  *  user_id         Unique ID of user running the import.
+ *  not_list        'Y' = NOT list was used, 'N' = no NOT list.
  *  article_count   Number of unique article IDs.  May be less than the
  *                   number of import_action rows referencing this row
  *                   because one article can appear in multiple categories.
@@ -660,6 +661,7 @@ CREATE TABLE ebms_import_batch (
     import_date     DATETIME NOT NULL,
     cycle_id        INT NOT NULL,
     user_id         INT UNSIGNED NOT NULL,
+    not_list        ENUM ('Y', 'N') NOT NUlL DEFAULT 'Y',
     article_count   INT NOT NULL,
     comment         VARCHAR(2048) NULL,
     FOREIGN KEY (topic_id) REFERENCES ebms_topic(topic_id),
