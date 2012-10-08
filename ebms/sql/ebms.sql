@@ -723,6 +723,7 @@ CREATE TABLE ebms_import_action (
  */
 CREATE TABLE ebms_article_state_type (
     state_id            INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    state_text_id       VARCHAR(32) NULL UNIQUE,
     state_name          VARCHAR(64) NOT NULL UNIQUE,
     description         VARCHAR(2048) NOT NULL,
     completed           ENUM('Y', 'N') NOT NULL DEFAULT 'N',
@@ -735,99 +736,99 @@ CREATE TABLE ebms_article_state_type (
 
     -- States that an article can be in in the review process
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Imported', 'Imported into the database', 1, 'N');
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('Imported', 'Imported', 'Imported into the database', 1, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Ready for initial review', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('ReadyInitReview', 'Ready for initial review', 
         'Article is associated with a summary topic, '
         'typically by a new import or an attempted import of a duplicate.  '
         'It is now ready for initial review', 2, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Rejected by NOT list', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('RejectJournalTitle', 'Rejected by NOT list', 
         'Article appeared in a "NOT listed" journal, rejected without review',
         3, 'Y');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Rejected in initial review', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('RejectInitReview', 'Rejected in initial review', 
         'Rejected in initial review, before publication to board managers', 
         4, 'Y');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Passed initial review', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('PassedInitReview', 'Passed initial review', 
         'Article ready for "publishing" for board manager review', 4, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Published', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('Published', 'Published', 
         'Article "published" for board manager review', 5, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Rejected by Board Manager', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('RejectBMReview', 'Rejected by Board Manager', 
         'Board manager rejected article', 6, 'Y');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Passed Board Manager', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('PassedBMReview', 'Passed Board Manager', 
         'Board manager accepted article for further review', 6, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Requested full text', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('FullRequested', 'Requested full text', 
         'Board manager has requested retrieval of full text', 7, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Full text retrieval failed', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('FullFailed', 'Full text retrieval failed', 
         'Staff were unable to obtain a copy of the article', 8, 'Y');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Full text retrieved', 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('FullRetrieved', 'Full text retrieved', 
         'Full text is available, awaiting further review by Board manager', 
         8, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Rejected after full text review',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('RejectFullReview', 'Rejected after full text review',
         'Full text examined at OCE, article rejected', 9, 'Y');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Passed full text review',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('PassedFullReview', 'Passed full text review',
         'Full text examined at OCE, article approved for board member review', 
         9, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Flagged as FYI',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('FYI', 'Flagged as FYI',
         'Article is being sent out without being linked to a specific topic',
         10, 'Y');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('No further action',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('FullEnd', 'No further action',
         'Decision after board member review is do not discuss.  '
         'Do not put on agenda.',
         11, 'Y');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Changes not for agenda',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('AgendaNoChg', 'Changes not for agenda',
         'Changes may be made to summary but no board meeting required.  '
         'Do not put on agenda.',
         11, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('For future agenda (with changes)',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('AgendaFutureChg', 'For future agenda (with changes)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'Summary changes have been proposed.',
         11, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('For future agenda (discussion only)',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('AgendaFutureDiscuss', 'For future agenda (discussion only)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'No summary changes have been proposed.',
         11, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('On agenda',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('AgendaOn', 'On agenda',
         'Article is on the agenda for an upcoming meeting.',
         12, 'N');
     INSERT ebms_article_state_type 
-        (state_name, description, sequence, completed)
-        VALUES ('Final board decision',
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('FinalBoardDecision', 'Final board decision',
         'Article was discussed at a board meeting and a decision was reached',
         13, 'Y');
 
