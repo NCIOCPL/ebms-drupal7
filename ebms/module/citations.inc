@@ -9,9 +9,11 @@
  */
 function pdq_ebms_citations($action = null) {
 
+	require_once('EbmsArticle.inc');
+
 	// grab the resource stylesheet
 	$css_path = drupal_get_path('theme', 'ebmstheme');
-	$css_path .= "/css/not_list.css";
+	$css_path .= "/css/citations.css";
 	drupal_add_css($css_path, array('type' => 'file'));
 
 	Ebms\Menu::$active = 'Citation Management';
@@ -34,6 +36,15 @@ function pdq_ebms_citations($action = null) {
 			$result['not_list_form'] = $form;
 
 			break;
+		case null:
+			$form = drupal_get_form('pdq_ebms_citation_queue');
+
+
+			$result['left_nav'] = \Ebms\Util::build_librarian_left_nav();
+
+			$result['cite_queue_form'] = $form;
+
+			break;
 	}
 	drupal_set_breadcrumb($crumbs);
 	if ($result)
@@ -45,16 +56,16 @@ function pdq_ebms_citations($action = null) {
 function pdq_ebms_citations_not_list($form, &$form_state) {
 
 	//include js to redirect pager links
-	$ret = drupal_add_js(EBMS\JS_DIR . '/not_list.js', 'file');
+	$ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
 
 	// retrieve boards
 	$boards = Ebms\Util::boards();
 
 	//db_select('ebms_not_list', 'nl')->join($table, $alias);
-	$form['#prefix'] = '<div id="not-list-div">';
+	$form['#prefix'] = '<div id="citation-div">';
 	$form['#suffix'] = '</div>';
 
-	$form['not-list']['#prefix'] = '<div id="not-list-form-div">';
+	$form['not-list']['#prefix'] = '<div id="citation-form-div">';
 	$form['not-list']['#suffix'] = '</div>';
 
 	$form['not-list']['description']['#markup'] = '<h2>Not List Maintenance</h2>';
@@ -63,7 +74,7 @@ function pdq_ebms_citations_not_list($form, &$form_state) {
 		'#title' => 'Editorial Board',
 		'#title_display' => 'after',
 		'#options' => $boards, //array(0 => t('All Boards')),
-		'#prefix' => '<div class="not-list-input-div">',
+		'#prefix' => '<div class="citation-input-div">',
 		'#suffix' => '</div>',
 		//'#default_value' => $board,
 	);
@@ -72,7 +83,7 @@ function pdq_ebms_citations_not_list($form, &$form_state) {
 		'#type' => 'textfield',
 		'#title' => 'Brief Journal Title',
 		'#title_display' => 'after',
-		'#prefix' => '<div class="not-list-input-div">',
+		'#prefix' => '<div class="citation-input-div">',
 		'#suffix' => '</div>',
 		//'#default_value' => $brief_title,
 	);
@@ -80,7 +91,7 @@ function pdq_ebms_citations_not_list($form, &$form_state) {
 		'#type' => 'textfield',
 		'#title' => 'Full Journal Title',
 		'#title_display' => 'after',
-		'#prefix' => '<div class="not-list-input-div">',
+		'#prefix' => '<div class="citation-input-div">',
 		'#suffix' => '</div>',
 		//'#default_value' => $full_title,
 	);
@@ -88,7 +99,7 @@ function pdq_ebms_citations_not_list($form, &$form_state) {
 		'#type' => 'textfield',
 		'#title' => 'Journal ID',
 		'#title_display' => 'after',
-		'#prefix' => '<div class="not-list-input-div">',
+		'#prefix' => '<div class="citation-input-div">',
 		'#suffix' => '</div>',
 		//'#default_value' => $id,
 	);
@@ -96,7 +107,7 @@ function pdq_ebms_citations_not_list($form, &$form_state) {
 		'#type' => 'checkbox',
 		'#title' => 'All Journals',
 		'#title_display' => 'after',
-		'#prefix' => '<div class="not-list-input-div">',
+		'#prefix' => '<div class="citation-input-div">',
 		'#suffix' => '</div>',
 		//'#default_value' => $all_journals,
 	);
@@ -106,7 +117,7 @@ function pdq_ebms_citations_not_list($form, &$form_state) {
 		'#value' => 'Search',
 		/* '#ajax' => array(
 		  'callback' => 'pdq_ebms_ajax_search_submit',
-		  'wrapper' => 'not-list-results-div',
+		  'wrapper' => 'citation-results-div',
 		  'method' => 'replace',
 		  ), */
 	);
@@ -116,7 +127,7 @@ function pdq_ebms_citations_not_list($form, &$form_state) {
 		'#value' => 'Reset',
 		/* '#ajax' => array(
 		  'callback' => 'pdq_ebms_ajax_clear_form',
-		  'wrapper' => 'not-list-div',
+		  'wrapper' => 'citation-div',
 		  'method' => 'replace',
 		  ), */
 	);
@@ -134,7 +145,7 @@ function pdq_ebms_citations_not_list($form, &$form_state) {
 		$id = $form_state['values']['journal_id_field'];
 		$all_journals = $form_state['values']['all_journals_check'];
 
-		$form['not-list-results'] = pdq_ebms_not_list_results(array(), $form_state, $board, $brief_title, $full_title, $id, $all_journals);
+		$form['citation-results'] = pdq_ebms_not_list_results(array(), $form_state, $board, $brief_title, $full_title, $id, $all_journals);
 	}
 
 	return $form;
@@ -327,14 +338,14 @@ function pdq_ebms_not_list_results($form, &$form_state, $board, $brief_title, $f
 	$result = $query->execute();
 
 	$form += array(
-		'#prefix' => '<div id="not-list-results-div">',
+		'#prefix' => '<div id="citation-results-div">',
 		'#suffix' => '</div>',
 	);
 
 	$form['results-title']['#markup'] = "<h2>Not List Search Results <span class = 'results-count'>($num_rows)</span></h2>";
 
 	$form['buttons'] = array(
-		'#prefix' => '<div id="not-list-buttons-div">',
+		'#prefix' => '<div id="citation-buttons-div">',
 		'#suffix' => '</div>',
 	);
 
@@ -351,7 +362,7 @@ function pdq_ebms_not_list_results($form, &$form_state, $board, $brief_title, $f
 		'#value' => 'Cancel',
 		/* '#ajax' => array(
 		  'callback' => 'pdq_ebms_ajax_clear_form',
-		  'wrapper' => 'not-list-results-div',
+		  'wrapper' => 'citation-results-div',
 		  'method' => 'replace',
 		  ), */
 	);
@@ -363,39 +374,39 @@ function pdq_ebms_not_list_results($form, &$form_state, $board, $brief_title, $f
 		));
 
 	$form['table'] = array(
-		'#prefix' => '<div id="not-list-table-div">',
+		'#prefix' => '<div id="citation-table-div">',
 		'#suffix' => '</div>',
 	);
 
 	$form['table']['header'] = array(
-		'#prefix' => "<div class='not-list-header'>",
+		'#prefix' => "<div class='citation-header'>",
 		'#suffix' => '</div>',
 	);
 
 	$form['table']['header'][]['#markup'] =
-		"<div class='not-list-cell brief-title'>Brief Journal Title</div>";
+		"<div class='citation-cell brief-title left-column'>Brief Journal Title</div>";
 	$form['table']['header'][]['#markup'] =
-		"<div class='not-list-cell full-title'>Full Journal Title</div>";
+		"<div class='citation-cell full-title'>Full Journal Title</div>";
 	$form['table']['header'][]['#markup'] =
-		"<div class='not-list-cell id'>Journal ID</div>";
+		"<div class='citation-cell id'>Journal ID</div>";
 	$form['table']['header'][]['#markup'] =
-		"<div class='not-list-cell not-check'>Not List</div>";
+		"<div class='citation-cell not-check right-column'>Not List</div>";
 
 
 	$ix = 0;
 	$form['table']['rows'] = array();
 	foreach ($result as $record) {
 		$form['table']['rows'][$ix] = array(
-			'#prefix' => "<div class='not-list-row'>",
+			'#prefix' => "<div class='citation-row'>",
 			'#suffix' => '</div>',
 		);
 
 		$form['table']['rows'][$ix]['brief_title']['#markup'] =
-			"<div class='not-list-cell brief-title'>$record->brf_jrnl_title</div>";
+			"<div class='citation-cell brief-title left-column'>$record->brf_jrnl_title</div>";
 		$form['table']['rows'][$ix]['full_title']['#markup'] =
-			"<div class='not-list-cell full-title'>$record->jrnl_title</div>";
+			"<div class='citation-cell full-title'>$record->jrnl_title</div>";
 		$form['table']['rows'][$ix]['journal_id']['#markup'] =
-			"<div class='not-list-cell id'>$record->source_jrnl_id</div>";
+			"<div class='citation-cell id'>$record->source_jrnl_id</div>";
 
 		$initial = $record->default_value;
 		$journal_hash = "$record->source|$record->source_jrnl_id|$board|$initial";
@@ -408,7 +419,7 @@ function pdq_ebms_not_list_results($form, &$form_state, $board, $brief_title, $f
 			'#type' => 'checkbox',
 			'#title' => "&nbsp;",
 			'#default_value' => $default,
-			'#prefix' => "<div class='not-list-cell not-check'>",
+			'#prefix' => "<div class='citation-cell not-check right-column'>",
 			'#suffix' => "</div>",
 			//'#return_value' => ,
 			//'#attributes' => array('name' => "search_row_${ix}_button"),
@@ -424,4 +435,391 @@ function pdq_ebms_not_list_results($form, &$form_state, $board, $brief_title, $f
 		));
 
 	return $form;
+}
+
+function pdq_ebms_citation_queue($form, &$form_state) {
+
+	$form_size = sizeof($form_state);
+
+	//include js to redirect pager links
+	$ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
+
+	// retrieve boards
+	$boards = Ebms\Util::boards();
+
+	//db_select('ebms_not_list', 'nl')->join($table, $alias);
+	/* $form['#prefix'] = '<div id="citation-div">';
+	  $form['#suffix'] = '</div>'; */
+
+	$form['citation_queue']['#prefix'] = '<div id="citation-form-div">';
+	$form['citation_queue']['#suffix'] = '</div>';
+
+	$form['citation_queue']['description']['#markup'] = '<h2>Sort My Citation Queue</h2>';
+
+	$form['citation_queue']['board_select'] = array(
+		'#type' => 'select',
+		'#title' => 'Editorial Board',
+		'#title_display' => 'after',
+		'#options' => array(0 => ''),
+		'#prefix' => '<div class="citation-input-div">',
+		'#suffix' => '</div>',
+		'#ajax' => array(
+			'callback' => '_ajax_citation_queue_board_select',
+			'wrapper' => 'topic-select-div'
+		),
+	);
+	$form['citation_queue']['board_select']['#options'] += $boards;
+	$form['citation_queue']['topic_select'] = array(
+		'#type' => 'select',
+		'#title' => 'Summary Topic',
+		'#title_display' => 'after',
+		'#options' => array(0 => 'Please select a board.'),
+		'#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
+		'#suffix' => '</div>',
+	);
+	if (isset($form_state['values']['board_select'])) {
+		$board_id = $form_state['values']['board_select'];
+		if ($board_id != 0) {
+			$form['citation_queue']['topic_select']['#options'] = array(0 => 'Please select a topic.');
+
+			$result = array();
+			try {
+				$result = db_select('ebms_topic', 't')->condition('board_id', $board_id)->fields('t')->execute();
+			} catch (Exception $e) {
+				dsm($e, 'topic query exception!');
+			}
+			foreach ($result as $record) {
+				$form['citation_queue']['topic_select']['#options'][$record->topic_id] = $record->topic_name;
+			}
+		}
+	}
+
+	$form['citation_queue']['journal_id_field'] = array(
+		'#type' => 'textfield',
+		'#title' => 'Journal ID',
+		'#title_display' => 'after',
+		'#prefix' => '<div class="citation-input-div">',
+		'#suffix' => '</div>',
+	);
+
+	$form['citation_queue']['reset_button'] = array(
+		'#type' => 'submit',
+		'#value' => 'Reset',
+		/* '#ajax' => array(
+		  'callback' => 'pdq_ebms_ajax_clear_form',
+		  'wrapper' => 'citation-div',
+		  'method' => 'replace',
+		  ), */
+	);
+
+	$form['citation_queue']['sort_button'] = array(
+		'#type' => 'submit',
+		'#value' => 'Sort',
+	);
+
+	$form['citation_queue']['submit_source'] = array(
+		'#type' => 'hidden',
+	);
+
+	if (isset($form_state['triggering_element']['#type']) &&
+		$form_state['triggering_element']['#type'] == 'select') {
+		// skip results if updating via ajax
+		return $form;
+	}
+
+	pdq_ebms_citation_queue_results($form, $form_state);
+
+	return $form;
+}
+
+function _ajax_citation_queue_board_select($form, $form_state) {
+	return $form['citation_queue']['topic_select'];
+}
+
+function pdq_ebms_citation_queue_results(&$form, &$form_state) {
+
+	$board_id = 0;
+	$topic_id = 0;
+	$journal_id = '';
+
+	// get values if they exist
+	if (isset($form_state['values'])) {
+		$board_id = $form_state['values']['board_select'];
+		$topic_id = $form_state['values']['topic_select'];
+		$journal_id = $form_state['values']['journal_id_field'];
+	}
+
+	if (!isset($form['citation_queue_results'])) {
+		$form['citation_queue_results'] = array(
+			'#prefix' => '<div id="citation-results-div">',
+			'#suffix' => '</div>',
+		);
+	}
+
+	$results = &$form['citation_queue_results'];
+
+	try {
+		$query = db_select('ebms_article_state', 's');
+		$query->join('ebms_last_article_topic_state', 'l', 'l.article_state_id = s.article_state_id');
+		if ($journal_id)
+			$query->join('ebms_article', 'a', 'a.article_id = s.article_id');
+
+		$state_id = Ebms\getStateIdByName('Ready for initial review');
+		$query->condition('s.state_id', $state_id);
+		// add the pager early on in the process
+		$query = $query->extend('PagerDefault');
+
+		// add the other filter fields
+		// $topic_id implies $board_id
+		if ($topic_id)
+			$query->condition('s.topic_id', $topic_id);
+		else if ($board_id)
+			$query->condition('s.board_id', $board_id);
+
+		if ($journal_id)
+			$query->condition('a.source_jrnl_id', "%$journal_id%", 'LIKE');
+
+		$query->groupBy('s.article_id');
+
+		// TODO: add the count back once the query is faster!
+		$num_rows = $query->countQuery()->execute()->fetchField();
+		//$num_rows = 10;
+
+		$query
+			->fields('s', array('article_id'))
+			->limit(10);
+		$query->addExpression('GROUP_CONCAT(s.topic_id)', 'topics');
+
+		$result = $query->execute();
+	} catch (Exception $e) {
+		dsm('error with query');
+		$num_rows = -1;
+		$result = array();
+	}
+
+	$results['results-title']['#markup'] = "<h2>Citations Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
+
+	/* $results['buttons'] = array(
+	  '#prefix' => '<div id="citation-buttons-div">',
+	  '#suffix' => '</div>',
+	  );
+
+	  $results['buttons']['save_button'] = array(
+	  '#type' => 'submit',
+	  '#value' => 'Save',
+	  );
+
+	  $results['buttons']['cancel_button'] = array(
+	  '#type' => 'submit',
+	  '#value' => 'Cancel',
+	  ); */
+
+	$results['top-pager'] = array(
+		'#theme' => 'pager',
+		'#attributes' => array(
+			'class' => 'top-pager'
+		));
+
+	$results['table'] = array(
+		'#prefix' => '<div id="citation-table-div">',
+		'#suffix' => '</div>',
+	);
+
+	$results['table']['header'] = array(
+		'#prefix' => "<div class='citation-header'>",
+		'#suffix' => '</div>',
+	);
+
+	$results['table']['header'][]['#markup'] =
+		"<div class='citation-cell brief-citation left-column'>Citations</div>";
+	$results['table']['header'][]['#markup'] =
+		"<div class='citation-cell board'>Board</div>";
+	$results['table']['header'][]['#markup'] =
+		"<div class='citation-cell summary-topic'><div class='summary-topic-name'>Summary Topic</div><div class='summary-topic-check'>Reject</div><div class='summary-topic-check'>Pass</div></div>";
+
+
+	$ix = 0;
+	$results['table']['rows'] = array();
+	foreach ($result as $record) {
+		$results['table']['rows'][$ix] = array(
+			'#prefix' => "<div class='citation-row'>",
+			'#suffix' => '</div>',
+		);
+
+		$row = &$results['table']['rows'][$ix];
+
+		$article = new Ebms\EbmsArticle($record->article_id);
+
+		//$authors = implode(', ', $article->getAuthors());
+		//$title = $article->getArticleTitle();
+
+		$cite = cite_article($record->article_id, $ix);
+
+		$row['brief_citation']['#markup'] =
+			"<div class='citation-cell brief-citation left-column'>$cite</div>";
+
+		// retrieve the topics and related boards
+		$curr_topics = explode(',', $record->topics);
+
+		$topics = array();
+		foreach ($article->getTopics() as $topic) {
+			if (in_array($topic->topic_id, $curr_topics)) {
+				$boards[$topic->board_name][$topic->topic_name] = array();
+			}
+		}
+
+		//dsm($boards, 'current article topics');
+
+		$row['brief_citation']['#markup'] =
+			"<div class='citation-cell brief-citation left-column'>$cite</div>";
+
+		// build the board->id cell
+		$output = '';
+		foreach ($boards as $board_name => $topics) {
+			$output .= "<div class='citation-cell board'>$board_name</div><div class='citation-cell summary-topic'>";
+			foreach ($topics as $topic_name => $topic) {
+				$output .= "<div class='summary-topic-line'><div class='summary-topic-name'>$topic_name</div><div class='summary-topic-check'>Reject</div><div class='summary-topic-check'>Pass</div></div>";
+			}
+			$output .= '</div>';
+		}
+
+		$row['board_topic']['#markup'] = $output;
+
+		//"<div class='citation-cell brief-citation left-column'>$brfCite<br><br><i>$title</i></div>";
+		/* $results['table']['header'][]['#markup'] =
+		  "<div class='citation-cell board'>Board</div>";
+		  $results['table']['header'][]['#markup'] =
+		  "<div class='citation-cell summary-topic'>Summary Topic</div>";
+		  $results['table']['header'][]['#markup'] =
+		  "<div class='citation-cell reject-check'>Reject</div>";
+		  $results['table']['header'][]['#markup'] =
+		  "<div class='citation-cell pass-check right-cell'>Pass</div>";
+
+		  /* $results['table']['rows'][$ix]['brief_title']['#markup'] =
+		  "<div class='citation-cell brief-title'>$record->brf_jrnl_title</div>";
+		  $results['table']['rows'][$ix]['full_title']['#markup'] =
+		  "<div class='citation-cell full-title'>$record->jrnl_title</div>";
+		  $results['table']['rows'][$ix]['journal_id']['#markup'] =
+		  "<div class='citation-cell id'>$record->source_jrnl_id</div>";
+
+		  $initial = $record->default_value;
+		  $journal_hash = "$record->source|$record->source_jrnl_id|$board|$initial";
+		  $default = $initial;
+		  if (isset($form_state['altered_states'][$journal_hash])) {
+		  $default = $form_state['altered_states'][$journal_hash];
+		  }
+
+		  $results['table']['rows'][$ix]["not_list_state_$journal_hash"] = array(
+		  '#type' => 'checkbox',
+		  '#title' => "&nbsp;",
+		  '#default_value' => $default,
+		  '#prefix' => "<div class='citation-cell not-check'>",
+		  '#suffix' => "</div>",
+		  //'#return_value' => ,
+		  //'#attributes' => array('name' => "search_row_${ix}_button"),
+		  ); */
+
+		$ix++;
+	}
+
+	$results['bottom-pager'] = array(
+		'#theme' => 'pager',
+		'#attributes' => array(
+			'class' => 'top-pager'
+		));
+}
+
+function pdq_ebms_citation_queue_submit($form, &$form_state) {
+
+	$form_state['rebuild'] = true;
+
+	if (isset($form_state['values']['op'])) {
+		$op = $form_state['values']['op'];
+		if (!empty($form_state['values']['submit_source'])) {
+			$op = $form_state['values']['submit_source'];
+		}
+
+		dsm("op = $op");
+
+		switch ($op) {
+			case 'Reset':
+				$form_state['rebuild'] = false;
+				return;
+			/* case 'Save':
+			  // write out the changes to the not list, in terms of
+			  // inserts and deletes to the DB
+			  pdq_ebms_write_not_list($form_state['altered_states']);
+
+			  $clear_states = true;
+
+			  break; */
+			case 'Search':
+			case 'Cancel':
+				//$clear_states = true;
+				break;
+		}
+	}
+
+	/* if ($clear_states)
+	  $form_state['altered_states'] = array();
+
+	  //dsm($form_state['altered_states'], 'altered states');
+	  // wipe out button values so that the default_states calculated from
+	  // altered states can take effect
+	  pdq_ebms_clear_journal_select($form_state['input'], 'input');
+	  //pdq_ebms_clear_journal_select($form_state['values'], 'values'); */
+}
+
+function cite_article($article_id, $position) {
+	$xml = db_select('ebms_article', 'a')
+		->fields('a', array('source_data'))
+		->condition('a.article_id', $article_id)
+		->execute()
+		->fetchField();
+	$doc = new \SimpleXMLElement($xml);
+	$title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
+	$article = $doc->MedlineCitation->Article;
+	$title = htmlspecialchars($article->ArticleTitle);
+	$pgn = htmlspecialchars($article->Pagination->MedlinePgn);
+	$year = $article->Journal->JournalIssue->PubDate->Year;
+	$issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
+	$vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
+	$authors = array();
+	if (isset($doc->MedlineCitation->Article->AuthorList->Author)) {
+		foreach ($doc->MedlineCitation->Article->AuthorList->Author
+		as $author) {
+			if (sizeof($authors) == 8) {
+				$authors[] = 'et al.';
+				break;
+			}
+			$name = $author->LastName;
+			if ($author->Initials)
+				$name .= ' ' . $author->Initials;
+			$authors[] = htmlspecialchars($name);
+		}
+	}
+	if (count($authors) < 1)
+		$authors = array('[No authors listed]');
+	$ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+	$ta = htmlspecialchars($ta);
+	$pmid = $doc->MedlineCitation->PMID;
+	$pieces = array(
+		'<div class="article-citation"><div>',
+		implode(', ', $authors),
+		"</div><div><em>$title</em></div><div>$ta $vol",
+	);
+	if ($issue)
+		$pieces[] = "($issue)";
+	if ($pgn)
+		$pieces[] = ": $pgn";
+	if ($year)
+		$pieces[] = ", $year";
+	$pieces[] = ".</div><div>PMID: $pmid</div><div>";
+	$pieces[] = '<a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
+	$pieces[] = '<a href="/ebmsdev/stub">DOWNLOAD FULL TEXT</a>';
+	$pieces[] = '</div></div>';
+	return implode($pieces);
+	#$results = db_select('ebms_article', 'a')
+	#    ->fields('a', array('article_title', 'source_id',
+	#return "Article $position (CMS ID $article_id)";
 }

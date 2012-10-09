@@ -4,3 +4,36 @@ description = Customization for Electronic Board Member Site (EBMS)
 core = 7.x
 version = "1.0"
 package = EBMS
+
+dependencies[]=block
+dependencies[]=comment
+dependencies[]=dblog
+dependencies[]=field
+dependencies[]=field_sql_storage
+dependencies[]=field_ui
+dependencies[]=file
+dependencies[]=filter
+dependencies[]=forum
+dependencies[]=help
+dependencies[]=menu
+dependencies[]=node
+dependencies[]=options
+dependencies[]=php
+dependencies[]=system
+dependencies[]=taxonomy
+dependencies[]=text
+dependencies[]=update
+dependencies[]=user
+
+
+
+dependencies[]=ctools
+dependencies[]=calendar
+dependencies[]=date
+dependencies[]=date_api
+dependencies[]=date_popup
+dependencies[]=date_tools
+dependencies[]=date_views
+dependencies[]=libraries
+dependencies[]=views
+dependencies[]=views_ui
