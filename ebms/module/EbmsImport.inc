@@ -364,8 +364,12 @@ class ImportBatch {
         // Null data describing the batch as a whole
         $this->batchId      = null;
         $this->topicId      = null;
-        $this->cycleId      = null;
         $this->source       = null;
+        $this->dateTime     = null;
+        $this->cycleId      = null;
+        $this->notList      = null;
+        $this->userId       = null;
+        $this->comment      = null;
         $this->articleCount = 0;
 
         // Building an instance from an import, we track unique source IDs
@@ -390,6 +394,7 @@ class ImportBatch {
     public function setSource($source)     { $this->source = $source; }
     public function setCycleId($cycleId)   { $this->cycleId = $cycleId; }
     public function setTopicId($topicId)   { $this->topicId = $topicId; }
+    public function setNotList($notList)   { $this->notList = $notList; }
     public function setDateTime($dateTime) { $this->dateTime = $dateTime; }
 
 
@@ -399,12 +404,13 @@ class ImportBatch {
      *  @param string $source   Should always be 'Pubmed' for now, more later?
      *  @param int $topicId     Topic of this import, may be null?
      *  @param int $cycleId     Cycle when import occurred.
+     *  @param int $notList     'Y' = NOT list used on import, else 'N'.
      *  @param string $comment  Comment to record as purpose (or whatever) of
      *                           this import batch.
      *  @param int $userId      User performing import, or use global.
      */
     public function init($source='Pubmed', $topicId=null, $cycleId=null,
-                         $comment=null, $userId=null) {
+                         $notList='Y', $comment=null, $userId=null) {
 
         // Initialize to empty object
         $this->clear();
@@ -419,6 +425,13 @@ class ImportBatch {
              "ImportBatch->init(): not currently supporting input from '%s'," .
              "  Only supporting exact string 'Pubmed'");
         $this->source = $source;
+
+        // Using NOT list is either 'Y' or 'N'
+        if ($notList != 'Y' && $notList != 'N')
+            throw new \Exception(
+             "ImportBatch->init(): Valid notList values are 'Y' and 'N', " .
+             " value '$notList' is invalid");
+        $this->notList = $notList;
 
         // User
         if (is_null($userId)) {
@@ -556,6 +569,7 @@ class ImportBatch {
                   'source'       => $this->source,
                   'import_date'  => $this->dateTime,
                   'cycle_id'     => $this->cycleId,
+                  'not_list'     => $this->notList,
                   'user_id'      => $this->userId,
                   'comment'      => $this->comment,
                   'article_count'=> count($this->uniqIds)
@@ -613,6 +627,7 @@ class ImportBatch {
         $this->source       = $row->source;
         $this->dateTime     = $row->import_date;
         $this->cycleId      = $row->cycle_id;
+        $this->notList      = $row->not_list;
         $this->userId       = $row->userId;
         $this->comment      = $row->comment;
         $this->articleCount = $row->article_count;
@@ -658,6 +673,7 @@ class ImportBatch {
  <tr><th>source</th><td>$this->source</td></tr>
  <tr><th>dateTime</th><td>$this->dateTime</td></tr>
  <tr><th>cycleId</th><td>$this->cycleId</td></tr>
+ <tr><th>notListUsed</th><td>$this->notList</td></tr>
  <tr><th>userId</th><td>$this->userId</td></tr>
  <tr><th>comment</th><td>$this->comment</td></tr>
  <tr><th>articleCount</th><td>$this->articleCount</td></tr>
