@@ -105,8 +105,6 @@ if ($logged_in) {
             '#attributes' => array('id' => 'picframe'),
         );
     $photo = drupal_render($photo);
-    $user_photo = $images . ($user_name == 'Robin Harrison' ?
-                  '/Robin-40x40.png' : '/bob-40x40.png');
     $profile_link = l(
         'Manage Profile',
         'profile/view/' . $user->uid,
@@ -160,15 +158,9 @@ if ($logged_in) {
               <div id="site-slogan">PDQ Editorial Board Management System</div>
             </div> <!-- /#name-and-slogan -->
 <?php if ($logged_in) { ?>
-                        <?php print "<!-- $user->picture -->"; ?>
             <div id="user-profile">
-<?php if ($user_photo) { ?>
-                         <?php echo $photo; ?>
-<!--
-              <img src="<?php print $user_photo; ?>"
-                   alt="<?php print $user_name; ?>"
-                   id="user-photo" />
--->
+<?php if ($photo) { ?>
+             <?php echo $photo; ?>
 <?php } /* if photo */ ?>
               <span id="user-name"><?php print $user_name; ?></span>
               <div id="profile-and-logout">
