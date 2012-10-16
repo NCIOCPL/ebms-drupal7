@@ -100,7 +100,7 @@ function pdq_ebms_about() {
             ),
             'cancer-genetics',
             array(***REDACTED***),
-            array('Robin Harrison, MPH', 'h***REMOVED***'),
+            array('Robin Juthe, MPH', 'h***REMOVED***'),
         ),
         array(
             'Pediatric Treatment',
@@ -119,7 +119,7 @@ function pdq_ebms_about() {
             'hematology, radiology, urology, statistics, epidemiology, ' .
             'and economics.',
             array(
-                array('Screenin Summaries', 'screening'),
+                array('Screening Summaries', 'screening'),
                 array('Prevention Summaries', 'prevention'),
             ),
             'screening-prevention',
