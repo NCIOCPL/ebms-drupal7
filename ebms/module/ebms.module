@@ -113,6 +113,14 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // CITATION IMPORT
+        'citations/import' => array(
+            'page callback' => 'pdq_ebms_import',
+            'file' => 'import.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+
         // SEARCH DATABASE
         'citations/search' => array(
             'page callback' => 'pdq_ebms_search',
