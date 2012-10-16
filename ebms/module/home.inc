@@ -249,7 +249,7 @@ class EbmsHomePage {
                     l('Search Database', 'citations/search'),
                     l('Find/Edit a Record', 'stub'),
                     l('Manage Journals', 'stub'),
-                    l('Import Citations', 'stub'),
+                    l('Import Citations', 'citations/import'),
                     l('Review Citations', 'stub'),
                     l('Publish Citations', 'stub'),
                 );
@@ -448,7 +448,7 @@ class EbmsHomePage {
                 '1' => array(
                     'title' => 'Citation Management',
                     'links' => array(
-                        l('Import Citation', 'stub'),
+                        l('Import Citation', 'citations/import'),
                         l('Find/Edit a Record', 'stub'),
                         l('Review Citations', 'stub'),
                     ),
@@ -472,7 +472,7 @@ class EbmsHomePage {
                 '1' => array(
                     'title' => 'Citation Management',
                     'links' => array(
-                        l('Search Database', 'stub'),
+                        l('Search Database', 'citations/search'),
                         l('Review Abstracts', 'stub'),
                         l('Add Citation', 'stub'),
                     ),
