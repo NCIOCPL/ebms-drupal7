@@ -25,8 +25,6 @@ dependencies[]=text
 dependencies[]=update
 dependencies[]=user
 
-
-
 dependencies[]=ctools
 dependencies[]=calendar
 dependencies[]=date
