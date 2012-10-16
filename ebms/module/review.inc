@@ -11,8 +11,8 @@
 /**
  * Callback registered for /review pages.
  */
-function pdq_ebms_review($action=null, $packet_id=0) {
-    $review = new EbmsReview($action, $packet_id);
+function pdq_ebms_review($action=null, $packet_id=0, $article_id=0) {
+    $review = new EbmsReview($action, $packet_id, $article_id);
     return $review->run();
 }
 
@@ -42,12 +42,13 @@ class EbmsReview {
      * to avoid dependency on Javascript being enabled on the user's
      * browser.
      */
-    public function __construct($action, $packet_id) {
+    public function __construct($action, $packet_id, $article_id) {
         global $user;
         $this->user         = $user;
         $this->packet_id    = Ebms\Util::get_request_value('packet',
                               $packet_id);
-        $this->article_id   = Ebms\Util::get_request_value('article');
+        $this->article_id   = Ebms\Util::get_request_value('article',
+                              $article_id);
         $this->expanded     = Ebms\Util::get_request_value('expanded');
         $this->sort_col     = Ebms\Util::get_request_value('sort-col', 'f');
         $this->sort_dir     = Ebms\Util::get_request_value('sort-dir', 'a');
@@ -63,6 +64,7 @@ class EbmsReview {
      */
     public function run() {
         Ebms\Util::add_js();
+        drupal_add_css(Ebms\CSS_DIR . '/review.css');
         Ebms\Menu::$active = 'Literature';
         if (in_array('board member', $this->user->roles)) {
             if ($this->action == 'reviewer-upload') {
@@ -299,17 +301,584 @@ class EbmsReview {
     }
 
     /**
-     * Show the reviews for this board manager's packets.
+     * Creates the render array for the left nav panel for Citation
+     * Management page.  Cloned from common.inc, where I had originally
+     * placed this functionality, not realizing that the left nav block
+     * was going to be different for every page.
+     *
+     *  @param string $active  Current action, highlighted by CSS
+     *
+     *  @return                Render array for left nav panel
      */
-    private function manager_reviews() {
+    public static function build_left_nav($active=null) {
+        $links = array(
+            array('Reviewed Packets', 'review/reviews'),
+            array('View / Edit Packets', 'review/add'),
+        );
+        $items = array();
+        foreach ($links as $link_info) {
+            list($label, $url) = $link_info;
+            $link = l($label, $url);
+            $class = $label == $active ? 'active' : 'inactive';
+            $items[] = array(
+                'data' => $link,
+                'class' => array($class),
+            );
+        }
+        return array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'left-nav'),
+            'nav' => array(
+                '#theme' => 'item_list',
+                '#items' => $items,
+            ),
+        );
+    }
+
+    private function get_reviewed_citation($article_id, $add_link=true) {
+        $xml = db_select('ebms_article', 'a')
+            ->fields('a', array('source_data'))
+            ->condition('a.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+        $doc = new \SimpleXMLElement($xml);
+        $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
+        $article = $doc->MedlineCitation->Article;
+        $title = htmlspecialchars($article->ArticleTitle);
+        if ($add_link) {
+            $url = EbmsReview::$url . '/reviews/' . $this->packet_id . '/' .
+                $article_id;
+            $title = l($title, $url);
+        }
+        $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
+        $year = $article->Journal->JournalIssue->PubDate->Year;
+        $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
+        $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
+        $authors = array();
+        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
+        {
+            if (sizeof($authors) == 3) {
+                $authors[] = 'et al.';
+                break;
+            }
+            $name = $author->LastName;
+            if ($author->Initials)
+                $name .= ' ' . $author->Initials;
+            $authors[] = htmlspecialchars($name);
+        }
+        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+        $ta = htmlspecialchars($ta);
+        $pmid = $doc->MedlineCitation->PMID;
+        $pieces = array(implode(',', $authors), '<br /><em>', $title,
+                  '</em><br />', $ta, ' ', $vol);
+        if ($issue)
+            $pieces[] = "($issue)";
+        if ($pgn)
+            $pieces[] = ": $pgn";
+        if ($year)
+            $pieces[] = ", $year";
+        $pieces[] = ".<br />PMID: $pmid";
+        return implode($pieces);
+    }
+    private function show_reviewed_packet($opts) {
+        if (isset($opts['query']['archive'])) {
+            $article_id = $opts['query']['archive'];
+            if ($article_id) {
+                $now = strftime("%Y-%m-%d %H:%M:%S");
+                db_update('ebms_packet_article')
+                    ->fields(array('archived' => $now))
+                    ->condition('article_id', $article_id)
+                    ->condition('packet_id', $this->packet_id)
+                    ->execute();
+            }
+
+            // Not enough to pull it out of our own set; table sorting
+            // URLs will go back to the original query for parameters.
+            unset($_GET['archive']);
+            unset($opts['query']['archive']);
+        }
+        if (isset($opts['query']['revive'])) {
+            $article_id = $opts['query']['revive'];
+            if ($article_id) {
+                db_update('ebms_packet_article')
+                    ->fields(array('archived' => null))
+                    ->condition('article_id', $article_id)
+                    ->condition('packet_id', $this->packet_id)
+                    ->execute();
+            }
+
+            // See note above about clearing the 'archive' parameter.
+            unset($_GET['revive']);
+            unset($opts['query']['revive']);
+        }
+
+        $url = EbmsReview::$url . '/reviews/' . $this->packet_id;
         drupal_set_breadcrumb(
             array(
                 l('Literature', EbmsReview::$url),
-                'Literature Surveillance Reviews',
+                l('Reviewed Packets', EbmsReview::$url . '/reviews'),
+                $this->packet_title,
             )
+        );
+        if ($this->pager != 'off')
+            $pager = array('#theme' => 'pager');
+        else {
+            unset($opts['query']['pager']);
+            $link = l('VIEW PAGES', EbmsReview::$url . '/reviews', $opts);
+            $pager = array(
+                '#type' => 'markup',
+                '#markup' => "<div id='pager-view-pages'>$link</div>",
+            );
+        }
+        $archive_opts = $opts;
+        if (isset($archive_opts['query']['sa'])) {
+            $archive_title = 'Don\'t Show Archived Articles';
+            unset($archive_opts['query']['sa']);
+            $sa = true;
+        }
+        else {
+            $archive_title = 'Show Archived Articles';
+            $archive_opts['query']['sa'] = 1;
+            $sa = false;
+        }
+        $archive_opts['attributes'] = array('title' => $archive_title);
+        $headers = array(
+            array(
+                'data' => 'Article',
+                'field' => 'a.article_title',
+            ),
+            array(
+                'data' => 'Reviewer&nbsp; &nbsp; | &nbsp; &nbsp;Disposition',
+                'class' => 'col-2',
+            ),
+            array(
+                'data' => 'Updated',
+                'field' => 'updated',
+            ),
+            array(
+                'data' => l('Archive', $url, $archive_opts),
+                'class' => array('col-4'),
+            ),
+        );
+        $warrants_no_changes = db_select('ebms_review_disposition_value', 'v')
+            ->fields('v', array('value_id'))
+            ->condition('v.value_name', 'Warrants no changes to the summary')
+            ->execute()
+            ->fetchField();
+        $query = db_select('ebms_packet_article', 'p');
+        $query = $query->extend('TableSort');
+        $query->join('ebms_article', 'a', 'a.article_id = p.article_id');
+        $query->join('ebms_article_review', 'r',
+            'r.article_id = a.article_id');
+        $query->join('ebms_review_disposition', 'd',
+            'd.review_id = r.review_id');
+        $query->fields('a', array('article_id', 'article_title'));
+        $query->fields('p', array('archived'));
+        $query->addExpression('MAX(r.when_posted)', 'updated');
+        $query->condition('p.packet_id', $this->packet_id);
+        if (!$sa)
+            $query->isNull('p.archived');
+        $query->groupBy('a.article_id');
+        $query->orderByHeader($headers);
+        $articles = $query->execute();
+        $rows = array();
+        foreach ($articles as $article) {
+            $citation = $this->get_reviewed_citation($article->article_id);
+            $query = db_select('users', 'u');
+            $query->fields('u', array('name'));
+            $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
+            $query->fields('r', array('review_id'));
+            $query->join('ebms_review_disposition', 'd',
+                'd.review_id = r.review_id');
+            $query->condition('r.packet_id', $this->packet_id);
+            $query->condition('r.article_id', $article->article_id);
+            $query->orderBy('u.name');
+            $query->distinct();
+            $results = $query->execute();
+            $reviewers = array();
+            foreach ($results as $result) {
+                $name = htmlspecialchars($result->name);
+                $dispositions = db_select('ebms_review_disposition', 'd')
+                    ->fields('d', array('value_id'))
+                    ->condition('d.review_id', $result->review_id)
+                    ->execute();
+                $png = 'EBMS_Pass_Icon_Active.png';
+                $thumbs_down = false;
+                foreach ($dispositions as $disposition)
+                    if ($disposition->value_id == $warrants_no_changes)
+                        $png = 'EBMS_Selection_X_Icon.png';
+                $image_url = Ebms\IMAGES_DIR . '/' . $png;
+                $img = '<img src="' . $image_url . '" alt="" />';
+                $reviewers[] = '<div class="reviewer">' .
+                    '<span class="reviewer-name">' . $name . '</span> ' .
+                    $img .
+                    #'<span class="review-disposition">' . $image . '</span>' .
+                    '</div>';
+            }
+            $article_opts = $opts;
+            $action = $article->archived ? 'revive' : 'archive';
+            $article_opts['query'][$action] = $article->article_id;
+            $href = url($url, $article_opts);
+            $type = 'type="checkbox"';
+            $onclick = 'onclick=\'location.href="' . $href . '"\'';
+            $checked = $article->archived ? ' checked="checked"' : '';
+            $checkbox = "<input $type $onclick$checked />";
+            $links = '<div class="links">' .
+                l('View Abstract', 'stub') . ' | ' .
+                l('Download Full Text', 'stub') . '</div>';
+            $data = array(
+                $citation . $links,
+                implode('<br />', $reviewers),
+                date("m/d/Y", strtotime($article->updated)),
+                array(
+                    'data' => $checkbox,
+                    'class' => array('col-4'),
+                ),
+            );
+            $rows[] = array(
+                'data' => $data,
+                'no_striping' => true,
+            );
+        }
+        return array(
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>' . htmlspecialchars($this->packet_title) .
+                '</h2>',
+            ),
+            'report button' => array(
+                '#type' => 'markup',
+                '#markup' => '<a class="button" href="stub">Create Report</a>',
+                '#prefix' => '<div id="report-button">',
+                '#suffix' => '</div>',
+            ),
+            'top pager' => $pager,
+            'table' => array(
+                '#attributes' => array('id' => 'manager-packet-table'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+            'bottom pager' => $pager,
+        );
+    }
+
+    private function show_reviewed_article($opts) {
+        #$results = db_select();
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                l('Reviewed Packets', EbmsReview::$url . '/reviews'),
+                l($this->packet_title, EbmsReview::$url . '/reviews/' .
+                    $this->packet_id),
+            )
+        );
+        $reviews = array();
+        $query = db_select('ebms_article_review', 'r');
+        $query->join('users', 'u', 'u.uid = r.reviewer_id');
+        $query->fields('r', array('review_id', 'when_posted', 'comments',
+                'loe_info'));
+        $query->fields('u', array('name'));
+        $query->condition('r.packet_id', $this->packet_id);
+        $query->condition('r.article_id', $this->article_id);
+        $query->orderBy('r.when_posted', 'DESC');
+        $results = $query->execute();
+        foreach ($results as $result) {
+            $reviewed = date("m/d/Y | g:i A", strtotime($result->when_posted));
+            $markup = array('<div class="review">');
+            #$markup[] = '<p class="align-right">' . $reviewed . '</p>';
+            $markup[] = '<h3>Reviewer<span class="float-right">' .
+                $reviewed . '</span></h3>';
+            $markup[] = '<p>' . htmlspecialchars($result->name) . '</p>';
+            $markup[] = '<h3>Options</h3>';
+            $query = db_select('ebms_review_disposition_value', 'v');
+            $query->join('ebms_review_disposition', 'd',
+                'd.value_id = v.value_id');
+            $query->fields('v', array('value_name'));
+            $query->orderBy('v.value_pos');
+            $query->distinct();
+            $query->condition('d.review_id', $result->review_id);
+            $dispositions = $query->execute();
+            foreach ($dispositions as $d)
+                $markup[] = '<p>' . htmlspecialchars($d->value_name) . '</p>';
+            $markup[] = '<h3>Comments</h3>';
+            if ($result->comments) {
+                $markup[] = '<p>' . htmlspecialchars($result->comments) .
+                    '</p>';
+            }
+            $markup[] = '<h3>LOE Info</h3>';
+            if ($result->loe_info) {
+                $markup[] = '<p>' . htmlspecialchars($result->loe_info) .
+                    '</p>';
+            }
+            $markup[] = '</div>';
+            $reviews[] = array(
+                '#type' => 'markup',
+                '#markup' => implode('', $markup),
+            );
+        }
+        return array(
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>' . $this->packet_title . '</h2>',
+            ),
+            'left' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'reviewed-citation-left'),
+                'label' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<h3>Full Citation</h3>',
+                ),
+                'citation' => array(
+                    '#type' => 'markup',
+                    '#markup' => $this->get_reviewed_citation(
+                        $this->article_id,
+                        false
+                    ),
+                    '#prefix' => '<div id="citation">',
+                    '#suffix' => '</div>',
+                ),
+                'view abstract' => array(
+                    '#type' => 'markup',
+                    '#markup' => l('View Abstract', 'stub'),
+                    '#prefix' => '<div id="view-abstract-link">',
+                    '#suffix' => '</div>',
+                ),
+                'download full text' => array(
+                    '#type' => 'markup',
+                    '#markup' => l('Download Full Text', 'stub'),
+                    '#prefix' => '<div id="download-full-text-link">',
+                    '#suffix' => '</div>',
+                ),
+            ),
+            'right' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'article-reviews-right'),
+                'reviews' => $reviews,
+                /*array(
+                    array(
+                        '#type' => 'markup',
+                        '#markup' => '<h3>Reviewer</h3><p>Ilana Cass</p>' .
+                        '<h3>Options</h3><p>Merits revision of the text' .
+                        '</p><p>Discuss at next meeting' .
+                        '</p><h3>Comments</h3><p>Quo usque tandem ' .
+                        'abutere Catalina patientia nostra?  Quamdiu ' .
+                        'etiam furor iste nos eludet?  Quem ad finem ' .
+                        'efranata iactabit audacia?</p>',
+                        '#prefix' => '<div class="review">',
+                        '#suffix' => '</div>',
+                    ),
+                    array(
+                        '#type' => 'markup',
+                        '#markup' => '<h3>Reviewer</h3>',
+                        '#prefix' => '<div class="review">',
+                        '#suffix' => '</div>',
+                    ),
+                    array(
+                        '#type' => 'markup',
+                        '#markup' => '<h3>Reviewer</h3>',
+                        '#prefix' => '<div class="review">',
+                        '#suffix' => '</div>',
+                    ),
+                    array(
+                        '#type' => 'markup',
+                        '#markup' => '<h3>Reviewer</h3>',
+                        '#prefix' => '<div class="review">',
+                        '#suffix' => '</div>',
+                    ),
+                    array(
+                        '#type' => 'markup',
+                        '#markup' => '<h3>Reviewer</h3>',
+                        '#prefix' => '<div class="review">',
+                        '#suffix' => '</div>',
+                    ),
+                ),*/
+            ),
+        );
+    }
+
+    /**
+     * Show the reviews for this board manager's packets.
+     */
+    private function manager_reviews() {
+        $opts = array('query' => drupal_get_query_parameters());
+        if ($this->article_id)
+            return $this->show_reviewed_article($opts);
+        if ($this->packet_id)
+            return $this->show_reviewed_packet($opts);
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                'Reviewed Packets',
+            )
+        );
+        $left_nav = $this->build_left_nav('Reviewed Packets');
+        $left_nav['board filter box'] = $this->board_filter_box($opts);
+        return array(
+            'left-nav' => $left_nav,
+            'packets' => $this->reviewed_packet_list($opts),
         );
         return '<p>Implementation of this page will be done as part of ' .
             'Iteration II, as part of the Reports stories.</p>';
+    }
+    private function reviewed_packet_list($opts) {
+        $boards = array();
+        if (isset($opts['query']['boards']))
+            $boards = explode(',', $opts['query']['boards']);
+        if (count($boards) < 1) {
+            $results = db_select('ebms_board_member', 'm')
+                ->fields('m', array('board_id'))
+                ->condition('m.user_id', $this->user->uid)
+                ->execute();
+            foreach ($results as $result)
+                $boards[] = $result->board_id;
+        }
+        if (count($boards) < 1) {
+            drupal_set_message('You are not linked to any boards');
+            return array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'main-right-panel'),
+                'page title' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<h2>Reviewed Packets</h2>',
+                ),
+            );
+        }
+        $headers = array(
+            array(
+                'data' => 'Packet Name',
+                'field' => 'p.packet_title',
+            ),
+            array(
+                'data' => 'Reviewer(s)',
+            ),
+            array(
+                'data' => 'Updated',
+                'field' => 'updated',
+            ),
+        );
+        $query = db_select('ebms_packet', 'p');
+        if ($this->pager != 'off')
+            $query = $query->extend('PagerDefault')->limit(10);
+        $query = $query->extend('TableSort');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
+        $query->join('ebms_article_review', 'r', 'r.packet_id = p.packet_id');
+        $query->fields('p', array('packet_id', 'packet_title'));
+        $query->addExpression('MAX(r.when_posted)', 'updated');
+        $query->condition('b.board_id', $boards, 'IN');
+        $query->condition('p.active_status', 'A');
+        $query->orderByHeader($headers);
+        $query->groupBy('p.packet_id');
+        $packets = $query->execute();
+        $rows = array();
+        $opts = array('query' => drupal_get_query_parameters());
+        foreach ($packets as $p) {
+            #$options = array('query' => array('packet' => $p->packet_id));
+            #$options['query']['action'] = 'edit';
+            $title = str_replace(' [Legacy]', '', $p->packet_title);
+            $query = db_select('users', 'u');
+            $query->fields('u', array('name'));
+            $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+            $query->condition('r.packet_id', $p->packet_id);
+            $query->orderBy('u.name');
+            $results = $query->execute();
+            $reviewers = array();
+            foreach ($results as $result)
+                $reviewers[] = htmlspecialchars($result->name);
+            $url = EbmsReview::$url . '/reviews/' . $p->packet_id;
+            $link = l($title, $url); #, $opts);
+            $data = array(
+                $link,
+                implode('<br />', $reviewers),
+                date("m/d/Y", strtotime($p->updated)),
+            );
+            $rows[] = array(
+                'data' => $data,
+                'no_striping' => true,
+            );
+        }
+        $title = 'Literature Surveillance Packets';
+        $id = 'manager-packets-page-title';
+        if ($this->pager != 'off')
+            $pager = array('#theme' => 'pager');
+        else {
+            unset($opts['query']['pager']);
+            $link = l('VIEW PAGES', EbmsReview::$url . '/reviews', $opts);
+            $pager = array(
+                '#type' => 'markup',
+                '#markup' => "<div id='pager-view-pages'>$link</div>",
+            );
+        }
+        $table = array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'main-right-panel'),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>Reviewed Packets</h2>',
+            ),
+            'report button' => array(
+                '#type' => 'markup',
+                '#markup' => '<a class="button" href="stub">Create Report</a>',
+            ),
+            'top pager' => $pager,
+            'table' => array(
+                '#attributes' => array('id' => 'manager-packets-table'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+            'bottom pager' => $pager,
+        );
+        return $table;
+
+        return array(
+            'page title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>Reviewed Packets</h2>',
+            ),
+        );
+    }
+    private function board_filter_box($opts) {
+        $checked_boards = array();
+        if (isset($opts['query']['boards']))
+            $checked_boards = explode(',', $opts['query']['boards']);
+        $items = array();
+        $boards = Ebms\Util::boards();
+        $url = EbmsReview::$url . '/reviews/' . $this->packet_id;
+        $type = 'type="checkbox"';
+        foreach ($boards as $id => $name) {
+            if (in_array($id, $checked_boards)) {
+                $checked = ' checked="checked"';
+                $new_boards = array_diff($checked_boards, (array)$id);
+            }
+            else {
+                $checked = '';
+                $new_boards = array_merge($checked_boards, (array)$id);
+            }
+            if (count($new_boards) < 1)
+                unset($opts['query']['boards']);
+            else
+                $opts['query']['boards'] = implode(',', $new_boards);
+            $href = url($url, $opts);
+            $onclick = 'onclick=\'location.href="' . $href . '"\'';
+            $cb_id = "edit-boards-$id";
+            $checkbox = "<input id='$cb_id' $type $onclick$checked />";
+            $label = "<label class='board-name' for='$cb_id'>$name</label>";
+            $item = "<div>$checkbox $label</div>";
+            #$items[] = "$checkbox <span class='option board-name'>$name</span>";
+            $items[] = $item;
+        }
+        $url = Ebms\IMAGES_DIR . '/left-nav-box-bottom.png';
+        $img = "<img class='ebms-left-nav-block-bottom' src='$url' alt='' />";
+        return array(
+            '#theme' => 'item_list',
+            '#title' => 'Filter by Board',
+            '#items' => $items,
+            '#attributes' => array('class' => 'ebms_left_nav_block'),
+            '#prefix' => '<div class="more-actions">',
+            '#suffix' => '</div>',
+        );
     }
 
     /**
@@ -1949,4 +2518,30 @@ function pdq_ebms_packet_topic_ajax($form, $form_state) {
 function pdq_ebms_packet_reviewers_ajax($form, $form_state) {
     return $form['board-specific-fields']['topic-specific-fields']
         ['reviewers-div'];
+}
+function pdq_ebms_board_filter_form($form, &$form_state, $opts) {
+    $checked_boards = array();
+    if (isset($opts['query']['boards']))
+        $checked_boards = explode(',', $opts['query']['boards']);
+    $items = array();
+    $boards = Ebms\Util::boards();
+        foreach ($boards as $id => $name) {
+            $href = '';
+            $type = 'type="checkbox"';
+            $onclick = 'onclick=\'location.href="' . $href . '"\'';
+            $onclick = '';
+            $checked = '';
+            if (in_array($id, $checked_boards))
+                $checked = ' checked="checked"';
+            $checkbox = "<input $type $onclick$checked />";
+            $items[] = "$checkbox <span class='board-name'>$name</span>";
+        }
+    $boards = Ebms\Util::boards();
+    return array(
+        'boards' => array(
+            '#type' => 'checkboxes',
+            '#title' => 'Filter by Board',
+            '#options' => $boards,
+        ),
+    );
 }
