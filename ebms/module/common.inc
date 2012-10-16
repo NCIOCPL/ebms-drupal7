@@ -814,12 +814,12 @@ class Util {
                                                     $full=true) {
         $links = array(
             array('Search Database', 'citations/search', 'always'),
-            array('Import Citations', 'stub', 'always'),
+            array('Import Citations', 'citations/import', 'always'),
             array('Find/Edit Citations', 'stub', 'full'),
             array('Review Citations', 'stub', 'full'),
             array('Publish Citations', 'stub', 'full'),
-			array('Not List Maintentance', 'citations/not-list', 'full'),
-			array('Manage Journals', 'stub', 'always'),			
+            array('Not List Maintentance', 'citations/not-list', 'full'),
+            array('Manage Journals', 'stub', 'always'),
         );
         $items = array();
         foreach ($links as $link_info) {
