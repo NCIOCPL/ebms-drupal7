@@ -1155,11 +1155,13 @@ CREATE TABLE ebms_packet_reviewer
  * article_id     foreign key into the ebms_article table
  * packet_id      foreign key into the ebms_packet table
  * drop_flag      should the article be omitted from the review work queue?
+ * archived       date/time article was suppressed from review display
  */
 CREATE TABLE ebms_packet_article
  (article_id INTEGER      NOT NULL,
    packet_id INTEGER      NOT NULL,
    drop_flag INTEGER      NOT NULL DEFAULT 0,
+    archived DATETIME         NULL,
  PRIMARY KEY (packet_id, article_id),
  FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
  FOREIGN KEY (packet_id)  REFERENCES ebms_packet (packet_id))
