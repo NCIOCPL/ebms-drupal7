@@ -1,0 +1,184 @@
+/* 
+    Document   : not_list
+    Created on : Sep 26, 2012, 2:37:10 PM
+    Author     : youngdr
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+#citation-form-div > input {
+    margin: 0 12px;
+}
+
+#citation-form-div {
+    margin-left: 250px;
+}
+
+.citation-input-div > .form-item > label {
+    text-transform: uppercase !important;
+    float: right !important;
+    width: 20% !important;
+    min-width: 175px;
+    margin: auto;
+}
+
+.citation-input-div > .form-item.form-type-checkbox > label {
+    padding-left: 9% !important;
+}
+
+.citation-input-div {
+    /*clear: both;*/
+}
+
+.page-citations input:not(.form-submit),
+.page-citations select{
+    width: 70% !important;
+}
+
+#citation-results-div {
+    clear: both;
+    padding-top: 20px;
+}
+
+#citation-results-div .results-count{
+    color: #696559;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+#citation-table-div,
+.citation-table,
+.citation-subtable{
+    display: table;
+}
+
+.citation-subtable{
+    height: 100%;
+}
+
+#citation-table-div {
+    clear: both;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.citation-row {
+    display: table-row;
+}
+
+#citation-buttons-div {
+    width: 50%;
+    float: left;
+    margin-bottom: 20px;
+}
+
+#citation-buttons-div input{
+    margin: 5px;
+    padding: 7px 10px;
+}
+
+#citation-results-div .item-list {
+    width: 40%;
+    float: right;
+}
+
+#citation-results-div .pager {
+    margin: 10px 0px;
+}
+
+.citation-header {
+    text-transform: uppercase;
+}
+
+.citation-row,
+.citation-header {
+    display: table-row;
+}
+
+.citation-column {
+    display: table-column;
+}
+
+.citation-cell {
+    display: table-cell;
+    padding: 0px 10px;
+}
+
+.citation-row > .citation-cell {
+    padding-top: 20px;
+}
+
+.citation-cell:not(.borderless){
+    border-right: 1px #696559 solid;
+}
+
+.citation-cell:not(.left-column){
+    padding-left: 5px;
+}
+
+/*
+.citation-cell.brief-title{
+    width: 25%;
+}
+
+.citation-cell.full-title{
+    width: 45%;
+}*/
+
+.citation-cell.brief-citation{
+    width: 35%;
+}
+
+.citation-cell.brief-citation div{
+    margin-bottom: 10px;
+}
+
+.citation-cell.brief-title{
+    min-width: 150px;
+}
+
+.citation-cell.id{
+    min-width: 100px;
+}
+
+.citation-cell.not-check{
+    min-width: 75px;
+}
+
+.citation-cell.not-check > .form-item{
+    margin: auto;
+    top: 10px;
+    padding-left: 10px;
+}
+
+/* citation-review specific */
+.citation-cell.brief-citation{
+    width: 325px;
+}
+
+.citation-cell.brief-citation div{
+    margin-bottom: 10px;
+}
+
+.citation-cell.summary-topic-check{
+    width: 70px;
+    text-align: center;
+}
+
+.citation-cell.summary-topic-name{
+    width: 320px;
+}
+
+.citation-cell input{
+    margin: 0 0 5px;
+    padding: 0px;
+}
+
+.citation-cell .topic-checks{
+    margin-top: 10px;
+    margin-left: 30px;
+}
+
+.citation-cell .topic-checks .form-type-checkbox{
+    margin-left: 20px;
+}
