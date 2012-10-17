@@ -2245,7 +2245,7 @@ function getTopicIdByName($topicName) {
 function getTagIdByName($tagName) {
 
     $tagId = db_query(
-        'SELECT tag_id FROM {ebms_articletag_type} WHERE tag_name = :tagName',
+        'SELECT tag_id FROM {ebms_article_tag_type} WHERE tag_name = :tagName',
         array(':tagName' => $tagName))->fetchField();
 
     if (is_null($tagId))
