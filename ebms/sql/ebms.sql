@@ -882,6 +882,9 @@ CREATE TABLE ebms_article_state (
     CREATE INDEX ebms_article_state_topic_index
            ON ebms_article_state(topic_id, state_id, board_id, article_id, 
                            active_status);
+    CREATE INDEX ebms_current_article_state_article_index
+           ON ebms_article_state(current, article_id, state_id);
+
 
 /*
  * One or more optional comments can be associated with an 
