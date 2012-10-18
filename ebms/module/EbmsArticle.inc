@@ -2038,6 +2038,25 @@ EOS;
     return $html;
 }
 
+/**
+ * Generates a array of tag type names, indexed by their tag's text_id.
+ * 
+ * @return mixed An array mapping tag text_ids to tag_names.
+ */
+function getTagTypeNames() {
+    // query for the tag text IDs and tag names
+    $result = db_select('ebms_article_tag_type', 'a')
+        ->fields('a', array('text_id', 'tag_name'))
+        ->execute();
+
+    // load the results into a text_id => tag_name array.
+    $names = array();
+    foreach ($result as $record) {
+        $names[$record->text_id] = $record->tag_name;
+    }
+
+    return $names;
+}
 
 /**
  * Store the file ID in the Drupal file table for article full text.
