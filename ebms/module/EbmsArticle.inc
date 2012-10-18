@@ -2041,12 +2041,19 @@ EOS;
 /**
  * Generates a array of tag type names, indexed by their tag's text_id.
  * 
+ * @param bool $articleOnly only returns tags that do not require a board if true
  * @return mixed An array mapping tag text_ids to tag_names.
  */
-function getTagTypeNames() {
+function getTagTypeNames($articleOnly = true) {
     // query for the tag text IDs and tag names
-    $result = db_select('ebms_article_tag_type', 'a')
-        ->fields('a', array('text_id', 'tag_name'))
+    $query = db_select('ebms_article_tag_type', 'a')
+        ->condition('a.active_status', 'A');
+
+    // if only querying for article-compatible tags, add a condition
+    if ($articleOnly)
+        $query->condition('a.board_required', 'N');
+
+    $result = $query->fields('a', array('text_id', 'tag_name'))
         ->execute();
 
     // load the results into a text_id => tag_name array.
