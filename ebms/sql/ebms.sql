@@ -847,6 +847,10 @@ CREATE TABLE ebms_article_state_type (
  *  status_dt          Date and time the row/state was created.
  *  active_status      Set to 'I' if the state row was a mistake, or no
  *                      longer applicable because of later events.
+ *  current            Set to 'Y' if this is the most recent row in the table
+ *                     for a given article/topic combination.  Only applied
+ *                     to state rows created after conversion from the legacy
+ *                     system; default is 'N'.
  */
 CREATE TABLE ebms_article_state (
     article_state_id  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -857,6 +861,7 @@ CREATE TABLE ebms_article_state (
     user_id           INTEGER UNSIGNED NOT NULL,
     status_dt         DATETIME NOT NULL,
     active_status     ENUM('A','I') NOT NULL DEFAULT 'A',
+    current           ENUM('Y','N') NOT NULL DEFAULT 'N',
     FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
     FOREIGN KEY (board_id)   REFERENCES ebms_board(board_id),
     FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
@@ -1616,3 +1621,35 @@ when_searched DATETIME          NOT NULL,
   search_spec LONGTEXT          NOT NULL,
   FOREIGN KEY (searched_by)   REFERENCES users (uid))
        ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Queue for publishable articles.
+ *
+ * queue_id       automatically generated primary key
+ * when_created   date/time the queue was first requested
+ * requested_by   foreign key into Drupal's users table
+ * queue_filtler  JSON encoded filter criteria for queue's query
+ */
+ CREATE TABLE ebms_publish_queue
+    (queue_id INTEGER           NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ when_created DATETIME          NOT NULL,
+ requested_by INTEGER  UNSIGNED NOT NULL,
+ queue_filter LONGTEXT          NOT NULL,
+  FOREIGN KEY (requested_by)   REFERENCES users (uid))
+       ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Rows in the state table which the user has flagged for promoting to
+ * the Published state.
+ *
+ * queue_id          foreign key into the ebms_publish_queue table
+ * article_state_id  foreign key into the ebms_article_state table
+ */
+    CREATE TABLE ebms_publish_queue_flag
+       (queue_id INTEGER NOT NULL,
+article_state_id INTEGER NOT NULL,
+     PRIMARY KEY (queue_id, article_state_id),
+     FOREIGN KEY (queue_id) REFERENCES ebms_publish_queue (queue_id),
+     FOREIGN KEY (article_state_id)
+                 REFERENCES ebms_article_state (article_state_id))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
