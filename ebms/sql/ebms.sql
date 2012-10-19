@@ -925,10 +925,8 @@ CREATE TABLE ebms_article_state_comment (
  *  text_id             Human readable invariant name for code refs.
  *  tag_name            Human readable name.
  *  description         Longer, descriptive help text.
- *  board_required      'Y' = rows with this state must have a non-NULL
- *                        board_id.
- *                      We don't allow topics at all here, but boards are
- *                        a useful discriminator for searching.
+ *  topic_required      'Y' = rows with this state must have a non-NULL
+ *                        topic_id.
  *  active_status       'A'ctive or 'I'nactive.
  */
 CREATE TABLE ebms_article_tag_type (
@@ -936,29 +934,39 @@ CREATE TABLE ebms_article_tag_type (
     text_id             VARCHAR(16) NOT NULL UNIQUE,
     tag_name            VARCHAR(64) NOT NULL UNIQUE,
     description         VARCHAR(2048) NOT NULL,
-    board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'N',
+    topic_required      ENUM('Y', 'N') NOT NULL DEFAULT 'N',
     active_status       ENUM('A', 'I') NOT NULL DEFAULT 'A'
 )
     ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
     /* These are partly for illustration.  They may not last */
     INSERT ebms_article_tag_type 
-        (text_id, tag_name, description, board_required)
+        (text_id, tag_name, description, topic_required)
         VALUES ('q_search', 'Questionable search',
         'This article was imported as a result of a search, but the article '
         'appears to be out of scope and the search '
         'criteria may have been too broad.', 'N');
     INSERT ebms_article_tag_type 
-        (text_id, tag_name, description, board_required)
+        (text_id, tag_name, description, topic_required)
         VALUES ('q_init_review', 'Borderline initial review',
         'This was examined in initial review but no judgment made.  It was a '
         'borderline case.  Look at it again later.', 'N');
     INSERT ebms_article_tag_type 
-        (text_id, tag_name, description, board_required)
+        (text_id, tag_name, description, topic_required)
         VALUES ('q_bm_review', 'Borderline board manager review',
         'This was examined by a board manager but no judgment made.  It was a '
-        'borderline case.  Look at it again later.  A specific board must '
+        'borderline case.  Look at it again later.  A specific topic must '
         'be identified.', 'Y');
+    INSERT ebms_article_tag_type 
+        (text_id, tag_name, description, topic_required)
+        VALUES ('i_fasttrack', 'Import fast track',
+        'The article was imported as part of a fast track import process.  '
+        'A specific topic must be identified.', 'Y');
+    INSERT ebms_article_tag_type 
+        (text_id, tag_name, description, topic_required)
+        VALUES ('i_specialsearch', 'Import special search',
+        'The article was imported as part of a special search import '
+        'process.  A specific topic must be identified.', 'Y');
 
 /*
  * Descriptive tags that have been attached to an article.
@@ -966,7 +974,7 @@ CREATE TABLE ebms_article_tag_type (
  *  article_tag_id     Automatically generated primary key
  *  article_id         Unique ID in article table.
  *  tag_id             ID of the tag that this row records.
- *  board_id           Optional (depending on tag type) board for which this
+ *  topic_id           Optional (depending on tag type) topic for which this
  *                      tag was assigned.
  *  user_id            ID of the user who attached the tag to this article.
  *  tag_dt             Date and time the row/tag was created.
@@ -977,24 +985,24 @@ CREATE TABLE ebms_article_tag (
     article_tag_id    INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     article_id        INTEGER NOT NULL,
     tag_id            INTEGER NOT NULL,
-    board_id          INTEGER NULL,
+    topic_id          INTEGER NULL,
     user_id           INTEGER UNSIGNED NOT NULL,
     tag_dt            DATETIME NOT NULL,
     active_status     ENUM('A','I') NOT NULL DEFAULT 'A',
     FOREIGN KEY (article_id) REFERENCES ebms_article(article_id),
     FOREIGN KEY (tag_id)     REFERENCES ebms_article_tag_type(tag_id),
-    FOREIGN KEY (board_id)   REFERENCES ebms_board(board_id),
+    FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
     FOREIGN KEY (user_id)    REFERENCES users(uid)
 )
     ENGINE InnoDB DEFAULT CHARSET=utf8;
 
-    -- Search for articles by article, tag, or board
+    -- Search for articles by article, tag, or topic
     CREATE INDEX ebms_article_tag_article_index
            ON ebms_article_tag(article_id, tag_id, active_status);
     CREATE INDEX ebms_article_tag_tag_index
-           ON ebms_article_tag(tag_id, board_id, article_id, active_status);
-    CREATE INDEX ebms_article_tag_board_index
-           ON ebms_article_tag(board_id, tag_id, article_id, active_status);
+           ON ebms_article_tag(tag_id, topic_id, article_id, active_status);
+    CREATE INDEX ebms_article_tag_topic_index
+           ON ebms_article_tag(topic_id, tag_id, article_id, active_status);
 
 /*
  * One or more optional comments can be associated with an 
