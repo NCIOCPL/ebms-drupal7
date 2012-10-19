@@ -1151,7 +1151,8 @@ function setArticleState($articleId, $stateName, $topicId=null,
         'status_dt'    => $dateTime,
         'active_status'=> 'A',
         'board_id'     => $boardId,
-        'topic_id'     => $topicId
+        'topic_id'     => $topicId,
+        'current'      => 'Y'
     );
     $insQry = db_insert('ebms_article_state')
         ->fields($insFields);
@@ -1210,6 +1211,21 @@ function setArticleState($articleId, $stateName, $topicId=null,
                                            $userId, $dateTime);
             }
         }
+
+        // Remove the "current" flag from all existing rows for this
+        //  article, this topic.
+        // Note: This doesn't work if we allow states without topics,
+        //       but a decision was made to implement this quickly using
+        //       current assumptions.  We'll have to change it if and
+        //       when the assumptions no longer obtain.
+        $newVal = array();
+        $newVal['current'] = 'N';
+        $curQry = db_update('ebms_article_state');
+        $curQry->fields($newVal);
+        $curQry->condition('article_id', $articleId);
+        $curQry->condition('topic_id', $topicId);
+        $curQry->condition('current', 'Y');
+        $curQry->execute();
 
         // Now insert row
         $rowId = $insQry->execute();
@@ -1294,6 +1310,16 @@ function addArticleStateComment($articleStateId, $comment,
  *   1. Last state matching criteria?
  *   2. All last states matching criteria, e.g., 2 boards + 3 topics
  *
+ * XXX - ISSUE
+ *  Since this function was written we added a "current" column to the
+ *  ebms_article_state table.  It greatly simplifies searching for the
+ *  current article state.
+ *
+ *  However, due to issues regarding dirty data, we decided not to set
+ *  the column value to 'Y' for any legacy data.  The function below
+ *  should work for legacy data too (except where data is bad) and has
+ *  therefore been retained.  A simpler, faster version could be written
+ *  if we ignore legacy data and use the new column.
  */
 function getCurrentState($article_id, $topic_id=null, $board_id=null) {
 
@@ -1410,6 +1436,8 @@ class ArticleStatus {
         $topic_id,         // Summary topic ID
         $topic_name,       // String form topic name
         $active_status,    // 'A' = Active, 'I' = Inactive
+        $current,          // 'Y' = This is the latest state, else 'N'
+                           //  All legacy data is marked as 'N'
         $comments;         // Array of 0 or more EbmsComents
 
     /**
@@ -1419,8 +1447,13 @@ class ArticleStatus {
      */
     public function toHtml() {
 
-        // Distinguish active from inactive rows
-        $active = ($this->active_status == 'A') ? 'activeStat' : 'inactiveStat';
+        // Distinguish current, active, inactive rows
+        if ($this->current == 'Y')
+            $active = 'currentStat';
+        else if ($this->active_status == 'A')
+            $active = 'activeStat';
+        else
+            $active = 'inactiveStat';
 
         // Construct the row
         $html = <<<EOS
@@ -1504,7 +1537,7 @@ function getStatusHistory($articleId, $boardId=null, $topicId=null,
     $qry->leftjoin('ebms_topic', 'topic',
                'state.topic_id = topic.topic_id');
     $qry->fields('state', array('article_state_id', 'state_id', 'user_id',
-                      'status_dt', 'board_id', 'topic_id', 'active_status'))
+             'status_dt', 'board_id', 'topic_id', 'active_status', 'current'))
         ->fields('stype', array('state_name', 'sequence'))
         ->fields('usr',   array('name'))
         ->fields('board', array('board_name'))
@@ -1570,6 +1603,7 @@ function getStatusHistory($articleId, $boardId=null, $topicId=null,
         $st->topic_id         = $sd->topic_id;
         $st->topic_name       = $sd->topic_name;
         $st->active_status    = $sd->active_status;
+        $st->current          = $sd->current;
         $st->comments         = array();
 
         // Save it, indexed by state row ID
@@ -1659,6 +1693,7 @@ function statusHistoryToHtml($history) {
 #table { border: 5 px; }
  .inactiveStat { color: grey; }
  .activeStat   { color: blue; }
+ .currentStat  { color: red; }
 #testresults {
  width: 80%;
  margin-left: 10%;
@@ -1669,7 +1704,8 @@ function statusHistoryToHtml($history) {
 <div id='testresults'>
 <h3>Status History</h3>
 <p class="activeStat">Active records shown in this color.<br />
-<span class="inactiveStat">Inactivated records are in this color.</span></p>
+<span class="inactiveStat">Inactivated records are in this color.</span><br />
+<span class="currentStat">The "current" state is in this color.</span></p>
 <table class='debug' border='1'>
  <tr>
   <th>DateTime<br />ArtID/StateID</th>
@@ -1698,8 +1734,8 @@ class EbmsArticleTag {
         $type_name,        // External human readable name of tag type
         $user_id,          // User assigning this tag
         $user_name,        // His/her name
-        $board_id,         // Editorial board ID
-        $board_name,       // String form board name
+        $topic_id,         // Summary topic ID
+        $topic_name,       // String form topic name
         $active_status,    // 'A' = Active, 'I' = Inactive
         $comments;         // Array of 0 or more EbmsComents
 
@@ -1719,7 +1755,7 @@ class EbmsArticleTag {
  <td>$this->dt<br />$this->article_id / $this->article_tag_id</td>
  <td class='tagname'>$this->type_name<br />$this->type_text_id / $this->type_id</td>
  <td>$this->user_name<br />$this->user_id</td>
- <td>$this->board_name<br />$this->board_id</td>
+ <td>$this->topic_name<br />$this->topic_id</td>
 </tr>
 EOS;
 
@@ -1739,7 +1775,7 @@ EOS;
  *
  *  @param string $tagIdStr Unique name of the tag to add.
  *  @param int $articleId   Unique ID of the article.
- *  @param int $boardId     Optional unique ID of an editorial board
+ *  @param int $topicId     Optional unique ID of a summary topic.
  *  @param string $comment  Optional comment to associate with the tag.
  *  @param int $userId      Optional user ID, default=current user.
  *
@@ -1747,7 +1783,7 @@ EOS;
  *
  *  @throws Exception       If serious parameter error.
  */
-function addArticleTag($tagIdStr, $articleId, $boardId=null,
+function addArticleTag($tagIdStr, $articleId, $topicId=null,
                        $comment=null, $userId=null) {
 
     // Check parms
@@ -1762,9 +1798,10 @@ function addArticleTag($tagIdStr, $articleId, $boardId=null,
     if (!$tagType)
         throw new \Exception("addArticleTag: Unknown tag type $tagIdStr");
 
-    // If board ID is required, is it present?
-    if (is_null($boardId) && $tagType->board_required == 'Y')
-        throw new \Exception("addArticleTag: '$tagIdStr' requires board ID");
+    // If topic ID is required, is it present?
+    // If topic is illegal, the database will throw an exception
+    if (is_null($topicId) && $tagType->topic_required == 'Y')
+        throw new \Exception("addArticleTag: '$tagIdStr' requires topic ID");
 
     // Get default user from global if not passed
     if (!$userId)
@@ -1775,7 +1812,7 @@ function addArticleTag($tagIdStr, $articleId, $boardId=null,
     $qry = db_insert('ebms_article_tag');
     $qry->fields(array('article_id' => $articleId,
                        'tag_id'     => $tagType->tag_id,
-                       'board_id'   => $boardId,
+                       'topic_id'   => $topicId,
                        'user_id'    => $userId,
                        'tag_dt'     => $tagDt));
     $articleTagId = $qry->execute();
@@ -1865,8 +1902,8 @@ EOS
  * Retrieve the complete tag history for an article.
  *
  *  @param int $articleId       Unique article ID
- *  @param int $boardId         If present, get tag info that has no board
- *                               (i.e. all boards) or the specified board ID.
+ *  @param int $topicId         If present, only get tag info that has the
+ *                               specified topic ID.  Else get all tag info.
  *                               Default null.
  *  @param string $tagIdStr     Text identifier of tag.  If null, get all tags.
  *                               Default null.
@@ -1879,17 +1916,15 @@ EOS
  *  @param string $order        Sort order for tags, a string containing
  *                               a single letter code for each sort key:
  *                               'D' = Date
- *                               'B' = Board name
+ *                               'T' = Topic name
  *                               'N' = Tag name
- *                               'T' = Tag text ID
+ *                               'X' = Tag text ID
  *                               'U' = User name (firstname lastname)
  *                              Default = 'ND'.
  *
  *  @return array of ArticleStatus objects with all info.
- *
- *  @throws Exception if invalid board/topic combo, or other error.
  */
-function getTagHistory($articleId, $boardId=null, $tagIdStr=null,
+function getTagHistory($articleId, $topicId=null, $tagIdStr=null,
                        $incComments=true, $inactive=false, $order='TD') {
 
     // Create the query
@@ -1898,22 +1933,22 @@ function getTagHistory($articleId, $boardId=null, $tagIdStr=null,
                'tag.tag_id = ttype.tag_id');
     $qry->leftjoin('users', 'usr',
                    'tag.user_id = usr.uid');
-    $qry->leftjoin('ebms_board', 'board',
-                   'tag.board_id = board.board_id');
-    $qry->fields('tag', array('article_tag_id', 'tag_id', 'board_id',
+    $qry->leftjoin('ebms_topic', 'topic',
+                   'tag.topic_id = topic.topic_id');
+    $qry->fields('tag', array('article_tag_id', 'tag_id', 'topic_id',
                  'user_id', 'tag_dt', 'active_status'))
         ->fields('ttype', array('tag_name', 'text_id'))
-        ->fields('board', array('board_name'))
+        ->fields('topic', array('topic_name'))
         ->fields('usr', array('name'));
 
     // Selection critera
     $qry->condition('tag.article_id', $articleId);
-    if ($boardId) {
-        // Get everything for this board, or with no board identified
-        // Otherwise, no bard restrictions at all
+    if ($topicId) {
+        // Get everything for this topic, or with no topic identified
+        // Otherwise, no topic restrictions at all
         $qry->condition(
-            db_or()->condition('tag.board_id', $boardId)
-                   ->isNull('tag.board_id'));
+            db_or()->condition('tag.topic_id', $topicId)
+                   ->isNull('tag.topic_id'));
     }
     if (!$inactive)
         $qry->condition('tag.active_status', 'A');
@@ -1922,9 +1957,9 @@ function getTagHistory($articleId, $boardId=null, $tagIdStr=null,
     for ($i=0; $i<strlen($order); $i++) {
         switch ($order[$i]) {
             case 'D': $fld = 'tag.tag_dt';       break;
-            case 'B': $fld = 'board.board_name'; break;
+            case 'T': $fld = 'topic.topic_name'; break;
             case 'N': $fld = 'ttype.tag_name';   break;
-            case 'T': $fld = 'ttype.text_id';    break;
+            case 'X': $fld = 'ttype.text_id';    break;
             case 'U': $fld = 'usr.name';         break;
             default:
                 throw new \Exception(
@@ -1948,8 +1983,8 @@ function getTagHistory($articleId, $boardId=null, $tagIdStr=null,
         $tt->type_name      = $td->tag_name;
         $tt->user_id        = $td->user_id;
         $tt->user_name      = $td->name;
-        $tt->board_id       = $td->board_id;
-        $tt->board_name     = $td->board_name;
+        $tt->topic_id       = $td->topic_id;
+        $tt->topic_name     = $td->topic_name;
         $tt->active_status  = $td->active_status;
         $comments           = array();
 
@@ -2030,7 +2065,7 @@ function tagHistoryToHtml($tagHistory) {
   <th>DateTime<br />ArtID/TagID</th>
   <th>TypeName<br />TagTextID / TypeTypeId</th>
   <th>UserName<br />UserID</th>
-  <th>BoardName<br />BoardID</th>
+  <th>TopicName<br />TopicID</th>
  </tr>
 EOS;
     $html .= implode('', $histHtmlArray) . "</table>\n</div>\n";
@@ -2040,8 +2075,9 @@ EOS;
 
 /**
  * Generates a array of tag type names, indexed by their tag's text_id.
- * 
- * @param bool $articleOnly only returns tags that do not require a board if true
+ *
+ * @param bool $articleOnly only returns tags that do not require a board
+ *                          if true
  * @return mixed An array mapping tag text_ids to tag_names.
  */
 function getTagTypeNames($articleOnly = true) {
