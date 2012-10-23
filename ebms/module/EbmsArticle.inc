@@ -2418,4 +2418,83 @@ function getTopicBoard ($topicId) {
     return $boardId;
 }
 
+/**
+ * Retrieves the related packets for a given article id, optionally limiting
+ * the results by a topic id.
+ * 
+ * @param int $article_id    the article id to match.   
+ * 
+ * @param int $topic_id    the optional topic id.
+ * 
+ *  @return mixed $packet_ids    Array of packet ids matching the article and 
+ *                               topic.
+ */
+function getArticlePacketIds($article_id, $topic_id = NULL) {
+    $query = db_select('ebms_packet_article', 'a');
+    $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
+    
+    if($topic_id != NULL){
+        $query->condition('p.topic_id', $topic_id);
+    }
+    
+    $packet_ids = $query
+        ->condition('a.article_id', $article_id)
+        ->condition('a.drop_flag', 0)
+        ->condition('p.active_status', 'A')
+        ->fields('a', array('packet_id'))
+        ->execute()
+        ->fetchCol();
+
+    return $packet_ids;
+}
+
+/**
+ * Collects a variety of information about a given packet and organizes it into
+ * a labeled array.
+ * 
+ * @param int $packet_id        The id of the packet of interest.
+ * 
+ * @return mixed $packet_info   An associative array of packet information.
+ */
+function getPacketInfo($packet_id) {
+    $info = db_select('ebms_packet', 'p')->condition('p.packet_id', $packet_id)
+        ->fields('p')->execute()->fetch();
+    
+    // also retrieve the reviewer ids
+    $reviewers = db_select('ebms_packet_reviewer', 'r')
+        ->condition('r.packet_id', $packet_id)
+        ->fields('r', array('reviewer_id'))
+        ->execute()
+        ->fetchCol();
+    
+    $info->reviewers = $reviewers;
+    
+    return $info;
+}
+
+/**
+ * Retrieves each board member's response for a topic of a particular article.
+ * 
+ * @param int $article_id   the id of the article.
+ * 
+ * @param int $topic_id     the topic id used to filter the reponses.
+ * 
+ * @return mixed $reponses  an array of DB records containing pertinent info.
+ */
+function getBoardMemberResponses($article_id, $topic_id) {
+    $query = db_select('ebms_article_review', 'r');
+    $query->join('ebms_review_disposition', 'd', 'r.review_id = d.review_id');
+    $query->join('ebms_review_disposition_value', 'v', 'd.value_id = v.value_id');
+    $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+
+    return $query->fields('r')
+            ->fields('p', array('packet_id', 'topic_id'))
+            ->fields('d', array('value_id'))
+            ->fields('v', array('value_name', 'instructions'))
+            ->condition('r.article_id', $article_id)
+            ->condition('p.topic_id', $topic_id)
+            ->execute()
+            ->fetchAll();
+}
+
 ?>
