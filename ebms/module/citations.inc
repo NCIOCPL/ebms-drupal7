@@ -33,9 +33,6 @@ function pdq_ebms_citations($action = null, $article_id = null) {
     global $user;
     $is_librarian = in_array('medical librarian', $user->roles);
 
-    //$fragment = $is_librarian ? 'is' : 'is not';
-    //dsm($user, "$user->name $fragment a librarian");
-
     Ebms\Menu::$active = 'Citation Management';
     drupal_set_title('Citation Management');
     $crumbs = array(
@@ -184,9 +181,6 @@ function pdq_ebms_citation_not_list($form, &$form_state) {
 }
 
 function pdq_ebms_citation_not_list_submit($form, &$form_state) {
-
-    //dsm($form_state, 'form state');
-
     $form_state['rebuild'] = true;
 
     // always update the changed list
@@ -199,8 +193,6 @@ function pdq_ebms_citation_not_list_submit($form, &$form_state) {
         if (!empty($form_state['values']['submit_source'])) {
             $op = $form_state['values']['submit_source'];
         }
-
-        //dsm("op = $op");
 
         switch ($op) {
             case 'Reset':
@@ -224,11 +216,9 @@ function pdq_ebms_citation_not_list_submit($form, &$form_state) {
     if ($clear_states)
         $form_state['altered_states'] = array();
 
-    //dsm($form_state['altered_states'], 'altered states');
     // wipe out button values so that the default_states calculated from
     // altered states can take effect
     _clear_journal_select($form_state['input'], 'input');
-    //pdq_ebms_clear_journal_select($form_state['values'], 'values');
 }
 
 // parse the values from the form state, keep the journals that have changed
@@ -246,10 +236,8 @@ function _update_journal_select(&$form_state) {
             // if the differ, add to $altered_states,
             // else remove
             if (strrpos($hash, (string) $value) == (strlen($hash) - 1)) {
-                //dsm("Found state $value at end of hash $hash");
                 unset($altered_states[$hash]);
             } else {
-                //dsm("Did not find state $value at end of hash $hash");
                 $altered_states[$hash] = $value;
             }
         }
@@ -266,12 +254,8 @@ function _clear_journal_select(&$target, $desc) {
         }
     }
 
-    //dsm($target, "$desc initial keys");
-
     $diff = array_diff_key($target, $button_keys);
 
-    //dsm($button_keys, "$desc check keys");
-    //dsm($diff, "$desc final keys");
     $target = $diff;
 }
 
@@ -471,11 +455,6 @@ function _not_list_results($form, &$form_state, $board, $brief_title, $full_titl
 
 function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
     require_once('EbmsArticle.inc');
-    global $user;
-    $fragment = $is_librarian ? 'is' : 'is not';
-    //dsm($user, "$user->name $fragment a librarian");
-
-    $form_size = sizeof($form_state);
 
     //include js to redirect pager links
     $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
@@ -522,7 +501,7 @@ function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
             try {
                 $result = db_select('ebms_topic', 't')->condition('board_id', $board_id)->fields('t')->execute();
             } catch (Exception $e) {
-                //dsm($e, 'topic query exception!');
+                
             }
             foreach ($result as $record) {
                 $form['citation_queue']['topic_select']['#options'][$record->topic_id] = $record->topic_name;
@@ -633,7 +612,6 @@ function _citation_queue_results(&$form, &$form_state, $is_librarian) {
 
         $result = $query->execute();
     } catch (Exception $e) {
-        //dsm('error with query');
         $num_rows = -1;
         $result = array();
     }
@@ -840,9 +818,6 @@ function _citation_queue_results(&$form, &$form_state, $is_librarian) {
 }
 
 function pdq_ebms_citation_queue_submit($form, &$form_state) {
-
-    //dsm($form_state, 'submit form_state');
-
     $is_librarian = $form_state['build_info']['args'][0];
 
     _update_topic_actions($form_state);
@@ -856,8 +831,6 @@ function pdq_ebms_citation_queue_submit($form, &$form_state) {
         if (!empty($form_state['values']['submit_source'])) {
             $op = $form_state['values']['submit_source'];
         }
-
-        //dsm("op = $op");
 
         switch ($op) {
             case 'Reset':
@@ -942,8 +915,6 @@ function _cite_article($article, $long_form = true) {
         $tPMID = '<div class="citation-subheader">PMID</div>';
         $tCMSID = '<div class="citation-subheader">CMS ID</div>';
         $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLE</div>';
-
-        //dsm($xml, 'citation xml');
 
         $cmsId = $article_id;
         /* $cycleYear = $doc->MedlineCitation->DateCreated->Year;
@@ -1045,12 +1016,7 @@ function _clear_topic_actions(&$target, $desc) {
         }
     }
 
-    //dsm($target, "$desc initial keys");
-
     $diff = array_diff_key($target, $button_keys);
-
-    //dsm($button_keys, "$desc check keys");
-    //dsm($diff, "$desc final keys");
     $target = $diff;
 }
 
@@ -1064,8 +1030,6 @@ function _clear_topic_actions(&$target, $desc) {
 function _write_topic_states($values, $initial_state) {
     // first, ensure the topic is valid
     global $citations_state_map;
-    /* if (!isset($citations_state_map[$initial_state]))
-      dsm("Bad initial state = $initial_state"); */
 
     $reject_name = $citations_state_map[$initial_state]['reject'];
     $pass_name = $citations_state_map[$initial_state]['pass'];
@@ -1086,7 +1050,6 @@ function _write_topic_states($values, $initial_state) {
         // (both selected, neither selected)
         // ((shouldn't actually happen))
         if ($pass == $reject) {
-            //dsm("matching states for hash $hash, both == $reject!");
             continue;
         }
         // else if pass is set, use the pass name
@@ -1096,7 +1059,6 @@ function _write_topic_states($values, $initial_state) {
         // otherwise, reject is already chosen and should be set
         // update the article's state
         $row_id = Ebms\setArticleState($article_id, $new_state_name, $topic_id);
-        //dsm("$row_id returned for setting $article_id / $topic_id to $new_state_name");
     }
 }
 
@@ -1104,7 +1066,6 @@ function pdq_ebms_full_citation($form, &$form_state, $articleId) {
     require_once('EbmsArticle.inc');
 
     $article = new Ebms\EbmsArticle($articleId);
-    //dsm("full citation for article $article_id");
 
     $cite = _cite_article($article);
 
@@ -1115,37 +1076,111 @@ function pdq_ebms_full_citation($form, &$form_state, $articleId) {
 
     // build the citation tags    
     $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');
+
     // reverse order so most recent is first
     $tags = array_reverse($tags);
     $form['article_tags'] = _format_tags($form_state, $tags, $articleId);
 
     // build the board topics
     $history = Ebms\getStatusHistory($articleId, null, null, true, true, 'BTS');
-    $form['editorial_boards'] = _format_boards($article, $history);
+    $form['editorial_boards'] = _format_boards($form_state, $article, $history, $tags);
 
-    //dsm($form, 'full citation form');
+    // need to ensure that the fieldsets leading to any triggered element
+    // are expanded
+    if (isset($form_state['triggering_element']['#array_parents'])) {
+        $parents = $form_state['triggering_element']['#array_parents'];
+        $path = &$form;
+        foreach ($parents as $parent) {
+            $path = &$path[$parent];
+
+            if (isset($path['#type']) && $path['#type'] == 'fieldset') {
+                $path['#collapsed'] = false;
+            }
+        }
+    }
 
     return $form;
 }
 
-/* function pdq_ebms_full_citation_submit($form, &$form_state) {
-  dsm($form_state, 'full citation submit form_state');
-  } */
+function pdq_ebms_full_citation_submit($form, &$form_state) {
+    $form_state['rebuild'] = TRUE;
+}
 
 /**
  * Formats an article or topic tag for rendering.
  * @param EbmsArticleTag $tag
  * @return mixed the formatted render array.
  */
-function _format_tag($tag) {
+function _format_tag($tag, $form_state = null) {
     $form = array();
-
-    $form['#prefix'] = '<div class="full-citation-tag">';
-    $form['#suffix'] = '</div>';
 
     $date = _format_date($tag->dt);
     $form['article_tag'] = array('#markup' => "<div>$tag->type_name - $date - $tag->user_name</div>");
+    if ($form_state != null) {
+        $form['article_tag']['#prefix'] = '<div class="full-citation-tag full-citation-indent">';
+        $form['article_tag']['#suffix'] = '</div>';
+    }
+
+    if ($form_state != null) {
+        //drop in 'add comment' button
+        $form['article_tag_comment_add_button'] =
+            _build_add_tag_comment_button($form_state, $tag->article_tag_id);
+    }
+
     $form['article_tag_comment'] = _format_comments($tag->comments);
+
+    if ($form_state != null) {
+        // indent the tag to clear the button
+        $form['article_tag_comment']['#prefix'] = '<div class="full-citation-element">';
+        $form['article_tag_comment']['#suffix'] = '</div>';
+    }
+
+    return $form;
+}
+
+function _build_add_tag_comment_button($form_state, $articleTagId) {
+    $form = array();
+
+    $hash = $articleTagId;
+    $buttonId = "add_tag_comment_$hash";
+
+    // check if related form is triggered
+    $triggered = _is_triggered_by($form_state, $buttonId);
+
+    if ($triggered) {
+        // grab icon for button
+        $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddComment_Icon_Active.png';
+
+        // create add tag button
+        $form[$buttonId] = array(
+            '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+        );
+
+        // create add comment form 
+        $formId = "add_tag_comment_form_$hash";
+        $form[$formId] = _build_add_tag_comment_form($articleTagId);
+        $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+        $form[$formId]['#suffix'] = '</div>';
+    } else {
+        // grab icon for button
+        $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddComment_Icon_Inactive.png';
+
+        // create add tag button
+        $form[$buttonId] = array(
+            '#type' => 'image_button',
+            '#return_value' => $buttonId,
+            '#src' => $iconPath,
+            '#ajax' => array(
+                'callback' => '_ajax_full_citation',
+                'wrapper' => 'citation-form-div',
+            ),
+            '#attributes' => array(
+                'class' => array('full-citation-button', 'image-button'),
+            ),
+        );
+    }
+
+
 
     return $form;
 }
@@ -1159,11 +1194,20 @@ function _format_date($dt) {
 
 function _format_comments($comments) {
     $form = array();
-    if (!empty($comments)) {
+
+    $commentTexts = array();
+    foreach ($comments as $comment) {
+        if (empty($comment->text))
+            continue;
+
+        $date = _format_date($comment->dt);
+
+        $commentTexts[] = "$date - $comment->user_name<br />$comment->text";
+    }
+
+    if (!empty($commentTexts)) {
         $markup = '<div class="citation-comment">COMMENTS: ';
-        foreach ($comments as $comment) {
-            $markup .= "$comment->text<br /><br />";
-        }
+        $markup .= implode('<br /><br />', $commentTexts);
         $markup .= "</div>";
         $form['#markup'] = $markup;
     }
@@ -1179,59 +1223,37 @@ function _format_comments($comments) {
 function _format_tags($form_state, $tags, $articleId, $topicId = null) {
     $form = array();
 
-    $board_tags = array();
-    foreach ($tags as $tag) {
-        $board_id = $tag->board_id;
-        if ($board_id)
-            $board_tags[$board_id][] = $tag;
-        else
-            $board_tags[0][] = $tag;
-    }
+    // organize the tags by topic
+    $topic_tags = _build_tag_array($tags);
 
-    //dsm($board_tags);
-    //dsm($tags, "article tags");
+    // determine the desired topic id, 0 representing topicless tags
+    $targetTopicId = $topicId;
+    if ($topicId == null)
+        $targetTopicId = 0;
 
-    if (isset($board_tags[0])) {
-        $tag = array_shift($board_tags[0]);
+    // generate the add tag button (or placeholder if triggered)
+    $form['article_tag_add_button'] = _build_add_tag_button($form_state, $articleId, $topicId);
 
-        $hash = "$articleId";
-        $buttonId = "add_tag_$hash";
-        //$divId = "tag_div_$hash";
+    //add header
+    $form['article_tag_header'] = array('#markup' => '<div class="citation-subheader">Tag(s)</div>');
+    $form['article_tag_header']['#prefix'] = '<div class="full-citation-indent">';
+    $form['article_tag_header']['#suffix'] = '</div>';
 
-        /* $form['#prefix'] = "<div id='$divId'>";
-          $form['#suffix'] = '</div>'; */
+    if (isset($topic_tags[$targetTopicId])) {
+        $tag = array_shift($topic_tags[$targetTopicId]);
 
-        $form[$buttonId] = array(
-            '#type' => 'button',
-            '#value' => '+',
-            '#ajax' => array(
-                'callback' => '_ajax_add_tag',
-                'wrapper' => 'citation-form-div',
-            ),
-            '#attributes' => array(
-                'class' => array('full-citation-button'),
-            ),
-        );
-        $form['article_tag_header'] = array('#markup' => '<div class="citation-subheader">Tag(s)</div>');
-
-        if (isset($form_state['triggering_element']['#parents']) &&
-            in_array($buttonId, $form_state['triggering_element']['#parents']) &&
-            $form_state['triggering_element']['#value'] == '+') {
-            $form["add_tag_form_$hash"] = _build_add_tag_form($articleId);
-        }
-
-        $form['latest_article_tag'] = _format_tag($tag);
+        $form['latest_article_tag'] = _format_tag($tag, $form_state);
     }
 
     // include the rest of the tags in a fieldset
     $article_tags = array();
-    if (isset($board_tags[0])) {
-        foreach ($board_tags[0] as $tag) {
+    if (isset($topic_tags[$targetTopicId])) {
+        foreach ($topic_tags[$targetTopicId] as $tag) {
             $article_tags[] = _format_tag($tag);
         }
     }
-    //dsm($article_tags);
 
+    // add the remaining tags to a collapsible set
     if (!empty($article_tags)) {
         $form['past_article_tags'] = array(
             '#type' => 'fieldset',
@@ -1239,50 +1261,112 @@ function _format_tags($form_state, $tags, $articleId, $topicId = null) {
             '#collapsible' => TRUE,
             '#collapsed' => TRUE,
             'tags' => $article_tags,
+            '#prefix' => '<div class="full-citation-element">',
+            '#suffix' => '</div>'
         );
     }
 
     return $form;
 }
 
+function _build_tag_array($tags) {
+    $topic_tags = array();
+    foreach ($tags as $tag) {
+        $tag_topic_id = $tag->topic_id;
+        if (isset($tag_topic_id))
+            $topic_tags[$tag_topic_id][] = $tag;
+        else
+            $topic_tags[0][] = $tag;
+    }
+
+    return $topic_tags;
+}
+
+function _build_add_tag_button($form_state, $articleId, $topicId) {
+    $form = array();
+
+    // create hash for article/topic
+    $hash = "$articleId|$topicId";
+
+    $buttonId = "add_tag_$hash";
+
+    // check if related form is triggered
+    $triggered = _is_triggered_by($form_state, $buttonId);
+
+    if ($triggered) {
+        // grab icon for button
+        $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png';
+
+        // create add tag button
+        $form[$buttonId] = array(
+            '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+        );
+
+        $formId = "add_tag_form_$hash";
+        $form[$formId] = _build_add_tag_form($articleId, $topicId);
+        $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+        $form[$formId]['#suffix'] = '</div>';
+    } else {
+        // grab icon for button
+        $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png';
+
+        // create add tag button
+        $form[$buttonId] = array(
+            '#type' => 'image_button',
+            '#return_value' => $buttonId,
+            '#src' => $iconPath,
+            '#ajax' => array(
+                'callback' => '_ajax_full_citation',
+                'wrapper' => 'citation-form-div',
+            ),
+            '#attributes' => array(
+                'class' => array('full-citation-button', 'image-button'),
+            ),
+        );
+    }
+
+    return $form;
+}
+
+/**
+ * Checks if the form has been triggered by an element with a particular return
+ * value.
+ * 
+ * @param mixed $form_state     The current form state.
+ * @param string $element_value The return value of interest.
+ * @return bool                 Returns true if the form state has a triggering
+ *                              element with the given return value.
+ */
+function _is_triggered_by($form_state, $element_value) {
+    return (isset($form_state['triggering_element']['#return_value']) &&
+        $form_state['triggering_element']['#return_value'] == $element_value);
+}
+
 function _build_add_tag_form($article_id, $topic_id = null) {
     $form = array();
 
-    $hash = "$article_id";
+    $hash = "$article_id|$topic_id";
 
-    $options = Ebms\getTagTypeNames();
+    $articleOnly = ($topic_id == null);
 
-    $form["tag_select_$hash"] = array(
-        '#type' => 'select',
-        '#title' => 'Tag',
-        //'#title_display' => 'after',
-        '#options' => $options, //array(0 => t('All Boards')),
-        //'#prefix' => '<div class="citation-input-div">',
-        //'#suffix' => '</div>',
-        '#required' => true,
-        //'#default_value' => $board,
-    );
+    $options = Ebms\getTagTypeNames($articleOnly);
 
     $form["tag_select_$hash"] = array(
         '#type' => 'select',
-        '#title' => t('Tag'),
-        //'#title_display' => 'after',
-        '#options' => $options, //array(0 => t('All Boards')),
-        //'#prefix' => '<div class="citation-input-div">',
-        //'#suffix' => '</div>',
+        '#title' => t('Add Tag'),
+        '#options' => $options,
         '#required' => true,
-        //'#default_value' => $board,
     );
 
     $form["tag_comment_$hash"] = array(
         '#type' => 'textfield',
-        '#title' => 'Comment',
+        '#title' => t('Comment'),
         '#required' => true,
     );
 
     $form["tag_save_$hash"] = array(
         '#type' => 'submit',
-        '#value' => 'Save',
+        '#value' => t('Save'),
         '#submit' => array('_add_tag_save'),
     );
 
@@ -1290,27 +1374,75 @@ function _build_add_tag_form($article_id, $topic_id = null) {
         '#type' => 'submit',
         '#value' => 'Cancel',
         '#limit_validation_errors' => array(),
-        //'#validate' => array(),
-        '#submit' => array('_add_tag_cancel'),
+        '#submit' => array('_form_cancel'),
     );
 
     return $form;
 }
 
-function _add_tag_cancel($form, &$form_state) {
-    
+function _form_cancel($form, &$form_state) {
+    $form_state['rebuild'] = TRUE;
 }
 
 function _add_tag_save($form, &$form_state) {
     require_once('EbmsArticle.inc');
 
+    $form_state['rebuild'] = TRUE;
+
     $values = _retrieve_hash_values($form_state, array('tag_select', 'tag_comment'));
 
     $tagIdStr = $values['tag_select'];
     $comment = $values['tag_comment'];
-    $articleId = $values['hash'];
+    $hash = $values['hash'];
 
-    Ebms\addArticleTag($tagIdStr, $articleId, NULL, $comment);
+    // split the hash into articleId and topicId
+    list($articleId, $topicId) = explode("|", $hash);
+
+    // bind topicId to null if undefined
+    if (!$topicId)
+        $topicId = null;
+
+    Ebms\addArticleTag($tagIdStr, $articleId, $topicId, $comment);
+}
+
+function _build_add_tag_comment_form($articleTagId) {
+    $form = array();
+
+    $hash = "$articleTagId";
+
+    $form["tag_comment_$hash"] = array(
+        '#type' => 'textfield',
+        '#title' => t('Add Comment'),
+        '#required' => true,
+    );
+
+    $form["tag_save_$hash"] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+        '#submit' => array('_add_tag_comment_save'),
+    );
+
+    $form["tag_cancel_$hash"] = array(
+        '#type' => 'submit',
+        '#value' => t('Cancel'),
+        '#limit_validation_errors' => array(),
+        '#submit' => array('_form_cancel'),
+    );
+
+    return $form;
+}
+
+function _add_tag_comment_save($form, &$form_state) {
+    require_once('EbmsArticle.inc');
+
+    $form_state['rebuild'] = TRUE;
+
+    $values = _retrieve_hash_values($form_state, array('tag_comment'));
+
+    $comment = $values['tag_comment'];
+    $articleTagId = $values['hash'];
+
+    Ebms\addTagComment($articleTagId, $comment);
 }
 
 function _retrieve_hash_values($form_state, $stems) {
@@ -1338,21 +1470,14 @@ function _retrieve_hash_values($form_state, $stems) {
     return $values;
 }
 
-/* function _form_add_tag_submit($form, &$form_state) {
-  dsm('_form_add_tag_submit!');
-
-  $form_state['redirect'] = '/citations/full/12345';
-  } */
-
 /**
  * Formats an array of boards to their topic state histories for rendering.
  * @param mixed $history
  * @return mixed the formatted render array.
  */
-function _format_boards($article, $history) {
+function _format_boards($form_state, $article, $history, $tags) {
     $form = array();
 
-    //dsm($history);
     // divide into arrays by board and topic
     $board_topic_states = array();
     foreach ($history as $status) {
@@ -1361,17 +1486,15 @@ function _format_boards($article, $history) {
         }
     }
 
-    //dsm($board_topic_states);
-
-    $form['board_header'] = array("#markup" => '<div class="citation-subheader">Editorial Board(s)</div>');
+    $form['boards_header'] = array("#markup" => '<div class="citation-subheader">Editorial Board(s)</div>');
 
     foreach ($board_topic_states as $board_name => $topics) {
-        $form['board_topic'][] = array(
+        $form[$board_name] = array(
             '#type' => 'fieldset',
             '#title' => $board_name,
             '#collapsible' => TRUE,
             '#collapsed' => TRUE,
-            'topics' => _format_topics($article, $topics),
+            'topics' => _format_topics($form_state, $article, $topics, $tags),
         );
     }
 
@@ -1383,11 +1506,11 @@ function _format_boards($article, $history) {
  * @param mixed $topics
  * @return mixed the formatted render array.
  */
-function _format_topics($article, $topics) {
+function _format_topics($form_state, $article, $topics, $tags) {
     $form = array();
 
     foreach ($topics as $topic_name => $topic_sequences) {
-        $form[] = _format_topic($article, $topic_name, $topic_sequences);
+        $form[$topic_name] = _format_topic($form_state, $article, $topic_name, $topic_sequences, $tags);
     }
 
     return $form;
@@ -1399,27 +1522,51 @@ function _format_topics($article, $topics) {
  * @param mixed $topic_states
  * @return mixed the formatted render array.
  */
-function _format_topic($article, $topic, $topic_sequences) {
+function _format_topic($form_state, $article, $topicName, $topic_sequences, $tags) {
     $form = array();
 
-    $form['topic_header'] = array("#markup" => "<div class='citation-subheader'>Summary Topic</div>");
-    $form['topic'] = array("#markup" => "<div>$topic</div>");
-    //$form['board_topic_states'] = _format_topic_sequences($topic_sequences);
-    $form['topic_nci_reviewer_decision'] = _format_topic_nci_reviewer_decision($topic, $topic_sequences);
-    $form['topic_full_text_decision'] = _format_topic_full_text_decision($article, $topic);
-    $form['topic_nci_surveillance_decision'] = _format_topic_surveillance_decision($topic, $topic_sequences);
+    // retrieve the relevant ids for this article and topic
+    // topic id should have error-checking, but originates from an error-checked
+    // method
+    $articleId = $article->getId();
+    $topicId = Ebms\getTopicIdByName($topicName);
+
+    $form['topic_header'] = _format_topic_header($topicName);
+    $form['topic_tags'] = _format_tags($form_state, $tags, $articleId, $topicId);
+    $form['topic_nci_reviewer_decision'] = _format_topic_nci_reviewer_decision($topic_sequences);
+    $form['topic_full_text_decision'] = _format_topic_full_text_decision($article);
+    $form['topic_nci_surveillance_decision'] = _format_topic_surveillance_decision($topic_sequences);
+    $form['topic_assigned_for_review_decision'] = _format_topic_assigned_for_review_decision($articleId, $topicId);
+    $form['topic_board_member_responses'] = _format_topic_board_member_responses($articleId, $topicId);
+    $form['topic_board_manager_actions'] = _format_topic_board_manager_actions($topic_sequences);
+    $form['topic_on_agenda'] = _format_topic_on_agenda($topic_sequences);
+    $form['topic_board_decision'] = _format_topic_editorial_board_decision($topic_sequences);
+
     $form['topic_end'] = array('#markup' => '<hr>');
 
     return $form;
 }
 
-function _format_topic_nci_reviewer_decision($topic, $topic_sequences) {
+function _format_topic_header($topic) {
+    $form = array();
+
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
+
+    $form['header'] = array("#markup" => "<div class='citation-subheader'>Summary Topic</div>");
+    $form['topic'] = array("#markup" => "<div>$topic</div>");
+
+    return $form;
+}
+
+function _format_topic_nci_reviewer_decision($topic_sequences) {
     $form = array();
 
     if (!isset($topic_sequences[4]['A'][0]))
         return $form;
 
-    //dsm($topic_sequences[4]['A'][0], 'nci_reviewer_decision');
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
 
     $status = $topic_sequences[4]['A'][0];
 
@@ -1432,13 +1579,16 @@ function _format_topic_nci_reviewer_decision($topic, $topic_sequences) {
     return $form;
 }
 
-function _format_topic_full_text_decision($article, $topic) {
+function _format_topic_full_text_decision($article) {
     $form = array();
 
     $fullTextId = $article->getFullTextId();
 
     if ($fullTextId === null)
         return $form;
+
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
 
     // add the header
     $form['header'] = array("#markup" => "<div class='citation-subheader'>Full Text Retrieved</div>");
@@ -1454,8 +1604,6 @@ function _format_topic_full_text_decision($article, $topic) {
     $records = db_select('file_managed', 'f')
             ->condition('fid', $fullTextId)->execute()->fetchAll();
 
-    dsm($records, 'full text records');
-
     if (!isset($records[0]))
         return $form;
 
@@ -1464,20 +1612,23 @@ function _format_topic_full_text_decision($article, $topic) {
     $filename = $record->filename;
     $ts = $record->timestamp;
     $date = format_date($ts, 'custom', 'm/d/Y');
-    
+
     $account = user_load($uid);
-    
+
     $form['decision'] = array("#markup" => "<div>Full Text Available - $date - $account->name</div>");
     $form['filename'] = array("#markup" => "<div>FILE NAME: $filename</div>");
 
     return $form;
 }
 
-function _format_topic_surveillance_decision($topic, $topic_sequences) {
+function _format_topic_surveillance_decision($topic_sequences) {
     $form = array();
 
     if (!isset($topic_sequences[9]['A'][0]))
         return $form;
+
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
 
     $status = $topic_sequences[9]['A'][0];
 
@@ -1489,57 +1640,186 @@ function _format_topic_surveillance_decision($topic, $topic_sequences) {
     return $form;
 }
 
-
-/**
- * Formats an array of states mapped by sequence and activity for rendering.
- * @param mixed $topic_states
- * @return mixed the formatted render array.
- */
-function _format_topic_sequences($topic_sequences) {
+function _format_topic_assigned_for_review_decision($articleId, $topicId) {
     $form = array();
 
-    // render each sequence's states
-    foreach ($topic_sequences as $topic_sequence) {
-        $form[] = _format_topic_sequence($topic_sequence);
+    $packetIds = Ebms\getArticlePacketIds($articleId, $topicId);
+
+    $packetInfos = array();
+    foreach ($packetIds as $packetId) {
+        $packetInfos[] = Ebms\getPacketInfo($packetId);
     }
+
+    if (empty($packetInfos))
+        return $form;
+
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
+
+    // add the header
+    $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
+
+    // build each packet block
+    $packetBlocks = array();
+    foreach ($packetInfos as $packetInfo) {
+        $packetBlocks[] = _format_packet_info($packetInfo);
+    }
+
+    $form['blocks'] = $packetBlocks;
 
     return $form;
 }
 
-/**
- * Formats an array of states for a particular sequence step, mapped by activity,
- * into a renderable array.
- * @param mixed $topic_sequence
- * @return mixed the formatted render array.
- */
-function _format_topic_sequence($topic_sequence) {
+function _format_packet_info($packetInfo) {
+
     $form = array();
 
-    // render each active state
-    if (isset($topic_sequence['A'])) {
-        foreach ($topic_sequence['A'] as $topic_state) {
-            $form[] = _format_topic_state($topic_state);
-        }
+    // format contributor row
+    $uid = $packetInfo->created_by;
+    $title = $packetInfo->packet_title;
+    $dt = $packetInfo->created_at;
+    $date = _format_date($dt);
+
+    $account = user_load($uid);
+
+    // load the reviewers
+    $reviewers = user_load_multiple($packetInfo->reviewers);
+    $names = array();
+    foreach ($reviewers as $reviewer) {
+        $names[] = $reviewer->name;
     }
 
-    // render each inactive state into a collapsed fieldset
-    if (isset($topic_sequence['I'])) {
-        foreach ($topic_sequence['I'] as $topic_state) {
-            
-        }
+    $nameList = implode(', ', $names);
+
+    $form['decision'] = array("#markup" => "<div>Assigned - $date - $account->name</div>");
+    $form['filename'] = array("#markup" => "<div>PACKET TITLE: $title</div>");
+    $form['reviewers'] = array("#markup" => "<div>REVIEWERS: $nameList</div>");
+
+    return $form;
+}
+
+function _format_topic_board_member_responses($articleId, $topicId) {
+    $form = array();
+
+    $responses = Ebms\getBoardMemberResponses($articleId, $topicId);
+
+    if (empty($responses)) {
+        return $form;
+    }
+
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
+
+    // add the header
+    $form['header'] = array('#markup' => "<div class='citation-subheader'>Board Member Responses</div>");
+
+    // build each packet block
+    $responseBlocks = array();
+    foreach ($responses as $response) {
+        $responseBlocks[] = _format_board_member_response($response);
+    }
+
+    $form['blocks'] = $responseBlocks;
+
+    return $form;
+}
+
+function _format_board_member_response($response) {
+    $form = array();
+
+    // format contributor row
+    $uid = $response->reviewer_id;
+    $action = $response->value_name;
+    $dt = $response->when_posted;
+    $date = _format_date($dt);
+
+    $account = user_load($uid);
+
+    $form['decision'] = array("#markup" => "<div>Response - $date - $account->name</div>");
+    $form['filename'] = array("#markup" => "<div>ACTION: $action</div>");
+
+    if (isset($response->comments)) {
+        $form['comments'] = array("#markup" => "<div>COMMENTS: $response->comments</div>");
+    }
+    if (isset($response->loe_info) && $response->loe_info != 'Not Selected') {
+        $form['loe_info'] = array("#markup" => "<div>LOE: $response->loe_info</div>");
     }
 
     return $form;
 }
 
-function _ajax_add_tag($form, $form_state) {
-    //dsm($form_state, 'add tag form_state');
+function _format_topic_board_manager_actions($topic_sequences) {
+    $form = array();
+
+    if (!isset($topic_sequences[11]['A'][0]))
+        return $form;
+
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
+
+    $status = $topic_sequences[11]['A'][0];
+
+    $form['header'] = array("#markup" => "<div class='citation-subheader'>Board Manager Action(s)</div>");
+    $date = _format_date($status->dt);
+    $form['decision'] = array("#markup" => "<div>Action - $date - $status->user_name</div>");
+    $form['action'] = array("#markup" => "<div>ACTION: $status->type_name</div>");
+    $form['comments'] = _format_comments($status->comments);
 
     return $form;
 }
 
-function _ajax_cancel_add_tag($form, $form_state) {
-    //dsm($form_state, 'add tag form_state');
+function _format_topic_on_agenda($topic_sequences) {
+    $form = array();
+
+    if (!isset($topic_sequences[12]['A'][0]))
+        return $form;
+
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
+
+    $status = $topic_sequences[12]['A'][0];
+
+    $form['header'] = array("#markup" => "<div class='citation-subheader'>On Agenda</div>");
+    $date = _format_date($status->dt);
+    $form['decision'] = array("#markup" => "<div>Approved - $date - $status->user_name</div>");
+    $form['comments'] = _format_comments($status->comments);
+
+    return $form;
+}
+
+function _format_topic_editorial_board_decision($topic_sequences) {
+    $form = array();
+
+    if (!isset($topic_sequences[13]['A']))
+        return $form;
+
+    $form['#prefix'] = '<div class="full-citation-element">';
+    $form['#suffix'] = '</div>';
+
+    $form['header'] = array("#markup" => "<div class='citation-subheader'>Editorial Board Decision</div>");
+
+    foreach ($topic_sequences[13]['A'] as $status) {
+        $statusForm = array();
+
+        // get the decisions for this status
+        $decisions = Ebms\getBoardDecisionsByArticleState($status->article_state_id);
+
+        foreach ($decisions as $decision) {
+            $statusForm[] = array("#markup" => "<div>DISPOSITION: $decision->value_name</div>");
+        }
+
+        $date = _format_date($status->dt);
+        $statusForm['discussed'] = array("#markup" => "<div>ARTICLE DISCUSSED - $date</div>");
+        $statusForm['member'] = array("#markup" => "<div>BOARD MEMBER: $status->user_name</div>");
+        $statusForm['comments'] = _format_comments($status->comments);
+
+        $form[] = $statusForm;
+    }
+
+    return $form;
+}
+
+function _ajax_full_citation($form, $form_state) {
 
     return $form;
 }

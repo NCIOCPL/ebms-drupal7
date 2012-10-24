@@ -2076,7 +2076,7 @@ EOS;
 /**
  * Generates a array of tag type names, indexed by their tag's text_id.
  *
- * @param bool $articleOnly only returns tags that do not require a board
+ * @param bool $articleOnly only returns tags that do not require a topic
  *                          if true
  * @return mixed An array mapping tag text_ids to tag_names.
  */
@@ -2087,7 +2087,7 @@ function getTagTypeNames($articleOnly = true) {
 
     // if only querying for article-compatible tags, add a condition
     if ($articleOnly)
-        $query->condition('a.board_required', 'N');
+        $query->condition('a.topic_required', 'N');
 
     $result = $query->fields('a', array('text_id', 'tag_name'))
         ->execute();
@@ -2496,5 +2496,69 @@ function getBoardMemberResponses($article_id, $topic_id) {
             ->execute()
             ->fetchAll();
 }
+
+/**
+ * Retrieves any board decisions that match the given article and topic ids
+ * 
+ * @param int $article_id   The desired article's id.
+ * 
+ * @param int $topic_id     The desired topic of the decision.
+ * 
+ * @return mixed $decisionTree  An array of zero or more records from the database,
+ *                              organized by article_status_id, with comments
+ *                              attached if present.
+ */
+function getBoardDecisions($article_id, $topic_id) {
+    $query = db_select('ebms_article_board_decision', 'd');
+    $query->join('ebms_article_board_decision_value', 'v', 'd.decision_value_id = v.value_id');
+    $query->join('ebms_article_state', 's', 's.article_state_id = d.article_state_id');
+
+    $decisions =  $query->fields('s')
+            ->fields('d', array('meeting_date', 'discussed'))
+            ->fields('v', array('value_name'))
+            ->condition('s.article_id', $article_id)
+            ->condition('s.topic_id', $topic_id)
+            ->execute()
+            ->fetchAll();
+    
+    $decisionTree = array();
+    
+    foreach($decisions as $decision){
+        $decisionTree[$decision->article_state_id][] = $decision;
+    }
+    
+    $history = getStatusHistory($article_id, null, $topic_id);
+    
+    // grab the available comments for each article state
+    foreach($decisionTree as $articleStateId => $decision){
+        if(isset($history[$articleStateId]))
+        {
+            $decisionTree[$articleStateId]['comments'] = $history[$articleStateId]->comments;
+        }
+    }
+    
+    return $decisionTree;
+}
+
+/**
+ * Retrieves any board decisions that match the given article state.
+ * 
+ * @param int $article_state_id   The desired article state's id.
+ * 
+ * @return mixed $decisions     An array of zero or more records from the database,
+ *                              representing decisions afor the article state.
+ */
+function getBoardDecisionsByArticleState($article_state_id) {
+    $query = db_select('ebms_article_board_decision', 'd');
+    $query->join('ebms_article_board_decision_value', 'v', 'd.decision_value_id = v.value_id');
+    
+    return $query
+            ->fields('d', array('meeting_date', 'discussed'))
+            ->fields('v', array('value_name'))
+            ->condition('d.article_state_id', $article_state_id)
+            ->execute()
+            ->fetchAll();
+}
+
 
 ?>
