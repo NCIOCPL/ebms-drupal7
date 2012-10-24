@@ -6,6 +6,12 @@
         Purpose of the stylesheet follows.
 */
 
+#citation-form-div fieldset{
+    border: 0px;
+    margin: 0px;
+    padding: 0px;
+}
+
 #citation-form-div > input {
     margin: 0 12px;
 }
@@ -181,4 +187,54 @@
 
 .citation-cell .topic-checks .form-type-checkbox{
     margin-left: 20px;
+}
+
+/* full citation styles*/
+#citation-form-div .fieldset-title{
+    text-transform: uppercase !important;
+}
+
+#citation-form-div .image-button{
+    border: none;
+}
+
+.citation-subheader{
+    font-weight: bold;
+    text-transform: uppercase !important;
+}
+
+.citation-comment{
+    padding-left: 6em;
+    text-indent: -6em;
+}
+
+#citation-form-div .full-citation-button{
+    float: left;
+    margin: 0px !important;
+    padding: 0px !important;
+}
+
+.full-citation-tag{
+    clear: both;
+}
+
+.full-citation-indent,
+.full-citation-element{
+    padding-left: 25px;
+}
+
+#citation-form-div .full-citation-element{
+    padding-bottom: 10px;
+}
+
+#citation-form-div .full-citation-form label{
+    margin: 0px;
+}
+
+#citation-form-div .full-citation-form .form-item{
+    margin: 0em 0em 1em;
+}
+     
+#citation-form-div  .full-citation-form .form-submit{
+    margin: 0em 0.5em 0.5em;
 }
