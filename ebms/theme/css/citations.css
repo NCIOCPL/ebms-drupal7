@@ -218,13 +218,13 @@
     clear: both;
 }
 
-.full-citation-indent,
-.full-citation-element{
+#citation-form-div .full-citation-element legend,
+.full-citation-indent{
     padding-left: 25px;
 }
 
 #citation-form-div .full-citation-element{
-    padding-bottom: 10px;
+    margin-bottom: 10px;
 }
 
 #citation-form-div .full-citation-form label{
@@ -235,6 +235,15 @@
     margin: 0em 0em 1em;
 }
      
-#citation-form-div  .full-citation-form .form-submit{
+#citation-form-div .full-citation-form .form-submit{
     margin: 0em 0.5em 0.5em;
+}
+
+#citation-form-div .full-citation-past-items div{
+    color: #696559;
+    opacity: 75%;
+}
+
+#citation-form-div .full-citation-decision-icon{
+    padding: 0px 5px;
 }
