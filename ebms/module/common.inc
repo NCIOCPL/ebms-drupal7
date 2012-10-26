@@ -25,6 +25,11 @@ define('Ebms\ELLIPSIS', "\xe2\x80\xa6");
 define('Ebms\STAR', "\xe2\x98\x86");
 define('Ebms\BLACK_STAR', "\xe2\x98\x85");
 define('Ebms\PICTURE_SIZE', 135);
+define('Ebms\ADD_DECISION_ACTIVE', IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png');
+define('Ebms\ADD_DECISION_INACTIVE', IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png');
+
+define('Ebms\PASS_ACTIVE', IMAGES_DIR . '/EBMS_Pass_Icon_Active.png');
+define('Ebms\REJECT_ACTIVE', IMAGES_DIR . '/EBMS_Reject_Icon_Active.png');
 
 /**
  * Initial implementation of discussion forums has one general forum

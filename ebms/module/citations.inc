@@ -2,1824 +2,2130 @@
 
 // $Id$
 
-
-$GLOBALS['citations_state_map'] = array(
-    'Ready for initial review' => array(
-        'reject' => 'Rejected in initial review',
-        'pass' => 'Passed initial review',
-    ),
-    'Passed initial review' => array(
-        'reject' => 'Rejected by Board Manager',
-        'pass' => 'Passed Board Manager',
-    ),
-    'Full text retrieved' => array(
-        'reject' => 'Rejected after full text review',
-        'pass' => 'Passed full text review',
-    ),
-);
-
-/**
- * @file
- *
- * Implementation of EBMS page for general site information.
- */
-function pdq_ebms_citations($action = null, $article_id = null) {
-
-    // grab the resource stylesheet
-    $css_path = drupal_get_path('theme', 'ebmstheme');
-    $css_path .= "/css/citations.css";
-    drupal_add_css($css_path, array('type' => 'file'));
-
-    global $user;
-    $is_librarian = in_array('medical librarian', $user->roles);
-
-    Ebms\Menu::$active = 'Citation Management';
-    drupal_set_title('Citation Management');
-    $crumbs = array(
-        $action ? l('Citation Management', 'citations') : 'Citation Management'
-    );
-    $result = null;
-    switch ($action) {
-        case 'full':
-            $crumbs[] = 'Review Citations';
-            $crumbs[] = 'Full Citation';
-
-            $form = drupal_get_form('pdq_ebms_full_citation', $article_id);
-
-            $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null, false);
-
-            $result['full_citation_form'] = $form;
-
-            break;
-        case 'not-list':
-            $crumbs[] = "Not List Maintenance";
-            $form = drupal_get_form('pdq_ebms_citation_not_list');
-
-
-            $result['left_nav'] = \Ebms\Util::build_librarian_left_nav('Not List Maintentance', false);
-
-            $result['not_list_form'] = $form;
-
-            break;
-        case null:
-        case 'review':
-            $crumbs[] = 'Review Citations';
-
-            $form = drupal_get_form('pdq_ebms_citation_queue', $is_librarian);
-
-            $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null, false);
-
-            $result['cite_queue_form'] = $form;
-
-            break;
-    }
-    drupal_set_breadcrumb($crumbs);
-    if ($result)
-        return $result;
-
-    return "<i>Stub for 'Citations' page, action = $action</i>";
-}
-
-function pdq_ebms_citation_not_list($form, &$form_state) {
+namespace Ebms {
 
     require_once('EbmsArticle.inc');
 
-    //include js to redirect pager links
-    $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
-
-    // retrieve boards
-    $boards = Ebms\Util::boards();
-
-    //db_select('ebms_not_list', 'nl')->join($table, $alias);
-    $form['#prefix'] = '<div id="citation-div">';
-    $form['#suffix'] = '</div>';
-
-    $form['not-list']['#prefix'] = '<div id="citation-form-div">';
-    $form['not-list']['#suffix'] = '</div>';
-
-    $form['not-list']['description']['#markup'] = '<h2>Not List Maintenance</h2>';
-    $form['not-list']['board_select'] = array(
-        '#type' => 'select',
-        '#title' => 'Editorial Board',
-        '#title_display' => 'after',
-        '#options' => $boards, //array(0 => t('All Boards')),
-        '#prefix' => '<div class="citation-input-div">',
-        '#suffix' => '</div>',
-        //'#default_value' => $board,
-    );
-    //$form['not-list']['board_select']['#options'] += $boards;
-    $form['not-list']['brief_title_field'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Brief Journal Title',
-        '#title_display' => 'after',
-        '#prefix' => '<div class="citation-input-div">',
-        '#suffix' => '</div>',
-        //'#default_value' => $brief_title,
-    );
-    $form['not-list']['full_title_field'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Full Journal Title',
-        '#title_display' => 'after',
-        '#prefix' => '<div class="citation-input-div">',
-        '#suffix' => '</div>',
-        //'#default_value' => $full_title,
-    );
-    $form['not-list']['journal_id_field'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Journal ID',
-        '#title_display' => 'after',
-        '#prefix' => '<div class="citation-input-div">',
-        '#suffix' => '</div>',
-        //'#default_value' => $id,
-    );
-    $form['not-list']['all_journals_check'] = array(
-        '#type' => 'checkbox',
-        '#title' => 'All Journals',
-        '#title_display' => 'after',
-        '#prefix' => '<div class="citation-input-div">',
-        '#suffix' => '</div>',
-        //'#default_value' => $all_journals,
+    $GLOBALS['citations_state_map'] = array(
+        'Ready for initial review' => array(
+            'reject' => 'Rejected in initial review',
+            'pass' => 'Passed initial review',
+        ),
+        'Passed initial review' => array(
+            'reject' => 'Rejected by Board Manager',
+            'pass' => 'Passed Board Manager',
+        ),
+        'Full text retrieved' => array(
+            'reject' => 'Rejected after full text review',
+            'pass' => 'Passed full text review',
+        ),
     );
 
-    $form['not-list']['search_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Search',
-        /* '#ajax' => array(
-          'callback' => 'pdq_ebms_ajax_search_submit',
-          'wrapper' => 'citation-results-div',
-          'method' => 'replace',
-          ), */
-    );
+    class EbmsTopicDecisions {
 
-    $form['not-list']['reset_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Reset',
-        /* '#ajax' => array(
-          'callback' => 'pdq_ebms_ajax_clear_form',
-          'wrapper' => 'citation-div',
-          'method' => 'replace',
-          ), */
-    );
+        static $NCIREVIEWER = null;
+        static $FULLTEXT = null;
+        static $SURVEILLANCE = null;
+        static $BOARDMANAGERACTIONS = null;
+        static $ONAGENDA = null;
+        static $EDITORIALBOARD = null;
+        private $title;
+        private $sequence;
+        private $formatter;
+        private $pass_states;
+        private $reject_states;
 
-    $form['not-list']['submit_source'] = array(
-        '#type' => 'hidden',
-    );
-
-
-    // build the results if the values exist in the form state
-    if (isset($form_state['values'])) {
-        $board = $form_state['values']['board_select'];
-        $brief_title = $form_state['values']['brief_title_field'];
-        $full_title = $form_state['values']['full_title_field'];
-        $id = $form_state['values']['journal_id_field'];
-        $all_journals = $form_state['values']['all_journals_check'];
-
-        $form['citation-results'] = _not_list_results(array(), $form_state, $board, $brief_title, $full_title, $id, $all_journals);
-    }
-
-    return $form;
-}
-
-function pdq_ebms_citation_not_list_submit($form, &$form_state) {
-    $form_state['rebuild'] = true;
-
-    // always update the changed list
-    _update_journal_select($form_state);
-
-    $clear_states = false;
-
-    if (isset($form_state['values']['op'])) {
-        $op = $form_state['values']['op'];
-        if (!empty($form_state['values']['submit_source'])) {
-            $op = $form_state['values']['submit_source'];
+        public function __construct($title, $sequence, $formatter = null, $pass_states = array(), $reject_states = array()) {
+            $this->title = $title;
+            $this->sequence = $sequence;
+            $this->formatter = $formatter;
+            $this->pass_states = $pass_states;
+            $this->reject_states = $reject_states;
         }
 
-        switch ($op) {
-            case 'Reset':
-                $form_state['rebuild'] = false;
-                return;
-            case 'Save':
-                // write out the changes to the not list, in terms of
-                // inserts and deletes to the DB
-                _write_not_list($form_state['altered_states']);
-
-                $clear_states = true;
-
-                break;
-            case 'Search':
-            case 'Cancel':
-                $clear_states = true;
-                break;
+        public static function init() {
+            self::$NCIREVIEWER =
+                new EbmsTopicDecisions('NCI Reviewer Decision', 4, null, array(EbmsArticleStates::PassedInitReview), array(EbmsArticleStates::RejectInitReview));
+            self::$FULLTEXT =
+                new EbmsTopicDecisions('Full Text Retrieved', 8);
+            self::$SURVEILLANCE =
+                new EbmsTopicDecisions('Literature Surveillance Committee Decision', 9);
+            self::$BOARDMANAGERACTIONS =
+                new EbmsTopicDecisions('Board Manager Action(s)', 11, '_format_topic_board_manager_actions');
+            self::$ONAGENDA =
+                new EbmsTopicDecisions('On Agenda', 12);
+            self::$EDITORIALBOARD =
+                new EbmsTopicDecisions('Editorial Board Decision', 13, '_format_topic_editorial_board_decision');
         }
+
+        public function title() {
+            return $this->title;
+        }
+
+        public function sequence() {
+            return $this->sequence;
+        }
+
+        public function formatter() {
+            return $this->formatter;
+        }
+
+        public function pass_states() {
+            return $this->pass_states;
+        }
+
+        public function reject_states() {
+            return $this->reject_states;
+        }
+
     }
 
-    if ($clear_states)
-        $form_state['altered_states'] = array();
-
-    // wipe out button values so that the default_states calculated from
-    // altered states can take effect
-    _clear_journal_select($form_state['input'], 'input');
+    EbmsTopicDecisions::init();
 }
+
+namespace {
+
+    /**
+     * @file
+     *
+     * Implementation of EBMS page for general site information.
+     */
+    function pdq_ebms_citations($action = null, $article_id = null) {
+
+        // grab the resource stylesheet
+        $css_path = drupal_get_path('theme', 'ebmstheme');
+        $css_path .= "/css/citations.css";
+        drupal_add_css($css_path, array('type' => 'file'));
+
+        global $user;
+        $is_librarian = in_array('medical librarian', $user->roles);
+
+        Ebms\Menu::$active = 'Citation Management';
+        drupal_set_title('Citation Management');
+        $crumbs = array(
+            $action ? l('Citation Management', 'citations') : 'Citation Management'
+        );
+        $result = null;
+        switch ($action) {
+            case 'full':
+                $crumbs[] = 'Review Citations';
+                $crumbs[] = 'Full Citation';
+
+                $form = drupal_get_form('pdq_ebms_full_citation', $article_id);
+
+                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null, false);
+
+                $result['full_citation_form'] = $form;
+
+                break;
+            case 'not-list':
+                $crumbs[] = "Not List Maintenance";
+                $form = drupal_get_form('pdq_ebms_citation_not_list');
+
+
+                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav('Not List Maintentance', false);
+
+                $result['not_list_form'] = $form;
+
+                break;
+            case null:
+            case 'review':
+                $crumbs[] = 'Review Citations';
+
+                $form = drupal_get_form('pdq_ebms_citation_queue', $is_librarian);
+
+                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null, false);
+
+                $result['cite_queue_form'] = $form;
+
+                break;
+        }
+        drupal_set_breadcrumb($crumbs);
+        if ($result)
+            return $result;
+
+        return "<i>Stub for 'Citations' page, action = $action</i>";
+    }
+
+    function pdq_ebms_citation_not_list($form, &$form_state) {
+
+        require_once('EbmsArticle.inc');
+
+        //include js to redirect pager links
+        $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
+
+        // retrieve boards
+        $boards = Ebms\Util::boards();
+
+        //db_select('ebms_not_list', 'nl')->join($table, $alias);
+        $form['#prefix'] = '<div id="citation-div">';
+        $form['#suffix'] = '</div>';
+
+        $form['not-list']['#prefix'] = '<div id="citation-form-div">';
+        $form['not-list']['#suffix'] = '</div>';
+
+        $form['not-list']['description']['#markup'] = '<h2>Not List Maintenance</h2>';
+        $form['not-list']['board_select'] = array(
+            '#type' => 'select',
+            '#title' => 'Editorial Board',
+            '#title_display' => 'after',
+            '#options' => $boards, //array(0 => t('All Boards')),
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
+            //'#default_value' => $board,
+        );
+        //$form['not-list']['board_select']['#options'] += $boards;
+        $form['not-list']['brief_title_field'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Brief Journal Title',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
+            //'#default_value' => $brief_title,
+        );
+        $form['not-list']['full_title_field'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Full Journal Title',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
+            //'#default_value' => $full_title,
+        );
+        $form['not-list']['journal_id_field'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Journal ID',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
+            //'#default_value' => $id,
+        );
+        $form['not-list']['all_journals_check'] = array(
+            '#type' => 'checkbox',
+            '#title' => 'All Journals',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
+            //'#default_value' => $all_journals,
+        );
+
+        $form['not-list']['search_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Search',
+            /* '#ajax' => array(
+              'callback' => 'pdq_ebms_ajax_search_submit',
+              'wrapper' => 'citation-results-div',
+              'method' => 'replace',
+              ), */
+        );
+
+        $form['not-list']['reset_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Reset',
+            /* '#ajax' => array(
+              'callback' => 'pdq_ebms_ajax_clear_form',
+              'wrapper' => 'citation-div',
+              'method' => 'replace',
+              ), */
+        );
+
+        $form['not-list']['submit_source'] = array(
+            '#type' => 'hidden',
+        );
+
+
+        // build the results if the values exist in the form state
+        if (isset($form_state['values'])) {
+            $board = $form_state['values']['board_select'];
+            $brief_title = $form_state['values']['brief_title_field'];
+            $full_title = $form_state['values']['full_title_field'];
+            $id = $form_state['values']['journal_id_field'];
+            $all_journals = $form_state['values']['all_journals_check'];
+
+            $form['citation-results'] = _not_list_results(array(), $form_state, $board, $brief_title, $full_title, $id, $all_journals);
+        }
+
+        return $form;
+    }
+
+    function pdq_ebms_citation_not_list_submit($form, &$form_state) {
+        $form_state['rebuild'] = true;
+
+        // always update the changed list
+        _update_journal_select($form_state);
+
+        $clear_states = false;
+
+        if (isset($form_state['values']['op'])) {
+            $op = $form_state['values']['op'];
+            if (!empty($form_state['values']['submit_source'])) {
+                $op = $form_state['values']['submit_source'];
+            }
+
+            switch ($op) {
+                case 'Reset':
+                    $form_state['rebuild'] = false;
+                    return;
+                case 'Save':
+                    // write out the changes to the not list, in terms of
+                    // inserts and deletes to the DB
+                    _write_not_list($form_state['altered_states']);
+
+                    $clear_states = true;
+
+                    break;
+                case 'Search':
+                case 'Cancel':
+                    $clear_states = true;
+                    break;
+            }
+        }
+
+        if ($clear_states)
+            $form_state['altered_states'] = array();
+
+        // wipe out button values so that the default_states calculated from
+        // altered states can take effect
+        _clear_journal_select($form_state['input'], 'input');
+    }
 
 // parse the values from the form state, keep the journals that have changed
 // from their initial state, and discard those that are unchanged.
-function _update_journal_select(&$form_state) {
-    $altered_states = array();
-    if (isset($form_state['altered_states']))
-        $altered_states = $form_state['altered_states'];
+    function _update_journal_select(&$form_state) {
+        $altered_states = array();
+        if (isset($form_state['altered_states']))
+            $altered_states = $form_state['altered_states'];
 
-    foreach ($form_state['values'] as $key => $value) {
-        if (strpos($key, 'not_list_state_') === 0) {
-            $hash = str_ireplace('not_list_state_', '', $key);
+        foreach ($form_state['values'] as $key => $value) {
+            if (strpos($key, 'not_list_state_') === 0) {
+                $hash = str_ireplace('not_list_state_', '', $key);
 
-            // compare the end of $hash with it's value - 
-            // if the differ, add to $altered_states,
-            // else remove
-            if (strrpos($hash, (string) $value) == (strlen($hash) - 1)) {
-                unset($altered_states[$hash]);
-            } else {
-                $altered_states[$hash] = $value;
+                // compare the end of $hash with it's value - 
+                // if the differ, add to $altered_states,
+                // else remove
+                if (strrpos($hash, (string) $value) == (strlen($hash) - 1)) {
+                    unset($altered_states[$hash]);
+                } else {
+                    $altered_states[$hash] = $value;
+                }
             }
         }
+
+        $form_state['altered_states'] = $altered_states;
     }
 
-    $form_state['altered_states'] = $altered_states;
-}
-
-function _clear_journal_select(&$target, $desc) {
-    $button_keys = array();
-    foreach ($target as $key => $value) {
-        if (strpos($key, 'not_list_state_') === 0) {
-            $button_keys[$key] = $value;
+    function _clear_journal_select(&$target, $desc) {
+        $button_keys = array();
+        foreach ($target as $key => $value) {
+            if (strpos($key, 'not_list_state_') === 0) {
+                $button_keys[$key] = $value;
+            }
         }
+
+        $diff = array_diff_key($target, $button_keys);
+
+        $target = $diff;
     }
 
-    $diff = array_diff_key($target, $button_keys);
+    function _write_not_list($values) {
+        // need to use the mapped values to insert / delete rows in ebms_not_list
+        // 
+        // loop though the values, explode and split up based on values
+        $changed = array(1 => array(), 0 => array());
+        foreach ($values as $value => $state) {
+            list($source, $id, $board, $initial) = explode('|', $value);
+            if ($initial != $state) {
 
-    $target = $diff;
-}
+                // add to added or removed based on state
+                if (!isset($changed[$state][$board]))
+                    $changed[$state][$board] = array();
+                if (!isset($changed[$state][$board][$source]))
+                    $changed[$state][$board][$source] = array();
 
-function _write_not_list($values) {
-    // need to use the mapped values to insert / delete rows in ebms_not_list
-    // 
-    // loop though the values, explode and split up based on values
-    $changed = array(1 => array(), 0 => array());
-    foreach ($values as $value => $state) {
-        list($source, $id, $board, $initial) = explode('|', $value);
-        if ($initial != $state) {
-
-            // add to added or removed based on state
-            if (!isset($changed[$state][$board]))
-                $changed[$state][$board] = array();
-            if (!isset($changed[$state][$board][$source]))
-                $changed[$state][$board][$source] = array();
-
-            $changed[$state][$board][$source][] = $id;
+                $changed[$state][$board][$source][] = $id;
+            }
         }
-    }
 
-    // insert new rows, if any
-    if (!empty($changed[1])) {
-        // loop through and perform inserts
+        // insert new rows, if any
+        if (!empty($changed[1])) {
+            // loop through and perform inserts
 
-        global $user;
-        foreach ($changed[1] as $board_id => $sources) {
-            foreach ($sources as $source => $journals) {
-                foreach ($journals as $id) {
-                    // insert this journal
-                    $timestamp = date('Y-m-d G:i:s');
-                    $record = array(
-                        'source' => $source,
-                        'source_jrnl_id' => $id,
-                        'board_id' => $board_id,
-                        'start_date' => $timestamp,
-                        'user_id' => $user->uid,
-                    );
-                    db_insert('ebms_not_list')
-                        ->fields($record)->execute();
+            global $user;
+            foreach ($changed[1] as $board_id => $sources) {
+                foreach ($sources as $source => $journals) {
+                    foreach ($journals as $id) {
+                        // insert this journal
+                        $timestamp = date('Y-m-d G:i:s');
+                        $record = array(
+                            'source' => $source,
+                            'source_jrnl_id' => $id,
+                            'board_id' => $board_id,
+                            'start_date' => $timestamp,
+                            'user_id' => $user->uid,
+                        );
+                        db_insert('ebms_not_list')
+                            ->fields($record)->execute();
+                    }
+                }
+            }
+        }
+
+        // delete removed rows, if any
+        if (!empty($changed[0])) {
+            // loop through and perform inserts
+            foreach ($changed[0] as $board_id => $sources) {
+                foreach ($sources as $source => $journals) {
+                    $query = db_delete('ebms_not_list');
+                    $query->condition('board_id', $board_id);
+                    $query->condition('source', $source);
+                    $query->condition('source_jrnl_id', $journals);
+                    $ret = $query->execute();
                 }
             }
         }
     }
 
-    // delete removed rows, if any
-    if (!empty($changed[0])) {
-        // loop through and perform inserts
-        foreach ($changed[0] as $board_id => $sources) {
-            foreach ($sources as $source => $journals) {
-                $query = db_delete('ebms_not_list');
-                $query->condition('board_id', $board_id);
-                $query->condition('source', $source);
-                $query->condition('source_jrnl_id', $journals);
-                $ret = $query->execute();
-            }
-        }
-    }
-}
+    function _not_list_results($form, &$form_state, $board, $brief_title, $full_title, $id, $all_journals) {
 
-function _not_list_results($form, &$form_state, $board, $brief_title, $full_title, $id, $all_journals) {
+        // if all_journals is set, then a right-join needs to be performed
 
-    // if all_journals is set, then a right-join needs to be performed
-
-    $query = db_select('ebms_not_list', 'nl');
-    if ($all_journals) {
-        $query->rightJoin('ebms_journal', 'j', 'j.source = nl.source
+        $query = db_select('ebms_not_list', 'nl');
+        if ($all_journals) {
+            $query->rightJoin('ebms_journal', 'j', 'j.source = nl.source
 				AND j.source_jrnl_id = nl.source_jrnl_id
 				AND nl.board_id = :board', array(':board' => $board));
-    } else {
-        $query->join('ebms_journal', 'j', 'nl.source_jrnl_id = j.source_jrnl_id AND nl.source = j.source');
-        $query->condition('nl.board_id', $board);
-    }
-    // add the pager early on in the process
-    $query = $query->extend('PagerDefault');
-
-    // add the other filter fields
-    if ($brief_title)
-        $query->condition('j.brf_jrnl_title', "%$brief_title%", 'LIKE');
-
-    if ($full_title)
-        $query->condition('j.jrnl_title', "%$full_title%", 'LIKE');
-
-    if ($id)
-        $query->condition('j.source_jrnl_id', "%$id%", 'LIKE');
-
-    $num_rows = $query->countQuery()->execute()->fetchField();
-
-    $query
-        ->fields('j', array('brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'))
-        ->limit(10);
-
-    $query->addExpression('!ISNULL(nl.source_jrnl_id)', 'default_value');
-
-    $result = $query->execute();
-
-    $form += array(
-        '#prefix' => '<div id="citation-results-div">',
-        '#suffix' => '</div>',
-    );
-
-    $form['results-title']['#markup'] = "<h2>Not List Search Results <span class = 'results-count'>($num_rows)</span></h2>";
-
-    $form['buttons'] = array(
-        '#prefix' => '<div id="citation-buttons-div">',
-        '#suffix' => '</div>',
-    );
-
-    $form['buttons']['save_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Save',
-        /* '#ajax' => array(
-          'callback' => 'pdq_ebms_ajax_save_list',
-          ), */
-    );
-
-    $form['buttons']['cancel_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Cancel',
-        /* '#ajax' => array(
-          'callback' => 'pdq_ebms_ajax_clear_form',
-          'wrapper' => 'citation-results-div',
-          'method' => 'replace',
-          ), */
-    );
-
-    $form['top-pager'] = array(
-        '#theme' => 'pager',
-        '#attributes' => array(
-            'class' => 'top-pager'
-        ));
-
-    $form['table'] = array(
-        '#prefix' => '<div id="citation-table-div">',
-        '#suffix' => '</div>',
-    );
-
-    $form['table']['header'] = array(
-        '#prefix' => "<div class='citation-header'>",
-        '#suffix' => '</div>',
-    );
-
-    $form['table']['header'][]['#markup'] =
-        "<div class='citation-cell brief-title left-column'>Brief Journal Title</div>";
-    $form['table']['header'][]['#markup'] =
-        "<div class='citation-cell full-title'>Full Journal Title</div>";
-    $form['table']['header'][]['#markup'] =
-        "<div class='citation-cell id'>Journal ID</div>";
-    $form['table']['header'][]['#markup'] =
-        "<div class='citation-cell not-check borderless'>Not List</div>";
-
-
-    $ix = 0;
-    $form['table']['rows'] = array();
-    foreach ($result as $record) {
-        $form['table']['rows'][$ix] = array(
-            '#prefix' => "<div class='citation-row'>",
-            '#suffix' => '</div>',
-        );
-
-        $form['table']['rows'][$ix]['brief_title']['#markup'] =
-            "<div class='citation-cell brief-title left-column'>$record->brf_jrnl_title</div>";
-        $form['table']['rows'][$ix]['full_title']['#markup'] =
-            "<div class='citation-cell full-title'>$record->jrnl_title</div>";
-        $form['table']['rows'][$ix]['journal_id']['#markup'] =
-            "<div class='citation-cell id'>$record->source_jrnl_id</div>";
-
-        $initial = $record->default_value;
-        $journal_hash = "$record->source|$record->source_jrnl_id|$board|$initial";
-        $default = $initial;
-        if (isset($form_state['altered_states'][$journal_hash])) {
-            $default = $form_state['altered_states'][$journal_hash];
+        } else {
+            $query->join('ebms_journal', 'j', 'nl.source_jrnl_id = j.source_jrnl_id AND nl.source = j.source');
+            $query->condition('nl.board_id', $board);
         }
-
-        $form['table']['rows'][$ix]["not_list_state_$journal_hash"] = array(
-            '#type' => 'checkbox',
-            '#title' => "&nbsp;",
-            '#default_value' => $default,
-            '#prefix' => "<div class='citation-cell not-check borderless'>",
-            '#suffix' => "</div>",
-            //'#return_value' => ,
-            //'#attributes' => array('name' => "search_row_${ix}_button"),
-        );
-
-        $ix++;
-    }
-
-    $form['bottom-pager'] = array(
-        '#theme' => 'pager',
-        '#attributes' => array(
-            'class' => 'top-pager'
-        ));
-
-    return $form;
-}
-
-function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
-    require_once('EbmsArticle.inc');
-
-    //include js to redirect pager links
-    $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
-
-    // retrieve boards
-    $boards = Ebms\Util::boards();
-
-    //db_select('ebms_not_list', 'nl')->join($table, $alias);
-    /* $form['#prefix'] = '<div id="citation-div">';
-      $form['#suffix'] = '</div>'; */
-
-    $form['citation_queue']['#prefix'] = '<div id="citation-form-div">';
-    $form['citation_queue']['#suffix'] = '</div>';
-
-    $form['citation_queue']['description']['#markup'] = '<h2>Sort My Citation Queue</h2>';
-
-    $form['citation_queue']['board_select'] = array(
-        '#type' => 'select',
-        '#title' => 'Editorial Board',
-        '#title_display' => 'after',
-        '#options' => array(0 => ''),
-        '#prefix' => '<div class="citation-input-div">',
-        '#suffix' => '</div>',
-        '#ajax' => array(
-            'callback' => '_ajax_citation_queue_board_select',
-            'wrapper' => 'topic-select-div'
-        ),
-    );
-    $form['citation_queue']['board_select']['#options'] += $boards;
-    $form['citation_queue']['topic_select'] = array(
-        '#type' => 'select',
-        '#title' => 'Summary Topic',
-        '#title_display' => 'after',
-        '#options' => array(0 => 'Please select a board.'),
-        '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
-        '#suffix' => '</div>',
-    );
-    if (isset($form_state['values']['board_select'])) {
-        $board_id = $form_state['values']['board_select'];
-        if ($board_id != 0) {
-            $form['citation_queue']['topic_select']['#options'] = array(0 => 'Please select a topic.');
-
-            $result = array();
-            try {
-                $result = db_select('ebms_topic', 't')->condition('board_id', $board_id)->fields('t')->execute();
-            } catch (Exception $e) {
-                
-            }
-            foreach ($result as $record) {
-                $form['citation_queue']['topic_select']['#options'][$record->topic_id] = $record->topic_name;
-            }
-        }
-    }
-
-    $form['citation_queue']['journal_id_field'] = array(
-        '#type' => 'textfield',
-        '#title' => 'Journal ID',
-        '#title_display' => 'after',
-        '#prefix' => '<div class="citation-input-div">',
-        '#suffix' => '</div>',
-    );
-
-    $form['citation_queue']['reset_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Reset',
-        /* '#ajax' => array(
-          'callback' => 'pdq_ebms_ajax_clear_form',
-          'wrapper' => 'citation-div',
-          'method' => 'replace',
-          ), */
-    );
-
-    $form['citation_queue']['sort_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Sort',
-    );
-
-    $form['citation_queue']['submit_source'] = array(
-        '#type' => 'hidden',
-    );
-
-    if (isset($form_state['triggering_element']['#type']) &&
-        $form_state['triggering_element']['#type'] == 'select') {
-        // skip results if updating via ajax
-        return $form;
-    }
-
-    _citation_queue_results($form, $form_state, $is_librarian);
-
-    return $form;
-}
-
-function _ajax_citation_queue_board_select($form, $form_state) {
-    return $form['citation_queue']['topic_select'];
-}
-
-function _citation_queue_results(&$form, &$form_state, $is_librarian) {
-
-    $board_id = 0;
-    $topic_id = 0;
-    $journal_id = '';
-
-    // get values if they exist
-    if (isset($form_state['values'])) {
-        $board_id = $form_state['values']['board_select'];
-        $topic_id = $form_state['values']['topic_select'];
-        $journal_id = $form_state['values']['journal_id_field'];
-    }
-
-    if (!isset($form['citation_queue_results'])) {
-        $form['citation_queue_results'] = array(
-            '#prefix' => '<div id="citation-results-div">',
-            '#suffix' => '</div>',
-        );
-    }
-
-    $results = &$form['citation_queue_results'];
-
-    try {
-        $query = db_select('ebms_article_state', 's');
-        $query->join('ebms_last_article_topic_state', 'l', 'l.article_state_id = s.article_state_id');
-        if ($journal_id)
-            $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
-
-        $source_state = 'Ready for initial review';
-        if (!$is_librarian) {
-            $source_state = 'Passed initial review';
-        }
-        $state_id = Ebms\getStateIdByName($source_state);
-
-        $query->condition('s.state_id', $state_id);
         // add the pager early on in the process
         $query = $query->extend('PagerDefault');
 
         // add the other filter fields
-        // $topic_id implies $board_id
-        if ($topic_id)
-            $query->condition('s.topic_id', $topic_id);
-        else if ($board_id)
-            $query->condition('s.board_id', $board_id);
+        if ($brief_title)
+            $query->condition('j.brf_jrnl_title', "%$brief_title%", 'LIKE');
 
-        if ($journal_id)
-            $query->condition('a.source_jrnl_id', "%$journal_id%", 'LIKE');
+        if ($full_title)
+            $query->condition('j.jrnl_title', "%$full_title%", 'LIKE');
 
-        $query->groupBy('s.article_id');
+        if ($id)
+            $query->condition('j.source_jrnl_id', "%$id%", 'LIKE');
 
-        // TODO: add the count back once the query is faster!
         $num_rows = $query->countQuery()->execute()->fetchField();
-        //$num_rows = 10;
 
         $query
-            ->fields('s', array('article_id'))
+            ->fields('j', array('brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'))
             ->limit(10);
-        $query->addExpression('GROUP_CONCAT(s.topic_id)', 'topics');
+
+        $query->addExpression('!ISNULL(nl.source_jrnl_id)', 'default_value');
 
         $result = $query->execute();
-    } catch (Exception $e) {
-        $num_rows = -1;
-        $result = array();
-    }
 
-    $results['results-title']['#markup'] = "<h2>Citations Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
-
-    $results['buttons'] = array(
-        '#prefix' => '<div id="citation-buttons-div">',
-        '#suffix' => '</div>',
-    );
-
-    $results['buttons']['save_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Save',
-    );
-
-    $results['buttons']['refresh_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Refresh',
-    );
-
-    $results['top-pager'] = array(
-        '#theme' => 'pager',
-        '#attributes' => array(
-            'class' => 'top-pager'
-        ));
-
-    $results['table'] = array(
-        '#prefix' => '<div id="citation-table-div">',
-        '#suffix' => '</div>',
-    );
-
-    $results['table']['header'] = array(
-        '#prefix' => "<div class='citation-header'>",
-        '#suffix' => '</div>',
-    );
-
-    $results['table']['header'][]['#markup'] =
-        "<div class='citation-cell actions left-column borderless'>&nbsp;</div>";
-    $results['table']['header'][]['#markup'] =
-        "<div class='citation-cell brief-citation'>Citations</div>";
-    $results['table']['header'][]['#markup'] =
-        "<div class='citation-cell board borderless'>Board - Topic</div>";
-    /* $results['table']['header'][]['#markup'] =
-      "<div class='citation-cell board'>Board</div>";
-      $results['table']['header'][]['#markup'] =
-      "<div class='citation-cell summary-topic'><div class='summary-topic-name'>Summary Topic</div><div class='summary-topic-check'>Reject</div><div class='summary-topic-check'>Pass</div></div>"; */
-
-    $page = 0;
-    $parms = drupal_get_query_parameters();
-    if (isset($parms['page']) && is_numeric($parms['page'])) {
-        $page = $parms['page'];
-    }
-
-    $rows_per_page = 10;
-
-    $first_row = ($page * $rows_per_page) + 1;
-
-    $ix = 0;
-    $results['table']['rows'] = array();
-    foreach ($result as $record) {
-        $results['table']['rows'][$ix] = array(
-            '#prefix' => "<div class='citation-row'>",
+        $form += array(
+            '#prefix' => '<div id="citation-results-div">',
             '#suffix' => '</div>',
         );
 
-        $row = &$results['table']['rows'][$ix];
+        $form['results-title']['#markup'] = "<h2>Not List Search Results <span class = 'results-count'>($num_rows)</span></h2>";
 
-        $row['actions']['#type'] = 'container';
-        $row['actions']['#prefix'] = "<div class='citation-cell borderless'>";
-        $row['actions']['#suffix'] = "</div>";
+        $form['buttons'] = array(
+            '#prefix' => '<div id="citation-buttons-div">',
+            '#suffix' => '</div>',
+        );
 
-        $row['actions']['row_num'] = array('#markup' => ($ix + $first_row) . "<br />");
-        /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />');
-          $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />');
-          $row['actions']['tag'] = array('#type' => 'submit', '#value' => t('Tag'), '#suffix' => '<br />'); */
+        $form['buttons']['save_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Save',
+            /* '#ajax' => array(
+              'callback' => 'pdq_ebms_ajax_save_list',
+              ), */
+        );
 
-        $article = new Ebms\EbmsArticle($record->article_id);
+        $form['buttons']['cancel_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+            /* '#ajax' => array(
+              'callback' => 'pdq_ebms_ajax_clear_form',
+              'wrapper' => 'citation-results-div',
+              'method' => 'replace',
+              ), */
+        );
 
-        //$authors = implode(', ', $article->getAuthors());
-        //$title = $article->getArticleTitle();
+        $form['top-pager'] = array(
+            '#theme' => 'pager',
+            '#attributes' => array(
+                'class' => 'top-pager'
+            ));
 
-        $cite = _cite_article($article, false);
+        $form['table'] = array(
+            '#prefix' => '<div id="citation-table-div">',
+            '#suffix' => '</div>',
+        );
 
-        $row['brief_citation']['#markup'] =
-            "<div class='citation-cell brief-citation left-column'><a href='/citations/full/$record->article_id'>$cite</a></div>";
+        $form['table']['header'] = array(
+            '#prefix' => "<div class='citation-header'>",
+            '#suffix' => '</div>',
+        );
 
-        // retrieve the topics and related boards
-        $curr_topics = explode(',', $record->topics);
+        $form['table']['header'][]['#markup'] =
+            "<div class='citation-cell brief-title left-column'>Brief Journal Title</div>";
+        $form['table']['header'][]['#markup'] =
+            "<div class='citation-cell full-title'>Full Journal Title</div>";
+        $form['table']['header'][]['#markup'] =
+            "<div class='citation-cell id'>Journal ID</div>";
+        $form['table']['header'][]['#markup'] =
+            "<div class='citation-cell not-check borderless'>Not List</div>";
 
-        $topics = array();
-        foreach ($article->getTopics() as $topic) {
-            if (in_array($topic->topic_id, $curr_topics)) {
-                $boards[$topic->board_name][$topic->topic_name] = $topic;
+
+        $ix = 0;
+        $form['table']['rows'] = array();
+        foreach ($result as $record) {
+            $form['table']['rows'][$ix] = array(
+                '#prefix' => "<div class='citation-row'>",
+                '#suffix' => '</div>',
+            );
+
+            $form['table']['rows'][$ix]['brief_title']['#markup'] =
+                "<div class='citation-cell brief-title left-column'>$record->brf_jrnl_title</div>";
+            $form['table']['rows'][$ix]['full_title']['#markup'] =
+                "<div class='citation-cell full-title'>$record->jrnl_title</div>";
+            $form['table']['rows'][$ix]['journal_id']['#markup'] =
+                "<div class='citation-cell id'>$record->source_jrnl_id</div>";
+
+            $initial = $record->default_value;
+            $journal_hash = "$record->source|$record->source_jrnl_id|$board|$initial";
+            $default = $initial;
+            if (isset($form_state['altered_states'][$journal_hash])) {
+                $default = $form_state['altered_states'][$journal_hash];
+            }
+
+            $form['table']['rows'][$ix]["not_list_state_$journal_hash"] = array(
+                '#type' => 'checkbox',
+                '#title' => "&nbsp;",
+                '#default_value' => $default,
+                '#prefix' => "<div class='citation-cell not-check borderless'>",
+                '#suffix' => "</div>",
+                //'#return_value' => ,
+                //'#attributes' => array('name' => "search_row_${ix}_button"),
+            );
+
+            $ix++;
+        }
+
+        $form['bottom-pager'] = array(
+            '#theme' => 'pager',
+            '#attributes' => array(
+                'class' => 'top-pager'
+            ));
+
+        return $form;
+    }
+
+    function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
+        require_once('EbmsArticle.inc');
+
+        //include js to redirect pager links
+        $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
+
+        // retrieve boards
+        $boards = Ebms\Util::boards();
+
+        //db_select('ebms_not_list', 'nl')->join($table, $alias);
+        /* $form['#prefix'] = '<div id="citation-div">';
+          $form['#suffix'] = '</div>'; */
+
+        $form['citation_queue']['#prefix'] = '<div id="citation-form-div">';
+        $form['citation_queue']['#suffix'] = '</div>';
+
+        $form['citation_queue']['description']['#markup'] = '<h2>Sort My Citation Queue</h2>';
+
+        $form['citation_queue']['board_select'] = array(
+            '#type' => 'select',
+            '#title' => 'Editorial Board',
+            '#title_display' => 'after',
+            '#options' => array(0 => ''),
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
+            '#ajax' => array(
+                'callback' => '_ajax_citation_queue_board_select',
+                'wrapper' => 'topic-select-div'
+            ),
+        );
+        $form['citation_queue']['board_select']['#options'] += $boards;
+        $form['citation_queue']['topic_select'] = array(
+            '#type' => 'select',
+            '#title' => 'Summary Topic',
+            '#title_display' => 'after',
+            '#options' => array(0 => 'Please select a board.'),
+            '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
+            '#suffix' => '</div>',
+        );
+        if (isset($form_state['values']['board_select'])) {
+            $board_id = $form_state['values']['board_select'];
+            if ($board_id != 0) {
+                $form['citation_queue']['topic_select']['#options'] = array(0 => 'Please select a topic.');
+
+                $result = array();
+                try {
+                    $result = db_select('ebms_topic', 't')->condition('board_id', $board_id)->fields('t')->execute();
+                } catch (Exception $e) {
+                    
+                }
+                foreach ($result as $record) {
+                    $form['citation_queue']['topic_select']['#options'][$record->topic_id] = $record->topic_name;
+                }
             }
         }
 
-        // build the board->id cell
-        /* $output = "<div class='citation-cell borderless'>";
-          foreach ($boards as $board_name => $topics) {
-          $output .= "<div class='citation-subtable'>";
-          $output .= "<div class='citation-cell board'>$board_name</div>";
-          $output .= "<div class='citation-cell borderless'>";
-          $output .= "<div class='summary-topic citation-table'>";
-          foreach ($topics as $topic_name => $topic) {
-          $output .= "<div class='summary-topic-line citation-row'>";
-          $output .= "<div class='summary-topic-name citation-cell borderless'>$topic_name</div>";
-          $output .= "<div class='summary-topic-check citation-cell borderless'>Reject</div>";
-          $output .= "<div class='summary-topic-check citation-cell borderless'>Pass</div>";
-          $output .= "</div>";  //end row
-          }
-          $output .= '</div>'; // end topic table
-          $output .= '</div>'; // end topic cell
-          $output .= '</div>'; // end board table
-          }
-          $output .= '</div>'; // end board cell */
+        $form['citation_queue']['journal_id_field'] = array(
+            '#type' => 'textfield',
+            '#title' => 'Journal ID',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
+        );
 
-        //$row['board_topic']['#markup'] = $output;
+        $form['citation_queue']['reset_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Reset',
+            /* '#ajax' => array(
+              'callback' => 'pdq_ebms_ajax_clear_form',
+              'wrapper' => 'citation-div',
+              'method' => 'replace',
+              ), */
+        );
 
-        $row['board_topic']['#type'] = 'container';
-        $row['board_topic']['#prefix'] = "<div class='citation-cell borderless'>";
-        $row['board_topic']['#suffix'] = "</div>";
+        $form['citation_queue']['sort_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Sort',
+        );
 
-        foreach ($boards as $board_name => $topics) {
-            $row['board_topic'][$board_name]['#type'] = 'container';
-            $row['board_topic'][$board_name]['board']['#markup'] = $board_name;
-            $row['board_topic'][$board_name]['board']['#prefix'] = '<div>';
-            $row['board_topic'][$board_name]['board']['#suffix'] = '</div>';
+        $form['citation_queue']['submit_source'] = array(
+            '#type' => 'hidden',
+        );
 
-
-            foreach ($topics as $topic_name => $topic) {
-                $row['board_topic'][$board_name][$topic_name]['#type'] = 'container';
-                $row['board_topic'][$board_name][$topic_name]['#attributes'] = array(
-                    'class' => array('topic-checks'),
-                );
-                /* $row['board_topic'][$board_name][$topic_name]['flag']= array(
-                  '#type' => 'submit',
-                  '#value' => t('Tag'),
-                  ); */
-                $row['board_topic'][$board_name][$topic_name]['topic']['#markup'] = $topic_name;
-
-                $hash = "$record->article_id|$topic->topic_id";
-                $actions = _get_topic_actions($form_state, $hash);
-                $row['board_topic'][$board_name][$topic_name]["reject_$hash"] = array(
-                    '#type' => 'checkbox',
-                    '#title' => t('Reject'),
-                );
-                if (isset($actions[$hash]['reject']) &&
-                    $actions[$hash]['reject'])
-                    $row['board_topic'][$board_name][$topic_name]["reject_$hash"]['#default_value'] = 1;
-
-                $row['board_topic'][$board_name][$topic_name]["pass_$hash"] = array(
-                    '#type' => 'checkbox',
-                    '#title' => t('Pass'),
-                );
-                if (isset($actions[$hash]['pass']) &&
-                    $actions[$hash]['pass'])
-                    $row['board_topic'][$board_name][$topic_name]["pass_$hash"]['#default_value'] = 1;
-            }
+        if (isset($form_state['triggering_element']['#type']) &&
+            $form_state['triggering_element']['#type'] == 'select') {
+            // skip results if updating via ajax
+            return $form;
         }
 
-        //"<div class='citation-cell brief-citation left-column'>$brfCite<br><br><i>$title</i></div>";
+        _citation_queue_results($form, $form_state, $is_librarian);
+
+        return $form;
+    }
+
+    function _ajax_citation_queue_board_select($form, $form_state) {
+        return $form['citation_queue']['topic_select'];
+    }
+
+    function _citation_queue_results(&$form, &$form_state, $is_librarian) {
+
+        $board_id = 0;
+        $topic_id = 0;
+        $journal_id = '';
+
+        // get values if they exist
+        if (isset($form_state['values'])) {
+            $board_id = $form_state['values']['board_select'];
+            $topic_id = $form_state['values']['topic_select'];
+            $journal_id = $form_state['values']['journal_id_field'];
+        }
+
+        if (!isset($form['citation_queue_results'])) {
+            $form['citation_queue_results'] = array(
+                '#prefix' => '<div id="citation-results-div">',
+                '#suffix' => '</div>',
+            );
+        }
+
+        $results = &$form['citation_queue_results'];
+
+        try {
+            $query = db_select('ebms_article_state', 's');
+            $query->join('ebms_last_article_topic_state', 'l', 'l.article_state_id = s.article_state_id');
+            if ($journal_id)
+                $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
+
+            $source_state = 'Ready for initial review';
+            if (!$is_librarian) {
+                $source_state = 'Passed initial review';
+            }
+            $state_id = Ebms\getStateIdByName($source_state);
+
+            $query->condition('s.state_id', $state_id);
+            // add the pager early on in the process
+            $query = $query->extend('PagerDefault');
+
+            // add the other filter fields
+            // $topic_id implies $board_id
+            if ($topic_id)
+                $query->condition('s.topic_id', $topic_id);
+            else if ($board_id)
+                $query->condition('s.board_id', $board_id);
+
+            if ($journal_id)
+                $query->condition('a.source_jrnl_id', "%$journal_id%", 'LIKE');
+
+            $query->groupBy('s.article_id');
+
+            // TODO: add the count back once the query is faster!
+            $num_rows = $query->countQuery()->execute()->fetchField();
+            //$num_rows = 10;
+
+            $query
+                ->fields('s', array('article_id'))
+                ->limit(10);
+            $query->addExpression('GROUP_CONCAT(s.topic_id)', 'topics');
+
+            $result = $query->execute();
+        } catch (Exception $e) {
+            $num_rows = -1;
+            $result = array();
+        }
+
+        $results['results-title']['#markup'] = "<h2>Citations Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
+
+        $results['buttons'] = array(
+            '#prefix' => '<div id="citation-buttons-div">',
+            '#suffix' => '</div>',
+        );
+
+        $results['buttons']['save_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Save',
+        );
+
+        $results['buttons']['refresh_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Refresh',
+        );
+
+        $results['top-pager'] = array(
+            '#theme' => 'pager',
+            '#attributes' => array(
+                'class' => 'top-pager'
+            ));
+
+        $results['table'] = array(
+            '#prefix' => '<div id="citation-table-div">',
+            '#suffix' => '</div>',
+        );
+
+        $results['table']['header'] = array(
+            '#prefix' => "<div class='citation-header'>",
+            '#suffix' => '</div>',
+        );
+
+        $results['table']['header'][]['#markup'] =
+            "<div class='citation-cell actions left-column borderless'>&nbsp;</div>";
+        $results['table']['header'][]['#markup'] =
+            "<div class='citation-cell brief-citation'>Citations</div>";
+        $results['table']['header'][]['#markup'] =
+            "<div class='citation-cell board borderless'>Board - Topic</div>";
         /* $results['table']['header'][]['#markup'] =
           "<div class='citation-cell board'>Board</div>";
           $results['table']['header'][]['#markup'] =
-          "<div class='citation-cell summary-topic'>Summary Topic</div>";
-          $results['table']['header'][]['#markup'] =
-          "<div class='citation-cell reject-check'>Reject</div>";
-          $results['table']['header'][]['#markup'] =
-          "<div class='citation-cell pass-check right-cell'>Pass</div>";
+          "<div class='citation-cell summary-topic'><div class='summary-topic-name'>Summary Topic</div><div class='summary-topic-check'>Reject</div><div class='summary-topic-check'>Pass</div></div>"; */
 
-          /* $results['table']['rows'][$ix]['brief_title']['#markup'] =
-          "<div class='citation-cell brief-title'>$record->brf_jrnl_title</div>";
-          $results['table']['rows'][$ix]['full_title']['#markup'] =
-          "<div class='citation-cell full-title'>$record->jrnl_title</div>";
-          $results['table']['rows'][$ix]['journal_id']['#markup'] =
-          "<div class='citation-cell id'>$record->source_jrnl_id</div>";
-
-          $initial = $record->default_value;
-          $journal_hash = "$record->source|$record->source_jrnl_id|$board|$initial";
-          $default = $initial;
-          if (isset($form_state['altered_states'][$journal_hash])) {
-          $default = $form_state['altered_states'][$journal_hash];
-          }
-
-          $results['table']['rows'][$ix]["not_list_state_$journal_hash"] = array(
-          '#type' => 'checkbox',
-          '#title' => "&nbsp;",
-          '#default_value' => $default,
-          '#prefix' => "<div class='citation-cell not-check'>",
-          '#suffix' => "</div>",
-          //'#return_value' => ,
-          //'#attributes' => array('name' => "search_row_${ix}_button"),
-          ); */
-
-        $ix++;
-    }
-
-    $results['bottom-pager'] = array(
-        '#theme' => 'pager',
-        '#attributes' => array(
-            'class' => 'top-pager'
-        ));
-}
-
-function pdq_ebms_citation_queue_submit($form, &$form_state) {
-    $is_librarian = $form_state['build_info']['args'][0];
-
-    _update_topic_actions($form_state);
-
-    $form_state['rebuild'] = true;
-
-    $clear_states = false;
-
-    if (isset($form_state['values']['op'])) {
-        $op = $form_state['values']['op'];
-        if (!empty($form_state['values']['submit_source'])) {
-            $op = $form_state['values']['submit_source'];
+        $page = 0;
+        $parms = drupal_get_query_parameters();
+        if (isset($parms['page']) && is_numeric($parms['page'])) {
+            $page = $parms['page'];
         }
 
-        switch ($op) {
-            case 'Reset':
-                $form_state['rebuild'] = false;
-                return;
-            case 'Save':
-                // write out the changes to the not list, in terms of
-                // inserts and deletes to the DB
-                $source_state = 'Ready for initial review';
-                if (!$is_librarian) {
-                    $source_state = 'Passed initial review';
+        $rows_per_page = 10;
+
+        $first_row = ($page * $rows_per_page) + 1;
+
+        $ix = 0;
+        $results['table']['rows'] = array();
+        foreach ($result as $record) {
+            $results['table']['rows'][$ix] = array(
+                '#prefix' => "<div class='citation-row'>",
+                '#suffix' => '</div>',
+            );
+
+            $row = &$results['table']['rows'][$ix];
+
+            $row['actions']['#type'] = 'container';
+            $row['actions']['#prefix'] = "<div class='citation-cell borderless'>";
+            $row['actions']['#suffix'] = "</div>";
+
+            $row['actions']['row_num'] = array('#markup' => ($ix + $first_row) . "<br />");
+            /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />');
+              $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />');
+              $row['actions']['tag'] = array('#type' => 'submit', '#value' => t('Tag'), '#suffix' => '<br />'); */
+
+            $article = new Ebms\EbmsArticle($record->article_id);
+
+            //$authors = implode(', ', $article->getAuthors());
+            //$title = $article->getArticleTitle();
+
+            $cite = _cite_article($article, false);
+
+            $row['brief_citation']['#markup'] =
+                "<div class='citation-cell brief-citation left-column'><a href='/citations/full/$record->article_id'>$cite</a></div>";
+
+            // retrieve the topics and related boards
+            $curr_topics = explode(',', $record->topics);
+
+            $topics = array();
+            foreach ($article->getTopics() as $topic) {
+                if (in_array($topic->topic_id, $curr_topics)) {
+                    $boards[$topic->board_name][$topic->topic_name] = $topic;
                 }
-                _write_topic_states($form_state['altered_topics'], $source_state);
-
-                $clear_states = true;
-                break;
-            case 'Sort':
-            case 'Refresh':
-                $clear_states = true;
-                break;
-        }
-    }
-
-    if ($clear_states)
-        $form_state['altered_topics'] = array();
-
-    // wipe out button values so that the default_values calculated from
-    // altered topics can take effect
-    _clear_topic_actions($form_state['input'], 'input');
-}
-
-function _cite_article($article, $long_form = true) {
-    $article_id = $article->getId();
-    $xml = db_select('ebms_article', 'a')
-        ->fields('a', array('source_data'))
-        ->condition('a.article_id', $article_id)
-        ->execute()
-        ->fetchField();
-    $doc = new \SimpleXMLElement($xml);
-    $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
-    $articleXML = $doc->MedlineCitation->Article;
-    $title = htmlspecialchars($articleXML->ArticleTitle);
-    if (!$long_form)
-        $title = "<em>$title</em>";
-    $pgn = htmlspecialchars($articleXML->Pagination->MedlinePgn);
-    $year = $articleXML->Journal->JournalIssue->PubDate->Year;
-    $issue = htmlspecialchars($articleXML->Journal->JournalIssue->Issue);
-    $vol = htmlspecialchars($articleXML->Journal->JournalIssue->Volume);
-    $authors = array();
-    if (isset($doc->MedlineCitation->Article->AuthorList->Author)) {
-        foreach ($doc->MedlineCitation->Article->AuthorList->Author
-        as $author) {
-            if (sizeof($authors) == 8) {
-                $authors[] = 'et al.';
-                break;
             }
-            $name = $author->LastName;
-            if ($author->Initials)
-                $name .= ' ' . $author->Initials;
-            $authors[] = htmlspecialchars($name);
-        }
-    }
-    if (count($authors) < 1)
-        $authors = array('[No authors listed]');
-    $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
-    $ta = htmlspecialchars($ta);
-    $pmid = $doc->MedlineCitation->PMID;
-    if (!$long_form)
-        $pmid = "PMID: $pmid";
 
-    $tAuthors = '';
-    $tTitle = '';
-    $tJournal = '';
-    $tPMID = '';
-    $tCMSID = '';
-    $tReviewCycle = '';
+            // build the board->id cell
+            /* $output = "<div class='citation-cell borderless'>";
+              foreach ($boards as $board_name => $topics) {
+              $output .= "<div class='citation-subtable'>";
+              $output .= "<div class='citation-cell board'>$board_name</div>";
+              $output .= "<div class='citation-cell borderless'>";
+              $output .= "<div class='summary-topic citation-table'>";
+              foreach ($topics as $topic_name => $topic) {
+              $output .= "<div class='summary-topic-line citation-row'>";
+              $output .= "<div class='summary-topic-name citation-cell borderless'>$topic_name</div>";
+              $output .= "<div class='summary-topic-check citation-cell borderless'>Reject</div>";
+              $output .= "<div class='summary-topic-check citation-cell borderless'>Pass</div>";
+              $output .= "</div>";  //end row
+              }
+              $output .= '</div>'; // end topic table
+              $output .= '</div>'; // end topic cell
+              $output .= '</div>'; // end board table
+              }
+              $output .= '</div>'; // end board cell */
 
-    if ($long_form) {
-        $tAuthors = '<div class="citation-subheader">AUTHORS</div>';
-        $tTitle = '<div class="citation-subheader">TITLE</div>';
-        $tJournal = '<div class="citation-subheader">JOURNAL</div>';
-        $tPMID = '<div class="citation-subheader">PMID</div>';
-        $tCMSID = '<div class="citation-subheader">CMS ID</div>';
-        $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLE</div>';
+            //$row['board_topic']['#markup'] = $output;
 
-        $cmsId = $article_id;
-        /* $cycleYear = $doc->MedlineCitation->DateCreated->Year;
-          $cycleMonth = $doc->MedlineCitation->DateCreated->Month;
-          $reviewCycle = "$cycleMonth/$cycleYear"; */
-        list($cycleYear, $cycleMonth) = explode('-', $article->getImportDate());
-        $reviewCycle = "$cycleMonth/$cycleYear";
-    }
+            $row['board_topic']['#type'] = 'container';
+            $row['board_topic']['#prefix'] = "<div class='citation-cell borderless'>";
+            $row['board_topic']['#suffix'] = "</div>";
 
-    $pieces = array(
-        "<div class='article-citation'>$tAuthors<div>",
-        implode(', ', $authors),
-        "</div>$tTitle<div>$title</div>$tJournal<div>$ta $vol",
-    );
-    if ($issue)
-        $pieces[] = "($issue)";
-    if ($pgn)
-        $pieces[] = ": $pgn";
-    if ($year)
-        $pieces[] = ", $year";
-    $pieces[] = ".</div>$tPMID<div>$pmid</div>";
-    if (!$long_form) {
-        $pieces[] = '<div><a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
-        $pieces[] = '<a href="/ebmsdev/stub">DOWNLOAD FULL TEXT</a></div>';
-    } else {
-        $pieces[] = "$tCMSID<div>$cmsId</div>";
-        $pieces[] = "$tReviewCycle<div>$reviewCycle</div>";
-    }
-    $pieces[] = '</div>';
-    return implode($pieces);
-    #$results = db_select('ebms_article', 'a')
-    #    ->fields('a', array('article_title', 'source_id',
-    #return "Article $position (CMS ID $article_id)";
-}
+            foreach ($boards as $board_name => $topics) {
+                $row['board_topic'][$board_name]['#type'] = 'container';
+                $row['board_topic'][$board_name]['board']['#markup'] = $board_name;
+                $row['board_topic'][$board_name]['board']['#prefix'] = '<div>';
+                $row['board_topic'][$board_name]['board']['#suffix'] = '</div>';
 
-function _get_topic_actions($form_state, $hash = null) {
 
-    if (!isset($form_state['altered_topics']))
-        return array();
+                foreach ($topics as $topic_name => $topic) {
+                    $row['board_topic'][$board_name][$topic_name]['#type'] = 'container';
+                    $row['board_topic'][$board_name][$topic_name]['#attributes'] = array(
+                        'class' => array('topic-checks'),
+                    );
+                    /* $row['board_topic'][$board_name][$topic_name]['flag']= array(
+                      '#type' => 'submit',
+                      '#value' => t('Tag'),
+                      ); */
+                    $row['board_topic'][$board_name][$topic_name]['topic']['#markup'] = $topic_name;
 
-    if (!isset($hash))
-        return $form_state['altered_topics'];
+                    $hash = "$record->article_id|$topic->topic_id";
+                    $actions = _get_topic_actions($form_state, $hash);
+                    $row['board_topic'][$board_name][$topic_name]["reject_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Reject'),
+                    );
+                    if (isset($actions[$hash]['reject']) &&
+                        $actions[$hash]['reject'])
+                        $row['board_topic'][$board_name][$topic_name]["reject_$hash"]['#default_value'] = 1;
 
-    $topic_actions = array();
-    foreach ($form_state['altered_topics'] as $key => $value) {
-        if ($key != $hash)
-            continue;
-
-        $topic_actions[$key] = $value;
-    }
-
-    return($topic_actions);
-}
-
-/**
- * Retrieves the reject or pass decisions on the listed topics from the form state
- * and stores the relevant values for later use.
- * @param array $form_state 
- */
-function _update_topic_actions(&$form_state) {
-    $altered_topics = array();
-    if (isset($form_state['altered_topics']))
-        $altered_topics = $form_state['altered_topics'];
-
-    foreach ($form_state['values'] as $key => $value) {
-        if (strpos($key, 'reject_') === 0 ||
-            strpos($key, 'pass_') === 0) {
-            list($action, $hash) = explode('_', $key);
-
-            // whatever the hash, add it and the current action to the altered
-            // topics array
-            $altered_topics[$hash][$action] = $value;
-        }
-    }
-
-    // clear out double-0 actions (no need to persist pairs of unchecked boxes)
-    $set_topics = array();
-    foreach ($altered_topics as $hash => $actions) {
-        if (!$actions['reject'] && !$actions['pass'])
-            continue;
-
-        $set_topics[$hash] = $actions;
-    }
-
-    $form_state['altered_topics'] = $set_topics;
-}
-
-/**
- * 
- * @param type $target
- * @param type $desc
- */
-function _clear_topic_actions(&$target, $desc) {
-    $button_keys = array();
-    foreach ($target as $key => $value) {
-        if (strpos($key, 'reject_') === 0 ||
-            strpos($key, 'pass_') === 0) {
-            $button_keys[$key] = $value;
-        }
-    }
-
-    $diff = array_diff_key($target, $button_keys);
-    $target = $diff;
-}
-
-/**
- * Used the given initial state as a starting point, determines the proper new
- * state for each topic, and updates the articles' states.
- * @global type $user
- * @param type $values an array of topic actions, pulled from $form_state
- * @param type $initial_state the original state of the listed article/topic pairs
- */
-function _write_topic_states($values, $initial_state) {
-    // first, ensure the topic is valid
-    global $citations_state_map;
-
-    $reject_name = $citations_state_map[$initial_state]['reject'];
-    $pass_name = $citations_state_map[$initial_state]['pass'];
-
-    // look through each article/topic hash and determine if they are rejected or
-    // passed
-    foreach ($values as $hash => $actions) {
-        // get the article id and topic id from the hash,
-        // and the reject and pass states from the actions array
-        list($article_id, $topic_id) = explode("|", $hash);
-        $reject = $actions['reject'];
-        $pass = $actions['pass'];
-
-        // define the new state, default to reject
-        $new_state_name = $reject_name;
-
-        // if the action states match, do nothing
-        // (both selected, neither selected)
-        // ((shouldn't actually happen))
-        if ($pass == $reject) {
-            continue;
-        }
-        // else if pass is set, use the pass name
-        else if ($pass)
-            $new_state_name = $pass_name;
-
-        // otherwise, reject is already chosen and should be set
-        // update the article's state
-        $row_id = Ebms\setArticleState($article_id, $new_state_name, $topic_id);
-    }
-}
-
-function pdq_ebms_full_citation($form, &$form_state, $articleId) {
-    require_once('EbmsArticle.inc');
-
-    $article = new Ebms\EbmsArticle($articleId);
-
-    $cite = _cite_article($article);
-
-    $form['#prefix'] = '<div id="citation-form-div">';
-    $form['#suffix'] = '</div">';
-
-    $form['citation'] = array('#markup' => $cite);
-
-    // build the citation tags    
-    $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');
-
-    // reverse order so most recent is first
-    $tags = array_reverse($tags);
-    $form['article_tags'] = _format_tags($form_state, $tags, $articleId);
-
-    // build the board topics
-    $history = Ebms\getStatusHistory($articleId, null, null, true, true, 'BTS');
-    $form['editorial_boards'] = _format_boards($form_state, $article, $history, $tags);
-
-    // need to ensure that the fieldsets leading to any triggered element
-    // are expanded
-    if (isset($form_state['triggering_element']['#array_parents'])) {
-        $parents = $form_state['triggering_element']['#array_parents'];
-        $path = &$form;
-        foreach ($parents as $parent) {
-            $path = &$path[$parent];
-
-            if (isset($path['#type']) && $path['#type'] == 'fieldset') {
-                $path['#collapsed'] = false;
+                    $row['board_topic'][$board_name][$topic_name]["pass_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Pass'),
+                    );
+                    if (isset($actions[$hash]['pass']) &&
+                        $actions[$hash]['pass'])
+                        $row['board_topic'][$board_name][$topic_name]["pass_$hash"]['#default_value'] = 1;
+                }
             }
+
+            //"<div class='citation-cell brief-citation left-column'>$brfCite<br><br><i>$title</i></div>";
+            /* $results['table']['header'][]['#markup'] =
+              "<div class='citation-cell board'>Board</div>";
+              $results['table']['header'][]['#markup'] =
+              "<div class='citation-cell summary-topic'>Summary Topic</div>";
+              $results['table']['header'][]['#markup'] =
+              "<div class='citation-cell reject-check'>Reject</div>";
+              $results['table']['header'][]['#markup'] =
+              "<div class='citation-cell pass-check right-cell'>Pass</div>";
+
+              /* $results['table']['rows'][$ix]['brief_title']['#markup'] =
+              "<div class='citation-cell brief-title'>$record->brf_jrnl_title</div>";
+              $results['table']['rows'][$ix]['full_title']['#markup'] =
+              "<div class='citation-cell full-title'>$record->jrnl_title</div>";
+              $results['table']['rows'][$ix]['journal_id']['#markup'] =
+              "<div class='citation-cell id'>$record->source_jrnl_id</div>";
+
+              $initial = $record->default_value;
+              $journal_hash = "$record->source|$record->source_jrnl_id|$board|$initial";
+              $default = $initial;
+              if (isset($form_state['altered_states'][$journal_hash])) {
+              $default = $form_state['altered_states'][$journal_hash];
+              }
+
+              $results['table']['rows'][$ix]["not_list_state_$journal_hash"] = array(
+              '#type' => 'checkbox',
+              '#title' => "&nbsp;",
+              '#default_value' => $default,
+              '#prefix' => "<div class='citation-cell not-check'>",
+              '#suffix' => "</div>",
+              //'#return_value' => ,
+              //'#attributes' => array('name' => "search_row_${ix}_button"),
+              ); */
+
+            $ix++;
         }
-    }
 
-    return $form;
-}
-
-function pdq_ebms_full_citation_submit($form, &$form_state) {
-    $form_state['rebuild'] = TRUE;
-}
-
-/**
- * Formats an article or topic tag for rendering.
- * @param EbmsArticleTag $tag
- * @return mixed the formatted render array.
- */
-function _format_tag($tag, $form_state = null) {
-    $form = array();
-
-    $date = _format_date($tag->dt);
-    $form['article_tag'] = array('#markup' => "<div>$tag->type_name - $date - $tag->user_name</div>");
-    if ($form_state != null) {
-        $form['article_tag']['#prefix'] = '<div class="full-citation-tag full-citation-indent">';
-        $form['article_tag']['#suffix'] = '</div>';
-    }
-
-    if ($form_state != null) {
-        //drop in 'add comment' button
-        $form['article_tag_comment_add_button'] =
-            _build_add_tag_comment_button($form_state, $tag->article_tag_id);
-    }
-
-    $form['article_tag_comment'] = _format_comments($tag->comments);
-
-    if ($form_state != null) {
-        // indent the tag to clear the button
-        $form['article_tag_comment']['#prefix'] = '<div class="full-citation-element">';
-        $form['article_tag_comment']['#suffix'] = '</div>';
-    }
-
-    return $form;
-}
-
-function _build_add_tag_comment_button($form_state, $articleTagId) {
-    $form = array();
-
-    $hash = $articleTagId;
-    $buttonId = "add_tag_comment_$hash";
-
-    // check if related form is triggered
-    $triggered = _is_triggered_by($form_state, $buttonId);
-
-    if ($triggered) {
-        // grab icon for button
-        $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddComment_Icon_Active.png';
-
-        // create add tag button
-        $form[$buttonId] = array(
-            '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
-        );
-
-        // create add comment form 
-        $formId = "add_tag_comment_form_$hash";
-        $form[$formId] = _build_add_tag_comment_form($articleTagId);
-        $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
-        $form[$formId]['#suffix'] = '</div>';
-    } else {
-        // grab icon for button
-        $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddComment_Icon_Inactive.png';
-
-        // create add tag button
-        $form[$buttonId] = array(
-            '#type' => 'image_button',
-            '#return_value' => $buttonId,
-            '#src' => $iconPath,
-            '#ajax' => array(
-                'callback' => '_ajax_full_citation',
-                'wrapper' => 'citation-form-div',
-            ),
+        $results['bottom-pager'] = array(
+            '#theme' => 'pager',
             '#attributes' => array(
-                'class' => array('full-citation-button', 'image-button'),
-            ),
+                'class' => 'top-pager'
+            ));
+    }
+
+    function pdq_ebms_citation_queue_submit($form, &$form_state) {
+        $is_librarian = $form_state['build_info']['args'][0];
+
+        _update_topic_actions($form_state);
+
+        $form_state['rebuild'] = true;
+
+        $clear_states = false;
+
+        if (isset($form_state['values']['op'])) {
+            $op = $form_state['values']['op'];
+            if (!empty($form_state['values']['submit_source'])) {
+                $op = $form_state['values']['submit_source'];
+            }
+
+            switch ($op) {
+                case 'Reset':
+                    $form_state['rebuild'] = false;
+                    return;
+                case 'Save':
+                    // write out the changes to the not list, in terms of
+                    // inserts and deletes to the DB
+                    $source_state = 'Ready for initial review';
+                    if (!$is_librarian) {
+                        $source_state = 'Passed initial review';
+                    }
+                    _write_topic_states($form_state['altered_topics'], $source_state);
+
+                    $clear_states = true;
+                    break;
+                case 'Sort':
+                case 'Refresh':
+                    $clear_states = true;
+                    break;
+            }
+        }
+
+        if ($clear_states)
+            $form_state['altered_topics'] = array();
+
+        // wipe out button values so that the default_values calculated from
+        // altered topics can take effect
+        _clear_topic_actions($form_state['input'], 'input');
+    }
+
+    function _cite_article($article, $long_form = true) {
+        $article_id = $article->getId();
+        $xml = db_select('ebms_article', 'a')
+            ->fields('a', array('source_data'))
+            ->condition('a.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+        $doc = new \SimpleXMLElement($xml);
+        $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
+        $articleXML = $doc->MedlineCitation->Article;
+        $title = htmlspecialchars($articleXML->ArticleTitle);
+        if (!$long_form)
+            $title = "<em>$title</em>";
+        $pgn = htmlspecialchars($articleXML->Pagination->MedlinePgn);
+        $year = $articleXML->Journal->JournalIssue->PubDate->Year;
+        $issue = htmlspecialchars($articleXML->Journal->JournalIssue->Issue);
+        $vol = htmlspecialchars($articleXML->Journal->JournalIssue->Volume);
+        $authors = array();
+        if (isset($doc->MedlineCitation->Article->AuthorList->Author)) {
+            foreach ($doc->MedlineCitation->Article->AuthorList->Author
+            as $author) {
+                if (sizeof($authors) == 8) {
+                    $authors[] = 'et al.';
+                    break;
+                }
+                $name = $author->LastName;
+                if ($author->Initials)
+                    $name .= ' ' . $author->Initials;
+                $authors[] = htmlspecialchars($name);
+            }
+        }
+        if (count($authors) < 1)
+            $authors = array('[No authors listed]');
+        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+        $ta = htmlspecialchars($ta);
+        $pmid = $doc->MedlineCitation->PMID;
+        if (!$long_form)
+            $pmid = "PMID: $pmid";
+
+        $tAuthors = '';
+        $tTitle = '';
+        $tJournal = '';
+        $tPMID = '';
+        $tCMSID = '';
+        $tReviewCycle = '';
+
+        if ($long_form) {
+            $tAuthors = '<div class="citation-subheader">AUTHORS</div>';
+            $tTitle = '<div class="citation-subheader">TITLE</div>';
+            $tJournal = '<div class="citation-subheader">JOURNAL</div>';
+            $tPMID = '<div class="citation-subheader">PMID</div>';
+            $tCMSID = '<div class="citation-subheader">CMS ID</div>';
+            $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLE</div>';
+
+            $cmsId = $article_id;
+            /* $cycleYear = $doc->MedlineCitation->DateCreated->Year;
+              $cycleMonth = $doc->MedlineCitation->DateCreated->Month;
+              $reviewCycle = "$cycleMonth/$cycleYear"; */
+            list($cycleYear, $cycleMonth) = explode('-', $article->getImportDate());
+            $reviewCycle = "$cycleMonth/$cycleYear";
+        }
+
+        $pieces = array(
+            "<div class='article-citation'>$tAuthors<div>",
+            implode(', ', $authors),
+            "</div>$tTitle<div>$title</div>$tJournal<div>$ta $vol",
         );
+        if ($issue)
+            $pieces[] = "($issue)";
+        if ($pgn)
+            $pieces[] = ": $pgn";
+        if ($year)
+            $pieces[] = ", $year";
+        $pieces[] = ".</div>$tPMID<div>$pmid</div>";
+        if (!$long_form) {
+            $pieces[] = '<div><a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
+            $pieces[] = '<a href="/ebmsdev/stub">DOWNLOAD FULL TEXT</a></div>';
+        } else {
+            $pieces[] = "$tCMSID<div>$cmsId</div>";
+
+            $cycles = Ebms\getArticleReviewCycle($article_id);
+
+            if (sizeof($cycles) > 1)
+                $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLES</div>';
+
+            $cycleNames = array();
+            foreach ($cycles as $cycle) {
+                $cycleNames[] = $cycle->cycle_name;
+            }
+
+            $reviewCycle = implode(', ', $cycleNames);
+
+            if (!empty($reviewCycle))
+                $pieces[] = "$tReviewCycle<div>$reviewCycle</div>";
+        }
+        $pieces[] = '</div>';
+        return implode($pieces);
+        #$results = db_select('ebms_article', 'a')
+        #    ->fields('a', array('article_title', 'source_id',
+        #return "Article $position (CMS ID $article_id)";
     }
 
+    function _get_topic_actions($form_state, $hash = null) {
 
+        if (!isset($form_state['altered_topics']))
+            return array();
 
-    return $form;
-}
+        if (!isset($hash))
+            return $form_state['altered_topics'];
 
-function _format_date($dt) {
-    list($date) = explode(' ', $dt);
-    $date = str_replace('-', '/', $date);
+        $topic_actions = array();
+        foreach ($form_state['altered_topics'] as $key => $value) {
+            if ($key != $hash)
+                continue;
 
-    return $date;
-}
+            $topic_actions[$key] = $value;
+        }
 
-function _format_comments($comments) {
-    $form = array();
-
-    $commentTexts = array();
-    foreach ($comments as $comment) {
-        if (empty($comment->text))
-            continue;
-
-        $date = _format_date($comment->dt);
-
-        $commentTexts[] = "$date - $comment->user_name<br />$comment->text";
+        return($topic_actions);
     }
 
-    if (!empty($commentTexts)) {
-        $markup = '<div class="citation-comment">COMMENTS: ';
-        $markup .= implode('<br /><br />', $commentTexts);
+    /**
+     * Retrieves the reject or pass decisions on the listed topics from the form state
+     * and stores the relevant values for later use.
+     * @param array $form_state 
+     */
+    function _update_topic_actions(&$form_state) {
+        $altered_topics = array();
+        if (isset($form_state['altered_topics']))
+            $altered_topics = $form_state['altered_topics'];
+
+        foreach ($form_state['values'] as $key => $value) {
+            if (strpos($key, 'reject_') === 0 ||
+                strpos($key, 'pass_') === 0) {
+                list($action, $hash) = explode('_', $key);
+
+                // whatever the hash, add it and the current action to the altered
+                // topics array
+                $altered_topics[$hash][$action] = $value;
+            }
+        }
+
+        // clear out double-0 actions (no need to persist pairs of unchecked boxes)
+        $set_topics = array();
+        foreach ($altered_topics as $hash => $actions) {
+            if (!$actions['reject'] && !$actions['pass'])
+                continue;
+
+            $set_topics[$hash] = $actions;
+        }
+
+        $form_state['altered_topics'] = $set_topics;
+    }
+
+    /**
+     * 
+     * @param type $target
+     * @param type $desc
+     */
+    function _clear_topic_actions(&$target, $desc) {
+        $button_keys = array();
+        foreach ($target as $key => $value) {
+            if (strpos($key, 'reject_') === 0 ||
+                strpos($key, 'pass_') === 0) {
+                $button_keys[$key] = $value;
+            }
+        }
+
+        $diff = array_diff_key($target, $button_keys);
+        $target = $diff;
+    }
+
+    /**
+     * Used the given initial state as a starting point, determines the proper new
+     * state for each topic, and updates the articles' states.
+     * @global type $user
+     * @param type $values an array of topic actions, pulled from $form_state
+     * @param type $initial_state the original state of the listed article/topic pairs
+     */
+    function _write_topic_states($values, $initial_state) {
+        // first, ensure the topic is valid
+        global $citations_state_map;
+
+        $reject_name = $citations_state_map[$initial_state]['reject'];
+        $pass_name = $citations_state_map[$initial_state]['pass'];
+
+        // look through each article/topic hash and determine if they are rejected or
+        // passed
+        foreach ($values as $hash => $actions) {
+            // get the article id and topic id from the hash,
+            // and the reject and pass states from the actions array
+            list($article_id, $topic_id) = explode("|", $hash);
+            $reject = $actions['reject'];
+            $pass = $actions['pass'];
+
+            // define the new state, default to reject
+            $new_state_name = $reject_name;
+
+            // if the action states match, do nothing
+            // (both selected, neither selected)
+            // ((shouldn't actually happen))
+            if ($pass == $reject) {
+                continue;
+            }
+            // else if pass is set, use the pass name
+            else if ($pass)
+                $new_state_name = $pass_name;
+
+            // otherwise, reject is already chosen and should be set
+            // update the article's state
+            $row_id = Ebms\setArticleState($article_id, $new_state_name, $topic_id);
+        }
+    }
+
+    function pdq_ebms_full_citation($form, &$form_state, $articleId) {
+        require_once('EbmsArticle.inc');
+
+        $article = new Ebms\EbmsArticle($articleId);
+
+        $cite = _cite_article($article);
+
+        $form['#prefix'] = '<div id="citation-form-div">';
+        $form['#suffix'] = '</div">';
+
+        $form['citation'] = array('#markup' => "<div class='full-citation-element'>$cite</div>");
+
+        // build the citation tags    
+        $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');
+
+        // reverse order so most recent is first
+        $tags = array_reverse($tags);
+        $form['article_tags'] = _format_tags($form_state, $tags, $articleId);
+
+        // build the board topics
+        $history = Ebms\getStatusHistory($articleId, null, null, true, true, 'BTS');
+        $form['editorial_boards'] = _format_boards($form_state, $article, $history, $tags);
+
+        // need to ensure that the fieldsets leading to any triggered element
+        // are expanded
+        if (isset($form_state['triggering_element']['#array_parents'])) {
+            $parents = $form_state['triggering_element']['#array_parents'];
+            $path = &$form;
+            foreach ($parents as $parent) {
+                $path = &$path[$parent];
+
+                if (isset($path['#type']) && $path['#type'] == 'fieldset') {
+                    $path['#collapsed'] = false;
+                }
+            }
+        }
+
+        return $form;
+    }
+
+    function pdq_ebms_full_citation_submit($form, &$form_state) {
+        $form_state['rebuild'] = TRUE;
+    }
+
+    /**
+     * Formats an article or topic tag for rendering.
+     * @param EbmsArticleTag $tag
+     * @return mixed the formatted render array.
+     */
+    function _format_tag($tag, $form_state = null) {
+        $form = array();
+        $form['#prefix'] = '<div class="full-citation-element">';
+        $form['#suffix'] = '</div>';
+
+        $date = _format_date($tag->dt);
+        $form['article_tag'] = array('#markup' => "<div>$tag->type_name - $date - $tag->user_name</div>");
+
+        // if a form state is provided, indent the elements to provide space for
+        // the button
+        if ($form_state != null) {
+            $form['article_tag']['#prefix'] = '<div class="full-citation-tag full-citation-indent">';
+            $form['article_tag']['#suffix'] = '</div>';
+
+            //drop in 'add comment' button
+            $form['article_tag_comment_add_button'] =
+                _build_add_tag_comment_button($form_state, $tag->article_tag_id);
+        }
+
+        $form['article_tag_comment'] = _format_comments($tag->comments);
+        $form['article_tag_comment']['#prefix'] = '<div class="full-citation-indent">';
+        $form['article_tag_comment']['#suffix'] = '</div>';
+
+        return $form;
+    }
+
+    function _build_add_tag_comment_button($form_state, $articleTagId) {
+        $form = array();
+
+        $hash = $articleTagId;
+        $buttonId = "add_tag_comment_$hash";
+
+        // check if related form is triggered
+        $triggered = _is_triggered_by($form_state, $buttonId);
+
+        if ($triggered) {
+            // grab icon for button
+            $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddComment_Icon_Active.png';
+
+            // create add tag button
+            $form[$buttonId] = array(
+                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+            );
+
+            // create add comment form 
+            $formId = "add_tag_comment_form_$hash";
+            $form[$formId] = _build_add_tag_comment_form($articleTagId);
+            $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+            $form[$formId]['#suffix'] = '</div>';
+        } else {
+            // grab icon for button
+            $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddComment_Icon_Inactive.png';
+
+            // create add tag button
+            $form[$buttonId] = array(
+                '#type' => 'image_button',
+                '#return_value' => $buttonId,
+                '#src' => $iconPath,
+                '#ajax' => array(
+                    'callback' => '_ajax_full_citation',
+                    'wrapper' => 'citation-form-div',
+                ),
+                '#attributes' => array(
+                    'class' => array('full-citation-button', 'image-button'),
+                    'title' => 'Add Comment',
+                    'alt' => 'Add Comment',
+                ),
+            );
+        }
+
+
+
+        return $form;
+    }
+
+    function _format_date($dt) {
+        list($date) = explode(' ', $dt);
+        $date = str_replace('-', '/', $date);
+
+        return $date;
+    }
+
+    function _format_comments($comments) {
+        $form = array();
+
+        $commentTexts = array();
+        $firstComment = true;
+        foreach ($comments as $comment) {
+            if (empty($comment->text))
+                continue;
+
+            $date = _format_date($comment->dt);
+
+            // skip the date and user fro the first comment
+            if ($firstComment) {
+                $firstComment = false;
+                $commentTexts[] = "$comment->text";
+            } else {
+                $commentTexts[] = "$date - $comment->user_name<br />$comment->text";
+            }
+        }
+
+
+        $markup = '<div class="citation-comment">';
+        if (!empty($commentTexts))
+            $markup .= 'COMMENTS: ' . implode('<br /><br />', $commentTexts);
+        else
+            $markup .= '&nbsp;';
+
         $markup .= "</div>";
         $form['#markup'] = $markup;
+        $form['#prefix'] = '<div class="full-citation-indent">';
+        $form['#suffix'] = '</div>';
+
+        return $form;
     }
 
-    return $form;
-}
+    /**
+     * Formats an array of tags for rendering.
+     * @param mixed $tags
+     * @return mixed the formatted render array.
+     */
+    function _format_tags($form_state, $tags, $articleId, $topicId = null) {
+        $form = array();
 
-/**
- * Formats an array of tags for rendering.
- * @param mixed $tags
- * @return mixed the formatted render array.
- */
-function _format_tags($form_state, $tags, $articleId, $topicId = null) {
-    $form = array();
+        // organize the tags by topic
+        $topic_tags = _build_tag_array($tags);
 
-    // organize the tags by topic
-    $topic_tags = _build_tag_array($tags);
+        // determine the desired topic id, 0 representing topicless tags
+        $targetTopicId = $topicId;
+        if ($topicId == null)
+            $targetTopicId = 0;
 
-    // determine the desired topic id, 0 representing topicless tags
-    $targetTopicId = $topicId;
-    if ($topicId == null)
-        $targetTopicId = 0;
+        // generate the add tag button (or placeholder if triggered)
+        $form['article_tag_add_button'] = _build_add_tag_button($form_state, $articleId, $topicId);
 
-    // generate the add tag button (or placeholder if triggered)
-    $form['article_tag_add_button'] = _build_add_tag_button($form_state, $articleId, $topicId);
+        if (isset($topic_tags[$targetTopicId])) {
+            //add header
+            $form['article_tag_header'] = array('#markup' => '<div class="citation-subheader">Tag(s)</div>');
+            $form['article_tag_header']['#prefix'] = '<div class="full-citation-indent">';
+            $form['article_tag_header']['#suffix'] = '</div>';
 
-    //add header
-    $form['article_tag_header'] = array('#markup' => '<div class="citation-subheader">Tag(s)</div>');
-    $form['article_tag_header']['#prefix'] = '<div class="full-citation-indent">';
-    $form['article_tag_header']['#suffix'] = '</div>';
-
-    if (isset($topic_tags[$targetTopicId])) {
-        $tag = array_shift($topic_tags[$targetTopicId]);
-
-        $form['latest_article_tag'] = _format_tag($tag, $form_state);
-    }
-
-    // include the rest of the tags in a fieldset
-    $article_tags = array();
-    if (isset($topic_tags[$targetTopicId])) {
-        foreach ($topic_tags[$targetTopicId] as $tag) {
-            $article_tags[] = _format_tag($tag);
+            $tag = array_shift($topic_tags[$targetTopicId]);
+            $form['latest_article_tag'] = _format_tag($tag, $form_state);
         }
-    }
 
-    // add the remaining tags to a collapsible set
-    if (!empty($article_tags)) {
-        $form['past_article_tags'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Past Tag(s)'),
-            '#collapsible' => TRUE,
-            '#collapsed' => TRUE,
-            'tags' => $article_tags,
-            '#prefix' => '<div class="full-citation-element">',
-            '#suffix' => '</div>'
-        );
-    }
-
-    return $form;
-}
-
-function _build_tag_array($tags) {
-    $topic_tags = array();
-    foreach ($tags as $tag) {
-        $tag_topic_id = $tag->topic_id;
-        if (isset($tag_topic_id))
-            $topic_tags[$tag_topic_id][] = $tag;
-        else
-            $topic_tags[0][] = $tag;
-    }
-
-    return $topic_tags;
-}
-
-function _build_add_tag_button($form_state, $articleId, $topicId) {
-    $form = array();
-
-    // create hash for article/topic
-    $hash = "$articleId|$topicId";
-
-    $buttonId = "add_tag_$hash";
-
-    // check if related form is triggered
-    $triggered = _is_triggered_by($form_state, $buttonId);
-
-    if ($triggered) {
-        // grab icon for button
-        $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png';
-
-        // create add tag button
-        $form[$buttonId] = array(
-            '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
-        );
-
-        $formId = "add_tag_form_$hash";
-        $form[$formId] = _build_add_tag_form($articleId, $topicId);
-        $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
-        $form[$formId]['#suffix'] = '</div>';
-    } else {
-        // grab icon for button
-        $iconPath = Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png';
-
-        // create add tag button
-        $form[$buttonId] = array(
-            '#type' => 'image_button',
-            '#return_value' => $buttonId,
-            '#src' => $iconPath,
-            '#ajax' => array(
-                'callback' => '_ajax_full_citation',
-                'wrapper' => 'citation-form-div',
-            ),
-            '#attributes' => array(
-                'class' => array('full-citation-button', 'image-button'),
-            ),
-        );
-    }
-
-    return $form;
-}
-
-/**
- * Checks if the form has been triggered by an element with a particular return
- * value.
- * 
- * @param mixed $form_state     The current form state.
- * @param string $element_value The return value of interest.
- * @return bool                 Returns true if the form state has a triggering
- *                              element with the given return value.
- */
-function _is_triggered_by($form_state, $element_value) {
-    return (isset($form_state['triggering_element']['#return_value']) &&
-        $form_state['triggering_element']['#return_value'] == $element_value);
-}
-
-function _build_add_tag_form($article_id, $topic_id = null) {
-    $form = array();
-
-    $hash = "$article_id|$topic_id";
-
-    $articleOnly = ($topic_id == null);
-
-    $options = Ebms\getTagTypeNames($articleOnly);
-
-    $form["tag_select_$hash"] = array(
-        '#type' => 'select',
-        '#title' => t('Add Tag'),
-        '#options' => $options,
-        '#required' => true,
-    );
-
-    $form["tag_comment_$hash"] = array(
-        '#type' => 'textfield',
-        '#title' => t('Comment'),
-        '#required' => true,
-    );
-
-    $form["tag_save_$hash"] = array(
-        '#type' => 'submit',
-        '#value' => t('Save'),
-        '#submit' => array('_add_tag_save'),
-    );
-
-    $form["tag_cancel_$hash"] = array(
-        '#type' => 'submit',
-        '#value' => 'Cancel',
-        '#limit_validation_errors' => array(),
-        '#submit' => array('_form_cancel'),
-    );
-
-    return $form;
-}
-
-function _form_cancel($form, &$form_state) {
-    $form_state['rebuild'] = TRUE;
-}
-
-function _add_tag_save($form, &$form_state) {
-    require_once('EbmsArticle.inc');
-
-    $form_state['rebuild'] = TRUE;
-
-    $values = _retrieve_hash_values($form_state, array('tag_select', 'tag_comment'));
-
-    $tagIdStr = $values['tag_select'];
-    $comment = $values['tag_comment'];
-    $hash = $values['hash'];
-
-    // split the hash into articleId and topicId
-    list($articleId, $topicId) = explode("|", $hash);
-
-    // bind topicId to null if undefined
-    if (!$topicId)
-        $topicId = null;
-
-    Ebms\addArticleTag($tagIdStr, $articleId, $topicId, $comment);
-}
-
-function _build_add_tag_comment_form($articleTagId) {
-    $form = array();
-
-    $hash = "$articleTagId";
-
-    $form["tag_comment_$hash"] = array(
-        '#type' => 'textfield',
-        '#title' => t('Add Comment'),
-        '#required' => true,
-    );
-
-    $form["tag_save_$hash"] = array(
-        '#type' => 'submit',
-        '#value' => t('Save'),
-        '#submit' => array('_add_tag_comment_save'),
-    );
-
-    $form["tag_cancel_$hash"] = array(
-        '#type' => 'submit',
-        '#value' => t('Cancel'),
-        '#limit_validation_errors' => array(),
-        '#submit' => array('_form_cancel'),
-    );
-
-    return $form;
-}
-
-function _add_tag_comment_save($form, &$form_state) {
-    require_once('EbmsArticle.inc');
-
-    $form_state['rebuild'] = TRUE;
-
-    $values = _retrieve_hash_values($form_state, array('tag_comment'));
-
-    $comment = $values['tag_comment'];
-    $articleTagId = $values['hash'];
-
-    Ebms\addTagComment($articleTagId, $comment);
-}
-
-function _retrieve_hash_values($form_state, $stems) {
-    $values = array();
-    $hash = null;
-    foreach ($stems as $stem) {
-        foreach ($form_state['values'] as $key => $value) {
-            // check the current key if it begins with the stem
-            if (strpos($key, $stem) === 0) {
-                // begins with stem, retrieve hash from end of key
-                $localHash = str_replace("${stem}_", '', $key);
-
-                if ($hash == null || $hash == $localHash)
-                    $hash = $localHash;
-                else
-                    drupal_set_message("conflicting hash: $hash vs $localHash", 'error');
-
-                $values[$stem] = $value;
+        // include the rest of the tags in a fieldset
+        $article_tags = array();
+        if (isset($topic_tags[$targetTopicId])) {
+            foreach ($topic_tags[$targetTopicId] as $tag) {
+                $article_tags[] = _format_tag($tag);
             }
         }
-    }
 
-    $values['hash'] = $hash;
-
-    return $values;
-}
-
-/**
- * Formats an array of boards to their topic state histories for rendering.
- * @param mixed $history
- * @return mixed the formatted render array.
- */
-function _format_boards($form_state, $article, $history, $tags) {
-    $form = array();
-
-    // divide into arrays by board and topic
-    $board_topic_states = array();
-    foreach ($history as $status) {
-        if ($status->board_name && $status->topic_name) {
-            $board_topic_states[$status->board_name][$status->topic_name][$status->type_sequence][$status->active_status][] = $status;
+        // add the remaining tags to a collapsible set
+        if (!empty($article_tags)) {
+            $form['past_article_tags'] = array(
+                '#type' => 'fieldset',
+                '#title' => t('Past Tag(s)'),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'tags' => $article_tags,
+                '#attributes' => array(
+                    'class' => array('full-citation-past-items'),
+                ),
+                '#prefix' => '<div class="full-citation-element full-citation-indent">',
+                '#suffix' => '</div>'
+            );
         }
+
+        if (!isset($form['latest_article_tag'])) {
+            $form['no_tags'] = array('#markup' => '<div class="full-citation-indent">&nbsp;</div>');
+        }
+
+        $form['#prefix'] = '<div class="full-citation-element">';
+        $form['#suffix'] = '</div>';
+
+        return $form;
     }
 
-    $form['boards_header'] = array("#markup" => '<div class="citation-subheader">Editorial Board(s)</div>');
+    function _build_tag_array($tags) {
+        $topic_tags = array();
+        foreach ($tags as $tag) {
+            $tag_topic_id = $tag->topic_id;
+            if (isset($tag_topic_id))
+                $topic_tags[$tag_topic_id][] = $tag;
+            else
+                $topic_tags[0][] = $tag;
+        }
 
-    foreach ($board_topic_states as $board_name => $topics) {
-        $form[$board_name] = array(
+        return $topic_tags;
+    }
+
+    function _build_add_tag_button($form_state, $articleId, $topicId) {
+        $form = array();
+
+        // create hash for article/topic
+        $hash = "$articleId|$topicId";
+
+        $buttonId = "add_tag_$hash";
+
+        // check if related form is triggered
+        $triggered = _is_triggered_by($form_state, $buttonId);
+
+        if ($triggered) {
+            // grab icon for button
+            $iconPath = Ebms\ADD_DECISION_ACTIVE;
+            //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png';
+            // create add tag button
+            $form[$buttonId] = array(
+                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+            );
+
+            $formId = "add_tag_form_$hash";
+            $form[$formId] = _build_add_tag_form($articleId, $topicId);
+            $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+            $form[$formId]['#suffix'] = '</div>';
+        } else {
+            // grab icon for button
+            $iconPath = Ebms\ADD_DECISION_INACTIVE;
+            //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png';
+            // create add tag button
+            $form[$buttonId] = array(
+                '#type' => 'image_button',
+                '#return_value' => $buttonId,
+                '#src' => $iconPath,
+                '#ajax' => array(
+                    'callback' => '_ajax_full_citation',
+                    'wrapper' => 'citation-form-div',
+                ),
+                '#attributes' => array(
+                    'class' => array('full-citation-button', 'image-button'),
+                    'title' => 'Add Tag',
+                    'alt' => 'Add Tag',
+                ),
+            );
+        }
+
+        return $form;
+    }
+
+    /**
+     * Checks if the form has been triggered by an element with a particular return
+     * value.
+     * 
+     * @param mixed $form_state     The current form state.
+     * @param string $element_value The return value of interest.
+     * @return bool                 Returns true if the form state has a triggering
+     *                              element with the given return value.
+     */
+    function _is_triggered_by($form_state, $element_value) {
+        return (isset($form_state['triggering_element']['#return_value']) &&
+            $form_state['triggering_element']['#return_value'] == $element_value);
+    }
+
+    function _build_add_tag_form($article_id, $topic_id = null) {
+        $form = array();
+
+        $hash = "$article_id|$topic_id";
+
+        $articleOnly = ($topic_id == null);
+
+        $options = Ebms\getTagTypeNames($articleOnly);
+
+        $form["tag_select_$hash"] = array(
+            '#type' => 'select',
+            '#title' => t('Add Tag'),
+            '#options' => $options,
+            '#required' => true,
+        );
+
+        $form["tag_comment_$hash"] = array(
+            '#type' => 'textfield',
+            '#title' => t('Comment'),
+            '#required' => true,
+        );
+
+        $form["tag_save_$hash"] = array(
+            '#type' => 'submit',
+            '#value' => t('Save'),
+            '#submit' => array('_add_tag_save'),
+        );
+
+        $form["tag_cancel_$hash"] = array(
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+            '#limit_validation_errors' => array(),
+            '#submit' => array('_form_cancel'),
+        );
+
+        return $form;
+    }
+
+    function _form_cancel($form, &$form_state) {
+        $form_state['rebuild'] = TRUE;
+    }
+
+    function _add_tag_save($form, &$form_state) {
+        require_once('EbmsArticle.inc');
+
+        $form_state['rebuild'] = TRUE;
+
+        $values = _retrieve_hash_values($form_state, array('tag_select', 'tag_comment'));
+
+        $tagIdStr = $values['tag_select'];
+        $comment = $values['tag_comment'];
+        $hash = $values['hash'];
+
+        // split the hash into articleId and topicId
+        list($articleId, $topicId) = explode("|", $hash);
+
+        // bind topicId to null if undefined
+        if (!$topicId)
+            $topicId = null;
+
+        Ebms\addArticleTag($tagIdStr, $articleId, $topicId, $comment);
+    }
+
+    function _build_add_tag_comment_form($articleTagId) {
+        $form = array();
+
+        $hash = "$articleTagId";
+
+        $form["tag_comment_$hash"] = array(
+            '#type' => 'textfield',
+            '#title' => t('Add Comment'),
+            '#required' => true,
+        );
+
+        $form["tag_save_$hash"] = array(
+            '#type' => 'submit',
+            '#value' => t('Save'),
+            '#submit' => array('_add_tag_comment_save'),
+        );
+
+        $form["tag_cancel_$hash"] = array(
+            '#type' => 'submit',
+            '#value' => t('Cancel'),
+            '#limit_validation_errors' => array(),
+            '#submit' => array('_form_cancel'),
+        );
+
+        return $form;
+    }
+
+    function _add_tag_comment_save($form, &$form_state) {
+        require_once('EbmsArticle.inc');
+
+        $form_state['rebuild'] = TRUE;
+
+        $values = _retrieve_hash_values($form_state, array('tag_comment'));
+
+        $comment = $values['tag_comment'];
+        $articleTagId = $values['hash'];
+
+        Ebms\addTagComment($articleTagId, $comment);
+    }
+
+    function _retrieve_hash_values($form_state, $stems) {
+        $values = array();
+        $hash = null;
+        foreach ($stems as $stem) {
+            foreach ($form_state['values'] as $key => $value) {
+                // check the current key if it begins with the stem
+                if (strpos($key, $stem) === 0) {
+                    // begins with stem, retrieve hash from end of key
+                    $localHash = str_replace("${stem}_", '', $key);
+
+                    if ($hash == null || $hash == $localHash)
+                        $hash = $localHash;
+                    else
+                        drupal_set_message("conflicting hash: $hash vs $localHash", 'error');
+
+                    $values[$stem] = $value;
+                }
+            }
+        }
+
+        $values['hash'] = $hash;
+
+        return $values;
+    }
+
+    /**
+     * Formats an array of boards to their topic state histories for rendering.
+     * @param mixed $history
+     * @return mixed the formatted render array.
+     */
+    function _format_boards($form_state, $article, $history, $tags) {
+        $form = array();
+
+        // divide into arrays by board and topic
+        $board_topic_states = array();
+        foreach ($history as $status) {
+            if ($status->board_name && $status->topic_name) {
+                $board_topic_states[$status->board_name][$status->topic_name][$status->type_sequence][$status->active_status][] = $status;
+            }
+        }
+
+        // determine if multiple review cycles exist
+        $cycles = Ebms\getArticleReviewCycle($article->getId());
+        $display_cycle = (sizeof($cycles) > 1);
+
+        $form['boards_header'] = array("#markup" => '<div class="citation-subheader">Editorial Board(s)</div>');
+
+        foreach ($board_topic_states as $board_name => $topics) {
+            $form[$board_name] = array(
+                '#type' => 'fieldset',
+                '#title' => $board_name,
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'topics' => _format_topics($form_state, $article, $topics, $tags, $display_cycle),
+            );
+        }
+
+        return $form;
+    }
+
+    /**
+     * Formats an array of topics and their related state histories for rendering.
+     * @param mixed $topics
+     * @return mixed the formatted render array.
+     */
+    function _format_topics($form_state, $article, $topics, $tags, $display_cycle) {
+        $form = array();
+
+        foreach ($topics as $topic_name => $topic_sequences) {
+            $form[$topic_name] = _format_topic($form_state, $article, $topic_name, $topic_sequences, $tags, $display_cycle);
+        }
+
+        return $form;
+    }
+
+    /**
+     * Formats a topic name and set of topic states for rendering.
+     * @param string $topic
+     * @param mixed $topic_states
+     * @return mixed the formatted render array.
+     */
+    function _format_topic($form_state, $article, $topicName, $topic_sequences, $tags, $display_cycle) {
+        $form = array();
+
+        // retrieve the relevant ids for this article and topic
+        // topic id should have error-checking, but originates from an error-checked
+        // method
+        $articleId = $article->getId();
+        $topicId = Ebms\getTopicIdByName($topicName);
+
+        $form['topic_header'] = _format_topic_header($topicName);
+        if ($display_cycle) {
+            $form['topic_cycle'] = _format_topic_cycle($articleId, $topicId);
+        }
+        $form['topic_tags'] = _format_tags($form_state, $tags, $articleId, $topicId);
+        $form['topic_nci_reviewer_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$NCIREVIEWER, $topic_sequences);
+        $form['topic_full_text_decision'] = _format_topic_full_text_decision($article);
+        //$form['topic_full_text_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$FULLTEXT, $topic_sequences);
+        $form['topic_nci_surveillance_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$SURVEILLANCE, $topic_sequences);
+        $form['topic_assigned_for_review_decision'] = _format_topic_assigned_for_review_decision($articleId, $topicId);
+        $form['topic_board_member_responses'] = _format_topic_board_member_responses($articleId, $topicId);
+        $form['topic_board_manager_actions'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS, $topic_sequences);
+        $form['topic_on_agenda'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$ONAGENDA, $topic_sequences);
+        $form['topic_board_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$EDITORIALBOARD, $topic_sequences);
+
+        $form['topic_end'] = array('#markup' => '<hr>');
+
+        return $form;
+    }
+
+    function _format_topic_header($topic) {
+        $form = array();
+
+        $form['#prefix'] = '<div class="full-citation-element full-citation-indent">';
+        $form['#suffix'] = '</div>';
+
+        $form['header'] = array("#markup" => "<div class='citation-subheader'>Summary Topic</div>");
+        $form['topic'] = array("#markup" => "<div>$topic</div>");
+
+        return $form;
+    }
+
+    function _format_topic_cycle($articleId, $topicId) {
+        $form = array();
+
+        $form['#prefix'] = '<div class="full-citation-element full-citation-indent">';
+        $form['#suffix'] = '</div>';
+
+        $form['header'] = array("#markup" => "<div class='citation-subheader'>Review Cycle</div>");
+
+        $cycles = Ebms\getArticleReviewCycle($articleId, $topicId);
+
+        if (empty($cycles))
+            return array();
+
+        if (sizeof($cycles) > 1)
+            $form['header'] = array("#markup" => "<div class='citation-subheader'>Review Cycles</div>");
+
+        $cycleNames = array();
+        foreach ($cycles as $cycle) {
+            $cycleNames[] = $cycle->cycle_name;
+        }
+
+        $reviewCycle = implode(', ', $cycleNames);
+
+        $form['cycle'] = array("#markup" => "<div>$reviewCycle</div>");
+
+        return $form;
+    }
+
+    /*
+      function _format_topic_nci_reviewer_decision($topic_sequences, $show_past = false) {
+      $form = array();
+
+      $index = $show_past ? 'I' : 'A';
+      if (!isset($topic_sequences[4][$index]))
+      return $form;
+
+      if (!$show_past) {
+      $form['#prefix'] = '<div class="full-citation-element full-citation-indent">';
+      $form['#suffix'] = '</div>';
+      }
+
+      $statii = $topic_sequences[4][$index];
+
+      if (!$show_past)
+      $form['header'] = array("#markup" => "<div class='citation-subheader'>NCI Reviewer Decision</div>");
+
+      $decisions = array();
+      foreach ($statii as $status) {
+      $decision = array();
+      $date = _format_date($status->dt);
+      $decision['decision'] = array("#markup" => "<div>$status->type_name - $date - $status->user_name</div>");
+      $decision['comments'] = _format_comments($status->comments);
+      $decision['#prefix'] = '<div class="full-citation-element">';
+      $decision['#suffix'] = '</div>';
+
+      $decisions[] = $decision;
+      }
+
+      $form['decisions'] = $decisions;
+
+      // also dig up the past decisions if the currently displayed set is current
+      if (!$show_past && isset($topic_sequences[4]['I'])) {
+      // add the remaining decisions to a collapsible set
+      $form['past_decisions'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Past Decisions'),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      'tags' => _format_topic_nci_reviewer_decision($topic_sequences, true),
+      '#attributes' => array(
+      'class' => array('full-citation-past-items'),
+      ),
+      '#prefix' => '<div class="full-citation-element full-citation-indent">',
+      '#suffix' => '</div>'
+      );
+      }
+      return $form;
+      } */
+
+    function _format_topic_decision(Ebms\EbmsTopicDecisions $decisionInfo, $topic_sequences, $show_past = false) {
+        $form = array();
+
+        $sequenceIndex = $decisionInfo->sequence();
+        $title = $decisionInfo->title();
+
+        if (!isset($topic_sequences[$sequenceIndex]))
+            return $form;
+
+        $activeIndex = $show_past ? 'I' : 'A';
+        if (isset($topic_sequences[$sequenceIndex][$activeIndex])) {
+            $statii = $topic_sequences[$sequenceIndex][$activeIndex];
+
+            if (!$show_past) {
+                $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>$title</div>");
+            }
+
+            $decisions = array();
+            foreach ($statii as $status) {
+                $decision = array();
+
+                if (function_exists($decisionInfo->formatter())) {
+                    $formatter = $decisionInfo->formatter();
+                    $decision = $formatter($status);
+                } else {
+                    $date = _format_date($status->dt);
+
+                    $name = $status->type_name;
+                    $text_id = $status->type_text_id;
+
+                    $prefix = "$name - ";
+
+                    if (in_array($text_id, $decisionInfo->pass_states())) {
+                        $img = Ebms\PASS_ACTIVE;
+                        $prefix = "<img class='full-citation-decision-icon' src='$img'>";
+                    } else if (in_array($text_id, $decisionInfo->reject_states())) {
+                        $img = Ebms\REJECT_ACTIVE;
+                        $prefix = "<img class='full-citation-decision-icon' src='$img'>";
+                    }
+
+                    $decision['decision'] = array("#markup" => "$prefix$date - $status->user_name");
+                    $decision['comments'] = _format_comments($status->comments);
+                    $decision['decision']['#prefix'] = '<div class="full-citation-indent">';
+                    $decision['decision']['#suffix'] = '</div>';
+                }
+
+                $decision['#prefix'] = '<div class="full-citation-element">';
+                $decision['#suffix'] = '</div>';
+                $decisions[] = $decision;
+            }
+
+            $form['decisions'] = $decisions;
+        }
+
+        // also dig up the past decisions if the currently displayed set is current
+        if (!$show_past && isset($topic_sequences[$sequenceIndex]['I'])) {
+            // ensure the header exists
+            $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>$title</div>");
+
+            // add the remaining decisions to a collapsible set
+            $form['past_decisions'] = array(
+                '#type' => 'fieldset',
+                '#title' => t('Past Decisions'),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'tags' => _format_topic_decision($decisionInfo, $topic_sequences, true),
+                '#attributes' => array(
+                    'class' => array('full-citation-past-items'),
+                ),
+            );
+        }
+
+        if (!$show_past && !empty($form)) {
+            $form['#prefix'] = '<div class="full-citation-element">';
+            $form['#suffix'] = '</div>';
+        }
+
+        return $form;
+    }
+
+    function _format_topic_full_text_decision($article) {
+        $form = array();
+
+        $fullTextId = $article->getFullTextId();
+
+        if ($fullTextId === null)
+            return $form;
+
+        $form['#prefix'] = '<div class="full-citation-element full-citation-indent">';
+        $form['#suffix'] = '</div>';
+
+        // add the header
+        $form['header'] = array("#markup" => "<div class='citation-subheader'>Full Text Retrieved</div>");
+
+        // if the id is < 1...
+        if ($fullTextId < 1) {
+            // attach the 'no text available' line and return
+            $form['decision'] = array("#markup" => "<div>No text available for this article.</div>");
+            return $form;
+        }
+
+        // get the related database row
+        $records = db_select('file_managed', 'f')
+                ->condition('fid', $fullTextId)->execute()->fetchAll();
+
+        if (!isset($records[0]))
+            return $form;
+
+        $record = $records[0];
+        $uid = $record->uid;
+        $filename = $record->filename;
+        $ts = $record->timestamp;
+        $date = format_date($ts, 'custom', 'm/d/Y');
+
+        $account = user_load($uid);
+
+        $form['decision'] = array("#markup" => "<div>Full Text Available - $date - $account->name</div>");
+        $form['filename'] = array("#markup" => "<div>FILE NAME: $filename</div>");
+
+        return $form;
+    }
+
+    /* function _format_topic_surveillance_decision($topic_sequences) {
+      $form = array();
+
+      if (!isset($topic_sequences[9]['A'][0]))
+      return $form;
+
+      $form['#prefix'] = '<div class="full-citation-element full-citation-indent">';
+      $form['#suffix'] = '</div>';
+
+      $status = $topic_sequences[9]['A'][0];
+
+      $form['header'] = array("#markup" => "<div class='citation-subheader'>Literature Surveillance Committee Decision</div>");
+      $date = _format_date($status->dt);
+      $form['decision'] = array("#markup" => "<div>$status->type_name - $date - $status->user_name</div>");
+      $form['comments'] = _format_comments($status->comments);
+
+      return $form;
+      } */
+
+    function _format_topic_assigned_for_review_decision($articleId, $topicId) {
+        $form = array();
+
+        $packetIds = Ebms\getArticlePacketIds($articleId, $topicId);
+
+        if (empty($packetIds))
+            return $form;
+
+        // enclose the element
+        $form['#prefix'] = '<div class="full-citation-element">';
+        $form['#suffix'] = '</div>';
+
+        // add the header
+        $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
+        $form['header']['#prefix'] = '<div class="full-citation-indent">';
+        $form['header']['#suffix'] = '</div>';
+
+        $form['blocks'] = _format_packet_ids($packetIds);
+        $form['blocks']['#prefix'] = '<div class="full-citation-indent">';
+        $form['blocks']['#suffix'] = '</div>';
+
+        // grab the past packets, if any
+        $pastIds = Ebms\getArticlePacketIds($articleId, $topicId, false, false, true);
+        if (empty($pastIds))
+            return $form;
+
+        $form['past_blocks'] = array(
             '#type' => 'fieldset',
-            '#title' => $board_name,
+            '#title' => t('Past Decisions'),
             '#collapsible' => TRUE,
             '#collapsed' => TRUE,
-            'topics' => _format_topics($form_state, $article, $topics, $tags),
+            'tags' => _format_packet_ids($pastIds),
+            '#attributes' => array(
+                'class' => array('full-citation-past-items'),
+            ),
+            '#prefix' => '<div class="full-citation-indent">',
+            '#suffix' => '</div>'
         );
-    }
 
-    return $form;
-}
-
-/**
- * Formats an array of topics and their related state histories for rendering.
- * @param mixed $topics
- * @return mixed the formatted render array.
- */
-function _format_topics($form_state, $article, $topics, $tags) {
-    $form = array();
-
-    foreach ($topics as $topic_name => $topic_sequences) {
-        $form[$topic_name] = _format_topic($form_state, $article, $topic_name, $topic_sequences, $tags);
-    }
-
-    return $form;
-}
-
-/**
- * Formats a topic name and set of topic states for rendering.
- * @param string $topic
- * @param mixed $topic_states
- * @return mixed the formatted render array.
- */
-function _format_topic($form_state, $article, $topicName, $topic_sequences, $tags) {
-    $form = array();
-
-    // retrieve the relevant ids for this article and topic
-    // topic id should have error-checking, but originates from an error-checked
-    // method
-    $articleId = $article->getId();
-    $topicId = Ebms\getTopicIdByName($topicName);
-
-    $form['topic_header'] = _format_topic_header($topicName);
-    $form['topic_tags'] = _format_tags($form_state, $tags, $articleId, $topicId);
-    $form['topic_nci_reviewer_decision'] = _format_topic_nci_reviewer_decision($topic_sequences);
-    $form['topic_full_text_decision'] = _format_topic_full_text_decision($article);
-    $form['topic_nci_surveillance_decision'] = _format_topic_surveillance_decision($topic_sequences);
-    $form['topic_assigned_for_review_decision'] = _format_topic_assigned_for_review_decision($articleId, $topicId);
-    $form['topic_board_member_responses'] = _format_topic_board_member_responses($articleId, $topicId);
-    $form['topic_board_manager_actions'] = _format_topic_board_manager_actions($topic_sequences);
-    $form['topic_on_agenda'] = _format_topic_on_agenda($topic_sequences);
-    $form['topic_board_decision'] = _format_topic_editorial_board_decision($topic_sequences);
-
-    $form['topic_end'] = array('#markup' => '<hr>');
-
-    return $form;
-}
-
-function _format_topic_header($topic) {
-    $form = array();
-
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
-
-    $form['header'] = array("#markup" => "<div class='citation-subheader'>Summary Topic</div>");
-    $form['topic'] = array("#markup" => "<div>$topic</div>");
-
-    return $form;
-}
-
-function _format_topic_nci_reviewer_decision($topic_sequences) {
-    $form = array();
-
-    if (!isset($topic_sequences[4]['A'][0]))
-        return $form;
-
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
-
-    $status = $topic_sequences[4]['A'][0];
-
-    $form['header'] = array("#markup" => "<div class='citation-subheader'>NCI Reviewer Decision</div>");
-    $date = _format_date($status->dt);
-    $form['decision'] = array("#markup" => "<div>$status->type_name - $date - $status->user_name</div>");
-    $form['comments'] = _format_comments($status->comments);
-
-
-    return $form;
-}
-
-function _format_topic_full_text_decision($article) {
-    $form = array();
-
-    $fullTextId = $article->getFullTextId();
-
-    if ($fullTextId === null)
-        return $form;
-
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
-
-    // add the header
-    $form['header'] = array("#markup" => "<div class='citation-subheader'>Full Text Retrieved</div>");
-
-    // if the id is < 1...
-    if ($fullTextId < 1) {
-        // attach the 'no text available' line and return
-        $form['decision'] = array("#markup" => "<div>No text available for this article.</div>");
         return $form;
     }
 
-    // get the related database row
-    $records = db_select('file_managed', 'f')
-            ->condition('fid', $fullTextId)->execute()->fetchAll();
+    function _format_packet_ids($packetIds) {
+        $form = array();
 
-    if (!isset($records[0]))
-        return $form;
+        $packetInfos = array();
+        foreach ($packetIds as $packetId) {
+            $packet = Ebms\getPacketInfo($packetId);
+            if ($packet != null)
+                $packetInfos[] = $packet;
+        }
 
-    $record = $records[0];
-    $uid = $record->uid;
-    $filename = $record->filename;
-    $ts = $record->timestamp;
-    $date = format_date($ts, 'custom', 'm/d/Y');
+        if (empty($packetInfos))
+            return $form;
 
-    $account = user_load($uid);
+        // build each packet block
+        $packetBlocks = array();
+        foreach ($packetInfos as $packetInfo) {
+            $packetBlocks[] = _format_packet_info($packetInfo);
+        }
 
-    $form['decision'] = array("#markup" => "<div>Full Text Available - $date - $account->name</div>");
-    $form['filename'] = array("#markup" => "<div>FILE NAME: $filename</div>");
+        $form = $packetBlocks;
 
-    return $form;
-}
-
-function _format_topic_surveillance_decision($topic_sequences) {
-    $form = array();
-
-    if (!isset($topic_sequences[9]['A'][0]))
-        return $form;
-
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
-
-    $status = $topic_sequences[9]['A'][0];
-
-    $form['header'] = array("#markup" => "<div class='citation-subheader'>Literature Surveillance Committee Decision</div>");
-    $date = _format_date($status->dt);
-    $form['decision'] = array("#markup" => "<div>$status->type_name - $date - $status->user_name</div>");
-    $form['comments'] = _format_comments($status->comments);
-
-    return $form;
-}
-
-function _format_topic_assigned_for_review_decision($articleId, $topicId) {
-    $form = array();
-
-    $packetIds = Ebms\getArticlePacketIds($articleId, $topicId);
-
-    $packetInfos = array();
-    foreach ($packetIds as $packetId) {
-        $packetInfos[] = Ebms\getPacketInfo($packetId);
-    }
-
-    if (empty($packetInfos))
-        return $form;
-
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
-
-    // add the header
-    $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
-
-    // build each packet block
-    $packetBlocks = array();
-    foreach ($packetInfos as $packetInfo) {
-        $packetBlocks[] = _format_packet_info($packetInfo);
-    }
-
-    $form['blocks'] = $packetBlocks;
-
-    return $form;
-}
-
-function _format_packet_info($packetInfo) {
-
-    $form = array();
-
-    // format contributor row
-    $uid = $packetInfo->created_by;
-    $title = $packetInfo->packet_title;
-    $dt = $packetInfo->created_at;
-    $date = _format_date($dt);
-
-    $account = user_load($uid);
-
-    // load the reviewers
-    $reviewers = user_load_multiple($packetInfo->reviewers);
-    $names = array();
-    foreach ($reviewers as $reviewer) {
-        $names[] = $reviewer->name;
-    }
-
-    $nameList = implode(', ', $names);
-
-    $form['decision'] = array("#markup" => "<div>Assigned - $date - $account->name</div>");
-    $form['filename'] = array("#markup" => "<div>PACKET TITLE: $title</div>");
-    $form['reviewers'] = array("#markup" => "<div>REVIEWERS: $nameList</div>");
-
-    return $form;
-}
-
-function _format_topic_board_member_responses($articleId, $topicId) {
-    $form = array();
-
-    $responses = Ebms\getBoardMemberResponses($articleId, $topicId);
-
-    if (empty($responses)) {
         return $form;
     }
 
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
+    function _format_packet_info($packetInfo) {
 
-    // add the header
-    $form['header'] = array('#markup' => "<div class='citation-subheader'>Board Member Responses</div>");
+        $form = array();
 
-    // build each packet block
-    $responseBlocks = array();
-    foreach ($responses as $response) {
-        $responseBlocks[] = _format_board_member_response($response);
+        // format contributor row
+        $uid = $packetInfo->created_by;
+        $title = $packetInfo->packet_title;
+        $dt = $packetInfo->created_at;
+        $date = _format_date($dt);
+
+        $account = user_load($uid);
+
+        // load the reviewers
+        $reviewers = user_load_multiple($packetInfo->reviewers);
+        $names = array();
+        foreach ($reviewers as $reviewer) {
+            $names[] = $reviewer->name;
+        }
+
+        $nameList = implode(', ', $names);
+
+        $form['decision'] = array("#markup" => "<div>Assigned - $date - $account->name</div>");
+        $form['filename'] = array("#markup" => "<div>PACKET TITLE: $title</div>");
+        $form['reviewers'] = array("#markup" => "<div>REVIEWERS: $nameList</div>");
+
+        $form['#prefix'] = '<div class="full-citation-element">';
+        $form['#suffix'] = '</div>';
+
+        return $form;
     }
 
-    $form['blocks'] = $responseBlocks;
+    function _format_topic_board_member_responses($articleId, $topicId) {
+        $form = array();
 
-    return $form;
-}
+        $responses = Ebms\getBoardMemberResponses($articleId, $topicId);
+        $pastResponses = Ebms\getBoardMemberResponses($articleId, $topicId, false, false);
 
-function _format_board_member_response($response) {
-    $form = array();
+        if (empty($responses) && empty($pastResponses)) {
+            return $form;
+        }
 
-    // format contributor row
-    $uid = $response->reviewer_id;
-    $action = $response->value_name;
-    $dt = $response->when_posted;
-    $date = _format_date($dt);
+        $form['#prefix'] = '<div class="full-citation-element">';
+        $form['#suffix'] = '</div>';
 
-    $account = user_load($uid);
+        // add the header
+        $form['header'] = array('#markup' => "<div class='citation-subheader full-citation-indent'>Board Member Responses</div>");
 
-    $form['decision'] = array("#markup" => "<div>Response - $date - $account->name</div>");
-    $form['filename'] = array("#markup" => "<div>ACTION: $action</div>");
+        // build each packet block
+        $responseBlocks = array();
+        foreach ($responses as $response) {
+            $responseBlocks[] = _format_board_member_response($response);
+        }
 
-    if (isset($response->comments)) {
-        $form['comments'] = array("#markup" => "<div>COMMENTS: $response->comments</div>");
+        if (!empty($responseBlocks)) {
+            $form['blocks'] = $responseBlocks;
+            $form['blocks']['#prefix'] = '<div class="full-citation-indent">';
+            $form['blocks']['#suffix'] = '</div>';
+        }
+
+        // build out past responses if any
+        if (empty($pastResponses)) {
+            return $form;
+        }
+
+        dsm($pastResponses);
+
+        // build each packet block
+        $pastBlocks = array();
+        foreach ($pastResponses as $response) {
+            $pastBlocks[] = _format_board_member_response($response);
+        }
+
+        dsm($pastBlocks);
+
+        $form['past_blocks'] = array(
+            '#type' => 'fieldset',
+            '#title' => t('Past Decisions'),
+            '#collapsible' => TRUE,
+            '#collapsed' => TRUE,
+            'tags' => $pastBlocks,
+            '#attributes' => array(
+                'class' => array('full-citation-past-items'),
+            ),
+            '#prefix' => '<div class="full-citation-indent">',
+            '#suffix' => '</div>'
+        );
+
+        return $form;
     }
-    if (isset($response->loe_info) && $response->loe_info != 'Not Selected') {
-        $form['loe_info'] = array("#markup" => "<div>LOE: $response->loe_info</div>");
+
+    function _format_board_member_response($response) {
+        $form = array();
+
+        // format contributor row
+        $uid = $response->reviewer_id;
+        $action = $response->value_name;
+        $dt = $response->when_posted;
+        $date = _format_date($dt);
+
+        $account = user_load($uid);
+
+        $form['decision'] = array("#markup" => "<div>Response - $date - $account->name</div>");
+        $form['filename'] = array("#markup" => "<div>ACTION: $action</div>");
+
+        if (isset($response->comments)) {
+            $form['comments'] = array("#markup" => "<div>COMMENTS: $response->comments</div>");
+        }
+        if (isset($response->loe_info) && $response->loe_info != 'Not Selected') {
+            $form['loe_info'] = array("#markup" => "<div>LOE: $response->loe_info</div>");
+        }
+
+        $form['#prefix'] = '<div class="full-citation-element">';
+        $form['#suffix'] = '</div>';
+
+        return $form;
     }
 
-    return $form;
-}
+    function _format_topic_board_manager_actions($status) {
+        $form = array();
 
-function _format_topic_board_manager_actions($topic_sequences) {
-    $form = array();
+        $date = _format_date($status->dt);
+        $form['decision'] = array("#markup" => "<div class='full-citation-indent'>Action - $date - $status->user_name</div>");
+        $form['action'] = array("#markup" => "<div class='full-citation-indent'>ACTION: $status->type_name</div>");
+        $form['comments'] = _format_comments($status->comments);
 
-    if (!isset($topic_sequences[11]['A'][0]))
         return $form;
+    }
 
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
+    /* function _format_topic_on_agenda($topic_sequences) {
+      $form = array();
 
-    $status = $topic_sequences[11]['A'][0];
+      if (!isset($topic_sequences[12]['A'][0]))
+      return $form;
 
-    $form['header'] = array("#markup" => "<div class='citation-subheader'>Board Manager Action(s)</div>");
-    $date = _format_date($status->dt);
-    $form['decision'] = array("#markup" => "<div>Action - $date - $status->user_name</div>");
-    $form['action'] = array("#markup" => "<div>ACTION: $status->type_name</div>");
-    $form['comments'] = _format_comments($status->comments);
+      $form['#prefix'] = '<div class="full-citation-element full-citation-indent">';
+      $form['#suffix'] = '</div>';
 
-    return $form;
-}
+      $status = $topic_sequences[12]['A'][0];
 
-function _format_topic_on_agenda($topic_sequences) {
-    $form = array();
+      $form['header'] = array("#markup" => "<div class='citation-subheader'>On Agenda</div>");
+      $date = _format_date($status->dt);
+      $form['decision'] = array("#markup" => "<div>Approved - $date - $status->user_name</div>");
+      $form['comments'] = _format_comments($status->comments);
 
-    if (!isset($topic_sequences[12]['A'][0]))
-        return $form;
+      return $form;
+      } */
 
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
-
-    $status = $topic_sequences[12]['A'][0];
-
-    $form['header'] = array("#markup" => "<div class='citation-subheader'>On Agenda</div>");
-    $date = _format_date($status->dt);
-    $form['decision'] = array("#markup" => "<div>Approved - $date - $status->user_name</div>");
-    $form['comments'] = _format_comments($status->comments);
-
-    return $form;
-}
-
-function _format_topic_editorial_board_decision($topic_sequences) {
-    $form = array();
-
-    if (!isset($topic_sequences[13]['A']))
-        return $form;
-
-    $form['#prefix'] = '<div class="full-citation-element">';
-    $form['#suffix'] = '</div>';
-
-    $form['header'] = array("#markup" => "<div class='citation-subheader'>Editorial Board Decision</div>");
-
-    foreach ($topic_sequences[13]['A'] as $status) {
-        $statusForm = array();
+    function _format_topic_editorial_board_decision($status) {
+        $form = array();
 
         // get the decisions for this status
         $decisions = Ebms\getBoardDecisionsByArticleState($status->article_state_id);
 
         foreach ($decisions as $decision) {
-            $statusForm[] = array("#markup" => "<div>DISPOSITION: $decision->value_name</div>");
+            $form[] = array("#markup" => "<div class='full-citation-indent'>DISPOSITION: $decision->value_name</div>");
         }
 
         $date = _format_date($status->dt);
-        $statusForm['discussed'] = array("#markup" => "<div>ARTICLE DISCUSSED - $date</div>");
-        $statusForm['member'] = array("#markup" => "<div>BOARD MEMBER: $status->user_name</div>");
-        $statusForm['comments'] = _format_comments($status->comments);
+        $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $date</div>");
+        $form['member'] = array("#markup" => "<div class='full-citation-indent'>BOARD MEMBER: $status->user_name</div>");
+        $form['comments'] = _format_comments($status->comments);
 
-        $form[] = $statusForm;
+        return $form;
     }
 
-    return $form;
-}
+    function _ajax_full_citation($form, $form_state) {
 
-function _ajax_full_citation($form, $form_state) {
+        return $form;
+    }
 
-    return $form;
 }

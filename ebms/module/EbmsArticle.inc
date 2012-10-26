@@ -11,6 +11,32 @@ define('Ebms\MAX_ART_TITLE', 512);
 define('Ebms\MAX_JRNL_TITLE', 512);
 
 /**
+ * A simple interface to enumerate the article state text IDs.
+ */
+interface EbmsArticleStates {
+    const Imported = 'Imported';
+    const ReadyInitReview = 'ReadyInitReview';
+    const RejectJournalTitle = 'RejectJournalTitle';
+    const RejectInitReview = 'RejectInitReview';
+    const PassedInitReview = 'PassedInitReview';
+    const Published = 'Published';
+    const PassedBMReview = 'PassedBMReview';
+    const RejectBMReview = 'RejectBMReview';
+    const FullRequested = 'FullRequested';
+    const FullFailed = 'FullFailed';
+    const FullRetrieved = 'FullRetrieved';
+    const RejectFullReview = 'RejectFullReview';
+    const PassedFullReview = 'PassedFullReview';
+    const FYI = 'FYI';
+    const AgendaNoChg = 'AgendaNoChg';
+    const AgendaFutureChg = 'AgendaFutureChg';
+    const AgendaFutureDiscuss = 'AgendaFutureDiscuss';
+    const FullEnd = 'FullEnd';
+    const AgendaOn = 'AgendaOn';
+    const FinalBoardDecision = 'FinalBoardDecision';
+}
+
+/**
  * One article / topic association
  */
 class EbmsArticleTopic {
@@ -1427,6 +1453,7 @@ class ArticleStatus {
         $article_state_id, // Row ID in ebms_article_state
         $dt,               // Date time status row was created
         $type_id,          // Row ID in ebms_article_state_type
+        $type_text_id,     // Text state ID in ebms_article_state_type
         $type_name,        // Name of the state type
         $type_sequence,    // Sequence number in the type table
         $user_id,          // User assigning this state
@@ -1459,7 +1486,7 @@ class ArticleStatus {
         $html = <<<EOS
 <tr class='$active'>
  <td>$this->dt<br />$this->article_id / $this->article_state_id</td>
- <td>$this->type_name<br />$this->type_id / $this->type_sequence</td>
+ <td>$this->type_name / $this->type_text_id<br />$this->type_id / $this->type_sequence</td>
  <td>$this->user_name<br />$this->user_id</td>
  <td>$this->board_name<br />$this->board_id</td>
  <td>$this->topic_name<br />$this->topic_id</td>
@@ -1538,7 +1565,7 @@ function getStatusHistory($articleId, $boardId=null, $topicId=null,
                'state.topic_id = topic.topic_id');
     $qry->fields('state', array('article_state_id', 'state_id', 'user_id',
              'status_dt', 'board_id', 'topic_id', 'active_status', 'current'))
-        ->fields('stype', array('state_name', 'sequence'))
+        ->fields('stype', array('state_name', 'state_text_id', 'sequence'))
         ->fields('usr',   array('name'))
         ->fields('board', array('board_name'))
         ->fields('topic', array('topic_name'));
@@ -1594,6 +1621,7 @@ function getStatusHistory($articleId, $boardId=null, $topicId=null,
         $st->article_state_id = $sd->article_state_id;
         $st->dt               = $sd->status_dt;
         $st->type_id          = $sd->state_id;
+        $st->type_text_id     = $sd->state_text_id;
         $st->type_name        = $sd->state_name;
         $st->type_sequence    = $sd->sequence;
         $st->user_id          = $sd->user_id;
@@ -2422,14 +2450,23 @@ function getTopicBoard ($topicId) {
  * Retrieves the related packets for a given article id, optionally limiting
  * the results by a topic id.
  * 
- * @param int $article_id    the article id to match.   
+ * @param int $article_id   the article id to match.   
  * 
- * @param int $topic_id    the optional topic id.
+ * @param int $topic_id     the optional topic id.
  * 
- *  @return mixed $packet_ids    Array of packet ids matching the article and 
- *                               topic.
+ * @param bool $find_all    if true, returns all packets, regardless of 
+ *                          inactivity
+ * 
+ * @param bool $active      limits the results to active or inactive packets
+ * 
+ * @param bool $include_dropped returns packets that have been dropped from the 
+ *                              article
+ * 
+ * @return mixed $packet_ids    Array of packet ids matching the article and 
+ *                               topic, and limited to active or inactive.
  */
-function getArticlePacketIds($article_id, $topic_id = NULL) {
+function getArticlePacketIds($article_id, $topic_id = NULL, $find_all = false, 
+        $active = true, $include_dropped = false) {
     $query = db_select('ebms_packet_article', 'a');
     $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
     
@@ -2437,10 +2474,17 @@ function getArticlePacketIds($article_id, $topic_id = NULL) {
         $query->condition('p.topic_id', $topic_id);
     }
     
+    if(!$find_all){
+        $flag = $active ? 'A' : 'I';
+        $query->condition('p.active_status', $flag);
+    }
+    
+    if(!$include_dropped){
+        $query->condition('a.drop_flag', 0);
+    }
+    
     $packet_ids = $query
         ->condition('a.article_id', $article_id)
-        ->condition('a.drop_flag', 0)
-        ->condition('p.active_status', 'A')
         ->fields('a', array('packet_id'))
         ->execute()
         ->fetchCol();
@@ -2479,13 +2523,23 @@ function getPacketInfo($packet_id) {
  * 
  * @param int $topic_id     the topic id used to filter the reponses.
  * 
+ * @param bool $fetch_all   returns all responses, irrespective of active state.
+ * 
+ * @param bool $active      returns only active or inactive reponses, in 
+ *                          conjunction with $fetch_all == false
+ * 
  * @return mixed $reponses  an array of DB records containing pertinent info.
  */
-function getBoardMemberResponses($article_id, $topic_id) {
+function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $active = true) {
     $query = db_select('ebms_article_review', 'r');
     $query->join('ebms_review_disposition', 'd', 'r.review_id = d.review_id');
     $query->join('ebms_review_disposition_value', 'v', 'd.value_id = v.value_id');
     $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+
+    if (!$fetch_all) {
+        $flag = $active ? 'A' : 'I';
+        $query->condition('p.active_status', $flag);
+    }
 
     return $query->fields('r')
             ->fields('p', array('packet_id', 'topic_id'))
@@ -2560,5 +2614,39 @@ function getBoardDecisionsByArticleState($article_state_id) {
             ->fetchAll();
 }
 
+/**
+ * Retrieves all matching review cycles for the given article and topic ids.
+ * 
+ * @param int $article_id  The article id to match.
+ * @param int $topic_id    The topic id to match
+ * @return mixed $result   An array of rows matching the given filters.
+ */
+function getArticleReviewCycle($article_id, $topic_id = null){
+    // get appropriate 'ready for initial review' rows
+    $state_query = db_select('ebms_article_state_type', 't')
+        ->condition('t.state_text_id', EbmsArticleStates::ReadyInitReview)
+        ->fields('t', array('state_id'));
+    
+    $article_query = db_select('ebms_article_state', 'a')
+        ->condition('a.active_status', 'A')
+        ->condition('a.article_id', $article_id)
+        ->fields('a');
+    
+    if ($topic_id != null)
+        $article_query->condition ('a.topic_id', $topic_id);
+    
+    $ready_query = db_select($article_query, 's');
+    $ready_query->join($state_query, 't', 's.state_id = t.state_id');
+    $ready_query->fields('s');
+    
+    $cycle_query = db_select($ready_query, 'r');
+    $cycle_query->join('ebms_cycle', 'c', 
+        'c.start_date IN (SELECT MIN(c1.start_date) FROM ebms_cycle c1 WHERE c1.start_date > r.status_dt)');
+    $cycle_query->addExpression('DISTINCT c.cycle_name', 'cycle_name');
+    
+    return $cycle_query
+        ->execute()
+        ->fetchAll();
+}
 
 ?>
