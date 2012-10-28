@@ -835,7 +835,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
 
     // Instantiate an ImportBatch to contain stats and report
     $ib = new ImportBatch();
-    $ib->init('Pubmed', $topicId, $cycleId, $comment, $userId);
+    $ib->init('Pubmed', $topicId, $cycleId, $useNotList, $comment, $userId);
 
     // Get batches of articles from NLM until we got them all
     while ($pi->getRemainCount() > 0) {
