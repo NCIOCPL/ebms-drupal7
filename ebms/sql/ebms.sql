@@ -44,6 +44,7 @@ DROP TABLE IF EXISTS ebms_cycle;
 DROP TABLE IF EXISTS ebms_article_author_cite;
 DROP TABLE IF EXISTS ebms_article_author;
 DROP TABLE IF EXISTS ebms_legacy_article_id;
+DROP TABLE IF EXISTS ebms_ft_unavailable;
 DROP TABLE IF EXISTS ebms_article;
 DROP TABLE IF EXISTS ebms_topic_reviewer;
 DROP TABLE IF EXISTS ebms_doc_topic;
@@ -422,6 +423,23 @@ CREATE TABLE ebms_legacy_article_id (
     FOREIGN KEY (article_id) REFERENCES ebms_article (article_id)
 )
     ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Records articles for which we are unable to obtain the full
+ * text.
+ *
+ *  article_id    Primary key, as well as foreign key into ebms_article
+ *  flagged       Date/time the full text was marked as unavailable
+ *  flagged_by    Foreign key into the Drupal users table
+ *  comment       Optional notes explaining failure to obtain the full text
+ */
+CREATE TABLE ebms_ft_unavailable
+ (article_id INTEGER      NOT NULL PRIMARY KEY,
+     flagged DATETIME     NOT NULL,
+  flagged_by INT UNSIGNED NOT NULL,
+     comment TEXT             NULL,
+ FOREIGN KEY (article_id) REFERENCES ebms_article (article_id))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Authors of articles.
