@@ -814,7 +814,7 @@ CREATE TABLE ebms_article_state_type (
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('FYI', 'Flagged as FYI',
         'Article is being sent out without being linked to a specific topic',
-        10, 'Y');
+        9, 'Y');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('FullEnd', 'No further action',
