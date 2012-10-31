@@ -218,9 +218,18 @@
     clear: both;
 }
 
+.full-citation-latest-decision .full-citation-indent{
+    margin-left: 30px;
+    padding-left: 10px;
+    border-left: 10px #0000BB solid;
+}
+
 #citation-form-div .full-citation-element legend,
-.full-citation-indent{
-    padding-left: 25px;
+.full-citation-indent,
+#citation-form-div .full-citation-latest-decision .full-citation-past-items .full-citation-indent{
+    padding-left: 50px;
+    margin-left: 0px;
+    border-left: none;
 }
 
 #citation-form-div .full-citation-element{
@@ -234,7 +243,7 @@
 #citation-form-div .full-citation-form .form-item{
     margin: 0em 0em 1em;
 }
-     
+
 #citation-form-div .full-citation-form .form-submit{
     margin: 0em 0.5em 0.5em;
 }
