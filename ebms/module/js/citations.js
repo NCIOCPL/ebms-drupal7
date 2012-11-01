@@ -38,7 +38,7 @@ jQuery(document).ready(function () {
     //jQuery('.citation-cell .topic-checks .form-type-checkbox label').fadeTo('fast', 0.5);
     
     // alter pass/reject buttons to disable their siblings on click
-    jQuery('.citation-cell .topic-checks input.form-checkbox').click(function () {
+    jQuery('.citation-cell .topic-checks input.form-checkbox, .full-citation-radio-check input.form-checkbox').click(function () {
         // get the parent div
         parent = jQuery(this).closest('.form-type-checkbox');
         
