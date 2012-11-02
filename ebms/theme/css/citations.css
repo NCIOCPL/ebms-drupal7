@@ -256,3 +256,16 @@
 #citation-form-div .full-citation-decision-icon{
     padding: 0px 5px;
 }
+
+#citation-form-div .full-citation-radio-check .form-checkboxes{
+    margin: 0px;
+}
+
+#citation-form-div .full-citation-radio-check .form-type-checkbox{
+    float: left;
+    margin: 5px;
+}
+
+#citation-form-div .form-type-textarea{
+    clear: both;
+}
