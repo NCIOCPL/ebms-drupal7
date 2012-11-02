@@ -37,7 +37,8 @@ namespace Ebms {
         private $pass_states;
         private $reject_states;
 
-        public function __construct($title, $sequence = null, $formatter = null, $pass_states = array(), $reject_states = array()) {
+        public function __construct($title, $sequence = null, $formatter = null,
+            $pass_states = array(), $reject_states = array()) {
             $this->title = $title;
             $this->sequence = $sequence;
             $this->formatter = $formatter;
@@ -133,7 +134,8 @@ namespace {
 
                 $form = drupal_get_form('pdq_ebms_full_citation', $article_id);
 
-                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null, false);
+                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null,
+                        false);
 
                 $result['full_citation_form'] = $form;
 
@@ -143,7 +145,8 @@ namespace {
                 $form = drupal_get_form('pdq_ebms_citation_not_list');
 
 
-                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav('Not List Maintentance', false);
+                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav('Not List Maintentance',
+                        false);
 
                 $result['not_list_form'] = $form;
 
@@ -154,15 +157,15 @@ namespace {
 
                 $form = drupal_get_form('pdq_ebms_citation_queue', $is_librarian);
 
-                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null, false);
+                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null,
+                        false);
 
                 $result['cite_queue_form'] = $form;
 
                 break;
         }
         drupal_set_breadcrumb($crumbs);
-        if ($result)
-            return $result;
+        if ($result) return $result;
 
         return "<i>Stub for 'Citations' page, action = $action</i>";
     }
@@ -261,7 +264,8 @@ namespace {
             $id = $form_state['values']['journal_id_field'];
             $all_journals = $form_state['values']['all_journals_check'];
 
-            $form['citation-results'] = _not_list_results(array(), $form_state, $board, $brief_title, $full_title, $id, $all_journals);
+            $form['citation-results'] = _not_list_results(array(), $form_state,
+                $board, $brief_title, $full_title, $id, $all_journals);
         }
 
         return $form;
@@ -300,8 +304,7 @@ namespace {
             }
         }
 
-        if ($clear_states)
-            $form_state['altered_states'] = array();
+        if ($clear_states) $form_state['altered_states'] = array();
 
         // wipe out button values so that the default_states calculated from
         // altered states can take effect
@@ -313,7 +316,7 @@ namespace {
     function _update_journal_select(&$form_state) {
         $altered_states = array();
         if (isset($form_state['altered_states']))
-            $altered_states = $form_state['altered_states'];
+                $altered_states = $form_state['altered_states'];
 
         foreach ($form_state['values'] as $key => $value) {
             if (strpos($key, 'not_list_state_') === 0) {
@@ -357,9 +360,9 @@ namespace {
 
                 // add to added or removed based on state
                 if (!isset($changed[$state][$board]))
-                    $changed[$state][$board] = array();
+                        $changed[$state][$board] = array();
                 if (!isset($changed[$state][$board][$source]))
-                    $changed[$state][$board][$source] = array();
+                        $changed[$state][$board][$source] = array();
 
                 $changed[$state][$board][$source][] = $id;
             }
@@ -404,17 +407,21 @@ namespace {
         }
     }
 
-    function _not_list_results($form, &$form_state, $board, $brief_title, $full_title, $id, $all_journals) {
+    function _not_list_results($form, &$form_state, $board, $brief_title,
+        $full_title, $id, $all_journals) {
 
         // if all_journals is set, then a right-join needs to be performed
 
         $query = db_select('ebms_not_list', 'nl');
         if ($all_journals) {
-            $query->rightJoin('ebms_journal', 'j', 'j.source = nl.source
+            $query->rightJoin('ebms_journal', 'j',
+                'j.source = nl.source
 				AND j.source_jrnl_id = nl.source_jrnl_id
-				AND nl.board_id = :board', array(':board' => $board));
+				AND nl.board_id = :board',
+                array(':board' => $board));
         } else {
-            $query->join('ebms_journal', 'j', 'nl.source_jrnl_id = j.source_jrnl_id AND nl.source = j.source');
+            $query->join('ebms_journal', 'j',
+                'nl.source_jrnl_id = j.source_jrnl_id AND nl.source = j.source');
             $query->condition('nl.board_id', $board);
         }
         // add the pager early on in the process
@@ -422,18 +429,18 @@ namespace {
 
         // add the other filter fields
         if ($brief_title)
-            $query->condition('j.brf_jrnl_title', "%$brief_title%", 'LIKE');
+                $query->condition('j.brf_jrnl_title', "%$brief_title%", 'LIKE');
 
         if ($full_title)
-            $query->condition('j.jrnl_title', "%$full_title%", 'LIKE');
+                $query->condition('j.jrnl_title', "%$full_title%", 'LIKE');
 
-        if ($id)
-            $query->condition('j.source_jrnl_id', "%$id%", 'LIKE');
+        if ($id) $query->condition('j.source_jrnl_id', "%$id%", 'LIKE');
 
         $num_rows = $query->countQuery()->execute()->fetchField();
 
         $query
-            ->fields('j', array('brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'))
+            ->fields('j',
+                array('brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'))
             ->limit(10);
 
         $query->addExpression('!ISNULL(nl.source_jrnl_id)', 'default_value');
@@ -586,7 +593,8 @@ namespace {
 
                 $result = array();
                 try {
-                    $result = db_select('ebms_topic', 't')->condition('board_id', $board_id)->fields('t')->execute();
+                    $result = db_select('ebms_topic', 't')->condition('board_id',
+                            $board_id)->fields('t')->execute();
                 } catch (Exception $e) {
                     
                 }
@@ -662,9 +670,11 @@ namespace {
 
         try {
             $query = db_select('ebms_article_state', 's');
-            $query->join('ebms_last_article_topic_state', 'l', 'l.article_state_id = s.article_state_id');
+            $query->join('ebms_last_article_topic_state', 'l',
+                'l.article_state_id = s.article_state_id');
             if ($journal_id)
-                $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
+                    $query->join('ebms_article', 'a',
+                    'a.article_id = s.article_id');
 
             $source_state = 'Ready for initial review';
             if (!$is_librarian) {
@@ -678,13 +688,12 @@ namespace {
 
             // add the other filter fields
             // $topic_id implies $board_id
-            if ($topic_id)
-                $query->condition('s.topic_id', $topic_id);
-            else if ($board_id)
-                $query->condition('s.board_id', $board_id);
+            if ($topic_id) $query->condition('s.topic_id', $topic_id);
+            else if ($board_id) $query->condition('s.board_id', $board_id);
 
             if ($journal_id)
-                $query->condition('a.source_jrnl_id', "%$journal_id%", 'LIKE');
+                    $query->condition('a.source_jrnl_id', "%$journal_id%",
+                    'LIKE');
 
             $query->groupBy('s.article_id');
 
@@ -848,7 +857,7 @@ namespace {
                     );
                     if (isset($actions[$hash]['reject']) &&
                         $actions[$hash]['reject'])
-                        $row['board_topic'][$board_name][$topic_name]["reject_$hash"]['#default_value'] = 1;
+                            $row['board_topic'][$board_name][$topic_name]["reject_$hash"]['#default_value'] = 1;
 
                     $row['board_topic'][$board_name][$topic_name]["pass_$hash"] = array(
                         '#type' => 'checkbox',
@@ -856,7 +865,7 @@ namespace {
                     );
                     if (isset($actions[$hash]['pass']) &&
                         $actions[$hash]['pass'])
-                        $row['board_topic'][$board_name][$topic_name]["pass_$hash"]['#default_value'] = 1;
+                            $row['board_topic'][$board_name][$topic_name]["pass_$hash"]['#default_value'] = 1;
                 }
             }
 
@@ -930,7 +939,8 @@ namespace {
                     if (!$is_librarian) {
                         $source_state = 'Passed initial review';
                     }
-                    _write_topic_states($form_state['altered_topics'], $source_state);
+                    _write_topic_states($form_state['altered_topics'],
+                        $source_state);
 
                     $clear_states = true;
                     break;
@@ -941,8 +951,7 @@ namespace {
             }
         }
 
-        if ($clear_states)
-            $form_state['altered_topics'] = array();
+        if ($clear_states) $form_state['altered_topics'] = array();
 
         // wipe out button values so that the default_values calculated from
         // altered topics can take effect
@@ -960,8 +969,7 @@ namespace {
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $articleXML = $doc->MedlineCitation->Article;
         $title = htmlspecialchars($articleXML->ArticleTitle);
-        if (!$long_form)
-            $title = "<em>$title</em>";
+        if (!$long_form) $title = "<em>$title</em>";
         $pgn = htmlspecialchars($articleXML->Pagination->MedlinePgn);
         $year = $articleXML->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($articleXML->Journal->JournalIssue->Issue);
@@ -975,18 +983,15 @@ namespace {
                     break;
                 }
                 $name = $author->LastName;
-                if ($author->Initials)
-                    $name .= ' ' . $author->Initials;
+                if ($author->Initials) $name .= ' ' . $author->Initials;
                 $authors[] = htmlspecialchars($name);
             }
         }
-        if (count($authors) < 1)
-            $authors = array('[No authors listed]');
+        if (count($authors) < 1) $authors = array('[No authors listed]');
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
-        if (!$long_form)
-            $pmid = "PMID: $pmid";
+        if (!$long_form) $pmid = "PMID: $pmid";
 
         $tAuthors = '';
         $tTitle = '';
@@ -1007,7 +1012,8 @@ namespace {
             /* $cycleYear = $doc->MedlineCitation->DateCreated->Year;
               $cycleMonth = $doc->MedlineCitation->DateCreated->Month;
               $reviewCycle = "$cycleMonth/$cycleYear"; */
-            list($cycleYear, $cycleMonth) = explode('-', $article->getImportDate());
+            list($cycleYear, $cycleMonth) = explode('-',
+                $article->getImportDate());
             $reviewCycle = "$cycleMonth/$cycleYear";
         }
 
@@ -1016,12 +1022,9 @@ namespace {
             implode(', ', $authors),
             "</div>$tTitle<div>$title</div>$tJournal<div>$ta $vol",
         );
-        if ($issue)
-            $pieces[] = "($issue)";
-        if ($pgn)
-            $pieces[] = ": $pgn";
-        if ($year)
-            $pieces[] = ", $year";
+        if ($issue) $pieces[] = "($issue)";
+        if ($pgn) $pieces[] = ": $pgn";
+        if ($year) $pieces[] = ", $year";
         $pieces[] = ".</div>$tPMID<div>$pmid</div>";
         if (!$long_form) {
             $pieces[] = '<div><a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
@@ -1032,7 +1035,7 @@ namespace {
             $cycles = Ebms\getArticleReviewCycle($article_id);
 
             if (sizeof($cycles) > 1)
-                $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLES</div>';
+                    $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLES</div>';
 
             $cycleNames = array();
             foreach ($cycles as $cycle) {
@@ -1042,7 +1045,7 @@ namespace {
             $reviewCycle = implode(', ', $cycleNames);
 
             if (!empty($reviewCycle))
-                $pieces[] = "$tReviewCycle<div>$reviewCycle</div>";
+                    $pieces[] = "$tReviewCycle<div>$reviewCycle</div>";
         }
         $pieces[] = '</div>';
         return implode($pieces);
@@ -1053,16 +1056,13 @@ namespace {
 
     function _get_topic_actions($form_state, $hash = null) {
 
-        if (!isset($form_state['altered_topics']))
-            return array();
+        if (!isset($form_state['altered_topics'])) return array();
 
-        if (!isset($hash))
-            return $form_state['altered_topics'];
+        if (!isset($hash)) return $form_state['altered_topics'];
 
         $topic_actions = array();
         foreach ($form_state['altered_topics'] as $key => $value) {
-            if ($key != $hash)
-                continue;
+            if ($key != $hash) continue;
 
             $topic_actions[$key] = $value;
         }
@@ -1078,7 +1078,7 @@ namespace {
     function _update_topic_actions(&$form_state) {
         $altered_topics = array();
         if (isset($form_state['altered_topics']))
-            $altered_topics = $form_state['altered_topics'];
+                $altered_topics = $form_state['altered_topics'];
 
         foreach ($form_state['values'] as $key => $value) {
             if (strpos($key, 'reject_') === 0 ||
@@ -1094,8 +1094,7 @@ namespace {
         // clear out double-0 actions (no need to persist pairs of unchecked boxes)
         $set_topics = array();
         foreach ($altered_topics as $hash => $actions) {
-            if (!$actions['reject'] && !$actions['pass'])
-                continue;
+            if (!$actions['reject'] && !$actions['pass']) continue;
 
             $set_topics[$hash] = $actions;
         }
@@ -1154,20 +1153,26 @@ namespace {
                 continue;
             }
             // else if pass is set, use the pass name
-            else if ($pass)
-                $new_state_name = $pass_name;
+            else if ($pass) $new_state_name = $pass_name;
 
             // otherwise, reject is already chosen and should be set
             // update the article's state
-            $row_id = Ebms\setArticleState($article_id, $new_state_name, $topic_id);
+            $row_id = Ebms\setArticleState($article_id, $new_state_name,
+                $topic_id);
         }
     }
 
     function pdq_ebms_full_citation($form, &$form_state, $articleId) {
         require_once('EbmsArticle.inc');
-        
+
         //include js to add radio/checkbox behavior
         $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
+
+        // hook into ajax completions to apply jQuery to form components
+        drupal_add_js('jQuery(document).ajaxComplete(function(){       
+            addHooks();                                      
+        });',
+            'inline');
 
         $article = new Ebms\EbmsArticle($articleId);
 
@@ -1193,9 +1198,9 @@ namespace {
         $form['article_tag_add_button'] = $button_array['button'];
         if ($no_tags) {
             if (count($button_array['form']))
-                $form['button_form'] = $button_array['form'];
+                    $form['button_form'] = $button_array['form'];
             else
-                $form['placeholder'] = array('#markup' => '<div class="full-citation-element">&nbsp;</div>');
+                    $form['placeholder'] = array('#markup' => '<div class="full-citation-element">&nbsp;</div>');
         }
         else {
             $form['article_tags'] = $tag_array;
@@ -1203,8 +1208,10 @@ namespace {
         }
 
         // build the board topics
-        $history = Ebms\getStatusHistory($articleId, null, null, true, true, 'BTS');
-        $form['editorial_boards'] = _format_boards($form_state, $article, $history, $tags);
+        $history = Ebms\getStatusHistory($articleId, null, null, true, true,
+            'BTS');
+        $form['editorial_boards'] = _format_boards($form_state, $article,
+            $history, $tags);
 
         // need to ensure that the fieldsets leading to any triggered element
         // are expanded
@@ -1302,7 +1309,8 @@ namespace {
         return $form;
     }
 
-    function _build_add_state_comment_button($form_state, Ebms\ArticleStatus $status) {
+    function _build_add_state_comment_button($form_state,
+        Ebms\ArticleStatus $status) {
         $form = array();
 
         $stateId = $status->article_state_id;
@@ -1366,8 +1374,7 @@ namespace {
         $commentTexts = array();
         $firstComment = true;
         foreach ($comments as $comment) {
-            if (empty($comment->text))
-                continue;
+            if (empty($comment->text)) continue;
 
             $date = _format_date($comment->dt);
 
@@ -1383,9 +1390,8 @@ namespace {
 
         $markup = '<div class="citation-comment">';
         if (!empty($commentTexts))
-            $markup .= 'COMMENTS: ' . implode('<br /><br />', $commentTexts);
-        else
-            return $form;
+                $markup .= 'COMMENTS: ' . implode('<br /><br />', $commentTexts);
+        else return $form;
 
         $markup .= "</div>";
         $form['#markup'] = $markup;
@@ -1408,8 +1414,7 @@ namespace {
 
         // determine the desired topic id, 0 representing topicless tags
         $targetTopicId = $topicId;
-        if ($topicId == null)
-            $targetTopicId = 0;
+        if ($topicId == null) $targetTopicId = 0;
 
         if (isset($topic_tags[$targetTopicId])) {
             //add header
@@ -1459,16 +1464,15 @@ namespace {
         $topic_tags = array();
         foreach ($tags as $tag) {
             $tag_topic_id = $tag->topic_id;
-            if (isset($tag_topic_id))
-                $topic_tags[$tag_topic_id][] = $tag;
-            else
-                $topic_tags[0][] = $tag;
+            if (isset($tag_topic_id)) $topic_tags[$tag_topic_id][] = $tag;
+            else $topic_tags[0][] = $tag;
         }
 
         return $topic_tags;
     }
 
-    function _build_add_tag_button($noTags, $form_state, $articleId, $topicId = null) {
+    function _build_add_tag_button($noTags, $form_state, $articleId,
+        $topicId = null) {
         $form = array();
 
         // create hash for article/topic
@@ -1578,7 +1582,8 @@ namespace {
 
         $form_state['rebuild'] = TRUE;
 
-        $values = _retrieve_hash_values($form_state, array('tag_select', 'tag_comment'));
+        $values = _retrieve_hash_values($form_state,
+            array('tag_select', 'tag_comment'));
 
         $tagIdStr = $values['tag_select'];
         $comment = $values['tag_comment'];
@@ -1588,8 +1593,7 @@ namespace {
         list($articleId, $topicId) = explode("|", $hash);
 
         // bind topicId to null if undefined
-        if (!$topicId)
-            $topicId = null;
+        if (!$topicId) $topicId = null;
 
         Ebms\addArticleTag($tagIdStr, $articleId, $topicId, $comment);
     }
@@ -1685,9 +1689,10 @@ namespace {
                     $localHash = str_replace("${stem}_", '', $key);
 
                     if ($hash == null || $hash == $localHash)
-                        $hash = $localHash;
+                            $hash = $localHash;
                     else
-                        drupal_set_message("conflicting hash: $hash vs $localHash", 'error');
+                            drupal_set_message("conflicting hash: $hash vs $localHash",
+                            'error');
 
                     $values[$stem] = $value;
                 }
@@ -1699,7 +1704,8 @@ namespace {
         return $values;
     }
 
-    function _build_edit_decision_button($form_state, $articleId, $topicId, $decisions, $isAdd = false) {
+    function _build_edit_decision_button($form_state, $articleId, $topicId,
+        $decisions, $isAdd = false) {
         $form = array();
 
         // create hash for article/topic
@@ -1719,7 +1725,8 @@ namespace {
             );
 
             $formId = "edit_decision_form_$hash";
-            $form['form'][$formId] = _build_edit_decision_form($articleId, $topicId, $decisions);
+            $form['form'][$formId] = _build_edit_decision_form($articleId,
+                $topicId, $decisions);
             $form['form'][$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
             $form['form'][$formId]['#suffix'] = '</div>';
         } else {
@@ -1750,30 +1757,147 @@ namespace {
     function _build_edit_decision_form($article_id, $topic_id, $decisions) {
         $form = array();
 
-        if (empty($decisions))
-            return $form;
+        if (empty($decisions)) return $form;
 
         $hash = "$article_id|$topic_id";
 
+        $ts = time();
+        $date = format_date($ts, 'custom', 'm/d/Y');
+
+        global $user;
+
+        $timetag = "<div>$date - <i>$user->name</i></div>";
+
         foreach ($decisions as $decision) {
             $title = $decision->title();
+            $full_title = array('#markup' => "<div class='citation-subheader'>$title</div><div>$timetag</div>");
 
             switch ($decision) {
                 case Ebms\EbmsTopicDecisions::$NCIREVIEWER:
+                    $form['reviewer_title'] = $full_title;
+
                     $form["nci_reviewer_check_$hash"] = array(
                         '#type' => 'checkboxes',
                         '#options' => array(
                             'pass' => t('Approve'),
                             'reject' => t('Reject'),
                         ),
-                        '#title' => $title,
                         '#prefix' => '<div class="full-citation-radio-check">',
                         '#suffix' => '</div>',
                     );
 
                     $form["nci_reviewer_comment_$hash"] = array(
-                        '#type' => 'textfield',
+                        '#type' => 'textarea',
                         '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
+                    );
+
+                    break;
+                case Ebms\EbmsTopicDecisions::$FULLTEXT:
+                    $form['fulltext_title'] = $full_title;
+
+                    $form["fulltext_file_$hash"] = array(
+                        '#type' => 'file',
+                    );
+
+                    $form["fulltext_check_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#return_value' => 'unavailable',
+                        '#title' => t('Unable to Upload'),
+                    );
+
+                    $form["fulltext_comment_$hash"] = array(
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
+                    );
+
+                    break;
+                case Ebms\EbmsTopicDecisions::$SURVEILLANCE:
+                    $form['surveillance_title'] = $full_title;
+
+                    $form["surveillance_check_$hash"] = array(
+                        '#type' => 'checkboxes',
+                        '#options' => array(
+                            'pass' => t('Approve'),
+                            'reject' => t('Reject'),
+                        ),
+                        '#prefix' => '<div class="full-citation-radio-check">',
+                        '#suffix' => '</div>',
+                    );
+
+                    $form["surveillance_comment_$hash"] = array(
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
+                    );
+
+                    break;
+                case Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES:
+
+                    $packetIds = Ebms\getArticlePacketIds($article_id, $topic_id);
+                    if (empty($packetIds)) break;
+
+                    $values = Ebms\getReviewDispositions();
+
+                    $options = array();
+                    foreach ($values as $value) {
+                        $options[$value->value_id] = $value->value_name;
+                    }
+                    $form['member_responses_title'] = $full_title;
+
+                    $form["member_responses_select_$hash"] = array(
+                        '#type' => 'select',
+                        '#options' => $options,
+                    );
+
+                    $form["member_responses_comment_$hash"] = array(
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
+                    );
+
+                    break;
+
+                case Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS:
+
+                    // get the full text for the board manager decisions
+                    $passStates = $decision->pass_states();
+
+                    $options = array();
+                    foreach ($passStates as $state) {
+                        $type = Ebms\getStateTypebyTextId($state);
+                        $options[$type->state_text_id] = $type->state_name;
+                    }
+
+                    $form['manager_actions_title'] = $full_title;
+
+                    $form["manager_actions_select_$hash"] = array(
+                        '#type' => 'select',
+                        '#options' => $options,
+                    );
+
+                    $form["manager_actions_comment_$hash"] = array(
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
+                    );
+
+                    break;
+                    
+                    case Ebms\EbmsTopicDecisions::$ONAGENDA:
+                    $form['on_agenda_title'] = $full_title;
+
+                    $form["on_agenda_comment_$hash"] = array(
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -1826,7 +1950,8 @@ namespace {
                 '#title' => $board_name,
                 '#collapsible' => TRUE,
                 '#collapsed' => TRUE,
-                'topics' => _format_topics($form_state, $article, $topics, $tags, $display_cycle),
+                'topics' => _format_topics($form_state, $article, $topics,
+                    $tags, $display_cycle),
             );
         }
 
@@ -1838,11 +1963,13 @@ namespace {
      * @param mixed $topics
      * @return mixed the formatted render array.
      */
-    function _format_topics($form_state, $article, $topics, $tags, $display_cycle) {
+    function _format_topics($form_state, $article, $topics, $tags,
+        $display_cycle) {
         $form = array();
 
         foreach ($topics as $topic_name => $topic_sequences) {
-            $form[$topic_name] = _format_topic($form_state, $article, $topic_name, $topic_sequences, $tags, $display_cycle);
+            $form[$topic_name] = _format_topic($form_state, $article,
+                $topic_name, $topic_sequences, $tags, $display_cycle);
         }
 
         return $form;
@@ -1854,7 +1981,8 @@ namespace {
      * @param mixed $topic_states
      * @return mixed the formatted render array.
      */
-    function _format_topic($form_state, $article, $topicName, $topic_sequences, $tags, $display_cycle) {
+    function _format_topic($form_state, $article, $topicName, $topic_sequences,
+        $tags, $display_cycle) {
         $form = array();
 
         // retrieve the relevant ids for this article and topic
@@ -1866,17 +1994,19 @@ namespace {
         // generate the add tag button and render array of tags
         $tag_array = _format_tags($form_state, $tags, $articleId, $topicId);
         $no_tags = empty($tag_array);
-        $button_array = _build_add_tag_button($no_tags, $form_state, $articleId, $topicId);
+        $button_array = _build_add_tag_button($no_tags, $form_state, $articleId,
+            $topicId);
 
         // split the button and potential form into separate areas based on the existence of
         // tags
-        $form['topic_header'] = _format_topic_header($topicName, $no_tags ? $button_array['button'] : array());
+        $form['topic_header'] = _format_topic_header($topicName,
+            $no_tags ? $button_array['button'] : array());
         if ($display_cycle) {
             $form['topic_cycle'] = _format_topic_cycle($articleId, $topicId);
         }
 
         if (!$no_tags)
-            $form['article_tag_add_button'] = $button_array['button'];
+                $form['article_tag_add_button'] = $button_array['button'];
         $form['topic_tags'] = $tag_array;
         $form['button_form'] = $button_array['form'];
 
@@ -1884,36 +2014,43 @@ namespace {
 
         // build decision arrays and missing decisions
         $empty_decisions = array();
-        $decisions['topic_nci_reviewer_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$NCIREVIEWER, $topic_sequences, $form_state);
+        $decisions['topic_nci_reviewer_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$NCIREVIEWER,
+            $topic_sequences, $form_state);
         if (count(end($decisions)) == 0)
-            $empty_decisions[] = Ebms\EbmsTopicDecisions::$NCIREVIEWER;
+                $empty_decisions[] = Ebms\EbmsTopicDecisions::$NCIREVIEWER;
 
         $decisions['topic_full_text_decision'] = _format_topic_full_text_decision($article);
         if (count(end($decisions)) == 0)
-            $empty_decisions[] = Ebms\EbmsTopicDecisions::$FULLTEXT;
+                $empty_decisions[] = Ebms\EbmsTopicDecisions::$FULLTEXT;
 
         //$decisions['topic_full_text_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$FULLTEXT, $topic_sequences);
-        $decisions['topic_nci_surveillance_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$SURVEILLANCE, $topic_sequences, $form_state);
+        $decisions['topic_nci_surveillance_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$SURVEILLANCE,
+            $topic_sequences, $form_state);
         if (count(end($decisions)) == 0)
-            $empty_decisions[] = Ebms\EbmsTopicDecisions::$SURVEILLANCE;
+                $empty_decisions[] = Ebms\EbmsTopicDecisions::$SURVEILLANCE;
 
-        $decisions['topic_assigned_for_review_decision'] = _format_topic_assigned_for_review_decision($articleId, $topicId);
+        $decisions['topic_assigned_for_review_decision'] = _format_topic_assigned_for_review_decision($articleId,
+            $topicId);
 
-        $decisions['topic_board_member_responses'] = _format_topic_board_member_responses($articleId, $topicId);
+        $decisions['topic_board_member_responses'] = _format_topic_board_member_responses($articleId,
+            $topicId);
         if (count(end($decisions)) == 0)
-            $empty_decisions[] = Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES;
+                $empty_decisions[] = Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES;
 
-        $decisions['topic_board_manager_actions'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS, $topic_sequences, $form_state);
+        $decisions['topic_board_manager_actions'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS,
+            $topic_sequences, $form_state);
         if (count(end($decisions)) == 0)
-            $empty_decisions[] = Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS;
+                $empty_decisions[] = Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS;
 
-        $decisions['topic_on_agenda'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$ONAGENDA, $topic_sequences, $form_state);
+        $decisions['topic_on_agenda'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$ONAGENDA,
+            $topic_sequences, $form_state);
         if (count(end($decisions)) == 0)
-            $empty_decisions[] = Ebms\EbmsTopicDecisions::$ONAGENDA;
+                $empty_decisions[] = Ebms\EbmsTopicDecisions::$ONAGENDA;
 
-        $decisions['topic_board_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$EDITORIALBOARD, $topic_sequences, $form_state);
+        $decisions['topic_board_decision'] = _format_topic_decision(Ebms\EbmsTopicDecisions::$EDITORIALBOARD,
+            $topic_sequences, $form_state);
         if (count(end($decisions)) == 0)
-            $empty_decisions[] = Ebms\EbmsTopicDecisions::$EDITORIALBOARD;
+                $empty_decisions[] = Ebms\EbmsTopicDecisions::$EDITORIALBOARD;
 
         $last_key = null;
         $last_array = null;
@@ -1935,7 +2072,8 @@ namespace {
         $form['decisions'] = $decisions;
 
         if (!empty($empty_decisions)) {
-            $dec_button_arr = _build_edit_decision_button($form_state, $articleId, $topicId, $empty_decisions, true);
+            $dec_button_arr = _build_edit_decision_button($form_state,
+                $articleId, $topicId, $empty_decisions, true);
             $form['add_decisions'] = $dec_button_arr['button'];
             $form['add_decisions_label'] = array('#markup' => '<div class="full-citation-element full-citation-indent">ADD NEW DECISION</div>');
             $form['add_decisions_form'] = $dec_button_arr['form'];
@@ -1975,11 +2113,10 @@ namespace {
 
         $cycles = Ebms\getArticleReviewCycle($articleId, $topicId);
 
-        if (empty($cycles))
-            return array();
+        if (empty($cycles)) return array();
 
         if (sizeof($cycles) > 1)
-            $form['header'] = array("#markup" => "<div class='citation-subheader'>Review Cycles</div>");
+                $form['header'] = array("#markup" => "<div class='citation-subheader'>Review Cycles</div>");
 
         $cycleNames = array();
         foreach ($cycles as $cycle) {
@@ -2044,7 +2181,8 @@ namespace {
       return $form;
       } */
 
-    function _format_topic_decision(Ebms\EbmsTopicDecisions $decisionInfo, $topic_sequences, $form_state = null) {
+    function _format_topic_decision(Ebms\EbmsTopicDecisions $decisionInfo,
+        $topic_sequences, $form_state = null) {
         $form = array();
 
         // generating past content if no form_state (and)
@@ -2053,8 +2191,7 @@ namespace {
         $sequenceIndex = $decisionInfo->sequence();
         $title = $decisionInfo->title();
 
-        if (!isset($topic_sequences[$sequenceIndex]))
-            return $form;
+        if (!isset($topic_sequences[$sequenceIndex])) return $form;
 
         $activeIndex = $show_past ? 'I' : 'A';
         if (isset($topic_sequences[$sequenceIndex][$activeIndex])) {
@@ -2081,7 +2218,7 @@ namespace {
 
                     $state = $decisionInfo->find_state($text_id);
                     if ($state != NULL)
-                        $prefix = _build_decision_icon_tag($state);
+                            $prefix = _build_decision_icon_tag($state);
 
                     $decision['decision'] = array("#markup" => "$prefix$date - $status->user_name");
                     $decision['decision']['#prefix'] = '<div class="full-citation-indent">';
@@ -2120,7 +2257,8 @@ namespace {
                 '#title' => t('Past Decisions'),
                 '#collapsible' => TRUE,
                 '#collapsed' => TRUE,
-                'past_decisions_list' => _format_topic_decision($decisionInfo, $topic_sequences),
+                'past_decisions_list' => _format_topic_decision($decisionInfo,
+                    $topic_sequences),
                 '#attributes' => array(
                     'class' => array('full-citation-past-items'),
                 ),
@@ -2140,8 +2278,7 @@ namespace {
 
         $fullTextId = $article->getFullTextId();
 
-        if ($fullTextId === null)
-            return $form;
+        if ($fullTextId === null) return $form;
 
         $form['#prefix'] = '<div class="full-citation-element full-citation-indent">';
         $form['#suffix'] = '</div>';
@@ -2160,8 +2297,7 @@ namespace {
         $records = db_select('file_managed', 'f')
                 ->condition('fid', $fullTextId)->execute()->fetchAll();
 
-        if (!isset($records[0]))
-            return $form;
+        if (!isset($records[0])) return $form;
 
         $record = $records[0];
         $uid = $record->uid;
@@ -2182,8 +2318,7 @@ namespace {
 
         $packetIds = Ebms\getArticlePacketIds($articleId, $topicId);
 
-        if (empty($packetIds))
-            return $form;
+        if (empty($packetIds)) return $form;
 
         // enclose the element
         $form['#prefix'] = '<div class="full-citation-element">';
@@ -2199,9 +2334,9 @@ namespace {
         $form['blocks']['#suffix'] = '</div>';
 
         // grab the past packets, if any
-        $pastIds = Ebms\getArticlePacketIds($articleId, $topicId, false, false, true);
-        if (empty($pastIds))
-            return $form;
+        $pastIds = Ebms\getArticlePacketIds($articleId, $topicId, false, false,
+            true);
+        if (empty($pastIds)) return $form;
 
         $form['past_blocks'] = array(
             '#type' => 'fieldset',
@@ -2225,12 +2360,10 @@ namespace {
         $packetInfos = array();
         foreach ($packetIds as $packetId) {
             $packet = Ebms\getPacketInfo($packetId);
-            if ($packet != null)
-                $packetInfos[] = $packet;
+            if ($packet != null) $packetInfos[] = $packet;
         }
 
-        if (empty($packetInfos))
-            return $form;
+        if (empty($packetInfos)) return $form;
 
         // build each packet block
         $packetBlocks = array();
@@ -2280,7 +2413,8 @@ namespace {
         $form = array();
 
         $responses = Ebms\getBoardMemberResponses($articleId, $topicId);
-        $pastResponses = Ebms\getBoardMemberResponses($articleId, $topicId, false, false);
+        $pastResponses = Ebms\getBoardMemberResponses($articleId, $topicId,
+            false, false);
 
         if (empty($responses) && empty($pastResponses)) {
             return $form;

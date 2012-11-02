@@ -2649,4 +2649,44 @@ function getArticleReviewCycle($article_id, $topic_id = null){
         ->fetchAll();
 }
 
+/**
+ * Retrieves all possible values of review dispositions.
+ * 
+ * @return mixed An array containing all rows of the review disposition table.
+ */
+function getReviewDispositions()
+{
+    return db_select('ebms_review_disposition_value', 'v')
+        ->fields('v')
+        ->execute()
+        ->fetchAll();
+}
+
+/**
+ * Retrieves a state type, identified by its text ID.
+ * 
+ * @param string $state_text_id The text id of the intended state.
+ * 
+ * @return mixed $sequence The state's matching details.
+ */
+function getStateTypebyTextId($state_text_id) {
+    return db_select('ebms_article_state_type', 't')
+            ->condition('state_text_id', $state_text_id)
+            ->fields('t')
+            ->execute()
+            ->fetch();
+}
+
+/**
+ * Retrieves all possible values of editorial board decisions.
+ * 
+ * @return mixed An array containing all rows of the board decision value table.
+ */
+function getBoardDecisionValues() {
+    return db_select('ebms_article_board_decision_value', 'v')
+            ->fields('v')
+            ->execute()
+            ->fetchAll();
+}
+
 ?>

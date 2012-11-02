@@ -5,8 +5,10 @@
 
 //jQuery(document).ready(function () { alert("Hello!"); });
 
-jQuery(document).ready(function () {
-    
+jQuery(document).ready(addHooks());
+
+function addHooks() {
+        
     jQuery('input[name=submit_source]').val('');
     
     // strip any pager query when the search is performed
@@ -37,6 +39,9 @@ jQuery(document).ready(function () {
     //jQuery('.citation-cell .topic-checks input.form-checkbox').attr("disabled", "disabled");
     //jQuery('.citation-cell .topic-checks .form-type-checkbox label').fadeTo('fast', 0.5);
     
+    //var count = jQuery('.form-checkbox').length;
+    //alert("Found " + count + " checkboxes!");
+    
     // alter pass/reject buttons to disable their siblings on click
     jQuery('.citation-cell .topic-checks input.form-checkbox, .full-citation-radio-check input.form-checkbox').click(function () {
         // get the parent div
@@ -54,4 +59,4 @@ jQuery(document).ready(function () {
             sib_input.attr("checked", "");
         }
     })
-});
+}
