@@ -31,12 +31,22 @@ function getSearchQuery($json) {
     $srch->srchArticleReviewer();
     $srch->srchReviewerResponse();
     $srch->srchComments();
+    $srch->srchTags();
     $srch->srchInputDate();
+    $srch->srchModifiedDate();
 
     // Sort them
     $srch->srchOrder();
 
-    $srch->qry->range(0,100);
+    // XXX - Should we limit results?
+    $srch->qry->range(0,500);
+
+// DEBUG
+$jspec = print_r($srch->spec, true);
+logw("Full decoded json spec:\n$jspec\n");
+$query = print_r($srch->qry, true);
+logw("Completed query:\n$query\n");
+
 
     return $srch->qry;
 }
@@ -64,8 +74,6 @@ class EbmsSearch {
         // Save the search spec
         $this->json = $json;
         $this->spec = json_decode($json, true);
-$jspec = print_r($this->spec, true);
-logw("Full decoded json spec:\n$jspec\n");
 
         // Topics and not yet analyzed and collected
         $this->topics = array();
@@ -77,24 +85,10 @@ logw("Full decoded json spec:\n$jspec\n");
         $this->qry->distinct();
     }
 
-    /* Table aliases
-        ebms_article             art
-        ebms_article_state       state
-        ebms_article_state_type  stype
-        ebms_board               board
-        ebms_article_author_cite acite1, acite2, ...
-        ebms_article_author      auth1, auth2, ...
-    */
-
     /**
      * Search unique IDs.
      */
     function srchIDs() {
-/* DEBUG
-$this->chkDates($this->spec['comment-added-start'],
-                $this->spec['comment-added-end'],
-                $this->spec['use-comment-date-range']);
-*/
 
         // Ignore conflicts.  We may change that someday.
         if ($this->spec['pmid'])
@@ -261,16 +255,28 @@ $this->chkDates($this->spec['comment-added-start'],
     }
 
     /**
-     * Search article state comments.  This is almost useless unless
-     * a user uses % wildcards.
+     * Search article state comments.  Tag comments are not searched
+     * (though users might want that in the future.)
+     *
+     * The user must use '%' wild cards appropriately.  Otherwise the search
+     * will consider the passed search criterion as the complete and exact
+     * value of the comment - which is not often helpful.
      *
      * However a user can search for a comment date without regard to
      * whether the text matches anything.
+     *
+     *  @param bool $anyMods    If true, use modified-start/end date
+     *                          specs.  Else use 'tag-added...' dates.
      */
-    function srchComments() {
+    function srchComments($anyMods=true) {
 
-        $comment   = $this->spec['comments'];
-        $startYear = $this->spec['comment-added-start']['year'];
+        $comment = null;
+        if ($anyMods)
+            $startYear = $this->spec['modified-start']['year'];
+        else {
+            $startYear = $this->spec['comment-added-start']['year'];
+            $comment   = $this->spec['comments'];
+        }
 
         // If we have either of them, we need to join states and comments
         if ($comment || $startYear) {
@@ -289,10 +295,22 @@ $this->chkDates($this->spec['comment-added-start'],
 
             // Search comment dates
             if ($startYear) {
-                $dateLimits = $this->chkDates(
-                        $this->spec['comment-added-start'],
-                        $this->spec['comment-added-end'],
-                        $this->spec['use-comment-date-range']);
+
+                // Search for comments within the modified range
+                if ($anyMods)
+                    $dateLimits = $this->chkDates(
+                            $this->spec['modified-start'],
+                            $this->spec['modified-end'],
+                            $this->spec['use-modified-date-range']);
+
+                // Or search for comments within the comment-added range
+                else
+                    $dateLimits = $this->chkDates(
+                            $this->spec['comment-added-start'],
+                            $this->spec['comment-added-end'],
+                            $this->spec['use-comment-date-range']);
+
+                // If we found a valid range
                 if ($dateLimits) {
                     $this->qry->condition('statecom.comment_dt',
                                            $dateLimits[0], '>=');
@@ -306,6 +324,67 @@ $this->chkDates($this->spec['comment-added-start'],
               $this->qry->condition("comstate.topic_id", $this->topics, 'IN');
             else if (!empty($this->boards))
               $this->qry->condition("comstate.board_id", $this->boards, 'IN');
+        }
+    }
+
+    /**
+     * Search for tagged articles.
+     *
+     * This can be called to search for tags in response to a tag
+     * entry, or can be called by srchModifiedDates() to look for
+     * articles that acquired a tag within the modified date range.
+     *
+     *  @param bool $anyMods    If true, use modified-start/end date
+     *                          specs.  Else use 'tag-added...' dates.
+     */
+    function srchTags($anyMods=false) {
+
+        $tagId = $this->spec['tag'];
+        if ($anyMods)
+            $startYear = $this->spec['modified-start']['year'];
+        else
+            $startYear = $this->spec['tag-added-start']['year'];
+
+        // If we have either of them, we need to join tags
+        if ($tagId || $startYear) {
+
+            // Look in the table of active tags
+            $this->qry->join('ebms_article_tag', 'tag',
+                     'tag.article_id = art.article_id');
+            $this->qry->condition('tag.active_status', 'A');
+
+            // Looking for a specific tag?
+            if ($tagId)
+                $this->qry->condition('tag.tag_id', $tagId);
+
+            // Looking for a date range?
+            // Do it whether or not we're looking for a specific tag
+            if ($startYear) {
+
+                // Search for tags within the modified range
+                if ($anyMods)
+                    $dateLimits = $this->chkDates(
+                            $this->spec['modified-start'],
+                            $this->spec['modified-end'],
+                            $this->spec['use-modified-date-range']);
+
+                // Or search for tags within the tag-added range
+                else
+                    $dateLimits = $this->chkDates(
+                            $this->spec['tag-added-start'],
+                            $this->spec['tag-added-end'],
+                            $this->spec['use-tag-date-range']);
+
+                // If we found a valid range
+                if ($dateLimits) {
+                    $this->qry->condition('tag.tag_dt', $dateLimits[0], '>=');
+                    $this->qry->condition('tag.tag_dt', $dateLimits[1], '<');
+                }
+            }
+
+            // Tags can have topics, but not boards
+            if (!empty($this->topics))
+              $this->qry->condition("tag.topic_id", $this->topics, 'IN');
         }
     }
 
@@ -480,17 +559,16 @@ $this->chkDates($this->spec['comment-added-start'],
      */
     function srchReviewCycle() {
 
-        define ('MIN_CYCLE_ID', 125); // XXX FIX ME with correct data
-
         $cycleId = $this->spec['review-cycle'];
-        if ($cycleId > MIN_CYCLE_ID) {
+        if ($cycleId) {
             $this->qry->join('ebms_import_action', 'impact',
-                             'impact.article_id = art.article_id');
+                         'impact.article_id = art.article_id');
             $this->qry->join('ebms_import_disposition', 'impdisp',
-                             'impdisp.disposition_id = impact.disposition_id');
+                         'impdisp.disposition_id = impact.disposition_id');
             $this->qry->join('ebms_import_batch', 'impbatch',
-                             'impbatch.import_batch_id = impact.mport_batch_id');
-            $this->qry->condition('impdisp.text_id', array('imported','topicAdded'), 'IN');
+                         'impbatch.import_batch_id = impact.import_batch_id');
+            $this->qry->condition('impdisp.text_id',
+                         array('imported','topicAdded'), 'IN');
             $this->qry->condition('impbatch.cycle_id', $cycleId);
         }
     }
@@ -574,46 +652,74 @@ $this->chkDates($this->spec['comment-added-start'],
         }
     }
 
-
-    /**
-     * Search the state comments.
-     *
-     * The user must use '%' wild cards appropriately.  Otherwise the search
-     * will consider the passed search criterion as the complete and exact
-     * value of the comment - which is not often helpful.
-     */
-    function srchStateComments() {
-        $comment = $this->spec['comments'];
-        if ($comment) {
-            // User can specify a date range for the comment
-        }
-    }
-
     /**
      * Find articles input within a date range.
      */
     function srchInputDate() {
 
-        if ($this->spec['admin-options']['input-start']['year']) {
+        if ($this->spec['input-start']['year']) {
             $dateLimits = $this->chkDates(
-                    $this->spec['admin-options']['input-start'],
-                    $this->spec['admin-options']['input-end'],
-                    $this->spec['admin-options']['use-input-date-range']);
+                    $this->spec['input-start'],
+                    $this->spec['input-end'],
+                    $this->spec['use-input-date-range']);
 
             if ($dateLimits) {
                 $this->qry->join('ebms_article_state', 'inpstate',
-                                 'inpstate.article_id = art.article_id');
+                     'inpstate.article_id = art.article_id');
+                $this->qry->join('ebms_article_state_type', 'inptype',
+                     'inptype.article_state_id = inpstate.article_state_id');
+
+                // Looking for input states in the date range
+                $this->qry->condition('inptype.state_text_id', 'Imported');
                 $this->qry->condition('inpstate.status_dt',
                                        $dateLimits[0], '>=');
                 $this->qry->condition('inpstate.status_dt',
                                        $dateLimits[1], '<');
 
+                // Standard qualifiers
                 if (!empty($this->topics))
                     $this->qry->condition("inpstate.topic_id",
                                            $this->topics, 'IN');
                 else if (!empty($this->boards))
                     $this->qry->condition("inpstate.board_id",
                                            $this->boards, 'IN');
+            }
+        }
+    }
+
+    /**
+     * Find articles with any modification within a date range.
+     *
+     * XXX - Since users said ANY modification we're not excluding
+     *       inactive states.  Ask to be sure if that's right.
+     */
+    function srchModifiedDate() {
+
+        if ($this->spec['modified-start']['year']) {
+            $dateLimits = $this->chkDates(
+                    $this->spec['modified-start'],
+                    $this->spec['modified-end'],
+                    $this->spec['use-modified-date-range']);
+
+            if ($dateLimits) {
+                $this->qry->join('ebms_article_state', 'modstate',
+                                 'modstate.article_id = art.article_id');
+
+                // Any mod will do within the date range, don't care what
+                $this->qry->condition('modstate.status_dt',
+                                       $dateLimits[0], '>=');
+                $this->qry->condition('modstate.status_dt',
+                                       $dateLimits[1], '<');
+
+                if (!empty($this->topics))
+                    $this->qry->condition("modstate.topic_id",
+                                           $this->topics, 'IN');
+                else if (!empty($this->boards))
+                    $this->qry->condition("modstate.board_id",
+                                           $this->boards, 'IN');
+
+                // A tag entry is also considered a "modification"
+                $this->srchTags(true);
             }
         }
     }
@@ -755,6 +861,10 @@ $this->chkDates($this->spec['comment-added-start'],
 
     /**
      * Sorting results.
+     *
+     * Note: If we add an option to not sort it will speed up searches
+     * that are otherwise limited to 500 or whatever - but will also
+     * get a random 500 hits.
      */
     function srchOrder() {
 
