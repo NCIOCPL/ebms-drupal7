@@ -1107,7 +1107,7 @@ class EbmsArticle {
  * no EbmsArticle object is otherwise required.
  *
  *  @param int $articleId    - Article whose state has changed.
- *  @param string $stateName - Name used in preference to ID.  The code is
+ *  @param string $textId    - Name used in preference to ID.  The code is
  *                              less efficient but caller's code is more
  *                              self-documenting.
  *  @param int $topicId      - Sometimes optional topic identifier.  See
@@ -1123,21 +1123,19 @@ class EbmsArticle {
  *
  *  @throws Exception if invalid parameters  or lower level error.
  */
-function setArticleState($articleId, $stateName, $topicId=null,
+function setArticleState($articleId, $textId, $topicId=null,
         $boardId=null, $comment=null, $userId=null, $dateTime=null) {
 
     // Get everything we know about this state
-    $result = db_query(
-        'SELECT state_id, board_required, topic_required, sequence
-           FROM {ebms_article_state_type}
-          WHERE state_name = :state_name',
-         array(':state_name' => $stateName));
-
-    $stateType = $result->fetchObject();
+    $stateType = db_select('ebms_article_state_type', 't')
+        ->fields('t')
+        ->condition('state_text_id', $textId)
+        ->execute()
+        ->fetchObject();
 
     // Must be one
     if (!$stateType)
-        throw new \Exception("setArticleState: Unknown state type $stateName");
+        throw new \Exception("setArticleState: Unknown state type text ID $textId");
 
     // Get defaul user from global if not passed
     $userId = Util::getUserId($userId);
@@ -1231,7 +1229,7 @@ function setArticleState($articleId, $stateName, $topicId=null,
 
                 // Add a comment to each inactive row
                 $inactiveComment =
-                  "State inactivated by setting \"$stateName\" at $dateTime";
+                  "State inactivated by setting \"$textId\" at $dateTime";
                 foreach ($stateRowIds as $updId)
                     addArticleStateComment($updId, $inactiveComment,
                                            $userId, $dateTime);
@@ -2605,14 +2603,34 @@ function getBoardDecisions($article_id, $topic_id) {
 function getBoardDecisionsByArticleState($article_state_id) {
     $query = db_select('ebms_article_board_decision', 'd');
     $query->join('ebms_article_board_decision_value', 'v', 'd.decision_value_id = v.value_id');
+    $query->leftJoin('ebms_cycle', 'c', 'd.meeting_date = c.cycle_id');
     
     return $query
-            ->fields('d', array('meeting_date', 'discussed'))
+            ->fields('d', array('discussed'))
             ->fields('v', array('value_name'))
+            ->fields('c', array('cycle_name'))
             ->condition('d.article_state_id', $article_state_id)
             ->execute()
             ->fetchAll();
 }
+
+/**
+ * Retrieves all board member uids associated with a board decision.
+ * 
+ * @param int $article_state_id   The decision's article state id.
+ * 
+ * @return mixed $memberIds     An array of related member uids
+ */
+function getBoardDecisionMembers($article_state_id) {
+    $query = db_select('ebms_article_board_decision_member', 'm');
+       
+    return $query
+            ->fields('m', array('uid'))
+            ->condition('m.article_state_id', $article_state_id)
+            ->execute()
+            ->fetchCol();
+}
+
 
 /**
  * Retrieves all matching review cycles for the given article and topic ids.

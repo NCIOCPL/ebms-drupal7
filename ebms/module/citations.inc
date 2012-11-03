@@ -48,7 +48,7 @@ namespace Ebms {
 
         public static function init() {
             self::$NCIREVIEWER =
-                new EbmsTopicDecisions('NCI Reviewer Decision', 4, null, array(EbmsArticleStates::PassedInitReview), array(EbmsArticleStates::RejectInitReview));
+                new EbmsTopicDecisions('NCI Reviewer Decision', 6, null, array(EbmsArticleStates::PassedBMReview), array(EbmsArticleStates::RejectBMReview));
             self::$FULLTEXT =
                 new EbmsTopicDecisions('Full Text Retrieved', 8, null, array(EbmsArticleStates::FullRetrieved), array(EbmsArticleStates::FullFailed));
             self::$SURVEILLANCE =
@@ -1678,23 +1678,37 @@ namespace {
         Ebms\addArticleStateComment($stateId, $comment);
     }
 
-    function _retrieve_hash_values($form_state, $stems) {
+    function _retrieve_hash_values($form_state, $stems, $prefix = '') {
         $values = array();
         $hash = null;
-        foreach ($stems as $stem) {
-            foreach ($form_state['values'] as $key => $value) {
-                // check the current key if it begins with the stem
-                if (strpos($key, $stem) === 0) {
-                    // begins with stem, retrieve hash from end of key
-                    $localHash = str_replace("${stem}_", '', $key);
+        foreach ($stems as $label => $stem) {
+            $localHash = null;
+            if (is_array($stem)) {
+                $values[$label] = _retrieve_hash_values($form_state, $stem,
+                    $label);
+                $localHash = $values[$label]['hash'];
+                unset($values[$label]['hash']);
+            } else {
+                $phrase = $stem;
+                if ($prefix) $phrase = "${prefix}_${stem}";
 
-                    if ($hash == null || $hash == $localHash)
-                            $hash = $localHash;
-                    else
-                            drupal_set_message("conflicting hash: $hash vs $localHash",
-                            'error');
+                foreach ($form_state['values'] as $key => $value) {
+                    // check the current key if it begins with the stem
+                    if (strpos($key, $phrase) === 0) {
+                        // begins with stem, retrieve hash from end of key
+                        $localHash = str_replace("${phrase}_", '', $key);
+                        $values[$stem] = $value;
 
-                    $values[$stem] = $value;
+                        break;
+                    }
+                }
+            }
+
+            if (isset($localHash)) {
+                if ($hash == null || $hash == $localHash) $hash = $localHash;
+                else {
+                    drupal_set_message("conflicting hash: $hash vs $localHash",
+                        'error');
                 }
             }
         }
@@ -1776,12 +1790,19 @@ namespace {
                 case Ebms\EbmsTopicDecisions::$NCIREVIEWER:
                     $form['reviewer_title'] = $full_title;
 
-                    $form["nci_reviewer_check_$hash"] = array(
-                        '#type' => 'checkboxes',
-                        '#options' => array(
-                            'pass' => t('Approve'),
-                            'reject' => t('Reject'),
-                        ),
+                    $checks = array();
+                    $checks["nci_reviewer_pass_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Approve'),
+                    );
+
+                    $checks["nci_reviewer_reject_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Reject'),
+                    );
+
+                    $form["nci_reviewer_checks_$hash"] = array(
+                        'checks' => $checks,
                         '#prefix' => '<div class="full-citation-radio-check">',
                         '#suffix' => '</div>',
                     );
@@ -1803,7 +1824,6 @@ namespace {
 
                     $form["fulltext_check_$hash"] = array(
                         '#type' => 'checkbox',
-                        '#return_value' => 'unavailable',
                         '#title' => t('Unable to Upload'),
                     );
 
@@ -1818,15 +1838,23 @@ namespace {
                 case Ebms\EbmsTopicDecisions::$SURVEILLANCE:
                     $form['surveillance_title'] = $full_title;
 
-                    $form["surveillance_check_$hash"] = array(
-                        '#type' => 'checkboxes',
-                        '#options' => array(
-                            'pass' => t('Approve'),
-                            'reject' => t('Reject'),
-                        ),
+                    $checks = array();
+                    $checks["surveillance_pass_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Approve'),
+                    );
+
+                    $checks["surveillance_reject_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Reject'),
+                    );
+
+                    $form["surveillance_checks_$hash"] = array(
+                        'checks' => $checks,
                         '#prefix' => '<div class="full-citation-radio-check">',
                         '#suffix' => '</div>',
                     );
+
 
                     $form["surveillance_comment_$hash"] = array(
                         '#type' => 'textarea',
@@ -1843,7 +1871,7 @@ namespace {
 
                     $values = Ebms\getReviewDispositions();
 
-                    $options = array();
+                    $options = array(0 => '');
                     foreach ($values as $value) {
                         $options[$value->value_id] = $value->value_name;
                     }
@@ -1868,7 +1896,7 @@ namespace {
                     // get the full text for the board manager decisions
                     $passStates = $decision->pass_states();
 
-                    $options = array();
+                    $options = array(0 => '');
                     foreach ($passStates as $state) {
                         $type = Ebms\getStateTypebyTextId($state);
                         $options[$type->state_text_id] = $type->state_name;
@@ -1889,11 +1917,67 @@ namespace {
                     );
 
                     break;
-                    
-                    case Ebms\EbmsTopicDecisions::$ONAGENDA:
+
+                case Ebms\EbmsTopicDecisions::$ONAGENDA:
                     $form['on_agenda_title'] = $full_title;
 
                     $form["on_agenda_comment_$hash"] = array(
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
+                    );
+
+                    break;
+
+                case Ebms\EbmsTopicDecisions::$EDITORIALBOARD:
+                    $form['board_decision_title'] = $full_title;
+
+                    $values = Ebms\getBoardDecisionValues();
+
+                    $options = array(0 => '');
+                    foreach ($values as $value) {
+                        $options[$value->value_id] = $value->value_name;
+                    }
+
+                    $form["board_decision_select_$hash"] = array(
+                        '#type' => 'select',
+                        '#options' => $options,
+                    );
+
+                    $form["board_decision_discussed_$hash"] = array(
+                        '#type' => 'radios',
+                        '#options' => array('Y' => 'Yes', 'N' => 'No'),
+                        '#default_value' => 'Y',
+                        '#title' => 'Discussed',
+                    );
+
+                    $boardId = Ebms\getTopicBoard($topic_id);
+
+                    $memberIds = db_select('ebms_board_member', 'm')
+                        ->condition('m.board_id', $boardId)
+                        ->fields('m', array('user_id'))
+                        ->execute()
+                        ->fetchCol();
+
+                    $members = user_load_multiple($memberIds);
+                    $memberOpts = array();
+                    foreach ($members as $member) {
+                        $memberOpts[$member->uid] = $member->name;
+                    }
+
+                    $form["board_decision_members_fieldset_$hash"] = array(
+                        '#type' => 'fieldset',
+                        '#title' => 'Board Members',
+                        '#collapsible' => 'true',
+                        '#collapsed' => 'true',
+                        "board_decision_members_$hash" => array(
+                            '#type' => 'checkboxes',
+                            '#options' => $memberOpts,
+                        )
+                    );
+
+                    $form["board_decision_comment_$hash"] = array(
                         '#type' => 'textarea',
                         '#title' => t('Comment'),
                         '#prefix' => '<div class="full-citation-element">',
@@ -1920,6 +2004,276 @@ namespace {
         );
 
         return $form;
+    }
+
+    function _edit_decision_save($form, &$form_state) {
+        require_once('EbmsArticle.inc');
+
+        $form_state['rebuild'] = TRUE;
+
+        $values = _retrieve_hash_values($form_state,
+            array(
+            'nci_reviewer' => array('pass', 'reject', 'comment'),
+            'fulltext' => array('file', 'check', 'comment'),
+            'surveillance' => array('pass', 'reject', 'comment'),
+            'member_responses' => array('select', 'comment'),
+            'manager_actions' => array('select', 'comment'),
+            'on_agenda' => array('comment'),
+            'board_decision' => array('select', 'discussed', 'members', 'comment'),
+            ));
+
+        dsm($values, 'edit decision values');
+        $hash = $values['hash'];
+
+        // split the hash into articleId and topicId
+        list($articleId, $topicId) = explode("|", $hash);
+
+        _save_nci_reviewer_decision($values['nci_reviewer'], $articleId,
+            $topicId);
+        _save_fulltext_decision($values['fulltext'], $articleId, $topicId);
+        _save_surveillance_decision($values['surveillance'], $articleId,
+            $topicId);
+        _save_member_responses_decision($values['member_responses'], $articleId,
+            $topicId);
+        _save_manager_actions_decision($values['manager_actions'], $articleId,
+            $topicId);
+        _save_on_agenda_decision($values['on_agenda'], $articleId, $topicId);
+        _save_board_decision($values['board_decision'], $articleId, $topicId);
+    }
+
+    function _save_nci_reviewer_decision($values, $articleId, $topicId) {
+        if (empty($values)) return;
+
+        $pass = $values['pass'];
+        $reject = $values['reject'];
+        $comment = $values['comment'];
+
+        if (empty($comment)) $comment = null;
+
+        if (!($pass xor $reject)) {
+            return;
+        }
+
+        $state = \Ebms\EbmsArticleStates::RejectBMReview;
+        if ($pass) $state = \Ebms\EbmsArticleStates::PassedBMReview;
+
+        Ebms\setArticleState($articleId, $state, $topicId, null, $comment);
+
+        drupal_set_message("Added NCI Reviewer decision to article $articleId");
+    }
+
+    function _save_fulltext_decision($values, $articleId, $topicId) {
+        // prefer 'unavailable' check
+        $check = $values['check'];
+        $comment = $values['comment'];
+
+        if (empty($comment)) $comment = null;
+
+        if ($check) {
+            global $user;
+            $now = strftime("%Y-%m-%d %H:%M:%S");
+            try {
+                db_insert('ebms_ft_unavailable')
+                    ->fields(
+                        array(
+                            'article_id' => $articleId,
+                            'flagged' => $now,
+                            'flagged_by' => $user->uid,
+                            'comment' => $comment,
+                        )
+                    )
+                    ->execute();
+                drupal_set_message('Marked article ' . $articleId .
+                    ' as unavailable');
+            } catch (Exception $e) {
+                // Shouldn't happen if this code is written correctly.
+                drupal_set_message('Unavailable flag already set for article '
+                    . $articleId, 'error');
+            }
+
+            return;
+        }
+
+        $validators = array('file_validate_extensions' => array());
+        foreach ($_FILES['files']['name'] as $key => $value) {
+            if ($value) {
+                $file = file_save_upload($key, $validators);
+                dsm($file, 'temporary saved file');
+                if ($file) {
+                    $file = file_move($file, 'public://');
+                    $file->status |= FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                    db_update('ebms_article')
+                        ->fields(array('full_text_id' => $file->fid))
+                        ->condition('article_id', $article_id)
+                        ->execute();
+                    drupal_set_message('Posted document ' . $file->filename .
+                        ' for article ' . $article_id . '.');
+                }
+                else drupal_set_message('Unable to upload ' . $value, 'error');
+            }
+        }
+
+        return;
+    }
+
+    function _save_surveillance_decision($values, $articleId, $topicId) {
+        if (empty($values)) return;
+
+        $pass = $values['pass'];
+        $reject = $values['reject'];
+        $comment = $values['comment'];
+
+        if (empty($comment)) $comment = null;
+
+        if (!($pass xor $reject)) {
+            return;
+        }
+
+        $state = \Ebms\EbmsArticleStates::PassedFullReview;
+        if ($pass) $state = \Ebms\EbmsArticleStates::RejectFullReview;
+
+        Ebms\setArticleState($articleId, $state, $topicId, null, $comment);
+
+        drupal_set_message("Added Literature Surveillance Committee decision to article $articleId");
+    }
+
+    function _save_member_responses_decision($values, $articleId, $topicId) {
+        if (empty($values)) return;
+
+        $select = $values['select'];
+
+        if (!$select) return;
+
+        $comment = $values['comment'];
+        if (!$comment) $comment = null;
+        $packets = Ebms\getArticlePacketIds($articleId, $topicId);
+
+        if (sizeof($packets) != 1) return;
+
+        $packetId = $packets[0];
+        global $user;
+
+        // Here are the fields we'll store
+        //   article_id and dates handled separately for new
+        //   and replace records
+        $fields = array(
+            'packet_id' => $packetId,
+            'article_id' => $articleId,
+            'reviewer_id' => $user->uid,
+            'when_posted' => db_query('SELECT NOW()')->fetchField(),
+            'comments' => $comment,
+            'loe_info' => NULL,
+        );
+
+        // Wrap this in a transaction
+        $txn = db_transaction();
+        try {
+
+            // Insert a new record
+            $query = db_insert('ebms_article_review');
+            $query->fields($fields);
+
+            $queryString = (string) $query;
+
+            $reviewId = $query->execute();
+
+            dsm($queryString, "query for reviewId $reviewId");
+
+            // also insert into the review disposition table
+            $reviewFields = array(
+                'review_id' => $reviewId,
+                'value_id' => $select,
+            );
+
+            // Insert a new record
+            $query = db_insert('ebms_review_disposition');
+            $query->fields($reviewFields);
+
+            $queryString = (string) $query;
+
+            $rowId = $query->execute();
+
+            dsm($queryString, "query for disposition row $rowId");
+        } catch (\Exception $e) {
+            $txn->rollback();
+            throw $e;
+        }
+    }
+
+    function _save_manager_actions_decision($values, $articleId, $topicId) {
+        if (empty($values)) return;
+
+        $select = $values['select'];
+        if (!$select) return;
+
+        $comment = $values['comment'];
+
+        if (empty($comment)) $comment = null;
+
+        Ebms\setArticleState($articleId, $select, $topicId, null, $comment);
+
+        drupal_set_message("Added Board Manager Action decision to article $articleId");
+    }
+
+    function _save_on_agenda_decision($values, $articleId, $topicId) {
+        if (empty($values)) return;
+
+        $comment = $values['comment'];
+
+        if (empty($comment)) $comment = null;
+        if ($comment == null) return;
+
+        Ebms\setArticleState($articleId, Ebms\EbmsArticleStates::AgendaOn,
+            $topicId, null, $comment);
+
+        drupal_set_message("Added Board Manager Action decision to article $articleId");
+    }
+
+    function _save_board_decision($values, $articleId, $topicId) {
+        dsm($values, 'board decision values');
+        if (empty($values)
+            || !$values['select']) return;
+
+        $value_id = $values['select'];
+        $discussed = $values['discussed'];
+        $memberIds = $values['members'];
+        $comment = $values['comment'];
+        if (!$comment) $comment = null;
+
+        $articleStateId = Ebms\setArticleState($articleId,
+            Ebms\EbmsArticleStates::FinalBoardDecision, $topicId, null, $comment);
+
+        $key = array(
+            'article_state_id' => $articleStateId,
+            'decision_value_id' => $value_id,
+        );
+        $fields = array(
+            'discussed' => $discussed,
+        );
+
+        // insert should work, as the article state is freshly created
+        $ret = db_merge('ebms_article_board_decision')
+            ->key($key)
+            ->fields($fields)
+            ->execute();
+
+        // proceed to save the decision members if the merge worked
+        if ($ret) {
+            foreach ($memberIds as $id) {
+                if ($id) {
+                    $key = array(
+                        'article_state_id' => $articleStateId,
+                        'uid' => $id,
+                    );
+
+                    // merge in article state / uid pair
+                    $ret = db_merge('ebms_article_board_decision_member')
+                        ->key($key)
+                        ->execute();
+                }
+            }
+        }
     }
 
     /**
@@ -2564,11 +2918,21 @@ namespace {
 
         foreach ($decisions as $decision) {
             $form[] = array("#markup" => "<div class='full-citation-indent'>DISPOSITION: $decision->value_name</div>");
+            $date = $decision->cycle_name;
+            if (!$date) $date = '';
+            $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $date</div>");
         }
 
-        $date = _format_date($status->dt);
-        $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $date</div>");
-        $form['member'] = array("#markup" => "<div class='full-citation-indent'>BOARD MEMBER: $status->user_name</div>");
+        $memberIds = Ebms\getBoardDecisionMembers($status->article_state_id);
+        $members = user_load_multiple($memberIds);
+        $memberNames = array();
+        foreach ($members as $member) {
+            $memberNames[] = $member->name;
+        }
+
+        $names = implode(', ', $memberNames);
+
+        $form['member'] = array("#markup" => "<div class='full-citation-indent'>BOARD MEMBERS: $names</div>");
 
         if ($form_state != null) {
             //drop in 'add comment' button
