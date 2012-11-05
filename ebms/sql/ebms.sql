@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
 DROP TABLE IF EXISTS ebms_article_board_decision;
 DROP TABLE IF EXISTS ebms_article_board_decision_value;
+DROP TABLE IF EXISTS ebms_article_board_decision_member;
 DROP TABLE IF EXISTS ebms_article_state_comment;
 DROP TABLE IF EXISTS ebms_article_state;
 DROP TABLE IF EXISTS ebms_article_state_type;
@@ -1109,6 +1110,25 @@ CREATE TABLE ebms_article_board_decision (
 )
     ENGINE InnoDB DEFAULT CHARSET=utf8;
 
+/*
+ * Record of the board members afffiliated with a particular board decision.
+ * The date of the decision entry can be found by looking up article_state_id
+ * in ebms_article_state.
+ *
+ *  article_state_id   foreign key into ebms_article_state table
+ *  uid                foreign key into users table
+ */
+CREATE TABLE ebms_article_board_decision_member
+( article_state_id INTEGER      NOT NULL,
+           uid INT UNSIGNED NOT NULL,
+PRIMARY KEY (article_state_id, uid),		   
+FOREIGN KEY (article_state_id)
+    REFERENCES ebms_article_state(article_state_id),
+FOREIGN KEY (uid) 
+    REFERENCES users(uid)
+)
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	
 /*
  * Collection of articles on a given topic assigned for board member review.
  *
