@@ -38,6 +38,9 @@ define('Ebms\REJECT_INACTIVE', IMAGES_DIR . '/EBMS_Reject_Icon_Inactive.png');
 define('Ebms\TAG_ACTIVE', IMAGES_DIR . '/EBMS_Tag_Icon_Active.png');
 define('Ebms\TAG_INACTIVE', IMAGES_DIR . '/EBMS_Tag_Icon_Inactive.png');
 
+define('Ebms\EDIT_ACTIVE', IMAGES_DIR . '/EBMS_Edit_Icon_Active.png');
+define('Ebms\EDIT_INACTIVE', IMAGES_DIR . '/EBMS_Edit_Icon_Inactive.png');
+
 /**
  * Initial implementation of discussion forums has one general forum
  * visible to all users, and one forum for each of the PDQ boards.
