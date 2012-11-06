@@ -903,6 +903,9 @@ CREATE TABLE ebms_article_state (
                            active_status);
     CREATE INDEX ebms_current_article_state_article_index
            ON ebms_article_state(current, article_id, state_id);
+    CREATE INDEX ebms_article_state_date_index
+           ON ebms_article_state(status_dt, article_id, state_id,
+                                 active_status);
 
 
 /*
