@@ -27,7 +27,7 @@ function getSearchQuery($json) {
     $srch->srchIncludeNotList();
     $srch->srchJrnl();
     $srch->srchPubDate();
-    $srch->srchReviewCycle();
+    $srch->srchImportActions();
     $srch->srchArticleReviewer();
     $srch->srchReviewerResponse();
     $srch->srchComments();
@@ -39,7 +39,7 @@ function getSearchQuery($json) {
     $srch->srchOrder();
 
     // XXX - Should we limit results?
-    $srch->qry->range(0,500);
+    // $srch->qry->range(0,500);
 
 // DEBUG
 $jspec = print_r($srch->spec, true);
@@ -496,6 +496,9 @@ class EbmsSearch {
      * Those are both negative conditions in the sense that we normally
      * make those exclusions.  The user must explicitly request that we
      * not make them.
+     *
+     * XXX UNIMPLEMENTED.  NO CHECK FOR non-rejected ARTICLES ONLY.
+     * THERE ARE QUESTIONS ABOUT HOW TO DO IT.
      */
     /*
     XXX - MAY NOT WANT THIS.  WAIT TO HEAR FROM BOB AND DAN
@@ -553,23 +556,46 @@ class EbmsSearch {
     }
 
     /**
-     * Review cycle in which an article was imported.
-     * Note: This only works for review cycles created in the new system
+     * Search the import tables.  Finds articles that have:
+     *   Specific review cycle, and/or
+     *   Have topics added during an import action.
+     *
+     * Putting these together is an optimization that avoids joining
+     * the same tables twice.  Maybe that's a mistake, but it should
+     * give higher performance when asking for articles with topics
+     * added during a specific review cycle - which might be a common
+     * usage.
+     *
+     * Note: This only works for articles imported in the new system
      *       unless we make a significant change to the conversion process.
      */
-    function srchReviewCycle() {
+    function srchImportActions() {
 
-        $cycleId = $this->spec['review-cycle'];
-        if ($cycleId) {
+        $cycleId  = $this->spec['review-cycle'];
+        $topAdded = $this->spec['admin-options']['summary-topics-added'];
+
+        if ($cycleId || $topAdded) {
+            // We need the import action and disposition tables
             $this->qry->join('ebms_import_action', 'impact',
                          'impact.article_id = art.article_id');
             $this->qry->join('ebms_import_disposition', 'impdisp',
                          'impdisp.disposition_id = impact.disposition_id');
-            $this->qry->join('ebms_import_batch', 'impbatch',
-                         'impbatch.import_batch_id = impact.import_batch_id');
-            $this->qry->condition('impdisp.text_id',
+
+            // If cycle ID requested, also need the batch table
+            if ($cycleId) {
+                $this->qry->join('ebms_import_batch', 'impbatch',
+                     'impbatch.import_batch_id = impact.import_batch_id');
+                $this->qry->condition('impbatch.cycle_id', $cycleId);
+            }
+
+            // For topicsAdded search, we only need to find that action
+            if ($topAdded)
+                $this->qry->condition('impdisp.text_id', 'topicAdded');
+
+            // Else we need both new imports and topic added articles
+            else
+                $this->qry->condition('impdisp.text_id',
                          array('imported','topicAdded'), 'IN');
-            $this->qry->condition('impbatch.cycle_id', $cycleId);
         }
     }
 
@@ -726,7 +752,10 @@ class EbmsSearch {
 
     /**
      * Find articles that had more than one summary topic added.
-     */
+     *
+     * XXX - The approach taken here only works for articles added
+     * after our conversion.
+     ***********
     function srchTopicsAdded() {
 
         if ($this->spec['admin-options']['summary-topics-added']) {
@@ -737,8 +766,7 @@ class EbmsSearch {
             $inQry->join('ebms_article_state_type', 'toptype',
                           'toptype.state_id = topstate.state_id');
 
-            /*
-            // $inQry->condition
+            // XXX LEFT OFF HERE - $inQry->condition
 
             $subqry =
               'SELECT s.article_id, count(*)
@@ -748,9 +776,9 @@ class EbmsSearch {
                WHERE t.state_text_id = 'ReadyInitReview'
                GROUP BY s.article_id
                HAVING count(*) > 1';
-            */
         }
     }
+    *******/
 
 
     /**
