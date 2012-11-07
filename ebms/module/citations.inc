@@ -23,6 +23,8 @@ namespace Ebms {
 
     class EbmsTopicDecisions {
 
+        static $INITIALREVIEW = null;
+        static $PUBLISHED = null;
         static $NCIREVIEWER = null;
         static $FULLTEXT = null;
         static $SURVEILLANCE = null;
@@ -39,38 +41,48 @@ namespace Ebms {
         private $reject_states;
         static $currentIndex = 0;
 
-        public function __construct($index, $title, $sequence = null,
-            $formatter = null, $pass_states = array(), $reject_states = array()) {
+        public function __construct($index, $title, $formatter = null,
+            $pass_states = array(), $reject_states = array()) {
             $this->index = $index;
             $this->title = $title;
-            $this->sequence = $sequence;
+
             $this->formatter = $formatter;
             $this->pass_states = $pass_states;
             $this->reject_states = $reject_states;
+
+            // if any pass states exist, use them to populate the sequence
+            $state = reset($pass_states);
+            if ($state) {
+                $this->sequence = getStateTypeSequence($state);
+            }
         }
 
         public static function init() {
             $index = 1;
+            self::$INITIALREVIEW =
+                new EbmsTopicDecisions($index++, 'Medical Librarian Initial Review', null, array(EbmsArticleStates::PassedInitReview), array(EbmsArticleStates::RejectInitReview));
+            self::$PUBLISHED =
+                new EbmsTopicDecisions($index++, 'Publishing', '_format_topic_publishing', array(EbmsArticleStates::Published));
             self::$NCIREVIEWER =
-                new EbmsTopicDecisions($index++, 'NCI Reviewer Decision', 6, null, array(EbmsArticleStates::PassedBMReview), array(EbmsArticleStates::RejectBMReview));
+                new EbmsTopicDecisions($index++, 'NCI Reviewer Decision', null, array(EbmsArticleStates::PassedBMReview), array(EbmsArticleStates::RejectBMReview));
             self::$FULLTEXT =
-                new EbmsTopicDecisions($index++, 'Full Text Retrieved', 8, null, array(EbmsArticleStates::FullRetrieved), array(EbmsArticleStates::FullFailed));
+                new EbmsTopicDecisions($index++, 'Full Text Retrieved', null, array(EbmsArticleStates::FullRetrieved), array(EbmsArticleStates::FullFailed));
             self::$SURVEILLANCE =
-                new EbmsTopicDecisions($index++, 'Literature Surveillance Committee Decision', 9, null, array(EbmsArticleStates::PassedFullReview), array(EbmsArticleStates::RejectFullReview));
+                new EbmsTopicDecisions($index++, 'Literature Surveillance Committee Decision', null, array(EbmsArticleStates::PassedFullReview), array(EbmsArticleStates::RejectFullReview));
             self::$ASSIGNEDFORREVIEW =
                 new EbmsTopicDecisions($index++, 'Assigned For Review');
             self::$BOARDMEMBERRESPONSES =
                 new EbmsTopicDecisions($index++, 'Board Member Responses');
             self::$BOARDMANAGERACTIONS =
-                new EbmsTopicDecisions($index++, 'Board Manager Action(s)', 11, '_format_topic_board_manager_actions', array(
+                new EbmsTopicDecisions($index++, 'Board Manager Action(s)', '_format_topic_board_manager_actions', array(
                     EbmsArticleStates::AgendaNoChg,
                     EbmsArticleStates::AgendaFutureChg,
                     EbmsArticleStates::AgendaFutureDiscuss,
                     EbmsArticleStates::FullEnd,));
             self::$ONAGENDA =
-                new EbmsTopicDecisions($index++, 'On Agenda', 12, null, array(EbmsArticleStates::AgendaOn));
+                new EbmsTopicDecisions($index++, 'On Agenda', null, array(EbmsArticleStates::AgendaOn));
             self::$EDITORIALBOARD =
-                new EbmsTopicDecisions($index++, 'Editorial Board Decision', 13, '_format_topic_editorial_board_decision', array(EbmsArticleStates::FinalBoardDecision));
+                new EbmsTopicDecisions($index++, 'Editorial Board Decision', '_format_topic_editorial_board_decision', array(EbmsArticleStates::FinalBoardDecision));
         }
 
         public function index() {
@@ -144,6 +156,12 @@ namespace {
 
                 $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null,
                         false);
+
+                $result['left_nav']['actions'] = _build_full_citation_actions($article_id);
+
+                $result['left_nav']['icon_key'] = array(
+                    '#markup' => "<div class='left-nav-box'><div class='left-nav-box-title'>key</div><div class='left-nav-box-text'>words</div></div>",
+                );
 
                 $result['full_citation_form'] = $form;
 
@@ -1170,6 +1188,85 @@ namespace {
         }
     }
 
+    /**
+     * Sets the prefix and suffix of a form so as to wrap it in a div with
+     * given classes.
+     * 
+     * @param mixed $form The form, passed by reference, to modify.
+     * 
+     * @param mixed $classes An array of class string to be added to the wrapping
+     *      div.
+     */
+    function _wrap_in_classes(&$form, $classes) {
+        $classText = implode(' ', $classes);
+        $form['#prefix'] = "<div class='$classText'>";
+        $form['#suffix'] = "</div>";
+    }
+
+    function _build_full_citation_actions($articleId) {
+        ctools_include('ajax');
+        ctools_include('modal');
+        ctools_modal_add_js();
+
+        $form = array();
+        _wrap_in_classes($form, array('left-nav-box'));
+
+        $form['title']['#markup'] = t('Citation Actions');
+        _wrap_in_classes($form['title'], array('left-nav-box-title'));
+
+        $article = new Ebms\EbmsArticle($articleId);
+
+        $fileUrl = null;
+        if ($article->getFullTextId()) {
+            $file = file_load($article->getFullTextId());
+            dsm($file);
+            $fileUrl = file_create_url($file->uri);
+        }
+
+        $button = ctools_ajax_text_button('CTools Test',
+            'citations/nojs/abstract/223229', 'CTools test link', '',
+            'ctools-use-modal');
+        dsm($button);
+
+        $links = array(
+            array('Refine Search', 'citations/search', array()),
+            array('View Abstract', 'citations/search', array()),
+            array('Download Full Text', $fileUrl, array()),
+            array('CTools Test', "citations/nojs/abstract/$articleId",
+                array('attributes' => array(
+                        'class' => array('ctools-use-modal'))
+            )),
+            //array('Add Comments', 'citations/search'),
+        );
+
+        $items = array();
+        foreach ($links as $link) {
+            list($label, $url, $options) = $link;
+
+            $item = l($label, $url, $options);
+
+            $items[]['#markup'] = "<div>$item</div>";
+        }
+
+        $form['links'] = $items;
+        _wrap_in_classes($form['links'], array('left-nav-box-text'));
+
+        return $form;
+    }
+
+    function ctools_ajax_view_abstract($js, $articleId) {
+        ctools_include('modal');
+
+        $title = t('Abstract');
+        $output = "<div>Abstract text for article $articleId.</div>";
+        if ($js) {
+            ctools_modal_render($title, $output);
+        } else {
+            drupal_set_title($title);
+            return $output;
+        }
+    }
+
     function pdq_ebms_full_citation($form, &$form_state, $articleId) {
         require_once('EbmsArticle.inc');
 
@@ -1188,6 +1285,8 @@ namespace {
 
         $form['#prefix'] = '<div id="citation-form-div">';
         $form['#suffix'] = '</div">';
+
+        $form['title'] = array('#markup' => "<h2>Full Citation</h2>");
 
         $form['citation'] = array('#markup' => "<div class='full-citation-element'>$cite</div>");
 
@@ -1221,6 +1320,39 @@ namespace {
         $form['editorial_boards'] = _format_boards($form_state, $article,
             $history, $tags);
 
+        $importData = Ebms\getArticleImportData($article->getId());
+        $form['import_process'] = array(
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Import Process</span>',
+            'section' => _format_import($article, $importData),
+            '#collapsible' => true,
+            '#collapsed' => true,
+            '#prefix' => "<div class='full-citation-element'>",
+            '#suffix' => "</div>",
+        );
+
+        $form['initial_review'] = array(
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Medical Librarian Initial Review</span>',
+            'section' => _format_boards($form_state, $article, $history, $tags,
+                'librarian'),
+            '#collapsible' => true,
+            '#collapsed' => true,
+            '#prefix' => "<div class='full-citation-element'>",
+            '#suffix' => "</div>",
+        );
+
+        $form['publishing'] = array(
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Publishing</span>',
+            'section' => _format_boards($form_state, $article, $history, $tags,
+                'publishing'),
+            '#collapsible' => true,
+            '#collapsed' => true,
+            '#prefix' => "<div class='full-citation-element'>",
+            '#suffix' => "</div>",
+        );
+
         // need to ensure that the fieldsets leading to any triggered element
         // are expanded
         if (isset($form_state['triggering_element']['#array_parents'])) {
@@ -1253,7 +1385,7 @@ namespace {
         $form['#suffix'] = '</div>';
 
         $date = _format_date($tag->dt);
-        $form['article_tag'] = array('#markup' => "<div class='full-citation-tag full-citation-indent'>$tag->type_name - $date - $tag->user_name</div>");
+        $form['article_tag'] = array('#markup' => "<div class='full-citation-indent'>$tag->type_name - $date - $tag->user_name</div>");
 
         // if a form state is provided, indent the elements to provide space for
         // the button
@@ -1732,11 +1864,14 @@ namespace {
         return $values;
     }
 
-    function _build_add_topic_button(&$form_state, $articleId, $boardId = null) {
+    function _build_add_topic_button(&$form_state, $mode, $articleId,
+        $boardId = null) {
         $form = array();
 
         // create hash for article/board
         $hash = "$articleId|$boardId";
+
+        if ($mode) $hash = "${mode}_$hash";
 
         $buttonId = $boardId ? "add_board_$hash" : "add_topic_$hash";
 
@@ -1760,17 +1895,25 @@ namespace {
             if (isset($values['add_board_topic']['select_topic'])) {
                 $topicId = $values['add_board_topic']['select_topic'];
 
+                $decisions = array();
+                if ($mode == 'librarian') {
+                    $decisions = array(Ebms\EbmsTopicDecisions:: $INITIALREVIEW);
+                } else if ($mode == 'publishing') {
+                    $decisions = array(Ebms\EbmsTopicDecisions:: $PUBLISHED);
+                } else {
+                    $decisions = array(
+                        Ebms\EbmsTopicDecisions:: $NCIREVIEWER,
+                        Ebms\EbmsTopicDecisions:: $FULLTEXT,
+                        Ebms\EbmsTopicDecisions:: $SURVEILLANCE,
+                        Ebms\EbmsTopicDecisions:: $BOARDMEMBERRESPONSES,
+                        Ebms\EbmsTopicDecisions:: $BOARDMANAGERACTIONS,
+                        Ebms\EbmsTopicDecisions:: $ONAGENDA,
+                        Ebms\EbmsTopicDecisions:: $EDITORIALBOARD,
+                    );
+                }
+
                 $form_array = _build_edit_decision_form(
-                    $articleId, $topicId,
-                    array(
-                    Ebms\EbmsTopicDecisions:: $NCIREVIEWER,
-                    Ebms\EbmsTopicDecisions:: $FULLTEXT,
-                    Ebms\EbmsTopicDecisions:: $SURVEILLANCE,
-                    Ebms\EbmsTopicDecisions:: $BOARDMEMBERRESPONSES,
-                    Ebms\EbmsTopicDecisions:: $BOARDMANAGERACTIONS,
-                    Ebms\EbmsTopicDecisions:: $ONAGENDA,
-                    Ebms\EbmsTopicDecisions:: $EDITORIALBOARD,
-                    ), true);
+                    $articleId, $topicId, $decisions, true);
             } else {
                 if (!$boardId) {
                     // attempt to dig selected board id form form state
@@ -1784,7 +1927,7 @@ namespace {
             }
 
             $title = '';
-            if(isset($topicId)){
+            if (isset($topicId)) {
                 $topicName = Ebms\getTopicNameById($topicId);
                 $title = "<div class='citation-subheader'>SUMMARY TOPIC</div><div class='full-citation-element'>$topicName</div>";
             }
@@ -1906,13 +2049,13 @@ namespace {
 
         // create hash for article/topic
         $hash = "$articleId|$topicId";
-        if (!$isAdd) {
-            // append any given decision indexes
-            foreach ($decisions as $decision) {
-                $index = $decision->index();
-                $hash .= "|$index";
-            }
+
+        // append any given decision indexes
+        foreach ($decisions as $decision) {
+            $index = $decision->index();
+            $hash .= "|$index";
         }
+
 
         $buttonId = $isAdd ? "add_decision_$hash" : "edit_decision_$hash";
 
@@ -1978,6 +2121,32 @@ namespace {
             $full_title = array('#markup' => "<div class='citation-subheader'>$title</div><div>$timetag</div>");
 
             switch ($decision) {
+                case Ebms\EbmsTopicDecisions::$INITIALREVIEW:
+                    $checks = array();
+                    $checks["initial_review_pass_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Approve'),
+                    );
+
+                    $checks["initial_review_reject_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Reject'),
+                    );
+
+                    $form["initial_review_checks_$hash"] = array(
+                        'checks' => $checks,
+                        '#prefix' => '<div class="full-citation-radio-check">',
+                        '#suffix' => '</div>',
+                    );
+
+                    $form["initial_review_comment_$hash"] = array(
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
+                    );
+
+                    break;
                 case Ebms\EbmsTopicDecisions::$NCIREVIEWER:
                     $form['reviewer_title'] = $full_title;
 
@@ -2204,6 +2373,7 @@ namespace {
 
         $values = _retrieve_hash_values($form_state,
             array(
+            'initial_review' => array('pass', 'reject', 'comment'),
             'nci_reviewer' => array('pass', 'reject', 'comment'),
             'fulltext' => array('file', 'check', 'comment'),
             'surveillance' => array('pass', 'reject', 'comment'),
@@ -2218,6 +2388,8 @@ namespace {
         // split the hash into articleId and topicId
         list($articleId, $topicId) = explode("|", $hash);
 
+        _save_initial_review_decision($values['initial_review'], $articleId,
+            $topicId);
         _save_nci_reviewer_decision($values['nci_reviewer'], $articleId,
             $topicId);
         _save_fulltext_decision($values['fulltext'], $articleId, $topicId);
@@ -2229,6 +2401,27 @@ namespace {
             $topicId);
         _save_on_agenda_decision($values['on_agenda'], $articleId, $topicId);
         _save_board_decision($values['board_decision'], $articleId, $topicId);
+    }
+
+    function _save_initial_review_decision($values, $articleId, $topicId) {
+        if (empty($values)) return;
+
+        $pass = $values['pass'];
+        $reject = $values['reject'];
+        $comment = $values['comment'];
+
+        if (empty($comment)) $comment = null;
+
+        if (!($pass xor $reject)) {
+            return;
+        }
+
+        $state = \Ebms\EbmsArticleStates::RejectInitReview;
+        if ($pass) $state = \Ebms\EbmsArticleStates::PassedInitReview;
+
+        Ebms\setArticleState($articleId, $state, $topicId, null, $comment);
+
+        drupal_set_message("Added Initial Review decision to article $articleId");
     }
 
     function _save_nci_reviewer_decision($values, $articleId, $topicId) {
@@ -2253,6 +2446,8 @@ namespace {
     }
 
     function _save_fulltext_decision($values, $articleId, $topicId) {
+        if (empty($values)) return;
+
         // prefer 'unavailable' check
         $check = $values['check'];
         $comment = $values['comment'];
@@ -2466,7 +2661,7 @@ namespace {
      * @return mixed the formatted render array.
      */
     function _format_boards(&$form_state, Ebms\EbmsArticle $article, $history,
-        $tags) {
+        $tags, $mode = null) {
         $form = array();
 
         // divide into arrays by board and topic
@@ -2478,10 +2673,14 @@ namespace {
         }
 
         // determine if multiple review cycles exist
-        $cycles = Ebms\getArticleReviewCycle($article->getId());
-        $display_cycle = (sizeof($cycles) > 1);
+        $display_cycle = false;
+        if (!$mode) {
+            $cycles = Ebms\getArticleReviewCycle($article->getId());
+            $display_cycle = (sizeof($cycles) > 1);
+        }
 
-        $button_array = _build_add_topic_button($form_state, $article->getId());
+        $button_array = _build_add_topic_button($form_state, $mode,
+            $article->getId());
         $form['boards_header']['button'] = $button_array['button'];
         $form['boards_header']['title'] = array("#markup" => '<div class="citation-subheader full-citation-indent full-citation-element">Editorial Board(s)</div>');
         $form['boards_header']['form'] = $button_array['form'];
@@ -2490,7 +2689,7 @@ namespace {
             $boardId = Ebms\getBoardIdByName($board_name);
 
             // create add topic button
-            $button_array = _build_add_topic_button($form_state,
+            $button_array = _build_add_topic_button($form_state, $mode,
                 $article->getId(), $boardId);
             $form[$board_name]['button'] = $button_array['button'];
             $form[$board_name]['fieldset'] = array(
@@ -2499,17 +2698,81 @@ namespace {
                 '#collapsible' => TRUE,
                 '#collapsed' => TRUE,
                 'topics' => _format_topics($form_state, $article, $topics,
-                    $tags, $display_cycle),
+                    $tags, $display_cycle, $mode),
                 '#attributes' => array(
-                    'class' => array('full-citation-topic'),
+                    'class' => array('full-citation-element'),
                 ),
                 '#prefix' => '<div class="full-citation-indent">',
                 '#suffix' => '</div>',
             );
+            if (!$mode) {
+                $form[$board_name]['fieldset']['#attributes'][] = 'full-citation-topic';
+            }
             $form[$board_name]['form'] = $button_array['form'];
-            $form[$board_name]['form']['#prefix'] = '<div class="full-citation-element">';
-            $form[$board_name]['form']['#suffix'] = '</div>';
         }
+
+        return $form;
+    }
+
+    function _format_import(Ebms\EbmsArticle &$article, &$importData) {
+        $form = array();
+
+        $form['#prefix'] = '<div class="full-citation-element">';
+        $form['#suffix'] = '</div>';
+
+        $articleId = $article->getId();
+        $fullTextId = $article->getFullTextId();
+
+        if ($fullTextId) {
+            $file = file_load($fullTextId);
+
+            $form['import_file_title'] = array("#markup" => '<div class="citation-subheader">Source File Name</div>');
+            $form['import_file_name'] = array("#markup" => "<div class='full-citation-element'>$file->filename</div>");
+        }
+
+        $importers = Ebms\getArticleImporters($articleId);
+        $dt = $article->getImportDate();
+        $date = _format_date($dt);
+        $names = implode(', ', $importers);
+
+        $form['importer_title'] = array("#markup" => '<div class="citation-subheader">Imported By</div>');
+        $form['importer_name'] = array("#markup" => "<div class='full-citation-element'>$names - $date</div>");
+
+        foreach ($importData as $boardId => $topics) {
+            $boardName = Ebms\getBoardNameById($boardId);
+
+            // wrap board-specific import data in fieldset
+            $form[$boardName]['fieldset'] = array(
+                '#type' => 'fieldset',
+                '#title' => $boardName,
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'underscore' => array('#markup' => '<hr>'),
+                'topics' => _format_import_topics($article, $topics),
+                '#prefix' => '<div class="full-citation-element">',
+                '#suffix' => '</div>',
+            );
+        }
+
+        return $form;
+    }
+
+    function _format_import_topics($article, $topics) {
+        $form = array();
+
+        foreach ($topics as $topicId => $topic) {
+            if (!empty($form)) {
+                // drop in a dividing rule
+                $form[] = array('#markup' => '<hr>');
+            }
+
+            $topicName = Ebms\getTopicNameById($topicId);
+            $form[$topicName] = _format_import_topic($article, $topicName,
+                $topic);
+        }
+
+        $form['#prefix'] = '<div class="full-citation-indent">';
+        $form['#suffix'] = '</div>';
 
         return $form;
     }
@@ -2520,12 +2783,65 @@ namespace {
      * @return mixed the formatted render array.
      */
     function _format_topics(&$form_state, $article, $topics, $tags,
-        $display_cycle) {
+        $display_cycle, $mode) {
         $form = array();
 
         foreach ($topics as $topic_name => $topic_sequences) {
+            if (!empty($form)) {
+                // drop in a dividing rule
+                $form[] = array('#markup' => '<hr>');
+            }
+
             $form[$topic_name] = _format_topic($form_state, $article,
-                $topic_name, $topic_sequences, $tags, $display_cycle);
+                $topic_name, $topic_sequences, $tags, $display_cycle, $mode);
+        }
+
+        return $form;
+    }
+
+    /**
+     * Formats a topic name and set of topic states for rendering.
+     * @param string $topic
+     * @param mixed $topic_states
+     * @return mixed the formatted render array.
+     */
+    function _format_import_topic($article, $topicName, $importData) {
+        $form = array();
+
+        // retrieve the relevant ids for this article and topic
+        // topic id should have error-checking, but originates from an error-checked
+        // method
+        $articleId = $article->getId();
+        $topicId = Ebms\getTopicIdByName($topicName);
+
+        $form['header'] = array(
+            "#markup" => "<div class='citation-subheader'>Summary Topic</div>"
+        );
+        $form['topic'] = array(
+            "#markup" => "<div class='full-citation-element'>$topicName</div>");
+
+        // find each of the dispositions, along with the related date
+        if (isset($importData['A'])) {
+            foreach ($importData['A'] as $batchId => $actions) {
+                $dt = '';
+                $comment = null;
+                foreach ($actions as $action) {
+                    $dt = $action->import_date;
+                    $disposition = array();
+                    $disposition['#markup'] = "<div class='citation-subheader full-citation-element'>$action->disposition_name</div>";
+                    if ($action->comment) $comment = $action->comment;
+
+                    $form['actions'][$batchId][] = $disposition;
+                }
+
+                $form['actions'][$batchId]['tag']['#markup'] = "<div class='citation-subheader'>TAG(S)</div>";
+                $date = _format_date($dt);
+                $form['actions'][$batchId]['time']['#markup'] = "<div>Batch - $date</div>";
+                $form['actions'][$batchId]['comment']['#markup'] = "<div>COMMENT: $action->comment</div>";
+
+                $form['actions'][$batchId]['#prefix'] = "<div class='full-citation-element'>";
+                $form['actions'][$batchId]['#suffix'] = "</div>";
+            }
         }
 
         return $form;
@@ -2538,7 +2854,7 @@ namespace {
      * @return mixed the formatted render array.
      */
     function _format_topic(&$form_state, $article, $topicName, $topic_sequences,
-        $tags, $display_cycle) {
+        $tags, $display_cycle, $mode) {
         $form = array();
 
         // retrieve the relevant ids for this article and topic
@@ -2561,74 +2877,98 @@ namespace {
             $form['topic_cycle'] = _format_topic_cycle($articleId, $topicId);
         }
 
+        if ($mode == 'publishing') {
+            $decisionInfo = Ebms\EbmsTopicDecisions::$PUBLISHED;
+            $decision = &_format_topic_publish($articleId, $topicId,
+                    $topic_sequences, $form_state);
+            if (empty($decision)) {
+                $decision = &_format_topic_decision($decisionInfo,
+                        $topic_sequences, $form_state, 'publishing');
+            }
+            $form['topic_publishing_decision'] = $decision;
+        }
+
         if (!$no_tags)
                 $form['article_tag_add_button'] = $button_array['button'];
         $form['topic_tags'] = $tag_array;
         $form['button_form'] = $button_array['form'];
 
-        $decisions = array();
-
         // build decision arrays and missing decisions
         $empty_decisions = array();
 
-        $decisionInfo = Ebms\EbmsTopicDecisions::$NCIREVIEWER;
-        $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-        $decisions['topic_nci_reviewer_decision'] = _wrap_decision($form_state,
-            $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
-        $decisionInfo = Ebms\EbmsTopicDecisions::$FULLTEXT;
-        $decision = &_format_topic_full_text_decision($article);
-        $decisions['topic_full_text_decision'] = _wrap_decision($form_state,
-            $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+        $decisions = array();
+        if ($mode == 'librarian') {
+            $decisions = array();
+            $decisionInfo = Ebms\EbmsTopicDecisions::$INITIALREVIEW;
+            $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
+                    $form_state);
+            $decisions['topic_initial_review_decision'] = _wrap_decision($form_state,
+                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+        } else if ($mode == 'publishing') {
+            
+        } else {
+            $decisions = array();
+            $decisionInfo = Ebms\EbmsTopicDecisions::$NCIREVIEWER;
+            $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
+                    $form_state);
+            $decisions['topic_nci_reviewer_decision'] = _wrap_decision($form_state,
+                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
-        $decisionInfo = Ebms\EbmsTopicDecisions::$SURVEILLANCE;
-        $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-        $decisions['topic_nci_surveillance_decision'] = _wrap_decision($form_state,
-            $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisionInfo = Ebms\EbmsTopicDecisions::$FULLTEXT;
+            $decision = &_format_topic_full_text_decision($article);
+            $decisions['topic_full_text_decision'] = _wrap_decision($form_state,
+                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
-        $decisions['topic_assigned_for_review_decision'] = _format_topic_assigned_for_review_decision($articleId,
-            $topicId);
+            $decisionInfo = Ebms\EbmsTopicDecisions::$SURVEILLANCE;
+            $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
+                    $form_state);
+            $decisions['topic_nci_surveillance_decision'] = _wrap_decision($form_state,
+                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
-        $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES;
-        $decision = &_format_topic_board_member_responses($articleId, $topicId);
-        $decisions['topic_board_member_responses'] = _wrap_decision($form_state,
-            $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_assigned_for_review_decision'] = _format_topic_assigned_for_review_decision($articleId,
+                $topicId);
 
-        $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS;
-        $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-        $decisions['topic_board_manager_actions'] = _wrap_decision($form_state,
-            $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES;
+            $decision = &_format_topic_board_member_responses($articleId,
+                    $topicId);
+            $decisions['topic_board_member_responses'] = _wrap_decision($form_state,
+                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
-        $decisionInfo = Ebms\EbmsTopicDecisions::$ONAGENDA;
-        $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-        $decisions['topic_on_agenda'] = _wrap_decision($form_state, $articleId,
-            $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS;
+            $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
+                    $form_state);
+            $decisions['topic_board_manager_actions'] = _wrap_decision($form_state,
+                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
-        $decisionInfo = Ebms\EbmsTopicDecisions::$EDITORIALBOARD;
-        $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-        $decisions['topic_board_decision'] = _wrap_decision($form_state,
-            $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisionInfo = Ebms\EbmsTopicDecisions::$ONAGENDA;
+            $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
+                    $form_state);
+            $decisions['topic_on_agenda'] = _wrap_decision($form_state,
+                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
-        $last_key = null;
-        $last_array = null;
-        foreach ($decisions as $key => $array) {
-            if (!empty($array)) {
-                $last_key = $key;
-                $last_array = $array;
+            $decisionInfo = Ebms\EbmsTopicDecisions::$EDITORIALBOARD;
+            $decision = &_format_topic_decision($decisionInfo, $topic_sequences,
+                    $form_state);
+            $decisions['topic_board_decision'] = _wrap_decision($form_state,
+                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+
+            $last_key = null;
+            $last_array = null;
+            foreach ($decisions as $key => $array) {
+                if (!empty($array)) {
+                    $last_key = $key;
+                    $last_array = $array;
+                }
             }
-        }
 
-        if ($last_array != null && $last_key != null) {
-            $decisions[$last_key] = array(
-                'decision' => $last_array,
-                '#prefix' => '<div class="full-citation-latest-decision">',
-                '#suffix' => '</div>',
-            );
+            if ($last_array != null && $last_key != null) {
+                $decisions[$last_key] = array(
+                    'decision' => $last_array,
+                    '#prefix' => '<div class="full-citation-latest-decision">',
+                    '#suffix' => '</div>',
+                );
+            }
         }
 
         $form['decisions'] = $decisions;
@@ -2640,7 +2980,6 @@ namespace {
             $form['add_decisions_label'] = array('#markup' => '<div class="full-citation-element full-citation-indent">ADD NEW DECISION</div>');
             $form['add_decisions_form'] = $dec_button_arr['form'];
         }
-        $form['topic_end'] = array('#markup' => '<hr>');
 
         return $form;
     }
@@ -2773,7 +3112,7 @@ namespace {
       } */
 
     function _format_topic_decision(Ebms\EbmsTopicDecisions $decisionInfo,
-        $topic_sequences, &$form_state = null) {
+        $topic_sequences, &$form_state = null, $modifier = null) {
         $form = array();
 
         // generating past content if no form_state (and)
@@ -2788,7 +3127,7 @@ namespace {
         if (isset($topic_sequences[$sequenceIndex][$activeIndex])) {
             $statii = $topic_sequences[$sequenceIndex][$activeIndex];
 
-            if (!$show_past) {
+            if (!$show_past && $modifier != 'publishing') {
                 $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>$title</div>");
             }
 
@@ -2815,7 +3154,7 @@ namespace {
                     $decision['decision']['#prefix'] = '<div class="full-citation-indent">';
                     $decision['decision']['#suffix'] = '</div>';
 
-                    if ($form_state != null) {
+                    if ($form_state != null && $modifier != 'publishing') {
                         //drop in 'add comment' button
                         $decision['comments_add_button'] =
                             _build_add_state_comment_button($form_state, $status);
@@ -2838,7 +3177,7 @@ namespace {
         }
 
         // also dig up the past decisions if the currently displayed set is current
-        if (!$show_past && isset($topic_sequences[$sequenceIndex]['I'])) {
+        if (!$show_past && $modifier != 'publishing' && isset($topic_sequences[$sequenceIndex]['I'])) {
             // ensure the header exists
             $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>$title</div>");
 
@@ -3101,6 +3440,77 @@ namespace {
         $form['#suffix'] = '</div>';
 
         return $form;
+    }
+
+    function _format_topic_publishing($status, &$form_state = null) {
+        $form = array();
+
+        $date = _format_date($status->dt);
+
+        $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>Publication Date</div>");
+        $form['date'] = array("#markup" => "<div class='full-citation-indent'>$date</div>");
+        $form['comments'] = _format_comments($status->comments);
+
+
+        return $form;
+    }
+
+    function _format_topic_publish($articleId, $topicId, $sequences,
+        &$form_state) {
+        $form = array();
+
+        // check if any sequences are past the publish sequence
+        $pubSequence = Ebms\EbmsTopicDecisions::$PUBLISHED->sequence();
+        foreach ($sequences as $sequence => $activity) {
+            if (!($sequence < $pubSequence)) return $form;
+        }
+
+        $form['header']['title'] = array("#markup" => "<div class='citation-subheader'>Publication Date</div>");
+        $form['header']['date'] = array("#markup" => "<i>Awaiting Publication</i>");
+        $form['header']['#prefix'] = "<div class='left-side'>";
+        $form['header']['#suffix'] = "</div>";
+
+        $hash = "$articleId|$topicId";
+        $buttonId = "topic_publish_submit_$hash";
+
+        $form[$buttonId] = array(
+            '#type' => 'submit',
+            '#return_value' => $buttonId,
+            '#name' => $buttonId,
+            '#submit' => array('_topic_publish_save'),
+            '#value' => t('Publish'),
+            '#attributes' => array(
+                'class' => array('small-button'),
+            ),
+        );
+
+        $form['#prefix'] = "<div class='full-citation-indent'>";
+        $form['#suffix'] = "</div>";
+
+        return $form;
+    }
+
+    function _topic_publish_save($form, &$form_state) {
+        require_once('EbmsArticle.inc');
+
+        $form_state['rebuild'] = TRUE;
+
+        $returnValue = $form_state['triggering_element']['#return_value'];
+        $hash = str_replace('topic_publish_submit_', '', $returnValue);
+        list($articleId, $topicId) = explode('|', $hash);
+
+        $ret = Ebms\setArticleState($articleId,
+            Ebms\EbmsArticleStates::Published, $topicId);
+
+        if ($ret) {
+            $article = new Ebms\EbmsArticle($articleId);
+            $articleTitle = $article->getArticleTitle();
+            $topicName = Ebms\getTopicNameById($topicId);
+
+            drupal_set_message("Successfully published article '$articleTitle' to topic '$topicName'");
+        }
+
+        return;
     }
 
     function _format_topic_board_manager_actions($status, &$form_state = null) {

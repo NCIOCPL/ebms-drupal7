@@ -2707,4 +2707,90 @@ function getBoardDecisionValues() {
             ->fetchAll();
 }
 
+/**
+ * Retrieves relevant information for an article's import.
+ * 
+ * @param int $articleId The id of the article in question.
+ * 
+ * @return mixed $return An associative array, branching by board_id, topic_id 
+ *      and active_state, with the leaves being arrays of database rows 
+ *      containing all available information related to the article's import.
+ */
+function getArticleImportData($articleId){
+    $query = db_select('ebms_import_action', 'a');
+    $query->join('ebms_import_batch', 'b', 
+        'a.import_batch_id = b.import_batch_id');
+        $query->join('ebms_import_disposition', 'd', 
+            'a.disposition_id = d.disposition_id');
+        
+    $result = $query
+        ->condition('a.article_id', $articleId)
+        ->fields('a')
+        ->fields('d', array(
+            'text_id', 
+            'disposition_name', 
+            'description', 
+            'active_status'))
+        ->fields('b', array(
+            'topic_id',
+            'source',
+            'import_date',
+            'cycle_id',
+            'user_id',
+            'article_count',
+            'comment',))
+        ->execute()
+        ->fetchAll();
+    
+    $data = array();
+    foreach($result as $record){
+        $topicId = $record->topic_id;
+        $boardId = 0;
+        if(!$topicId) $topicId = 0;
+        else{
+            $boardId = getTopicBoard($topicId);
+        }
+        $data[$boardId][$topicId][$record->active_status][$record->import_batch_id][] = $record;
+    }
+    
+    return $data;
+}
+
+/**
+ * Retrieves all user's names that are associated with importing a given article.
+ * 
+ * @param int $articleId The id of the article in question.
+ * 
+ * @return mixed $userNames an array of user names found to have participated
+ *      in importing this article.
+ */
+function getArticleImporters($articleId){
+    $query = db_select('ebms_import_action', 'a');
+    $query->join('ebms_import_batch', 'b', 
+        'a.import_batch_id = b.import_batch_id');
+    $query->join('users', 'u', 'b.user_id = u.uid');
+    
+    $query->addExpression('DISTINCT u.name', 'user_name');
+    
+    return $query
+        ->condition('a.article_id', $articleId)
+        ->execute()
+        ->fetchCol();
+}
+
+/**
+ * Retrieves the numeric sequence number for a particular article state type.
+ * 
+ * @param string $textId The state type's text id.
+ * 
+ * @return int $sequence The state type's related sequence number.
+ */
+function getStateTypeSequence($textId){
+    return db_select('ebms_article_state_type', 't')
+        ->condition('t.state_text_id', $textId)
+        ->fields('t', array('sequence'))
+        ->execute()
+        ->fetchField();
+}
+
 ?>
