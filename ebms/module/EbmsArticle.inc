@@ -1530,6 +1530,7 @@ EOS;
  *                               'B' = Board name
  *                               'T' = Summary topic name
  *                               'U' = User name (firstname lastname)
+ *                               'I' = Article state ID (state creation order)
  *                              Default = "DSBT".
  *
  *  @return array of ArticleStatus objects with all info.
@@ -1596,11 +1597,12 @@ function getStatusHistory($articleId, $boardId=null, $topicId=null,
     // Construct desired sort/retrieval order
     for ($i=0; $i<strlen($order); $i++) {
         switch ($order[$i]) {
-            case 'D': $fld = 'state.status_dt';   break;
-            case 'S': $fld = 'stype.sequence';    break;
-            case 'B': $fld = 'board.board_name';  break;
-            case 'T': $fld = 'topic.topic_name';  break;
-            case 'U': $fld = 'usr.name';          break;
+            case 'D': $fld = 'state.status_dt';        break;
+            case 'S': $fld = 'stype.sequence';         break;
+            case 'B': $fld = 'board.board_name';       break;
+            case 'T': $fld = 'topic.topic_name';       break;
+            case 'U': $fld = 'usr.name';               break;
+            case 'I': $fld = 'state.article_state_id'; break;
             default:
                 throw new \Exception(
                     "getStatusHistory: Invalid sort order token '$order[$i]'");
@@ -2791,6 +2793,29 @@ function getStateTypeSequence($textId){
         ->fields('t', array('sequence'))
         ->execute()
         ->fetchField();
+}
+
+/**
+ * Retrieves the article history, limited to states matching the given topic and
+ * state type text id.
+ * 
+ * @param type $articleId   The article to match.
+ * @param type $topicId     The topic to match.
+ * @param type $stateTextId The state type's text id to match.
+ * @return array $filtered  The filtered history.
+ */
+function getStatusHistoryByType($articleId, $topicId, $stateTextId)
+{
+    $statii = getStatusHistory($articleId, null, $topicId);
+    
+    $filtered = array();
+    foreach($statii as $articleStateId => $status)
+    {
+        if($status->type_text_id == $stateTextId)
+            $filtered[$articleStateId] = $status;
+    }
+    
+    return $filtered;
 }
 
 ?>

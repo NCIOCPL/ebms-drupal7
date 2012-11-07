@@ -19,7 +19,6 @@
  *   - rosters and other reports
  *   - request forms (e.g., hotel reservations, reimbursements)
  */
-
 require_once('common.inc');
 
 /**
@@ -74,21 +73,18 @@ function ebms_permission() {
  */
 function ebms_menu() {
     return array(
-
         // CUSTOM LOGIN PAGE
         'login' => array(
             'page callback' => 'pdq_ebms_login',
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         // REQUEST FOR NEW PASSWORD
         'password' => array(
             'page callback' => 'pdq_ebms_password',
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         // FORM FOR MANAGING USER'S PROFILE
         'profile' => array(
             'page callback' => 'pdq_ebms_profile',
@@ -96,7 +92,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // LANDING PAGE
         'home' => array(
             'page callback' => 'pdq_ebms_home',
@@ -104,7 +99,6 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         // CITATION MANAGEMENT
         'citations' => array(
             'page callback' => 'pdq_ebms_citations',
@@ -112,7 +106,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // CITATION IMPORT
         'citations/import' => array(
             'page callback' => 'pdq_ebms_import',
@@ -120,7 +113,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // SEARCH DATABASE
         'citations/search' => array(
             'page callback' => 'pdq_ebms_search',
@@ -129,7 +121,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // SEARCH DATABASE
         'citations/review' => array(
             'page callback' => 'pdq_ebms_citations',
@@ -138,7 +129,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // SEARCH DATABASE
         'citations/add' => array(
             'page callback' => 'pdq_ebms_citations',
@@ -147,7 +137,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // SYSTEM HELP
         'citations/help' => array(
             'page callback' => 'pdq_ebms_citations',
@@ -156,7 +145,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // CITATIONS ADMIN
         'citations/admin' => array(
             'page callback' => 'pdq_ebms_citations',
@@ -165,7 +153,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // CITATIONS NOT LIST
         'citations/not-list' => array(
             'page callback' => 'pdq_ebms_citations',
@@ -174,8 +161,7 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-		
-		        // CITATIONS NOT LIST
+        // CITATIONS NOT LIST
         'citations/full' => array(
             'page callback' => 'pdq_ebms_citations',
             'page arguments' => array(1, 2),
@@ -183,7 +169,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         
         // CALENDAR
         'calendar' => array(
@@ -192,7 +177,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // VIEW CALENDAR
         'calendar/view' => array(
             'page callback' => 'pdq_ebms_calendar',
@@ -200,7 +184,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // CREATE EVENT
         'calendar/create' => array(
             'page callback' => 'pdq_ebms_calendar',
@@ -208,7 +191,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // LITERATURE REVIEW
         'review' => array(
             'page callback' => 'pdq_ebms_review',
@@ -216,7 +198,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // ASSIGNED PACKETS
         'review/assigned' => array(
             'page callback' => 'pdq_ebms_review',
@@ -224,7 +205,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // CREATE PACKET
         'review/create' => array(
             'page callback' => 'pdq_ebms_review',
@@ -232,7 +212,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // SUMMARIES
         'summaries' => array(
             'page callback' => 'pdq_ebms_summaries',
@@ -240,7 +219,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // TRAVEL
         'travel' => array(
             'page callback' => 'pdq_ebms_travel',
@@ -248,7 +226,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // TRAVEL INFO
         'travel/info' => array(
             'page callback' => 'pdq_ebms_travel',
@@ -256,7 +233,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // HOTEL REQUEST
         'travel/hotel' => array(
             'page callback' => 'pdq_ebms_travel',
@@ -264,7 +240,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // REIMBURSEMENT REQUEST
         'travel/reimbursement' => array(
             'page callback' => 'pdq_ebms_travel',
@@ -272,7 +247,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // TRAVEL REPORTS
         'travel/reports' => array(
             'page callback' => 'pdq_ebms_travel',
@@ -280,7 +254,6 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
         // FORUMS
         'discussion' => array(
             'page callback' => 'pdq_ebms_forum',
@@ -288,7 +261,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // ABOUT
         'about' => array(
             'page callback' => 'pdq_ebms_about',
@@ -296,7 +268,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // GENERAL INFORMATION ABOUT EBMS
         'about/info' => array(
             'page callback' => 'pdq_ebms_about',
@@ -304,7 +275,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // Information on PDQ Boards
         'about/boards' => array(
             'page callback' => 'pdq_ebms_about',
@@ -312,7 +282,6 @@ function ebms_menu() {
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-
         // POSTING DOCUMENTS
         'docs' => array(
             'page callback' => 'pdq_ebms_docs',
@@ -320,7 +289,6 @@ function ebms_menu() {
             'access arguments' => array('administer'),
             'type' => MENU_CALLBACK,
         ),
-
         // REPORTS
         'reports' => array(
             'page callback' => 'pdq_ebms_reports',
@@ -328,7 +296,6 @@ function ebms_menu() {
             'access arguments' => array('administer'),
             'type' => MENU_CALLBACK,
         ),
-        
         // AD-HOC GROUPS
         'groups' => array(
             'page callback' => 'pdq_ebms_groups',
@@ -336,7 +303,6 @@ function ebms_menu() {
             'access arguments' => array('administer'),
             'type' => MENU_CALLBACK,
         ),
-
         // CUSTOM 403 PAGE
         'access-denied' => array(
             'title' => 'Access Denied',
@@ -344,7 +310,6 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         // CUSTOM 404 PAGE
         'not-found' => array(
             'title' => 'Page Not Found',
@@ -352,17 +317,16 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         /*
-        // TESTING ARTICLE SEARCH
-        'articlesearch' => array(
-            'title' => 'Search for Articles',
-            'page callback' => 'pdq_ebms_artsearch',
-            'file' => 'art_search.inc',
-            'access callback' => 'user_is_logged_in',
-            'menu_name' => 'main-menu',
-            'weight' => 6,
-        ),*/
+          // TESTING ARTICLE SEARCH
+          'articlesearch' => array(
+          'title' => 'Search for Articles',
+          'page callback' => 'pdq_ebms_artsearch',
+          'file' => 'art_search.inc',
+          'access callback' => 'user_is_logged_in',
+          'menu_name' => 'main-menu',
+          'weight' => 6,
+          ), */
 
         // TESTING FOR ALAN
         'alantest' => array(
@@ -371,10 +335,9 @@ function ebms_menu() {
             'file' => 'alan.inc',
             'access callback' => true,
             'theme callback' => 'pdq_ebms_tester_theme',
-            //'menu_name' => 'main-menu',
-            //'weight' => 20,
+        //'menu_name' => 'main-menu',
+        //'weight' => 20,
         ),
-
         // TESTING FOR ALAN
         'admin/apitest' => array(
             'title' => 'AlanTest',
@@ -382,17 +345,15 @@ function ebms_menu() {
             'file' => 'alan.inc',
             'access callback' => true,
             'theme callback' => 'pdq_ebms_tester_theme',
-            //'menu_name' => 'main-menu',
-            //'weight' => 20,
+        //'menu_name' => 'main-menu',
+        //'weight' => 20,
         ),
-
         // AJAX CALLBACK FOR THE NEW PASSWORD FORM.
         'account-email-status' => array(
             'page callback' => 'pdq_ebms_account_email_status',
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         // USED ONLY BY DEVELOPER.
         'upload-files' => array(
             'title' => 'Upload Files',
@@ -400,7 +361,6 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         // PLACEHOLDER DURING DEVELOPMENT
         'stub' => array(
             'title' => 'Place Holder',
@@ -408,7 +368,6 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         // TEMPLATE USED FOR PUTTING UP TEST FORMS
         'testform' => array(
             'title' => 'Test Form',
@@ -417,7 +376,6 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
             'file' => 'testform.inc',
         ),
-
         // CLEAR THEME CACHE
         'clear-theme-cache' => array(
             'title' => 'Clear Theme Cache',
@@ -425,7 +383,6 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
         // CLEAR ALL CACHES
         'clear-all-caches' => array(
             'title' => 'Clear Theme Cache',
@@ -495,10 +452,8 @@ function pdq_ebms_login_form_validate($form, &$form_state) {
     $name_empty = empty($name);
     $pass_empty = empty($pass);
     if ($name_empty || $pass_empty) {
-        if ($name_empty)
-            form_set_error('name', 'Username field is required.');
-        if ($pass_empty)
-            form_set_error('pass', 'Password field is required.');
+        if ($name_empty) form_set_error('name', 'Username field is required.');
+        if ($pass_empty) form_set_error('pass', 'Password field is required.');
         return;
     }
 
@@ -541,9 +496,8 @@ function pdq_ebms_login_form_validate($form, &$form_state) {
 
     // Prevent flooding attacks for this account.
     if (variable_get('user_failed_login_identifier_uid_only', false))
-        $identifier = $uid;
-    else
-        $identifier = $uid . '-' . ip_address();
+            $identifier = $uid;
+    else $identifier = $uid . '-' . ip_address();
     $form_state['flood_control_user_identifier'] = $identifier;
     $attack_name = 'failed_login_attempt_user';
     $limit = variable_get('user_failed_login_user_limit', 5);
@@ -640,8 +594,7 @@ function pdq_ebms_password_form_validate($form, &$form_state) {
     if (empty($address)) {
         form_set_error('email', 'Email address is required.');
         $errors++;
-    }
-    else {
+    } else {
         $account = user_load_by_mail($address);
         if (empty($account)) {
             form_set_error('email',
@@ -649,8 +602,7 @@ function pdq_ebms_password_form_validate($form, &$form_state) {
             $errors++;
         }
     }
-    if (!$errors)
-        $form_state['account'] = $account;
+    if (!$errors) $form_state['account'] = $account;
 }
 
 /**
@@ -665,7 +617,7 @@ function pdq_ebms_password_form_submit($form, &$form_state) {
     $subject = 'EBMS Account Information';
     $to = Ebms\Util::format_email_address($account->mail, $account->name);
     if ($forgot == 'username' || $forgot == 'both')
-        $message = array("Your EBMS login name is {$account->name}.\n");
+            $message = array("Your EBMS login name is {$account->name}.\n");
     if ($forgot == 'password' || $forgot == 'both') {
         $new_pw = user_password();
         $message[] = "Your new password is $new_pw.\n";
@@ -699,8 +651,7 @@ function pdq_ebms_account_email_status() {
     if (!empty($address)) {
         $account = user_load_by_mail($address);
         if (!empty($account)) {
-            if ($account->status != 1)
-                $status = "blocked";
+            if ($account->status != 1) $status = "blocked";
             else {
                 $name = $account->name;
                 $status = 'valid';
@@ -717,7 +668,7 @@ function ebms_mail($key, &$message, $params) {
     $message['subject'] = $params['subject'];
     $message['body'] = $params['body'];
     if (isset($params['reply-to']))
-        $message['headers']['Reply-to'] = $params['reply-to'];
+            $message['headers']['Reply-to'] = $params['reply-to'];
     if (isset($params['boundary'])) {
         $boundary = $params['boundary'];
         $message['headers']['MIME-Version'] = '1.0';
@@ -783,7 +734,7 @@ function theme_ebms_menu_item_list($variables) {
     $items = $variables['items'];
     if (!empty($items)) {
         if (!empty($variables['level']))
-            $variables['attributes']['class'][] = 'ebms-submenu';
+                $variables['attributes']['class'][] = 'ebms-submenu';
         $attributes = drupal_attributes($variables['attributes']);
         $num_items = count($items);
         $markup[] = "<ul$attributes>";
@@ -806,8 +757,7 @@ function theme_ebms_menu_item_list($variables) {
                     }
                 }
             }
-            else
-                $data = $item;
+            else $data = $item;
             if (empty($variables['level'])) {
                 $data .= '<div class="ebms-menu-left-divider"></div>';
                 $data .= '<div class="ebms-menu-right-divider"></div>';
@@ -823,10 +773,8 @@ function theme_ebms_menu_item_list($variables) {
                     )
                 );
             }
-            if ($i == 0)
-                $attributes['class'][] = 'first';
-            if ($i == $num_items - 1)
-                $attributes['class'][] = 'last';
+            if ($i == 0) $attributes['class'][] = 'first';
+            if ($i == $num_items - 1) $attributes['class'][] = 'last';
             $attributes = drupal_attributes($attributes);
             $markup[] = "<li$attributes>$data</li>";
         }
@@ -844,8 +792,7 @@ function theme_ebms_menu_item_list($variables) {
 function ebms_page_build(&$page) {
     $menus = Ebms\Menu::menus();
     $items = array();
-    foreach ($menus as $m)
-        $items[] = $m->render_array();
+    foreach ($menus as $m) $items[] = $m->render_array();
     $page['ebms_menu'] = array(
         '#attributes' => array(
             'class' => array('sf-menu'),
@@ -877,15 +824,13 @@ function ebms_init() {
             ->condition('m.user_id', $user->uid)
             ->execute();
         $user->ebms_boards = array();
-        foreach ($result as $record)
-            $user->ebms_boards[] = $record->board_id;
+        foreach ($result as $record) $user->ebms_boards[] = $record->board_id;
         $result = db_select('ebms_subgroup_member', 'm')
             ->fields('m', array('sg_id'))
             ->condition('m.user_id', $user->uid)
             ->execute();
         $user->ebms_subgroups = array();
-        foreach ($result as $record)
-            $user->ebms_subgroups[] = $record->sg_id;
+        foreach ($result as $record) $user->ebms_subgroups[] = $record->sg_id;
     }
 }
 
@@ -903,8 +848,7 @@ function ebms_user_load($users) {
             ->condition('m.user_id', $uid)
             ->execute();
         $boards = array();
-        foreach ($results as $result)
-            $boards[] = $result->board_id;
+        foreach ($results as $result) $boards[] = $result->board_id;
         $users[$uid]->boards = $boards;
     }
     $results = db_select('ebms_user', 'u')
@@ -912,13 +856,14 @@ function ebms_user_load($users) {
         ->condition('u.user_id', array_keys($users), 'IN')
         ->execute();
     foreach ($results as $record)
-        $users[$record->user_id]->password_changed = $record->password_changed;
+            $users[$record->user_id]->password_changed = $record->password_changed;
 }
 
 /**
  * XXX Everything below here will be jettisoned once we're in production.
  */
 class EbmsUploadFile extends stdClass {
+
     function EbmsUploadFile($path, $mimetype, $uid) {
         $this->uid = $uid;
         $this->uri = $path; //'public://' . $path;
@@ -928,6 +873,7 @@ class EbmsUploadFile extends stdClass {
         $this->status = 1;
         $this->filemime = $mimetype;
     }
+
 }
 
 function pdq_ebms_upload_files() {
@@ -950,21 +896,21 @@ function pdq_ebms_upload_files() {
 function pdq_ebms_debug($where, $what) {
     $now = date('c');
     file_put_contents('/tmp/ebms.debug',
-                      "$now $where\n" . print_r($what, TRUE) .
-                      "\n", FILE_APPEND);
+        "$now $where\n" . print_r($what, TRUE) .
+        "\n", FILE_APPEND);
 }
 
 function pdq_ebms_stub() {
     return '<h2>Placeholder</h2>' .
         '<p>Stub used while functionality is being developed!</p>';
     return drupal_get_form('pdq_ebms_demo_form_1',
-        array(
+            array(
             'foo' => 1234,
             'bar' => array(
                 'buzz' => 'lightyear',
                 'prince' => 'hamlet',
             ),
-        )
+            )
     );
 }
 
@@ -1006,6 +952,7 @@ function pdq_ebms_demo_form_1_submit($form, $form_state) {
     drupal_set_message('wrong name', 'error');
     return '<p>Your test failed.</p>';
 }
+
 function testform_validation($form, &$form_state) {
     form_set_error('desc', $form_state['values']['name'] . ' is bad.');
     drupal_set_message(print_r($form_state, true));
@@ -1041,4 +988,6 @@ function pdq_ebms_clear_all_caches() {
     return '<p>Caches cleared ' . date('c') . '.</p>';
 }
 
-function pdq_ebms_tester_theme() { return 'apitest'; }
+function pdq_ebms_tester_theme() {
+    return 'apitest';
+}

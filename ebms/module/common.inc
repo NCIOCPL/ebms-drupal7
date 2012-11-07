@@ -26,8 +26,10 @@ define('Ebms\STAR', "\xe2\x98\x86");
 define('Ebms\BLACK_STAR', "\xe2\x98\x85");
 define('Ebms\PICTURE_SIZE', 135);
 
-define('Ebms\ADD_DECISION_ACTIVE', IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png');
-define('Ebms\ADD_DECISION_INACTIVE', IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png');
+define('Ebms\ADD_DECISION_ACTIVE',
+    IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png');
+define('Ebms\ADD_DECISION_INACTIVE',
+    IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png');
 
 define('Ebms\PASS_ACTIVE', IMAGES_DIR . '/EBMS_Pass_Icon_Active.png');
 define('Ebms\PASS_INACTIVE', IMAGES_DIR . '/EBMS_Pass_Icon_Inactive.png');
@@ -40,6 +42,13 @@ define('Ebms\TAG_INACTIVE', IMAGES_DIR . '/EBMS_Tag_Icon_Inactive.png');
 
 define('Ebms\EDIT_ACTIVE', IMAGES_DIR . '/EBMS_Edit_Icon_Active.png');
 define('Ebms\EDIT_INACTIVE', IMAGES_DIR . '/EBMS_Edit_Icon_Inactive.png');
+
+define('Ebms\COMMENT_ACTIVE', IMAGES_DIR . '/EBMS_AddComment_Icon_Active.png');
+define('Ebms\COMMENT_INACTIVE',
+    IMAGES_DIR . '/EBMS_AddComment_Icon_Inactive.png');
+
+define('Ebms\FYI_ACTIVE', IMAGES_DIR . '/EBMS_FlagFYI_Icon_Active.png');
+define('Ebms\FYI_INACTIVE', IMAGES_DIR . '/EBMS_FlagFYI_Icon_Inactive.png');
 
 /**
  * Initial implementation of discussion forums has one general forum
@@ -58,6 +67,7 @@ define('Ebms\EDIT_INACTIVE', IMAGES_DIR . '/EBMS_Edit_Icon_Inactive.png');
  * to be altered.
  */
 class Forum {
+
     public
         $id,
         $name,
@@ -73,7 +83,7 @@ class Forum {
      * The $board or $subgroup parameter is passed as a hash
      * with "id" and "name" members.
      */
-    public function __construct($name, $board=null, $subgroup=null) {
+    public function __construct($name, $board = null, $subgroup = null) {
         $this->name = $name;
         $this->board = $board;
         $this->subgroup = $subgroup;
@@ -112,8 +122,7 @@ class Forum {
      * that hasn't been done already.
      */
     public static function forums() {
-        if (empty(self::$forums))
-            self::init();
+        if (empty(self::$forums)) self::init();
         // pdq_ebms_debug('FORUMS', self::$forums);
         return self::$forums;
     }
@@ -124,14 +133,14 @@ class Forum {
      */
     public function visible() {
         global $user;
-        if (!user_is_logged_in())
-            return false;
+        if (!user_is_logged_in()) return false;
         if (isset($this->board))
-            return in_array($this->board['id'], $user->ebms_boards);
+                return in_array($this->board['id'], $user->ebms_boards);
         if (isset($this->subgroup))
-            return in_array($this->subgroup['id'], $user->ebms_subgroups);
+                return in_array($this->subgroup['id'], $user->ebms_subgroups);
         return true;
     }
+
 }
 
 /**
@@ -163,7 +172,7 @@ class Menu {
      * can also include an array of child menu items.  The
      * EBMS menu structures have only a single level of nesting.
      */
-    public function __construct($label, $path, $children=null) {
+    public function __construct($label, $path, $children = null) {
         $this->label = $label;
         $this->path = $path;
         $this->children = $children ? $children : array();
@@ -177,13 +186,11 @@ class Menu {
      */
     public function render_array() {
         $ra = array('data' => l($this->label, $this->path));
-        if ($this->label == Menu::$active)
-            $ra['class'] = array('active');
+        if ($this->label == Menu::$active) $ra['class'] = array('active');
         $children = array();
         foreach ($this->children as $child)
-            $children[] = l($child->label, $child->path);
-        if (!empty($children))
-            $ra['children'] = $children;
+                $children[] = l($child->label, $child->path);
+        if (!empty($children)) $ra['children'] = $children;
         return $ra;
     }
 
@@ -193,10 +200,8 @@ class Menu {
      * logged in.
      */
     public static function menus() {
-        if (!user_is_logged_in())
-            return array();
-        if (empty(self::$menus))
-            self::init();
+        if (!user_is_logged_in()) return array();
+        if (empty(self::$menus)) self::init();
         return self::$menus;
     }
 
@@ -208,12 +213,9 @@ class Menu {
     public static function init() {
         // XXX Slice the roles finer as development evolves.
         global $user;
-        if (in_array('medical librarian', $user->roles))
-            $role = 'librarian';
-        elseif (in_array('board member', $user->roles))
-            $role = 'member';
-        else
-            $role = 'admin';
+        if (in_array('medical librarian', $user->roles)) $role = 'librarian';
+        elseif (in_array('board member', $user->roles)) $role = 'member';
+        else $role = 'admin';
         switch ($role) {
             case 'librarian':
                 self::$menus = array(
@@ -252,10 +254,10 @@ class Menu {
      */
     public static function reports() {
         return new Menu(
-            'Reports', 'reports', array(
+                'Reports', 'reports', array(
                 new Menu('Citation Management System Reports', 'reports/cite'),
                 new Menu('Not List Reports', 'reports/not-list'),
-            )
+                )
         );
     }
 
@@ -264,10 +266,10 @@ class Menu {
      */
     public static function admin_tool() {
         return new Menu(
-            'Administrator Tool', 'admin-tool', array(
+                'Administrator Tool', 'admin-tool', array(
                 new Menu('Manage Summary Topics', 'admin-tool/topics'),
                 new Menu('Add Review Cycle', 'admin-tool/add-cycle'),
-            )
+                )
         );
     }
 
@@ -304,7 +306,7 @@ class Menu {
     public static function calendar($role) {
         $menu = new Menu('Calendar', 'calendar');
         if ($role == 'admin' || $role == 'librarian')
-            $menu->children = array(
+                $menu->children = array(
                 new Menu('View', 'calendar/view'),
                 new Menu('Create Event', 'calendar/create'),
             );
@@ -317,12 +319,12 @@ class Menu {
     public static function literature($role) {
         $menu = new Menu('Literature', 'review');
         if ($role == 'admin')
-            $menu->children = array(
+                $menu->children = array(
                 new Menu('Assigned Packets', 'review/packets'),
                 new Menu('Create Packet', 'review/add'),
             );
         if ($role == 'member')
-            $menu->children = array(
+                $menu->children = array(
                 new Menu('Assigned Packets', 'review/assigned'),
             );
         return $menu;
@@ -340,14 +342,14 @@ class Menu {
      */
     public static function travel($role) {
         $menu = new Menu(
-            'Travel', 'travel', array(
+                'Travel', 'travel', array(
                 new Menu('Travel Information', 'travel/info'),
                 new Menu('Hotel Request', 'travel/hotel'),
                 new Menu('Reimbursement Request', 'travel/reimbursement'),
-            )
+                )
         );
         if ($role == 'admin')
-            $menu->children[] =
+                $menu->children[] =
                 new Menu('Travel Reports', 'travel/reports');
         return $menu;
     }
@@ -376,18 +378,20 @@ class Menu {
     public static function about() {
         $reg = drupal_convert_to_utf8("\xAE", 'latin1');
         return new Menu(
-            'About', 'about', array(
+                'About', 'about', array(
                 new Menu('General Information', 'about/info'),
                 new Menu("PDQ$reg Editorial Boards", 'about/boards'),
-            )
+                )
         );
     }
+
 }
 
 /**
  * Common utility functions used throughout the EBMS.
  */
 class Util {
+
     private static $u2aMapping = array(
         160 => ' ',
         163 => '[pounds]',
@@ -646,11 +650,9 @@ class Util {
             $hi = ord($ucs2[$i++]);
             $code = $lo + $hi * 256;
             if (array_key_exists($code, self::$u2aMapping))
-                $ascii[] = self::$u2aMapping[$code];
-            elseif ($code < 128)
-                $ascii[] = chr($code);
-            else
-                $ascii[] = '?';
+                    $ascii[] = self::$u2aMapping[$code];
+            elseif ($code < 128) $ascii[] = chr($code);
+            else $ascii[] = '?';
         }
         return implode('', $ascii);
     }
@@ -669,26 +671,20 @@ class Util {
      */
     public static function indexify($text, $ascii, $trim, $maxLen) {
 
-        if ($ascii && $text)
-            $text = Util::utf8ToAscii($text);
-        if ($trim && $text)
-            $text = trim($text);
-        if ($maxLen && $text)
-            $text = substr($text, 0, $maxLen);
+        if ($ascii && $text) $text = Util::utf8ToAscii($text);
+        if ($trim && $text) $text = trim($text);
+        if ($maxLen && $text) $text = substr($text, 0, $maxLen);
 
         return $text;
     }
-
 
     /**
      * Pulls a parameter from a request without letting in parameters
      * from cookies (which we'd get from $_REQUEST).
      */
-    public static function get_request_value($name, $default='') {
-        if (array_key_exists($name, $_POST))
-            return $_POST[$name];
-        if (array_key_exists($name, $_GET))
-            return $_GET[$name];
+    public static function get_request_value($name, $default = '') {
+        if (array_key_exists($name, $_POST)) return $_POST[$name];
+        if (array_key_exists($name, $_GET)) return $_GET[$name];
         return $default;
     }
 
@@ -710,28 +706,23 @@ class Util {
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
         $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
         $authors = array();
-        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
-        {
+        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author) {
             if (sizeof($authors) == 3) {
                 $authors[] = 'et al.';
                 break;
             }
             $name = $author->LastName;
-            if ($author->Initials)
-                $name .= ' ' . $author->Initials;
+            if ($author->Initials) $name .= ' ' . $author->Initials;
             $authors[] = htmlspecialchars($name);
         }
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
         $pieces = array(implode(',', $authors), ': <em>', $title, '</em> ',
-                  $ta, ' ', $vol);
-        if ($issue)
-            $pieces[] = "($issue)";
-        if ($pgn)
-            $pieces[] = ": $pgn";
-        if ($year)
-            $pieces[] = ", $year";
+            $ta, ' ', $vol);
+        if ($issue) $pieces[] = "($issue)";
+        if ($pgn) $pieces[] = ": $pgn";
+        if ($year) $pieces[] = ", $year";
         $pieces[] = ". $pmid";
         return implode($pieces);
     }
@@ -765,15 +756,16 @@ class Util {
      */
     public static function get_state_id($state_name) {
         return db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_name', $state_name)
-            ->execute()
-            ->fetchField();
+                ->fields('t', array('state_id'))
+                ->condition('t.state_name', $state_name)
+                ->execute()
+                ->fetchField();
     }
 
     /*
      * Load the Javascript libraries we need.
      */
+
     public static function add_js() {
         drupal_add_library('system', 'ui.dialog');
         drupal_add_js(JS_DIR . '/ebms.js');
@@ -784,10 +776,10 @@ class Util {
      */
     public static function get_file_uri($file_id) {
         return db_select('file_managed', 'f')
-            ->fields('f', array('uri'))
-            ->condition('f.fid', $file_id)
-            ->execute()
-            ->fetchField();
+                ->fields('f', array('uri'))
+                ->condition('f.fid', $file_id)
+                ->execute()
+                ->fetchField();
     }
 
     /**
@@ -800,7 +792,7 @@ class Util {
             ->orderBy('b.board_name')
             ->execute();
         foreach ($results as $result)
-            $boards[$result->board_id] = $result->board_name;
+                $boards[$result->board_id] = $result->board_name;
         return $boards;
     }
 
@@ -809,10 +801,10 @@ class Util {
      */
     public static function get_board_name($board_id) {
         return db_select('ebms_board', 'b')
-            ->fields('b', array('board_name'))
-            ->condition('b.board_id', $board_id)
-            ->execute()
-            ->fetchField();
+                ->fields('b', array('board_name'))
+                ->condition('b.board_id', $board_id)
+                ->execute()
+                ->fetchField();
     }
 
     /**
@@ -825,16 +817,15 @@ class Util {
      *
      *  @return                Render array for left nav panel
      */
-    public static function build_librarian_left_nav($active=null,
-                                                    $full=true) {
+    public static function build_librarian_left_nav($active = null, $full = true) {
         $links = array(
             array('Search Database', 'citations/search', 'always'),
             array('Import Citations', 'citations/import', 'always'),
             array('Find/Edit Citations', 'stub', 'full'),
             array('Review Citations', 'stub', 'full'),
             array('Publish Citations', 'stub', 'always'),
-			array('Not List Maintentance', 'citations/not-list', 'always'),
-			array('Manage Journals', 'stub', 'full'),			
+            array('Not List Maintentance', 'citations/not-list', 'always'),
+            array('Manage Journals', 'stub', 'full'),
         );
         $items = array();
         foreach ($links as $link_info) {
@@ -857,4 +848,5 @@ class Util {
             ),
         );
     }
+
 }
