@@ -46,6 +46,7 @@ DROP TABLE IF EXISTS ebms_article_tag_type;
 DROP TABLE IF EXISTS ebms_import_action;
 DROP TABLE IF EXISTS ebms_import_batch;
 DROP TABLE IF EXISTS ebms_import_disposition;
+DROP TABLE IF EXISTS ebms_journal;
 DROP TABLE IF EXISTS ebms_not_list;
 DROP TABLE IF EXISTS ebms_cycle;
 DROP TABLE IF EXISTS ebms_article_author_cite;
@@ -561,6 +562,24 @@ CREATE TABLE ebms_cycle
   start_date DATETIME    NOT NULL UNIQUE)
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+/*
+ * A list of all known journals.
+ *
+ *  source          Name of source, 'Pubmed' predominates.
+ *  source_jrnl_id  If source = 'Pubmed': then NLM unique journal id.
+ *                    Else: to be determined.
+ *  jrnl_title      Full journal title at time of import or update.
+ *  brf_jrnl_title  Journal title abbreviation found in article record.
+ */
+CREATE TABLE ebms_journal (
+  source            VARCHAR(32) NOT NULL,
+  source_jrnl_id    VARCHAR(32) NOT NULL,
+  jrnl_title        VARCHAR(512) CHARACTER SET ASCII NOT NULL,
+  brf_jrnl_title    VARCHAR(127) NULL,
+PRIMARY KEY (source, source_jrnl_id, jrnl_title, brf_jrnl_title)
+)
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	  
 /*
  * Identifies journals that are known to be poor sources of info.  Articles
  * from these journals are not further reviewed.
@@ -1120,7 +1139,7 @@ CREATE TABLE ebms_article_board_decision (
     ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
- * Record of the board members afffiliated with a particular board decision.
+ * Record of the board members affiliated with a particular board decision.
  * The date of the decision entry can be found by looking up article_state_id
  * in ebms_article_state.
  *
