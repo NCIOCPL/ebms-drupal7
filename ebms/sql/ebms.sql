@@ -3,6 +3,8 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_publish_queue_flag;
+DROP TABLE IF EXISTS ebms_publish_queue;
 DROP TABLE IF EXISTS ebms_search;
 DROP TABLE IF EXISTS ebms_summary_returned_doc;
 DROP TABLE IF EXISTS ebms_summary_posted_doc;
@@ -24,6 +26,10 @@ DROP TABLE IF EXISTS ebms_review_disposition;
 DROP TABLE IF EXISTS ebms_review_rejection_value;
 DROP TABLE IF EXISTS ebms_review_disposition_value;
 DROP TABLE IF EXISTS ebms_article_review;
+DROP TABLE IF EXISTS ebms_member_wants_print;
+DROP TABLE IF EXISTS ebms_packet_printed;
+DROP TABLE IF EXISTS ebms_print_job;
+DROP TABLE IF EXISTS ebms_print_job_type;
 DROP TABLE IF EXISTS ebms_packet_article;
 DROP TABLE IF EXISTS ebms_packet_reviewer;
 DROP TABLE IF EXISTS ebms_packet_summary;
@@ -887,7 +893,7 @@ CREATE TABLE ebms_article_state (
     FOREIGN KEY (state_id)   REFERENCES ebms_article_state_type(state_id),
     FOREIGN KEY (user_id)    REFERENCES users(uid)
 )
-    ENGINE InnoDB DEFAULT CHARSET=utf8;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
     -- Search for articles by article, state, board, or topic
     CREATE INDEX ebms_article_state_article_index
@@ -932,7 +938,7 @@ CREATE TABLE ebms_article_state_comment (
                 ebms_article_state(article_state_id),
     FOREIGN KEY (user_id) REFERENCES users(uid)
 )
-    ENGINE InnoDB DEFAULT CHARSET=utf8;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
     -- Usually retrieved in association with state row, in date order
     CREATE INDEX ebms_article_state_comment_state_index ON
@@ -1016,7 +1022,7 @@ CREATE TABLE ebms_article_tag (
     FOREIGN KEY (topic_id)   REFERENCES ebms_topic(topic_id),
     FOREIGN KEY (user_id)    REFERENCES users(uid)
 )
-    ENGINE InnoDB DEFAULT CHARSET=utf8;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
     -- Search for articles by article, tag, or topic
     CREATE INDEX ebms_article_tag_article_index
@@ -1051,7 +1057,7 @@ CREATE TABLE ebms_article_tag_comment (
     FOREIGN KEY (article_tag_id) REFERENCES ebms_article_tag(article_tag_id),
     FOREIGN KEY (user_id)        REFERENCES users(uid)
 )
-    ENGINE InnoDB DEFAULT CHARSET=utf8;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
     -- Usually retrieved in association with article_tag row, in date order
     CREATE INDEX ebms_article_tag_comment_tag_index ON
@@ -1069,7 +1075,7 @@ CREATE TABLE ebms_article_board_decision_value (
     value_id      INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     value_name    VARCHAR(64) NOT NULL UNIQUE
 )
-    ENGINE InnoDB DEFAULT CHARSET=utf8;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 INSERT INTO ebms_article_board_decision_value (value_name)
      VALUES ('Cited (citation only)');
 INSERT INTO ebms_article_board_decision_value (value_name)
@@ -1111,7 +1117,7 @@ CREATE TABLE ebms_article_board_decision (
         REFERENCES ebms_article_board_decision_value(value_id),
     FOREIGN KEY (meeting_date)  REFERENCES ebms_cycle(cycle_id)
 )
-    ENGINE InnoDB DEFAULT CHARSET=utf8;
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Record of the board members afffiliated with a particular board decision.
@@ -1164,6 +1170,116 @@ active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
   FOREIGN KEY (topic_id)   REFERENCES ebms_topic (topic_id),
   FOREIGN KEY (created_by) REFERENCES users (uid))
        ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Types of supported print jobs.
+ *
+ *  print_job_type_id   Unique ID.
+ *  print_job_text_id   Unique readable text ID.
+ *  description         Purely for documentation purposes.
+ */
+CREATE TABLE ebms_print_job_type (
+    print_job_type_id   INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    print_job_text_id   VARCHAR(32) NOT NULL UNIQUE,
+    description         VARCHAR(2048) NOT NULL
+)
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+    -- Predefined types
+    INSERT ebms_print_job_type (print_job_text_id, description)
+      VALUES ('board', 
+       'Job run for all board members that receive printouts on one board');
+    INSERT ebms_print_job_type (print_job_text_id, description)
+      VALUES ('package', 
+       'Printing all packets (one package) for one user on one board');
+    INSERT ebms_print_job_type (print_job_text_id, description)
+      VALUES ('packet', 
+       'Printing a single packet for a user');
+
+    -- For future use
+    INSERT ebms_print_job_type (print_job_text_id, description)
+      VALUES ('meeting',
+       'Printing all documents for a board meeting');
+
+/*
+ * Records print jobs.
+ *
+ *  print_job_id        Unique ID of this job.
+ *  old_job_id          Unique ID of a previous job if this job is a reprint
+ *                       of that one.  Else null.
+ *  print_job_type_id   Why was this job printed.
+ *  packet_start_dt     Only include packets created on or after this date.
+ *  packet_end_dt       Only include packets created before this date.
+ *  print_dt            Date time of actual printing.
+ *  board_id            ID of board for which job was run.
+ *  board_member_id     ID of board member for 'package' job type, optional
+ *                       for 'packet' type and null for 'board' type.
+ *  outcome             One of: 'success', 'failure', 'in-process'.
+ *  comment             Optional free text comment about job.
+ */
+CREATE TABLE ebms_print_job (
+    print_job_id        INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    old_job_id          INTEGER NULL,
+    print_job_type_id   INTEGER NOT NULL,
+    packet_start_dt     DATE NULL,
+    packet_end_dt       DATE NULL,
+    print_dt            DATETIME NOT NULL,
+    board_id            INTEGER NULL,
+    board_member_id     INTEGER UNSIGNED NULL,
+    outcome             ENUM('success', 'failure', 'in-process') NOT NULL
+                         DEFAULT 'in-process',
+    comment             VARCHAR(2048) NULL,
+    FOREIGN KEY (old_job_id) REFERENCES ebms_print_job (print_job_id),
+    FOREIGN KEY (print_job_type_id) 
+        REFERENCES ebms_print_job_type (print_job_type_id),
+    FOREIGN KEY (board_id) REFERENCES ebms_board (board_id),
+    FOREIGN KEY (board_member_id) REFERENCES ebms_board_member(user_id)
+)
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Records what has been printed for a board member.  This is used to
+ * avoid printing something twice, to answer a board member's questions
+ * about whether and when something was printed for him, and possibly to
+ * provide management information reports.
+ *
+ *  board_member_id     The ID of the board member for whom printing occurred.
+ *  packet_id           The ID of the packet that was printed.
+ *                       If a single document is printed apart from a packet,
+ *                       that is not recorded.  It's only packets that we
+ *                       record.
+ *  print_job_id        The ID of the job for which the printout occurred.
+ */
+CREATE TABLE ebms_packet_printed (
+    board_member_id     INTEGER UNSIGNED NOT NULL,
+    packet_id           INTEGER NOT NULL,
+    print_job_id        INTEGER NOT NULL,
+    PRIMARY KEY (board_member_id, packet_id, print_job_id),
+    FOREIGN KEY (board_member_id) REFERENCES ebms_board_member(user_id),
+    FOREIGN KEY (packet_id) REFERENCES ebms_packet(packet_id),
+    FOREIGN KEY (print_job_id) REFERENCES ebms_print_job(print_job_id)
+)
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Record of which board members want printed packets.
+ *
+ * Add a row here when a board member wants printouts.  Set the end_dt
+ * if and only if he no longer wants printouts after that date.  This also
+ * provides a historical record of who wanted printouts in the past.
+ *
+ *  board_member_id     Who wanted printouts.
+ *  start_dt            When they should start.
+ *  end_dt              When no longer needed.  Null if still needed.
+ */
+CREATE TABLE ebms_member_wants_print (
+    board_member_id     INTEGER UNSIGNED NOT NULL,
+    start_dt            DATE NOT NULL,
+    end_dt              DATE null,
+    PRIMARY KEY (board_member_id, start_dt),
+    FOREIGN KEY (board_member_id) REFERENCES ebms_board_member(user_id)
+)
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * PDQ summary document related to the articles in a review packet.
