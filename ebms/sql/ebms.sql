@@ -835,19 +835,19 @@ CREATE TABLE ebms_article_state_type (
         VALUES ('NotForAgenda', 'Changes not for agenda',
         'Changes may be made to summary but no board meeting required.  '
         'Do not put on agenda.',
-        80, 'N');
+        70, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('AgendaFutureChg', 'For future agenda (with changes)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'Summary changes have been proposed.',
-        80, 'N');
+        70, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('AgendaFutureDiscuss', 'For future agenda (discussion only)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'No summary changes have been proposed.',
-        80, 'N');
+        70, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('OnAgenda', 'On agenda',
