@@ -364,6 +364,9 @@ CREATE TABLE ebms_topic_reviewer
  *                    database.
  *  update_date     Datetime of the most recent replacement of the article
  *                    with updated data.  Null if never replaced.
+ *  imported_by     Userid of the person who performed the import.  This is
+ *                    the original import only, not the update, if there was
+ *                    one.
  *  source_data     Unmodified XML or whatever downloaded from the source.
  *                    We'll assume it's always there and make it not null
  *                    changing that only if there's a real use case.
@@ -391,9 +394,11 @@ CREATE TABLE ebms_article (
   published_date    VARCHAR(64) NOT NULL,
   import_date       DATETIME NOT NULL,
   update_date       DATETIME NULL,
+  imported_by       INTEGER UNSIGNED NOT NULL,
   source_data       LONGTEXT NULL,
   full_text_id      INTEGER UNSIGNED NULL,
   active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
+  FOREIGN KEY (imported_by) REFERENCES users(uid),
   FOREIGN KEY (full_text_id) REFERENCES file_managed (fid)
 )
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -758,10 +763,6 @@ CREATE TABLE ebms_import_action (
  *  description         Longer, descriptive help text.
  *  completed           'Y' = article in this state requires no further
  *                        processing.
- *  board_required      'Y' = rows with this state must have a non-NULL
- *                        board_id
- *  topic_required      'Y' = rows with this state must have a non-NULL
- *                        topic_id
  *  active_status       'A'ctive or 'I'nactive.
  *  sequence            The sequence order of states in workflows.
  */
@@ -771,8 +772,6 @@ CREATE TABLE ebms_article_state_type (
     state_name          VARCHAR(64) NOT NULL UNIQUE,
     description         VARCHAR(2048) NOT NULL,
     completed           ENUM('Y', 'N') NOT NULL DEFAULT 'N',
-    board_required      ENUM('Y', 'N') NOT NULL DEFAULT 'Y',
-    topic_required      ENUM('Y', 'N') NOT NULL DEFAULT 'Y',
     active_status       ENUM('A', 'I') NOT NULL DEFAULT 'A',
     sequence            INTEGER NULL
 )
@@ -781,100 +780,84 @@ CREATE TABLE ebms_article_state_type (
     -- States that an article can be in in the review process
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
-        VALUES ('Imported', 'Imported', 'Imported into the database', 1, 'N');
-    INSERT ebms_article_state_type 
-        (state_text_id, state_name, description, sequence, completed)
         VALUES ('ReadyInitReview', 'Ready for initial review', 
         'Article is associated with a summary topic, '
         'typically by a new import or an attempted import of a duplicate.  '
-        'It is now ready for initial review', 2, 'N');
+        'It is now ready for initial review', 10, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('RejectJournalTitle', 'Rejected by NOT list', 
         'Article appeared in a "NOT listed" journal, rejected without review',
-        3, 'Y');
+        20, 'Y');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('RejectInitReview', 'Rejected in initial review', 
         'Rejected in initial review, before publication to board managers', 
-        4, 'Y');
+        30, 'Y');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('PassedInitReview', 'Passed initial review', 
-        'Article ready for "publishing" for board manager review', 4, 'N');
+        'Article ready for "publishing" for board manager review', 30, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('Published', 'Published', 
-        'Article "published" for board manager review', 5, 'N');
+        'Article "published" for board manager review', 40, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('RejectBMReview', 'Rejected by Board Manager', 
-        'Board manager rejected article', 6, 'Y');
+        'Board manager rejected article', 50, 'Y');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('PassedBMReview', 'Passed Board Manager', 
-        'Board manager accepted article for further review', 6, 'N');
-    INSERT ebms_article_state_type 
-        (state_text_id, state_name, description, sequence, completed)
-        VALUES ('FullRequested', 'Requested full text', 
-        'Board manager has requested retrieval of full text', 7, 'N');
-    INSERT ebms_article_state_type 
-        (state_text_id, state_name, description, sequence, completed)
-        VALUES ('FullFailed', 'Full text retrieval failed', 
-        'Staff were unable to obtain a copy of the article', 8, 'Y');
-    INSERT ebms_article_state_type 
-        (state_text_id, state_name, description, sequence, completed)
-        VALUES ('FullRetrieved', 'Full text retrieved', 
-        'Full text is available, awaiting further review by Board manager', 
-        8, 'N');
+        'Board manager accepted article for further review', 50, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('RejectFullReview', 'Rejected after full text review',
-        'Full text examined at OCE, article rejected', 9, 'Y');
+        'Full text examined at OCE, article rejected', 60, 'Y');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('PassedFullReview', 'Passed full text review',
         'Full text examined at OCE, article approved for board member review', 
-        9, 'N');
+        60, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('FYI', 'Flagged as FYI',
         'Article is being sent out without being linked to a specific topic',
-        9, 'Y');
+        60, 'Y');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('FullEnd', 'No further action',
         'Decision after board member review is do not discuss.  '
         'Do not put on agenda.',
-        11, 'Y');
+        70, 'Y');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
-        VALUES ('AgendaNoChg', 'Changes not for agenda',
+        VALUES ('NotForAgenda', 'Changes not for agenda',
         'Changes may be made to summary but no board meeting required.  '
         'Do not put on agenda.',
-        11, 'N');
+        80, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('AgendaFutureChg', 'For future agenda (with changes)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'Summary changes have been proposed.',
-        11, 'N');
+        80, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('AgendaFutureDiscuss', 'For future agenda (discussion only)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'No summary changes have been proposed.',
-        11, 'N');
+        80, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
-        VALUES ('AgendaOn', 'On agenda',
+        VALUES ('OnAgenda', 'On agenda',
         'Article is on the agenda for an upcoming meeting.',
-        12, 'N');
+        80, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('FinalBoardDecision', 'Final board decision',
         'Article was discussed at a board meeting and a decision was reached',
-        13, 'Y');
+        90, 'Y');
 
 
 /*
