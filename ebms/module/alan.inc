@@ -14,6 +14,7 @@ function pdq_ebms_alantest() {
     require_once('testimport.inc');
     require_once('EbmsArticle.inc');
     require_once('EbmsImport.inc');
+    require_once('EbmsSearch.inc');
     pdq_ebms_debug('ALAN POST', $_POST);
     // return (tryIt());
     $test = Ebms\Util::get_request_value('test');
@@ -52,6 +53,10 @@ function pdq_ebms_alantest() {
             if ($op)
                 return pdq_ebms_inactivatetag_test();
             return drupal_get_form('ebms_testapi_inactivatetag_form');
+        case 'execSearch':
+            if ($op)
+                return pdq_ebms_search_test();
+            return drupal_get_form('ebms_testapi_search_form');
         /* Debug board picker
         case 'pickBoard':
             if ($op) return test_pickBoard_test();
@@ -226,7 +231,7 @@ function pdq_ebms_getstatushistory_test() {
     // Get the status and tag history
     $statusHist = Ebms\getStatusHistory($articleId, $boardId, $topicId,
                                         true, $showInactive, $sortOrder);
-    $tagHist    = Ebms\getTagHistory($articleId, $boardId, null,
+    $tagHist    = Ebms\getTagHistory($articleId, $topicId, null,
                                      true, $showInactive);
     // Convert to HTML
     $html = Ebms\statusHistoryToHtml($statusHist);
@@ -249,17 +254,17 @@ function pdq_ebms_addtag_test() {
     if (!$tagInfo)
         return "A descriptive tag is required";
 
-    // Optional board
-    $boardInfo = boardRequest();
-    $boardId   = $boardInfo['boardId'];
+    // Optional topic
+    $topicStr = Ebms\Util::get_request_value('topicId', null);
+    $topicId  = $topicStr ? intval($topicStr) : null;
 
     // Optional comment
     $comment = Ebms\Util::get_request_value('comment', null);
 
     // Add the tag to the article
-    $rowId = Ebms\addArticleTag($tagTextId, $articleId, $boardId, $comment);
+    $rowId = Ebms\addArticleTag($tagTextId, $articleId, $topicId, $comment);
 
-    $tagHist = Ebms\getTagHistory($articleId, $boardId);
+    $tagHist = Ebms\getTagHistory($articleId, $topicId);
     return Ebms\tagHistoryToHtml($tagHist);
 }
 
@@ -321,6 +326,43 @@ function pdq_ebms_inactivatetag_test() {
     return Ebms\tagHistoryToHtml($hist);
 }
 
+function pdq_ebms_search_test() {
+
+    // Pick out a JSON search string from the database by its primary key
+    $srchKey = Ebms\Util::get_request_value('srchId');
+    $json = db_query(
+            'SELECT search_spec FROM {ebms_search} WHERE search_id = :sid',
+            array(':sid' => $srchKey))->fetchField();
+
+    if (!$json)
+        throw new \Exception("No search found with search_id=$json");
+
+    // Get the query object
+    $qry = Ebms\getSearchQuery($json);
+
+$qryVal = print_r($qry, true);
+logw($qryVal);
+$qryVal = (string) $qry;
+logw($qryVal);
+
+    // Execute the search
+    $result = $qry->execute();
+    $rowCount = $result->rowCount();
+    $html = "<p>Found $rowCount articles</p>\n<table border='1'>\n";
+    $count = 0;
+    $maxShow = $rowCount;
+    if ($maxShow > 20)
+        $maxShow = 20;
+    for ($i=0; $i<$maxShow; $i++) {
+        $artId = $result->fetchField();
+        $artObj = new Ebms\EbmsArticle($artId);
+        $html .= " <tr><td>" . $artId . "</td><td>"
+              . $artObj->getBrfCite() . "</td></tr>\n";
+    }
+    $html .= "</table>\n";
+
+    return $html;
+}
 
 function pdq_ebms_show_dummy_test_results($title, $test) {
     $header = array('Who', 'What', 'When', 'Where');
@@ -353,6 +395,7 @@ function pdq_ebms_api_tests() {
         array('Add a descriptive tag to an article', 'addTag'),
         array('Add another comment to a descriptive tag', 'addTagComment'),
         array('Inactivate a descriptive tag and its comments', 'inactivateTag'),
+        array('Execute a stored search', 'execSearch'),
         // array('Pick a board', 'pickBoard'),
     );
     foreach ($tests as $test) {
@@ -604,8 +647,8 @@ function ebms_testapi_getstatushistory_form($form) {
           'Enter single letters (see below) to control sorting:<br />
  D = Date<br />
  S = Sequence number in status type table<br />
- B = editorial Board name<br />
- T = summary Topic name<br />
+ B = Editorial Board name<br />
+ T = Summary Topic name<br />
  U = User name (firstname lastname)',
         '#size' => 8,
         '#maxlength' => 8,
@@ -631,9 +674,16 @@ function ebms_testapi_addtag_form($form) {
         '#markup' => '<h3>Add a Descriptive Tag to an Article</h3>'
     );
     addArticleIdsToForm($form);
-    addBoardIdToForm($form,
-            'Optionally restrict to particular board (or no board)');
     addTagIdToForm($form);
+
+    // Topic ID may or may not be required
+    $form['topicId'] = array(
+        '#type' => 'textfield',
+        '#size' => 6,
+        '#title' => 'Summary topic ID number',
+        '#description' => 'Some states require topics, some don\'t'
+    );
+
     addCommentToForm($form, 'Optional comment to associate with the tag');
     addSubmitButtonToForm($form);
 
@@ -679,6 +729,30 @@ function ebms_testapi_inactivatetag_form($form) {
     return $form;
 }
 
+/**
+ * Form for search API test.
+ */
+function ebms_testapi_search_form($form) {
+
+    $form = array();
+    $form['title'] = array(
+        '#type' => 'markup',
+        '#markup' => '<h3>Test the search API.</h3>'
+    );
+
+    $form['srchId'] = array(
+        '#type' => 'textfield',
+        '#title' => 'ebms_search.search_id',
+        '#description' =>
+                'Enter the internal ID of a stored search JSON string',
+        '#size' => 10,
+        '#maxlength' => 10,
+        '#required' => true
+    );
+    addSubmitButtonToForm($form);
+
+    return $form;
+}
 
 /**
  * Create form elements to get an article ID or Pubmed ID.
