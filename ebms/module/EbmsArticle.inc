@@ -14,7 +14,6 @@ define('Ebms\MAX_JRNL_TITLE', 512);
  * A simple interface to enumerate the article state text IDs.
  */
 interface EbmsArticleStates {
-    const Imported = 'Imported';
     const ReadyInitReview = 'ReadyInitReview';
     const RejectJournalTitle = 'RejectJournalTitle';
     const RejectInitReview = 'RejectInitReview';
@@ -22,18 +21,52 @@ interface EbmsArticleStates {
     const Published = 'Published';
     const PassedBMReview = 'PassedBMReview';
     const RejectBMReview = 'RejectBMReview';
-    const FullRequested = 'FullRequested';
-    const FullFailed = 'FullFailed';
-    const FullRetrieved = 'FullRetrieved';
     const RejectFullReview = 'RejectFullReview';
     const PassedFullReview = 'PassedFullReview';
     const FYI = 'FYI';
-    const AgendaNoChg = 'AgendaNoChg';
+    const FullEnd = 'FullEnd';
+    const NotForAgenda = 'NotForAgenda';
     const AgendaFutureChg = 'AgendaFutureChg';
     const AgendaFutureDiscuss = 'AgendaFutureDiscuss';
-    const FullEnd = 'FullEnd';
-    const AgendaOn = 'AgendaOn';
+    const OnAgenda = 'OnAgenda';
     const FinalBoardDecision = 'FinalBoardDecision';
+}
+
+validateArticleStates();
+
+function validateArticleStates() {
+    $states = array(
+        EbmsArticleStates::ReadyInitReview,
+        EbmsArticleStates::RejectJournalTitle,
+        EbmsArticleStates::RejectInitReview,
+        EbmsArticleStates::PassedInitReview,
+        EbmsArticleStates::Published,
+        EbmsArticleStates::PassedBMReview,
+        EbmsArticleStates::RejectBMReview,
+        EbmsArticleStates::RejectFullReview,
+        EbmsArticleStates::PassedFullReview,
+        EbmsArticleStates::FYI,
+        EbmsArticleStates::FullEnd,
+        EbmsArticleStates::NotForAgenda,
+        EbmsArticleStates::AgendaFutureChg,
+        EbmsArticleStates::AgendaFutureDiscuss,
+        EbmsArticleStates::OnAgenda,
+        EbmsArticleStates::FinalBoardDecision,
+    );
+
+    $currStates = db_select('ebms_article_state_type', 't')
+        ->fields('t', array('state_text_id'))
+        ->execute()
+        ->fetchCol();
+
+    $localStates = array_diff($states, $currStates);
+    $dbStates = array_diff($currStates, $states);
+    if (!empty($localStates)) {
+        drupal_set_message($localStates, 'state types missing from database!');
+    }
+    if (!empty($dbStates)) {
+        drupal_set_message($dbStates, 'unknown state types found in database!');
+    }
 }
 
 /**
