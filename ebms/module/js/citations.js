@@ -3,9 +3,9 @@
  * and open the template in the editor.
  */
 
-//jQuery(document).ready(function () { alert("Hello!"); });
-
-jQuery(document).ready(addHooks());
+jQuery(document).ready(function(){
+   addHooks(); 
+});
 
 function addHooks() {
         

@@ -7,13 +7,13 @@ namespace Ebms {
     require_once('EbmsArticle.inc');
 
     $GLOBALS['citations_state_map'] = array(
-        'Ready for initial review' => array(
-            'reject' => 'Rejected in initial review',
-            'pass' => 'Passed initial review',
+        \Ebms\EbmsArticleStates::ReadyInitReview => array(
+            'reject' => \Ebms\EbmsArticleStates::RejectInitReview,
+            'pass' => \Ebms\EbmsArticleStates::PassedInitReview,
         ),
-        'Passed initial review' => array(
-            'reject' => 'Rejected by Board Manager',
-            'pass' => 'Passed Board Manager',
+        \Ebms\EbmsArticleStates::Published => array(
+            'reject' => \Ebms\EbmsArticleStates::RejectBMReview,
+            'pass' => \Ebms\EbmsArticleStates::PassedBMReview,
         ),
         'Full text retrieved' => array(
             'reject' => 'Rejected after full text review',
@@ -707,19 +707,17 @@ namespace {
 
         try {
             $query = db_select('ebms_article_state', 's');
-            $query->join('ebms_last_article_topic_state', 'l',
-                'l.article_state_id = s.article_state_id');
             if ($journal_id)
                     $query->join('ebms_article', 'a',
                     'a.article_id = s.article_id');
 
-            $source_state = 'Ready for initial review';
+            $source_state = \Ebms\EbmsArticleStates::ReadyInitReview;
             if (!$is_librarian) {
-                $source_state = 'Passed initial review';
+                $source_state = \Ebms\EbmsArticleStates::Published;
             }
-            $state_id = Ebms\getStateIdByName($source_state);
+            $state = Ebms\getStateTypebyTextId($source_state);
 
-            $query->condition('s.state_id', $state_id);
+            $query->condition('s.state_id', $state->state_id);
             // add the pager early on in the process
             $query = $query->extend('PagerDefault');
 
@@ -733,10 +731,9 @@ namespace {
                     'LIKE');
 
             $query->groupBy('s.article_id');
+            $query->condition('s.current', 'Y');
 
-            // TODO: add the count back once the query is faster!
             $num_rows = $query->countQuery()->execute()->fetchField();
-            //$num_rows = 10;
 
             $query
                 ->fields('s', array('article_id'))
@@ -773,25 +770,27 @@ namespace {
             ));
 
         $results['table'] = array(
-            '#prefix' => '<div id="citation-table-div">',
-            '#suffix' => '</div>',
+            '#prefix' => '<table>',
+            '#suffix' => '</table>',
         );
 
         $results['table']['header'] = array(
-            '#prefix' => "<div class='citation-header'>",
-            '#suffix' => '</div>',
+            '#prefix' => "<tr>",
+            '#suffix' => '</tr>',
         );
 
-        $results['table']['header'][]['#markup'] =
-            "<div class='citation-cell actions left-column borderless'>&nbsp;</div>";
-        $results['table']['header'][]['#markup'] =
-            "<div class='citation-cell brief-citation'>Citations</div>";
-        $results['table']['header'][]['#markup'] =
-            "<div class='citation-cell board borderless'>Board - Topic</div>";
-        /* $results['table']['header'][]['#markup'] =
-          "<div class='citation-cell board'>Board</div>";
-          $results['table']['header'][]['#markup'] =
-          "<div class='citation-cell summary-topic'><div class='summary-topic-name'>Summary Topic</div><div class='summary-topic-check'>Reject</div><div class='summary-topic-check'>Pass</div></div>"; */
+        $results['table']['header']['actions']['#markup'] =
+            "<th class='actions left-column borderless'>&nbsp;</th>";
+        $results['table']['header']['brief_citation']['#markup'] =
+            "<th class='brief-citation'>Citations</th>";
+        $results['table']['header']['board']['#markup'] =
+            "<th class='board'>Board</th>";
+        $results['table']['header']['topic']['#markup'] =
+            "<th class='summary-topic-name'>Summary Topic</th>";
+        $results['table']['header']['pass']['#markup'] =
+            "<th class='summary-topic-check'>Reject</th>";
+        $results['table']['header']['reject']['#markup'] =
+            "<th class='summary-topic-check'>Pass</th>";
 
         $page = 0;
         $parms = drupal_get_query_parameters();
@@ -806,41 +805,155 @@ namespace {
         $ix = 0;
         $results['table']['rows'] = array();
         foreach ($result as $record) {
-            $results['table']['rows'][$ix] = array(
-                '#prefix' => "<div class='citation-row'>",
-                '#suffix' => '</div>',
+            $article = new Ebms\EbmsArticle($record->article_id);
+
+            // retrieve the topics and related boards
+            $curr_topics = explode(',', $record->topics);
+
+            // grab all topics and board from the topic objects
+            $boards = array();
+            $topics = array();
+            foreach ($article->getTopics() as $topic) {
+                if (in_array($topic->topic_id, $curr_topics)) {
+                    $boardName = $topic->board_name;
+                    if (!in_array($boardName, $boards)) $boards[] = $boardName;
+                    $topics[] = $topic;
+                }
+            }
+
+            // now that all boards are known and indexed, create an array that 
+            // maps boards to topic objects
+            $boardTopicMap = array();
+            foreach ($boards as $boardName) {
+                $localMap = array();
+                // add each matching topic using an integer index
+                foreach ($topics as $topic) {
+                    if ($boardName == $topic->board_name) {
+                        $localMap['topics'][] = $topic;
+                    }
+                }
+                // store the board name
+                $localMap['boardName'] = $boardName;
+
+                // add the mapping using an integer index
+                $boardTopicMap[] = $localMap;
+                unset($localMap);
+            }
+
+            $topicCount = sizeof($topics);
+
+            // need to construct a set of rows for eact record, as rowspans will
+            // be used for every column apart from topics
+            // $topicRows indicates the total number of rows per result, with 
+            // the actions and citation columns spanning all rows,
+            // each topic spanning just its topics' rows, and the topics each
+            // taking up a single row.
+            // rows will look something like
+            // actions  citation    board   topic
+            //                              topic
+            //                      board   topic
+            //                              topic
+            //                              topic
+            // will use an index into the current board and topic to generate 
+            // each row, incrementing topic until it rolls over into the next
+            // board, and then board until all boards are done.
+
+            $rowIx = 0;
+            $boardIx = 0;
+            $topicIx = 0;
+
+            // set up the rows array, and prep the first one.
+            $rows = array();
+            $rows[$rowIx] = array(
+                '#prefix' => "<tr>",
+                '#suffix' => '</tr>',
             );
 
-            $row = &$results['table']['rows'][$ix];
+            $row = &$rows[$rowIx];
 
-            $row['actions']['#type'] = 'container';
-            $row['actions']['#prefix'] = "<div class='citation-cell borderless'>";
-            $row['actions']['#suffix'] = "</div>";
+            // always add actions and citations to the first row
+            // build actions.
+            $row['actions']['#prefix'] = "<td rowspan='$topicCount' class='borderless'>";
+            $row['actions']['#suffix'] = "</td>";
 
             $row['actions']['row_num'] = array('#markup' => ($ix + $first_row) . "<br />");
             /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />');
               $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />');
               $row['actions']['tag'] = array('#type' => 'submit', '#value' => t('Tag'), '#suffix' => '<br />'); */
 
-            $article = new Ebms\EbmsArticle($record->article_id);
-
-            //$authors = implode(', ', $article->getAuthors());
-            //$title = $article->getArticleTitle();
-
+            // build citation
             $cite = _cite_article($article, false);
 
             $row['brief_citation']['#markup'] =
-                "<div class='citation-cell brief-citation left-column'><a href='/citations/full/$record->article_id'>$cite</a></div>";
+                "<td rowspan='$topicCount' class='brief-citation left-column'><a href='/citations/full/$record->article_id'>$cite</a></td>";
 
-            // retrieve the topics and related boards
-            $curr_topics = explode(',', $record->topics);
+            while (isset($boardTopicMap[$boardIx])) {
+                // add the board and cycle through the topics
+                $topicIx = 0;
+                $boardName = $boardTopicMap[$boardIx]['boardName'];
+                $boardTopicCount = sizeof($boardTopicMap[$boardIx]['topics']);
+                $row['board']['#markup'] = "<td rowspan='$boardTopicCount'>$boardName</td>";
 
-            $topics = array();
-            foreach ($article->getTopics() as $topic) {
-                if (in_array($topic->topic_id, $curr_topics)) {
-                    $boards[$topic->board_name][$topic->topic_name] = $topic;
+                while (isset($boardTopicMap[$boardIx]['topics'][$topicIx])) {
+                    $topic = $boardTopicMap[$boardIx]['topics'][$topicIx];
+
+                    // create topic label
+                    $row['topic']['#markup'] = "<td class='summary-topic-name'>$topic->topic_name</td>";
+
+                    $hash = "$record->article_id|$topic->topic_id";
+                    $actions = _get_topic_actions($form_state, $hash);
+
+                    // create reject button
+                    $row['reject']['#prefix'] = "<td class='summary-topic-check'>";
+                    $row['reject']['#suffix'] = "</td>";
+
+                    $row['reject']["reject_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Reject'),
+                    );
+                    if (isset($actions[$hash]['reject']) &&
+                        $actions[$hash]['reject'])
+                            $row['reject']["reject_$hash"]['#default_value'] = 1;
+
+                    // create pass button
+                    $row['pass']['#prefix'] = "<td class='summary-topic-check'>";
+                    $row['pass']['#suffix'] = "</td>";
+
+                    $row['pass']["pass_$hash"] = array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Pass'),
+                    );
+                    if (isset($actions[$hash]['pass']) &&
+                        $actions[$hash]['pass'])
+                            $row['pass']["pass_$hash"]['#default_value'] = 1;
+
+
+                    // done with this row, set up the next.
+                    $topicIx++;
+                    $rowIx++;
+
+                    $rows[$rowIx] = array(
+                        '#prefix' => "<tr>",
+                        '#suffix' => '</tr>',
+                    );
+
+                    $row = &$rows[$rowIx];
                 }
+
+                $boardIx++;
             }
+
+            // should be an extra, empty row, unset it
+            unset($rows[$rowIx]);
+
+            $results['table']['rows'][$ix] = $rows;
+
+            /* foreach ($boards as $boardName => $topics) {
+              $tableRows = sizeof($topics);
+              $row['board_topic'][$boardName]['board']['#markup'] = $boardName;
+              $row['board_topic'][$boardName]['board']['#prefix'] = "<td rowspan='$tableRows'>";
+              $row['board_topic'][$boardName]['board']['#suffix'] = '</td>';
+              } */
 
             // build the board->id cell
             /* $output = "<div class='citation-cell borderless'>";
@@ -860,51 +973,50 @@ namespace {
               $output .= '</div>'; // end topic cell
               $output .= '</div>'; // end board table
               }
-              $output .= '</div>'; // end board cell */
-
+              $output .= '</div>'; */ // end board cell
             //$row['board_topic']['#markup'] = $output;
 
-            $row['board_topic']['#type'] = 'container';
-            $row['board_topic']['#prefix'] = "<div class='citation-cell borderless'>";
-            $row['board_topic']['#suffix'] = "</div>";
+            /* $row['board_topic']['#type'] = 'container';
+              $row['board_topic']['#prefix'] = "<td class=' borderless'>";
+              $row['board_topic']['#suffix'] = "</td>";
 
-            foreach ($boards as $board_name => $topics) {
-                $row['board_topic'][$board_name]['#type'] = 'container';
-                $row['board_topic'][$board_name]['board']['#markup'] = $board_name;
-                $row['board_topic'][$board_name]['board']['#prefix'] = '<div>';
-                $row['board_topic'][$board_name]['board']['#suffix'] = '</div>';
+              foreach ($boards as $board_name => $topics) {
+              $row['board_topic'][$board_name]['#type'] = 'container';
+              $row['board_topic'][$board_name]['board']['#markup'] = $board_name;
+              $row['board_topic'][$board_name]['board']['#prefix'] = '<div>';
+              $row['board_topic'][$board_name]['board']['#suffix'] = '</div>';
 
 
-                foreach ($topics as $topic_name => $topic) {
-                    $row['board_topic'][$board_name][$topic_name]['#type'] = 'container';
-                    $row['board_topic'][$board_name][$topic_name]['#attributes'] = array(
-                        'class' => array('topic-checks'),
-                    );
-                    /* $row['board_topic'][$board_name][$topic_name]['flag']= array(
-                      '#type' => 'submit',
-                      '#value' => t('Tag'),
-                      ); */
-                    $row['board_topic'][$board_name][$topic_name]['topic']['#markup'] = $topic_name;
+              foreach ($topics as $topic_name => $topic) {
+              $row['board_topic'][$board_name][$topic_name]['#type'] = 'container';
+              $row['board_topic'][$board_name][$topic_name]['#attributes'] = array(
+              'class' => array('topic-checks'),
+              );
+              /* $row['board_topic'][$board_name][$topic_name]['flag']= array(
+              '#type' => 'submit',
+              '#value' => t('Tag'),
+              ); */
+            /* $row['board_topic'][$board_name][$topic_name]['topic']['#markup'] = $topic_name;
 
-                    $hash = "$record->article_id|$topic->topic_id";
-                    $actions = _get_topic_actions($form_state, $hash);
-                    $row['board_topic'][$board_name][$topic_name]["reject_$hash"] = array(
-                        '#type' => 'checkbox',
-                        '#title' => t('Reject'),
-                    );
-                    if (isset($actions[$hash]['reject']) &&
-                        $actions[$hash]['reject'])
-                            $row['board_topic'][$board_name][$topic_name]["reject_$hash"]['#default_value'] = 1;
+              $hash = "$record->article_id|$topic->topic_id";
+              $actions = _get_topic_actions($form_state, $hash);
+              $row['board_topic'][$board_name][$topic_name]["reject_$hash"] = array(
+              '#type' => 'checkbox',
+              '#title' => t('Reject'),
+              );
+              if (isset($actions[$hash]['reject']) &&
+              $actions[$hash]['reject'])
+              $row['board_topic'][$board_name][$topic_name]["reject_$hash"]['#default_value'] = 1;
 
-                    $row['board_topic'][$board_name][$topic_name]["pass_$hash"] = array(
-                        '#type' => 'checkbox',
-                        '#title' => t('Pass'),
-                    );
-                    if (isset($actions[$hash]['pass']) &&
-                        $actions[$hash]['pass'])
-                            $row['board_topic'][$board_name][$topic_name]["pass_$hash"]['#default_value'] = 1;
-                }
-            }
+              $row['board_topic'][$board_name][$topic_name]["pass_$hash"] = array(
+              '#type' => 'checkbox',
+              '#title' => t('Pass'),
+              );
+              if (isset($actions[$hash]['pass']) &&
+              $actions[$hash]['pass'])
+              $row['board_topic'][$board_name][$topic_name]["pass_$hash"]['#default_value'] = 1;
+              }
+              } */
 
             //"<div class='citation-cell brief-citation left-column'>$brfCite<br><br><i>$title</i></div>";
             /* $results['table']['header'][]['#markup'] =
@@ -972,9 +1084,9 @@ namespace {
                 case 'Save':
                     // write out the changes to the not list, in terms of
                     // inserts and deletes to the DB
-                    $source_state = 'Ready for initial review';
+                    $source_state = \Ebms\EbmsArticleStates::ReadyInitReview;
                     if (!$is_librarian) {
-                        $source_state = 'Passed initial review';
+                        $source_state = \Ebms\EbmsArticleStates::Published;
                     }
                     _write_topic_states($form_state['altered_topics'],
                         $source_state);
@@ -1188,9 +1300,10 @@ namespace {
             // ((shouldn't actually happen))
             if ($pass == $reject) {
                 continue;
+            } else if ($pass) {
+                // else if pass is set, use the pass name
+                $new_state_name = $pass_name;
             }
-            // else if pass is set, use the pass name
-            else if ($pass) $new_state_name = $pass_name;
 
             // otherwise, reject is already chosen and should be set
             // update the article's state
