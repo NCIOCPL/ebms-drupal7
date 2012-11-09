@@ -129,19 +129,19 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        // UPLOAD FULL-TEXT PDF FOR ARTICLES
-        'citations/fulltext' => array(
-            'page callback' => 'pdq_ebms_fulltext',
-            'file' => 'fulltext.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
         // AJAX CALLBACK FOR THE PUBLISH PAGE
         'publish-checkbox-ajax' => array(
             'page callback' => 'pdq_ebms_publish_checkbox_ajax',
             'file' => 'publish.inc',
             'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // UPLOAD FULL-TEXT PDF FOR ARTICLES
+        'citations/fulltext' => array(
+            'page callback' => 'pdq_ebms_fulltext',
+            'file' => 'fulltext.inc',
+            'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
 
@@ -194,6 +194,15 @@ function ebms_menu() {
         'citations/not-list' => array(
             'page callback' => 'pdq_ebms_citations',
             'page arguments' => array(1),
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+
+        // FULL CITATION PAGE
+        'citations/full' => array(
+            'page callback' => 'pdq_ebms_citations',
+            'page arguments' => array(1, 2),
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
