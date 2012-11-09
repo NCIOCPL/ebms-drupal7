@@ -893,7 +893,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 $msgs   = $oldRec->getErrorMsgs();
                 if ($rec->getSourceData() != $oldRec->getSourceData()) {
                     if ($mode == 'live')
-                        $rec->store($pi->constantDt);
+                        $rec->store($pi->constantDt, $userId);
                     $ib->addArticle('replaced', $pmid, $foundId, $msgs);
                 }
 
@@ -921,10 +921,8 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
             }
             else {
                 if ($mode == 'live') {
-                    // Save it, populating the articleId
+                    // Save it, populating the article ID and import info
                     $rec->store();
-                    $rec->setArticleState('Imported', $topicId, $boardId,
-                                      $comment, $userId, $pi->constantDt);
                 }
                 $ib->addArticle('imported', $pmid, $rec->getId(), null);
 
