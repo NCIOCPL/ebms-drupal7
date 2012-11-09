@@ -907,6 +907,76 @@ ebmsscript.init_groups_page = function() {
 */
 };
 
+ebmsscript.publish_checkbox = function(box, queue_id, article_state_id) {
+    var action = box.checked ? 'set' : 'clear';
+    jQuery.ajax({
+        url: ebmsscript.site_root + "/publish-checkbox-ajax",
+        data: {
+            article_state_id: article_state_id,
+            queue_id: queue_id,
+            action: action
+        },
+        dataType: "json",
+        success: function(result) {
+             if (result.error)
+                 alert(result.error);
+        },
+        error: function(a,b,c) { alert("Internal error"); }
+    });
+    return false;
+}
+
+ebmsscript.publish_check_all = function(queue_id) {
+    jQuery("td.col-5 input").each(function() {
+        jQuery(this).attr("checked", true);
+    });
+    jQuery.ajax({
+        url: ebmsscript.site_root + "/publish-checkbox-ajax",
+        data: {
+            queue_id: queue_id,
+            action: 'check-all'
+        },
+        dataType: "json",
+        success: function(result) {
+             if (result.error)
+                 alert(result.error);
+        },
+        error: function(a,b,c) { alert("Internal error"); }
+    });
+    return false;
+}
+ebmsscript.publish_clear_all = function(queue_id) {
+    jQuery("td.col-5 input").each(function() {
+        jQuery(this).attr("checked", false);
+    });
+    jQuery.ajax({
+        url: ebmsscript.site_root + "/publish-checkbox-ajax",
+        data: {
+            queue_id: queue_id,
+            action: 'clear-all'
+        },
+        dataType: "json",
+        success: function(result) {
+             if (result.error)
+                 alert(result.error);
+        },
+        error: function(a,b,c) { alert("Internal error"); }
+    });
+    return false;
+}
+
+ebmsscript.clear_publish_box = function(queue_id, article_state_id) {
+    jQuery.ajax({
+        url: ebmsscript.site_root + "/clear-publish-box",
+        data: { article_state_id: article_state_id,
+                queue_id: queue_id
+        },
+        dataType: "json",
+        error: function(a,b,c) { alert("Internal error"); }
+    });
+    return false;
+}
+
 /**
  * Initialization housekeeping which can only be performed after we're
  * sure the document has been loaded.
@@ -921,4 +991,5 @@ jQuery(function() {
     ebmsscript.init_summaries_page();
     ebmsscript.init_docs_page();
     ebmsscript.init_groups_page();
+    jQuery(".working").hide().ajaxStart(function() { jQuery(this).show(); }).ajaxStop(function() { jQuery(this).hide(); });
 });
