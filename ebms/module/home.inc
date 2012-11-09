@@ -251,7 +251,7 @@ class EbmsHomePage {
                     l('Manage Journals', 'stub'),
                     l('Import Citations', 'citations/import'),
                     l('Review Citations', 'stub'),
-                    l('Publish Citations', 'stub'),
+                    l('Publish Citations', 'citations/publish'),
                 );
                 break;
             default:
@@ -343,7 +343,9 @@ class EbmsHomePage {
         $date = date_format($then, 'F j, Y');
         $time = '10:00 - 11:00 AM ET.';
         $desc = 'Stub Meeting (no events yet)';
-        $items = array("<span>$date</span><br />$time<br />$desc");
+        $link = l("<span>$date</span><br />$time<br />$desc", 'calendar',
+                array('html' => true));
+        $items = array($link);
         return $this->list_block('Next Meeting', 'next-meeting', $items);
     }
 
@@ -446,7 +448,7 @@ class EbmsHomePage {
         $info = array(
             'librarian' => array(
                 '1' => array(
-                    'title' => 'Citation Management',
+                    'title' => l('Citation Management', 'citations'),
                     'links' => array(
                         l('Import Citation', 'citations/import'),
                         l('Find/Edit a Record', 'stub'),
@@ -454,14 +456,14 @@ class EbmsHomePage {
                     ),
                 ),
                 '2' => array(
-                    'title' => 'Reports',
+                    'title' => l('Reports', 'reports'),
                     'links' => array(
                         l('Citation Management System Reports', 'stub'),
                         l('Not List Reports', 'stub'),
                     ),
                 ),
                 '3' => array(
-                    'title' => 'Administrator Tool',
+                    'title' => l('Administrator Tool', 'stub'),
                     'links' => array(
                         l('Add New Review Cycle', 'stub'),
                         l('Manage Summary Topics', 'stub'),
@@ -470,7 +472,7 @@ class EbmsHomePage {
             ),
             'admin' => array(
                 '1' => array(
-                    'title' => 'Citation Management',
+                    'title' => l('Citation Management', 'citations'),
                     'links' => array(
                         l('Search Database', 'citations/search'),
                         l('Review Abstracts', 'stub'),
@@ -478,7 +480,7 @@ class EbmsHomePage {
                     ),
                 ),
                 '2' => array(
-                    'title' => 'Literature Surveillance',
+                    'title' => l('Literature Surveillance', 'review/reviews'),
                     'links' => array(
                         l('Create A Literature Surveillance Packet',
                             'review/add'),
@@ -489,14 +491,14 @@ class EbmsHomePage {
                     ),
                 ),
                 '3' => array(
-                    'title' => 'Summaries',
+                    'title' => l('Summaries', 'summaries'),
                     'links' => array(
                         l('Post Summary Document', 'summaries'),
                         l('Download and Review Summaries', 'summaries'),
                     ),
                 ),
                 '4' => array(
-                    'title' => 'Reports',
+                    'title' => l('Reports', 'reports'),
                     'links' => array(
                         l('Literature Surveillance Review Report', 'stub'),
                         l('Travel Reports', 'stub'),
@@ -505,21 +507,21 @@ class EbmsHomePage {
             ),
             'member' => array(
                 '1' => array(
-                    'title' => 'Literature Surveillance',
+                    'title' => l('Literature Surveillance', 'review'),
                     'links' => array(
                         l('Review the Latest Literature Surveillance',
                             'review'),
                     )
                 ),
                 '2' => array(
-                    'title' => 'Summaries',
+                    'title' => l('Summaries', 'summaries'),
                     'links' => array(
                         l('Download and Review Summaries', 'summaries'),
                         l('Submit Summaries with Changes', 'summaries'),
                     )
                 ),
                 '3' => array(
-                    'title' => 'Travel',
+                    'title' => l('Travel', 'travel'),
                     'links' => array(
                         l('Hotel Reservations', 'travel'),
                         l('Directions to NCI', 'travel'),
