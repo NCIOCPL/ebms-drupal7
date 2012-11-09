@@ -214,7 +214,6 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
                 array(
                     '',
                     'Passed Board Manager',
-                    'Requested full text',
                     'Passed full text review',
                     'On agenda',
                 )
@@ -343,6 +342,10 @@ function pdq_ebms_import_board_ajax($form, $form_state) {
 }
 
 function pdq_ebms_import_form_validate($form, &$form_state) {
+    if ($form_state['values']['op'] == 'CANCEL') {
+        drupal_goto(EbmsImport::$url);
+        return;
+    }
     if (!$form_state['values']['board'])
         form_set_error('board', 'You must select a board for article import');
     if (!$form_state['values']['topic'])
@@ -378,6 +381,10 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
 
 function pdq_ebms_import_form_submit($form, &$form_state) {
     #pdq_ebms_debug('SUBMIT', $form_state);
+    if ($form_state['values']['op'] == 'CANCEL') {
+        drupal_goto(EbmsImport::$url);
+        return;
+    }
     $pmids = $form_state['article-ids'];
     $values =& $form_state['values'];
     pdq_ebms_debug('REFERENCE TO IMPORT SUBMIT VALUES', $values);
