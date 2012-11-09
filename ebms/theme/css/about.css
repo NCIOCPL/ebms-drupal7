@@ -1,10 +1,11 @@
 #about-img { margin-top: 20px; }
-h3#boards-title { margin-top: 30px; }
+h3#boards-title { padding-top: 30px; }
 p { margin-top: 12px; margin-bottom: 10px; }
+p.link-desc { margin-bottom: 30px; }
 p#lead { margin-bottom: 30px; }
 h4.board-name {
     text-transform: uppercase; font-weight: bold; margin-left: 10px;
-    margin-top: 25px; margin-bottom: 15px;
+    margin-top: 40px; margin-bottom: 15px;
 }
 p.board-desc { font-style: italic; }
 p.board-links a { text-transform: uppercase; }
