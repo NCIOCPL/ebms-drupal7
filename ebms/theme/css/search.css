@@ -22,3 +22,12 @@
     margin-top: -42px; padding-left: 100px;
 }
 #search-results div.float-left { margin-top: 10px; margin-left: 10px; }
+
+/* added later */
+/*
+#search-db-form input.form-text { width: 620px; }
+#search-db-form #edit-advanced-search select,
+#search-db-form #edit-advanced-search input { width: 500px; }
+#search-db-form #edit-advanced-search #edit-publication-year,
+#search-db-form #edit-advanced-search #edit-publication-month { width: 100px; }
+*/

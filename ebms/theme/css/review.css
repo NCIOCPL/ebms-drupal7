@@ -7,7 +7,7 @@ div.more-actions { margin: 30px 10px; }
 }
 #left-nav .ebms_left_nav_block li input { float: left; }
 .board-name {
-    font-size: 13px; float: left; margin-left: 0px; width: 160px;
+    font-size: 13px; float: left; margin-left: 0px; width: 150px;
     font-weight: normal;
 }
 #left-nav .ebms_left_nav_block li.last { margin-bottom: 0; padding-bottom: 0; }
