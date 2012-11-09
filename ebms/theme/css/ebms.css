@@ -11,7 +11,11 @@ body { margin: 0; }
 img { border: none; }
 strong { font-weight: bold; }
 a { color: inherit; text-decoration: none; }
-a:focus, li a:hover, a:hover, div.breadcrumb a:hover { color: #a90101; }
+a:focus, li a:hover, a:hover, div.breadcrumb a:hover,
+a:focus span, a:hover span {
+    color: #a90101; text-decoration: underline;
+}
+div.breadcrumb a:hover, li a:hover { text-decoration: none; }
 h2, h3 {
     text-transform: uppercase;
     padding-left: 11px; padding-right: 11px;
@@ -81,7 +85,7 @@ ul.no-bullets li { margin-left: 12px; margin-bottom: 12px; }
 #message-wrapper div.status { margin-bottom: 30px; }
 .button { border: solid 1px #696559; border-radius: 7px; padding: 7px; }
 .button { text-transform: uppercase; }
-.button:hover { border-color: #a90101; color: #a90101; }
+.button:hover { border-color: #a90101; color: #a90101; text-decoration: none; }
 
 /* STATUS AND ERROR MESSAGES */
 body.not-logged-in div.messages { margin-top: 30px; }
@@ -104,13 +108,14 @@ div.messages.error {
 }
 #banner img { margin: 0; float: none; }
 #banner div.section div { line-height: 40px; color: white; }
-#banner a:hover { color: white; text-decoration: underline; }
+#banner a:hover { color: white; text-decoration: none; }
 
 /* HEADER */
 #header { height: 120px; }
 #name-and-slogan { float: left; margin-left: 10px; }
 #site-name { margin-top: 28px; }
 #site-name a { font-size: 36px; }
+#site-name a:hover { text-decoration: none; }
 #site-slogan { line-height: 16px; font-size: 20px; }
 #user-profile {
     float: right;
@@ -143,6 +148,7 @@ div.messages.error {
     text-align: right;
 }
 #profile-and-logout-menu a { position: absolute; }
+#profile-and-logout a:hover { text-decoration: none; }
 #profile-link { top: 75px; }
 #logout-link { top: 105px; }
 
@@ -155,14 +161,16 @@ div.messages.error {
 #nav.manager div.section { width: 975px; padding-left: 12px; }
 #ebms-menu, .ebms-submenu { list-style-type: none; }
 #ebms-menu, #ebms-menu li { float: left; }
-#ebms-menu li, #ebms-menu a { position: relative; }
+#ebms-menu li, #ebms-menu a { position: relative; text-decoration: none }
 #ebms-menu > li > a {
     font-size: 20px; text-transform: uppercase; line-height: 19px;
     padding-top: 12px; padding-bottom: 12px;
 }
 #ebms-menu > li.active > a { color: #a90101; }
 #nav #ebms-menu a { padding-left: 35px; padding-right: 35px; }
-#nav.manager #ebms-menu a { padding-left: 10px; padding-right: 10px; }
+#nav.manager #ebms-menu a {
+    padding-left: 12px; padding-right: 12px; font-size: 17px;
+}
 #nav.librarian #ebms-menu a { padding-left: 25px; padding-right: 25px; }
 #ebms-menu li li a {
     font-size: 17px; text-transform: none; line-height: 18px;
@@ -216,9 +224,10 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
 }
 #left-nav li.active { border-bottom: 1px #a90101 solid; }
 #left-nav a {
-    text-transform: uppercase; font-size: 14px; color: #696559; opacity: 75;
+    text-transform: uppercase; font-size: 14px; color: #696559; opacity: .65;
 }
-#left-nav li.active a { color: #a90101; opacity: 100; font-weight: bold; }
+#left-nav a:hover { color: #a90101; text-decoration: none; }
+#left-nav li.active a { color: #a90101; opacity: 1; font-weight: bold; }
 
 /* BREADCRUMBS */
 #breadcrumb {
@@ -232,9 +241,10 @@ div.breadcrumb, div.breadcrumb a { font-size: 12px; color: #2d2c28; }
 table { width: 100%; }
 tbody { border: none; }
 th { text-transform: uppercase; border: none; }
-th, td { margin: 0; border-left: 1px solid #696559; padding: 5px 10px; }
+th, td { margin: 0; border-left: 1px solid #696559; padding: 10px; }
 th:first-child, td:first-child, tr.event, tr.odd { border: none; }
 td.active, th.active { background: white; }
+th a:hover, th a:hover span { text-decoration: none; }
 
 /* TABLE PAGER */
 .item-list ul.pager { margin: 20px 0; text-align: right; padding-right: 12px; }
@@ -260,6 +270,12 @@ select { border-radius: 7px; background: white; }
     background-color: white !important;
     color: #2d2c28;
 }
+input:focus, input:hover, select:focus, select:hover,
+.form-type-textfield input:focus, .form-type-textfield input:hover
+.form-type-password input:focus, .form-type-password input:hover
+{ border-color: #a90101; }
+input.form-submit:focus { color: #a90101; }
+
 /* Have to separate this, or Firefox ignores the rules for the others */
 input:-webkit-autofill {
     border: solid 1px #696559;
@@ -313,8 +329,9 @@ form .form-radio:not(#foo), form .form-checkbox:not(#foo)  {
 }
 form .form-item.form-type-radio:not(#foo) label,
 form .form-item.form-type-checkbox:not(#foo) label {
-    background: url("../images/checkbox-unchecked.png") 0 0 no-repeat;
-    float: left; line-height: 22px; padding: 0 0 0 35px;
+    background-image: url("../images/checkbox-unchecked.png");
+    background-repeat: no-repeat;
+    float: left; line-height: 22px; padding: 0 25px 0 35px;
     margin: 0 0 5px 0;
 }
 form .form-type-radio:not(#foo) input.form-radio:checked + label,
@@ -380,7 +397,7 @@ body.not-logged-in #footer { margin-top: 150px; }
     font-size: 14px;
 }
 #footer a { padding-left: 8px; padding-right: 8px; color: white; }
-#footer a:hover { color: white; text-decoration: underline; }
+#footer a:hover { color: white; text-decoration: none; }
 
 /* JQUERY UI DIALOG */
 span.ui-dialog-title { color: white; padding-left: 14px; }
@@ -496,6 +513,7 @@ body.front div.block-ebms {
     height: 450px; width: 630px; position: relative;
     margin: 20px 0 13px 0;
 }
+.ebms-featured-block a:hover { text-decoration: none; }
 .ebms-featured-block div { position: relative; }
 .ebms-featured-block h3 {
     line-height: 16px; padding: 1px 0; margin: 0;
@@ -524,6 +542,7 @@ body.front div.block-ebms {
 #featured-librarian-3 div { left: 235px; top: 325px; }
 
 /* Positioning for home page sidebar blocks */
+.ebms-block a:hover { text-decoration: none; }
 #sidebar-second .ebms-block {
     margin-left: 27px; padding-left: 0; margin-right: 0;
 }
@@ -611,7 +630,7 @@ body.front #next-meeting span { font-weight: bold; }
     margin-top: 0; margin-bottom: 0; padding-top: 0; padding-bottom: 0;
     border: none;
 }
-#reviewer-uploads td { padding: 8px 0; }
+#reviewer-uploads td { padding: 10px 0; }
 #reviewer-uploads td.c1 { width: 58%; }
 #reviewer-uploads td.c2 {
     width: 20%; border-left: 1px #696559 solid; padding-left: 20px;
@@ -893,6 +912,7 @@ table.docs-table.admin td.col-5 { text-align: center; }
 #cg-summaries-block.expanded { margin-bottom: 30px; }
 
 #nci-docs-block.expanded { margin-bottom: 30px; margin-top: 30px; }
+#summary-posted-docs-table { margin-top: 10px; }
 
 /* DOCUMENT POSTING */
 #documents-title { position: relative; margin-bottom: 15px; }
@@ -991,3 +1011,9 @@ form.confirmation a#edit-cancel:hover { border: 1px solid #a90101; }
     color: #a90101; cursor: pointer;
 }
 #group-form-buttons { padding-bottom: 20px; }
+
+/* PRINT */
+@media print {
+    #banner, #header, #nav, #breadcrumb, #message-wrapper, #tabs,
+    #reports-top, #footer { display: none; }
+}
