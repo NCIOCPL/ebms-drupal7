@@ -1,6 +1,6 @@
 <?php
 
-// $Id: citations.inc 10623 2012-09-20 12:08:10Z bkline $
+// $Id$
 
 /**
  * @file
@@ -103,9 +103,13 @@ class EbmsSearch {
             case 'Title':
                 $query->orderBy('a.article_title');
                 break;
-            case 'Author':
             case 'Journal':
+                $query->orderBy('a.jrnl_title');
+                break;
             case 'Publication Date':
+                $query->orderBy('a.published_date');
+                break;
+            case 'Author':
             case 'CMS ID#':
             default:
                 $query->orderBy('a.article_id');
@@ -217,7 +221,7 @@ class EbmsSearch {
         $pieces = array(
             '<span class="article-number">' . $position . '</span>',
             '<span class="article-citation"><span class="authors">',
-            implode(',', $authors), '</span><br /><em>',
+            implode('; ', $authors), '</span><br /><em>',
             $title, '</em><br /> ',
             $ta, ' ', $vol,
         );
@@ -227,12 +231,31 @@ class EbmsSearch {
             $pieces[] = ": $pgn";
         if ($year)
             $pieces[] = ", $year";
+        $edit_link = l(
+            'EDIT',
+            'citations/full/' . $article_id,
+            array('query' => array('search' => $this->search_id))
+        );
+        $pub_link = l(
+            'PUBLISH',
+            'citations/full/' . $article_id,
+            array('query' => array('search' => $this->search_id))
+        );
+        $ft_link = l(
+            'DOWNLOAD FULL TEXT',
+            'citations/full/' . $article_id,
+            array('query' => array('search' => $this->search_id))
+        );
         $pieces[] = "<br />PMID: $pmid &nbsp; CMS ID: $article_id<br /><br />";
-        $pieces[] = '<a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
-        $pieces[] = '<a href="/ebmsdev/stub">DOWNLOAD FULL TEXT</a> | ';
-        $pieces[] = '<a href="/ebmsdev/stub">EDIT</a> | ';
-        $pieces[] = '<a href="/ebmsdev/stub">REVIEW</a> | ';
-        $pieces[] = '<a href="/ebmsdev/stub">PUBLISH</a></span><br /><br />&nbsp;';
+        $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
+            $pmid . '" target="_blank">VIEW ABSTRACT</a> | ';
+        //$pieces[] = '<a href="/ebmsdev/stub">DOWNLOAD FULL TEXT</a> | ';
+        $pieces[] = $ft_link . ' | ';
+        $pieces[] = $edit_link . ' | ';
+        // '<a href="/ebmsdev/stub">EDIT</a> | ';
+        $pieces[] = l('REVIEW', 'citations/review') . ' | ';
+        $pieces[] = $pub_link . '</span></br /><br />&nbsp;';
+        //'<a href="/ebmsdev/">PUBLISH</a></span><br /><br />&nbsp;';
         return implode($pieces);
         #$results = db_select('ebms_article', 'a')
         #    ->fields('a', array('article_title', 'source_id',
@@ -745,7 +768,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                     array(
                         'CMS ID#',
                         'PM ID#',
-                        'Author',
+                        //'Author',
                         'Title',
                         'Journal',
                         'Publication Date',
