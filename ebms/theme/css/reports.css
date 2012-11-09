@@ -1,0 +1,67 @@
+#left-nav.report-left-nav { margin-top: 15px; margin-bottom: 50px; }
+#reports-image { margin-top: 10px; margin-bottom: 30px; }
+#reports-right-links ul { list-style-type: none; margin-bottom: 50px; }
+#reports-right-links li {
+    text-transform: uppercase; margin-top: 12px; margin-left: 30px;
+}
+#reports-right-links li:first-child { margin-left: 10px; }
+#reports-right-links li:first-child a { font-weight: bold; }
+#report-form, #reports-right {
+    float: left; width: 730px; margin-bottom: 50px;
+}
+#report-form h2 { margin-top: 25px; }
+#reports-right { margin-top: 8px; }
+#report-form .form-select.fixed-width { width: 500px; }
+#report-form .form-type-select label { text-transform: uppercase; }
+#left-nav .child { padding-left: 25px; }
+#report-form #report-buttons { width: 500px; text-align: right; clear: both; }
+#report-form #report-buttons input {
+    margin: 15px 0 12px 12px; padding: 10px 12px;
+}
+#left-nav li.parent a { font-size: 15px; }
+#left-nav li.parent.open a { opacity: 1; color: #2d2c28; }
+.date-field-line { clear: both; margin-top: 0; }
+.box-on-right { float: right; margin-right: 2px; }
+.box-on-right .form-item { margin-top: 0; margin-bottom: 0; }
+form .box-on-right .form-item.form-type-checkbox:not(#foo) label {
+    font-weight: normal;
+}
+form .box-on-right .form-item.form-type-checkbox:not(#foo) label {
+    background-position: right; background-repeat: no-repeat;
+    padding-right: 30px;
+}
+.form-type-date {
+    float: left; clear: both; margin-top: 0; margin-bottom: 10px;
+}
+.date-label {
+    float: left; margin-left: 10px; margin-top: 0;
+    text-transform: uppercase; font-weight: normal;
+}
+/* Month, day, year order */
+.form-type-date div div select { width: 75px; }
+.form-type-date div div:first-child select { width: 150px; }
+.form-type-date div div:last-child select { width: 125px; }
+/* Year, month, day order */
+.form-type-date div div select { width: 150px; }
+.form-type-date div div:first-child select { width: 125px; }
+.form-type-date div div:last-child select { width: 75px; }
+.date-with-range { width: 500px; float: left; }
+
+#report { clear: both; }
+#report caption { font-weight: bold; margin-top: 50px; margin-bottom: 20px; }
+#report .meta { margin-left: 11px; }
+/*
+#report .meta .label {
+    padding-right: 1em; float: left; width: 120px; text-align: right;
+}
+*/
+#report td { padding: 5px 10px; }
+#report tr.even { border-bottom: none; background-color: white; }
+/*
+#report.cites-pub table { width: 720px }
+*/
+#report th, #report td { text-align: right; width: 50%; }
+#report th:first-child, #report td:first-child { text-align: left; }
+#report.initial-decision th, #report.initial-decision td { width: 25%; }
+#report.initial-decision th:first-child,
+#report.initial-decision td:first-child { width: 50%; }

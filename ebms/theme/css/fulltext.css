@@ -1,0 +1,18 @@
+#fulltext-top #left-nav { margin-top: 6px; }
+#fulltext-filter { float: left; width: 730px; margin-bottom: 40px; }
+#fulltext-filter .form-select { width: 500px; }
+#fulltext-filter .form-type-select label { text-transform: uppercase; }
+#fulltext-filter #filter-buttons { width: 500px; text-align: right; }
+#fulltext-filter #filter-buttons input {
+    margin: 15px 0 12px 12px; padding: 10px 12px;
+}
+#pdq-ebms-fulltext-form .form-submit { padding: 10px 12px; }
+#fulltext-articles .article-fields .form-file { margin: 0 25px 35px 11px; }
+#fulltext-articles .article-fields .form-item { float: left; }
+#fulltext-articles .citation { clear: both; margin: 50px 0 0 11px; }
+#fulltext-articles .article-counter {
+    float: left; margin-left: -65px; width: 50px; font-size: 36px;
+    text-align: right; padding-right: 15px;
+}
+#fulltext-articles a { text-transform: uppercase; }
+#edit-submit-2 { clear: both; display: block; }
