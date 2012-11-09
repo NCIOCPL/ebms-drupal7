@@ -62,10 +62,16 @@ function validateArticleStates() {
     $localStates = array_diff($states, $currStates);
     $dbStates = array_diff($currStates, $states);
     if (!empty($localStates)) {
-        drupal_set_message($localStates, 'state types missing from database!');
+        $wrongStates = implode(',', $localStates);
+        throw new \Exception(
+            "$wrongStates = state types missing from database!");
     }
     if (!empty($dbStates)) {
-        drupal_set_message($dbStates, 'unknown state types found in database!');
+        // XXX FIX ME WHEN THE DB IS REBUILT W/O THE REMOVED STATE TYPES
+        $wrongStates = implode(',', $dbStates);
+        // throw new \Exception(
+        drupal_set_message(
+            "$wrongStates = unknown state types found in database!");
     }
 }
 
@@ -164,6 +170,7 @@ class EbmsArticle {
       $jrnl_title,          // Title of journal at last update time
       $brf_jrnl_title,      // Comes from the source
       $import_date,         // First time saved in EBMS
+      $impored_by,          // User who imported it the first time
       $update_date,         // Most recent replacement from source, or null
       $abstract,            // Abstract string
       $published_date,      // Date on journal article
@@ -276,6 +283,7 @@ class EbmsArticle {
         $this->jrnl_title     = $row->jrnl_title;
         $this->brf_jrnl_title = $row->brf_jrnl_title;
         $this->import_date    = $row->import_date;
+        $this->imported_by    = $row->imported_by;
         $this->update_date    = $row->update_date;
         $this->abstract       = $row->abstract;
         $this->published_date = $row->published_date;
@@ -299,6 +307,7 @@ class EbmsArticle {
         $this->jrnl_title     = null;
         $this->brf_jrnl_title = null;
         $this->import_date    = null;
+        $this->imported_by    = null;
         $this->update_date    = null;
         $this->abstract       = null;
         $this->published_date = null;
@@ -324,6 +333,7 @@ class EbmsArticle {
     public function getAbstract()     { return $this->abstract; }
     public function getPubDate()      { return $this->published_date; }
     public function getImportDate()   { return $this->import_date; }
+    public function getImportedBy()   { return $this->imported_by; }
     public function getUpdateDate()   { return $this->update_date; }
 
     /**
@@ -490,13 +500,12 @@ class EbmsArticle {
      * EbmsArticle interface to setArticleState(), q.v.
      *
      *
-     *  @param string $stateName - Name used in preference to ID.  The code is
+     *  @param string $textId    - Name used in preference to ID.  The code is
      *                              less efficient but caller's code is more
      *                              self-documenting.
-     *  @param int $topicId      - Sometimes optional topic identifier.  See
-     *                              ebms_article_state_type table.
-     *  @param int $boardId      - Sometimes optional board identifier. If null,
-     *                              if topic is present, board id is inferred.
+     *  @param int $topicId      - Topic identifier.
+     *  @param int $boardId      - Board identifier.  See notes on free
+     *                              standing routine.
      *  @param int $comment      - Optional user or program supplied comment.
      *  @param int $userId       - User setting the state.  If null use current.
      *  @param int $dateTime     - Date time of action.  If null, use now.
@@ -506,10 +515,10 @@ class EbmsArticle {
      *
      *  @throws Exception if invalid parameters  or lower level error.
      */
-    public function setArticleState($stateName, $topicId=null,
+    public function setArticleState($textId, $topicId=null,
         $boardId=null, $comment=null, $userId=null, $dateTime=null) {
 
-        return setArticleState($this->article_id, $stateName, $topicId,
+        return setArticleState($this->article_id, $textId, $topicId,
             $boardId=null, $comment=null, $userId=null, $dateTime=null);
     }
 
@@ -596,8 +605,8 @@ class EbmsArticle {
         // Published date and brief citation set here
         $this->loadCite($article);
 
-        // import_date, update_date, and article_id all populated in the
-        //   store() method
+        // import_date, imported_by, update_date, and article_id are
+        //  all populated in the store() method
     }
 
     /**
@@ -781,6 +790,7 @@ class EbmsArticle {
         $text .= "    jrnl_title: " . $this->jrnl_title . $term;
         $text .= "brf_jrnl_title: " . $this->brf_jrnl_title . $term;
         $text .= "   import_date: " . $this->import_date . $term;
+        $text .= "   imported_by: " . $this->imported_by . $term;
         $text .= "   update_date: " . $this->update_date . $term;
         $text .= "      abstract: " . $this->abstract . $term;
         $text .= "published_date: " . $this->published_date . $term;
@@ -861,11 +871,15 @@ class EbmsArticle {
      *                each record in the batch, though that may be better
      *                than allowing random dates.
      *
+     *  @param int $importUserId - Person importing a new record.
+     *                Maybe never used, but it supports EbmsImport
+     *                functionality.
+     *
      *  @return void.
      *
      *  @throws Exception on database error.
      */
-    public function store($storeDate=null) {
+    public function store($storeDate=null, $importUserId=null) {
 
         // TODO: Check authorization
 
@@ -903,9 +917,14 @@ class EbmsArticle {
             // If we're inserting a new record with store
             if ($newRec) {
 
+                // Identify the importing user
+                if (!$importUserId)
+                    $importUserId = Util::getUserId($importUserId);
+
                 // Insert a new record
                 $query = db_insert('ebms_article');
                 $fields['import_date'] = $storeDate;
+                $fields['imported_by'] = $importUserId;
                 $fields['update_date'] = null;
                 $query->fields($fields);
                 $article_id = $query->execute();
@@ -1143,10 +1162,11 @@ class EbmsArticle {
  *  @param string $textId    - Name used in preference to ID.  The code is
  *                              less efficient but caller's code is more
  *                              self-documenting.
- *  @param int $topicId      - Sometimes optional topic identifier.  See
- *                              ebms_article_state_type table.
- *  @param int $boardId      - Sometimes optional board identifier.  If null,
- *                              if topic is present, board id is inferred.
+ *  @param int $topicId      - Topic identifier, now always required.
+ *  @param int $boardId      - Board identifier, must match topic.
+ *                              XXX - We can dispense with this now since
+ *                                    board is now always set to the board
+ *                                    associated with the topic.
  *  @param int $comment      - Optional user or program supplied comment.
  *  @param int $userId       - User setting the state.  If null use current.
  *  @param int $dateTime     - Date time of action.  If null, use now.
@@ -1156,7 +1176,7 @@ class EbmsArticle {
  *
  *  @throws Exception if invalid parameters  or lower level error.
  */
-function setArticleState($articleId, $textId, $topicId=null,
+function setArticleState($articleId, $textId, $topicId,
         $boardId=null, $comment=null, $userId=null, $dateTime=null) {
 
     // Get everything we know about this state
@@ -1168,33 +1188,26 @@ function setArticleState($articleId, $textId, $topicId=null,
 
     // Must be one
     if (!$stateType)
-        throw new \Exception("setArticleState: Unknown state type text ID $textId");
+        throw new \Exception(
+                "setArticleState: Unknown state type text ID $textId");
+    if (!$topicId)
+        throw new \Exception(
+                "setArticleState: Missing required topic ID");
 
-    // Get defaul user from global if not passed
-    $userId = Util::getUserId($userId);
+    // Get defaul user from global if not passed (or 0)
+    if (!$userId)
+        $userId = Util::getUserId($userId);
 
     // Check topic/board consistency
-    if ($topicId) {
-        $topicBoardId = getTopicBoard($topicId);
+    $topicBoardId = getTopicBoard($topicId);
 
-        if ($boardId && $boardId != $topicBoardId)
-            throw new \Exception("setArticleState: boardId=$boardId does not" .
-                                " match topicId=$topicId");
+    if ($boardId && $boardId != $topicBoardId)
+        throw new \Exception("setArticleState: boardId=$boardId does not" .
+                            " match topicId=$topicId");
 
-        // Derive board from topic if needed
-        if (!$boardId)
-            $boardId = $topicBoardId;
-    }
-
-    // Required board or topic passed?
-    if (!$boardId && $stateType->board_required == 'Y')
-        throw new \Exception("setArticleState: required boardId not passed");
-    if (!$topicId && $stateType->topic_required == 'Y')
-        throw new \Exception("setArticleState: required topicId not passed");
+    // Derive board from topic if needed
     if (!$boardId)
-        $boardId = null;
-    if (!$topicId)
-        $topicId = null;
+        $boardId = $topicBoardId;
 
     // Get datetime from database if needed
     if (is_null($dateTime))
@@ -1318,7 +1331,8 @@ function addArticleStateComment($articleStateId, $comment,
                                 $userId=null, $commentDt=null) {
 
     // Resolve defaulted args
-    $userId = Util::getUserId($userId);
+    if (!$userId)
+        $userId = Util::getUserId($userId);
     if (is_null($commentDt))
         $commentDt = db_query('SELECT NOW()')->fetchField();
 
@@ -1867,7 +1881,7 @@ function addArticleTag($tagIdStr, $articleId, $topicId=null,
     // Get default user from global if not passed
     if (!$userId)
         $userId = Util::getUserId($userId);
-    $tagDt  = db_query('SELECT NOW()')->fetchField();
+    $tagDt = db_query('SELECT NOW()')->fetchField();
 
     // Create the tag row in the database
     $qry = db_insert('ebms_article_tag');
@@ -2145,11 +2159,6 @@ function getTagTypeNames($articleOnly = true) {
     // query for the tag text IDs and tag names
     $query = db_select('ebms_article_tag_type', 'a')
         ->condition('a.active_status', 'A');
-
-    // if only querying for article-compatible tags, add a condition
-    if ($articleOnly)
-        $query->condition('a.topic_required', 'N');
-
     $result = $query->fields('a', array('text_id', 'tag_name'))
         ->execute();
 
@@ -2482,40 +2491,40 @@ function getTopicBoard ($topicId) {
 /**
  * Retrieves the related packets for a given article id, optionally limiting
  * the results by a topic id.
- * 
- * @param int $article_id   the article id to match.   
- * 
+ *
+ * @param int $article_id   the article id to match.
+ *
  * @param int $topic_id     the optional topic id.
- * 
- * @param bool $find_all    if true, returns all packets, regardless of 
+ *
+ * @param bool $find_all    if true, returns all packets, regardless of
  *                          inactivity
- * 
+ *
  * @param bool $active      limits the results to active or inactive packets
- * 
- * @param bool $include_dropped returns packets that have been dropped from the 
+ *
+ * @param bool $include_dropped returns packets that have been dropped from the
  *                              article
- * 
- * @return mixed $packet_ids    Array of packet ids matching the article and 
+ *
+ * @return mixed $packet_ids    Array of packet ids matching the article and
  *                               topic, and limited to active or inactive.
  */
-function getArticlePacketIds($article_id, $topic_id = NULL, $find_all = false, 
+function getArticlePacketIds($article_id, $topic_id = NULL, $find_all = false,
         $active = true, $include_dropped = false) {
     $query = db_select('ebms_packet_article', 'a');
     $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
-    
+
     if($topic_id != NULL){
         $query->condition('p.topic_id', $topic_id);
     }
-    
+
     if(!$find_all){
         $flag = $active ? 'A' : 'I';
         $query->condition('p.active_status', $flag);
     }
-    
+
     if(!$include_dropped){
         $query->condition('a.drop_flag', 0);
     }
-    
+
     $packet_ids = $query
         ->condition('a.article_id', $article_id)
         ->fields('a', array('packet_id'))
@@ -2528,39 +2537,39 @@ function getArticlePacketIds($article_id, $topic_id = NULL, $find_all = false,
 /**
  * Collects a variety of information about a given packet and organizes it into
  * a labeled array.
- * 
+ *
  * @param int $packet_id        The id of the packet of interest.
- * 
+ *
  * @return mixed $packet_info   An associative array of packet information.
  */
 function getPacketInfo($packet_id) {
     $info = db_select('ebms_packet', 'p')->condition('p.packet_id', $packet_id)
         ->fields('p')->execute()->fetch();
-    
+
     // also retrieve the reviewer ids
     $reviewers = db_select('ebms_packet_reviewer', 'r')
         ->condition('r.packet_id', $packet_id)
         ->fields('r', array('reviewer_id'))
         ->execute()
         ->fetchCol();
-    
+
     $info->reviewers = $reviewers;
-    
+
     return $info;
 }
 
 /**
  * Retrieves each board member's response for a topic of a particular article.
- * 
+ *
  * @param int $article_id   the id of the article.
- * 
+ *
  * @param int $topic_id     the topic id used to filter the reponses.
- * 
+ *
  * @param bool $fetch_all   returns all responses, irrespective of active state.
- * 
- * @param bool $active      returns only active or inactive reponses, in 
+ *
+ * @param bool $active      returns only active or inactive reponses, in
  *                          conjunction with $fetch_all == false
- * 
+ *
  * @return mixed $reponses  an array of DB records containing pertinent info.
  */
 function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $active = true) {
@@ -2586,11 +2595,11 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
 
 /**
  * Retrieves any board decisions that match the given article and topic ids
- * 
+ *
  * @param int $article_id   The desired article's id.
- * 
+ *
  * @param int $topic_id     The desired topic of the decision.
- * 
+ *
  * @return mixed $decisionTree  An array of zero or more records from the database,
  *                              organized by article_status_id, with comments
  *                              attached if present.
@@ -2607,15 +2616,15 @@ function getBoardDecisions($article_id, $topic_id) {
             ->condition('s.topic_id', $topic_id)
             ->execute()
             ->fetchAll();
-    
+
     $decisionTree = array();
-    
+
     foreach($decisions as $decision){
         $decisionTree[$decision->article_state_id][] = $decision;
     }
-    
+
     $history = getStatusHistory($article_id, null, $topic_id);
-    
+
     // grab the available comments for each article state
     foreach($decisionTree as $articleStateId => $decision){
         if(isset($history[$articleStateId]))
@@ -2623,15 +2632,15 @@ function getBoardDecisions($article_id, $topic_id) {
             $decisionTree[$articleStateId]['comments'] = $history[$articleStateId]->comments;
         }
     }
-    
+
     return $decisionTree;
 }
 
 /**
  * Retrieves any board decisions that match the given article state.
- * 
+ *
  * @param int $article_state_id   The desired article state's id.
- * 
+ *
  * @return mixed $decisions     An array of zero or more records from the database,
  *                              representing decisions afor the article state.
  */
@@ -2639,7 +2648,7 @@ function getBoardDecisionsByArticleState($article_state_id) {
     $query = db_select('ebms_article_board_decision', 'd');
     $query->join('ebms_article_board_decision_value', 'v', 'd.decision_value_id = v.value_id');
     $query->leftJoin('ebms_cycle', 'c', 'd.meeting_date = c.cycle_id');
-    
+
     return $query
             ->fields('d', array('discussed'))
             ->fields('v', array('value_name'))
@@ -2651,14 +2660,14 @@ function getBoardDecisionsByArticleState($article_state_id) {
 
 /**
  * Retrieves all board member uids associated with a board decision.
- * 
+ *
  * @param int $article_state_id   The decision's article state id.
- * 
+ *
  * @return mixed $memberIds     An array of related member uids
  */
 function getBoardDecisionMembers($article_state_id) {
     $query = db_select('ebms_article_board_decision_member', 'm');
-       
+
     return $query
             ->fields('m', array('uid'))
             ->condition('m.article_state_id', $article_state_id)
@@ -2669,7 +2678,7 @@ function getBoardDecisionMembers($article_state_id) {
 
 /**
  * Retrieves all matching review cycles for the given article and topic ids.
- * 
+ *
  * @param int $article_id  The article id to match.
  * @param int $topic_id    The topic id to match
  * @return mixed $result   An array of rows matching the given filters.
@@ -2679,24 +2688,24 @@ function getArticleReviewCycle($article_id, $topic_id = null){
     $state_query = db_select('ebms_article_state_type', 't')
         ->condition('t.state_text_id', EbmsArticleStates::ReadyInitReview)
         ->fields('t', array('state_id'));
-    
+
     $article_query = db_select('ebms_article_state', 'a')
         ->condition('a.active_status', 'A')
         ->condition('a.article_id', $article_id)
         ->fields('a');
-    
+
     if ($topic_id != null)
         $article_query->condition ('a.topic_id', $topic_id);
-    
+
     $ready_query = db_select($article_query, 's');
     $ready_query->join($state_query, 't', 's.state_id = t.state_id');
     $ready_query->fields('s');
-    
+
     $cycle_query = db_select($ready_query, 'r');
-    $cycle_query->join('ebms_cycle', 'c', 
+    $cycle_query->join('ebms_cycle', 'c',
         'c.start_date IN (SELECT MIN(c1.start_date) FROM ebms_cycle c1 WHERE c1.start_date > r.status_dt)');
     $cycle_query->addExpression('DISTINCT c.cycle_name', 'cycle_name');
-    
+
     return $cycle_query
         ->execute()
         ->fetchAll();
@@ -2704,7 +2713,7 @@ function getArticleReviewCycle($article_id, $topic_id = null){
 
 /**
  * Retrieves all possible values of review dispositions.
- * 
+ *
  * @return mixed An array containing all rows of the review disposition table.
  */
 function getReviewDispositions()
@@ -2717,9 +2726,9 @@ function getReviewDispositions()
 
 /**
  * Retrieves a state type, identified by its text ID.
- * 
+ *
  * @param string $state_text_id The text id of the intended state.
- * 
+ *
  * @return mixed $sequence The state's matching details.
  */
 function getStateTypebyTextId($state_text_id) {
@@ -2732,7 +2741,7 @@ function getStateTypebyTextId($state_text_id) {
 
 /**
  * Retrieves all possible values of editorial board decisions.
- * 
+ *
  * @return mixed An array containing all rows of the board decision value table.
  */
 function getBoardDecisionValues() {
@@ -2744,27 +2753,27 @@ function getBoardDecisionValues() {
 
 /**
  * Retrieves relevant information for an article's import.
- * 
+ *
  * @param int $articleId The id of the article in question.
- * 
- * @return mixed $return An associative array, branching by board_id, topic_id 
- *      and active_state, with the leaves being arrays of database rows 
+ *
+ * @return mixed $return An associative array, branching by board_id, topic_id
+ *      and active_state, with the leaves being arrays of database rows
  *      containing all available information related to the article's import.
  */
 function getArticleImportData($articleId){
     $query = db_select('ebms_import_action', 'a');
-    $query->join('ebms_import_batch', 'b', 
+    $query->join('ebms_import_batch', 'b',
         'a.import_batch_id = b.import_batch_id');
-        $query->join('ebms_import_disposition', 'd', 
+        $query->join('ebms_import_disposition', 'd',
             'a.disposition_id = d.disposition_id');
-        
+
     $result = $query
         ->condition('a.article_id', $articleId)
         ->fields('a')
         ->fields('d', array(
-            'text_id', 
-            'disposition_name', 
-            'description', 
+            'text_id',
+            'disposition_name',
+            'description',
             'active_status'))
         ->fields('b', array(
             'topic_id',
@@ -2776,7 +2785,7 @@ function getArticleImportData($articleId){
             'comment',))
         ->execute()
         ->fetchAll();
-    
+
     $data = array();
     foreach($result as $record){
         $topicId = $record->topic_id;
@@ -2787,26 +2796,26 @@ function getArticleImportData($articleId){
         }
         $data[$boardId][$topicId][$record->active_status][$record->import_batch_id][] = $record;
     }
-    
+
     return $data;
 }
 
 /**
  * Retrieves all user's names that are associated with importing a given article.
- * 
+ *
  * @param int $articleId The id of the article in question.
- * 
+ *
  * @return mixed $userNames an array of user names found to have participated
  *      in importing this article.
  */
 function getArticleImporters($articleId){
     $query = db_select('ebms_import_action', 'a');
-    $query->join('ebms_import_batch', 'b', 
+    $query->join('ebms_import_batch', 'b',
         'a.import_batch_id = b.import_batch_id');
     $query->join('users', 'u', 'b.user_id = u.uid');
-    
+
     $query->addExpression('DISTINCT u.name', 'user_name');
-    
+
     return $query
         ->condition('a.article_id', $articleId)
         ->execute()
@@ -2815,9 +2824,9 @@ function getArticleImporters($articleId){
 
 /**
  * Retrieves the numeric sequence number for a particular article state type.
- * 
+ *
  * @param string $textId The state type's text id.
- * 
+ *
  * @return int $sequence The state type's related sequence number.
  */
 function getStateTypeSequence($textId){
@@ -2831,7 +2840,7 @@ function getStateTypeSequence($textId){
 /**
  * Retrieves the article history, limited to states matching the given topic and
  * state type text id.
- * 
+ *
  * @param type $articleId   The article to match.
  * @param type $topicId     The topic to match.
  * @param type $stateTextId The state type's text id to match.
@@ -2840,14 +2849,14 @@ function getStateTypeSequence($textId){
 function getStatusHistoryByType($articleId, $topicId, $stateTextId)
 {
     $statii = getStatusHistory($articleId, null, $topicId);
-    
+
     $filtered = array();
     foreach($statii as $articleStateId => $status)
     {
         if($status->type_text_id == $stateTextId)
             $filtered[$articleStateId] = $status;
     }
-    
+
     return $filtered;
 }
 
