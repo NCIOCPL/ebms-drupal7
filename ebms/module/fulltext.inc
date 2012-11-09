@@ -93,6 +93,8 @@ class EbmsFullText {
         if ($year)
             $pieces[] = ", $year";
         $pieces[] = '.<br />PMID: ' . $pmid;
+        $pieces[] = ' &nbsp; EBMS ID: ' . l($article_id,
+                    'citations/full/' . $article_id);
 
         // XXX Add real link when Dan's finished his current story.
         $pieces[] = '<br /><br />' . l('View Abstract', 'stub');
@@ -251,7 +253,8 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
     $query = db_select('ebms_article', 'a');
     $query->fields('a', array('article_id'));
     $query->join('ebms_article_state', 's', 'a.article_id = s.article_id');
-    $query->leftJoin('ebms_ft_unavailable', 'u', 'u.article_id = a.article_id');
+    $query->leftJoin('ebms_ft_unavailable', 'u',
+        'u.article_id = a.article_id');
     $query->condition('s.current', 'Y');
     $query->isNull('a.full_text_id');
     $query->isNull('u.article_id');
