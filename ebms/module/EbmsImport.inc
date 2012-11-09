@@ -910,7 +910,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 }
                 if ($newTopic) {
                     if ($mode == 'live') {
-                        $rec->setArticleState('Ready for initial review',
+                        $rec->setArticleState('ReadyInitReview',
                             $topicId, $boardId, $comment, $userId,
                             $pi->constantDt);
                     }
@@ -931,7 +931,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 // If not marking it for not list, mark it ready for review
                 if (!$useNotList || !array_key_exists($nlmJrnlId, $notList)) {
                     if ($mode == 'live') {
-                        $rec->setArticleState('Ready for initial review',
+                        $rec->setArticleState('ReadyInitReview',
                                $topicId, $boardId, $comment, $userId,
                                $pi->constantDt);
                     }
@@ -947,7 +947,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 //   a human's decision.
                 if (is_null($oldTopicState)) {
                     if ($mode == 'live') {
-                        $rec->setArticleState('Rejected by NOT list',
+                        $rec->setArticleState('RejectJournalTitle',
                                $topicId, $boardId, $comment, $userId,
                                $pi->constantDt);
                     }
