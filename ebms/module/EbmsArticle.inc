@@ -170,7 +170,7 @@ class EbmsArticle {
       $jrnl_title,          // Title of journal at last update time
       $brf_jrnl_title,      // Comes from the source
       $import_date,         // First time saved in EBMS
-      $impored_by,          // User who imported it the first time
+      $imported_by,          // User who imported it the first time
       $update_date,         // Most recent replacement from source, or null
       $abstract,            // Abstract string
       $published_date,      // Date on journal article
