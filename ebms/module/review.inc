@@ -52,7 +52,6 @@ class EbmsReview {
         $this->expanded     = Ebms\Util::get_request_value('expanded');
         $this->sort_col     = Ebms\Util::get_request_value('sort-col', 'f');
         $this->sort_dir     = Ebms\Util::get_request_value('sort-dir', 'a');
-        #$this->action       = Ebms\Util::get_request_value('action', $action);
         $this->action = $action;
         $this->reviewed     = Ebms\Util::get_request_value('reviewed');
         $this->pager        = Ebms\Util::get_request_value('pager');
@@ -97,6 +96,11 @@ class EbmsReview {
         return $this->manager_literature_landing_page();
     }
 
+    /*
+     * Marks the current packet as inactive so it won't show up
+     * in users' queues, then redirects to the page which shows
+     * the board manager's packets.
+     */
     private function delete_packet() {
         $title = EbmsPacket::fetch_title($this->packet_id);
         $title = str_replace(' [Legacy]', '', $title);
@@ -216,7 +220,7 @@ class EbmsReview {
         );
         $query = db_select('ebms_packet', 'p');
         if ($this->pager != 'off')
-            $query = $query->extend('PagerDefault')->limit(6);
+            $query = $query->extend('PagerDefault')->limit(10);
         $query = $query->extend('TableSort');
         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
         $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
@@ -242,13 +246,15 @@ class EbmsReview {
         foreach ($packets as $p) {
             #$options = array('query' => array('packet' => $p->packet_id));
             #$options['query']['action'] = 'edit';
-            $edit_link = l('EDIT', "$main_url/edit/{$p->packet_id}", $opts);
+            $edit_url = "$main_url/edit/{$p->packet_id}";
+            $edit_link = l('EDIT', $edit_url, $opts);
             $del_parm = url("$main_url/delete/{$p->packet_id}", $opts);
             $del_url = "$del_func('$del_parm');";
             $del_link = '<a href="' . $del_url . '">DELETE</a>';
             $title = str_replace(' [Legacy]', '', $p->packet_title);
+            $title_link = l(htmlspecialchars($title), $edit_url, $opts);
             $data = array(
-                htmlspecialchars($title),
+                $title_link,
                 htmlspecialchars($p->board_name),
                 htmlspecialchars($p->name),
                 "$edit_link $divider $del_link",
@@ -313,7 +319,7 @@ class EbmsReview {
     public static function build_left_nav($active=null) {
         $links = array(
             array('Reviewed Packets', 'review/reviews'),
-            array('View / Edit Packets', 'review/add'),
+            array('View / Edit Packets', 'review/packets'),
         );
         $items = array();
         foreach ($links as $link_info) {
@@ -335,6 +341,212 @@ class EbmsReview {
         );
     }
 
+    /**
+     * Show the reviews for this board manager's packets.  Switches to
+     * the appropriate page type, if the user has drilled down to a
+     * specific packet or article.
+     */
+    private function manager_reviews() {
+        $opts = array('query' => drupal_get_query_parameters());
+        if ($this->article_id)
+            return $this->show_reviewed_article($opts);
+        if ($this->packet_id)
+            return $this->show_reviewed_packet($opts);
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                'Reviewed Packets',
+            )
+        );
+        $left_nav = $this->build_left_nav('Reviewed Packets');
+        $left_nav['board filter box'] = $this->board_filter_box($opts);
+        return array(
+            'left-nav' => $left_nav,
+            'packets' => $this->reviewed_packet_list($opts),
+        );
+    }
+
+    /*
+     * Creates a set of checkboxes for identifying boards for which the
+     * reviews should be displayed, rather than using the list of boards
+     * of which the user is a member.
+     */
+    private function board_filter_box($opts) {
+        $checked_boards = array();
+        if (isset($opts['query']['boards']))
+            $checked_boards = explode(',', $opts['query']['boards']);
+        $items = array();
+        $boards = Ebms\Util::boards();
+        $url = EbmsReview::$url . '/reviews/' . $this->packet_id;
+        $type = 'type="checkbox"';
+        foreach ($boards as $id => $name) {
+            if (in_array($id, $checked_boards)) {
+                $checked = ' checked="checked"';
+                $new_boards = array_diff($checked_boards, (array)$id);
+            }
+            else {
+                $checked = '';
+                $new_boards = array_merge($checked_boards, (array)$id);
+            }
+            if (count($new_boards) < 1)
+                unset($opts['query']['boards']);
+            else
+                $opts['query']['boards'] = implode(',', $new_boards);
+            $href = url($url, $opts);
+            $onclick = 'onclick=\'location.href="' . $href . '"\'';
+            $cb_id = "edit-boards-$id";
+            $checkbox = "<input id='$cb_id' $type $onclick$checked />";
+            $label = "<label class='board-name' for='$cb_id'>$name</label>";
+            $item = "<div>$checkbox $label</div>";
+            $items[] = $item;
+        }
+        $url = Ebms\IMAGES_DIR . '/left-nav-box-bottom.png';
+        $img = "<img class='ebms-left-nav-block-bottom' src='$url' alt='' />";
+        return array(
+            '#theme' => 'item_list',
+            '#title' => 'Filter by Board',
+            '#items' => $items,
+            '#attributes' => array('class' => 'ebms_left_nav_block'),
+            '#prefix' => '<div class="more-actions">',
+            '#suffix' => '</div>',
+        );
+    }
+
+    /*
+     * Builds the Drupal render array for the list of all the packets
+     * connected with the user's board(s).  If the user has explicitly
+     * identified boards for which she wants to see review, show
+     * packets for those boards instead.
+     */
+    private function reviewed_packet_list($opts) {
+
+        // See if the user has identified one or more boards.
+        $boards = array();
+        if (isset($opts['query']['boards']))
+            $boards = explode(',', $opts['query']['boards']);
+
+        // If not, find the boards of she's a member.
+        if (count($boards) < 1) {
+            $results = db_select('ebms_board_member', 'm')
+                ->fields('m', array('board_id'))
+                ->condition('m.user_id', $this->user->uid)
+                ->execute();
+            foreach ($results as $result)
+                $boards[] = $result->board_id;
+        }
+
+        // If we don't have any boards, then there's nothing more to do.
+        if (count($boards) < 1) {
+            drupal_set_message('You are not linked to any boards');
+            return array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'main-right-panel'),
+                'page title' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<h2>Reviewed Packets</h2>',
+                ),
+            );
+        }
+
+        // Set up the table headers, specifying sorting options.
+        $headers = array(
+            array(
+                'data' => 'Packet Name',
+                'field' => 'p.packet_title',
+            ),
+            array(
+                'data' => 'Reviewer(s)',
+            ),
+            array(
+                'data' => 'Updated',
+                'field' => 'updated',
+            ),
+        );
+
+        // Build the query to show the packets with reviews.
+        $query = db_select('ebms_packet', 'p');
+        if ($this->pager != 'off')
+            $query = $query->extend('PagerDefault')->limit(10);
+        $query = $query->extend('TableSort');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
+        $query->join('ebms_article_review', 'r', 'r.packet_id = p.packet_id');
+        $query->fields('p', array('packet_id', 'packet_title'));
+        $query->addExpression('MAX(r.when_posted)', 'updated');
+        $query->condition('b.board_id', $boards, 'IN');
+        $query->condition('p.active_status', 'A');
+        $query->orderByHeader($headers);
+        $query->groupBy('p.packet_id');
+        $packets = $query->execute();
+
+        // Assemble the rows for the table.
+        $rows = array();
+        $opts = array('query' => drupal_get_query_parameters());
+        foreach ($packets as $p) {
+            $title = str_replace(' [Legacy]', '', $p->packet_title);
+            $query = db_select('users', 'u');
+            $query->fields('u', array('name'));
+            $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+            $query->condition('r.packet_id', $p->packet_id);
+            $query->orderBy('u.name');
+            $results = $query->execute();
+            $reviewers = array();
+            foreach ($results as $result)
+                $reviewers[] = htmlspecialchars($result->name);
+            $url = EbmsReview::$url . '/reviews/' . $p->packet_id;
+            $link = l($title, $url); #, $opts);
+            $data = array(
+                $link,
+                implode('<br />', $reviewers),
+                date("m/d/Y", strtotime($p->updated)),
+            );
+            $rows[] = array(
+                'data' => $data,
+                'no_striping' => true,
+            );
+        }
+
+        // Assemble the render array for the table and return it.
+        $title = 'Literature Surveillance Packets';
+        $id = 'manager-packets-page-title';
+        if ($this->pager != 'off')
+            $pager = array('#theme' => 'pager');
+        else {
+            unset($opts['query']['pager']);
+            $link = l('VIEW PAGES', EbmsReview::$url . '/reviews', $opts);
+            $pager = array(
+                '#type' => 'markup',
+                '#markup' => "<div id='pager-view-pages'>$link</div>",
+            );
+        }
+        $table = array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'main-right-panel'),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>Reviewed Packets</h2>',
+            ),
+            'report button' => array(
+                '#type' => 'markup',
+                '#markup' => '<a class="button" href="stub">Create Report</a>',
+            ),
+            'top pager' => $pager,
+            'table' => array(
+                '#attributes' => array('id' => 'manager-packets-table'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+            'bottom pager' => $pager,
+        );
+        return $table;
+    }
+
+    /*
+     * Assembles the full citation display for a single article.
+     * XXX to be rewritten when Alan's API for getting the citation
+     * elements is complete.
+     */
     private function get_reviewed_citation($article_id, $add_link=true) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
@@ -380,6 +592,9 @@ class EbmsReview {
         $pieces[] = ".<br />PMID: $pmid";
         return implode($pieces);
     }
+
+    /*
+     */
     private function show_reviewed_packet($opts) {
         if (isset($opts['query']['archive'])) {
             $article_id = $opts['query']['archive'];
@@ -449,7 +664,7 @@ class EbmsReview {
             ),
             array(
                 'data' => 'Reviewer&nbsp; &nbsp; | &nbsp; &nbsp;Disposition',
-                'class' => 'col-2',
+                'class' => array('col-2'),
             ),
             array(
                 'data' => 'Updated',
@@ -694,190 +909,6 @@ class EbmsReview {
                     ),
                 ),*/
             ),
-        );
-    }
-
-    /**
-     * Show the reviews for this board manager's packets.
-     */
-    private function manager_reviews() {
-        $opts = array('query' => drupal_get_query_parameters());
-        if ($this->article_id)
-            return $this->show_reviewed_article($opts);
-        if ($this->packet_id)
-            return $this->show_reviewed_packet($opts);
-        drupal_set_breadcrumb(
-            array(
-                l('Literature', EbmsReview::$url),
-                'Reviewed Packets',
-            )
-        );
-        $left_nav = $this->build_left_nav('Reviewed Packets');
-        $left_nav['board filter box'] = $this->board_filter_box($opts);
-        return array(
-            'left-nav' => $left_nav,
-            'packets' => $this->reviewed_packet_list($opts),
-        );
-        return '<p>Implementation of this page will be done as part of ' .
-            'Iteration II, as part of the Reports stories.</p>';
-    }
-    private function reviewed_packet_list($opts) {
-        $boards = array();
-        if (isset($opts['query']['boards']))
-            $boards = explode(',', $opts['query']['boards']);
-        if (count($boards) < 1) {
-            $results = db_select('ebms_board_member', 'm')
-                ->fields('m', array('board_id'))
-                ->condition('m.user_id', $this->user->uid)
-                ->execute();
-            foreach ($results as $result)
-                $boards[] = $result->board_id;
-        }
-        if (count($boards) < 1) {
-            drupal_set_message('You are not linked to any boards');
-            return array(
-                '#type' => 'container',
-                '#attributes' => array('id' => 'main-right-panel'),
-                'page title' => array(
-                    '#type' => 'markup',
-                    '#markup' => '<h2>Reviewed Packets</h2>',
-                ),
-            );
-        }
-        $headers = array(
-            array(
-                'data' => 'Packet Name',
-                'field' => 'p.packet_title',
-            ),
-            array(
-                'data' => 'Reviewer(s)',
-            ),
-            array(
-                'data' => 'Updated',
-                'field' => 'updated',
-            ),
-        );
-        $query = db_select('ebms_packet', 'p');
-        if ($this->pager != 'off')
-            $query = $query->extend('PagerDefault')->limit(10);
-        $query = $query->extend('TableSort');
-        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
-        $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
-        $query->join('ebms_article_review', 'r', 'r.packet_id = p.packet_id');
-        $query->fields('p', array('packet_id', 'packet_title'));
-        $query->addExpression('MAX(r.when_posted)', 'updated');
-        $query->condition('b.board_id', $boards, 'IN');
-        $query->condition('p.active_status', 'A');
-        $query->orderByHeader($headers);
-        $query->groupBy('p.packet_id');
-        $packets = $query->execute();
-        $rows = array();
-        $opts = array('query' => drupal_get_query_parameters());
-        foreach ($packets as $p) {
-            #$options = array('query' => array('packet' => $p->packet_id));
-            #$options['query']['action'] = 'edit';
-            $title = str_replace(' [Legacy]', '', $p->packet_title);
-            $query = db_select('users', 'u');
-            $query->fields('u', array('name'));
-            $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
-            $query->condition('r.packet_id', $p->packet_id);
-            $query->orderBy('u.name');
-            $results = $query->execute();
-            $reviewers = array();
-            foreach ($results as $result)
-                $reviewers[] = htmlspecialchars($result->name);
-            $url = EbmsReview::$url . '/reviews/' . $p->packet_id;
-            $link = l($title, $url); #, $opts);
-            $data = array(
-                $link,
-                implode('<br />', $reviewers),
-                date("m/d/Y", strtotime($p->updated)),
-            );
-            $rows[] = array(
-                'data' => $data,
-                'no_striping' => true,
-            );
-        }
-        $title = 'Literature Surveillance Packets';
-        $id = 'manager-packets-page-title';
-        if ($this->pager != 'off')
-            $pager = array('#theme' => 'pager');
-        else {
-            unset($opts['query']['pager']);
-            $link = l('VIEW PAGES', EbmsReview::$url . '/reviews', $opts);
-            $pager = array(
-                '#type' => 'markup',
-                '#markup' => "<div id='pager-view-pages'>$link</div>",
-            );
-        }
-        $table = array(
-            '#type' => 'container',
-            '#attributes' => array('id' => 'main-right-panel'),
-            'title' => array(
-                '#type' => 'markup',
-                '#markup' => '<h2>Reviewed Packets</h2>',
-            ),
-            'report button' => array(
-                '#type' => 'markup',
-                '#markup' => '<a class="button" href="stub">Create Report</a>',
-            ),
-            'top pager' => $pager,
-            'table' => array(
-                '#attributes' => array('id' => 'manager-packets-table'),
-                '#theme' => 'table',
-                '#rows' => $rows,
-                '#header' => $headers,
-            ),
-            'bottom pager' => $pager,
-        );
-        return $table;
-
-        return array(
-            'page title' => array(
-                '#type' => 'markup',
-                '#markup' => '<h2>Reviewed Packets</h2>',
-            ),
-        );
-    }
-    private function board_filter_box($opts) {
-        $checked_boards = array();
-        if (isset($opts['query']['boards']))
-            $checked_boards = explode(',', $opts['query']['boards']);
-        $items = array();
-        $boards = Ebms\Util::boards();
-        $url = EbmsReview::$url . '/reviews/' . $this->packet_id;
-        $type = 'type="checkbox"';
-        foreach ($boards as $id => $name) {
-            if (in_array($id, $checked_boards)) {
-                $checked = ' checked="checked"';
-                $new_boards = array_diff($checked_boards, (array)$id);
-            }
-            else {
-                $checked = '';
-                $new_boards = array_merge($checked_boards, (array)$id);
-            }
-            if (count($new_boards) < 1)
-                unset($opts['query']['boards']);
-            else
-                $opts['query']['boards'] = implode(',', $new_boards);
-            $href = url($url, $opts);
-            $onclick = 'onclick=\'location.href="' . $href . '"\'';
-            $cb_id = "edit-boards-$id";
-            $checkbox = "<input id='$cb_id' $type $onclick$checked />";
-            $label = "<label class='board-name' for='$cb_id'>$name</label>";
-            $item = "<div>$checkbox $label</div>";
-            #$items[] = "$checkbox <span class='option board-name'>$name</span>";
-            $items[] = $item;
-        }
-        $url = Ebms\IMAGES_DIR . '/left-nav-box-bottom.png';
-        $img = "<img class='ebms-left-nav-block-bottom' src='$url' alt='' />";
-        return array(
-            '#theme' => 'item_list',
-            '#title' => 'Filter by Board',
-            '#items' => $items,
-            '#attributes' => array('class' => 'ebms_left_nav_block'),
-            '#prefix' => '<div class="more-actions">',
-            '#suffix' => '</div>',
         );
     }
 
