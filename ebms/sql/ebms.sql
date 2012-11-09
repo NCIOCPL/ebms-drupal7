@@ -997,6 +997,11 @@ CREATE TABLE ebms_article_tag_type (
         VALUES ('i_specialsearch', 'Import special search',
         'The article was imported as part of a special search import '
         'process.  A specific topic must be identified.', 'Y');
+    INSERT ebms_article_tag_type 
+        (text_id, tag_name, description, topic_required)
+        VALUES ('conversion_note', 'Legacy conversion note',
+        'Information about the article recorded during conversion '
+        'from the legacy CiteMS', 'N');
 
 /*
  * Descriptive tags that have been attached to an article.
