@@ -693,7 +693,7 @@ function pdq_ebms_profile_picture_form($form, &$form_state, $user) {
         ),
         'label' => array(
             '#type' => 'markup',
-            '#markup' => '<div id="picture-form-name">Picture</div>',
+            '#markup' => '<div id="picture-form-name">Profile Picture</div>',
         ),
         'original' => EbmsProfile::get_picture($user),
         'fields' => array(
