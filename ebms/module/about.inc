@@ -24,13 +24,15 @@ function pdq_ebms_about() {
         ),
         'prologue' => array(
             '#type' => 'markup',
-            '#markup' => '<p id="lead">Curabitur blandit tempus porttitor.  ' .
-            'Vivamus sagittis lacus vel augue laoreet rutrum faucibus ' .
-            'dolor auctor.  Donec id elit non mi porta gravida at eget ' .
-            'metus. Cum sociis natoque penatibus et magnis dis parturient ' .
-            'montes, nascetur ridiculus mus.  Morbi leo risus, porta ac ' .
-            'consecietur ac, vestibulum at eros.  Aenean lacinia ' .
-            'bibendum null sed consectetur.</p>',
+            '#markup' => '<p id="lead">The PDQ cancer information summaries ' .
+            'are produced, maintained, and updated regularly by six ' .
+            'editorial boards comprised of oncology specialists in fields ' .
+            'including medical, surgical, and radiation oncology; ' .
+            'epidemiology; psychology; genetics; and complementary and ' .
+            'alternative medicine. Each Board reviews published research ' .
+            'findings on a monthly basis and meets several times a year ' .
+            'to review and discuss updates to their summaries. The Boards ' .
+            'are not formal advisory or policy-making boards for the NCI.</p>',
         ),
         'links' => array(),
         'boards' => array(),
@@ -64,7 +66,8 @@ function pdq_ebms_about() {
         $desc = htmlspecialchars($desc);
         $page['links'][] = array(
             '#type' => 'markup',
-            '#markup' => '<h3>' . $link . '</h3><p>' . $desc . '</p>',
+            '#markup' => '<h3>' . $link . '</h3><p class="link-desc">' .
+            $desc . '</p>',
         );
     }
     $boards = array(
@@ -150,8 +153,10 @@ function pdq_ebms_about() {
                   ' Editorial Board</h4>');
         $markup[] = '<p class="board-desc">' . $board[1] . '</p>';
         $markup[] = '<p class="board-person">Editor-in-Chief: ' .
-            '<a href="mailto:' . $board[4][1] . '">' .
-            strtoupper($board[4][0] . '</a></p>');
+            //'<a href="mailto:' . $board[4][1] . '">' .
+            strtoupper($board[4][0] .
+            //'</a>' .
+            '</p>');
         $markup[] = '<p class="board-person">Board Manager: ' .
             '<a href="mailto:' . $board[5][1] . '">' .
             strtoupper($board[5][0] . '</a></p>');

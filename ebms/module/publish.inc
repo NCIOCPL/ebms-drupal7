@@ -1,6 +1,6 @@
 <?php
 
-// $Id: about.inc 10678 2012-10-16 12:24:17Z bkline $
+// $Id$
 
 /**
  * @file
