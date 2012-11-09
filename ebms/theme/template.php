@@ -152,6 +152,7 @@ function ebms_password($variables) {
  * tucked in as a subtitle right under the field's title.
  */
 function ebmstheme_form_element($variables) {
+    // pdq_ebms_debug('THEME FORM ELEMENT', $variables);
     $element = &$variables['element'];
 
     // Add element id for type 'item'.
@@ -219,3 +220,34 @@ function ebmstheme_form_element($variables) {
     $output[] = "</div>\n";
     return implode($output);
 }
+// function ebmstheme_date($variables) {
+//     $variables['element']['month']['#weight'] = -0.001;
+//     $variables['element']['day']['#weight'] = 0;
+//     $variables['element']['year']['#weight'] = 0.001;
+//     $variables['element']['#sorted'] = false;
+//     return theme_date($variables);
+// }
+
+/* function ebmstheme_checkbox($element) { */
+/*     pdq_ebms_debug('THEME CHECKBOX', $element); */
+/*     _form_set_class($element, array('form-checkbox')); */
+/*     $checkbox = '<input '; */
+/*     $checkbox .= 'type="checkbox" '; */
+/*     $checkbox .= 'name="' . $element['#name'] . '" '; */
+/*     $checkbox .= 'id="' . $element['#id'] . '" '; */
+/*     $checkbox .= 'value="' . $element['#return_value'] . '" '; */
+/*     $checkbox .= $element['#value'] ? ' checked="checked" ' : ' '; */
+/*     $checkbox .= drupal_attributes($element['#attributes']) . ' />'; */
+
+/*   if (!is_null($element['#title'])) { */
+/*       if ($element['#title_display'] == 'before') */
+/*           $checkbox = '<label class="option" for="' . $element['#id'] . */
+/*               '">' . $element['#title'] . '</label> ' . $checkbox; */
+/*       else */
+/*           $checkbox .= ' <label class="option" for="' . $element['#id'] . */
+/*               '">' . $element['#title'] . '</label>'; */
+/*   } */
+
+/*   unset($element['#title']); */
+/*   return theme('form_element', $element, $checkbox); */
+/* } */
