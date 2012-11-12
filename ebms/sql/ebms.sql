@@ -866,10 +866,8 @@ CREATE TABLE ebms_article_state_type (
  *  article_state_id   Automatically generated primary key
  *  article_id         Unique ID in article table.
  *  state_id           ID of the state that this row records.
- *  board_id           Optional (depending on state type) board for which this
- *                      state is set.
- *  topic_id           Optional (depending on state type) summary topic for 
- *                      which this article state is set.
+ *  board_id           Board for which this state is set.
+ *  topic_id           Summary topic for which this article state is set.
  *  user_id            ID of the user that put the article in this state.
  *  status_dt          Date and time the row/state was created.
  *  active_status      Set to 'I' if the state row was a mistake, or no
@@ -883,8 +881,8 @@ CREATE TABLE ebms_article_state (
     article_state_id  INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     article_id        INTEGER NOT NULL,
     state_id          INTEGER NOT NULL,
-    board_id          INTEGER NULL,
-    topic_id          INTEGER NULL,
+    board_id          INTEGER NOT NULL,
+    topic_id          INTEGER NOT NULL,
     user_id           INTEGER UNSIGNED NOT NULL,
     status_dt         DATETIME NOT NULL,
     active_status     ENUM('A','I') NOT NULL DEFAULT 'A',
