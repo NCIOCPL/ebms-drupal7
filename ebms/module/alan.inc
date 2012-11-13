@@ -11,7 +11,7 @@ function pdq_ebms_alantest() {
     // Test
     // return '<i>Stub for Alan\'s testing</i>';
     require_once('logw.inc');
-    require_once('testimport.inc');
+    // require_once('testimport.inc');
     require_once('EbmsArticle.inc');
     require_once('EbmsImport.inc');
     require_once('EbmsSearch.inc');
