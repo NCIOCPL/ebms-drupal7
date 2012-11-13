@@ -1826,3 +1826,14 @@ article_state_id INTEGER NOT NULL,
      FOREIGN KEY (article_state_id)
                  REFERENCES ebms_article_state (article_state_id))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Stores report request parameters, serialized using jsencode().
+ *
+ * report_id       automatically generated primary key
+ * report_data     request parameters
+ */
+CREATE TABLE ebms_temp_report
+  (report_id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+ report_data text    NOT NULL)
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
