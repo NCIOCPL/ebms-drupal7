@@ -91,8 +91,10 @@ class EbmsSearch {
     function srchIDs() {
 
         // Ignore conflicts.  We may change that someday.
-        if ($this->spec['pmid'])
-            $this->qry->condition('art.article_id', $this->spec['pmid']);
+        if ($this->spec['pmid']) {
+            $this->qry->condition('art.source', 'Pubmed');
+            $this->qry->condition('art.source_id', $this->spec['pmid']);
+        }
         if ($this->spec['cms-id'])
             $this->qry->condition('art.article_id', $this->spec['cms-id']);
     }
