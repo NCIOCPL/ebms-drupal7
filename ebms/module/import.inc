@@ -95,7 +95,7 @@ class EbmsImport {
         $links = array(
             array('Search Database', 'citations/search'),
             array('Import Citations', 'citations/import'),
-            array('Publish Citations', 'stub'),
+            array('Publish Citations', 'citations/publish'),
             array('Not List Maintenance', 'stub'),
         );
         $items = array();
