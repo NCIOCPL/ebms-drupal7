@@ -610,8 +610,6 @@ namespace {
         /* $form['#prefix'] = '<div id="citation-div">';
           $form['#suffix'] = '</div>'; */
 
-        //dsm($form_state, 'CiteMS form state');
-
         $form['citation_queue']['#prefix'] = '<div id="citation-form-div">';
         $form['citation_queue']['#suffix'] = '</div>';
 
@@ -722,8 +720,6 @@ namespace {
 
     function _citation_queue_results(&$form, &$form_state, $is_librarian) {
 
-        dsm($form_state, 'queue results form state');
-
         $board_id = 0;
         $topic_id = 0;
         $journal_id = '';
@@ -822,7 +818,7 @@ namespace {
         } catch (Exception $e) {
             $num_rows = -1;
             $result = array();
-            dsm($e);
+            watchdog('EBMS - citations', (string) $e);
         }
 
         $results['results-title']['#markup'] = "<h2>Citations Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
@@ -3928,8 +3924,6 @@ namespace {
     function _format_topic_publishing($status, &$form_state = null) {
         $form = array();
 
-        //dsm($status, 'published status');
-
         $date = _format_date($status->dt);
 
         $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>Publication Date</div>");
@@ -3991,7 +3985,6 @@ namespace {
         $form = array();
         _wrap_in_classes($form, array('full-citation-element'));
 
-        //dsm($sequences, "sequences for article $articleId, topic $topicId");
         // get all known history for this topic
         $allHistory = \Ebms\getStatusHistory($articleId, null, $topicId, true,
             true, 'I');

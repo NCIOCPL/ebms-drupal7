@@ -849,9 +849,9 @@ class Util {
             array('Import Citations', 'citations/import', 'always'),
             array('Find/Edit Citations', 'stub', 'full'),
             array('Review Citations', 'stub', 'full'),
-            array('Publish Citations', 'citations/publish', 'full'),
-            array('Not List Maintentance', 'citations/not-list', 'full'),
-            array('Manage Journals', 'stub', 'always'),
+            array('Publish Citations', 'citations/publish', 'always'),
+            array('Not List Maintentance', 'citations/not-list', 'always'),
+            array('Manage Journals', 'stub', 'full'),
         );
         $items = array();
         foreach ($links as $link_info) {
