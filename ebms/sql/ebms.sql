@@ -3,6 +3,7 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_temp_report;
 DROP TABLE IF EXISTS ebms_publish_queue_flag;
 DROP TABLE IF EXISTS ebms_publish_queue;
 DROP TABLE IF EXISTS ebms_search;
