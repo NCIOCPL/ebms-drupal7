@@ -6,7 +6,8 @@
         Purpose of the stylesheet follows.
 */
 
-#citation-form-div fieldset{
+#citation-form-div fieldset,
+#citation-results-div fieldset{
     border: 0px;
     margin: 0px;
     padding: 0px;
@@ -23,22 +24,23 @@
 .citation-input-div > .form-item > label {
     text-transform: uppercase !important;
     float: right !important;
-    width: 20% !important;
-    min-width: 175px;
+    width: 175px;
     margin: auto;
-}
-
-.citation-input-div > .form-item.form-type-checkbox > label {
-    padding-left: 9% !important;
 }
 
 .citation-input-div {
     /*clear: both;*/
 }
 
-.page-citations input:not(.form-submit),
-.page-citations select{
-    width: 70% !important;
+.page-citations #citation-buttons-div .form-type-checkbox
+{
+    display: inline;
+}
+
+
+.page-citations #citation-form-div input:not(.form-submit):not(.form-checkbox),
+.page-citations #citation-form-div select{
+    width: 525px;
 }
 
 #citation-results-div {
@@ -73,14 +75,66 @@
 }
 
 #citation-buttons-div {
-    width: 50%;
     float: left;
     margin-bottom: 20px;
 }
 
+#citation-buttons-div .citation-input-div{
+    width: 415px;
+}
+
+
+#citation-buttons-div .citation-input-div select{
+    width: 150px;
+}
+
 #citation-buttons-div input{
-    margin: 5px;
     padding: 7px 10px;
+}
+
+#citation-buttons-div > input,
+#citation-buttons-div > fieldset,
+.page-citations form #citation-buttons-div label,
+.page-citations form #citation-buttons-div .form-item.form-type-checkbox label{
+    margin: 0px 5px 5px;
+}
+
+#citation-buttons-div .citation-input-div .form-type-checkboxes .form-type-checkbox label{
+    background-position: right top;
+    padding-left: 0px;
+    padding-right: 35px;
+}
+
+
+.page-citations form #citation-buttons-div .citation-input-div>.form-type-checkbox>label{
+    padding: 0px 0px 0px 40px !important;
+
+}
+
+.page-citations #citation-buttons-div .citation-input-div>.form-item>label{
+    width: 190px;
+    float:right;
+}
+
+#citation-buttons-div .citation-input-div>.form-item{
+    clear: both;
+    overflow: auto;
+}
+
+#citation-buttons-div .citation-input-div>.form-item>*:not(label):not(input){
+    clear: both;
+    width: 200px;
+    margin-right: 10px;
+}
+
+.page-citations #citation-buttons-div .form-checkboxes{
+    margin: 0px;
+}
+
+#citation-buttons-div > input,
+#citation-buttons-div > fieldset{
+    float: left;
+
 }
 
 #citation-results-div .item-list {
@@ -157,6 +211,10 @@
     padding-left: 10px;
 }
 
+.article-citation div{
+    margin-bottom: 5px;
+}
+
 /* citation-review specific */
 .citation-cell.brief-citation{
     width: 325px;
@@ -195,6 +253,15 @@
 
 .summary-topic-check{
     border: none;
+}
+
+
+.summary-topic-check .form-item{
+    margin: 0px;
+}
+
+td.board-cell {
+    border-left: 1px solid #696559 !important;
 }
 
 /* full citation styles*/
@@ -270,11 +337,11 @@
     padding: 0px 5px;
 }
 
-#citation-form-div .full-citation-radio-check .form-checkboxes{
+#citation-form-div .full-citation-results .full-citation-radio-check .form-checkboxes{
     margin: 0px;
 }
 
-#citation-form-div .full-citation-radio-check .form-type-checkbox{
+#citation-form-div .full-citation-results .full-citation-radio-check .form-type-checkbox{
     float: left;
     margin: 5px;
 }

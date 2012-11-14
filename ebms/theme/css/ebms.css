@@ -57,13 +57,32 @@ h3.expanded a:hover span { color: #a90101; }
  * Cf. http://css-tricks.com/all-about-floats/
  */
 .non-float { color: white; font-size: 1px; clear: both; }
-.clearfix:after { 
-     content: "."; 
-     visibility: hidden; 
-     display: block; 
-     height: 0; 
+
+/* slightly enhanced, universal clearfix hack 
+from http://perishablepress.com/lessons-learned-concerning-the-clearfix-css-hack
+
+the childfix class is meant to apply clearfix to all child elements,
+useful in the case of a Drupal form element that would otherwise
+disallow applying a class directly to a desired sub-element.
+*/
+.childfix>*:after,
+.clearfix:after {
+     visibility: hidden;
+     display: block;
+     font-size: 0;
+     content: " ";
      clear: both;
-}
+     height: 0;
+     }
+.childfix>*,
+.clearfix { display: inline-block; }
+/* start commented backslash hack \*/
+* html .childfix>*,
+* html .clearfix { height: 1%; }
+.childfix>*,
+.clearfix { display: block; }
+/* close commented backslash hack */
+
 /* Suppress Drupal's title for the page */
 h1#page-title { display: none; }
 
