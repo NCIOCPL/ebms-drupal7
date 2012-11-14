@@ -978,7 +978,7 @@ namespace {
             // will need a separate row for these two items if in the full-citation view
             // build citation
             $cite = _cite_article($article, false, $isAbstract);
-            
+
             $recordIx = $ix + $first_row;
 
             if ($isAbstract) {
@@ -1275,22 +1275,27 @@ namespace {
      * @return string $abstract
      */
     function _format_abstract(Ebms\EbmsArticle $article) {
-        $xml = $article->getSourceData();
-        $doc = new \SimpleXMLElement($xml);
-        $abstractXml = $doc->MedlineCitation->Article->Abstract;
-
         $pieces = array();
+        try {
+            $xml = $article->getSourceData();
+            $doc = new \SimpleXMLElement($xml);
+            $abstractXml = $doc->MedlineCitation->Article->Abstract;
 
-        foreach ($abstractXml->children() as $element) {
-            $text = (string) $element;
-            $label = $element['Label'];
-            if ($label)
-                $pieces[] = "<div class='citation-abstract-label'>$label</div>";
+            $children = $abstractXml->children();
 
-            $pieces[] = "<div class='citation-abstract-text'>$text</div>";
+            foreach ($children as $element) {
+                $text = (string) $element;
+                $label = $element['Label'];
+                if ($label)
+                    $pieces[] = "<div class='citation-abstract-label'>$label</div>";
+
+                $pieces[] = "<div class='citation-abstract-text'>$text</div>";
+            }
+
+            return implode('', $pieces);
+        } catch (Exception $e) {
+            watchdog('EBMS - citations', (string) $e);
         }
-
-        return implode('', $pieces);
     }
 
     function _cite_article(Ebms\EbmsArticle $article, $long_form = true,
