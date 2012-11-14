@@ -988,8 +988,7 @@ namespace {
                 $row['actions']['row_num'] = array('#markup' => "<h2 class='borderless'>$recordIx</h2>");
                 /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />');
                   $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />'); */
-                $row['actions']['tag'] = _build_add_tag_button(true,
-                    $form_state, $article->getId());
+                $row['actions']['tag'] = _build_add_tag_popup($article->getId());
 
                 // set the abstract to the remaining width of the table, finish
                 // the row, and begin another with a header for the boards and topics
@@ -1034,8 +1033,7 @@ namespace {
                 $row['actions']['row_num'] = array('#markup' => "<h2 class='borderless'>$recordIx</h2>");
                 /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />');
                   $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />'); */
-                $row['actions']['tag'] = _build_add_tag_button(true,
-                    $form_state, $article->getId());
+                $row['actions']['tag'] = _build_add_tag_popup($article->getId());
 
                 $row['brief_citation']['#markup'] =
                     "<td rowspan='$topicCount' class='brief-citation left-column borderless'><a href='/citations/full/$record->article_id'>$cite</a></td>";
@@ -1061,8 +1059,13 @@ namespace {
                 while (isset($boardTopicMap[$boardIx]['topics'][$topicIx])) {
                     $topic = $boardTopicMap[$boardIx]['topics'][$topicIx];
 
+                    $button = _build_add_tag_popup($article->getId(), $topic->topic_id);
                     // create topic label
-                    $row['topic']['#markup'] = "<td class='summary-topic-name'>$topic->topic_name</td>";
+                    $row['topic']['button'] = $button;
+                    $row['topic']['name']['#markup'] = "$topic->topic_name";
+                    
+                    $row['topic']['#prefix'] = "<td class='summary-topic-name'>";
+                    $row['topic']['#suffix'] = "</td>";
 
                     $hash = "$record->article_id|$topic->topic_id";
                     $actions = _get_topic_actions($form_state, $hash);
@@ -2373,6 +2376,18 @@ namespace {
             );
             $form['form'] = array();
         }
+
+        return $form;
+    }
+
+    function _build_add_tag_popup($articleId, $topicId = null) {
+        $form = array();
+
+        // grab icon for button
+        $iconPath = Ebms\TAG_INACTIVE;
+
+        // create edit decision button
+        $form['#markup'] = "<a><img src='$iconPath' /></a>";
 
         return $form;
     }
