@@ -407,7 +407,7 @@ class EbmsSearch {
 
         // Passed full text review
         // Once known as "passed literature surveillance committe"
-        if ($this->spec['advanced-options']['nci-reviewer-decision'])
+        if ($this->spec['advanced-options']['committee-decision'])
             $this->chkStates(array('PassedFullReview'), '=');
 
         // Has "For Your Information (FYI)" status
