@@ -1059,11 +1059,12 @@ namespace {
                 while (isset($boardTopicMap[$boardIx]['topics'][$topicIx])) {
                     $topic = $boardTopicMap[$boardIx]['topics'][$topicIx];
 
-                    $button = _build_add_tag_popup($article->getId(), $topic->topic_id);
+                    $button = _build_add_tag_popup($article->getId(),
+                        $topic->topic_id);
                     // create topic label
                     $row['topic']['button'] = $button;
                     $row['topic']['name']['#markup'] = "$topic->topic_name";
-                    
+
                     $row['topic']['#prefix'] = "<td class='summary-topic-name'>";
                     $row['topic']['#suffix'] = "</td>";
 
@@ -1284,17 +1285,18 @@ namespace {
             $doc = new \SimpleXMLElement($xml);
             $abstractXml = $doc->MedlineCitation->Article->Abstract;
 
-            $children = $abstractXml->children();
+            if ($abstractXml->count() > 0) {
+                $children = $abstractXml->children();
 
-            foreach ($children as $element) {
-                $text = (string) $element;
-                $label = $element['Label'];
-                if ($label)
-                    $pieces[] = "<div class='citation-abstract-label'>$label</div>";
+                foreach ($children as $element) {
+                    $text = (string) $element;
+                    $label = $element['Label'];
+                    if ($label)
+                        $pieces[] = "<div class='citation-abstract-label'>$label</div>";
 
-                $pieces[] = "<div class='citation-abstract-text'>$text</div>";
+                    $pieces[] = "<div class='citation-abstract-text'>$text</div>";
+                }
             }
-
             return implode('', $pieces);
         } catch (Exception $e) {
             watchdog('EBMS - citations', (string) $e);
