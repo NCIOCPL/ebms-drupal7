@@ -364,7 +364,7 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
                     'unavailable-' . $article_id => array(
                         '#type' => 'checkbox',
                         '#id' => 'unavailable-' . $article_id,
-                        '#title' => 'Unavailable',
+                        '#title' => 'Unable to Upload',
                     ),
                 ),
             );
