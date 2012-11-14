@@ -872,12 +872,12 @@ namespace {
             $results['table']['header']['actions']['#markup'] =
                 "<th class='actions left-column borderless'>&nbsp;</th>";
             $results['table']['header']['abstracts']['#markup'] =
-                "<th colspan='$colspan'>Citation Abstracts</th>";
+                "<th colspan='$colspan' class='borderless'>Citation Abstracts</th>";
         } else {
             $results['table']['header']['actions']['#markup'] =
                 "<th class='actions left-column borderless'>&nbsp;</th>";
             $results['table']['header']['brief_citation']['#markup'] =
-                "<th class='brief-citation'>Citations</th>";
+                "<th class='brief-citation borderless'>Citations</th>";
             $results['table']['header']['board']['#markup'] =
                 "<th class='board'>Board</th>";
             $results['table']['header']['topic']['#markup'] =
@@ -978,20 +978,23 @@ namespace {
             // will need a separate row for these two items if in the full-citation view
             // build citation
             $cite = _cite_article($article, false, $isAbstract);
+            
+            $recordIx = $ix + $first_row;
 
             if ($isAbstract) {
                 $row['actions']['#prefix'] = "<td class='borderless'>";
                 $row['actions']['#suffix'] = "</td>";
 
-                $row['actions']['row_num'] = array('#markup' => ($ix + $first_row) . "<br />");
+                $row['actions']['row_num'] = array('#markup' => "<h2 class='borderless'>$recordIx</h2>");
                 /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />');
-                  $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />');
-                  $row['actions']['tag'] = array('#type' => 'submit', '#value' => t('Tag'), '#suffix' => '<br />'); */
+                  $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />'); */
+                $row['actions']['tag'] = _build_add_tag_button(true,
+                    $form_state, $article->getId());
 
                 // set the abstract to the remaining width of the table, finish
                 // the row, and begin another with a header for the boards and topics
                 $row['abstract']['#markup'] =
-                    "<td colspan='$colspan' class='left-column'><a href='/citations/full/$record->article_id'>$cite</a></td>";
+                    "<td colspan='$colspan' class='left-column borderless'><a href='/citations/full/$record->article_id'>$cite</a></td>";
 
                 $rows["${rowIx}_header"] = array(
                     '#prefix' => "<tr>",
@@ -1003,7 +1006,7 @@ namespace {
                 $row['actions']['#markup'] =
                     "<th class='actions left-column borderless'>&nbsp;</th>";
                 $row['board']['#markup'] =
-                    "<th class='board'>Board(s)</th>";
+                    "<th class='board borderless'>Board(s)</th>";
                 $row['topic']['#markup'] =
                     "<th class='summary-topic-name'>Summary Topic(s)</th>";
                 $row['pass']['#markup'] =
@@ -1028,13 +1031,14 @@ namespace {
                 $row['actions']['#prefix'] = "<td rowspan='$topicCount' class='borderless'>";
                 $row['actions']['#suffix'] = "</td>";
 
-                $row['actions']['row_num'] = array('#markup' => ($ix + $first_row) . "<br />");
+                $row['actions']['row_num'] = array('#markup' => "<h2 class='borderless'>$recordIx</h2>");
                 /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />');
-                  $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />');
-                  $row['actions']['tag'] = array('#type' => 'submit', '#value' => t('Tag'), '#suffix' => '<br />'); */
+                  $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />'); */
+                $row['actions']['tag'] = _build_add_tag_button(true,
+                    $form_state, $article->getId());
 
                 $row['brief_citation']['#markup'] =
-                    "<td rowspan='$topicCount' class='brief-citation left-column'><a href='/citations/full/$record->article_id'>$cite</a></td>";
+                    "<td rowspan='$topicCount' class='brief-citation left-column borderless'><a href='/citations/full/$record->article_id'>$cite</a></td>";
             }
             while (isset($boardTopicMap[$boardIx])) {
                 // add the board (and potentially actions), and cycle through 
@@ -1043,14 +1047,16 @@ namespace {
                 $boardName = $boardTopicMap[$boardIx]['boardName'];
                 $boardTopicCount = sizeof($boardTopicMap[$boardIx]['topics']);
 
+                $boardClass = 'board-cell';
                 if ($isAbstract) {
                     $row['actions']['#prefix'] = "<td rowspan='$boardTopicCount' class='borderless'>";
                     $row['actions']['#suffix'] = "</td>";
 
+                    $boardClass = "borderless";
                     //$row['actions']['edit'] = array('#markup' => ($ix + $first_row) . "<br />");
                 }
 
-                $row['board']['#markup'] = "<td class='board-cell' rowspan='$boardTopicCount'>$boardName</td>";
+                $row['board']['#markup'] = "<td class='$boardClass' rowspan='$boardTopicCount'>$boardName</td>";
 
                 while (isset($boardTopicMap[$boardIx]['topics'][$topicIx])) {
                     $topic = $boardTopicMap[$boardIx]['topics'][$topicIx];
@@ -2000,6 +2006,18 @@ namespace {
         return $topic_tags;
     }
 
+    /**
+     * Builds a button and form for adding a tag to a article or topic.
+     * 
+     * @param bool $noTags      Indicates if no tags yet exist.
+     * @param type $form_state  The form_state, used to determine if the button
+     *      has been clicked.
+     * @param type $articleId   The article to tag's id.
+     * @param type $topicId     An optional topic to tag.
+     * @return array $form      The renderable array, divided into 'button' and
+     *      'form' subelements.  These elements can be placed separately in
+     *      a larger render array.
+     */
     function _build_add_tag_button($noTags, &$form_state, $articleId,
         $topicId = null) {
         $form = array();
