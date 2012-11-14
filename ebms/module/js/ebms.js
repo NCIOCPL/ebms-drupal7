@@ -10,7 +10,7 @@ ebmsscript = {};
  * State and static variables.
  */
 ebmsscript.file_upload_textarea_open = false;
-ebmsscript.site_root = "/ebmsdev";
+ebmsscript.site_root = "";
 ebmsscript.normal_field_css = { "color": "#2d2c28", "font-style": "normal" };
 ebmsscript.init_field_css = { "color": "#d3d3d3", "font-style": "italic" };
 
@@ -978,10 +978,26 @@ ebmsscript.clear_publish_box = function(queue_id, article_state_id) {
 }
 
 /**
+ * Common initialization we always want done.
+ */
+ebmsscript.init = function() {
+    var loc = window.location.href;
+    if (/ebmsdev/.test(loc))
+        ebmsscript.site_root = "/ebmsdev";
+    if (/ebmsqa/.test(loc))
+        ebmsscript.site_root = "/ebmsqa";
+    jQuery(".working").hide().ajaxStart(function() {
+        jQuery(this).show();
+    }).ajaxStop(function() {
+        jQuery(this).hide();
+    });
+}
+/**
  * Initialization housekeeping which can only be performed after we're
  * sure the document has been loaded.
  */
 jQuery(function() {
+    ebmsscript.init();
     ebmsscript.init_login_form();
     ebmsscript.init_reviewer_file_upload_form();
     ebmsscript.init_literature_review_form();
@@ -991,5 +1007,4 @@ jQuery(function() {
     ebmsscript.init_summaries_page();
     ebmsscript.init_docs_page();
     ebmsscript.init_groups_page();
-    jQuery(".working").hide().ajaxStart(function() { jQuery(this).show(); }).ajaxStop(function() { jQuery(this).hide(); });
 });
