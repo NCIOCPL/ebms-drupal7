@@ -79,7 +79,6 @@ class EbmsPublish {
         $this->topics = array();
         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
-            ->condition('t.active_status', 'A')
             ->orderBy('t.topic_name')
             ->execute();
         foreach ($results as $result)
@@ -264,6 +263,8 @@ class EbmsPublish {
                 'BETWEEN'
             );
         }
+        else
+            $query->condition('s.status_dt', Ebms\CONVERSION_DATE, '>');
         if ($this->filter_parms['board'])
             $query->condition('s.board_id', $this->filter_parms['board']);
         if ($this->filter_parms['topic'])
