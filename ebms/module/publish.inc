@@ -473,7 +473,7 @@ class EbmsPublish {
         );
         $buttons['publish-button'] = array(
             '#type' => 'markup',
-            '#markup' => "<a href='$href' class='button'>Publish Selected</a>",
+            '#markup' => "<a href='$href' class='button'>Batch Publish</a>",
         );
 
         // Add an indicator which is visible while Ajax is working.
