@@ -250,7 +250,7 @@ class EbmsHomePage {
                     l('Find/Edit a Record', 'stub'),
                     l('Manage Journals', 'stub'),
                     l('Import Citations', 'citations/import'),
-                    l('Review Citations', 'stub'),
+                    l('Review Citations', 'citations'),
                     l('Publish Citations', 'citations/publish'),
                 );
                 break;
