@@ -23,7 +23,7 @@ function addHooks() {
         jQuery('input[name=submit_source]').val(jQuery(this).val());
         form.submit();
         return false;
-    })
+    });
     
     // alter the action to submit the pager URLs when they are clicked
     jQuery('.pager a').click(function () {
@@ -33,7 +33,7 @@ function addHooks() {
         jQuery('input[name=submit_source]').val('Pager');
         form.submit();
         return false;
-    })
+    });
     
     // test to disable each topic check box
     //jQuery('.citation-cell .topic-checks input.form-checkbox').attr("disabled", "disabled");
@@ -42,13 +42,37 @@ function addHooks() {
     //var count = jQuery('.form-checkbox').length;
     //alert("Found " + count + " checkboxes!");
     
+    //var count = jQuery('.summary-topic-check input.form-checkbox').length;
+    //alert("Found " + count + " topic checkboxes!");
+    
     // alter pass/reject buttons to disable their siblings on click
-    jQuery('.citation-cell .topic-checks input.form-checkbox, .full-citation-radio-check input.form-checkbox').click(function () {
+    jQuery('.summary-topic-check input.form-checkbox').click(function () {
+        // get the parent div
+        parent = jQuery(this).closest('.summary-topic-check');
+        //alert("Found parent " + parent);
+        
+        // get the sibling checkbox and label
+        siblings = parent.siblings('.summary-topic-check');
+        //alert("Found " + siblings.length + ' siblings!');
+        
+        sib_inputs = siblings.find('input.form-checkbox');
+        //alert("Found " + sib_inputs.length + ' sibling checkboxes!');
+        sib_labels = siblings.find('label');
+        
+        // based on the current state of this checkbox,
+        // either disable the other checkbox or enable all checkboxes
+        if(jQuery(this).attr('checked')) {
+            // this is set, uncheck the other checkbox
+            sib_inputs.attr("checked", "");
+        }
+    });
+
+    jQuery('.full-citation-radio-check input.form-checkbox').click(function () {
         // get the parent div
         parent = jQuery(this).closest('.form-type-checkbox');
         
         // get the sibling checkbox and label
-        sibling = parent.siblings('.form-type-checkbox')
+        sibling = parent.siblings('.form-type-checkbox');
         sib_input = sibling.children('input.form-checkbox');
         sib_label = sibling.children('label');
         
@@ -58,5 +82,5 @@ function addHooks() {
             // this is set, uncheck the other checkbox
             sib_input.attr("checked", "");
         }
-    })
+    });
 }
