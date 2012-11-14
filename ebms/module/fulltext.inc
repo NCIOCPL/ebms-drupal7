@@ -286,6 +286,9 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
                 'BETWEEN'
             );
     }
+    else
+        $query->condition('s.status_dt', Ebms\CONVERSION_DATE, '>');
+    $query->range(0, 100);
     $query->orderBy('s.status_dt');
     $article_ids = array();
     $results = $query->execute();
