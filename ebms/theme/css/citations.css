@@ -26,6 +26,7 @@
     float: right !important;
     width: 175px;
     margin: auto;
+    padding-right: 0px !important;
 }
 
 .citation-input-div {
@@ -168,8 +169,8 @@
     padding-top: 20px;
 }
 
-.citation-cell:not(.borderless){
-    border-right: 1px #696559 solid;
+.borderless{
+    border: none;
 }
 
 .citation-cell:not(.left-column){
@@ -269,7 +270,8 @@ td.board-cell {
     text-transform: uppercase !important;
 }
 
-#citation-form-div .image-button{
+#citation-form-div .image-button,
+#citation-results-div .image-button{
     border: none;
 }
 
@@ -284,7 +286,8 @@ td.board-cell {
     text-indent: -6em;
 }
 
-#citation-form-div .full-citation-button{
+#citation-form-div .full-citation-button,
+#citation-results-div .full-citation-button{
     float: left;
     margin: 0px !important;
     padding: 0px !important;
