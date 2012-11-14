@@ -39,13 +39,14 @@ function getSearchQuery($json) {
     $srch->srchOrder();
 
     // XXX - Should we limit results?
-    // $srch->qry->range(0,500);
+    $srch->qry->range(0,500);
 
 // DEBUG
 $jspec = print_r($srch->spec, true);
 logw("Full decoded json spec:\n$jspec\n");
+logw("SQL for query:\n{$srch->qry}\n");
 $query = print_r($srch->qry, true);
-logw("Completed query:\n$query\n");
+logw("Query object for query:\n$query\n");
 
 
     return $srch->qry;
@@ -267,17 +268,23 @@ class EbmsSearch {
      * However a user can search for a comment date without regard to
      * whether the text matches anything.
      *
-     *  @param bool $anyMods    If true, use modified-start/end date
-     *                          specs.  Else use 'tag-added...' dates.
+     * The search specs may specify a comment-added-start or a modified-start.
+     * It makes no sense to specify both because a search for any modification
+     * automatically includes any comment-added.  So we give priority
+     * to the modified-start.
      */
-    function srchComments($anyMods=true) {
+    function srchComments() {
 
-        $comment = null;
-        if ($anyMods)
+        $comment = $this->spec['comments'];
+
+        // See if user wants to search for comment-added
+        $startYear = $this->spec['comment-added-start']['year'];
+        $anyMods   = false;
+
+        // But might override it
+        if ($this->spec['modified-start']['year']) {
             $startYear = $this->spec['modified-start']['year'];
-        else {
-            $startYear = $this->spec['comment-added-start']['year'];
-            $comment   = $this->spec['comments'];
+            $anyMods   = true;
         }
 
         // If we have either of them, we need to join states and comments
@@ -299,18 +306,20 @@ class EbmsSearch {
             if ($startYear) {
 
                 // Search for comments within the modified range
-                if ($anyMods)
+                if ($anyMods) {
                     $dateLimits = $this->chkDates(
                             $this->spec['modified-start'],
                             $this->spec['modified-end'],
-                            $this->spec['use-modified-date-range']);
+                            $this->spec['use-mod-date-range']);
+                }
 
                 // Or search for comments within the comment-added range
-                else
+                else {
                     $dateLimits = $this->chkDates(
                             $this->spec['comment-added-start'],
                             $this->spec['comment-added-end'],
                             $this->spec['use-comment-date-range']);
+                }
 
                 // If we found a valid range
                 if ($dateLimits) {
@@ -368,7 +377,7 @@ class EbmsSearch {
                     $dateLimits = $this->chkDates(
                             $this->spec['modified-start'],
                             $this->spec['modified-end'],
-                            $this->spec['use-modified-date-range']);
+                            $this->spec['use-mod-date-range']);
 
                 // Or search for tags within the tag-added range
                 else
@@ -418,10 +427,6 @@ class EbmsSearch {
         // "Published", i.e. released from initial review to board managers
         if ($this->spec['advanced-options']['published-to-cite-ms'])
             $this->chkStates(array('Published'), '=');
-
-        // Has ever had a summary topic added
-        if ($this->spec['admin-options']['summary-topics-added'])
-            $this->chkStates(array('ReadyInitReview'), '=');
     }
 
     /**
@@ -727,7 +732,7 @@ class EbmsSearch {
             $dateLimits = $this->chkDates(
                     $this->spec['modified-start'],
                     $this->spec['modified-end'],
-                    $this->spec['use-modified-date-range']);
+                    $this->spec['use-mod-date-range']);
 
             if ($dateLimits) {
                 $this->qry->join('ebms_article_state', 'modstate',
@@ -745,6 +750,10 @@ class EbmsSearch {
                 else if (!empty($this->boards))
                     $this->qry->condition("modstate.board_id",
                                            $this->boards, 'IN');
+
+                // A state comment may be entered independently of a state
+                // It's a modification.  It will be picked up automatically
+                //  by the srchComments() function.
 
                 // A tag entry is also considered a "modification"
                 $this->srchTags(true);
@@ -870,8 +879,8 @@ class EbmsSearch {
             else {
                 // End is exactly 1 day after start, searching one day
                 // Let PHP do the month/day/leapyear calculations for us
-                $phpStartDate = new DateTime($startSqlDate);
-                $phpEndDate   = $phpStartDate->add(new DateInterval("P1D"));
+                $phpStartDate = new \DateTime($startSqlDate);
+                $phpEndDate   = $phpStartDate->add(new \DateInterval("P1D"));
                 $endYear      = $phpEndDate->format('Y');
                 $endMonth     = $phpEndDate->format('m');
                 $endDay       = $phpEndDate->format('j');
