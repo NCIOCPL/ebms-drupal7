@@ -402,6 +402,164 @@ class Menu {
 }
 
 /**
+ * Support for keeping the list of journal titles up to date.
+ */
+class Journal {
+    public $pmid, $title, $brief;
+    function __construct($pmid, $title, $brief) {
+        $this->pmid = $pmid;
+        $this->title = $title;
+        $this->brief = $brief;
+    }
+
+    /**
+     * The only public function.  Fetches the latest list of journals
+     * from the National Library of Medicine, updating titles for
+     * journals we already have and adding journals which are new.
+     * Does not drop rows for journals which have disappeared from
+     * NLM's list.  Writes to the ebms_journal table.  Records the
+     * date/time the refresh was done in the drupal variable named
+     * ebms_journals_refreshed.
+     *
+     *  @return   array with counts, indexed by the name of the count:
+     *              'fetched'  => how many journals NLM listed
+     *              'checked'  => how many journals we already have
+     *              'updated'  => how many existing rows we changed
+     *              'inserted' => how many rows we inserted for new journals
+     *
+     *  @throw    \Exception if we cannot fetch the journal information
+     *            from the National Library of Medicine.
+     */
+    public static function refresh() {
+
+        // Collect the two list of journals (ours and NLM's).
+        $ebmsJournals = Journal::fetch_titles_from_db();
+        $nlmJournals = Journal::fetch_titles_from_nlm();
+
+        // Update the rows for journals whose titles have changed.
+        $updated = array();
+        foreach ($ebmsJournals as $pmid => $ebmsJournal) {
+            if (array_key_exists($pmid, $nlmJournals)) {
+                $nlmJournal = $nlmJournals[$pmid];
+                if ($nlmJournal->title != $ebmsJournal->title ||
+                    $nlmJournal->brief != $ebmsJournal->brief) {
+                    db_update('ebms_journal')
+                        ->fields(
+                            array(
+                                'jrnl_title' => $nlmJounal->title,
+                                'brf_jrnl_title' => $nlmJournal->brief,
+                            )
+                        )
+                        ->condition('source_jrnl_id', $pmid)
+                        ->execute();
+                    $updated[] = $pmid;
+                }
+            }
+        }
+
+        // Add rows for the new journals.
+        $inserted = array();
+        foreach ($nlmJournals as $pmid => $nlmJournal) {
+            if (!array_key_exists($pmid, $ebmsJournals)) {
+                db_insert('ebms_journal')
+                ->fields(
+                    array(
+                        'source' => 'Pubmed',
+                        'source_jrnl_id' => $pmid,
+                        'jrnl_title' => $nlmJournal->title,
+                        'brf_jrnl_title' => $nlmJournal->brief,
+                    )
+                )
+                ->execute();
+                $inserted[] = $pmid;
+            }
+        }
+
+        // Remember when we did the refresh.
+        variable_set('ebms_journals_refreshed', strftime("%Y-%m-%d %H:%M:%S"));
+
+        // Tell the caller what we did.
+        return array(
+            'fetched' => count($nlmJournals),
+            'checked' => count($ebmsJournals),
+            'updated' => count($updated),
+            'inserted' => count($inserted),
+        );
+    }
+
+    /**
+     * Fetch and parse the journal data maintained by the National Library
+     * of Medicine.
+     */
+    static function fetch_titles_from_nlm() {
+
+        // Fetch the compressed file of journal information.
+        $url = 'ftp://ftp.ncbi.nih.gov/pubmed/J_Medline.gz';
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $results = curl_exec($ch);
+        curl_close($ch);
+
+        // Write it to a file so we can uncompress it.  PHP won't have
+        // full support for uncompressing in memory until PHP6; see
+        // http://proger.i-forge.net/gzdecode_doesnt_work_in_PHP_pre-6/OQB
+        $tmpfname = tempnam(sys_get_temp_dir(), 'nlm-journals');
+        file_put_contents($tmpfname, $results);
+        ob_start();
+        readgzfile($tmpfname);
+        $results = ob_get_clean();
+
+        // Break the uncompressed file into separate lines and parse
+        // out the journals.  The Pubmed ID is always last in the set
+        // of lines for a journal.
+        $lines = preg_split("/(\r\n|\n|\r)/", $results);
+        $pmid = $title = $brief = null;
+        $journals = array();
+        foreach ($lines as $line) {
+            $matches = array();
+            if (substr($line, 0, 5) == '-----')
+                $pmid = $title = $brief = null;
+            elseif (preg_match('/NlmId: (.*)/', $line, $matches))
+                $pmid = $matches[1];
+            elseif (preg_match('/JournalTitle: (.*)/', $line, $matches))
+                $title = $matches[1];
+            elseif (preg_match('/MedAbbr: (.*)/', $line, $matches))
+                $brief = $matches[1];
+            if ($pmid && $title) {
+                $journals[$pmid] = new Journal($pmid, $title, $brief);
+                $pmid = $title = $brief = null;
+            }
+        }
+
+        // Should actually be more than 25,000 journals in the file.
+        if (count($journals) < 10000)
+            throw new \Exception('Failure retrieving journal titles from NLM');
+        return $journals;
+    }
+
+    /**
+     * Collect the journal information from the ebms_journal table.
+     */
+    static function fetch_titles_from_db() {
+        $journals = array();
+        $results = db_select('ebms_journal', 'j')
+            ->fields(
+                'j',
+                array('source_jrnl_id', 'jrnl_title', 'brf_jrnl_title')
+            )
+            ->condition('j.source', 'Pubmed')
+            ->execute();
+        foreach ($results as $result) {
+            $pmid = $result->source_jrnl_id;
+            $title = $result->jrnl_title;
+            $brief = $result->brf_jrnl_title;
+            $journals[$pmid] = new Journal($pmid, $title, $brief);
+        }
+        return $journals;
+    }
+}
+
+/**
  * Common utility functions used throughout the EBMS.
  */
 class Util {
