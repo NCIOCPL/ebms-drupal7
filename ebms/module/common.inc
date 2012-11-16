@@ -980,18 +980,19 @@ class Util {
      * Citations Management page.
      *
      *  @param string $active  Current action, highlighted by CSS
-     *  @param string $role    Current user's role (default='librarian')
      *
      *  @return                Render array for left nav panel
      */
-    public static function build_left_nav($active=null, $role='librarian') {
+    public static function build_left_nav($active=null) {
+
+        global $user;
 
         $links = array(
             array('Search Database', 'citations/search'),
             array('Import Citations', 'citations/import'),
             array('Not List Maintentance', 'citations/not-list'),
         );
-        if ($role == 'librarian')
+        if (in_array('medical librarian', $user->roles))
             $links[] = array('Publish Citations', 'citations/publish');
         $items = array();
         foreach ($links as $link_info) {
