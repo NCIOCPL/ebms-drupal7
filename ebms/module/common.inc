@@ -9,7 +9,7 @@
 
 namespace Ebms;
 
-define('Ebms\CONVERSION_DATE', '2012-11-12');
+define('Ebms\CONVERSION_DATE', '2012-11-12'); // XXX Fix when we go live!
 define('Ebms\APP_DIR', base_path());
 define('Ebms\THEME_NAME', 'ebmstheme');
 define('Ebms\THEME_DIR', APP_DIR . drupal_get_path('theme', THEME_NAME));
