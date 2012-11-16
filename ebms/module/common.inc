@@ -286,28 +286,13 @@ class Menu {
      * Build the EBMS menu information for Citation management.
      */
     public static function citations($role) {
-        switch ($role) {
-            case 'librarian':
-                $children = array(
-                    new Menu('Import Citations', 'citations/import'),
-                    new Menu('Review Citations', 'citations/review'),
-                    new Menu('Find/Edit a record', 'citations/search'),
-                    new Menu('Add New Journal', 'citations/add-journal'),
-                    new Menu('Not List Maintenance', 'citations/not-list'),
-                    new Menu('Upload Full Text', 'citations/fulltext'),
-                );
-                break;
-            default:
-                $children = array(
-                    new Menu('Search Database', 'citations/search'),
-                    new Menu('Review Abstracts', 'citations/review'),
-                    new Menu('Add Citation', 'citations/add'),
-                    new Menu('System Help', 'citations/help'),
-                    new Menu('Administrator Tool', 'citations/admin'),
-                    new Menu('Upload Full Text', 'citations/fulltext'),
-                );
-                break;
-        }
+        $children = array(
+            new Menu('Search Database', 'citations/search'),
+            new Menu('Import Citations', 'citations/import'),
+            new Menu('Not List Maintenance', 'citations/not-list'),
+        );
+        if ($role == 'librarian')
+            $children[] = new Menu('Publish Citations', 'citations/publish');
         return new Menu('Citation Management', 'citations', $children);
     }
 
@@ -988,6 +973,44 @@ class Util {
             ->condition('b.board_id', $board_id)
             ->execute()
             ->fetchField();
+    }
+
+    /**
+     * Creates the render array for the left nav panel for a the
+     * Citations Management page.
+     *
+     *  @param string $active  Current action, highlighted by CSS
+     *  @param string $role    Current user's role (default='librarian')
+     *
+     *  @return                Render array for left nav panel
+     */
+    public static function build_left_nav($active=null, $role='librarian') {
+
+        $links = array(
+            array('Search Database', 'citations/search'),
+            array('Import Citations', 'citations/import'),
+            array('Not List Maintentance', 'citations/not-list'),
+        );
+        if ($role == 'librarian')
+            $links[] = array('Publish Citations', 'citations/publish');
+        $items = array();
+        foreach ($links as $link_info) {
+            list($label, $url) = $link_info;
+            $link = l($label, $url);
+            $class = $label == $active ? 'active' : 'inactive';
+            $items[] = array(
+                'data' => $link,
+                'class' => array($class),
+            );
+        }
+        return array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'left-nav'),
+            'nav' => array(
+                '#theme' => 'item_list',
+                '#items' => $items,
+            ),
+        );
     }
 
     /**
