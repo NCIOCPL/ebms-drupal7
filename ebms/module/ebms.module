@@ -376,6 +376,13 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // REFRESH JOURNAL TABLE
+        'admin/refresh-journals' => array(
+            'title' => 'Journal Table Refresh',
+            'page callback' => 'pdq_ebms_refresh_journals',
+            'access arguments' => array('administer'),
+        ),
+
         /*
         // TESTING ARTICLE SEARCH
         'articlesearch' => array(
@@ -936,6 +943,20 @@ function ebms_user_load($users) {
         ->execute();
     foreach ($results as $record)
         $users[$record->user_id]->password_changed = $record->password_changed;
+}
+
+/**
+ * Syncs up the ebms_journal table with the latest information at the
+ * National Library of Medicine.
+ */
+function pdq_ebms_refresh_journals() {
+    $result = Ebms\Journal::refresh();
+    $report = array();
+    foreach ($result as $action => $count)
+        $report[] = "$count journals $action";
+    drupal_set_message('Refreshed: ' .
+        variable_get('ebms_journals_refreshed'));
+    return '<p>' . implode('; ', $report) . '</p>';
 }
 
 /**
