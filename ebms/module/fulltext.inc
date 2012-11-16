@@ -100,42 +100,6 @@ class EbmsFullText {
         $pieces[] = '<br /><br />' . l('View Abstract', 'stub');
         return implode($pieces);
     }
-
-    /**
-     * Creates the render array for the left nav panel for Citation
-     * Management page.  Cloned from common.inc, where I had originally
-     * placed this functionality, not realizing that the left nav block
-     * was going to be different for every page.
-     *
-     *  @param string $active  Current action, highlighted by CSS
-     *
-     *  @return                Render array for left nav panel
-     */
-    public static function build_left_nav($active=null) {
-        $links = array(
-            array('Search Database', 'citations/search'),
-            array('Import Citations', 'citations/import'),
-            array('Not List Maintenance', 'citations/not-list'),
-        );
-        $items = array();
-        foreach ($links as $link_info) {
-            list($label, $url) = $link_info;
-            $link = l($label, $url);
-            $class = $label == $active ? 'active' : 'inactive';
-            $items[] = array(
-                'data' => $link,
-                'class' => array($class),
-            );
-        }
-        return array(
-            '#type' => 'container',
-            '#attributes' => array('id' => 'left-nav'),
-            'nav' => array(
-                '#theme' => 'item_list',
-                '#items' => $items,
-            ),
-        );
-    }
 }
 
 function pdq_ebms_fulltext_form_submit($form, &$form_state) {
@@ -209,7 +173,7 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'fulltext-top'),
-        'left-nav' => EbmsFullText::build_left_nav(),
+        'left-nav' => Ebms\Util::build_left_nav(),
         'filter-fields' => array(
             '#type' => 'container',
             '#attributes' => array('id' => 'fulltext-filter'),

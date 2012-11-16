@@ -36,7 +36,7 @@ class EbmsImport {
                 'Import Citations',
             )
         );
-        $left_nav = self::build_librarian_left_nav('Import Citations');
+        $left_nav = Ebms\Util::build_left_nav('Import Citations');
         $left_nav['more actions'] = $this->more_actions();
         return array(
             'left-nav' => $left_nav,
@@ -79,43 +79,6 @@ class EbmsImport {
             ->execute()
             ->fetchField();
         return drupal_json_decode($json);
-    }
-
-    /**
-     * Creates the render array for the left nav panel for a librarian's
-     * Citations Management page.  Cloned from common.inc, where I had
-     * originally placed this functionality, not realizing that the left
-     * nav block was going to be different for every page.
-     *
-     *  @param string $active  Current action, highlighted by CSS
-     *
-     *  @return                Render array for left nav panel
-     */
-    public static function build_librarian_left_nav($active=null) {
-        $links = array(
-            array('Search Database', 'citations/search'),
-            array('Import Citations', 'citations/import'),
-            array('Publish Citations', 'citations/publish'),
-            array('Not List Maintenance', 'stub'),
-        );
-        $items = array();
-        foreach ($links as $link_info) {
-            list($label, $url) = $link_info;
-            $link = l($label, $url);
-            $class = $label == $active ? 'active' : 'inactive';
-            $items[] = array(
-                'data' => $link,
-                'class' => array($class),
-            );
-        }
-        return array(
-            '#type' => 'container',
-            '#attributes' => array('id' => 'left-nav'),
-            'nav' => array(
-                '#theme' => 'item_list',
-                '#items' => $items,
-            ),
-        );
     }
 }
 

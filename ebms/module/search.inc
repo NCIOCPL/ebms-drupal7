@@ -51,7 +51,7 @@ class EbmsSearch {
             else
                 return $this->show_search_results();
         }
-        $left_nav = Ebms\Util::build_librarian_left_nav('Search Database');
+        $left_nav = Ebms\Util::build_left_nav('Search Database');
         return array(
             'left-nav' => $left_nav,
             'search form' => drupal_get_form('pdq_ebms_search_db_form',
@@ -179,7 +179,7 @@ class EbmsSearch {
                 "<div id='pager-view-pages'>$show_pages_link</div>",
             );
 
-        $left = Ebms\Util::build_librarian_left_nav('Search Database', false);
+        $left = Ebms\Util::build_left_nav('Search Database');
         return array($left, $list);
     }
     function list_article($article_id, $position) {

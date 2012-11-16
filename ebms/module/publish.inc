@@ -118,7 +118,7 @@ class EbmsPublish {
                 'Publish Citations',
             )
         );
-        $left_nav = $this->build_left_nav('Publish Citations');
+        $left_nav = Ebms\Util::build_left_nav('Publish Citations');
         $page = array(
             'top' => array(
                 '#type' => 'container',
@@ -591,43 +591,6 @@ class EbmsPublish {
             $pieces[] = ", $year";
         $pieces[] = '.<br />PMID: ' . $pmid;
         return implode($pieces);
-    }
-
-    /**
-     * Creates the render array for the left nav panel for Citation
-     * Management page.  Cloned from common.inc, where I had originally
-     * placed this functionality, not realizing that the left nav block
-     * was going to be different for every page.
-     *
-     *  @param string $active  Current action, highlighted by CSS
-     *
-     *  @return                Render array for left nav panel
-     */
-    public static function build_left_nav($active=null) {
-        $links = array(
-            array('Search Database', 'citations/search'),
-            array('Import Citations', 'citations/import'),
-            array('Publish Citations', 'citations/publish'),
-            array('Not List Maintenance', 'citations/not-list'),
-        );
-        $items = array();
-        foreach ($links as $link_info) {
-            list($label, $url) = $link_info;
-            $link = l($label, $url);
-            $class = $label == $active ? 'active' : 'inactive';
-            $items[] = array(
-                'data' => $link,
-                'class' => array($class),
-            );
-        }
-        return array(
-            '#type' => 'container',
-            '#attributes' => array('id' => 'left-nav'),
-            'nav' => array(
-                '#theme' => 'item_list',
-                '#items' => $items,
-            ),
-        );
     }
 }
 
