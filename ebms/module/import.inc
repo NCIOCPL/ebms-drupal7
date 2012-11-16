@@ -342,9 +342,11 @@ function pdq_ebms_import_board_ajax($form, $form_state) {
 }
 
 function pdq_ebms_import_form_validate($form, &$form_state) {
-    if ($form_state['values']['op'] == 'CANCEL') {
-        drupal_goto(EbmsImport::$url);
-        return;
+    if (isset($form_state['values']['op'])) {
+        if ($form_state['values']['op'] == 'CANCEL') {
+            drupal_goto(EbmsImport::$url);
+            return;
+        }
     }
     if (!$form_state['values']['board'])
         form_set_error('board', 'You must select a board for article import');
