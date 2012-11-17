@@ -992,10 +992,16 @@ function pdq_ebms_upload_files() {
 }
 
 function pdq_ebms_debug($where, $what) {
-    $now = date('c');
-    file_put_contents('/tmp/ebms.debug',
-                      "$now $where\n" . print_r($what, TRUE) .
-                      "\n", FILE_APPEND);
+    //$host = $_SERVER['HTTP_HOST'];
+    //if (strpos($host, 'ebms-dev') === 0 || strpos($host, 'ebms-qa') === 0) {
+    if (Ebms\DEV || Ebms\QA) {
+        $now = date('c');
+        file_put_contents(
+            '/tmp/ebms.debug',
+            "$now $where\n" . print_r($what, TRUE) . "\n",
+            FILE_APPEND);
+        drupal_chmod('/tmp/ebms.debug', 0644);
+    }
 }
 
 function pdq_ebms_stub() {
