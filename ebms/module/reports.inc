@@ -753,25 +753,25 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
         );
     }
     pdq_ebms_debug("REPORT NAME", $report);
-    /*
     if (!strcmp($report, 'Citation Summary Topic Changes') ||
         !strcmp($report, 'Citations Not Selected for Full Text Retrieval')) {
-        pdq_ebms_debug("REPORT NAME TEST", 'Yes!');
         $form['top']['report-form']['ajax fields']['start-date'] = array(
             '#type' => 'date',
-            '#title' => 'Start Date',
+            '#title' => 'START DATE',
             '#title_display' => 'after',
             '#default_value' => $start_date,
-            '#attributes' => array('class' => array('fixed-width')),
+            '#pre_render' => array('pdq_ebms_fix_date'),
+            '#attributes' => array('class' => array('right-aligned-date')),
         );
         $form['top']['report-form']['ajax fields']['end-date'] = array(
             '#type' => 'date',
-            '#title' => 'Start Date',
+            '#title' => 'END DATE',
             '#title_display' => 'after',
-            '#default_value' => $start_date,
-            '#attributes' => array('class' => array('fixed-width')),
+            '#default_value' => $end_date,
+            '#pre_render' => array('pdq_ebms_fix_date'),
+            '#attributes' => array('class' => array('right-aligned-date')),
         );
-    }*/
+    }
     pdq_ebms_debug("SWITCH STATEMENT",
         array($report, $boards, $board, $cycle));
     if ($report && $values['op'] == 'Submit') {

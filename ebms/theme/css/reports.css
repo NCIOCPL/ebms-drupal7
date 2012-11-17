@@ -47,6 +47,11 @@ form .box-on-right .form-item.form-type-checkbox:not(#foo) label {
 .form-type-date div div:last-child select { width: 75px; }
 .date-with-range { width: 500px; float: left; }
 
+div.right-aligned-date { float: left; width: 500px; }
+div.right-aligned-date > div { float: right; margin: 0 0 5px 5px; }
+div.right-aligned-date + label.option {
+    float: left; margin-top: 4px; text-transform: uppercase; margin-left: 10px;
+}
 #report { clear: both; }
 #report caption { font-weight: bold; margin-top: 50px; margin-bottom: 20px; }
 #report .meta { margin-left: 11px; }
