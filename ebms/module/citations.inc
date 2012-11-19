@@ -177,8 +177,7 @@ namespace {
 
                 $form = drupal_get_form('pdq_ebms_full_citation', $article_id);
 
-                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null,
-                        false);
+                $result['left_nav'] = \Ebms\Util::build_left_nav();
 
                 $result['left_nav']['actions'] = _build_full_citation_actions($article_id);
 
@@ -192,8 +191,7 @@ namespace {
                 $form = drupal_get_form('pdq_ebms_citation_not_list');
 
 
-                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav('Not List Maintentance',
-                        false);
+                $result['left_nav'] = \Ebms\Util::build_left_nav('Not List Maintentance');
 
                 $result['not_list_form'] = $form;
 
@@ -204,8 +202,7 @@ namespace {
 
                 $form = drupal_get_form('pdq_ebms_citation_queue', $is_librarian);
 
-                $result['left_nav'] = \Ebms\Util::build_librarian_left_nav(null,
-                        false);
+                $result['left_nav'] = \Ebms\Util::build_left_nav();
 
                 $result['cite_queue_form'] = $form;
 
