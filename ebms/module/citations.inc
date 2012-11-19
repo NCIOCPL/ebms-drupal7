@@ -64,43 +64,43 @@ namespace Ebms {
             $index = 1;
             self::$INITIALREVIEW =
                 new EbmsTopicDecisions($index++,
-                'Medical Librarian Initial Review', null,
-                array(EbmsArticleStates::PassedInitReview),
-                array(EbmsArticleStates::RejectInitReview));
+                    'Medical Librarian Initial Review', null,
+                    array(EbmsArticleStates::PassedInitReview),
+                    array(EbmsArticleStates::RejectInitReview));
             self::$PUBLISHED =
                 new EbmsTopicDecisions($index++, 'Publishing',
-                '_format_topic_publishing', array(EbmsArticleStates::Published));
+                    '_format_topic_publishing', array(EbmsArticleStates::Published));
             self::$NCIREVIEWER =
                 new EbmsTopicDecisions($index++, 'NCI Reviewer Decision', null,
-                array(EbmsArticleStates::PassedBMReview),
-                array(EbmsArticleStates::RejectBMReview));
+                    array(EbmsArticleStates::PassedBMReview),
+                    array(EbmsArticleStates::RejectBMReview));
             self::$FULLTEXT =
                 new EbmsTopicDecisions($index++, 'Full Text Retrieved', null);
             self::$SURVEILLANCE =
                 new EbmsTopicDecisions($index++,
-                'Literature Surveillance Committee Decision', null,
-                array(EbmsArticleStates::PassedFullReview),
-                array(EbmsArticleStates::RejectFullReview),
-                array(EbmsArticleStates::FYI));
+                    'Literature Surveillance Committee Decision', null,
+                    array(EbmsArticleStates::PassedFullReview),
+                    array(EbmsArticleStates::RejectFullReview),
+                    array(EbmsArticleStates::FYI));
             self::$ASSIGNEDFORREVIEW =
                 new EbmsTopicDecisions($index++, 'Assigned For Review');
             self::$BOARDMEMBERRESPONSES =
                 new EbmsTopicDecisions($index++, 'Board Member Responses');
             self::$BOARDMANAGERACTIONS =
                 new EbmsTopicDecisions($index++, 'Board Manager Action(s)',
-                '_format_topic_board_manager_actions',
-                array(
-                EbmsArticleStates::NotForAgenda,
-                EbmsArticleStates::AgendaFutureChg,
-                EbmsArticleStates::AgendaFutureDiscuss,
-                EbmsArticleStates::FullEnd,));
+                    '_format_topic_board_manager_actions',
+                    array(
+                        EbmsArticleStates::NotForAgenda,
+                        EbmsArticleStates::AgendaFutureChg,
+                        EbmsArticleStates::AgendaFutureDiscuss,
+                        EbmsArticleStates::FullEnd,));
             self::$ONAGENDA =
                 new EbmsTopicDecisions($index++, 'On Agenda', null,
-                array(EbmsArticleStates::OnAgenda));
+                    array(EbmsArticleStates::OnAgenda));
             self::$EDITORIALBOARD =
                 new EbmsTopicDecisions($index++, 'Editorial Board Decision',
-                '_format_topic_editorial_board_decision',
-                array(EbmsArticleStates::FinalBoardDecision));
+                    '_format_topic_editorial_board_decision',
+                    array(EbmsArticleStates::FinalBoardDecision));
         }
 
         public function index() {
@@ -597,11 +597,46 @@ namespace {
         return $form;
     }
 
+    function _update_persistent_elements(&$form_state) {
+        if (isset($form_state['triggering_element']['#return_value'])
+            && isset($form_state['triggering_element']['#persist'])) {
+
+            $persist = $form_state['triggering_element']['#persist'];
+            $elementValue = $form_state['triggering_element']['#return_value'];
+
+            // set or clear the related triggered_elements field
+            if ($persist['type'] === 'toggle' &&
+                isset($form_state['triggered_elements'][$elementValue]) &&
+                !empty($form_state['triggered_elements'][$elementValue])) {
+                $groupId = $form_state['triggered_elements'][$elementValue]['group'];
+                // clear this and all other elements with same groupid
+                $toRemove = array();
+                foreach ($form_state['triggered_elements'] as $key => $element) {
+                    if ($element['group'] === $groupId)
+                        $toRemove[] = $key;
+                }
+
+                foreach ($toRemove as $elementId) {
+                    unset($form_state['triggered_elements'][$elementId]);
+                }
+
+                // keep an empty element to prevent counting as triggered
+                $form_state['triggered_elements'][$elementValue] = array();
+            } else {
+                $form_state['triggered_elements'][$elementValue] = $persist;
+                $form_state['triggered_elements'][$elementValue]['state'] = $form_state['triggering_element'];
+            }
+        }
+    }
+
     function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
         require_once('EbmsArticle.inc');
 
         //include js to redirect pager links
         $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
+
+        // maintain triggered element states
+        _update_persistent_elements($form_state);
 
         // retrieve boards
         $boards = Ebms\Util::boards();
@@ -609,6 +644,8 @@ namespace {
         //db_select('ebms_not_list', 'nl')->join($table, $alias);
         /* $form['#prefix'] = '<div id="citation-div">';
           $form['#suffix'] = '</div>'; */
+        $form['#prefix'] = '<div id="citation-complete-div">';
+        $form['#suffix'] = '</div>';
 
         $form['citation_queue']['#prefix'] = '<div id="citation-form-div">';
         $form['citation_queue']['#suffix'] = '</div>';
@@ -628,42 +665,135 @@ namespace {
             ),
         );
         $form['citation_queue']['board_select']['#options'] += $boards;
-        $form['citation_queue']['topic_select'] = array(
-            '#type' => 'select',
-            '#title' => 'Summary Topic',
-            '#title_display' => 'after',
-            '#options' => array(0 => 'Please select a board.'),
-            '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
-            '#suffix' => '</div>',
-        );
-        if (isset($form_state['values']['board_select'])) {
-            $board_id = $form_state['values']['board_select'];
-            if ($board_id != 0) {
-                $form['citation_queue']['topic_select']['#options'] = array(0 => 'Please select a topic.');
 
-                $result = array();
-                try {
-                    $result = db_select('ebms_topic', 't')->condition('board_id',
-                            $board_id)->fields('t')->execute();
-                } catch (Exception $e) {
-                    
+        if ($is_librarian) {
+            $form['citation_queue']['topic_select'] = array(
+                '#type' => 'select',
+                '#title' => 'Summary Topic',
+                '#title_display' => 'after',
+                '#options' => array(0 => 'Please select a board.'),
+                '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
+                '#suffix' => '</div>',
+            );
+            if (isset($form_state['values']['board_select'])) {
+                $board_id = $form_state['values']['board_select'];
+                if ($board_id != 0) {
+                    $form['citation_queue']['topic_select']['#options'] = array(0 => 'Please select a topic.');
+
+                    $result = array();
+                    try {
+                        $result = db_select('ebms_topic', 't')->condition('board_id',
+                                $board_id)->fields('t')->execute();
+                    } catch (Exception $e) {
+                        
+                    }
+                    foreach ($result as $record) {
+                        $form['citation_queue']['topic_select']['#options'][$record->topic_id]
+                            = $record->topic_name;
+                    }
                 }
-                foreach ($result as $record) {
-                    $form['citation_queue']['topic_select']['#options'][$record->topic_id]
-                        = $record->topic_name;
+            }
+        } else {
+            $form['citation_queue']['topic_select'] = array(
+                '#type' => 'fieldset',
+                '#title' => 'Summary Topic',
+                '#title_display' => 'after',
+                //'options' => array(0 => 'Please select a board.'),
+                '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
+                '#suffix' => '</div>',
+                '#collapsible' => true,
+                '#collapsed' => true,
+                '#tree' => true,
+            );
+            if (isset($form_state['values']['board_select'])) {
+                $board_id = $form_state['values']['board_select'];
+                if ($board_id != 0) {
+                    // build an option list based on all topics related to the given board
+                    $topicRows = db_select('ebms_topic', 't')
+                        ->condition('t.board_id', $board_id)
+                        ->fields('t')
+                        ->execute()
+                        ->fetchAll();
+
+                    $abstractReview = $form_state['values']['abstract_review_check'];
+                    $targetState = $abstractReview ? Ebms\EbmsArticleStates::Published
+                            : Ebms\EbmsArticleStates::PassedBMReview;
+                    $stateId = Ebms\getStateTypebyTextId($targetState)->state_id;
+
+                    $topicOptions = array();
+                    foreach ($topicRows as $topicRow) {
+                        // need to query for each topic to find the number of
+                        // related articles
+                        //depends on abstract/full text review switch
+                        $query = db_select('ebms_article_state', 's');
+                        $query->join('ebms_article', 'a',
+                            'a.article_id = s.article_id');
+
+                        if (!$abstractReview)
+                            $query->isNotNull('a.full_text_id');
+
+                        $count = $query->condition('s.topic_id',
+                                $topicRow->topic_id)
+                            ->condition('s.state_id', $stateId)
+                            ->condition('s.active_status', 'A')
+                            ->condition('s.current', 'Y')
+                            ->countQuery()
+                            ->execute()
+                            ->fetchField();
+
+                        $topicOptions[$topicRow->topic_id] = "$topicRow->topic_name ($count)";
+                    }
+
+                    $form['citation_queue']['topic_select']['options'] = array(
+                        '#type' => 'checkboxes',
+                        '#title' => '',
+                        '#options' => $topicOptions,
+                    );
                 }
             }
         }
 
-        $form['citation_queue']['journal_id_field'] = array(
-            '#type' => 'textfield',
-            '#title' => 'Journal ID',
-            '#title_display' => 'after',
-            '#prefix' => '<div class="citation-input-div">',
-            '#suffix' => '</div>',
-        );
+        if ($is_librarian) {
+            $form['citation_queue']['journal_id_field'] = array(
+                '#type' => 'textfield',
+                '#title' => 'Journal ID',
+                '#title_display' => 'after',
+                '#prefix' => '<div class="citation-input-div">',
+                '#suffix' => '</div>',
+            );
+        } else {
 
-        if (!$is_librarian) {
+            // get all of the cycles
+            $cycles = db_select('ebms_cycle', 'c')
+                ->fields('c')
+                ->execute()
+                ->fetchAllKeyed();
+
+            $form['citation_queue']['cycle_select'] = array(
+                '#type' => 'select',
+                '#title' => 'Review Cycle',
+                '#title_display' => 'after',
+                '#options' => array(0 => ''),
+                '#prefix' => '<div class="citation-input-div">',
+                '#suffix' => '</div>',
+            );
+            $form['citation_queue']['cycle_select']['#options'] += $cycles;
+
+            // get all of the tags
+            $tags = db_select('ebms_article_tag_type', 't')
+                ->fields('t', array('tag_id', 'tag_name'))
+                ->execute()
+                ->fetchAllKeyed();
+
+            $form['citation_queue']['tag_select'] = array(
+                '#type' => 'select',
+                '#title' => 'Tag',
+                '#title_display' => 'after',
+                '#options' => array(0 => ''),
+                '#prefix' => '<div class="citation-input-div">',
+                '#suffix' => '</div>',
+            );
+            $form['citation_queue']['tag_select']['#options'] += $tags;
 
             $checks = array();
             $checks["abstract_review_check"] = array(
@@ -703,11 +833,11 @@ namespace {
             '#type' => 'hidden',
         );
 
-        if (isset($form_state['triggering_element']['#type']) &&
-            $form_state['triggering_element']['#type'] == 'select') {
-            // skip results if updating via ajax
-            return $form;
-        }
+        /* if (isset($form_state['triggering_element']['#type']) &&
+          $form_state['triggering_element']['#type'] == 'select') {
+          // skip results if updating via ajax
+          return $form;
+          } */
 
         _citation_queue_results($form, $form_state, $is_librarian);
 
@@ -719,7 +849,6 @@ namespace {
     }
 
     function _citation_queue_results(&$form, &$form_state, $is_librarian) {
-
         $board_id = 0;
         $topic_id = 0;
         $journal_id = '';
@@ -728,19 +857,28 @@ namespace {
         $per_page = 10;
         $core_only = false;
         $fulltext_review = false;
+        $cycle_id = 0;
+        $tag_id = 0;
 
         // get values if they exist
         if (isset($form_state['values'])) {
             $board_id = $form_state['values']['board_select'];
-            $topic_id = $form_state['values']['topic_select'];
-            $journal_id = $form_state['values']['journal_id_field'];
+            if (isset($form_state['values']['topic_select']))
+                $topic_id = $form_state['values']['topic_select'];
+
             $sort_by = $form_state['values']['sort_by'];
             $format = $form_state['values']['format']['brief'] ? $form_state['values']['format']['brief']
                     : $form_state['values']['format']['abstract'];
             $per_page = $form_state['values']['per_page'];
             //$core_only = $form_state['values']['core_only'];
-            $fulltext_review = isset($form_state['values']['fulltext_review_check'])
-                    ? $form_state['values']['fulltext_review_check'] : false;
+
+            if ($is_librarian) {
+                $journal_id = $form_state['values']['journal_id_field'];
+            } else {
+                $fulltext_review = $form_state['values']['fulltext_review_check'];
+                $cycle_id = $form_state['values']['cycle_select'];
+                $tag_id = $form_state['values']['tag_select'];
+            }
         }
 
         if (!isset($form['citation_queue_results'])) {
@@ -765,18 +903,57 @@ namespace {
             $state = Ebms\getStateTypebyTextId($source_state);
 
             $query->condition('s.state_id', $state->state_id);
+            if ($fulltext_review)
+                $query->isNotNull('a.full_text_id');
             // add the pager early on in the process
             $query = $query->extend('PagerDefault');
 
             // add the other filter fields
             // $topic_id implies $board_id
-            if ($topic_id)
-                $query->condition('s.topic_id', $topic_id);
-            else if ($board_id)
+            if ($topic_id) {
+                if (is_array($topic_id)) {
+                    // grab any non-zero value from the topic_select options
+                    $selectedTopics = array();
+                    foreach ($topic_id['options'] as $selected_id) {
+                        if ($selected_id)
+                            $selectedTopics[] = $selected_id;
+                    }
+
+                    if (!empty($selectedTopics))
+                        $query->condition('s.topic_id', $selectedTopics, 'IN');
+                }
+                else
+                    $query->condition('s.topic_id', $topic_id);
+            }
+
+            if ($board_id)
                 $query->condition('s.board_id', $board_id);
 
             if ($journal_id)
                 $query->condition('a.source_jrnl_id', "%$journal_id%", 'LIKE');
+
+            if ($tag_id) {
+                // need to join query to ebms_article_tag
+                $tagQuery = db_select('ebms_article_tag', 't')
+                    ->condition('t.tag_id', $tag_id)
+                    ->fields('t');
+
+                $query->join($tagQuery, 'tt', 'tt.article_id = s.article_id');
+            }
+
+            if ($cycle_id) {
+                // ultimately need to filter on article id and topic id by the given cycle
+                $batchQuery = db_select('ebms_import_batch', 'b');
+                $batchQuery->join('ebms_import_action', 'act',
+                    'act.import_batch_id = b.import_batch_id');
+
+                $batchQuery->condition('b.cycle_id', $cycle_id)
+                    ->fields('act', array('article_id'))
+                    ->fields('b', array('topic_id'));
+
+                $query->join($batchQuery, 'batch',
+                    "batch.article_id = a.article_id AND batch.topic_id = s.topic_id");
+            }
 
             $query->groupBy('s.article_id');
             $query->condition('s.current', 'Y');
@@ -821,7 +998,15 @@ namespace {
             watchdog('EBMS - citations', (string) $e);
         }
 
-        $results['results-title']['#markup'] = "<h2>Citations Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
+        if ($is_librarian) {
+            $results['results-title']['#markup'] = "<h2>Citations Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
+        } else {
+            if ($fulltext_review) {
+                $results['results-title']['#markup'] = "<h2>Full Text Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
+            } else {
+                $results['results-title']['#markup'] = "<h2>Abstracts Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
+            }
+        }
 
         $results['buttons'] = array(
             '#prefix' => '<div id="citation-buttons-div">',
@@ -848,6 +1033,9 @@ namespace {
             //'#suffix' => "</div>",
         );
 
+        if (!$num_rows)
+            return;
+
         $results['top-pager'] = array(
             '#theme' => 'pager',
             '#attributes' => array(
@@ -855,7 +1043,7 @@ namespace {
             ));
 
         $results['table'] = array(
-            '#prefix' => '<table>',
+            '#prefix' => "<table id='citation-results-table'>",
             '#suffix' => '</table>',
         );
 
@@ -906,6 +1094,7 @@ namespace {
         $results['table']['rows'] = array();
         foreach ($result as $record) {
             $article = new Ebms\EbmsArticle($record->article_id);
+            $articleId = $record->article_id;
 
             // retrieve the topics and related boards
             $curr_topics = explode(',', $record->topics);
@@ -962,9 +1151,11 @@ namespace {
             $rowIx = 0;
             $boardIx = 0;
             $topicIx = 0;
+            $groupId = "";
 
             // set up the rows array, and prep the first one.
             $rows = array();
+
             $rows[$rowIx] = array(
                 '#prefix' => "<tr>",
                 '#suffix' => '</tr>',
@@ -1027,13 +1218,44 @@ namespace {
 
                 // finally, set up the actual row for the boards and topics
             } else {
-                $row['actions']['#prefix'] = "<td rowspan='$topicCount' class='borderless'>";
+                $expandButton = _build_expand_boards_button($form_state,
+                    $article->getId());
+
+                // grab the groupId to use for the related elements
+                foreach ($expandButton['button'] as $button) {
+                    if (isset($button['#persist']['group'])) {
+                        $groupId = $button['#persist']['group'];
+                        break;
+                    }
+                }
+
+                // IF THE BOARDS AND TOPICS ARE EXPANDED FOR ADDITION:
+                if (isset($expandButton['triggered'])) {
+                    // need to add placeholders to the board/topic map
+                    // to represent the slots for adding.
+                    foreach ($boardTopicMap as $index => $localMap) {
+                        $boardTopicMap[$index]['topics'][] = 'Add New';
+                        $topicCount++;
+                    }
+
+                    $boardTopicMap[] = array(
+                        'boardName' => 'Add New',
+                        'topics' => array(),
+                    );
+                    $topicCount++;
+                }
+
+                $row['actions']['#prefix'] = "<td rowspan='$topicCount' class='action-cell borderless'>";
                 $row['actions']['#suffix'] = "</td>";
 
                 $row['actions']['row_num'] = array('#markup' => "<h2 class='borderless'>$recordIx</h2>");
-                /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />');
-                  $row['actions']['edit'] = array('#type' => 'submit', '#value' => t('Edit'), '#suffix' => '<br />'); */
+                /* $row['actions']['flag'] = array('#type' => 'submit', '#value' => t('Flag'), '#suffix' => '<br />'); */
+
+                $row['actions']['edit'] = $expandButton;
+                _wrap_in_classes($row['actions']['edit'], array('clearfix'));
+
                 $row['actions']['tag'] = _build_add_tag_popup($article->getId());
+                _wrap_in_classes($row['actions']['tag'], array('clearfix'));
 
                 $row['brief_citation']['#markup'] =
                     "<td rowspan='$topicCount' class='brief-citation left-column borderless'><a href='/citations/full/$record->article_id'>$cite</a></td>";
@@ -1043,70 +1265,285 @@ namespace {
                 // the topics
                 $topicIx = 0;
                 $boardName = $boardTopicMap[$boardIx]['boardName'];
+                $currBoard = 0;
+                if ($boardName !== 'Add New') {
+                    $currBoard = Ebms\getBoardIdByName($boardName);
+                }
                 $boardTopicCount = sizeof($boardTopicMap[$boardIx]['topics']);
 
                 $boardClass = 'board-cell';
                 if ($isAbstract) {
+                    $expandButton = _build_expand_boards_button($form_state,
+                        $article->getId(), $currBoard);
+
+                    // grab the groupId to use for the related elements
+                    foreach ($expandButton['button'] as $button) {
+                        if (isset($button['#persist']['group'])) {
+                            $groupId = $button['#persist']['group'];
+                            break;
+                        }
+                    }
+
+                    // IF THE BOARDS AND TOPICS ARE EXPANDED FOR ADDITION:
+                    if (isset($expandButton['triggered'])) {
+                        // need to add a placeholder to the board/topic map
+                        // to represent the slot for adding a topic.
+                        $boardTopicMap[$boardIx]['topics'][] = 'Add New';
+                        $boardTopicCount++;
+                    }
+
+                    $row['actions']['edit'] = $expandButton;
+                    _wrap_in_classes($row['actions']['edit'], array('clearfix'));
+
                     $row['actions']['#prefix'] = "<td rowspan='$boardTopicCount' class='borderless'>";
                     $row['actions']['#suffix'] = "</td>";
 
                     $boardClass = "borderless";
-                    //$row['actions']['edit'] = array('#markup' => ($ix + $first_row) . "<br />");
                 }
 
-                $row['board']['#markup'] = "<td class='$boardClass' rowspan='$boardTopicCount'>$boardName</td>";
+                // preserve any existing choice for new boards
+                if ($currBoard === 0) {
+                    // first check for persistent value
+                    $hash = "$articleId|";
+                    $selectId = "add_board_$hash";
+
+                    if (_is_triggered_by($form_state, $selectId)) {
+                        // check for existing board choice
+                        if (isset($form_state['values'][$selectId])) {
+                            $currBoard = $form_state['values'][$selectId];
+                            $boardName = Ebms\getBoardNameById($currBoard);
+                        }
+                    }
+
+                    // create dropdown
+                    // build a list of board options
+                    $boardOptions = array();
+                    $dbBoards = db_select('ebms_board', 'b')->fields('b')->execute()->fetchAll();
+                    foreach ($dbBoards as $board) {
+                        $boardFound = false;
+                        foreach ($boardTopicMap as $localMap) {
+                            if ($localMap['boardName'] === $board->board_name) {
+                                $boardFound = true;
+                                break;
+                            }
+                        }
+
+                        if (!$boardFound)
+                            $boardOptions[$board->board_id] = $board->board_name;
+                    }
+
+                    if (empty($boardOptions)) {
+                        // nothing to show, blank this row out
+                        $row = array(
+                            '#prefix' => "<tr>",
+                            '#suffix' => '</tr>',
+                        );
+                        $boardIx++;
+                        continue;
+                    }
+
+                    $options = array();
+                    $options[0] = 'ADD NEW';
+                    $options += $boardOptions;
+
+                    $row['board'][$selectId] = array(
+                        '#type' => 'select',
+                        '#title' => '',
+                        '#options' => $options,
+                        '#return_value' => $selectId,
+                        '#persist' => array(
+                            'type' => 'update',
+                            'group' => $groupId),
+                        '#ajax' => array(
+                            'event' => 'change',
+                            'callback' => '_ajax_expand_boards',
+                            'wrapper' => 'citation-results-div',
+                        //'progress' => array('message' => '!'),
+                        ),
+                    );
+
+                    $row['board']['#prefix'] = "<td class='$boardClass'>";
+                    $row['board']['#suffix'] = "</td>";
+
+                    $topicText = '&nbsp';
+
+                    // if no board choice, drop in an empty topic
+                    if ($currBoard === 0) {
+                        $topicspan = $colspan - 1;
+                        $row['empty']['#markup'] = "<td colspan='$topicspan'>$topicText</td>";
+                    } else {
+                        // else add an 'add new' element to the board map
+                        $boardTopicMap[$boardIx]['topics'][] = 'Add New';
+                    }
+                } else {
+                    $row['board']['#markup'] = "<td class='$boardClass' rowspan='$boardTopicCount'>$boardName</td>";
+                }
 
                 while (isset($boardTopicMap[$boardIx]['topics'][$topicIx])) {
                     $topic = $boardTopicMap[$boardIx]['topics'][$topicIx];
 
-                    $button = _build_add_tag_popup($article->getId(),
-                        $topic->topic_id);
-                    // create topic label
-                    $row['topic']['button'] = $button;
-                    $row['topic']['name']['#markup'] = "$topic->topic_name";
+                    $currTopic = 0;
+                    $topicName = '';
 
-                    $row['topic']['#prefix'] = "<td class='summary-topic-name'>";
-                    $row['topic']['#suffix'] = "</td>";
+                    if ($topic == 'Add New') {
+                        $topicName = $topic;
+                    } else {
+                        $currTopic = $topic->topic_id;
+                        $topicName = $topic->topic_name;
+                    }
 
-                    $hash = "$record->article_id|$topic->topic_id";
-                    $actions = _get_topic_actions($form_state, $hash);
+                    if ($currTopic === 0) {
+                        $topicSelectId = "add_topic_$hash";
 
-                    // create reject button
-                    $row['reject']['#prefix'] = "<td class='summary-topic-check'>";
-                    $row['reject']['#suffix'] = "</td>";
+                        // check for existing board choice
+                        if (isset($form_state['values'][$topicSelectId])) {
+                            $currTopic = $form_state['values'][$topicSelectId];
+                        }
 
-                    $row['reject']["reject_$hash"] = array(
-                        '#type' => 'checkbox',
-                        '#title' => t('Reject'),
-                    );
-                    if (isset($actions[$hash]['reject']) &&
-                        $actions[$hash]['reject'])
-                        $row['reject']["reject_$hash"]['#default_value'] = 1;
+                        // check the triggered elements as a backup
+                        if (isset($form_state['triggered_elements'][$topicSelectId]['state']['#value'])) {
+                            $currTopic = $form_state['triggered_elements'][$topicSelectId]['state']['#value'];
+                        }
 
-                    // create pass button
-                    $row['pass']['#prefix'] = "<td class='summary-topic-check'>";
-                    $row['pass']['#suffix'] = "</td>";
+                        if ($currTopic) {
+                            $topicName = Ebms\getTopicNameById($currTopic);
 
-                    $row['pass']["pass_$hash"] = array(
-                        '#type' => 'checkbox',
-                        '#title' => t('Pass'),
-                    );
-                    if (isset($actions[$hash]['pass']) &&
-                        $actions[$hash]['pass'])
-                        $row['pass']["pass_$hash"]['#default_value'] = 1;
+                            // need to replace the current index with a proper topic object
+                            if ($currTopic) {
+                                $topic = db_select('ebms_topic', 't')
+                                    ->condition('t.topic_id', $currTopic)
+                                    ->fields('t')
+                                    ->execute()
+                                    ->fetch();
+                            }
+                        } else {
+                            // if the topic is still 0, carry on with no selected topic
+                            // 
+                            // find the board id, and build a list or available topics
+                            if ($currBoard) {
+                                $topicRows = db_select('ebms_topic', 't')
+                                    ->condition('t.board_id', $currBoard)
+                                    ->fields('t')
+                                    ->execute()
+                                    ->fetchAll();
 
-                    if ($fulltext_review) {
-                        // create fyi button
-                        $row['fyi']['#prefix'] = "<td class='summary-topic-check'>";
-                        $row['fyi']['#suffix'] = "</td>";
+                                $availableTopics = array();
+                                // check each of this board's topics to see if it is
+                                // not yet added
+                                foreach ($topicRows as $topicRow) {
+                                    $hasTopic = false;
+                                    foreach ($boardTopicMap[$boardIx]['topics'] as
+                                            $boardTopic) {
+                                        if ($boardTopic !== 'Add New' && $topicRow->topic_id == $boardTopic->topic_id)
+                                            $hasTopic = true;
+                                        break;
+                                    }
 
-                        $row['fyi']["fyi_$hash"] = array(
+                                    if (!$hasTopic) {
+                                        $availableTopics[$topicRow->topic_id] = $topicRow->topic_name;
+                                    }
+                                }
+
+                                if (empty($availableTopics)) {
+                                    // simply add a blank cell of the proper width
+                                    $topicspan = $colspan - 1;
+                                    $row['empty']['#markup'] = "<td colspan='$topicspan' class='summary-topic-name'>&nbsp;</td>";
+                                } else {
+                                    // create a select field for the topic
+                                    $options = array();
+                                    $options[0] = 'ADD NEW';
+                                    $options += $availableTopics;
+
+                                    $row['topic_select'][$topicSelectId] = array(
+                                        '#type' => 'select',
+                                        '#title' => '',
+                                        '#options' => $options,
+                                        '#return_value' => $topicSelectId,
+                                        '#persist' => array(
+                                            'type' => 'update',
+                                            'group' => $groupId),
+                                        '#ajax' => array(
+                                            'event' => 'change',
+                                            'callback' => '_ajax_expand_boards',
+                                            'wrapper' => 'citation-results-div',
+                                        //'progress' => array('message' => '!'),
+                                        ),
+                                    );
+
+                                    $topicspan = $colspan - 1;
+                                    $row['topic_select']['#prefix'] = "<td colspan='$topicspan' class='summary-topic-name'>";
+                                    $row['topic_select']['#suffix'] = "</td>";
+                                }
+                            } else {
+                                // simply add a blank cell of the proper width
+                                $topicspan = $colspan - 1;
+                                $row['empty']['#markup'] = "<td colspan='$topicspan' class='summary-topic-name'>&nbsp;</td>";
+                            }
+                        }
+                    }
+
+                    // if the topic is now or has been set...
+                    if ($currTopic) {
+                        $button = _build_add_tag_popup($article->getId(),
+                            $currTopic);
+                        // create topic label
+                        $row['topic']['button'] = $button;
+                        $row['topic']['name']['#markup'] = "<div>$topic->topic_name</div>";
+
+                        $tags = Ebms\getTagHistory($articleId, $currTopic);
+                        $tagNames = array();
+                        foreach ($tags as $tag) {
+                            $tagNames[] = $tag->type_name;
+                        }
+
+                        if (!empty($tagNames)) {
+                            $list = implode(', ', $tagNames);
+                            $row['topic']['tags']['#markup'] = "<div>TAGS: $list</div>";
+                        }
+
+                        $row['topic']['#prefix'] = "<td class='summary-topic-name'>";
+                        $row['topic']['#suffix'] = "</td>";
+
+                        $hash = "$record->article_id|$topic->topic_id";
+                        $actions = _get_topic_actions($form_state, $hash);
+
+                        // create reject button
+                        $row['reject']['#prefix'] = "<td class='summary-topic-check'>";
+                        $row['reject']['#suffix'] = "</td>";
+
+                        $row['reject']["reject_$hash"] = array(
                             '#type' => 'checkbox',
-                            '#title' => t('FYI'),
+                            '#title' => t('Reject'),
                         );
-                        if (isset($actions[$hash]['fyi']) &&
-                            $actions[$hash]['fyi'])
-                            $row['fyi']["fyi_$hash"]['#default_value'] = 1;
+                        if (isset($actions[$hash]['reject']) &&
+                            $actions[$hash]['reject'])
+                            $row['reject']["reject_$hash"]['#default_value'] = 1;
+
+                        // create pass button
+                        $row['pass']['#prefix'] = "<td class='summary-topic-check'>";
+                        $row['pass']['#suffix'] = "</td>";
+
+                        $row['pass']["pass_$hash"] = array(
+                            '#type' => 'checkbox',
+                            '#title' => t('Pass'),
+                        );
+                        if (isset($actions[$hash]['pass']) &&
+                            $actions[$hash]['pass'])
+                            $row['pass']["pass_$hash"]['#default_value'] = 1;
+
+                        if ($fulltext_review) {
+                            // create fyi button
+                            $row['fyi']['#prefix'] = "<td class='summary-topic-check'>";
+                            $row['fyi']['#suffix'] = "</td>";
+
+                            $row['fyi']["fyi_$hash"] = array(
+                                '#type' => 'checkbox',
+                                '#title' => t('FYI'),
+                            );
+                            if (isset($actions[$hash]['fyi']) &&
+                                $actions[$hash]['fyi'])
+                                $row['fyi']["fyi_$hash"]['#default_value'] = 1;
+                        }
                     }
 
                     // done with this row, set up the next.
@@ -1125,10 +1562,11 @@ namespace {
             }
 
             // should be an extra, empty row, unset it
-            unset($rows[$rowIx]);
+            if ($boardName != 'Add New') {
+                unset($rows[$rowIx]);
+            }
 
             $results['table']['rows'][$ix] = $rows;
-
             $ix++;
         }
 
@@ -1257,14 +1695,18 @@ namespace {
                     $clear_states = true;
                     break;
                 case 'Sort':
-                case 'Refresh':
                     $clear_states = true;
+                    break;
+                case 'Refresh':
+
                     break;
             }
         }
 
-        if ($clear_states)
+        if ($clear_states) {
             $form_state['altered_topics'] = array();
+            $form_state['triggered_elements'] = array();
+        }
 
         // wipe out button values so that the default_values calculated from
         // altered topics can take effect
@@ -1289,8 +1731,8 @@ namespace {
                 $children = $abstractXml->children();
 
                 foreach ($children as $element) {
-                    $text = (string) $element;
-                    $label = $element['Label'];
+                    $text = htmlspecialchars((string) $element);
+                    $label = htmlspecialchars($element['Label']);
                     if ($label)
                         $pieces[] = "<div class='citation-abstract-label'>$label</div>";
 
@@ -1389,8 +1831,16 @@ namespace {
             }
 
             $pieces[] = '<div>';
-            if (!$showAbstract)
-                $pieces[] = '<a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
+            if (!$showAbstract) {
+                ctools_include('ajax');
+                ctools_include('modal');
+                ctools_modal_add_js();
+
+                $link = ctools_modal_text_button('VIEW ABSTRACT',
+                    "citations/nojs/view_abstract/$article_id", 'View Abstract');
+
+                $pieces[] = "$link | "; //'<a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
+            }
 
             // build full citation text url
             $fileUrl = null;
@@ -1557,7 +2007,7 @@ namespace {
      * @param mixed $classes An array of class string to be added to the wrapping
      *      div.
      */
-    function _wrap_in_classes(&$form, $classes) {
+    function _wrap_in_classes(&$form, $classes = array()) {
         $classText = implode(' ', $classes);
         $form['#prefix'] = "<div class='$classText'>";
         $form['#suffix'] = "</div>";
@@ -2088,18 +2538,22 @@ namespace {
      *                              element with the given return value.
      */
     function _is_triggered_by(&$form_state, $element_value) {
+        // check existing triggered elements
+        if (isset($form_state['triggered_elements'][$element_value])) {
+            return empty($form_state['triggered_elements'][$element_value]) ? 'cleared'
+                    : 'persist';
+        }
+
+        // otherwise check for recently triggered elements
         if ((isset($form_state['triggering_element']['#return_value']) &&
             $form_state['triggering_element']['#return_value'] == $element_value)
         )
             return 'trigger';
 
-        if (isset($form_state['form_progress'][$element_value]))
-            return 'progress';
-
         return false;
     }
 
-    function _build_add_tag_form($article_id, $topic_id = null) {
+    function _build_add_tag_form($article_id, $topic_id = null, $js = false) {
         $form = array();
 
         $hash = "$article_id|$topic_id";
@@ -2134,11 +2588,45 @@ namespace {
             '#submit' => array('_form_cancel'),
         );
 
+        if ($js) {
+            // drop in ajax-specific versions of the submit functions
+            $form["tag_save_$hash"]['#submit'] = array('_add_tag_save_js');
+            $form["tag_cancel_$hash"]['#submit'] = array('_form_cancel_js');
+        }
+
         return $form;
+    }
+
+    function _form_cancel_js($form, &$form_state) {
+        // ensure the form is not rebuilt.
+        $form_state['rebuild'] = FALSE;
+
+        // issue command to close the window
+        ctools_include('modal');
+        $commands = array();
+        $commands[] = ctools_modal_command_dismiss();
+
+        print ajax_render($commands);
+        exit;
     }
 
     function _form_cancel($form, &$form_state) {
         $form_state['rebuild'] = TRUE;
+    }
+
+    function _add_tag_save_js($form, &$form_state) {
+        // wrap the normal submit
+        _add_tag_save($form, $form_state);
+
+        // issue command to close the window
+        ctools_include('modal');
+        $commands = array();
+        $commands[] = ctools_modal_command_dismiss();
+        $commands[] = ajax_command_invoke('#pdq-ebms-citation-queue #edit-refresh-button',
+            'click');
+
+        print ajax_render($commands);
+        exit;
     }
 
     function _add_tag_save($form, &$form_state) {
@@ -2383,13 +2871,20 @@ namespace {
     }
 
     function _build_add_tag_popup($articleId, $topicId = null) {
+        ctools_include('ajax');
+        ctools_include('modal');
+        ctools_modal_add_js();
+
         $form = array();
 
         // grab icon for button
         $iconPath = Ebms\TAG_INACTIVE;
 
+        $button = ctools_modal_image_button($iconPath,
+            "citations/nojs/add_tag/$articleId/$topicId", 'Add Tag');
+
         // create edit decision button
-        $form['#markup'] = "<a><img src='$iconPath' /></a>";
+        $form['#markup'] = $button;
 
         return $form;
     }
@@ -2478,7 +2973,7 @@ namespace {
     function _build_edit_decision_button(&$form_state, $articleId, $topicId,
         Ebms\EbmsTopicDecisions $decision) {
         return _build_add_decision_button($form_state, $articleId, $topicId,
-            array($decision));
+                array($decision));
     }
 
     function _build_add_decision_button(&$form_state, $articleId, $topicId,
@@ -4266,7 +4761,152 @@ namespace {
     }
 
     function _ajax_full_citation($form, &$form_state) {
+        $form_state['rebuild'] = true;
 
         return $form;
+    }
+
+    function _ajax_modal_add_tag($js, $articleId, $topicId = null) {
+        // grab the resource stylesheet
+        $css_path = drupal_get_path('theme', 'ebmstheme');
+        $css_path .= "/css/citations.css";
+        drupal_add_css($css_path, array('type' => 'file'));
+
+        $form = drupal_get_form('_ajax_modal_add_tag_form', $js, $articleId,
+            $topicId);
+
+        if ($js) {
+            // react with the modal
+            ctools_include('ajax');
+            ctools_include('modal');
+            ctools_modal_add_js();
+
+            $output = drupal_render($form);
+
+            $form_state = array();
+            $form_state['title'] = $topicId ? t('TAG TOPIC') : t('TAG CITATION');
+            $commands = ctools_modal_form_render($form_state, $output);
+
+            print ajax_render($commands);
+            exit;
+        } else {
+            return $form;
+        }
+    }
+
+    function _ajax_modal_add_tag_form($form, &$form_state, $js, $articleId,
+        $topicId = null) {
+
+        $form['add_tag'] = _build_add_tag_form($articleId, $topicId, $js);
+        $form['add_tag']['#prefix'] = "<div class='full-citation-form'>";
+        $form['add_tag']['#suffix'] = "</div>";
+
+        $form['#prefix'] = "<div id='citation-form-div'>";
+        $form['#suffix'] = "</div>";
+
+        return $form;
+    }
+
+    function _ajax_modal_view_abstract($js, $articleId) {
+        // grab the resource stylesheet
+        $css_path = drupal_get_path('theme', 'ebmstheme');
+        $css_path .= "/css/citations.css";
+        drupal_add_css($css_path, array('type' => 'file'));
+
+        $form = drupal_get_form('_ajax_modal_view_abstract_form', $articleId);
+
+        if ($js) {
+            // react with the modal
+            ctools_include('ajax');
+            ctools_include('modal');
+            ctools_modal_add_js();
+
+            $output = drupal_render($form);
+
+            $form_state = array();
+            $form_state['title'] = t('VIEW ABSTRACT');
+            $commands = ctools_modal_form_render($form_state, $output);
+
+            print ajax_render($commands);
+            exit;
+        } else {
+            return $form;
+        }
+    }
+
+    function _ajax_modal_view_abstract_form($form, &$form_state, $articleId) {
+        require_once('EbmsArticle.inc');
+
+        $article = new Ebms\EbmsArticle($articleId);
+        $abstract = _format_abstract($article);
+        $form['abstract']['#markup'] = $abstract;
+
+        // build pubmed direct link
+        $target = array('attributes' => array('target' => '_blank'));
+        $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
+        $pm_id = $article->getSourceId();
+        $pm_link = $pubmed . $pm_id;
+
+        $item = l(t('VIEW ABSTRACT ON PUBMED'), $pm_link, $target);
+
+        $form['pubmed_link']['#markup'] = "<div>$item</div>";
+
+        $form['#prefix'] = "<div id='view-abstract-div'>";
+        $form['#suffix'] = "</div>";
+
+        return $form;
+    }
+
+    function _build_expand_boards_button(&$form_state, $articleId, $boardId = 0) {
+        $form = array();
+
+        // create hash for article/board
+        $hash = "$articleId|$boardId";
+
+        $buttonId = "expand_board_$hash";
+        $groupId = "expand_$hash";
+
+        // check if related form is triggered
+        $triggered = _is_triggered_by($form_state, $buttonId);
+
+        if ($triggered === 'persist') {
+            // grab icon for button
+            $iconPath = Ebms\EDIT_ACTIVE;
+
+            $form['triggered'] = array();
+        } else {
+            // grab icon for button
+            $iconPath = Ebms\EDIT_INACTIVE;
+        }
+
+        // create edit decision button
+        $form['button'][$buttonId] = array(
+            '#type' => 'image_button',
+            '#return_value' => $buttonId,
+            '#src' => $iconPath,
+            '#ajax' => array(
+                'callback' => '_ajax_expand_boards',
+                'wrapper' => 'citation-results-div',
+                'progress' => array(
+                    'type' => 'throbber',
+                    'message' => t('')),
+            ),
+            '#attributes' => array(
+                'class' => array('full-citation-button', 'image-button'),
+                'title' => 'Add Topic',
+                'alt' => 'Add Topic',
+            ),
+            '#persist' => array(
+                'type' => 'toggle',
+                'group' => $groupId),
+        );
+
+        return $form;
+    }
+
+    function _ajax_expand_boards($form, &$form_state) {
+        $form_state['rebuild'] = true;
+
+        return $form['citation_queue_results'];
     }
 }

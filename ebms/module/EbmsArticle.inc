@@ -2159,6 +2159,10 @@ function getTagTypeNames($articleOnly = true) {
     // query for the tag text IDs and tag names
     $query = db_select('ebms_article_tag_type', 'a')
         ->condition('a.active_status', 'A');
+    
+    if($articleOnly)
+        $query->condition('a.topic_required', 'N');
+    
     $result = $query->fields('a', array('text_id', 'tag_name'))
         ->execute();
 

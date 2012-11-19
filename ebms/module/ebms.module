@@ -207,7 +207,25 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
+        
+        'citations/%ctools_js/add_tag' => array(
+            'title' => 'Add Tag',
+            'page callback' => '_ajax_modal_add_tag',
+            'page arguments' => array(1, 3, 4),
+            'file' => 'citations.inc',
+            'access callback' => TRUE,
+            'type' => MENU_CALLBACK,
+        ),
 
+        'citations/%ctools_js/view_abstract/%' => array(
+            'title' => 'View Abstract',
+            'page callback' => '_ajax_modal_view_abstract',
+            'page arguments' => array(1, 3),
+            'file' => 'citations.inc',
+            'access callback' => TRUE,
+            'type' => MENU_CALLBACK,
+        ),
+        
         // CALENDAR
         'calendar' => array(
             'page callback' => 'pdq_ebms_calendar',
