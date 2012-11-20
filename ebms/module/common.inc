@@ -1105,4 +1105,35 @@ class Util {
         }
         return false;
     }
+
+    /**
+     * Adds a condition to a DB query, restricting the results to
+     * the date range specified by the caller.
+     *
+     *  @param SelectQuery $query   Reference to query object
+     *  @param array       $start   Beginning of date range
+     *  @param array       $end     End of date range
+     *  @param string      $field   Qualified string for date column
+     *                              to be tested against date range
+     *
+     *  @return                     Boolean indicating whether query
+     *                              was successfully modified.
+     */
+    public static function add_date_range_to_query(&$query, $start, $end,
+        $field)
+    {
+        try {
+            $range = array(
+                @sprintf("%04d-%02d-%02d", $start['year'], $start['month'],
+                    $start['day']),
+                @sprintf("%04d-%02d-%02d 23:59:59", $end['year'],
+                    $end['month'], $end['day']),
+            );
+            $query->condition($field, $range, 'BETWEEN');
+            return true;
+        }
+        catch (Exception $e) {
+            return false;
+        }
+    }
 }

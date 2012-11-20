@@ -1,3 +1,4 @@
+/* #filter-buttons { width: 498px; text-align: right; clear: both; } */
 #left-nav.report-left-nav { margin-top: 15px; margin-bottom: 50px; }
 #reports-image { margin-top: 10px; margin-bottom: 30px; }
 #reports-right-links ul { list-style-type: none; margin-bottom: 50px; }
@@ -14,7 +15,7 @@
 #report-form .form-select.fixed-width { width: 500px; }
 #report-form .form-type-select label { text-transform: uppercase; }
 #left-nav .child { padding-left: 25px; }
-#report-form #report-buttons { width: 500px; text-align: right; clear: both; }
+#report-form #report-buttons { width: 498px; text-align: right; clear: both; }
 #report-form #report-buttons input {
     margin: 15px 0 12px 12px; padding: 10px 12px;
 }
@@ -37,21 +38,24 @@ form .box-on-right .form-item.form-type-checkbox:not(#foo) label {
     float: left; margin-left: 10px; margin-top: 0;
     text-transform: uppercase; font-weight: normal;
 }
-/* Month, day, year order */
-.form-type-date div div select { width: 75px; }
-.form-type-date div div:first-child select { width: 150px; }
-.form-type-date div div:last-child select { width: 125px; }
 /* Year, month, day order */
 .form-type-date div div select { width: 150px; }
 .form-type-date div div:first-child select { width: 125px; }
 .form-type-date div div:last-child select { width: 75px; }
+
+/* Month, day, year order */
+.form-type-date div div select { width: 75px; }
+.form-type-date div div:first-child select { width: 150px; }
+.form-type-date div div:last-child select { width: 125px; }
+
 .date-with-range { width: 500px; float: left; }
 
-div.right-aligned-date { float: left; width: 500px; }
-div.right-aligned-date > div { float: right; margin: 0 0 5px 5px; }
+div.right-aligned-date { float: left; margin-left: 126px; }
+div.right-aligned-date > div { margin: 0 0 5px 5px; }
 div.right-aligned-date + label.option {
-    float: left; margin-top: 4px; text-transform: uppercase; margin-left: 10px;
+    float: left; margin-top: 2px; text-transform: uppercase; margin-left: 10px;
 }
+
 #report { clear: both; }
 #report caption { font-weight: bold; margin-top: 50px; margin-bottom: 20px; }
 #report .meta { margin-left: 11px; }
@@ -70,3 +74,12 @@ div.right-aligned-date + label.option {
 #report.initial-decision th, #report.initial-decision td { width: 25%; }
 #report.initial-decision th:first-child,
 #report.initial-decision td:first-child { width: 50%; }
+#report.manager-rejection th, #report.manager-rejection td {
+    text-align: left; width: 5%;
+}
+#report.manager-rejection th.col-3, #report.manager-rejection td.col-3 {
+    width: 26%;
+}
+#report.manager-rejection th.col-4, #report.manager-rejection td.col-4 {
+    width: 14%;
+}
