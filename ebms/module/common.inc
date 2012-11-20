@@ -436,7 +436,7 @@ class Journal {
                     db_update('ebms_journal')
                         ->fields(
                             array(
-                                'jrnl_title' => $nlmJounal->title,
+                                'jrnl_title' => $nlmJournal->title,
                                 'brf_jrnl_title' => $nlmJournal->brief,
                             )
                         )
