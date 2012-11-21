@@ -49,7 +49,7 @@ class EbmsImport {
 
     function more_actions() {
         $items = array(
-            l('View Past Imports', 'stub'),
+            l('View Past Imports', 'reports/import'),
         );
         $url = Ebms\IMAGES_DIR . '/left-nav-box-bottom.png';
         $img = "<img class='ebms-left-nav-block-bottom' src='$url' alt='' />";
@@ -173,13 +173,11 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
         'placement' => array(
             '#type' => 'select',
             '#title' => 'PLACEMENT LEVEL',
-            '#options' => drupal_map_assoc(
-                array(
-                    '',
-                    'Passed Board Manager',
-                    'Passed full text review',
-                    'On agenda',
-                )
+            '#options' => array(
+                '' => ' ',
+                'PassedBMReview' => 'Passed Board Manager',
+                'PassedFullReview' => 'Passed full text review',
+                'OnAgenda' => 'On agenda',
             ),
             '#states' => array(
                 'visible' => array(
@@ -240,64 +238,11 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
         pdq_ebms_debug('ENCODED BATCH IN FORM', $batch);
         $batch = drupal_json_decode($batch);
         pdq_ebms_debug('DECODED BATCH IN FORM', $batch);
-        $form['report-title'] = array(
-            '#type' => 'markup',
-            '#markup' => '<h2>Statistics</h2>',
-        );
-        $ids = array_keys($batch['uniqIds']);
-        $form['report-totals'] =
-            pdq_ebms_report_block('UNIQUE ID{S} IN BATCH', $ids);
-        $blocks = array(
-            'imported' => 'ARTICLE{S} IMPORTED',
-            'notListed' => 'ARTICLE{S} NOT LISTED',
-            'duplicate' => 'DUPLICATE ARTICLE{S}',
-            'reviewReady' => 'ARTICLE{S} READY FOR REVIEW',
-            'topicAdded' => 'ARTICLE{S} WITH TOPIC ADDED',
-            'replaced' => 'ARTICLE{S} REPLACED',
-            'error' => 'ARTICLE{S} WITH ERRORS',
-        );
-        foreach ($blocks as $key => $title) {
-            $ids = array();
-            foreach ($batch['action'][$key] as $article)
-                $ids[] = $article[0];
-            $form["report-$key"] = pdq_ebms_report_block($title, $ids);
-        }
+        $batch = (object) $batch;
+        pdq_ebms_debug('BATCH AS OBJECT', $batch);
+        $form['report'] = Ebms\Util::import_report($batch, 'Statistics');
     }
     return $form;
-}
-
-function pdq_ebms_report_block($title, $ids) {
-    $s = count($ids) == 1 ? '' : 'S';
-    $title = count($ids) . ' ' . str_replace('{S}', $s, $title);
-    sort($ids, SORT_NUMERIC);
-    $table = array('<table class="pmids">');
-    $counter = 0;
-    $cols = 5;
-    $options = array('attributes' => array('target' => '_blank'));
-    foreach ($ids as $id) {
-        if ($counter % $cols == 0) {
-            if ($counter)
-                $table[] = '</tr>';
-            $table[] = '<tr>';
-        }
-        ++$counter;
-        $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $id;
-        $link = l($id, $url, $options);
-        $table[] = "<td>$link</td>";
-    }
-    while ($counter++ % $cols)
-        $table[] = '<td>&nbsp;</td>';
-    $table[] = '</tr></table>';
-    return array(
-        '#type' => 'fieldset',
-        '#title' => $title,
-        '#collapsible' => true,
-        '#collapsed' => true,
-        'ids' => array(
-            '#type' => 'markup',
-            '#markup' => implode($table),
-        ),
-    );
 }
 
 function pdq_ebms_import_board_ajax($form, $form_state) {
@@ -362,8 +307,9 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $test = $values['options']['test-mode'] ? true : false;
     # $test = true; // for debugging ...
     $mode = $test ? 'test' : 'live';
+    $import_type = $fast_track ? 'F' : 'R';
     $batch = Ebms\importArticlesFromNLM($mode, $pmids, $topic, $cycle,
-             $comments, $use_not_list);
+             $comments, $use_not_list, $import_type);
     if (!$test) {
         #$article_ids = array_keys($batch->uniqIds);
         if ($fast_track) {

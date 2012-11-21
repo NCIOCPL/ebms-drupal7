@@ -48,7 +48,8 @@ class EbmsReports {
             case 'citations':
                 return drupal_get_form('pdq_ebms_citation_reports_form');
             case 'import':
-                return drupal_get_form('pdq_ebms_import_reports_form');
+                return drupal_get_form('pdq_ebms_import_reports_form',
+                    $this->request_id);
             case 'board':
                 return $this->landing_page('Board Management');
             case 'cite':
@@ -296,7 +297,6 @@ class EbmsReports {
      * for topics for which no articles were published.
      */
     public static function cites_published_0($boards, $board, $cycle) {
-        pdq_ebms_debug("CITES PUBLISHED", array($boards, $board, $cycle));
         if ($board)
             $boards = array($board => $boards[$board]);
         $query = db_select('ebms_cycle', 'c')
@@ -343,7 +343,6 @@ class EbmsReports {
         $query->condition('s.state_id', $published);
         $query->groupBy('s.topic_id');
         $query->addExpression('COUNT(*)', 'n');
-        //pdq_ebms_debug('CITES PUBLISHED QUERY', 'query: ' . $query);
         $results = $query->execute();
         $stats = array();
         foreach ($results as $result)
@@ -429,7 +428,6 @@ class EbmsReports {
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
         $query->orderBy('t.topic_name');
-        //pdq_ebms_debug('CITES PUBLISHED QUERY', 'query: ' . $query);
         $results = $query->execute();
         $stats = array();
         foreach ($results as $result) {
@@ -499,7 +497,6 @@ class EbmsReports {
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
         $query->orderBy('t.topic_name');
-        //pdq_ebms_debug('CITES PUBLISHED QUERY', 'query: ' . $query);
         $results = $query->execute();
         $stats = array();
         foreach ($results as $result) {
@@ -578,7 +575,6 @@ class EbmsReports {
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
         $query->orderBy('t.topic_name');
-        //pdq_ebms_debug('INITIAL DECISION QUERY', 'query: ' . $query);
         $results = $query->execute();
         $stats = array();
         foreach ($results as $result) {
@@ -617,6 +613,10 @@ class EbmsReports {
         return '<div class="meta"><span class="label">Report Date:</span> ' .
             $d . '</div>';
     }
+    static function format_board($board_name) {
+        return '<div class="meta"><span class="label">Board:</span> '.
+            $board_name . '</div>';
+    }
     static function format_cycle_name($cycle) {
         $cycle_name = Ebms\Util::get_cycle_name($cycle);
         return '<div class="meta"><span class="label">Review Cycle:</span> ' .
@@ -626,7 +626,6 @@ class EbmsReports {
         $y = $date['year'];
         $m = $date['month'];
         $d = $date['day'];
-        pdq_ebms_debug('FORMAT DATE', array($date, $y, $m, $d));
         if (!$y || !$m || !$d)
             return '';
         $t = mktime(0, 0, 0, $m, $d, $y);
@@ -645,17 +644,14 @@ class EbmsReports {
         $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
             'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
         $pubmed_opts = array('attributes' => array('target' => '_blank'));
-        pdq_ebms_debug('MANAGER REJECTION', array(
-                           'board' => $board,
-                           'cycle' => $cycle,
-                           'start-date' => $start,
-                           'end_date' => $end));
-        //return array(
-        //    '#type' => 'markup',
-        //    '#markup' => '<p>Stub report</p>',
-        //);
         $title = '<h2>Citations Not Selected for Full Text Retrieval</h2>';
         $title .= EbmsReports::format_report_date();
+        $boards = Ebms\Util::boards();
+        if ($board) {
+            $board_name = $boards[$board];
+            $boards = array($board => $board_name);
+            $title .= EbmsReports::format_board($board_name);
+        }
         if ($cycle)
             $title .= EbmsReports::format_cycle_name($cycle);
         else {
@@ -678,9 +674,6 @@ class EbmsReports {
                 '#markup' => $title,
             )
         );
-        $boards = Ebms\Util::boards();
-        if ($board)
-            $boards = array($board => $boards[$board]);
         $state_id = db_select('ebms_article_state_type', 't')
             ->fields('t', array('state_id'))
             ->condition('t.state_text_id', 'RejectBMReview')
@@ -693,77 +686,253 @@ class EbmsReports {
             array('data' => 'NCI Reviewer', 'class' => array('col-4')),
             'Comments',
         );
-        foreach ($boards as $board_id => $board_name) {
-            $query = db_select('ebms_article_state', 's');
-            $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
-            $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
-            $query->join('users', 'u', 's.user_id = u.uid');
-            $query->fields('a', array('article_id', 'source_id'));
-            $query->fields('t', array('topic_name'));
-            $query->fields('u', array('name'));
-            $query->fields('s', array('article_state_id'));
-            $query->condition('s.board_id', $board_id);
-            if ($cycle) {
-                if (!Ebms\Util::add_cycle_to_query($query, $cycle,
-                        's.status_dt')) {
-                    drupal_set_message('Failure restricting query by cycle',
-                        'error');
-                    return array();
-                }
+        $board_ids = array_keys($boards);
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
+        $query->join('users', 'u', 's.user_id = u.uid');
+        $query->fields('a', array('article_id', 'source_id'));
+        $query->fields('t', array('topic_name'));
+        $query->fields('u', array('name'));
+        $query->fields('s', array('article_state_id'));
+        $query->condition('s.board_id', $board_ids, 'IN');
+        if ($cycle) {
+            if (!Ebms\Util::add_cycle_to_query($query, $cycle,
+                    's.status_dt')) {
+                drupal_set_message('Failure restricting query by cycle',
+                    'error');
+                return array();
             }
-            else {
-                if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
-                        's.status_dt')) {
-                    drupal_set_message('Failure restricting query by range',
-                        'error');
-                    return array();
-                }
+        }
+        else {
+            if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
+                    's.status_dt')) {
+                drupal_set_message('Failure restricting query by range',
+                    'error');
+                return array();
             }
-            $query->condition('s.state_id', $state_id);
-            $query->orderBy('a.article_id');
-            $query->orderBy('t.topic_name');
-            pdq_ebms_debug('BM REJECTION QUERY', 'query: ' . $query);
-            $results = $query->execute();
-            $rows = array();
-            $last_article_id = null;
-            foreach ($results as $result) {
-                $article_state_id = $result->article_state_id;
-                $article_id = $result->article_id;
-                $pmid = $result->source_id;
-                $col3 = $result->topic_name;
-                $col4 = $result->name;
-                $comment_rows = db_select('ebms_article_state_comment', 'c')
-                    ->fields('c', array('comment'))
-                    ->condition('c.article_state_id', $article_state_id)
-                    ->orderBy('c.comment_id')
-                    ->execute();
-                $comments = array();
-                foreach ($comment_rows as $comment_row)
-                    $comments[] = $comment_row->comment;
-                $col5 = implode('; ', $comments);
-                if ($article_id != $last_article_id) {
-                    $col1 = l($article_id, 'citations/full/' . $article_id);
-                    $col2 = l($pmid, $pubmed_base . $pmid, $pubmed_opts);
-                    $last_article_id = $article_id;
-                }
-                else
-                    $col1 = $col2 = '&nbsp;';
-                $rows[] = array(
-                    array('data' => $col1, 'class' => array('col-1')),
-                    array('data' => $col2, 'class' => array('col-2')),
-                    array('data' => $col3, 'class' => array('col-3')),
-                    array('data' => $col4, 'class' => array('col-4')),
-                    array('data' => $col5, 'class' => array('col-5')),
-                );
+        }
+        $query->condition('s.state_id', $state_id);
+        $query->orderBy('a.article_id');
+        $query->orderBy('t.topic_name');
+        $results = $query->execute();
+        $rows = array();
+        $last_article_id = null;
+        foreach ($results as $result) {
+            $article_state_id = $result->article_state_id;
+            $article_id = $result->article_id;
+            $pmid = $result->source_id;
+            $col3 = $result->topic_name;
+            $col4 = $result->name;
+            $comment_rows = db_select('ebms_article_state_comment', 'c')
+                ->fields('c', array('comment'))
+                ->condition('c.article_state_id', $article_state_id)
+                ->orderBy('c.comment_id')
+                ->execute();
+            $comments = array();
+            foreach ($comment_rows as $comment_row)
+                $comments[] = $comment_row->comment;
+            $col5 = implode('; ', $comments);
+            if ($article_id != $last_article_id) {
+                $col1 = l($article_id, 'citations/full/' . $article_id);
+                $col2 = l($pmid, $pubmed_base . $pmid, $pubmed_opts);
+                $last_article_id = $article_id;
             }
-            $report[$board_name] = array(
-                '#theme' => 'table',
-                '#caption' => $board_name,
-                '#header' => $header,
-                '#rows' => $rows,
+            else
+                $col1 = $col2 = '&nbsp;';
+            $rows[] = array(
+                array('data' => $col1, 'class' => array('col-1')),
+                array('data' => $col2, 'class' => array('col-2')),
+                array('data' => $col3, 'class' => array('col-3')),
+                array('data' => $col4, 'class' => array('col-4')),
+                array('data' => $col5, 'class' => array('col-5')),
             );
         }
+        $report['table'] = array(
+            '#theme' => 'table',
+            '#header' => $header,
+            '#rows' => $rows,
+        );
         return $report;
+    }
+    static function get_topics($article_id, $state_id) {
+        $query = db_select('ebms_topic', 't');
+        $query->join('ebms_article_state', 's', 's.topic_id = t.topic_id');
+        $query->fields('t', array('topic_name'));
+        $query->condition('s.article_id', $article_id);
+        $query->condition('s.state_id', $state_id);
+        $query->distinct();
+        $query->orderBy('t.topic_name');
+        $results = $query->execute();
+        $topics = array();
+        foreach ($results as $result)
+            $topics[] = htmlspecialchars($result->topic_name);
+        return implode('<br />', $topics);
+    }
+    public static function topic_changes($start, $end)
+    {
+        $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
+            'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
+        $pubmed_opts = array('attributes' => array('target' => '_blank'));
+        $title = '<h2>Citation Summary Topic Changes</h2>';
+        $title .= EbmsReports::format_report_date();
+        $title .= EbmsReports::format_date_range($start, $end);
+        $report = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => 'report',
+                'class' => array('topic-changes'),
+            ),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => $title,
+            )
+        );
+        $librarian_approval = db_select('ebms_article_state_type', 't')
+            ->fields('t', array('state_id'))
+            ->condition('t.state_text_id', 'PassedInitReview')
+            ->execute()
+            ->fetchField();
+        $manager_approval = db_select('ebms_article_state_type', 't')
+            ->fields('t', array('state_id'))
+            ->condition('t.state_text_id', 'PassedBMReview')
+            ->execute()
+            ->fetchField();
+        $header = array(
+            array('data' => 'EBMS ID', 'class' => array('col-1')),
+            array('data' => 'PMID', 'class' => array('col-2')),
+            array(
+                'data' => 'After Librarian Review',
+                'class' => array('col-3'),
+            ),
+            array('data' => 'After NCI Review', 'class' => array('col-4')),
+        );
+        $query = db_select('ebms_article_state', 's1');
+        $query->join('ebms_article', 'a', 'a.article_id = s1.article_id');
+        $query->leftJoin('ebms_article_state', 's0',
+            's1.article_id = s0.article_id AND s1.topic_id = s0.topic_id ' .
+            'AND s0.state_id = ' . $librarian_approval);
+        $query->condition('s1.state_id', $manager_approval);
+        $query->isNull('s0.article_id');
+        $query->fields('a', array('article_id', 'source_id'));
+        $query->distinct();
+        if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
+            's1.status_dt')) {
+            drupal_set_message('Failure restricting by range', 'error');
+            return array();
+        }
+        $query->orderBy('a.article_id');
+        $results = $query->execute();
+        $rows = array();
+        foreach ($results as $result) {
+            $article_id = $result->article_id;
+            $pmid = $result->source_id;
+            $col1 = l($article_id, 'citations/full/' . $article_id);
+            $col2 = l($pmid, $pubmed_base . $pmid, $pubmed_opts);
+            $col3 = EbmsReports::get_topics($article_id, $librarian_approval);
+            $col4 = EbmsReports::get_topics($article_id, $manager_approval);
+            $rows[] = array(
+                array('data' => $col1, 'class' => array('col-1')),
+                array('data' => $col2, 'class' => array('col-2')),
+                array('data' => $col3, 'class' => array('col-3')),
+                array('data' => $col4, 'class' => array('col-4')),
+            );
+        }
+        $report['table'] = array(
+            '#theme' => 'table',
+            '#header' => $header,
+            '#rows' => $rows,
+        );
+        return $report;
+    }
+
+    public static function import_reports(
+        $board, $topic, $cycle, $start, $end, $range
+    ) {
+        $query = db_select('ebms_import_batch', 'j');
+        $query->join('ebms_import_action', 'a',
+            'a.import_batch_id = j.import_batch_id');
+        $query->join('ebms_topic', 't', 't.topic_id = j.topic_id');
+        $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
+        if ($board)
+            $query->condition('b.board_id', $board);
+        if ($topic)
+            $query->condition('t.topic_id', $topic);
+        if ($cycle) {
+            if (!Ebms\Util::add_cycle_to_query($query, $cycle,
+                    'j.import_date')) {
+                drupal_set_message('Failure restricting query by cycle',
+                    'error');
+                return array();
+            }
+        }
+        elseif ($range) {
+            if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
+                    'j.import_date')) {
+                drupal_set_message('Failure restricting query by range',
+                    'error');
+                return array();
+            }
+        }
+        else
+            Ebms\Util::add_date_to_query($query, $start, 'j.import_date');
+        $query->fields('j', array('import_batch_id', 'import_date'));
+        $query->fields('t', array('topic_name'));
+        $query->fields('b', array('board_name'));
+        $query->addExpression('COUNT(DISTINCT a.source_id)', 'citations');
+        $query->groupBy('j.import_batch_id');
+        $query->groupBy('j.import_date');
+        $query->groupBy('t.topic_name');
+        $query->groupBy('b.board_name');
+        $query->orderBy('j.import_date');
+        pdq_ebms_debug('IMPORT REPORT QUERY', 'query: ' . $query);
+        $results = $query->execute();
+        $items = array();
+        foreach ($results as $result) {
+            $date = date('m/d/Y', strtotime($result->import_date));
+            $board_name = $result->board_name;
+            $topic_name = $result->topic_name;
+            $count = $result->citations . ' citation';
+            if ($result->citations != 1)
+                $count .= 's';
+            $line = "$date | $board_name | $topic_name | $count";
+            $items[] = l($line, 'reports/import/' . $result->import_batch_id);
+        }
+        return array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => 'report',
+                'class' => array('import-reports'),
+            ),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>Import Reports (' . count($items) . ')</h2>',
+            ),
+            'reports' => array(
+                '#theme' => 'item_list',
+                '#items' => $items,
+                '#attributes' => array('class' => array('no-bullets')),
+            ),
+        );
+    }
+    public static function import_job($id) {
+        require_once('EbmsImport.inc');
+        $batch = new Ebms\ImportBatch($id);
+        pdq_ebms_debug('IMPORT BATCH', $batch);
+        $title = 'Import Batch ' . $id;
+        return Ebms\Util::import_report($batch, $title);
+        return;
+        return array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => 'report',
+                'class' => array('import-batch-report'),
+            ),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>Import Batch ' . $id . '</h2>',
+            ),
+        );
     }
 }
 
@@ -771,9 +940,8 @@ function pdq_ebms_citation_reports_form_submit($form, &$form_state) {
     $form_state['rebuild'] = true;
     return;
     $spec = drupal_json_encode($form_state['values']);
-    pdq_ebms_debug('ENCODED SPEC', $spec);
     global $user;
-    $now = strftime("%Y-%m-%d %H:%M:%S");
+    $now = strftime('%Y-%m-%d %H:%M:%S');
     $request_id = db_insert('ebms_report_request')
         ->fields(
             array(
@@ -794,10 +962,9 @@ function pdq_ebms_report_ajax($form, $form_state) {
     return $form['top']['report-form']['ajax fields'];
 }
 function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
-    pdq_ebms_debug('CITATION REPORT VALIDATION', $form_state['values']);
     $values = $form_state['values'];
     $report = $values['report'];
-    $cycle = $values['cycle'];
+    $cycle = isset($values['cycle']) ? $values['cycle'] : 0;
     if (!$report)
         form_set_error('report', 'No report selected');
     else {
@@ -835,6 +1002,16 @@ function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
                     form_set_error('cycle',
                         'Must specify cycle or complete date range');
                 break;
+            case 'Citation Summary Topic Changes':
+                $s = $values['start-date'];
+                $e = $values['end-date'];
+                if (!$s['year'] || !$s['month'] || !$s['day'])
+                    form_set_error('start-date',
+                        'A complete date range is required');
+                elseif (!$e['year'] || !$e['month'] || !$e['day'])
+                    form_set_error('end-date',
+                        'A complete date range is required');
+                break;
         }
     }
 }
@@ -865,7 +1042,6 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
         if (isset($values['end-date']))
             $end_date = $values['end-date'];
     }
-    pdq_ebms_debug('CITES REPORT', array($cycle, $values));
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $cycles = array(0 => ' ');
     $reports = array(0 => ' ') + drupal_map_assoc(
@@ -943,7 +1119,6 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             '#attributes' => array('class' => array('fixed-width')),
         );
     }
-    pdq_ebms_debug("REPORT NAME", $report);
     if (!strcmp($report, 'Citation Summary Topic Changes') ||
         !strcmp($report, 'Citations Not Selected for Full Text Retrieval')) {
         $form['top']['report-form']['ajax fields']['start-date'] = array(
@@ -965,8 +1140,6 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             '#element_validate' => array('pdq_ebms_date_validate'),
         );
     }
-    pdq_ebms_debug("SWITCH STATEMENT",
-        array($report, $boards, $board, $cycle));
     if ($report && $values['op'] == 'Submit') {
         switch ($report) {
             case 'Citations Published':
@@ -986,13 +1159,22 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
                     EbmsReports::manager_rejection($board, $cycle,
                         $start_date, $end_date);
                 break;
+            case 'Citation Summary Topic Changes':
+                $form['report'] =
+                    EbmsReports::topic_changes($start_date, $end_date);
+                break;
         }
     }
     return $form;
 }
 
-function pdq_ebms_import_reports_form($form, &$form_state) {
-    $no_date = array('year' => 0, 'month' => 0, 'day' => 0);
+function pdq_ebms_import_reports_form_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/import');
+    $form_state['rebuild'] = true;
+    return;
+}
+function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
@@ -1002,25 +1184,29 @@ function pdq_ebms_import_reports_form($form, &$form_state) {
     );
     $left_nav = EbmsReports::build_left_nav('Citation Management',
                                             'Import Reports');
-    $board = $cycle = $report = 0;
+    $board = $cycle = $topic = 0;
+    $op = '';
+    $range = false;
+    $start = $end = array('year' => 0, 'month' => 0, 'day' => 0);
     if (isset($form_state['values'])) {
         $values = $form_state['values'];
         $board = $values['board'];
+        $topic = $values['topic'];
         $cycle = $values['cycle'];
+        $start = $values['import-start'];
+        $end = $values['import-end'];
+        $range = $values['use-import-date-range'];
+        $op = $values['op'];
     }
     $boards = array(0 => ' ') + Ebms\Util::boards();
+    $topics = array(0 => ' ');
+    $results = db_select('ebms_topic', 't')
+        ->fields('t', array('topic_id', 'topic_name'))
+        ->orderBy('t.topic_name')
+        ->execute();
+    foreach ($results as $result)
+        $topics[$result->topic_id] = $result->topic_name;
     $cycles = array(0 => ' ');
-    $reports = array(0 => ' ') + drupal_map_assoc(
-        array(
-            'Citations Published',
-            'Citations Rejected/Accepted for Publishing',
-            'Citations Imported from Text Files',
-            'Citations Originally Imported from Text Files',
-            'Citations Not Selected for Full Text Retrieval',
-            'Citation Summary Topic Changes',
-        )
-    );
-
     $results = db_select('ebms_cycle', 'c')
         ->fields('c', array('cycle_id', 'cycle_name'))
         ->orderBy('c.start_date', 'DESC')
@@ -1038,20 +1224,20 @@ function pdq_ebms_import_reports_form($form, &$form_state) {
                 '#type' => 'markup',
                 '#markup' => '<h2>Import Reports</h2>',
             ),
-            'reports' => array(
-                '#type' => 'select',
-                '#title' => 'Reports',
-                '#title_display' => 'after',
-                '#options' => $reports,
-                '#default_value' => $report,
-                '#attributes' => array('class' => array('fixed-width')),
-            ),
             'board' => array(
                 '#type' => 'select',
                 '#title' => 'Editorial Board',
                 '#title_display' => 'after',
                 '#options' => $boards,
                 '#default_value' => $board,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'topic' => array(
+                '#type' => 'select',
+                '#title' => 'Summary Topic',
+                '#title_display' => 'after',
+                '#options' => $topics,
+                '#default_value' => $topic,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
             'cycle' => array(
@@ -1068,37 +1254,34 @@ function pdq_ebms_import_reports_form($form, &$form_state) {
                 'import-start' => array(
                     '#type' => 'date',
                     '#element_validate' => array('pdq_ebms_date_validate'),
-                    //'#title' => 'Import Date',
-                    '#default_value' => $no_date,
+                    '#default_value' => $start,
                     '#pre_render' => array('pdq_ebms_fix_date'),
                 ),
                 'use-import-date-range' => array(
                     '#type' => 'checkbox',
-                    //'#title' => 'RANGE <span class="cb"> </span>',
                     '#title' => 'RANGE',
-                    //'#title_display' => 'before',
                     '#prefix' => '<div class="box-on-right">',
                     '#suffix' => '</div>',
-                    //'#default_value' => $defaults->use_input_date_range,
+                    '#default_value' => $range,
                 ),
             ),
-                'import-date-label' => array(
-                    '#type' => 'markup',
-                    '#markup' => '<div class="date-label">Import Date</div>',
-                ),
+            'import-date-label' => array(
+                '#type' => 'markup',
+                '#markup' => '<div class="date-label">Import Date</div>',
+            ),
             'import-end' => array(
                 '#type' => 'date',
                 '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $no_date,
+                '#default_value' => $start,
                 '#pre_render' => array('pdq_ebms_fix_date'),
                 '#states' => array(
-                    'visible' => array(
+                    'invisible' => array(
                         '#edit-use-input-date-range' => array(
-                            'checked' => true
+                            'checked' => false
                         ),
                     ),
                 ),
-             ),
+            ),
             'buttons' => array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'report-buttons'),
@@ -1108,18 +1291,23 @@ function pdq_ebms_import_reports_form($form, &$form_state) {
                 ),
                 'submit' => array(
                     '#type' => 'submit',
-                    '#value' => 'Filter',
+                    '#value' => 'Submit',
                 ),
             ),
         ),
     );
+    if ($job)
+        $form['report'] = EbmsReports::import_job($job);
+    elseif ($op == 'Submit')
+        $form['report'] = EbmsReports::import_reports($board, $topic,
+                          $cycle, $start, $end, $range);
     return $form;
 }
 
 function pdq_ebms_fix_date($element) {
     $years = array(0 => 'YEAR');
     $today = getdate();
-    for ($year = $today['year'] + 2; $year >= 2000; --$year)
+    for ($year = $today['year'] + 1; $year >= 2000; --$year)
         $years[$year] = $year;
     $element['year']['#options'] = $years;
     array_unshift($element['month']['#options'], 'MONTH');
@@ -1127,7 +1315,6 @@ function pdq_ebms_fix_date($element) {
     return $element;
 }
 function pdq_ebms_date_validate($element, &$form_state, $form) {
-    //pdq_ebms_debug('DATE VALIDATION', $element);
     $y = $element['#value']['year'];
     $m = $element['#value']['month'];
     $d = $element['#value']['day'];

@@ -1136,4 +1136,130 @@ class Util {
             return false;
         }
     }
+
+    /**
+     * Adds a condition to a DB query, restricting the results based
+     * on a (possibly incomplete) date field.  This function assumes
+     * that if a day is specified, a month will also be specified.
+     * Similarly, if a month is specified, a year must also be
+     * specified.  Verification of these assumptions must be handled
+     * by the caller in the form validation code.
+     *
+     *  @param SelectQuery $query   Reference to query object
+     *  @param array       $date    Drupal date field
+     *  @param string      $field   Qualified string for date column
+     *                              to be tested against date range
+     *
+     *  @return                     Boolean indicating whether query
+     *                              was successfully modified.
+     */
+    public static function add_date_to_query(&$query, $date, $field) {
+        try {
+            $y = $date['year'];
+            $m = $date['month'];
+            $d = $date['day'];
+            if ($d)
+                $range = array(
+                    @sprintf("%04d-%02d-%02d", $y, $m, $d),
+                    @sprintf("%04d-%02d-%02d 23:59:59", $y, $m, $d),
+                );
+            elseif ($m)
+                $range = array(
+                    @sprintf("%04d-%02d-01", $y, $m),
+                    @date("Y-m-d H:i:s", mktime(0, 0, -1, $m + 1, 1, $y)),
+                );
+            elseif ($y)
+                $range = array(
+                    @sprintf("%04d-01-01", $y),
+                    @sprintf("%04d-12-31 23:59:59", $y),
+                );
+            else
+                return false;
+            pdq_ebms_debug('DATE RANGE', $range);
+            $query->condition($field, $range, 'BETWEEN');
+            return true;
+        }
+        catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Adds a report of imported articles to be added to a Drupal form
+     * array, using the ImportBatch object returned by the EBMS
+     * import API.
+     *
+     *  @param ImportBatch  $batch  Reference to object containing
+     *                              statistics for an import job
+     *  @param string       $title  Header for the report
+     *
+     *  @return                     Render array for report
+     */
+    public static function import_report(&$batch, $title) {
+        $report = array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'import-report'),
+        );
+        $report['report-title'] = array(
+            '#type' => 'markup',
+            '#markup' => '<h2>' . $title . '</h2>',
+        );
+        $ids = array_keys($batch->uniqIds);
+        $report['report-totals'] =
+            Util::import_report_block('UNIQUE ID{S} IN BATCH', $ids);
+        $blocks = array(
+            'imported' => 'ARTICLE{S} IMPORTED',
+            'notListed' => 'ARTICLE{S} NOT LISTED',
+            'duplicate' => 'DUPLICATE ARTICLE{S}',
+            'reviewReady' => 'ARTICLE{S} READY FOR REVIEW',
+            'topicAdded' => 'ARTICLE{S} WITH TOPIC ADDED',
+            'replaced' => 'ARTICLE{S} REPLACED',
+            'error' => 'ARTICLE{S} WITH ERRORS',
+        );
+        foreach ($blocks as $key => $title) {
+            $ids = array();
+            foreach ($batch->action[$key] as $article)
+                $ids[] = $article[0];
+            $report["report-$key"] = Util::import_report_block($title, $ids);
+        }
+        return $report;
+    }
+
+    /**
+     * Helper function to add to a form a collapsible block showing imported
+     * articles in a specific category.  Invoked by import_report() above.
+     */
+    static function import_report_block($title, $ids) {
+        $s = count($ids) == 1 ? '' : 'S';
+        $title = count($ids) . ' ' . str_replace('{S}', $s, $title);
+        sort($ids, SORT_NUMERIC);
+        $table = array('<table class="pmids">');
+        $counter = 0;
+        $cols = 5;
+        $options = array('attributes' => array('target' => '_blank'));
+        foreach ($ids as $id) {
+            if ($counter % $cols == 0) {
+                if ($counter)
+                    $table[] = '</tr>';
+                $table[] = '<tr>';
+            }
+            ++$counter;
+            $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $id;
+            $link = l($id, $url, $options);
+            $table[] = "<td>$link</td>";
+        }
+        while ($counter++ % $cols)
+            $table[] = '<td>&nbsp;</td>';
+        $table[] = '</tr></table>';
+        return array(
+            '#type' => 'fieldset',
+            '#title' => $title,
+            '#collapsible' => true,
+            '#collapsed' => true,
+            'ids' => array(
+                '#type' => 'markup',
+                '#markup' => implode($table),
+            ),
+        );
+    }
 }

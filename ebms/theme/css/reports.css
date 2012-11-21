@@ -83,3 +83,15 @@ div.right-aligned-date + label.option {
 #report.manager-rejection th.col-4, #report.manager-rejection td.col-4 {
     width: 14%;
 }
+#report.manager-rejection table.sticky-table { margin-top: 20px; }
+#report.topic-changes th, #report.topic-changes td {
+    text-align: left; width: 8%;
+}
+#report.topic-changes th.col-3, #report.topic-changes td.col-3,
+#report.topic-changes th.col-4, #report.topic-changes td.col-4 {
+    width: 35%;
+}
+#report.topic-changes table.sticky-table { margin-top: 20px; }
+div.import-reports h2 { margin-bottom: 15px; }
+div.import-reports ul li a { text-transform: uppercase; }
+#import-report td, #import-report th { border-left: none; }
