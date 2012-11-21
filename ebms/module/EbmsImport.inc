@@ -368,6 +368,7 @@ class ImportBatch {
         $this->dateTime     = null;
         $this->cycleId      = null;
         $this->notList      = null;
+        $this->inputType    = null;
         $this->userId       = null;
         $this->comment      = null;
         $this->articleCount = 0;
@@ -390,12 +391,13 @@ class ImportBatch {
     /**
      * Setters for overriding defaults.
      */
-    public function setUserId($userId)     { $this->userId = $userId; }
-    public function setSource($source)     { $this->source = $source; }
-    public function setCycleId($cycleId)   { $this->cycleId = $cycleId; }
-    public function setTopicId($topicId)   { $this->topicId = $topicId; }
-    public function setNotList($notList)   { $this->notList = $notList; }
-    public function setDateTime($dateTime) { $this->dateTime = $dateTime; }
+    public function setUserId($userId)       { $this->userId = $userId; }
+    public function setSource($source)       { $this->source = $source; }
+    public function setCycleId($cycleId)     { $this->cycleId = $cycleId; }
+    public function setTopicId($topicId)     { $this->topicId = $topicId; }
+    public function setNotList($notList)     { $this->notList = $notList; }
+    public function setInputType($inputType) { $this->inputType = $inputType; }
+    public function setDateTime($dateTime)   { $this->dateTime = $dateTime; }
 
 
     /**
@@ -410,7 +412,7 @@ class ImportBatch {
      *  @param int $userId      User performing import, or use global.
      */
     public function init($source='Pubmed', $topicId=null, $cycleId=null,
-                         $notList='Y', $comment=null, $userId=null) {
+                 $notList='Y', $inputType='R', $comment=null, $userId=null) {
 
         // Initialize to empty object
         $this->clear();
@@ -432,6 +434,9 @@ class ImportBatch {
              "ImportBatch->init(): Valid notList values are 'Y' and 'N', " .
              " value '$notList' is invalid");
         $this->notList = $notList;
+
+        // Input type is checked by database constraint
+        $this->inputType = $inputType;
 
         // User
         if (is_null($userId)) {
@@ -570,6 +575,7 @@ class ImportBatch {
                   'import_date'  => $this->dateTime,
                   'cycle_id'     => $this->cycleId,
                   'not_list'     => $this->notList,
+                  'input_type'   => $this->inputType,
                   'user_id'      => $this->userId,
                   'comment'      => $this->comment,
                   'article_count'=> count($this->uniqIds)
@@ -628,24 +634,25 @@ class ImportBatch {
         $this->dateTime     = $row->import_date;
         $this->cycleId      = $row->cycle_id;
         $this->notList      = $row->not_list;
-        $this->userId       = $row->userId;
+        $this->inputType    = $row->input_type;
+        $this->userId       = $row->user_id;
         $this->comment      = $row->comment;
         $this->articleCount = $row->article_count;
 
         // Load all of the different article actions
-        $result = db_select('ebms_import_action', 'act')
-          ->join('ebms_import_disposition', 'disp',
-                 'act.disposition_id = disp.disposition_id')
-          ->addField('act', 'source_id')
-          ->addField('act', 'article_id')
-          ->addField('act', 'disposition_id')
-          ->addField('act', 'message')
-          ->addField('disp', 'disposition_name')
-          ->condition('act.import_batch_id', $batchId, '=')
-          ->execute();
+        $query = db_select('ebms_import_action', 'act');
+        $query->join('ebms_import_disposition', 'disp',
+          'act.disposition_id = disp.disposition_id');
+        $query->addField('act', 'source_id');
+        $query->addField('act', 'article_id');
+        $query->addField('act', 'disposition_id');
+        $query->addField('act', 'message');
+        $query->addField('disp', 'disposition_name');
+        $query->condition('act.import_batch_id', $batchId, '=');
+        $result = $query->execute();
 
         // Install each one in the object
-        while ($row = $result->fetchObject) {
+        while ($row = $result->fetchObject()) {
             $this->addArticle($row->disposition_name, $row->source_id,
                               $row->article_id, $row->message);
         }
@@ -674,6 +681,7 @@ class ImportBatch {
  <tr><th>dateTime</th><td>$this->dateTime</td></tr>
  <tr><th>cycleId</th><td>$this->cycleId</td></tr>
  <tr><th>notListUsed</th><td>$this->notList</td></tr>
+ <tr><th>inputType</th><td>$this->inputType</td></tr>
  <tr><th>userId</th><td>$this->userId</td></tr>
  <tr><th>comment</th><td>$this->comment</td></tr>
  <tr><th>articleCount</th><td>$this->articleCount</td></tr>
@@ -788,6 +796,7 @@ function loadNotList ($boardId, $source='Pubmed') {
  *  @param boolean $useNotList  True = use the "NOT list" for the board
  *                               for this topic.  Default = true, but NOT
  *                               list is always ignored if $topicId is null.
+ *  @param string $inputType    'R'egular, 'F'ast track, or 'S'pecial search.
  *  @param int $userId          User running the import, defaults to current
  *                               user.
  *
@@ -799,7 +808,7 @@ function loadNotList ($boardId, $source='Pubmed') {
  *  @throws Exception if database or other error.
  */
 function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
-                           $comment=null, $useNotList=true, $userId=null) {
+           $comment=null, $useNotList=true, $inputType='R', $userId=null) {
 
     // Max we'll fetch at once - good citzenship
     define('PUBMED_BATCH_SIZE', 100);
@@ -835,7 +844,8 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
 
     // Instantiate an ImportBatch to contain stats and report
     $ib = new ImportBatch();
-    $ib->init('Pubmed', $topicId, $cycleId, $useNotList, $comment, $userId);
+    $ib->init('Pubmed', $topicId, $cycleId, $useNotList, $inputType,
+               $comment, $userId);
 
     // Get batches of articles from NLM until we got them all
     while ($pi->getRemainCount() > 0) {
