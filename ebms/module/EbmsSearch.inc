@@ -700,7 +700,7 @@ class EbmsSearch {
                 $this->qry->join('ebms_article_state', 'inpstate',
                      'inpstate.article_id = art.article_id');
                 $this->qry->join('ebms_article_state_type', 'inptype',
-                     'inptype.article_state_id = inpstate.article_state_id');
+                     'inptype.state_id = inpstate.state_id');
 
                 // Looking for input states in the date range
                 $this->qry->condition('inptype.state_text_id', 'Imported');
