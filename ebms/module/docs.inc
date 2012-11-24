@@ -139,6 +139,7 @@ class EbmsDocs {
         $del_func = 'javascript:ebmsscript.delete_doc';
 
         // Build the array of table rows.
+        $rows = array();
         foreach ($docs as $d) {
             $edit_link = l('EDIT', "$main_url/edit/{$d->doc_id}", $opts);
             $del_url = url("$main_url/delete/{$d->doc_id}", $opts);
