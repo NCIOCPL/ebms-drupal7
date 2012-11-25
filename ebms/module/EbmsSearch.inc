@@ -697,25 +697,9 @@ class EbmsSearch {
                     $this->spec['use-input-date-range']);
 
             if ($dateLimits) {
-                $this->qry->join('ebms_article_state', 'inpstate',
-                     'inpstate.article_id = art.article_id');
-                $this->qry->join('ebms_article_state_type', 'inptype',
-                     'inptype.state_id = inpstate.state_id');
-
-                // Looking for input states in the date range
-                $this->qry->condition('inptype.state_text_id', 'Imported');
-                $this->qry->condition('inpstate.status_dt',
-                                       $dateLimits[0], '>=');
-                $this->qry->condition('inpstate.status_dt',
-                                       $dateLimits[1], '<');
-
-                // Standard qualifiers
-                if (!empty($this->topics))
-                    $this->qry->condition("inpstate.topic_id",
-                                           $this->topics, 'IN');
-                else if (!empty($this->boards))
-                    $this->qry->condition("inpstate.board_id",
-                                           $this->boards, 'IN');
+                // We already specified the article table
+                $this->qry->condition('art.import_date', $dateLimits[0], '>=');
+                $this->qry->condition('art.import_date', $dateLimits[1], '<');
             }
         }
     }
