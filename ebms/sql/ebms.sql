@@ -417,6 +417,8 @@ CREATE TABLE ebms_article (
              ON ebms_article(jrnl_title);
       CREATE INDEX ebms_article_brf_jrnl_title_index
              ON ebms_article(brf_jrnl_title);
+      CREATE INDEX ebms_article_import_date
+             ON ebms_article(import_date);
       CREATE INDEX ebms_article_published_date
              ON ebms_article(published_date);
 
