@@ -625,7 +625,7 @@ class ImportBatch {
              WHERE import_batch_id = :batchId',
             array(':batchId' => $batchId));
         $row = $result->fetchObject();
-        if (is_null($row))
+        if (!$row)
             throw new \Exception(
                     "ImportBatch.load: no import batch with id=$batchId");
         $this->batchId      = $row->import_batch_id;
@@ -645,15 +645,14 @@ class ImportBatch {
           'act.disposition_id = disp.disposition_id');
         $query->addField('act', 'source_id');
         $query->addField('act', 'article_id');
-        $query->addField('act', 'disposition_id');
+        $query->addField('disp', 'text_id');
         $query->addField('act', 'message');
-        $query->addField('disp', 'disposition_name');
         $query->condition('act.import_batch_id', $batchId, '=');
         $result = $query->execute();
 
         // Install each one in the object
         while ($row = $result->fetchObject()) {
-            $this->addArticle($row->disposition_name, $row->source_id,
+            $this->addArticle($row->text_id, $row->source_id, 
                               $row->article_id, $row->message);
         }
     }
