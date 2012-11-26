@@ -298,6 +298,9 @@ class Menu {
         );
         if ($role == 'librarian')
             $children[] = new Menu('Publish Citations', 'citations/publish');
+        if (pdq_ebms_is_admin_assistant())
+            $children[] = new Menu('Full Text Retrieval',
+                          'citations/fulltext');
         return new Menu('Citation Management', 'citations', $children);
     }
 
