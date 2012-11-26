@@ -141,7 +141,7 @@ function ebms_menu() {
         'citations/fulltext' => array(
             'page callback' => 'pdq_ebms_fulltext',
             'file' => 'fulltext.inc',
-            'access arguments' => array('manage citations'),
+            'access callback' => 'pdq_ebms_is_admin_assistant',
             'type' => MENU_CALLBACK,
         ),
 
@@ -207,7 +207,7 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-        
+
         'citations/%ctools_js/add_tag' => array(
             'title' => 'Add Tag',
             'page callback' => '_ajax_modal_add_tag',
@@ -225,7 +225,7 @@ function ebms_menu() {
             'access callback' => TRUE,
             'type' => MENU_CALLBACK,
         ),
-        
+
         // CALENDAR
         'calendar' => array(
             'page callback' => 'pdq_ebms_calendar',
@@ -961,6 +961,15 @@ function ebms_user_load($users) {
         ->execute();
     foreach ($results as $record)
         $users[$record->user_id]->password_changed = $record->password_changed;
+}
+
+/**
+ * Added to restrict access to full text retrieval queue to Bonnie (see
+ * bug report #2128).
+ */
+function pdq_ebms_is_admin_assistant() {
+    global $user;
+    return in_array('admin assistant', $user->roles);
 }
 
 /**
