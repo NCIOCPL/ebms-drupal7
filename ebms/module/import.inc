@@ -261,7 +261,7 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
     if (!$form_state['values']['topic'])
         form_set_error('topic', 'You must select a topic for article import');
     if (!$form_state['values']['cycle'])
-        form_set_error('board', 'You must select a cycle for article import');
+        form_set_error('cycle', 'You must select a cycle for article import');
     if ($form_state['values']['options']['fast-track']) {
         if (!$form_state['values']['placement'])
             form_set_error('placement',
