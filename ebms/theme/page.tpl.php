@@ -79,12 +79,8 @@ if ($logged_in) {
     $user_name = htmlspecialchars($user->name);
     if ($user->picture)
         $uri = Ebms\Util::get_file_uri($user->picture);
-    else {
-        //$url = $uri = Ebms\IMAGES_DIR . '/avatar-45x45-stroked.png';
-        $hash = md5($user->mail);
-        $type = 'identicon'; // or mm | monsterid | wavatar | retro
-        $uri = "http://www.gravatar.com/avatar/$hash?f=y&s=45&d=$type";
-    }
+    else
+        $uri = Ebms\IMAGES_DIR . '/avatar-135x135-stroked-1px.png';
     $photo = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'user-photo'),
