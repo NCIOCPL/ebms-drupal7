@@ -54,6 +54,20 @@ class EbmsReports {
                 return $this->landing_page('Board Management');
             case 'cite':
                 return $this->landing_page('Citation Management');
+            case 'documents':
+                if ($this->request_id) {
+                    $action = substr($this->request_id, 0, 1);
+                    $doc_id = substr($this->request_id, 1);
+                    if ($action == 'a')
+                        db_update('ebms_doc')
+                            ->fields(array('drop_flag' => 1))
+                            ->condition('doc_id', $doc_id)
+                            ->execute();
+                    elseif ($action == 'e')
+                        return drupal_get_form('pdq_ebms_doc_edit_form',
+                            $doc_id);
+                }
+                return drupal_get_form('pdq_ebms_documents_report_form');
             default:
                 return $this->landing_page();
         }
@@ -187,17 +201,17 @@ class EbmsReports {
             $role = 'librarian';
         else
             $role = 'manager';
-        $role = 'librarian'; // XXX debugging
+        //$role = 'librarian'; // XXX debugging
         $links = array(
             'librarian' => array(
                 array(
                     'Board Management',
                     'reports/board',
                     array(
-                        array('Documents', 'stub'),
+                        array('Documents', 'reports/documents'),
                         array('Meeting Dates', 'stub'),
                         array('Hotel Requests', 'stub'),
-                        array('Reimbursement', 'stub'),
+                        array('Reimbursement Requests', 'stub'),
                     ),
                 ),
                 array(
@@ -216,10 +230,10 @@ class EbmsReports {
                     'Board Management',
                     'reports/board',
                     array(
-                        array('Documents', 'stub'),
+                        array('Documents', 'reports/documents'),
                         array('Meeting Dates', 'stub'),
                         array('Hotel Requests', 'stub'),
-                        array('Reimbursement', 'stub'),
+                        array('Reimbursement Requests', 'stub'),
                     ),
                 ),
                 array(
@@ -230,7 +244,7 @@ class EbmsReports {
                         array('Literature Reviews', 'stub'),
                         array('No Responses', 'stub'),
                         array('Citation Follow-up', 'stub'),
-                        array('Literature Report', 'stub'),
+                        array('Board and Topic Lists', 'stub'),
                     ),
                 ),
             ),
@@ -885,7 +899,7 @@ class EbmsReports {
         $query->groupBy('t.topic_name');
         $query->groupBy('b.board_name');
         $query->orderBy('j.import_date');
-        pdq_ebms_debug('IMPORT REPORT QUERY', 'query: ' . $query);
+        //pdq_ebms_debug('IMPORT REPORT QUERY', 'query: ' . $query);
         $results = $query->execute();
         $items = array();
         foreach ($results as $result) {
@@ -918,7 +932,7 @@ class EbmsReports {
     public static function import_job($id) {
         require_once('EbmsImport.inc');
         $batch = new Ebms\ImportBatch($id);
-        pdq_ebms_debug('IMPORT BATCH', $batch);
+        //pdq_ebms_debug('IMPORT BATCH', $batch);
         $title = 'Import Batch ' . $id;
         return Ebms\Util::import_report($batch, $title);
         return;
@@ -933,6 +947,121 @@ class EbmsReports {
                 '#markup' => '<h2>Import Batch ' . $id . '</h2>',
             ),
         );
+    }
+
+    public static function docs($board, $tag, $keyword, $inhouse,
+        $member, $archived, $range, $start, $end)
+    {
+        pdq_ebms_debug('DOCS', array($board, $tag, $keyword, $inhouse,
+                $member, $archived, $range, $start, $end));
+        $pager = true;
+        $headers = array(
+            array(
+                'data' => 'File Name',
+                'field' => 'f.filename',
+                'class' => array('col-1'),
+            ),
+            array(
+                'data' => 'Uploaded By',
+                //'field' => 'u.name',
+                'class' => array('col-2'),
+            ),
+            array(
+                'data' => 'Date Uploaded',
+                //'field' => 'd.when_posted',
+                'class' => array('col-3'),
+            ),
+            array(
+                'data' => 'Actions',
+                'class' => array('col-4'),
+            ),
+        );
+        $query = db_select('ebms_doc', 'd');
+        $query = $query->extend('TableSort');
+        if ($pager)
+            $query = $query->extend('PagerDefault')->limit(5);
+        $query->join('file_managed', 'f', 'f.fid = d.file_id');
+        $query->join('users', 'u', 'u.uid = f.uid');
+        $query->fields('f', array('filename'));
+        $query->fields('d', array('when_posted', 'doc_id', 'drop_flag'));
+        $query->fields('u', array('name'));
+        if (!$archived)
+            $query->condition('d.drop_flag', 0);
+        if ($board) {
+            $query->join('ebms_doc_board', 'b', 'b.doc_id = d.doc_id');
+            $query->condition('b.board_id', $board);
+        }
+        if ($tag) {
+            $query->join('ebms_doc_tag', 't', 't.doc_id = d.doc_id');
+            $query->condition('t.tag_id', $tag);
+        }
+        if ($range)
+            Ebms\Util::add_date_range_to_query($query, $start, $end,
+                'd.when_posted');
+        else
+            Ebms\Util::add_date_to_query($query, $start, 'd.when_posted');
+        if ($inhouse)
+            $query->condition('u.uid', $inhouse);
+        if ($member)
+            $query->condition('u.uid', $member);
+        $query->orderByHeader($headers);
+        $count_query = $query->countQuery();
+        $total = $count_query->execute()->fetchField();
+        $docs = $query->execute();
+
+        // Collect information we'll use repeatedly in the loop.
+        $divider = '<span class="action-divider">|</span>';
+        $main_url = 'reports/documents';
+
+        // Build the array of table rows.
+        $rows = array();
+        foreach ($docs as $d) {
+            $links = l('EDIT', "$main_url/e{$d->doc_id}");
+            if (!$d->drop_flag) {
+                $archive_link = l('ARCHIVE', "$main_url/a{$d->doc_id}");
+                $links .= " $divider $archive_link";
+            }
+            $data = array(
+                array(
+                    'data' => htmlspecialchars($d->filename),
+                    'class' => array('col-1'),
+                ),
+                array(
+                    'data' => htmlspecialchars($d->name),
+                    'class' => array('col-2'),
+                ),
+                array(
+                    'data' => date('m/d/Y', strtotime($d->when_posted)),
+                    'class' => array('col-3'),
+                ),
+                array(
+                    'data' => $links,
+                    'class' => array('col-4'),
+                ),
+            );
+            $rows[] = array(
+                'data' => $data,
+                'no_striping' => true,
+            );
+        }
+
+        // Assemble the table.
+        $id = 'doc-report-title';
+        $table = array(
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => "<h2 id='$id'>Documents ($total)</h2>",
+            ),
+            'table' => array(
+                '#attributes' => array('id' => 'doc-report'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+        );
+        if ($pager)
+            $table['pager'] = array('#theme' => 'pager');
+        return $table;
     }
 }
 
@@ -961,6 +1090,7 @@ function pdq_ebms_citation_reports_form_submit($form, &$form_state) {
 function pdq_ebms_report_ajax($form, $form_state) {
     return $form['top']['report-form']['ajax fields'];
 }
+
 function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
     $values = $form_state['values'];
     $report = $values['report'];
@@ -1174,6 +1304,7 @@ function pdq_ebms_import_reports_form_submit($form, &$form_state) {
     $form_state['rebuild'] = true;
     return;
 }
+
 function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
     drupal_set_breadcrumb(
         array(
@@ -1304,6 +1435,238 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
     return $form;
 }
 
+function pdq_ebms_documents_report_form_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/documents');
+    $form_state['rebuild'] = true;
+    return;
+}
+
+function pdq_ebms_documents_report_form($form, &$form_state) {
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Board Managment Reports', 'reports/board'),
+            'Documents',
+        )
+    );
+    $left_nav = EbmsReports::build_left_nav('Board Management',
+                                            'Documents');
+    $board = $tag = $inhouse = $member = 0;
+    $op = $keyword = '';
+    $range = $archived = false;
+    $start = $end = array('year' => 0, 'month' => 0, 'day' => 0);
+    if (isset($form_state['values'])) {
+        $values = $form_state['values'];
+        $board = $values['board'];
+        $tag = $values['tag'];
+        $keyword = $values['keyword'];
+        $inhouse = $values['inhouse'];
+        $member = $values['member'];
+        $archived = $values['archived'];
+        $range = $values['use-upload-date-range'];
+        $start = $values['upload-start'];
+        if ($range)
+            $end = $values['upload-end'];
+        $op = $values['op'];
+    }
+    $boards = array(0 => ' ') + Ebms\Util::boards();
+    $tags = array(0 => ' ');
+    $results = db_select('ebms_tag', 't')
+        ->fields('t', array('tag_id', 'tag_name'))
+        ->orderBy('t.tag_name')
+        ->execute();
+    foreach ($results as $result)
+        $tags[$result->tag_id] = $result->tag_name;
+    $board_member_role = db_select('role', 'r')
+        ->fields('r', array('rid'))
+        ->condition('r.name', 'board member')
+        ->execute()
+        ->fetchField();
+    $results = db_select('users_roles', 'u')
+        ->fields('u', array('uid'))
+        ->condition('u.rid', $board_member_role)
+        ->execute();
+    $board_member_ids = array();
+    foreach ($results as $result)
+        $board_member_ids[$result->uid] = $result->uid;
+    $inhouse_users = array(0 => 'IN-HOUSE STAFF');
+    $board_members = array(0 => 'BOARD MEMBERS');
+    $results = db_select('users', 'u')
+        ->fields('u', array('uid', 'name'))
+        ->condition('u.uid', 0, '>')
+        ->orderBy('u.name')
+        ->execute();
+    foreach ($results as $result)
+        if (array_key_exists($result->uid, $board_member_ids))
+            $board_members[$result->uid] = $result->name;
+        else
+            $inhouse_users[$result->uid] = $result->name;
+    $form['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'documents-top'),
+        'left-nav' => $left_nav,
+        'report-form' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'report-form'),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>Documents</h2>',
+            ),
+            'board' => array(
+                '#type' => 'select',
+                '#title' => 'Editorial Board',
+                '#title_display' => 'after',
+                '#options' => $boards,
+                '#default_value' => $board,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'tag' => array(
+                '#type' => 'select',
+                '#title' => 'Tag',
+                '#title_display' => 'after',
+                '#options' => $tags,
+                '#default_value' => $tag,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'keyword' => array(
+                '#type' => 'textfield',
+                '#title' => 'Keyword',
+                '#title_display' => 'after',
+                '#default_value' => $keyword,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'inhouse' => array(
+                '#type' => 'select',
+                '#title' => 'Uploaded By',
+                '#title_display' => 'after',
+                '#options' => $inhouse_users,
+                '#default_value' => $inhouse,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'member' => array(
+                '#type' => 'select',
+                '#options' => $board_members,
+                '#default_value' => $member,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'upload-date-line' => array(
+                '#type' => 'container',
+                '#attributes' => array('class' => array('date-with-range')),
+                'upload-start' => array(
+                    '#type' => 'date',
+                    '#element_validate' => array('pdq_ebms_date_validate'),
+                    '#default_value' => $start,
+                    '#pre_render' => array('pdq_ebms_fix_date'),
+                ),
+                'use-upload-date-range' => array(
+                    '#type' => 'checkbox',
+                    '#title' => 'RANGE',
+                    '#prefix' => '<div class="box-on-right">',
+                    '#suffix' => '</div>',
+                    '#default_value' => $range,
+                ),
+            ),
+            'upload-date-label' => array(
+                '#type' => 'markup',
+                '#markup' => '<div class="date-label">Date Uploaded</div>',
+            ),
+            'upload-end' => array(
+                '#type' => 'date',
+                '#element_validate' => array('pdq_ebms_date_validate'),
+                '#default_value' => $start,
+                '#pre_render' => array('pdq_ebms_fix_date'),
+                '#states' => array(
+                    'invisible' => array(
+                        '#edit-use-upload-date-range' => array(
+                            'checked' => false
+                        ),
+                    ),
+                ),
+            ),
+            'archived' => array(
+                '#type' => 'checkbox',
+                '#title' => 'ARCHIVED',
+                '#default_value' => $archived,
+            ),
+            'buttons' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'report-buttons'),
+                'reset' => array(
+                    '#type' => 'submit',
+                    '#value' => 'Reset',
+                ),
+                'filter' => array(
+                    '#type' => 'submit',
+                    '#value' => 'Filter',
+                ),
+            ),
+        ),
+    );
+    $form['report'] = EbmsReports::docs($board, $tag, $keyword, $inhouse,
+                      $member, $archived, $range, $start, $end);
+    return $form;
+}
+
+function pdq_ebms_doc_edit_form($form, &$form_state, $doc_id) {
+    $query = db_select('ebms_doc', 'd');
+    $query->join('file_managed', 'f', 'f.fid = d.file_id');
+    $query->fields('f', array('filename'));
+    $file_name = htmlspecialchars($query->execute()->fetchField());
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Board Managment Reports', 'reports/board'),
+            l('Documents', 'reports/documents'),
+            $file_name,
+        )
+    );
+    return array(
+        'title' => array(
+            '#type' => 'markup',
+            '#markup' => "<h2>Replace $file_name</h2>",
+        ),
+        'file' => array(
+            '#type' => 'file',
+            '#title' => 'Replacement File',
+            '#element_validate' => array('pdq_ebms_doc_file_required'),
+        ),
+        'doc_id' => array(
+            '#type' => 'hidden',
+            '#value' => $doc_id,
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+        'cancel' => array(
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+        ),
+    );
+}
+
+function pdq_ebms_doc_edit_form_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Submit') {
+        $doc_id = $form_state['values']['doc_id'];
+        $validators = array('file_validate_extensions' => array());
+        $file = file_save_upload('file', $validators);
+        if ($file) {
+            $file = file_move($file, 'public://');
+            $file->status |= FILE_STATUS_PERMANENT;
+            $file = file_save($file);
+            db_update('ebms_doc')
+                ->fields(array('file_id' => $file->fid))
+                ->condition('doc_id', $doc_id)
+                ->execute();
+            drupal_set_message('Posted document ' . $file->filename . '.');
+        }
+        else
+            drupal_set_message('File not found', 'error');
+    }
+    drupal_goto('reports/documents');
+}
+
 function pdq_ebms_fix_date($element) {
     $years = array(0 => 'YEAR');
     $today = getdate();
@@ -1314,6 +1677,7 @@ function pdq_ebms_fix_date($element) {
     array_unshift($element['day']['#options'], 'DAY');
     return $element;
 }
+
 function pdq_ebms_date_validate($element, &$form_state, $form) {
     $y = $element['#value']['year'];
     $m = $element['#value']['month'];
@@ -1326,4 +1690,15 @@ function pdq_ebms_date_validate($element, &$form_state, $form) {
     }
     elseif ($m && !$y)
         form_error($element, 'Month cannot be specified without year');
+}
+
+/**
+ * Validation function to ensure that a document was selected for a file
+ * upload field (Drupal's validation of required file upload fields is
+ * broken).
+ */
+function pdq_ebms_doc_file_required($element, &$form_state) {
+    if ($_FILES['files']['name']['file'] == '') {
+        form_set_error('file', t('Please select a document'));
+    }
 }
