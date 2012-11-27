@@ -2,6 +2,12 @@
 
 // $Id$
 
+// Show all errors
+error_reporting(-1);
+$conf['error_level'] = 2;
+ini_set('display_errors', TRUE);
+ini_set('display_startup_errors', TRUE);
+
 /**
  * @file
  *
@@ -11,12 +17,10 @@ function pdq_ebms_alantest() {
     // Test
     // return '<i>Stub for Alan\'s testing</i>';
     require_once('logw.inc');
-    // require_once('testimport.inc');
     require_once('EbmsArticle.inc');
     require_once('EbmsImport.inc');
     require_once('EbmsSearch.inc');
     pdq_ebms_debug('ALAN POST', $_POST);
-    // return (tryIt());
     $test = Ebms\Util::get_request_value('test');
     $op = Ebms\Util::get_request_value('op');
     switch ($test) {
@@ -25,6 +29,10 @@ function pdq_ebms_alantest() {
                 return pdq_ebms_import_test();
             // print(drupal_realpath('public://anal-cancer-201202.rtf'));
             return drupal_get_form('ebms_testapi_import_form');
+        case 'oldImport':
+            if ($op)
+                return pdq_ebms_oldimport_test();
+            return drupal_get_form('ebms_testapi_oldimport_form');
         case 'setStatus':
             if ($op)
                 return pdq_ebms_setstatus_test();
@@ -76,6 +84,7 @@ function pdq_ebms_import_test() {
     $cycleId    = \Ebms\Util::get_request_value('cycleId');
     $topicId    = \Ebms\Util::get_request_value('topicId');
     $frmNotList = \Ebms\Util::get_request_value('useNotList');
+    $inputType  = \Ebms\Util::get_request_value('inputType');
     $comment    = \Ebms\Util::get_request_value('comment');
 
     // Validate Pubmed data entered
@@ -97,7 +106,20 @@ function pdq_ebms_import_test() {
 
     // Try it
     $ib = Ebms\importArticlesFromNLM($mode, $pmids, $topicId, $cycleId,
-                                     $comment, $useNotList, null);
+                                     $comment, $useNotList, $inputType, null);
+
+    // Dump the ImportBatch object
+    return $ib->dumpHtml();
+}
+
+// Implements return of the data from an existing import
+function pdq_ebms_oldimport_test() {
+
+    // Get form data
+    $batchId = intval(\Ebms\Util::get_request_value('batchId'));
+
+    // Try it.  Function will fail with exception if id doesn't exist
+    $ib = new \Ebms\ImportBatch($batchId);
 
     // Dump the ImportBatch object
     return $ib->dumpHtml();
@@ -387,6 +409,7 @@ function pdq_ebms_show_dummy_test_results($title, $test) {
 function pdq_ebms_api_tests() {
     $tests = array(
         array('Import articles from NLM', 'import'),
+        array('View old import batch results', 'oldImport'),
         array('Set the status of an article', 'setStatus'),
         array('Add another comment to a status setting for an article',
             'addStatusComment'),
@@ -460,6 +483,19 @@ function ebms_testapi_import_form($form) {
         '#required' => true
     );
 
+    $inputTypeOpts = array(
+        'R' => 'Regular',
+        'F' => 'Fast track',
+        'S' => 'Special search'
+    );
+    $form['inputType'] = array(
+        '#type' => 'select',
+        '#title' => 'Import type',
+        '#description' => 'What kind of import is this.',
+        '#options' => $inputTypeOpts,
+        '#default_value' => 'R',
+        '#required' => true
+    );
 
     $modeOpts = array(
         'test' => 'Test mode',
@@ -492,6 +528,30 @@ function ebms_testapi_import_form($form) {
        'Alternatively, enter one or more Pubmed IDs separated by spaces, newlines, or commas.',
         '#rows' => 2,
         '#cols' => 50,
+        '#required' => true
+    );
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Submit'
+    );
+
+    return $form;
+}
+
+function ebms_testapi_oldimport_form($form) {
+
+    $form = array();
+    $form['title'] = array(
+        '#type' => 'markup',
+        '#markup' => '<h3>View values from an old import batch</h3>'
+    );
+
+    $form['batchId'] = array(
+        '#type' => 'textfield',
+        '#size' => 6,
+        '#title' => 'Batch ID',
+        '#description' => 'ID number of the existing batch import to display',
         '#required' => true
     );
 
