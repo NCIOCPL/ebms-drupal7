@@ -99,6 +99,8 @@ div.import-reports ul li a { text-transform: uppercase; }
 #import-report td, #import-report th { border-left: none; }
 #documents-top div.form-item-archived { clear: both; margin-left: 476px; }
 #doc-report { margin-top: 35px; }
+/*
 #doc-report .col-1 { width: 325px; }
 #doc-report .col-2 { width: 275px; }
 #doc-report .col-3 { width: 150px; }
+*/

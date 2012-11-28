@@ -963,17 +963,23 @@ class EbmsReports {
             ),
             array(
                 'data' => 'Uploaded By',
-                //'field' => 'u.name',
                 'class' => array('col-2'),
             ),
             array(
-                'data' => 'Date Uploaded',
-                //'field' => 'd.when_posted',
+                'data' => 'Boards',
                 'class' => array('col-3'),
             ),
             array(
-                'data' => 'Actions',
+                'data' => 'Tags',
                 'class' => array('col-4'),
+            ),
+            array(
+                'data' => 'Date Uploaded',
+                'class' => array('col-5'),
+            ),
+            array(
+                'data' => 'Actions',
+                'class' => array('col-6'),
             ),
         );
         $query = db_select('ebms_doc', 'd');
@@ -1021,6 +1027,26 @@ class EbmsReports {
                 $archive_link = l('ARCHIVE', "$main_url/a{$d->doc_id}");
                 $links .= " $divider $archive_link";
             }
+            $bquery = db_select('ebms_board', 'b');
+            $bquery->join('ebms_doc_board', 'd', 'd.board_id = b.board_id');
+            $bquery->condition('d.doc_id', $d->doc_id);
+            $bquery->fields('b', array('board_name'));
+            $bquery->orderBy('b.board_name');
+            $results = $bquery->execute();
+            $boards = array();
+            foreach ($results as $result)
+                $boards[] = $result->board_name;
+            $boards = implode('; ', $boards);
+            $tquery = db_select('ebms_tag', 't');
+            $tquery->join('ebms_doc_tag', 'd', 't.tag_id = d.tag_id');
+            $tquery->condition('d.doc_id', $d->doc_id);
+            $tquery->fields('t', array('tag_name'));
+            $tquery->orderBy('t.tag_name');
+            $results = $tquery->execute();
+            $tags = array();
+            foreach ($results as $result)
+                $tags[] = $result->tag_name;
+            $tags = implode('; ', $tags);
             $data = array(
                 array(
                     'data' => htmlspecialchars($d->filename),
@@ -1031,12 +1057,20 @@ class EbmsReports {
                     'class' => array('col-2'),
                 ),
                 array(
-                    'data' => date('m/d/Y', strtotime($d->when_posted)),
+                    'data' => htmlspecialchars($boards),
                     'class' => array('col-3'),
                 ),
                 array(
-                    'data' => $links,
+                    'data' => htmlspecialchars($tags),
                     'class' => array('col-4'),
+                ),
+                array(
+                    'data' => date('m/d/Y', strtotime($d->when_posted)),
+                    'class' => array('col-5'),
+                ),
+                array(
+                    'data' => $links,
+                    'class' => array('col-6'),
                 ),
             );
             $rows[] = array(
