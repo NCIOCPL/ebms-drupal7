@@ -383,6 +383,99 @@ class EbmsSearchSpec {
     }
 }
 
+/**
+ * Prevent the user from submitting a search request without having
+ * specified any search criteria.  Specifying a board (or multiple
+ * boards) isn't sufficient.  Also, make sure date ranges are fully
+ * specified.
+ */
+function pdq_ebms_search_db_form_validate($form, &$form_state) {
+
+    // Initial assumption.
+    $have_value = $have_board = false;
+
+    // Use shorthand for checking values.
+    $values = $form_state['values'];
+    pdq_ebms_debug('SEARCH FORM VALIDATE', $values);
+
+    // Any of the multi-select fields have a value selected?
+    $multi_fields = array('boards', 'topics');
+    foreach ($multi_fields as $field) {
+        foreach ($values[$field] as $id => $val) {
+            if ($val) {
+                if ($field == 'board')
+                    $have_board = true;
+                else
+                    $have_value = true;
+            }
+        }
+    }
+
+    // Check the fields that can have a single value.
+    if ($have_value) {
+        $simple_fields = array('pmid', 'cms-id', 'author', 'title', 'journal',
+                         'comments', 'publication-year', 'review-cycle',
+                         'reviewer', 'response', 'decision', 'tag');
+        foreach ($simple_fields as $field) {
+            if ($values[$field]) {
+                $have_value = true;
+                break;
+            }
+        }
+    }
+
+    // Flag options to check.
+    $flag_fields = array(
+        'admin' => array('summary-topics-added'),
+        'advanced' => array(
+            'fyi-citation',
+            'nci-reviewer-decision',
+            'full-text-retrieved',
+            'committee-decision',
+            'published-to-cite-ms',
+        ),
+    );
+    if (!$have_value) {
+        foreach ($flag_fields as $group => $names) {
+            $set = $values[$group . '-options'];
+            foreach ($names as $name) {
+                if ($set[$name]) {
+                    $have_value = true;
+                    break 2;
+                }
+            }
+        }
+    }
+
+    // Check the date fields.
+    $date_fields = array(
+        'comment-added' => 'use-comment-date-range',
+        'tag-added' => 'use-tag-date-range',
+        'input' => 'use-input-date-range',
+        'modified' => 'use-mod-date-range',
+    );
+    $message = 'Date range must be specified with complete dates.';
+    foreach ($date_fields as $field => $flag_field) {
+        $start_name = $field . '-start';
+        $start_date = $values[$start_name];
+        if ($start_date['year'])
+            $have_value = true;
+        if ($values[$flag_field]) {
+            $end_name = $field . '-end';
+            $end_date = $values[$end_name];
+            if (!$start_date['day'])
+                form_set_error($start_name, $message);
+            elseif (!$end_date['day'])
+                form_set_error($start_name, $message);
+        }
+    }
+
+    // Complain if we didn't get any search criteria.
+    if (!$have_value)
+        form_set_error('pmid',
+            'At least one (non-board) search criterion is required.');
+}
+
 function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $defaults = new EbmsSearchSpec($search_id);
     $checked_boards = $defaults->boards;
@@ -809,9 +902,9 @@ function pdq_ebms_db_search_board_ajax($form, $form_state) {
 }
 
 function pdq_ebms_search_db_form_submit($form, &$form_state) {
-    pdq_ebms_debug('SEARCH SPEC', $form_state['values']);
+    //pdq_ebms_debug('SEARCH SPEC', $form_state['values']);
     $spec = drupal_json_encode($form_state['values']);
-    pdq_ebms_debug('ENCODED SPEC', $spec);
+    //pdq_ebms_debug('ENCODED SPEC', $spec);
     global $user;
     $now = strftime("%Y-%m-%d %H:%M:%S");
     $search_id = db_insert('ebms_search')
@@ -863,5 +956,10 @@ function pdq_ebms_date_validate($element, &$form_state, $form) {
     $m = $element['#value']['month'];
     $d = $element['#value']['day'];
     if ($y && $m && $d && !checkdate($m, $d, $y))
-        form_error($element, 'The specified date is invalid');
+        form_error($element, 'The specified date is invalid.');
+    elseif ($m && !$y)
+        form_error($element, 'Month cannot be specified without year.');
+    elseif ($d && !$m)
+        form_error($element,
+            'Day cannot be specified without month and year.');
 }
