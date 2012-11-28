@@ -1,0 +1,166 @@
+<?php
+
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
+
+module_load_include('inc', 'ebms', 'includes/ebms.fields');
+
+function ebms_enable() {
+    _ebms_install_create_event();
+    _ebms_install_add_event_fields();
+}
+
+function _ebms_install_create_event() {
+    
+}
+
+function _ebms_install_add_event_fields() {
+    global $ebms_event_fields;
+
+    node_types_rebuild();
+    _ebms_enable_fields($ebms_event_fields);
+}
+
+/**
+ *
+ * @param type $fields
+ * @return boolean 
+ */
+function _ebms_enable_fields($fields) {
+    try {
+        foreach ($fields as $field) {
+            $field_info = _ebms_field_info($field);
+            field_read_field($field_info['field_name']) == FALSE ? field_create_field($field_info)
+                        : field_update_field($field_info);
+            //Add an instance of this field to each of the content types that use it.
+            foreach ($field['bundles'] as $bundle) {
+                $instance_info = _ebms_instance_info($field, $bundle);
+
+                if ($instance_info) {
+                    field_read_instance($instance_info['entity_type'],
+                            $instance_info['field_name'],
+                            $instance_info['bundle']) == FALSE ? field_create_instance($instance_info)
+                                : field_update_instance($instance_info);
+                } else {
+                    watchdog('error',
+                        t('There was a problem creating a field instance.'));
+                }
+            }
+        }
+        return TRUE;
+    } catch (Exception $e) {
+        watchdog_exception('EBMS - enable', $e);
+        return FALSE;
+    }
+}
+
+/**
+ *
+ * @param type $field
+ * @return type 
+ */
+function _ebms_field_info($field = array()) {
+
+    if (empty($field))
+        return;
+    // Variables
+    $field_info = array();
+
+    // Create the fields
+    //Required field properties
+    $field_info['field_name'] = $field['field_name'];
+    $field_info['type'] = $field['type'];
+    //Optional field properties
+    if (array_key_exists('cardinality', $field))
+        $field_info['cardinality'] = $field['cardinality'];
+
+    if (array_key_exists('label', $field))
+        $field_info['label'] = $field['label'];
+
+    if (array_key_exists('description', $field))
+        $field_info['description'] = $field['description'];
+
+    if (array_key_exists('settings', $field))
+        $field_info['settings'] = $field['settings'];
+
+    if (array_key_exists('instance_settings', $field))
+        $field_info['instance_settings'] = $field['instance_settings'];
+
+    if (array_key_exists('default_widget', $field))
+        $field_info['default_widget'] = $field['default_widget'];
+
+    if (array_key_exists('default_formatter', $field))
+        $field_info['default_formatter'] = $field['default_formatter'];
+
+    if (array_key_exists('locked', $field))
+        $field_info['locked'] = $field['locked'];
+
+    if (array_key_exists('no_ui', $field))
+        $field_info['no_ui'] = $field['no_ui'];
+
+    // Return the fields
+    return $field_info;
+}
+
+/**
+ *
+ * @param type $field
+ * @param type $bundle
+ * @return type 
+ */
+function _ebms_instance_info($field = array(), $bundle = FALSE) {
+
+    if (empty($field) || !$bundle) {
+        return;
+    }
+
+    $instance_info = array();
+
+    //required instance fields
+    $instance_info['field_name'] = $field['field_name'];
+    $instance_info['entity_type'] = $field['entity_type'];
+    $instance_info['bundle'] = $bundle;
+
+    //optional instance fields
+    if (array_key_exists('label', $field))
+        $instance_info['label'] = $field['label'];
+
+    if (array_key_exists('description', $field))
+        $instance_info['description'] = $field['description'];
+
+    if (array_key_exists('required', $field))
+        $instance_info['required'] = $field['required'];
+
+    if (array_key_exists('default_value_function', $field))
+        $instance_info['default_value_function'] = $field['default_value_function'];
+
+    if (array_key_exists('settings', $field))
+        $instance_info['settings'] = $field['settings'];
+
+    if (array_key_exists('widget', $field))
+        $instance_info['widget'] = $field['widget'];
+
+    if (array_key_exists('display', $field))
+        $instance_info['display'] = $field['display'];
+
+    return $instance_info;
+}
+
+function ebms_enable_test() {
+    dsm('Cycling ebms module.');
+    module_disable(array('ebms'));
+    module_enable(array('ebms'));
+    
+    dsm(field_info_field_types(), 'fields types');
+    dsm(field_info_fields(), 'field descs');
+
+    dsm(node_type_load('event'), 'event node type info');
+    dsm(node_type_load('ebms_event'), 'ebms event node type info');
+
+    dsm(field_info_instances('node', 'ebms_event'), 'ebms event field desc');
+    
+    return array();
+}
+?>

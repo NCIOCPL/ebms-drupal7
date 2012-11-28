@@ -21,6 +21,7 @@
  */
 
 require_once('common.inc');
+module_load_include('inc', 'ebms', 'includes/ebms.nodes');
 
 /**
  * Permissions granted to EBMS users.  Implementation of hook_permission().
@@ -234,14 +235,6 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        // VIEW CALENDAR
-        'calendar/view' => array(
-            'page callback' => 'pdq_ebms_calendar',
-            'file' => 'calendar.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
         // CREATE EVENT
         'calendar/create' => array(
             'page callback' => 'pdq_ebms_calendar',
@@ -249,7 +242,7 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-
+        
         // LITERATURE REVIEW
         'review' => array(
             'page callback' => 'pdq_ebms_review',
@@ -428,6 +421,17 @@ function ebms_menu() {
             'title' => 'AlanTest',
             'page callback' => 'pdq_ebms_alantest',
             'file' => 'alan.inc',
+            'access callback' => true,
+            'theme callback' => 'pdq_ebms_tester_theme',
+            //'menu_name' => 'main-menu',
+            //'weight' => 20,
+        ),
+        
+        // TESTING FOR DAN
+        'admin/ebms/enable' => array(
+            'title' => 'EBMS Enable',
+            'page callback' => 'ebms_enable_test',
+            'file' => 'ebms.install',
             'access callback' => true,
             'theme callback' => 'pdq_ebms_tester_theme',
             //'menu_name' => 'main-menu',
@@ -1119,3 +1123,13 @@ function pdq_ebms_clear_all_caches() {
 }
 
 function pdq_ebms_tester_theme() { return 'apitest'; }
+
+function ebms_node_info() {
+    global $ebms_event_nodes;
+
+    $nodes = array();
+
+    $nodes += $ebms_event_nodes;
+
+    return $nodes;
+}
