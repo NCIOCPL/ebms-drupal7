@@ -224,7 +224,7 @@ if ($logged_in) {
 <?php } /* if title */ ?>
 <?php print render($title_suffix); ?>
 <?php if ($tabs) { ?>
-                <div class="tabs"><?php print render($tabs); ?></div>
+                <!--<div class="tabs"><?php //print render($tabs); ?></div>-->
 <?php } /* if tabs */ ?>
 <?php print render($page['help']); ?>
 <?php if ($action_links) { ?>

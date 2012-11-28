@@ -251,3 +251,157 @@ function ebmstheme_form_element($variables) {
 /*   unset($element['#title']); */
 /*   return theme('form_element', $element, $checkbox); */
 /* } */
+
+function ebmstheme_preprocess_node(&$variables) {
+    if (isset($variables['node']) &&
+        $variables['node']->type == 'ebms_event') {
+        preprocess_ebms_event($variables);
+    }
+}
+
+function preprocess_ebms_event(&$variables) {
+    //retrieve the node from the variables
+    $node = $variables['node'];
+        
+    // retrieve the needed values for the template
+    $eventDate = field_get_items('node', $node, 'event_date');
+    $variables['eventDate'] = 'unknown';
+    $variables['eventTime'] = 'unknown';
+    if ($eventDate) {
+        $startDate = $eventDate[0]['value'];
+        $endDate = $eventDate[0]['value2'];
+
+        // build the date of the event
+        $date = date('F j, Y', $startDate);
+
+        // build the time of the event
+        // render out separate pieces of the dates
+        $startTime = date('g:i', $startDate);
+        $endTime = date('g:i', $endDate);
+
+        $startMeridiem = date('A', $startDate);
+        $endMeridiem = date('A', $endDate);
+
+        $endTime .= " $endMeridiem";
+        if ($startMeridiem != $endMeridiem) {
+            $startTime .= " $startMeridiem";
+        }
+
+        $time = "$startTime - $endTime E.T.";
+
+        // store date and time
+        $variables['eventDate'] = $date;
+        $variables['eventTime'] = $time;
+        
+        // need to determine next and previous events
+        $sortedNodes = array();
+
+        // get the nearest previous event
+        $prevQuery = new EntityFieldQuery();
+        $prevQuery
+            ->entityCondition('entity_type', 'node')
+            ->entityCondition('bundle', 'ebms_event')
+            ->propertyCondition('status', '1')
+            ->fieldCondition('event_date', 'value', $startDate, '<')
+            ->fieldOrderBy('event_date', 'value', 'DESC')
+            ->entityOrderBy('entity_id')
+            ->range(0, 1);
+
+        $prevResult = $prevQuery->execute();
+        if (isset($prevResult['node']))
+            $sortedNodes += $prevResult['node'];
+
+        // determine if there are events at the same time,
+        // and attempt to get previous and next from those
+        $currQuery = new EntityFieldQuery();
+        $currQuery
+            ->entityCondition('entity_type', 'node')
+            ->entityCondition('bundle', 'ebms_event')
+            ->propertyCondition('status', '1')
+            ->fieldCondition('event_date', 'value', $startDate)
+            ->entityOrderBy('entity_id');
+
+        $currResult = $currQuery->execute();
+        if (isset($currResult['node']))
+            $sortedNodes += $currResult['node'];
+
+        // get the first following event
+        $nextQuery = new EntityFieldQuery();
+        $nextQuery
+            ->entityCondition('entity_type', 'node')
+            ->entityCondition('bundle', 'ebms_event')
+            ->propertyCondition('status', '1')
+            ->fieldCondition('event_date', 'value', $startDate, '>')
+            ->fieldOrderBy('event_date', 'value')
+            ->entityOrderBy('entity_id')
+            ->range(0, 1);
+
+        $nextResult = $nextQuery->execute();
+        if (isset($nextResult['node']))
+            $sortedNodes += $nextResult['node'];
+        
+        $prevNode = null;
+        $lastNode = null;
+        $nextNode = null;
+        foreach ($sortedNodes as $nid => $obj) {
+            // if found the current node, keep the previous
+            if ($nid == $node->nid)
+                $prevNode = $lastNode;
+
+            // if this node follows the current node, keep as next
+            if ($lastNode == $node->nid)
+                $nextNode = $nid;
+            
+            $lastNode = $nid;
+        }
+
+        $variables['prevNode'] = $prevNode;
+        $variables['nextNode'] = $nextNode;
+    }
+
+    $eventType = field_get_items('node', $node, 'event_type');
+    $variables['eventType'] = 'In Person';
+    if ($eventType[0]['value'] != 'in_person')
+        $variables['eventType'] = 'Webex/Phone Conference';
+
+    $board = field_get_items('node', $node, 'board');
+    $variables['boardName'] = null;
+    if ($board) {
+        $boardId = $boardId[0]['value'];
+        $variables['boardName'] = Ebms\getBoardNameById($boardId);
+    }
+    
+    $eventNotes = field_get_items('node', $node, 'event_notes');
+    $variables['eventNotes'] = null;
+    if ($eventNotes)
+        $variables['eventNotes'] = $eventNotes[0]['value'];
+
+    $submitter = user_load($node->uid);
+    $variables['submitter'] = $submitter->name;
+    $submitted = $node->created;
+    $variables['submitted'] = date('m/d/y', $submitted);
+    
+    $inhouseStaff = field_get_items('node', $node, 'inhouse_staff');
+    $boardMembers = field_get_items('node', $node, 'board_members');
+
+    $individuals = array();
+    if ($inhouseStaff) {
+        foreach ($inhouseStaff as $staff) {
+            $individuals[] = $staff['value'];
+        }
+    }
+
+    if ($boardMembers) {
+        foreach ($boardMembers as $member) {
+            $individuals[] = $member['value'];
+        }
+    }
+    
+    $users = user_load_multiple($individuals);
+    $individualNames = array();
+    foreach($users as $individual)
+    {
+        $individualNames[] = $individual->name;
+    }
+    $variables['individuals'] = implode(', ', $individualNames);
+}

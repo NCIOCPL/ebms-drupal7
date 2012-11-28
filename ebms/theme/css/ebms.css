@@ -70,7 +70,7 @@ disallow applying a class directly to a desired sub-element.
      visibility: hidden;
      display: block;
      font-size: 0;
-     content: " ";
+     content: ".";
      clear: both;
      height: 0;
      }
@@ -242,10 +242,11 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
     padding-bottom: 10px; 
 }
 #left-nav li.active { border-bottom: 1px #a90101 solid; }
+#left-nav li.inactive{ opacity: 0.65; }
 #left-nav a {
     text-transform: uppercase; font-size: 14px; color: #696559; opacity: .65;
 }
-#left-nav a:hover { color: #a90101; text-decoration: none; }
+#left-nav a:hover { color: #a90101; text-decoration: none; opacity: 1.0;}
 #left-nav li.active a { color: #a90101; opacity: 1; font-weight: bold; }
 
 /* BREADCRUMBS */
