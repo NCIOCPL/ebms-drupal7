@@ -35,8 +35,7 @@ function _calendar_get_upcoming_events() {
     foreach ($events as $event) {
         $event_date = field_get_items('node', $event, 'event_date');
         if ($event_date === false) {
-
-            dsm($event, 'bad event date');
+            watchdog("ebms - calendar", 'bad event date');
             continue;
         }
 
