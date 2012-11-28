@@ -920,6 +920,16 @@ function pdq_ebms_search_db_form_submit($form, &$form_state) {
 }
 
 function pdq_ebms_fix_date($element) {
+    $years = array(0 => 'YEAR');
+    $today = getdate();
+    for ($year = $today['year'] + 1; $year >= 2000; --$year)
+        $years[$year] = $year;
+    $element['year']['#options'] = $years;
+    array_unshift($element['month']['#options'], 'MONTH');
+    array_unshift($element['day']['#options'], 'DAY');
+    return $element;
+}
+function pdq_ebms_old_fix_date($element) {
     #pdq_ebms_debug('FIX DATE', $element);
     /*$element['year']['#options'] = array(1900 => ' ');
     $element['month']['#options'] = array(
