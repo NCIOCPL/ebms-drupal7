@@ -638,6 +638,15 @@ namespace {
         // retrieve boards
         $boards = Ebms\Util::boards();
 
+        // pull the default user board, if any
+        global $user;
+        if (isset($user->ebms_boards)) {
+            $userBoardId = reset($user->ebms_boards);
+            if ($userBoardId === false) {
+                $userBoardId = 0;
+            }
+        }
+
         //db_select('ebms_not_list', 'nl')->join($table, $alias);
         /* $form['#prefix'] = '<div id="citation-div">';
           $form['#suffix'] = '</div>'; */
@@ -654,6 +663,7 @@ namespace {
             '#title' => 'Editorial Board',
             '#title_display' => 'after',
             '#options' => array(0 => ''),
+            '#default_value' => $userBoardId,
             '#prefix' => '<div class="citation-input-div">',
             '#suffix' => '</div>',
             '#ajax' => array(
@@ -702,51 +712,55 @@ namespace {
                 '#collapsed' => true,
                 '#tree' => true,
             );
-            if (isset($form_state['values']['board_select'])) {
+
+            // use the default board id, or dig the value from the form state
+            $board_id = $userBoardId;
+            $abstractReview = 1;
+            if (isset($form_state['values']['board_select']))
                 $board_id = $form_state['values']['board_select'];
-                if ($board_id != 0) {
-                    // build an option list based on all topics related to the given board
-                    $topicRows = db_select('ebms_topic', 't')
-                        ->condition('t.board_id', $board_id)
-                        ->fields('t')
-                        ->execute()
-                        ->fetchAll();
 
+            if ($board_id != 0) {
+                // build an option list based on all topics related to the given board
+                $topicRows = db_select('ebms_topic', 't')
+                    ->condition('t.board_id', $board_id)
+                    ->fields('t')
+                    ->execute()
+                    ->fetchAll();
+
+                if (isset($form_state['values']['abstract_review_check']))
                     $abstractReview = $form_state['values']['abstract_review_check'];
-                    $targetState = $abstractReview ? Ebms\EbmsArticleStates::Published
-                            : Ebms\EbmsArticleStates::PassedBMReview;
-                    $stateId = Ebms\getStateTypebyTextId($targetState)->state_id;
+                $targetState = $abstractReview ? Ebms\EbmsArticleStates::Published
+                        : Ebms\EbmsArticleStates::PassedBMReview;
+                $stateId = Ebms\getStateTypebyTextId($targetState)->state_id;
 
-                    $topicOptions = array();
-                    foreach ($topicRows as $topicRow) {
-                        // need to query for each topic to find the number of
-                        // related articles
-                        //depends on abstract/full text review switch
-                        $query = db_select('ebms_article_state', 's');
-                        $query->join('ebms_article', 'a',
-                            'a.article_id = s.article_id');
+                $topicOptions = array();
+                foreach ($topicRows as $topicRow) {
+                    // need to query for each topic to find the number of
+                    // related articles
+                    //depends on abstract/full text review switch
+                    $query = db_select('ebms_article_state', 's');
+                    $query->join('ebms_article', 'a',
+                        'a.article_id = s.article_id');
 
-                        if (!$abstractReview)
-                            $query->isNotNull('a.full_text_id');
+                    if (!$abstractReview)
+                        $query->isNotNull('a.full_text_id');
 
-                        $count = $query->condition('s.topic_id',
-                                $topicRow->topic_id)
-                            ->condition('s.state_id', $stateId)
-                            ->condition('s.active_status', 'A')
-                            ->condition('s.current', 'Y')
-                            ->countQuery()
-                            ->execute()
-                            ->fetchField();
+                    $count = $query->condition('s.topic_id', $topicRow->topic_id)
+                        ->condition('s.state_id', $stateId)
+                        ->condition('s.active_status', 'A')
+                        ->condition('s.current', 'Y')
+                        ->countQuery()
+                        ->execute()
+                        ->fetchField();
 
-                        $topicOptions[$topicRow->topic_id] = "$topicRow->topic_name ($count)";
-                    }
-
-                    $form['citation_queue']['topic_select']['options'] = array(
-                        '#type' => 'checkboxes',
-                        '#title' => '',
-                        '#options' => $topicOptions,
-                    );
+                    $topicOptions[$topicRow->topic_id] = "$topicRow->topic_name ($count)";
                 }
+
+                $form['citation_queue']['topic_select']['options'] = array(
+                    '#type' => 'checkboxes',
+                    '#title' => '',
+                    '#options' => $topicOptions,
+                );
             }
         }
 
@@ -836,7 +850,7 @@ namespace {
           return $form;
           } */
 
-        _citation_queue_results($form, $form_state, $is_librarian);
+        _citation_queue_results($form, $form_state, $is_librarian, $userBoardId);
 
         return $form;
     }
@@ -845,8 +859,9 @@ namespace {
         return $form['citation_queue']['topic_select'];
     }
 
-    function _citation_queue_results(&$form, &$form_state, $is_librarian) {
-        $board_id = 0;
+    function _citation_queue_results(&$form, &$form_state, $is_librarian,
+        $default_board) {
+        $board_id = $default_board;
         $topic_id = 0;
         $journal_id = '';
         $sort_by = '';
@@ -1816,11 +1831,11 @@ namespace {
             $pieces[] = ", $year";
 
         if ($showAbstract)
-            $cmsId = "CMS ID: $cmsId";
+            $abstractCmsId = "CMS ID: $cmsId";
         else
-            $cmsId = '';
+            $abstractCmsId = '';
 
-        $pieces[] = ".</div>$tPMID<div>$pmid&nbsp;&nbsp;&nbsp;&nbsp;$cmsId</div>";
+        $pieces[] = ".</div>$tPMID<div>$pmid&nbsp;&nbsp;&nbsp;&nbsp;$abstractCmsId</div>";
 
         if (!$long_form) {
             if ($showAbstract) {
@@ -3467,7 +3482,7 @@ namespace {
         }
 
         $state = \Ebms\EbmsArticleStates::PassedFullReview;
-        if ($pass)
+        if ($reject)
             $state = \Ebms\EbmsArticleStates::RejectFullReview;
         else if ($fyi)
             $state = \Ebms\EbmsArticleStates::FYI;

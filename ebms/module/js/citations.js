@@ -4,21 +4,20 @@
  */
 
 jQuery(document).ready(function(){
-   addHooks(); 
+    addHooks(); 
 });
 
 function addHooks() {
-        
     jQuery('input[name=submit_source]').val('');
     
     // strip any pager query when the search is performed
     jQuery('input#edit-search-button, input#edit-sort-button').click(function () {
-        form = jQuery(this).closest('form');
+        var form = jQuery(this).closest('form');
         if(form.length == 0) return false;
-        button_val = jQuery(this).val();
+        var button_val = jQuery(this).val();
         
         // remove the query from the action
-        form_action = form.attr('action');
+        var form_action = form.attr('action');
         form.attr('action', form_action.split('?')[0]);
         jQuery('input[name=submit_source]').val(jQuery(this).val());
         form.submit();
@@ -27,7 +26,7 @@ function addHooks() {
     
     // alter the action to submit the pager URLs when they are clicked
     jQuery('.pager a').click(function () {
-        form = jQuery(this).closest('form');
+        var form = jQuery(this).closest('form');
         if(form.length == 0) return false;
         form.attr('action', this.getAttribute('href'));
         jQuery('input[name=submit_source]').val('Pager');
@@ -48,16 +47,16 @@ function addHooks() {
     // alter pass/reject buttons to disable their siblings on click
     jQuery('.summary-topic-check input.form-checkbox').click(function () {
         // get the parent div
-        parent = jQuery(this).closest('.summary-topic-check');
+        var parent = jQuery(this).closest('.summary-topic-check');
         //alert("Found parent " + parent);
         
         // get the sibling checkbox and label
-        siblings = parent.siblings('.summary-topic-check');
+        var siblings = parent.siblings('.summary-topic-check');
         //alert("Found " + siblings.length + ' siblings!');
         
-        sib_inputs = siblings.find('input.form-checkbox');
+        var sib_inputs = siblings.find('input.form-checkbox');
         //alert("Found " + sib_inputs.length + ' sibling checkboxes!');
-        sib_labels = siblings.find('label');
+        var sib_labels = siblings.find('label');
         
         // based on the current state of this checkbox,
         // either disable the other checkbox or enable all checkboxes
@@ -69,12 +68,12 @@ function addHooks() {
 
     jQuery('.full-citation-radio-check input.form-checkbox').click(function () {
         // get the parent div
-        parent = jQuery(this).closest('.form-type-checkbox');
+        var parent = jQuery(this).closest('.form-type-checkbox');
         
         // get the sibling checkbox and label
-        sibling = parent.siblings('.form-type-checkbox');
-        sib_input = sibling.children('input.form-checkbox');
-        sib_label = sibling.children('label');
+        var sibling = parent.siblings('.form-type-checkbox');
+        var sib_input = sibling.children('input.form-checkbox');
+        var sib_label = sibling.children('label');
         
         // based on the current state of this checkbox,
         // either disable the other checkbox or enable all checkboxes
