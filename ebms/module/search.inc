@@ -74,48 +74,6 @@ class EbmsSearch {
         require_once('EbmsSearch.inc');
         $json = $this->fetch_search_spec($this->search_id, false);
         $spec = drupal_json_decode($json);
-        //pdq_ebms_debug('SEARCH', $spec);
-        /*
-        $query = db_select('ebms_article', 'a')->distinct();
-        if ($spec['title'])
-            $query->condition('a.article_title', $spec['title'], 'LIKE');
-        if ($spec['author']) {
-            $query->join('ebms_article_author_cite', 'au_link',
-                'au_link.article_id = a.article_id');
-            $query->join('ebms_article_author', 'author',
-                'author.author_id = au_link.author_id');
-            $query->condition('author.last_name', $spec['author'], 'LIKE');
-        }
-        if ($spec['pmid'])
-            $query->condition('a.source_id', $spec['pmid']);
-        if ($spec['cms-id'])
-            $query->condition('a.article_id', $spec['cms-id']);
-        if ($spec['tag']) {
-            $query->join('ebms_article_tag', 'article_tag',
-                'article_tag.article_id = a.article_id');
-            $query->condition('article_tag.tag_id', $spec['tag']);
-        }
-        $query->fields('a', array('article_id'));
-        switch ($spec['sort-by']) {
-            case 'PM ID#':
-                $query->orderBy('a.source_id');
-                break;
-            case 'Title':
-                $query->orderBy('a.article_title');
-                break;
-            case 'Journal':
-                $query->orderBy('a.jrnl_title');
-                break;
-            case 'Publication Date':
-                $query->orderBy('a.published_date');
-                break;
-            case 'Author':
-            case 'CMS ID#':
-            default:
-                $query->orderBy('a.article_id');
-                break;
-        }
-        */
         $query = Ebms\getSearchQuery($json);
         $counter = $query->countQuery();
         $count = $counter->execute()->fetchField();
@@ -134,7 +92,6 @@ class EbmsSearch {
         if ($count >= $per_page)
             $query = $query->extend('PagerDefault')->limit($per_page);
         $results = $query->execute();
-        #pdq_ebms_debug('SHOW SEARCH RESULTS', array($results, $query));
         $items = array();
         $page = 0;
         if (isset($this->parms['page']))
@@ -156,6 +113,7 @@ class EbmsSearch {
                 $refine_url . '" class="button">REFINE SEARCH</a></div>',
             ),
         );
+        $prefix = '<div id="articles-div">';
         if ($count > $per_page)
             $list['pager-top'] = array('#theme' => 'pager');
         elseif (!empty($show_pages_link))
@@ -164,7 +122,11 @@ class EbmsSearch {
                 '#markup' =>
                 "<div id='pager-view-pages'>$show_pages_link</div>",
             );
+        else
+            $prefix = '<div id="articles-div" class="extra-top-margin">';
         $list['items'] = array(
+            '#prefix' => $prefix,
+            '#suffix' => '</div>',
             '#theme' => 'item_list',
             '#items' => $items,
             '#attributes' => array('id' => 'article-list'),
@@ -183,8 +145,6 @@ class EbmsSearch {
         return array($left, $list);
     }
     function list_article($article_id, $position) {
-        #$cite = Ebms\Util::get_full_citation($article_id);
-        #return "$position $cite";
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
             ->condition('a.article_id', $article_id)
@@ -207,9 +167,12 @@ class EbmsSearch {
                     $authors[] = 'et al.';
                     break;
                 }
-                $name = $author->LastName;
-                if ($author->Initials)
-                    $name .= ' ' . $author->Initials;
+                $name = $author->CollectiveName;
+                if (!$name) {
+                    $name = $author->LastName;
+                    if ($author->Initials)
+                        $name .= ' ' . $author->Initials;
+                }
                 $authors[] = htmlspecialchars($name);
             }
         }
@@ -249,17 +212,11 @@ class EbmsSearch {
         $pieces[] = "<br />PMID: $pmid &nbsp; CMS ID: $article_id<br /><br />";
         $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
             $pmid . '" target="_blank">VIEW ABSTRACT</a> | ';
-        //$pieces[] = '<a href="/ebmsdev/stub">DOWNLOAD FULL TEXT</a> | ';
         $pieces[] = $ft_link . ' | ';
         $pieces[] = $edit_link . ' | ';
-        // '<a href="/ebmsdev/stub">EDIT</a> | ';
         $pieces[] = l('REVIEW', 'citations/review') . ' | ';
         $pieces[] = $pub_link . '</span></br /><br />&nbsp;';
-        //'<a href="/ebmsdev/">PUBLISH</a></span><br /><br />&nbsp;';
         return implode($pieces);
-        #$results = db_select('ebms_article', 'a')
-        #    ->fields('a', array('article_title', 'source_id',
-        #return "Article $position (CMS ID $article_id)";
     }
     public static function defaults() {
         return array(
@@ -403,7 +360,7 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
     foreach ($multi_fields as $field) {
         foreach ($values[$field] as $id => $val) {
             if ($val) {
-                if ($field == 'board')
+                if ($field == 'boards')
                     $have_board = true;
                 else
                     $have_value = true;
@@ -412,7 +369,7 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
     }
 
     // Check the fields that can have a single value.
-    if ($have_value) {
+    if (!$have_value) {
         $simple_fields = array('pmid', 'cms-id', 'author', 'title', 'journal',
                          'comments', 'publication-year', 'review-cycle',
                          'reviewer', 'response', 'decision', 'tag');
@@ -529,11 +486,6 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     for ($i = 1; $i <= 12; ++$i)
         $pub_months[$i] = date('F', mktime(0, 0, 0, $i));
     $pub_years = array(0 => ' ');
-    /*
-    $last_year = substr(db_select('ebms_article', 'a')
-                 ->fields('a', array('max(published_date)'))
-                 ->fetchField(), 1, 4);
-    */
     $last_year = 2013;
     for ($i = 1964; $i <= $last_year; ++$i)
         $pub_years[$i] = $i;
@@ -576,7 +528,6 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#description' => 'If you do not select "AND" or "OR," ' .
                                   'the default search will be "OR"',
                 '#options' => drupal_map_assoc(array('AND', 'OR')),
-                #'#default_value' => 'OR',
             ),
             'topics' => array(
                 '#type' => 'checkboxes',
@@ -638,7 +589,6 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             ),
             'publication-month' => array(
                 '#type' => 'select',
-                #'#title' => 'PUBLICATION MONTH',
                 '#options' => $pub_months,
                 '#default_value' => $defaults->publication_month,
             ),
@@ -648,26 +598,6 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#options' => $review_cycles,
                 '#default_value' => $defaults->review_cycle,
             ),
-            /**************************************************
-            'nci-reviewer-decision' => array(
-                '#type' => 'radios',
-                '#title' => 'NCI REVIEWER DECISION',
-                '#options' => drupal_map_assoc(array('YES', 'NO')),
-                '#default_value' => null,
-            ),
-            'full-text-retrieved' => array(
-                '#type' => 'radios',
-                '#title' => 'FULL TEXT RETRIEVED',
-                '#options' => drupal_map_assoc(array('YES', 'NO')),
-                '#default_value' => null,
-            ),
-            'committee-decision' => array(
-                '#type' => 'radios',
-                '#title' => 'COMMITTEE DECISION',
-                '#options' => drupal_map_assoc(array('YES', 'NO')),
-                '#default_value' => null,
-            ),
-        *******************************************************/
             'reviewer' => array(
                 '#type' => 'select',
                 '#title' => 'EDITORIAL BOARD REVIEWER',
@@ -751,26 +681,6 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                     ),
                 ),
             ),
-        /***********************************************
-            'published-to-citems' => array(
-                '#type' => 'radios',
-                '#title' => 'PUBLISHED TO CITE MS',
-                '#options' => drupal_map_assoc(array('YES', 'NO')),
-                '#default_value' => null,
-            ),
-            'core-journals' => array(
-                '#type' => 'radios',
-                '#title' => 'CORE JOURNALS',
-                '#options' => drupal_map_assoc(array('YES', 'NO')),
-                '#default_value' => null,
-            ),
-            'include-not-list-journals' => array(
-                '#type' => 'radios',
-                '#title' => 'INCLUDE NOT LIST JOURNALS',
-                '#options' => drupal_map_assoc(array('YES', 'NO')),
-                '#default_value' => null,
-            ),
-        **********************************************/
         ),
         'administrator search' => array(
             '#type' => 'fieldset',
@@ -840,14 +750,6 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                     ),
                 ),
              ),
-            /************************************************
-            'rejected' => array(
-                '#type' => 'radios',
-                '#title' => 'INCLUDED REJECTED ARTICLES',
-                '#options' => drupal_map_assoc(array('YES', 'NO')),
-                 '#default_value' => null,
-            ),
-    **************************************************/
         ),
         'display options' => array(
             '#type' => 'fieldset',
@@ -897,14 +799,13 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
         )
     );
 }
+
 function pdq_ebms_db_search_board_ajax($form, $form_state) {
     return $form['topics box']['topics'];
 }
 
 function pdq_ebms_search_db_form_submit($form, &$form_state) {
-    //pdq_ebms_debug('SEARCH SPEC', $form_state['values']);
     $spec = drupal_json_encode($form_state['values']);
-    //pdq_ebms_debug('ENCODED SPEC', $spec);
     global $user;
     $now = strftime("%Y-%m-%d %H:%M:%S");
     $search_id = db_insert('ebms_search')
@@ -929,39 +830,8 @@ function pdq_ebms_fix_date($element) {
     array_unshift($element['day']['#options'], 'DAY');
     return $element;
 }
-function pdq_ebms_old_fix_date($element) {
-    #pdq_ebms_debug('FIX DATE', $element);
-    /*$element['year']['#options'] = array(1900 => ' ');
-    $element['month']['#options'] = array(
-        '01' => ' ',
-        1 => 'Jan',
-        2 => 'Feb',
-        3 => 'Mar',
-        4 => 'Apr',
-        5 => 'May',
-        6 => 'Jun',
-        7 => 'Jul',
-        8 => 'Aug',
-        9 => 'Sep',
-        10 => 'Oct',
-        11 => 'Nov',
-        12 => 'Dec',
-    );
-    $element['day']['#options'] = array('01' => ' ');
-    for ($y = 1964; $y < 2025; ++$y)
-        $element['year']['#options'][$y] = $y;
-    for ($d = 1; $d <= 31; ++$d)
-        $element['day']['#options'][$d] = $d;*/
-    array_unshift($element['year']['#options'], '');
-    array_unshift($element['month']['#options'], '');
-    array_unshift($element['day']['#options'], '');
-    #$element['#element_validate'] = array('pdq_ebms_date_validate');
-    #pdq_ebms_debug('FIXED DATE', $element);
-    return $element;
-}
 
 function pdq_ebms_date_validate($element, &$form_state, $form) {
-    #pdq_ebms_debug('VALIDATE DATE', $element);
     $y = $element['#value']['year'];
     $m = $element['#value']['month'];
     $d = $element['#value']['day'];
