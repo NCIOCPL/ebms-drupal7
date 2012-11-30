@@ -31,6 +31,21 @@ function ebmstheme_tablesort_indicator($variables) {
  * on a single page.
  */
 function ebmstheme_pager($variables) {
+    $query = pager_get_query_parameters();
+    if (isset($query['pager']) && $query['pager'] == 'off') {
+        // unset the pager from the existing query parameters to show the pager
+        unset($query['pager']);
+        // Add a link for turning paging on.
+        $url = url($_GET['q'], array('query' => $query));
+        $items[] = "<a href='$url'>VIEW PAGES</a>";
+
+        // Render the pager items and prefix them with an accessible label.
+        $accessible_title = '<h2 class="element-invisible">Pages</h2>';
+        $attributes = array('class' => array('pager'));
+        $variables = array('items' => $items, 'attributes' => $attributes);
+        $pager = theme('item_list', $variables);
+        return $accessible_title . $pager;
+    }
 
     // Don't bother doing anything if there's only one page.
     global $pager_page_array, $pager_total;

@@ -217,6 +217,10 @@
 }
 
 /* citation-review specific */
+td.brief-citation{
+    min-width: 325px;
+}
+
 .citation-cell.brief-citation{
     width: 325px;
 }
