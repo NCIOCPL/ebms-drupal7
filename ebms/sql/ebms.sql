@@ -587,7 +587,7 @@ CREATE TABLE ebms_journal (
 PRIMARY KEY (source, source_jrnl_id, jrnl_title, brf_jrnl_title)
 )
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
-	  
+      
 /*
  * Identifies journals that are known to be poor sources of info.  Articles
  * from these journals are not further reviewed.
@@ -837,21 +837,33 @@ CREATE TABLE ebms_article_state_type (
         70, 'Y');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
-        VALUES ('NotForAgenda', 'Changes not for agenda',
+        VALUES ('NotForAgenda', 'Minor changes not for Board review',
         'Changes may be made to summary but no board meeting required.  '
         'Do not put on agenda.',
         70, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
-        VALUES ('AgendaFutureChg', 'For future agenda (with changes)',
+        VALUES ('AgendaNoPaprChg', 'Summary changes for Board review (no paper for discussion)',
+        'Show this on the picklist of articles that can be added to agenda.  '
+        'Summary changes have been proposed, but no paper exists.',
+        70, 'N');
+    INSERT ebms_article_state_type 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('AgendaFutureChg', 'Paper and summary changes for discussion',
         'Show this on the picklist of articles that can be added to agenda.  '
         'Summary changes have been proposed.',
         70, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
-        VALUES ('AgendaFutureDiscuss', 'For future agenda (discussion only)',
+        VALUES ('AgendaBoardDiscuss', 'Paper for Board discussion',
         'Show this on the picklist of articles that can be added to agenda.  '
-        'No summary changes have been proposed.',
+        'No changes proposed, discuss with Board.',
+        70, 'N');
+    INSERT ebms_article_state_type 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('AgendaWrkGrpDiscuss', 'Paper for Working Group discussion',
+        'Show this on the picklist of articles that can be added to agenda.  '
+        'No changes proposed, discuss with Working Group.',
         70, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
@@ -1140,14 +1152,14 @@ CREATE TABLE ebms_article_board_decision (
 CREATE TABLE ebms_article_board_decision_member
 ( article_state_id INTEGER      NOT NULL,
            uid INT UNSIGNED NOT NULL,
-PRIMARY KEY (article_state_id, uid),		   
+PRIMARY KEY (article_state_id, uid),           
 FOREIGN KEY (article_state_id)
     REFERENCES ebms_article_state(article_state_id),
 FOREIGN KEY (uid) 
     REFERENCES users(uid)
 )
     ENGINE=InnoDB DEFAULT CHARSET=utf8;
-	
+    
 /*
  * Collection of articles on a given topic assigned for board member review.
  *
