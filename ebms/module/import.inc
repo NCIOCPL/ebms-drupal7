@@ -112,9 +112,9 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
         ->fields('t', array('text_id', 'tag_name'))
         ->orderBy('t.tag_name')
         ->execute();
-    //$tags = array();
-    //foreach ($results as $result)
-    //    $tags[$result->text_id] = $result->tag_name;
+    $tags = array();
+    foreach ($results as $result)
+        $tags[$result->text_id] = $result->tag_name;
     $form = array(
         '#id' => 'import-form',
         'page title' => array(
@@ -142,14 +142,12 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
             '#title' => 'REVIEW CYCLE',
             '#options' => $review_cycles,
         ),
-        /*
         'tags' => array(
-            '#type' => 'checkboxes',
-            #'#multiple' => 'true',
+            '#type' => 'select',
+            '#multiple' => 'true',
             '#title' => 'CITATION TAGS',
             '#options' => $tags,
         ),
-        */
         'pmid' => array(
             '#type' => 'textfield',
             '#title' => 'PUB MED IDS',
@@ -310,29 +308,23 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $import_type = $fast_track ? 'F' : 'R';
     $batch = Ebms\importArticlesFromNLM($mode, $pmids, $topic, $cycle,
              $comments, $use_not_list, $import_type);
+    pdq_ebms_debug('IMPORT BATCH', $batch);
     if (!$test) {
-        #$article_ids = array_keys($batch->uniqIds);
+        $article_ids = array();
+        foreach ($batch->action['reviewReady'] as $info)
+            $article_ids[] = $info[1];
         if ($fast_track) {
             $cmt = $values['ft-comments'];
             $state = $values['placement'];
-            pdq_ebms_debug("FAST TRACKING BATCH", $batch);
-            foreach ($batch->action['reviewReady'] as $info) {
-                $id = $info[1];
-                //$article = new Ebms\EbmsArticle($article_id);
-                pdq_ebms_debug('SET ARTICLE STATE', array($id, $state, $cmt));
-                //$article->setArticleState($state, $topic, $board, $ft_cmt);
-                $i = Ebms\setArticleState($id, $state, $topic, $board, $cmt);
-                //drupal_set_message("new state row is $i");
-            }
+            foreach ($article_ids as $id)
+                Ebms\setArticleState($id, $state, $topic, $board, $cmt);
         }
-        /*
         foreach ($values['tags'] as $tag_id => $tag_val) {
             if ($tag_val) {
                 foreach ($article_ids as $article_id)
-                    Ebms\addArticleTag($tag_id, $article_id);
+                    Ebms\addArticleTag($tag_id, $article_id, $topic);
             }
         }
-        */
     }
     $report_data = drupal_json_encode($batch);
     $report_id = db_insert('ebms_temp_report')
