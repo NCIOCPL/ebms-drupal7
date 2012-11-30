@@ -969,9 +969,39 @@ class Util {
             ->fields('b', array('board_id', 'board_name'))
             ->orderBy('b.board_name')
             ->execute();
+        $boards = array();
         foreach ($results as $result)
             $boards[$result->board_id] = $result->board_name;
         return $boards;
+    }
+
+    /**
+     * Build a dictionary of EBMS review cycles.  The keys are the cycle
+     * IDs and the values are the cycle names.  The cycles are added in
+     * reverse chronological order, to facilitate convenient selection
+     * of recent cycles in the user interface.
+     *
+     *  @param boolean $no_legacy  Flag indicating whether to include
+     *                             only cycles from after conversion
+     *                             of the legacy CiteMS system's data;
+     *                             default is to include all cycles.
+     *
+     *  @return                    Array of cycle names, indexed by
+     *                             cycle IDs
+     */
+    public static function cycles($no_legacy=false) {
+        $query = db_select('ebms_cycle', 'c')
+            ->fields('c', array('cycle_id', 'cycle_name'))
+            ->orderBy('c.start_date', 'DESC');
+        if ($no_legacy) {
+            $cutoff = substr(CONVERSION_DATE, 0, 7) . '-01';
+            $query->condition('c.start_date', $cutoff, '>=');
+        }
+        $results = $query->execute();
+        $cycles = array();
+        foreach ($results as $result)
+            $cycles[$result->cycle_id] = $result->cycle_name;
+        return $cycles;
     }
 
     /**
@@ -1265,6 +1295,18 @@ class Util {
                 '#type' => 'markup',
                 '#markup' => implode($table),
             ),
+        );
+    }
+
+    /**
+     * Creates and returns an array representing an empty Drupal date
+     * field.
+     */
+    static function empty_date() {
+        return array(
+            'year' => 0,
+            'month' => 0,
+            'day' => 0
         );
     }
 }
