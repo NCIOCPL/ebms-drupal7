@@ -26,10 +26,13 @@ interface EbmsArticleStates {
     const FYI = 'FYI';
     const FullEnd = 'FullEnd';
     const NotForAgenda = 'NotForAgenda';
+    const AgendaNoPaprChg = 'AgendaNoPaprChg';
     const AgendaFutureChg = 'AgendaFutureChg';
-    const AgendaFutureDiscuss = 'AgendaFutureDiscuss';
+    const AgendaWrkGrpDiscuss = 'AgendaWrkGrpDiscuss';
+    const AgendaBoardDiscuss = 'AgendaBoardDiscuss';
     const OnAgenda = 'OnAgenda';
     const FinalBoardDecision = 'FinalBoardDecision';
+
 }
 
 validateArticleStates();
@@ -46,10 +49,12 @@ function validateArticleStates() {
         EbmsArticleStates::RejectFullReview,
         EbmsArticleStates::PassedFullReview,
         EbmsArticleStates::FYI,
-        EbmsArticleStates::FullEnd,
         EbmsArticleStates::NotForAgenda,
+        EbmsArticleStates::AgendaNoPaprChg,
         EbmsArticleStates::AgendaFutureChg,
-        EbmsArticleStates::AgendaFutureDiscuss,
+        EbmsArticleStates::AgendaBoardDiscuss,
+        EbmsArticleStates::AgendaWrkGrpDiscuss,
+        EbmsArticleStates::FullEnd,
         EbmsArticleStates::OnAgenda,
         EbmsArticleStates::FinalBoardDecision,
     );
@@ -1402,7 +1407,7 @@ function getCurrentState($article_id, $topic_id=null, $board_id=null) {
     $qry->leftJoin('ebms_topic', 'topic', 'state.topic_id = topic.topic_id');
     $qry->fields('state', array('article_state_id', 'state_id', 'user_id',
                                 'board_id', 'topic_id', 'status_dt'));
-    $qry->fields('type', array('state_name'));
+    $qry->fields('type', array('state_text_id', 'state_name'));
     $qry->fields('user', array('name'));
     $qry->fields('board', array('board_name'));
     $qry->fields('topic', array('topic_name'));

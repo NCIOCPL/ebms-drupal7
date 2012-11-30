@@ -91,8 +91,10 @@ namespace Ebms {
                     '_format_topic_board_manager_actions',
                     array(
                         EbmsArticleStates::NotForAgenda,
+                        EbmsArticleStates::AgendaNoPaprChg,
                         EbmsArticleStates::AgendaFutureChg,
-                        EbmsArticleStates::AgendaFutureDiscuss,
+                        EbmsArticleStates::AgendaBoardDiscuss,
+                        EbmsArticleStates::AgendaWrkGrpDiscuss,
                         EbmsArticleStates::FullEnd,));
             self::$ONAGENDA =
                 new EbmsTopicDecisions($index++, 'On Agenda', null,
@@ -471,7 +473,7 @@ namespace {
             $query->condition('nl.board_id', $board);
         }
         // add the pager early on in the process
-        $query = $query->extend('PagerDefault');
+        $query = $query->extend('Ebms\EbmsPager');
 
         // add the other filter fields
         if ($brief_title)
@@ -526,9 +528,7 @@ namespace {
 
         $form['top-pager'] = array(
             '#theme' => 'pager',
-            '#attributes' => array(
-                'class' => 'top-pager'
-            ));
+        );
 
         $form['table'] = array(
             '#prefix' => '<div id="citation-table-div">',
@@ -587,9 +587,7 @@ namespace {
 
         $form['bottom-pager'] = array(
             '#theme' => 'pager',
-            '#attributes' => array(
-                'class' => 'top-pager'
-            ));
+        );
 
         return $form;
     }
@@ -835,9 +833,9 @@ namespace {
               ), */
         );
 
-        $form['citation_queue']['sort_button'] = array(
+        $form['citation_queue']['filter_button'] = array(
             '#type' => 'submit',
-            '#value' => 'Sort',
+            '#value' => 'Filter',
         );
 
         $form['citation_queue']['submit_source'] = array(
@@ -904,6 +902,7 @@ namespace {
 
         try {
             $query = db_select('ebms_article_state', 's');
+
             $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
 
             $source_state = \Ebms\EbmsArticleStates::ReadyInitReview;
@@ -917,8 +916,6 @@ namespace {
             $query->condition('s.state_id', $state->state_id);
             if ($fulltext_review)
                 $query->isNotNull('a.full_text_id');
-            // add the pager early on in the process
-            $query = $query->extend('PagerDefault');
 
             // add the other filter fields
             // $topic_id implies $board_id
@@ -972,9 +969,8 @@ namespace {
 
             $num_rows = $query->countQuery()->execute()->fetchField();
 
-            if ($per_page != 'all') {
-                $query->limit($per_page);
-            }
+            if ($per_page != 'all')
+                $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
 
             $query
                 ->fields('s', array('article_id'));
@@ -1050,9 +1046,7 @@ namespace {
 
         $results['top-pager'] = array(
             '#theme' => 'pager',
-            '#attributes' => array(
-                'class' => 'top-pager'
-            ));
+        );
 
         $results['table'] = array(
             '#prefix' => "<table id='citation-results-table'>",
@@ -1066,7 +1060,7 @@ namespace {
 
         // width of the full citation and
         $colspan = $fulltext_review ? 5 : 4;
-        $isAbstract = $format == 'abstract';
+        $isAbstract = ($format == 'abstract');
 
         if ($isAbstract) {
             $results['table']['header']['actions']['#markup'] =
@@ -1180,7 +1174,7 @@ namespace {
             //
             // will need a separate row for these two items if in the full-citation view
             // build citation
-            $cite = _cite_article($article, false, $isAbstract);
+            $cite = _cite_article($article, false, $isAbstract, $fulltext_review);
 
             $recordIx = $ix + $first_row;
 
@@ -1584,9 +1578,7 @@ namespace {
 
         $results['bottom-pager'] = array(
             '#theme' => 'pager',
-            '#attributes' => array(
-                'class' => 'top-pager'
-            ));
+        );
     }
 
     function _build_citation_sort_options() {
@@ -1706,7 +1698,7 @@ namespace {
 
                     $clear_states = true;
                     break;
-                case 'Sort':
+                case 'Filter':
                     $clear_states = true;
                     break;
                 case 'Refresh':
@@ -1758,7 +1750,7 @@ namespace {
     }
 
     function _cite_article(Ebms\EbmsArticle $article, $long_form = true,
-        $showAbstract = false) {
+        $showAbstract = false, $showFullText = true) {
         $article_id = $article->getId();
         $xml = $article->getSourceData();
         $doc = new \SimpleXMLElement($xml);
@@ -1843,6 +1835,7 @@ namespace {
             }
 
             $pieces[] = '<div>';
+            $abstractLink = null;
             if (!$showAbstract) {
                 ctools_include('ajax');
                 ctools_include('modal');
@@ -1851,17 +1844,24 @@ namespace {
                 $link = ctools_modal_text_button('VIEW ABSTRACT',
                     "citations/nojs/view_abstract/$article_id", 'View Abstract');
 
-                $pieces[] = "$link | "; //'<a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
+                $abstractLink = $link; //'<a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
             }
 
             // build full citation text url
             $fileUrl = null;
-            if ($article->getFullTextId()) {
+            if ($showFullText && $article->getFullTextId()) {
                 $file = file_load($article->getFullTextId());
                 $fileUrl = file_create_url($file->uri);
             }
 
-            $pieces[] = "<a href='$fileUrl'>DOWNLOAD FULL TEXT</a></div>";
+            if ($abstractLink) {
+                $pieces[] = $abstractLink;
+                if ($fileUrl)
+                    $pieces[] = ' | ';
+            }
+
+            if ($fileUrl)
+                $pieces[] = "<a href='$fileUrl'>DOWNLOAD FULL TEXT</a></div>";
         } else {
             $pieces[] = "$tCMSID<div>$cmsId</div>";
 
@@ -3645,12 +3645,12 @@ namespace {
         $tags, $mode = null) {
         $form = array();
 
-        $showButtons = true;
+        $showButtons = false;
         // if in a specific mode, hide buttons for the managers
         if ($mode) {
             global $user;
-            if (in_array('board manager', $user->roles)) {
-                $showButtons = false;
+            if (in_array('medical librarian', $user->roles)) {
+                $showButtons = true;
             }
         }
 
@@ -3916,12 +3916,13 @@ namespace {
             if ($showButtons) {
                 $decision = _format_topic_decision($decisionInfo,
                     $topic_sequences, $form_state);
+                $decisions['topic_initial_review_decision'] = _wrap_decision($form_state,
+                    $articleId, $topicId, $decision, $decisionInfo,
+                    $empty_decisions);
             } else {
-                $decision = _format_topic_decision($decisionInfo,
+                $decisions['topic_initial_review_decision'] = _format_topic_decision($decisionInfo,
                     $topic_sequences);
             }
-            $decisions['topic_initial_review_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
         } else if ($mode == 'publishing') {
             
         } else {
@@ -4485,6 +4486,7 @@ namespace {
         &$form_state) {
         $form = array();
 
+        $state = Ebms\getCurrentState($articleId, $topicId);
 
         $showButtons = true;
         // hide buttons for the managers
@@ -4493,15 +4495,11 @@ namespace {
             $showButtons = false;
         }
 
-        // check if any sequences are past the publish sequence
-        $pubSequence = Ebms\EbmsTopicDecisions::$PUBLISHED->sequence();
-        $history = Ebms\getStatusHistory($articleId, null, $topicId, true,
-            false, 'I');
-        foreach ($history as $status) {
-            if (!($status->type_sequence < $pubSequence))
-                return $form;
-        }
+        // if the current state is not passed initial review...
+        if ($state['state_text_id'] != \Ebms\EbmsArticleStates::PassedInitReview)
+            return $form;
 
+        // build the rest of the form and the publish button
         $form['header']['title'] = array("#markup" => "<div class='citation-subheader'>Publication Date</div>");
         $form['header']['date'] = array("#markup" => "<i>Awaiting Publication</i>");
         $form['header']['#prefix'] = "<div class='left-side'>";

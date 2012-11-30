@@ -1310,3 +1310,42 @@ class Util {
         );
     }
 }
+
+class EbmsPager extends \PagerDefault {
+
+    /**
+     * Override PagerDefault's execute method.
+     * 
+     * if page = off, execute with no changes to the contained query.
+     */
+    public function execute() {
+
+        // Add convenience tag to mark that this is an extended query. We have to
+        // do this in the constructor to ensure that it is set before preExecute()
+        // gets called.
+        if (!$this->preExecute($this)) {
+            return NULL;
+        }
+
+        // A NULL limit is the "kill switch" for pager queries.
+        if (empty($this->limit)) {
+            return;
+        }
+        $this->ensureElement();
+
+        // ALTERATION: check for page==off
+        $parms = drupal_get_query_parameters();
+
+        // if no page query parameter or it is not equal to 'off'...
+        if (!isset($parms['pager']) || $parms['pager'] != 'off') {
+            // ...perform the normal alterations to the query.
+            $total_items = $this->getCountQuery()->execute()->fetchField();
+            $current_page = pager_default_initialize($total_items, $this->limit,
+                $this->element);
+            $this->range($current_page * $this->limit, $this->limit);
+        }
+        // !ALTERATION
+        // Now that we've added our pager-based range instructions, run the query normally.
+        return $this->query->execute();
+    }
+}
