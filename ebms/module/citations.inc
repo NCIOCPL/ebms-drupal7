@@ -458,6 +458,16 @@ namespace {
     function _not_list_results($form, &$form_state, $board, $brief_title,
         $full_title, $id, $all_journals) {
 
+        // first, refresh the journal list
+        require_once('common.inc');
+        $refreshRet = Ebms\Journal::refresh();
+
+        // collect the display options
+        $per_page = 10;
+
+        if (isset($form_state['values']['per_page']))
+            $per_page = $form_state['values']['per_page'];
+
         // if all_journals is set, then a right-join needs to be performed
 
         $query = db_select('ebms_not_list', 'nl');
@@ -472,8 +482,9 @@ namespace {
                 'nl.source_jrnl_id = j.source_jrnl_id AND nl.source = j.source');
             $query->condition('nl.board_id', $board);
         }
-        // add the pager early on in the process
-        $query = $query->extend('Ebms\EbmsPager');
+
+        if ($per_page != 'all')
+            $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
 
         // add the other filter fields
         if ($brief_title)
@@ -489,8 +500,7 @@ namespace {
 
         $query
             ->fields('j',
-                array('brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'))
-            ->limit(10);
+                array('brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'));
 
         $query->addExpression('!ISNULL(nl.source_jrnl_id)', 'default_value');
 
@@ -524,6 +534,16 @@ namespace {
               'wrapper' => 'citation-results-div',
               'method' => 'replace',
               ), */
+        );
+
+        $form['buttons']['display_options'] = array(
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Display Options</span>',
+            'options' => _build_citation_sort_options(false),
+            '#collapsible' => true,
+            '#collapsed' => true,
+            //'#prefix' => "<div class='full-citation-element'>",
+            //'#suffix' => "</div>",
         );
 
         $form['top-pager'] = array(
@@ -773,10 +793,10 @@ namespace {
         } else {
 
             // get all of the cycles
-            $cycles = db_select('ebms_cycle', 'c')
-                ->fields('c')
-                ->execute()
-                ->fetchAllKeyed();
+            $cycles = Ebms\Util::cycles(); /* db_select('ebms_cycle', 'c')
+              ->fields('c')
+              ->execute()
+              ->fetchAllKeyed(); */
 
             $form['citation_queue']['cycle_select'] = array(
                 '#type' => 'select',
@@ -1581,42 +1601,44 @@ namespace {
         );
     }
 
-    function _build_citation_sort_options() {
+    function _build_citation_sort_options($showAbstract = true) {
         $form = array(
             '#prefix' => '<div class="citation-input-div childfix">',
             '#suffix' => '</div>',
         );
 
-        $sortOptions = array(
-            null => '',
-            'cms_id' => t("CMS ID#"),
-            'pmid' => t("PMID #"),
-            'author' => t("Author"),
-            'title' => t("Title"),
-            'journal' => t("Journal"),
-            'publication_date' => t("Publication Date"),
-        );
+        if ($showAbstract) {
+            $sortOptions = array(
+                null => '',
+                'cms_id' => t("CMS ID#"),
+                'pmid' => t("PMID #"),
+                'author' => t("Author"),
+                'title' => t("Title"),
+                'journal' => t("Journal"),
+                'publication_date' => t("Publication Date"),
+            );
 
-        $form['sort_by'] = array(
-            '#type' => 'select',
-            '#title' => t('Sort By'),
-            '#options' => $sortOptions,
-            '#title_display' => 'after',
-        );
+            $form['sort_by'] = array(
+                '#type' => 'select',
+                '#title' => t('Sort By'),
+                '#options' => $sortOptions,
+                '#title_display' => 'after',
+            );
 
-        $formatOptions = array(
-            'brief' => t('Brief'),
-            'abstract' => t('Abstract'),
-        );
+            $formatOptions = array(
+                'brief' => t('Brief'),
+                'abstract' => t('Abstract'),
+            );
 
-        $form['format'] = array(
-            '#type' => 'checkboxes',
-            '#title' => t('Format'),
-            '#title_display' => 'after',
-            '#options' => $formatOptions,
-            '#default_value' => array('brief'),
-            '#attributes' => array('class' => array('full-citation-radio-check')),
-        );
+            $form['format'] = array(
+                '#type' => 'checkboxes',
+                '#title' => t('Format'),
+                '#title_display' => 'after',
+                '#options' => $formatOptions,
+                '#default_value' => array('brief'),
+                '#attributes' => array('class' => array('full-citation-radio-check')),
+            );
+        }
 
         $pagerOptions = array(
             10 => 10,
@@ -3234,6 +3256,56 @@ namespace {
                 case Ebms\EbmsTopicDecisions::$ONAGENDA:
                     $form['on_agenda_title'] = $full_title;
 
+                    $query = new EntityFieldQuery();
+                    $query
+                        ->entityCondition('entity_type', 'node')
+                        ->entityCondition('bundle', 'ebms_event')
+                        ->propertyCondition('status', '1')
+                        ->fieldCondition('event_date', 'value', time(), '>')
+                        ->fieldOrderBy('event_date', 'value')
+                        ->entityOrderBy('entity_id');
+
+                    $result = $query->execute();
+
+                    $futureEvents = array(0 => '');
+                    if (isset($result['node'])) {
+                        foreach ($result['node'] as $node) {
+                            $fullNode = node_load($node->nid);
+                            $futureEvents[$node->nid] = $fullNode->title;
+                        }
+                    }
+
+                    $query = new EntityFieldQuery();
+                    $query
+                        ->entityCondition('entity_type', 'node')
+                        ->entityCondition('bundle', 'ebms_event')
+                        ->propertyCondition('status', '1')
+                        ->fieldCondition('event_date', 'value2', time(), '<')
+                        ->fieldOrderBy('event_date', 'value', 'DESC')
+                        ->entityOrderBy('entity_id', 'DESC');
+
+                    $result = $query->execute();
+
+                    $pastEvents = array(0 => '');
+                    if (isset($result['node'])) {
+                        foreach ($result['node'] as $node) {
+                            $fullNode = node_load($node->nid);
+                            $pastEvents[$node->nid] = $fullNode->title;
+                        }
+                    }
+
+                    $form["on_agenda_future_$hash"] = array(
+                        '#type' => 'select',
+                        '#title' => 'Future Meetings',
+                        '#options' => $futureEvents,
+                    );
+
+                    $form["on_agenda_past_$hash"] = array(
+                        '#type' => 'select',
+                        '#title' => 'Past Meetings',
+                        '#options' => $pastEvents,
+                    );
+
                     $form["on_agenda_comment_$hash"] = array(
                         '#type' => 'textarea',
                         '#title' => t('Comment'),
@@ -3332,7 +3404,7 @@ namespace {
             'surveillance' => array('pass', 'reject', 'fyi', 'comment'),
             'member_responses' => array('select', 'comment'),
             'manager_actions' => array('select', 'comment'),
-            'on_agenda' => array('comment'),
+            'on_agenda' => array('future', 'past', 'comment'),
             'board_decision' => array('select', 'discussed', 'members', 'comment'),
             ));
 
@@ -3577,6 +3649,8 @@ namespace {
         if (empty($values))
             return;
 
+        $future = $values['future'];
+        $past = $values['past'];
         $comment = $values['comment'];
 
         if (empty($comment))
@@ -3587,7 +3661,7 @@ namespace {
         Ebms\setArticleState($articleId, Ebms\EbmsArticleStates::OnAgenda,
             $topicId, null, $comment);
 
-        drupal_set_message("Added Board Manager Action decision to article $articleId");
+        drupal_set_message("Added On Agenda decision to article $articleId");
     }
 
     function _save_board_decision($values, $articleId, $topicId) {

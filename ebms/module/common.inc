@@ -415,6 +415,9 @@ class Journal {
      * NLM's list.  Writes to the ebms_journal table.  Records the
      * date/time the refresh was done in the drupal variable named
      * ebms_journals_refreshed.
+     * 
+     *  @param bool $forceCheck a flag to skip the once-per-day rate limitation
+     *                          of journal refreshes.
      *
      *  @return   array with counts, indexed by the name of the count:
      *              'fetched'  => how many journals NLM listed
@@ -425,7 +428,43 @@ class Journal {
      *  @throw    \Exception if we cannot fetch the journal information
      *            from the National Library of Medicine.
      */
-    public static function refresh() {
+    public static function refresh($forceCheck = false) {
+        
+        // by default, gate the refreshes to only occur once a day
+        if (!$forceCheck) {
+            // retrieve the last update time
+            $lastRefresh = variable_get('ebms_journals_refreshed');
+
+            // if the last refresh is available and can be parsed...
+            if ($lastRefresh) {
+                $refreshDate = \DateTime::CreateFromFormat("Y-m-d H:i:s",
+                        $lastRefresh);
+
+                if ($refreshDate) {
+                    // check the date by adding a day to it and comparing to the
+                    // current time
+                    $dayInterval = new \DateInterval('P1D');
+                    $refreshDate->add($dayInterval);
+
+                    $currentDate = new \DateTime();
+
+                    $diffInterval = $refreshDate->diff($currentDate);
+
+                    if ($diffInterval->invert) {
+                        // an inverted interval is negative, implying the refresh
+                        // date (plus a day) is ahead of the current time, hence a
+                        // day has not passed.
+                        // so, can return from this point.
+                        return array(
+                            'fetched' => 0,
+                            'checked' => 0,
+                            'updated' => 0,
+                            'inserted' => 0,
+                        );
+                    }
+                }
+            }
+        }
 
         // Collect the two list of journals (ours and NLM's).
         $ebmsJournals = Journal::fetch_titles_from_db();
