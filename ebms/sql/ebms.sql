@@ -843,7 +843,8 @@ CREATE TABLE ebms_article_state_type (
         70, 'N');
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
-        VALUES ('AgendaNoPaprChg', 'Summary changes for Board review (no paper for discussion)',
+        VALUES ('AgendaNoPaprChg', 
+		'Summary changes for Board review (no paper for discussion)',
         'Show this on the picklist of articles that can be added to agenda.  '
         'Summary changes have been proposed, but no paper exists.',
         70, 'N');
