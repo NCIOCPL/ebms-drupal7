@@ -302,6 +302,7 @@ td.board-cell {
     padding-left: 30px;
     margin-left: 0px;
     border-left: none;
+    min-height: 20px;
 }
 
 .full-citation-topic .full-citation-latest-decision .full-citation-indent{
@@ -322,7 +323,8 @@ td.board-cell {
     margin-bottom: 10px;
 }
 
-#citation-form-div .full-citation-form label{
+#citation-form-div .full-citation-form label,
+#citation-form-div .form-textarea-wrapper{
     margin: 0px;
 }
 
