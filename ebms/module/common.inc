@@ -193,15 +193,31 @@ class Menu {
      * here, without recursion.
      */
     public function render_array() {
-        $ra = array('data' => l($this->label, $this->path));
+        $ra = array('data' => Menu::make_link($this->label, $this->path));
         if ($this->label == Menu::$active)
             $ra['class'] = array('active');
         $children = array();
         foreach ($this->children as $child)
-            $children[] = l($child->label, $child->path);
+            $children[] = Menu::make_link($child->label, $child->path);
         if (!empty($children))
             $ra['children'] = $children;
         return $ra;
+    }
+
+    /**
+     * I had thought that using the 'fragment' option would get
+     * Drupal to do the right thing in constructing the link, but
+     * it still comes out with the hash character replaced with '%23';
+     * so we have to fix it on the way out by hand.  Ugly!
+     */
+    static function make_link($label, $path) {
+        $options = array();
+        if (strpos('#', $path) !== false) {
+            list($path, $fragment) = explode('#', $path, 2);
+            $options['fragment'] = $fragment;
+        }
+        $link = l($label, $path, $options);
+        return str_replace('%23', '#', $link);
     }
 
     /**
@@ -389,8 +405,8 @@ class Menu {
         $reg = drupal_convert_to_utf8("\xAE", 'latin1');
         return new Menu(
             'About', 'about', array(
-                new Menu('General Information', 'about/info'),
-                new Menu("PDQ$reg Editorial Boards", 'about/boards'),
+                new Menu('General Information', 'about'),
+                new Menu("PDQ$reg Editorial Boards", 'about#pdq-boards'),
             )
         );
     }

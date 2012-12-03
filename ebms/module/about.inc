@@ -56,8 +56,13 @@ function pdq_ebms_about() {
     $query->orderBy('d.description');
     $results = $query->execute();
     foreach ($results as $result) {
-        // drupal_set_message($result->description);
-        list($label, $description) = explode('|', $result->description);
+        $pieces = explode('|', $result->description, 2);
+        if (count($pieces) == 2)
+            list($label, $description) = $pieces;
+        else {
+            $label = $pieces[0];
+            $description = '';
+        }
         $link = l($label, file_create_url($result->uri));
         $links[] = array($link, $description);
     }
@@ -146,7 +151,8 @@ function pdq_ebms_about() {
     );
     $page['boards']['title'] = array(
         '#type' => 'markup',
-        '#markup' => '<h3 id="boards-title">PDQ&reg; EDITORIAL BOARDS</h3>',
+        '#markup' => '<h3 id="boards-title"><a name="pdq-boards"></a>' .
+        'PDQ&reg; EDITORIAL BOARDS</h3>',
     );
     foreach ($boards as $board) {
         $markup = array('<h4 class="board-name">' . $board[0] .

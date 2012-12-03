@@ -269,8 +269,6 @@ class EbmsHomePage {
 
     /**
      * Create the home page box containing links to the board rosters.
-     * XXX Replace the stub URLs when the roster documents have been
-     *     loaded.
      */
     private function rosters($middle=false) {
         $base = 'http://www.cancer.gov/cancertopics/pdq/';

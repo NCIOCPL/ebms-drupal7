@@ -340,7 +340,7 @@ function ebms_menu() {
         ),
 
         // Information on PDQ Boards
-        'about/boards' => array(
+        'about#pdq-boards' => array(
             'page callback' => 'pdq_ebms_about',
             'file' => 'about.inc',
             'access callback' => 'user_is_logged_in',
