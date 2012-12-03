@@ -3719,12 +3719,12 @@ namespace {
         $tags, $mode = null) {
         $form = array();
 
-        $showButtons = false;
+        $showButtons = true;
         // if in a specific mode, hide buttons for the managers
         if ($mode) {
             global $user;
-            if (in_array('medical librarian', $user->roles)) {
-                $showButtons = true;
+            if (!in_array('medical librarian', $user->roles)) {
+                $showButtons = false;
             }
         }
 
