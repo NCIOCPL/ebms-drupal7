@@ -1079,18 +1079,13 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
     else $found = preg_match(PUBMED_XML_START_PAT, $dataStr, $matches,
                         PREG_OFFSET_CAPTURE);
     if ($found) {
-        /* XXX This is wrong
-        if ($matches[0][1] > 500) {
-            throw new \Exception(
-                "Looks like Pubmed XML ArticleSet Format," .
-                "but garbage at front?");
-        }
-        */
+        // Won't be found if saved as html, see exception below
         return findPubmedIDsInXML($dataStr);
     }
     throw new \Exception(
         "Unsupported Pubmed search result format - " .
-        "only accepting Medline print format (text) or Pubmed XML");
+        "only accepting Medline print format (text) or Pubmed XML.  " .
+        "For clean data, use Pubmed's 'Send to: File' to save the data)");
 }
 
 /**
@@ -1106,10 +1101,11 @@ function findPubmedIDsInMedlineFmt($resultStr) {
 
     $matches = array();
     $count = preg_match_all(MEDLINE_PMID_PAT, $resultStr, $matches);
-    if ($count == 0)
+    if ($count == 0) {
         throw new \Exception(
             "findPubmedIDsInMedlineFormat: Couldn't find any '^PMID- nnn'. " .
             " How can that happen?");
+    }
 
     // Return the pmids - the first subpattern in MEDLINE_PMID_PAT
     return $matches[1];
