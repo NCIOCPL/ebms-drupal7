@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS ebms_article_review;
 DROP TABLE IF EXISTS ebms_member_wants_print;
 DROP TABLE IF EXISTS ebms_packet_printed;
 DROP TABLE IF EXISTS ebms_print_job;
+DROP TABLE IF EXISTS ebms_print_status_type;
 DROP TABLE IF EXISTS ebms_print_job_type;
 DROP TABLE IF EXISTS ebms_packet_article;
 DROP TABLE IF EXISTS ebms_packet_reviewer;
@@ -1195,34 +1196,52 @@ active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
        ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
- * Types of supported print jobs.
+ * Types of supported packet printing jobs.
  *
- *  print_job_type_id   Unique ID.
- *  print_job_text_id   Unique readable text ID.
+ *  print_job_type_id   What kind of job this is.
  *  description         Purely for documentation purposes.
  */
 CREATE TABLE ebms_print_job_type (
-    print_job_type_id   INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    print_job_text_id   VARCHAR(32) NOT NULL UNIQUE,
+    print_job_type_id   VARCHAR(16) PRIMARY KEY,
     description         VARCHAR(2048) NOT NULL
 )
     ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
     -- Predefined types
-    INSERT ebms_print_job_type (print_job_text_id, description)
+    INSERT ebms_print_job_type (print_job_type_id, description)
       VALUES ('board', 
        'Job run for all board members that receive printouts on one board');
-    INSERT ebms_print_job_type (print_job_text_id, description)
+    INSERT ebms_print_job_type (print_job_type_id, description)
       VALUES ('package', 
        'Printing all packets (one package) for one user on one board');
-    INSERT ebms_print_job_type (print_job_text_id, description)
-      VALUES ('packet', 
-       'Printing a single packet for a user');
+    INSERT ebms_print_job_type (print_job_type_id, description)
+      VALUES ('packet', 'Printing a single packet for a user');
 
     -- For future use
-    INSERT ebms_print_job_type (print_job_text_id, description)
-      VALUES ('meeting',
-       'Printing all documents for a board meeting');
+    INSERT ebms_print_job_type (print_job_type_id, description)
+      VALUES ('meeting', 'Printing all documents for a board meeting');
+
+/*
+ * Types of packet printing job status values / outcomes.
+ *
+ *  print_job_status_id     What kind of job this is.
+ *  description             Purely for documentation purposes.
+ */
+CREATE TABLE ebms_print_status_type (
+    print_job_status_id     VARCHAR(16) PRIMARY KEY,
+    description             VARCHAR(2048) NOT NULL
+)
+    ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+    -- Recognized statuss
+    INSERT ebms_print_status_type (print_job_status_id, description)
+      VALUES('queued', 'Job parameters entered, job is ready to run');
+    INSERT ebms_print_status_type (print_job_status_id, description)
+      VALUES('in-process', 'Job started, not yet reached normal finish');
+    INSERT ebms_print_status_type (print_job_status_id, description)
+      VALUES('failure', 'Job failed.  May be more info in comment');
+    INSERT ebms_print_status_type (print_job_status_id, description)
+      VALUES('success', 'Job completed successfully');
 
 /*
  * Records print jobs.
@@ -1237,26 +1256,28 @@ CREATE TABLE ebms_print_job_type (
  *  board_id            ID of board for which job was run.
  *  board_member_id     ID of board member for 'package' job type, optional
  *                       for 'packet' type and null for 'board' type.
- *  outcome             One of: 'success', 'failure', 'in-process'.
+ *  status             One of: 'success', 'failure', 'in-process'.
  *  comment             Optional free text comment about job.
  */
 CREATE TABLE ebms_print_job (
     print_job_id        INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     old_job_id          INTEGER NULL,
-    print_job_type_id   INTEGER NOT NULL,
+    print_job_type_id   VARCHAR(16) NOT NULL,
     packet_start_dt     DATE NULL,
     packet_end_dt       DATE NULL,
-    print_dt            DATETIME NOT NULL,
+    print_dt            DATETIME NULL,
     board_id            INTEGER NULL,
     board_member_id     INTEGER UNSIGNED NULL,
-    outcome             ENUM('success', 'failure', 'in-process') NOT NULL
-                         DEFAULT 'in-process',
+    mode                ENUM('live', 'test') NOT NULL,
+    status             VARCHAR(16) NOT NULL,
     comment             VARCHAR(2048) NULL,
     FOREIGN KEY (old_job_id) REFERENCES ebms_print_job (print_job_id),
     FOREIGN KEY (print_job_type_id) 
         REFERENCES ebms_print_job_type (print_job_type_id),
     FOREIGN KEY (board_id) REFERENCES ebms_board (board_id),
-    FOREIGN KEY (board_member_id) REFERENCES ebms_board_member(user_id)
+    FOREIGN KEY (board_member_id) REFERENCES ebms_board_member(user_id),
+    FOREIGN KEY (status) 
+        REFERENCES ebms_print_status_type(print_job_status_id)
 )
     ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
