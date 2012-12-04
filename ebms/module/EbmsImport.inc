@@ -652,7 +652,7 @@ class ImportBatch {
 
         // Install each one in the object
         while ($row = $result->fetchObject()) {
-            $this->addArticle($row->text_id, $row->source_id, 
+            $this->addArticle($row->text_id, $row->source_id,
                               $row->article_id, $row->message);
         }
     }
@@ -1071,7 +1071,7 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
         //  be an xhtml declaration at the front, but little more
         if ($matches[0][1] > 500) {
             throw new \Exception(
-                "findPubmedIDs: Looks like Medline Print Format," .
+                "Looks like Medline Print Format, " .
                 "but garbage at front?");
         }
         return findPubmedIDsInMedlineFmt($dataStr);
@@ -1079,15 +1079,18 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
     else $found = preg_match(PUBMED_XML_START_PAT, $dataStr, $matches,
                         PREG_OFFSET_CAPTURE);
     if ($found) {
+        /* XXX This is wrong
         if ($matches[0][1] > 500) {
             throw new \Exception(
-                "findPubmedIDs: Looks like Pubmed XML ArticleSet Format," .
+                "Looks like Pubmed XML ArticleSet Format," .
                 "but garbage at front?");
         }
+        */
         return findPubmedIDsInXML($dataStr);
     }
     throw new \Exception(
-        "findPubmedIDs: Unsupported Pubmed search result format - maybe later");
+        "Unsupported Pubmed search result format - " .
+        "only accepting Medline print format (text) or Pubmed XML");
 }
 
 /**
