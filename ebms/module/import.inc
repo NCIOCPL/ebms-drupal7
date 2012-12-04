@@ -268,18 +268,27 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
     $pmids = array();
     $validators = array('file_validate_extensions' => array());
     $file = file_save_upload('file', $validators);
+    $errors = 0;
     if ($file) {
         if ($form_state['values']['pmid'])
             form_set_error('pmid', 'You cannot supply both Pubmed IDs and ' .
                 'a Pubmed Print file in the same request');
-        else
-            $pmids = Ebms\findPubmedIDs($file->fid, null, null);
+        else {
+            try {
+                $pmids = Ebms\findPubmedIDs($file->fid, null, null);
+            }
+            catch (\Exception $e) {
+                //pdq_ebms_debug('PMID FAILURE', $e);
+                form_set_error('file', $e->getMessage());
+                ++$errors;
+            }
+        }
     }
     elseif ($form_state['values']['pmid']) {
         $pmids = preg_split('/[\s,]/', $form_state['values']['pmid'], null,
                  PREG_SPLIT_NO_EMPTY);
     }
-    if (count($pmids) < 1)
+    if (!$errors && count($pmids) < 1)
         form_set_error('pmid', 'You must either specify Pubmed IDs or ' .
             'upload a Pubmed search results file');
     $form_state['article-ids'] = $pmids;
@@ -306,30 +315,39 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     # $test = true; // for debugging ...
     $mode = $test ? 'test' : 'live';
     $import_type = $fast_track ? 'F' : 'R';
-    $batch = Ebms\importArticlesFromNLM($mode, $pmids, $topic, $cycle,
-             $comments, $use_not_list, $import_type);
+    try {
+        $batch = Ebms\importArticlesFromNLM($mode, $pmids, $topic, $cycle,
+                 $comments, $use_not_list, $import_type);
+    }
+    catch (\Exception $e) {
+        drupal_set_message($e);
+        $batch = null;
+        $url = EbmsImport::$url;
+    }
     pdq_ebms_debug('IMPORT BATCH', $batch);
-    if (!$test) {
-        $article_ids = array();
-        foreach ($batch->action['reviewReady'] as $info)
-            $article_ids[] = $info[1];
-        if ($fast_track) {
-            $cmt = $values['ft-comments'];
-            $state = $values['placement'];
-            foreach ($article_ids as $id)
-                Ebms\setArticleState($id, $state, $topic, $board, $cmt);
-        }
-        foreach ($values['tags'] as $tag_id => $tag_val) {
-            if ($tag_val) {
-                foreach ($article_ids as $article_id)
-                    Ebms\addArticleTag($tag_id, $article_id, $topic);
+    if ($batch) {
+        if (!$test) {
+            $article_ids = array();
+            foreach ($batch->action['reviewReady'] as $info)
+                $article_ids[] = $info[1];
+            if ($fast_track) {
+                $cmt = $values['ft-comments'];
+                $state = $values['placement'];
+                foreach ($article_ids as $id)
+                    Ebms\setArticleState($id, $state, $topic, $board, $cmt);
+            }
+            foreach ($values['tags'] as $tag_id => $tag_val) {
+                if ($tag_val) {
+                    foreach ($article_ids as $article_id)
+                        Ebms\addArticleTag($tag_id, $article_id, $topic);
+                }
             }
         }
+        $report_data = drupal_json_encode($batch);
+        $report_id = db_insert('ebms_temp_report')
+            ->fields(array('report_data' => $report_data))
+            ->execute();
+        $url = EbmsImport::$url . '/' . $report_id;
     }
-    $report_data = drupal_json_encode($batch);
-    $report_id = db_insert('ebms_temp_report')
-        ->fields(array('report_data' => $report_data))
-        ->execute();
-    $url = EbmsImport::$url . '/' . $report_id;
     drupal_goto($url);
 }
