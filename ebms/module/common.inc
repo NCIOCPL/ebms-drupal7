@@ -1357,12 +1357,21 @@ class Util {
      * Creates and returns an array representing an empty Drupal date
      * field.
      */
-    static function empty_date() {
+    public static function empty_date() {
         return array(
             'year' => 0,
             'month' => 0,
             'day' => 0
         );
+    }
+
+    /**
+     * Add period to end of string unless it already has terminal punctuation.
+     */
+    public static function full_stop($s) {
+        if (preg_match('/.*[\.?!]$/', $s))
+            return $s;
+        return $s . '.';
     }
 }
 
@@ -1370,7 +1379,7 @@ class EbmsPager extends \PagerDefault {
 
     /**
      * Override PagerDefault's execute method.
-     * 
+     *
      * if page = off, execute with no changes to the contained query.
      */
     public function execute() {

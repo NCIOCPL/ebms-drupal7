@@ -279,7 +279,7 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
             }
             catch (\Exception $e) {
                 //pdq_ebms_debug('PMID FAILURE', $e);
-                form_set_error('file', $e->getMessage());
+                form_set_error('file', Ebms\Util::full_stop($e->getMessage()));
                 ++$errors;
             }
         }
