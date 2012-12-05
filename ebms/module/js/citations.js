@@ -82,4 +82,25 @@ function addHooks() {
             sib_input.attr("checked", "");
         }
     });
+            
+    // show/hide the response reject fieldset when the response select is
+    // set to certain values
+    jQuery('.js-response-select').change(function () {       
+        var select = jQuery(this);
+        
+        var val = select.val();
+        
+        if(val == 1) {
+            jQuery('.js-response-reject').show('normal');
+        }
+        else{
+            jQuery('.js-response-reject').hide('normal');
+        }
+    });
+    
+    // execute a similar function to above to show rejections if the select
+    // is already set
+    if(jQuery('.js-response-select').val() == 1){
+        jQuery('.js-response-reject').show('normal');
+    }
 }

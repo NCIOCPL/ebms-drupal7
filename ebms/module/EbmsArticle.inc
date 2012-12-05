@@ -2592,7 +2592,7 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
         $query->condition('p.active_status', $flag);
     }
 
-    return $query->fields('r')
+    $responses = $query->fields('r')
             ->fields('p', array('packet_id', 'topic_id'))
             ->fields('d', array('value_id'))
             ->fields('v', array('value_name', 'instructions'))
@@ -2600,6 +2600,23 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
             ->condition('p.topic_id', $topic_id)
             ->execute()
             ->fetchAll();
+    
+    foreach ($responses as $index => $response) {
+        // get all rejection reasons for the response
+        $reviewId = $response->review_id;
+        $query = db_select('ebms_review_rejection_reason', 'r');
+        $query->join('ebms_review_rejection_value', 'v',
+            'r.value_id = v.value_id');
+
+        $reasons = $query->condition('r.review_id', $reviewId)
+            ->fields('v')
+            ->execute()
+            ->fetchAll();
+
+        $responses[$index]->reasons = $reasons;
+    }
+    
+    return $responses;
 }
 
 /**

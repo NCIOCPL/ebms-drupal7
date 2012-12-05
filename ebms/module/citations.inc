@@ -2094,11 +2094,10 @@ namespace {
                 $item = "<a>$label</a>";
             }
 
-            $items[]['#markup'] = "<div>$item</div>";
+            $items[]['#markup'] = "<div class='left-nav-box-text'>$item</div>";
         }
 
         $form['links'] = $items;
-        _wrap_in_classes($form['links'], array('left-nav-box-text'));
 
         return $form;
     }
@@ -2206,7 +2205,7 @@ namespace {
             'section' => _format_import($article, $importData),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element'>",
+            '#prefix' => "<div class='full-citation-element citation-subheader'>",
             '#suffix' => "</div>",
         );
 
@@ -2217,7 +2216,7 @@ namespace {
                 'librarian'),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element'>",
+            '#prefix' => "<div class='full-citation-element citation-subheader'>",
             '#suffix' => "</div>",
         );
 
@@ -2228,7 +2227,7 @@ namespace {
                 'publishing'),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element'>",
+            '#prefix' => "<div class='full-citation-element citation-subheader'>",
             '#suffix' => "</div>",
         );
 
@@ -3215,6 +3214,29 @@ namespace {
                     $form["member_responses_select_$hash"] = array(
                         '#type' => 'select',
                         '#options' => $options,
+                        '#attributes' => array(
+                            'class' => array('js-response-select'),
+                        ),
+                    );
+
+                    $rejectValues = db_select('ebms_review_rejection_value', 'v')
+                        ->fields('v')
+                        ->orderBy('v.value_pos')
+                        ->execute()
+                        ->fetchAllKeyed();
+
+                    $form["member_responses_reject_fieldset_$hash"] = array(
+                        '#type' => 'fieldset',
+                        '#title' => "<span class='citation-subheader'>
+                            Reason For Rejection</span>",
+                        '#collapsible' => TRUE,
+                        '#collapsed' => FALSE,
+                        "member_responses_reject_$hash" => array(
+                            '#type' => 'checkboxes',
+                            '#options' => $rejectValues,
+                        ),
+                        '#prefix' => '<div class="full-citation-element js-response-reject">',
+                        '#suffix' => '</div>',
                     );
 
                     $form["member_responses_comment_$hash"] = array(
@@ -3378,6 +3400,7 @@ namespace {
         $form["edit_decision_save_$hash"] = array(
             '#type' => 'submit',
             '#value' => t('Save'),
+            '#validate' => array('_edit_decision_validate'),
             '#submit' => array('_edit_decision_save'),
         );
 
@@ -3391,6 +3414,53 @@ namespace {
         return $form;
     }
 
+    function _edit_decision_validate($form, &$form_state) {
+        require_once('EbmsArticle.inc');
+
+        //include js to add radio/checkbox behavior
+        $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
+
+        // hook into ajax completions to apply jQuery to form components
+        drupal_add_js(
+            'jQuery(document).ajaxComplete(function(){       
+                addHooks();       
+            });',
+            'inline');
+
+        $values = _retrieve_hash_values($form_state,
+            array(
+            'initial_review' => array('pass', 'reject', 'comment'),
+            'nci_reviewer' => array('pass', 'reject', 'comment'),
+            'fulltext' => array('file', 'check', 'comment'),
+            'surveillance' => array('pass', 'reject', 'fyi', 'comment'),
+            'member_responses' => array('select', 'reject', 'comment'),
+            'manager_actions' => array('select', 'comment'),
+            'on_agenda' => array('future', 'past', 'comment'),
+            'board_decision' => array('select', 'discussed', 'members', 'comment'),
+            ));
+
+        $hash = $values['hash'];
+
+        // split the hash into articleId and topicId
+        list($articleId, $topicId) = explode("|", $hash);
+
+        // if member responses select is 1, make sure a reject reason is chosen
+        if ($values['member_responses']['select'] == 1) {
+            $reasonChosen = false;
+            foreach ($values['member_responses']['reject'] as $value) {
+                if ($value) {
+                    $reasonChosen = true;
+                    break;
+                }
+            }
+
+            if (!$reasonChosen) {
+                form_set_error("member_responses_reject_$hash",
+                    "At least one rejection reason must be chosen.");
+            }
+        }
+    }
+
     function _edit_decision_save($form, &$form_state) {
         require_once('EbmsArticle.inc');
 
@@ -3402,7 +3472,7 @@ namespace {
             'nci_reviewer' => array('pass', 'reject', 'comment'),
             'fulltext' => array('file', 'check', 'comment'),
             'surveillance' => array('pass', 'reject', 'fyi', 'comment'),
-            'member_responses' => array('select', 'comment'),
+            'member_responses' => array('select', 'reject', 'comment'),
             'manager_actions' => array('select', 'comment'),
             'on_agenda' => array('future', 'past', 'comment'),
             'board_decision' => array('select', 'discussed', 'members', 'comment'),
@@ -3569,6 +3639,7 @@ namespace {
             return;
 
         $select = $values['select'];
+        $reject = $values['reject'];
 
         if (!$select)
             return;
@@ -3587,10 +3658,12 @@ namespace {
         // Here are the fields we'll store
         //   article_id and dates handled separately for new
         //   and replace records
-        $fields = array(
+        $key = array(
             'packet_id' => $packetId,
             'article_id' => $articleId,
             'reviewer_id' => $user->uid,
+        );
+        $fields = array(
             'when_posted' => db_query('SELECT NOW()')->fetchField(),
             'comments' => $comment,
             'loe_info' => NULL,
@@ -3601,12 +3674,20 @@ namespace {
         try {
 
             // Insert a new record
-            $query = db_insert('ebms_article_review');
+            $query = db_merge('ebms_article_review');
+            $query->key($key);
             $query->fields($fields);
 
-            $queryString = (string) $query;
+            $statusId = $query->execute();
 
-            $reviewId = $query->execute();
+            // retrieve the review id
+            $reviewId = db_select('ebms_article_review', 'r')
+                ->condition('r.packet_id', $packetId)
+                ->condition('r.article_id', $articleId)
+                ->condition('r.reviewer_id', $user->uid)
+                ->fields('r', array('review_id'))
+                ->execute()
+                ->fetchField();
 
             // also insert into the review disposition table
             $reviewFields = array(
@@ -3615,12 +3696,34 @@ namespace {
             );
 
             // Insert a new record
-            $query = db_insert('ebms_review_disposition');
-            $query->fields($reviewFields);
+            $query = db_merge('ebms_review_disposition');
+            $query->key($reviewFields);
 
-            $queryString = (string) $query;
+            $query->execute();
 
-            $rowId = $query->execute();
+            // also, save the rejection reasons if the value is 1
+            if ($select == 1) {
+                // clear all current values for the review
+                db_delete('ebms_review_rejection_reason')
+                    ->condition('review_id', $reviewId)
+                    ->execute();
+
+                foreach ($reject as $reason) {
+                    if ($reason) {
+                        $rejectFields = array(
+                            'review_id' => $reviewId,
+                            'value_id' => $reason,
+                        );
+
+                        // Insert a new record
+                        $query = db_insert('ebms_review_rejection_reason');
+                        $query->fields($rejectFields);
+                        $query->execute();
+                    }
+                }
+            }
+
+            drupal_set_message("Saved Board Member Response for article $articleId");
         } catch (\Exception $e) {
             $txn->rollback();
             throw $e;
@@ -3767,9 +3870,6 @@ namespace {
                 '#collapsed' => TRUE,
                 'topics' => _format_topics($form_state, $article, $topics,
                     $tags, $display_cycle, $mode),
-                '#attributes' => array(
-                    'class' => array('full-citation-element'),
-                ),
                 '#prefix' => '<div class="full-citation-indent">',
                 '#suffix' => '</div>',
             );
@@ -3786,7 +3886,7 @@ namespace {
     function _format_import(Ebms\EbmsArticle &$article, &$importData) {
         $form = array();
 
-        $form['#prefix'] = '<div class="full-citation-element">';
+        $form['#prefix'] = '<div class="full-citation-element full-citation-indent">';
         $form['#suffix'] = '</div>';
 
         $articleId = $article->getId();
@@ -4018,8 +4118,10 @@ namespace {
             $decisions['topic_nci_surveillance_decision'] = _wrap_decision($form_state,
                 $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
-            $decisions['topic_assigned_for_review_decision'] = _format_topic_assigned_for_review_decision($articleId,
+            $decision = _format_topic_assigned_for_review_decision($articleId,
                 $topicId);
+            $decisions['topic_assigned_for_review_decision'] =
+                _wrap_decision_simple($decision);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES;
             $decision = _format_topic_board_member_responses($articleId,
@@ -4048,7 +4150,7 @@ namespace {
             $last_key = null;
             $last_array = null;
             foreach ($decisions as $key => $array) {
-                if (!empty($array)) {
+                if (isset($array['decision']['current_decisions'])) {
                     $last_key = $key;
                     $last_array = $array;
                 }
@@ -4080,13 +4182,13 @@ namespace {
      * Wraps a decision with edit buttons and determines if the decision
      * is empty.
      * 
-     * @param type $form_state
-     * @param type $articleId
-     * @param type $topicId
-     * @param type $decision
+     * @param array $form_state
+     * @param int $articleId
+     * @param int $topicId
+     * @param array $decision
      * @param Ebms\EbmsTopicDecisions $decisionInfo
-     * @param type $emptyDecisions
-     * @return type
+     * @param array $emptyDecisions
+     * @return array
      */
     function _wrap_decision(&$form_state, $articleId, $topicId, &$decision,
         Ebms\EbmsTopicDecisions $decisionInfo, &$emptyDecisions) {
@@ -4101,6 +4203,14 @@ namespace {
         $form['button'] = $buttonArray['button'];
         $form['decision'] = $decision;
         $form['form'] = $buttonArray['form'];
+
+        return $form;
+    }
+
+    function _wrap_decision_simple(&$decision) {
+        $form = array();
+
+        $form['decision'] = $decision;
 
         return $form;
     }
@@ -4268,7 +4378,7 @@ namespace {
                 $decisions[] = $decision;
             }
 
-            $form['decisions'] = $decisions;
+            $form['current_decisions'] = $decisions;
         }
 
         // also dig up the past decisions if the currently displayed set is current
@@ -4303,7 +4413,6 @@ namespace {
 
         $fullTextId = $article->getFullTextId();
 
-
         $form['#prefix'] = '<div class="full-citation-element">';
         $form['#suffix'] = '</div>';
 
@@ -4332,8 +4441,8 @@ namespace {
             $account = user_load($uid);
             $icon = _build_decision_icon_tag('reject');
 
-            $form['decision'] = array("#markup" => "<div class='full-citation-indent'>$icon$date - $account->name</div>");
-            $form['comment'] = array('#markup' => "<div class='full-citation-indent'>COMMENTS: $comment</div>");
+            $form['current_decisions']['decision'] = array("#markup" => "<div class='full-citation-indent'>$icon$date - $account->name</div>");
+            $form['current_decisions']['comment'] = array('#markup' => "<div class='full-citation-indent'>COMMENTS: $comment</div>");
             return $form;
         }
 
@@ -4356,8 +4465,8 @@ namespace {
         $account = user_load($uid);
         $icon = _build_decision_icon_tag('pass');
 
-        $form['decision'] = array("#markup" => "<div class='full-citation-indent'>$icon$date - $account->name</div>");
-        $form['filename'] = array("#markup" => "<div class='full-citation-indent'>FILE NAME: $filename</div>");
+        $form['current_decisions']['decision'] = array("#markup" => "<div class='full-citation-indent'>$icon$date - $account->name</div>");
+        $form['current_decisions']['filename'] = array("#markup" => "<div class='full-citation-indent'>FILE NAME: $filename</div>");
 
         return $form;
     }
@@ -4365,42 +4474,44 @@ namespace {
     function _format_topic_assigned_for_review_decision($articleId, $topicId) {
         $form = array();
 
+        // grab the current and past packet ids
         $packetIds = Ebms\getArticlePacketIds($articleId, $topicId);
+        $pastIds = Ebms\getArticlePacketIds($articleId, $topicId, false, false,
+            true);
 
-        if (empty($packetIds))
+        // if no packets of either kind, done
+        if (empty($packetIds) && empty($pastIds))
             return $form;
 
         // enclose the element
         $form['#prefix'] = '<div class="full-citation-element">';
         $form['#suffix'] = '</div>';
 
-        // add the header
-        $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
-        $form['header']['#prefix'] = '<div class="full-citation-indent">';
-        $form['header']['#suffix'] = '</div>';
+        if (!empty($packetIds)) {
+            // add the header
+            $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
+            $form['header']['#prefix'] = '<div class="full-citation-indent">';
+            $form['header']['#suffix'] = '</div>';
 
-        $form['blocks'] = _format_packet_ids($packetIds);
-        $form['blocks']['#prefix'] = '<div class="full-citation-indent">';
-        $form['blocks']['#suffix'] = '</div>';
+            $form['current_decisions']['blocks'] = _format_packet_ids($packetIds);
+            $form['current_decisions']['blocks']['#prefix'] = '<div class="full-citation-indent">';
+            $form['current_decisions']['blocks']['#suffix'] = '</div>';
+        }
 
-        // grab the past packets, if any
-        $pastIds = Ebms\getArticlePacketIds($articleId, $topicId, false, false,
-            true);
-        if (empty($pastIds))
-            return $form;
-
-        $form['past_blocks'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Past Decisions'),
-            '#collapsible' => TRUE,
-            '#collapsed' => TRUE,
-            'tags' => _format_packet_ids($pastIds),
-            '#attributes' => array(
-                'class' => array('full-citation-past-items'),
-            ),
-            '#prefix' => '<div class="full-citation-indent">',
-            '#suffix' => '</div>'
-        );
+        if (!empty($pastIds)) {
+            $form['past_blocks'] = array(
+                '#type' => 'fieldset',
+                '#title' => t('Past Decisions'),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'tags' => _format_packet_ids($pastIds),
+                '#attributes' => array(
+                    'class' => array('full-citation-past-items'),
+                ),
+                '#prefix' => '<div class="full-citation-indent">',
+                '#suffix' => '</div>'
+            );
+        }
 
         return $form;
     }
@@ -4486,7 +4597,7 @@ namespace {
         }
 
         if (!empty($responseBlocks)) {
-            $form['blocks'] = $responseBlocks;
+            $form['current_decisions']['blocks'] = $responseBlocks;
         }
 
         // build out past responses if any
@@ -4529,6 +4640,10 @@ namespace {
 
         $form['decision'] = array("#markup" => "<div class='full-citation-indent'>$img$date - $account->name</div>");
         $form['filename'] = array("#markup" => "<div class='full-citation-indent'>ACTION: $action</div>");
+
+        foreach ($response->reasons as $index => $reason) {
+            $form['reason'][$index] = array("#markup" => "<div class='full-citation-indent'>REASON: $reason->value_name</div>");
+        }
 
         if (isset($response->comments)) {
             $form['comments'] = array("#markup" => "<div class='full-citation-indent'>COMMENTS: $response->comments</div>");
