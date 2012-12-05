@@ -15,7 +15,10 @@ a:focus, li a:hover, a:hover, div.breadcrumb a:hover,
 a:focus span, a:hover span {
     color: #a90101; text-decoration: underline;
 }
-div.breadcrumb a:hover, li a:hover { text-decoration: none; }
+li.active a:hover,
+li.active a:focus,
+li.inactive a:hover,
+li.inactive a:focus{ text-decoration: none; }
 h2, h3 {
     text-transform: uppercase;
     padding-left: 11px; padding-right: 11px;
@@ -26,6 +29,8 @@ h2 {
     padding-bottom: 5px;
     font-weight: bold;
     margin-bottom: 5px;
+    padding-top: 9px;
+    margin-top: 0px;
 }
 h2 + h2 { margin-top: 35px; }
 h2.end-of-short-page { margin-bottom: 300px; }
@@ -180,7 +185,9 @@ div.messages.error {
 #nav.manager div.section { width: 975px; padding-left: 12px; }
 #ebms-menu, .ebms-submenu { list-style-type: none; }
 #ebms-menu, #ebms-menu li { float: left; }
-#ebms-menu li, #ebms-menu a { position: relative; text-decoration: none }
+#ebms-menu li, #ebms-menu a { position: relative;}
+#ebms-menu > li > a { text-decoration: none; }
+
 #ebms-menu > li > a {
     font-size: 20px; text-transform: uppercase; line-height: 19px;
     padding-top: 12px; padding-bottom: 12px;
@@ -236,7 +243,7 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
 }
 
 /* LEFT NAV */
-#left-nav { float: left; width: 210px; margin-top: 30px; margin-right: 20px; }
+#left-nav { float: left; width: 210px; margin-right: 20px; }
 #left-nav li {
     border-bottom: 1px #696559 solid; list-style-type: none; margin: 10px;
     padding-bottom: 10px; 
@@ -246,7 +253,14 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
 #left-nav a {
     text-transform: uppercase; font-size: 14px; color: #696559; opacity: .65;
 }
-#left-nav a:hover { color: #a90101; text-decoration: none; opacity: 1.0;}
+
+#left-nav li.active:hover, 
+#left-nav li.inactive:hover{ border-color: #a90101; }
+
+#left-nav li.active:hover, 
+#left-nav li.inactive:hover,
+#left-nav li.active:hover a,
+#left-nav li.inactive:hover a{ color: #a90101; opacity: 1.0;}
 #left-nav li.active a { color: #a90101; opacity: 1; font-weight: bold; }
 
 /* BREADCRUMBS */
@@ -256,6 +270,11 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
     padding-left: 20px;
 }
 div.breadcrumb, div.breadcrumb a { font-size: 12px; color: #2d2c28; }
+
+/* CONTENT */
+.content{
+    margin-top: 20px;
+}
 
 /* TABLES */
 table { width: 100%; }
@@ -417,7 +436,6 @@ body.not-logged-in #footer { margin-top: 150px; }
     font-size: 14px;
 }
 #footer a { padding-left: 8px; padding-right: 8px; color: white; }
-#footer a:hover { color: white; text-decoration: none; }
 
 /* JQUERY UI DIALOG */
 span.ui-dialog-title { color: white; padding-left: 14px; }
@@ -562,7 +580,6 @@ body.front div.block-ebms {
 #featured-librarian-3 div { left: 235px; top: 325px; }
 
 /* Positioning for home page sidebar blocks */
-.ebms-block a:hover { text-decoration: none; }
 #sidebar-second .ebms-block {
     margin-left: 27px; padding-left: 0; margin-right: 0;
 }

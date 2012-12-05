@@ -1,5 +1,4 @@
 /* #filter-buttons { width: 498px; text-align: right; clear: both; } */
-#left-nav.report-left-nav { margin-top: 15px; margin-bottom: 50px; }
 #reports-image { margin-top: 10px; margin-bottom: 30px; }
 #reports-right-links ul { list-style-type: none; margin-bottom: 50px; }
 #reports-right-links li {
@@ -11,7 +10,6 @@
     float: left; width: 730px; margin-bottom: 50px;
 }
 #report-form h2 { margin-top: 25px; }
-#reports-right { margin-top: 8px; }
 #report-form .form-select.fixed-width,
 #report-form .form-text.fixed-width{ width: 500px; }
 #report-form .form-type-select label,

@@ -38,10 +38,25 @@
     display: inline;
 }
 
-
-.page-citations #citation-form-div input:not(.form-submit):not(.form-checkbox),
-.page-citations #citation-form-div select{
+.page-citations #citation-form-div .citation-input-div input.form-text,
+.page-citations #citation-form-div .citation-input-div select{
     width: 525px;
+}
+/*
+.page-citations #citation-form-div input.form-submit,
+.page-citations #citation-form-div input.form-checkbox{
+    width: auto;
+}*/
+
+.page-citations #citation-form-div .citation-input-div>
+.form-type-checkbox>input.form-checkbox{
+    margin-left: 510px;
+}
+
+.page-citations #citation-form-div .citation-input-div>
+.form-type-checkbox>input.form-checkbox:not(#foo){
+    margin-left: 490px;
+    margin-top: 0px;
 }
 
 #citation-results-div {
@@ -95,12 +110,15 @@
 
 #citation-buttons-div > input,
 #citation-buttons-div > fieldset,
-.page-citations form #citation-buttons-div label,
 .page-citations form #citation-buttons-div .form-item.form-type-checkbox label{
     margin: 0px 5px 5px;
 }
 
-#citation-buttons-div .citation-input-div .form-type-checkboxes .form-type-checkbox label{
+#citation-buttons-div .form-type-checkboxes label{
+    margin-top: 5px;
+}
+
+#citation-buttons-div .citation-input-div .form-type-checkboxes .form-type-checkbox label:not(#foo){
     background-position: right top;
     padding-left: 0px;
     padding-right: 35px;
@@ -112,20 +130,29 @@
 
 }
 
-.page-citations #citation-buttons-div .citation-input-div>.form-item>label{
-    width: 190px;
-    float:right;
-}
-
 #citation-buttons-div .citation-input-div>.form-item{
     clear: both;
     overflow: auto;
 }
 
-#citation-buttons-div .citation-input-div>.form-item>*:not(label):not(input){
+#citation-buttons-div .citation-input-div>.form-item>*{
     clear: both;
     width: 200px;
     margin-right: 10px;
+}
+
+.page-citations #citation-buttons-div .citation-input-div>.form-item>label{
+    clear: none;
+    width: 190px;
+    float:right;
+}
+
+.page-citations #citation-buttons-div .citation-input-div .form-type-checkbox > *{
+    /*margin-left: 0px;
+    margin-right: 0px;
+    padding-left: 0px;
+    padding-right: 0px;*/
+    float: left;
 }
 
 .page-citations #citation-buttons-div .form-checkboxes{
@@ -135,7 +162,6 @@
 #citation-buttons-div > input,
 #citation-buttons-div > fieldset{
     float: left;
-
 }
 
 #citation-results-div .item-list {
@@ -173,8 +199,12 @@
     border: none;
 }
 
-.citation-cell:not(.left-column){
+.citation-cell{
     padding-left: 5px;
+}
+
+.citation-cell.left-column{
+    padding-left: 0px;
 }
 
 /*
@@ -285,6 +315,10 @@ td.board-cell {
     text-transform: uppercase !important;
 }
 
+.citation-subheader{
+    margin-top: 20px;
+}
+
 .citation-comment{
     padding-left: 6em;
     text-indent: -6em;
@@ -295,6 +329,7 @@ td.board-cell {
     float: left;
     margin: 0px !important;
     padding: 0px !important;
+    border-radius: 0px;
 }
 
 
