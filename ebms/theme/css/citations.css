@@ -355,7 +355,7 @@ td.board-cell {
 }
 
 #citation-form-div .full-citation-element{
-    margin-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 #citation-form-div .full-citation-form label,
@@ -406,6 +406,10 @@ td.board-cell {
     float: left;
 }
 
+.js-response-reject{
+    display: none;
+}
+
 .left-nav-box{
     border: 1px solid #696559;
     border-radius: 7px 7px 7px 7px;
@@ -418,9 +422,18 @@ td.board-cell {
     border-radius: 4px 4px 0px 0px
 }
 
+.left-nav-box-text{
+    margin: 5px;
+}
+
 .left-nav-box-title,
 .left-nav-box-text{
     padding: 5px;
+}
+
+.left-nav-box-text,
+.left-nav-most-recent{
+    font-size: 14px;
 }
 
 .left-nav-most-recent{
