@@ -1256,7 +1256,8 @@ CREATE TABLE ebms_print_status_type (
  *  board_id            ID of board for which job was run.
  *  board_member_id     ID of board member for 'package' job type, optional
  *                       for 'packet' type and null for 'board' type.
- *  status             One of: 'success', 'failure', 'in-process'.
+ *  status              One of the legal status values.
+ *  mode                'live' updates the database, 'test' just reports.
  *  comment             Optional free text comment about job.
  */
 CREATE TABLE ebms_print_job (
@@ -1269,7 +1270,7 @@ CREATE TABLE ebms_print_job (
     board_id            INTEGER NULL,
     board_member_id     INTEGER UNSIGNED NULL,
     mode                ENUM('live', 'test') NOT NULL,
-    status             VARCHAR(16) NOT NULL,
+    status              VARCHAR(16) NOT NULL,
     comment             VARCHAR(2048) NULL,
     FOREIGN KEY (old_job_id) REFERENCES ebms_print_job (print_job_id),
     FOREIGN KEY (print_job_type_id) 
