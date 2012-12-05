@@ -3445,7 +3445,8 @@ namespace {
         list($articleId, $topicId) = explode("|", $hash);
 
         // if member responses select is 1, make sure a reject reason is chosen
-        if ($values['member_responses']['select'] == 1) {
+        if (isset($values['member_responses']['select']) &&
+            $values['member_responses']['select'] == 1) {
             $reasonChosen = false;
             foreach ($values['member_responses']['reject'] as $value) {
                 if ($value) {
