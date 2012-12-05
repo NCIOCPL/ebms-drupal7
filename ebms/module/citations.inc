@@ -2062,7 +2062,7 @@ namespace {
         if (isset($query['search']))
             $searchId = $query['search'];
 
-        $searchPath = 'citations/search' . ($searchId ? "/r$searchId" : '');
+        $searchPath = 'citations/search' . ($searchId ? "/R$searchId" : '');
 
         // build full citation text url
         $fileUrl = null;
