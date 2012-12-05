@@ -18,8 +18,8 @@
     float: left; width: 630px; font-size: 13px; padding-bottom: 30px; 
 }
 #search-results span.article-citation * { font-size: 13px; }
-#search-results span.authors:hover { color: #a90101; }
-
+#search-results a.article-title { font-style: italic; }
+#search-results .article-citation a:hover { text-decoration: underline; }
 #search-db-form div.form-item-publication-month {
     margin-top: -42px; padding-left: 100px;
 }

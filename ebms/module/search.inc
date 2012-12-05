@@ -181,11 +181,21 @@ class EbmsSearch {
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
+        $full_url = 'citations/full/' . $article_id;
+        $full_opts = array('query' => array('search' => $this->search_id));
+        $title_opts = array(
+            'query' => array('search' => $this->search_id),
+            'attributes' => array(
+                'class' => array('article-title'),
+            )
+        );
+        $title_link = l($title, $full_url, $title_opts);
         $pieces = array(
             '<span class="article-number">' . $position . '</span>',
-            '<span class="article-citation"><span class="authors">',
-            implode('; ', $authors), '</span><br /><em>',
-            $title, '</em><br /> ',
+            '<span class="article-citation">',
+            implode('; ', $authors) . '<br />',
+            $title_link,
+            '<br />',
             $ta, ' ', $vol,
         );
         if ($issue)
@@ -194,21 +204,9 @@ class EbmsSearch {
             $pieces[] = ": $pgn";
         if ($year)
             $pieces[] = ", $year";
-        $edit_link = l(
-            'EDIT',
-            'citations/full/' . $article_id,
-            array('query' => array('search' => $this->search_id))
-        );
-        $pub_link = l(
-            'PUBLISH',
-            'citations/full/' . $article_id,
-            array('query' => array('search' => $this->search_id))
-        );
-        $ft_link = l(
-            'DOWNLOAD FULL TEXT',
-            'citations/full/' . $article_id,
-            array('query' => array('search' => $this->search_id))
-        );
+        $edit_link = l('EDIT', $full_url, $full_opts);
+        $pub_link = l('PUBLISH', $full_url, $full_opts);
+        $ft_link = l('DOWNLOAD FULL TEXT', $full_url, $full_opts);
         $pieces[] = "<br />PMID: $pmid &nbsp; CMS ID: $article_id<br /><br />";
         $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
             $pmid . '" target="_blank">VIEW ABSTRACT</a> | ';
@@ -218,6 +216,7 @@ class EbmsSearch {
         $pieces[] = $pub_link . '</span></br /><br />&nbsp;';
         return implode($pieces);
     }
+
     public static function defaults() {
         return array(
             'boards' => array(),
