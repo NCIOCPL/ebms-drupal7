@@ -1133,3 +1133,18 @@ function ebms_node_info() {
 
     return $nodes;
 }
+
+/**
+ * Implementation of the Views query alter hook.  
+ * 
+ * @param type $view  The view object about to be processed.
+ * @param type $query An object describing the query.
+ */
+function ebms_views_query_alter(&$view, &$query) {
+    switch ($view->name) {
+        case 'event_calendar':
+            require_once 'calendar.inc';
+            _calendar_query_alter($view, $query);
+            break;
+    }
+}

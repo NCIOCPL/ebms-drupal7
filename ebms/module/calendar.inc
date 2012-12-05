@@ -131,3 +131,27 @@ function _calendar_left_nav($span = null) {
     print '<img class="ebms-left-nav-block-bottom" alt="" src="/sites/ebms.cancer.gov/themes/ebmstheme/images/left-nav-box-bottom.png">';
     print '</div>';
 }
+
+/**
+ * Calendar helper function for altering a Views query.
+ * 
+ * @param type $view  The view object about to be processed.
+ * @param type $query An object describing the query.
+ */
+function _calendar_query_alter(&$view, &$query) {
+    global $user;
+
+    // if the user is a board memeber...
+    if (in_array('board member', $user->roles)) {
+        //dsm($user, 'user');
+        // add a condition to the query to ensure the event's board is in the 
+        // member's set of boards
+        $query->where[1]['conditions'][] = array(
+            'field' => 'field_data_board.board_value',
+            'value' => $user->ebms_boards,
+            'operator' => 'IN',
+        );
+
+        //dsm($query, 'calendar view query');
+    }
+}
