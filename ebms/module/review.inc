@@ -687,7 +687,7 @@ class EbmsReview {
             'r.article_id = a.article_id');
         $query->join('ebms_review_disposition', 'd',
             'd.review_id = r.review_id');
-        $query->fields('a', array('article_id', 'article_title'));
+        $query->fields('a', array('article_id', 'article_title', 'source_id'));
         $query->fields('p', array('archived'));
         $query->addExpression('MAX(r.when_posted)', 'updated');
         $query->condition('p.packet_id', $this->packet_id);
@@ -697,6 +697,8 @@ class EbmsReview {
         $query->orderByHeader($headers);
         $articles = $query->execute();
         $rows = array();
+        $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
+        $target = array('attributes' => array('target' => '_blank'));
         foreach ($articles as $article) {
             $citation = $this->get_reviewed_citation($article->article_id);
             $query = db_select('users', 'u');
@@ -738,8 +740,9 @@ class EbmsReview {
             $onclick = 'onclick=\'location.href="' . $href . '"\'';
             $checked = $article->archived ? ' checked="checked"' : '';
             $checkbox = "<input $type $onclick$checked />";
+            $pm_link = $pubmed . $article->source_id;
             $links = '<div class="links">' .
-                l('View Abstract', 'stub') . ' | ' .
+                l('View Abstract', $pm_link, $target) . ' | ' .
                 l('Download Full Text', 'stub') . '</div>';
             $data = array(
                 $citation . $links,
@@ -832,6 +835,14 @@ class EbmsReview {
                 '#markup' => implode('', $markup),
             );
         }
+        $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
+        $target = array('attributes' => array('target' => '_blank'));
+        $pmid = db_select('ebms_article', 'a')
+            ->fields('a', array('source_id'))
+            ->condition('a.article_id', $this->article_id)
+            ->execute()
+            ->fetchField();
+        $pm_url = $pubmed . $pmid;
         return array(
             'title' => array(
                 '#type' => 'markup',
@@ -855,7 +866,7 @@ class EbmsReview {
                 ),
                 'view abstract' => array(
                     '#type' => 'markup',
-                    '#markup' => l('View Abstract', 'stub'),
+                    '#markup' => l('View Abstract', $pm_url, $target),
                     '#prefix' => '<div id="view-abstract-link">',
                     '#suffix' => '</div>',
                 ),
@@ -1779,8 +1790,8 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
     $attrs = array('attributes' => array('target' => '_blank'));
     $ft_url = file_create_url('public://full-text-article-stub.pdf');
     $pm_url = EbmsReview::pubmed_url($review->article_id);
-    $ft_link = l('VIEW ABSTRACT', $ft_url, $attrs);
-    $pm_link = l('DOWNLOAD FULL TEXT', $pm_url, $attrs);
+    $pm_link = l('VIEW ABSTRACT', $pm_url, $attrs);
+    $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $attrs);
     $article_id = $review->article_id;
     $cite = Ebms\Util::get_full_citation($article_id);
     return array(
