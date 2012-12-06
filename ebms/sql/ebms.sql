@@ -1249,6 +1249,7 @@ CREATE TABLE ebms_print_status_type (
  *  print_job_id        Unique ID of this job.
  *  old_job_id          Unique ID of a previous job if this job is a reprint
  *                       of that one.  Else null.
+ *  user_id             Drupal user ID of person who requested the printing.
  *  print_job_type_id   Why was this job printed.
  *  packet_start_dt     Only include packets created on or after this date.
  *  packet_end_dt       Only include packets created before this date.
@@ -1264,6 +1265,7 @@ CREATE TABLE ebms_print_status_type (
 CREATE TABLE ebms_print_job (
     print_job_id        INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
     old_job_id          INTEGER NULL,
+    user_id             INTEGER UNSIGNED NOT NULL,
     print_job_type_id   VARCHAR(16) NOT NULL,
     packet_start_dt     DATE NULL,
     packet_end_dt       DATE NULL,
@@ -1275,6 +1277,7 @@ CREATE TABLE ebms_print_job (
     status              VARCHAR(16) NOT NULL,
     comment             VARCHAR(2048) NULL,
     FOREIGN KEY (old_job_id) REFERENCES ebms_print_job (print_job_id),
+    FOREIGN KEY (user_id)  REFERENCES users (uid),
     FOREIGN KEY (print_job_type_id) 
         REFERENCES ebms_print_job_type (print_job_type_id),
     FOREIGN KEY (board_id) REFERENCES ebms_board (board_id),
