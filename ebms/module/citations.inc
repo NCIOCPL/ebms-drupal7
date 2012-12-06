@@ -4710,7 +4710,7 @@ namespace {
                 ),
             );
 
-        $form['#prefix'] = "<div class='full-citation-indent'>";
+        $form['#prefix'] = "<div class='full-citation-indent full-citation-element'>";
         $form['#suffix'] = "</div>";
 
         return $form;
