@@ -319,6 +319,10 @@ td.board-cell {
     margin-top: 20px;
 }
 
+.left-side .citation-subheader{
+    margin-top: 0px;
+}
+
 .citation-comment{
     padding-left: 6em;
     text-indent: -6em;
