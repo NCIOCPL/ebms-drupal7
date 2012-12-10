@@ -245,6 +245,8 @@ class Menu {
             $role = 'librarian';
         elseif (in_array('board member', $user->roles))
             $role = 'member';
+        elseif (in_array('admin assistant', $user->roles))
+            $role = 'admin'; // XXX maybe later 'assistant';
         else
             $role = 'admin';
         switch ($role) {
@@ -319,7 +321,11 @@ class Menu {
         if (pdq_ebms_is_admin_assistant())
             $children[] = new Menu('Full Text Retrieval',
                           'citations/fulltext');
-        return new Menu('Citation Management', 'citations', $children);
+        $landing_page = 'citations';
+        global $user;
+        if (in_array('admin assistant', $user->roles))
+            $landing_page = 'citations/fulltext';
+        return new Menu('Citation Management', $landing_page, $children);
     }
 
     /**
