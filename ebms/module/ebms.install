@@ -149,17 +149,18 @@ function _ebms_instance_info($field = array(), $bundle = FALSE) {
 }
 
 function ebms_enable_test() {
-    dsm('Cycling ebms module.');
+    drupal_set_message('Cycling ebms module.');
     module_disable(array('ebms'));
     module_enable(array('ebms'));
     
-    dsm(field_info_field_types(), 'fields types');
-    dsm(field_info_fields(), 'field descs');
+    //dsm(field_info_field_types(), 'fields types');
+    //dsm(field_info_fields(), 'field descs');
 
-    dsm(node_type_load('event'), 'event node type info');
-    dsm(node_type_load('ebms_event'), 'ebms event node type info');
+    //dsm(node_type_load('ebms_event'), 'ebms event node type info');
 
-    dsm(field_info_instances('node', 'ebms_event'), 'ebms event field desc');
+    //dsm(field_info_instances('node', 'ebms_event'), 'ebms event field desc');
+
+    drupal_set_message('Module enabled!');
     
     return array();
 }

@@ -117,7 +117,7 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_event_date.event_date_value' => 'field_data_event_date.event_date_value',
 );
-$handler->display->display_options['path'] = 'calendar/month';
+$handler->display->display_options['path'] = 'calendar';
 $handler->display->display_options['menu']['type'] = 'default tab';
 $handler->display->display_options['menu']['title'] = 'Month';
 $handler->display->display_options['menu']['weight'] = '0';

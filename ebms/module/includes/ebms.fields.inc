@@ -13,7 +13,7 @@ $GLOBALS['ebms_event_fields'] = array(
     array(
         'label' => t('Event Date'),
         'entity_type' => 'node',
-        'description' => t('Date of the beginning of the event.'),
+        'description' => t('Date of the event.'),
         'field_name' => 'event_date',
         'required' => TRUE,
         'type' => 'datestamp',
@@ -41,39 +41,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'bundles' => array(
             'ebms_event',
         ),
-    ),
-    /*array(
-        'label' => t('End Date'),
-        'entity_type' => 'node',
-        'description' => t('Date of the end of the event.'),
-        'field_name' => 'end_date',
-        'required' => TRUE,
-        'type' => 'datestamp',
-        'widget' => array(
-            'weight' => '3',
-            'type' => 'date_popup',
-            'settings' => array(
-                'input_format' => 'Y-m-d H:i',
-                'year_range' => '-100:+5',
-                'increment' => 1,
-            ),
-        ),
-        'cardinality' => '1',
-        'settings' => array(
-            'repeat' => 0,
-            'todate' => '',
-            'granularity' => array(
-                'year' => 'year',
-                'month' => 'month',
-                'day' => 'day',
-                'hour' => 'hour',
-                'minute' => 'minute',
-            ),
-        ),
-        'bundles' => array(
-            'ebms_event',
-        ),
-    ),*/
+    ),    
 // event type - in person | webex / phone conf.
     array(
         'label' => t('Event Type'),
@@ -177,7 +145,7 @@ $GLOBALS['ebms_event_fields'] = array(
     array(
         'label' => t('Board Members'),
         'entity_type' => 'node',
-        'description' => t('Select from the available board memebers.'),
+        'description' => t('Select from the available board members.'),
         'field_name' => 'board_members',
         'required' => FALSE,
         'type' => 'list_integer',
@@ -192,17 +160,59 @@ $GLOBALS['ebms_event_fields'] = array(
             'ebms_event'
         ),
     ),
-// notes - free form text
+    // agenda - rich text
     array(
-        'label' => t('Notes'),
+        'label' => t('Agenda'),
         'entity_type' => 'node',
-        'description' => t('Enter any notes about this event.'),
-        'field_name' => 'event_notes',
+        //'description' => t('The agenda for the event.'),
+        'field_name' => 'event_agenda',
         'required' => FALSE,
         'type' => 'text_long',
         'cardinality' => '1',
         'widget' => array(
             'weight' => '10',
+        ),
+        'settings' => array(
+            'max_length' => '',
+            'text_processing' => 1
+        ),
+        'bundles' => array(
+            'ebms_event',
+        ),
+    ),
+    array(
+        'label' => 'Meeting Documents',
+        'entity_type' => 'node',
+        'description' => t('Documents relating to this event.'),
+        'field_name' => 'event_document',
+        'cardinality' => -1,
+        'type' => 'file',
+        'settings' => array(
+            'display_field' => '1',
+            'display_default' => '1',
+             'file_extensions' => 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg gif bmp png tiff mpg mpeg mp4 3gp avi htm html',
+        ),
+        'widget' => array(
+            'type' => 'file_generic',
+            'settings' => array(
+                'description_field' => '1',
+            ),
+        ),
+        'bundles' => array(
+            'ebms_event',
+        ),
+    ),
+// notes - free form text
+    array(
+        'label' => t('Notes'),
+        'entity_type' => 'node',
+        //'description' => t('Any related notes for the event.'),
+        'field_name' => 'event_notes',
+        'required' => FALSE,
+        'type' => 'text_long',
+        'cardinality' => '1',
+        'widget' => array(
+            'weight' => '11',
         ),
         'settings' => array(
             'max_length' => '',

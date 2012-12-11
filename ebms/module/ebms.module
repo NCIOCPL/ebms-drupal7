@@ -228,7 +228,7 @@ function ebms_menu() {
         ),
 
         // CALENDAR
-        'calendar' => array(
+        /*'calendar' => array(
             'page callback' => 'pdq_ebms_calendar',
             'file' => 'calendar.inc',
             'access callback' => 'user_is_logged_in',
@@ -243,6 +243,15 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
         
+        // EDIT EVENT
+        'calendar/edit/%' => array(
+            'page callback' => 'ebms_calendar_edit_event',
+            'page arguments' => array(2),
+            'file' => 'calendar.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),*/
+
         // LITERATURE REVIEW
         'review' => array(
             'page callback' => 'pdq_ebms_review',
@@ -1135,6 +1144,13 @@ function ebms_node_info() {
 }
 
 /**
+ * Implements hook_views_api().
+ */
+function ebms_views_api() {
+	return array('api' => 2.0);
+}
+
+/**
  * Implementation of the Views query alter hook.  
  * 
  * @param type $view  The view object about to be processed.
@@ -1146,5 +1162,13 @@ function ebms_views_query_alter(&$view, &$query) {
             require_once 'calendar.inc';
             _calendar_query_alter($view, $query);
             break;
+    }
+}
+
+function ebms_form_node_form_alter(&$form, &$form_state, $form_id) {
+    if ($form_id == 'ebms_event_node_form') {
+        require_once 'calendar.inc';
+        calendar_node_form_alter($form, $form_state);
+        return;
     }
 }

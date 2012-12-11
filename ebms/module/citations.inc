@@ -192,8 +192,7 @@ namespace {
                 $crumbs[] = "Not List Maintenance";
                 $form = drupal_get_form('pdq_ebms_citation_not_list');
 
-
-                $result['left_nav'] = \Ebms\Util::build_left_nav('Not List Maintentance');
+                $result['left_nav'] = \Ebms\Util::build_left_nav('Not List Maintenance');
 
                 $result['not_list_form'] = $form;
 
@@ -3850,10 +3849,10 @@ namespace {
 
         $button_array = _build_add_topic_button($form_state, $mode,
             $article->getId());
-        if ($showButtons)
+        if ($showButtons && $mode != 'publishing')
             $form['boards_header']['button'] = $button_array['button'];
         $form['boards_header']['title'] = array("#markup" => '<div class="citation-subheader full-citation-indent full-citation-element">Editorial Board(s)</div>');
-        if ($showButtons)
+        if ($showButtons && $mode != 'publishing')
             $form['boards_header']['form'] = $button_array['form'];
 
         foreach ($board_topic_states as $board_name => $topics) {
@@ -3862,7 +3861,7 @@ namespace {
             // create add topic button
             $button_array = _build_add_topic_button($form_state, $mode,
                 $article->getId(), $boardId);
-            if ($showButtons)
+            if ($showButtons && $mode != 'publishing')
                 $form[$board_name]['button'] = $button_array['button'];
             $form[$board_name]['fieldset'] = array(
                 '#type' => 'fieldset',
@@ -3877,7 +3876,7 @@ namespace {
             if (!$mode) {
                 $form[$board_name]['fieldset']['#attributes']['class'][] = 'full-citation-topic';
             }
-            if ($showButtons)
+            if ($showButtons && $mode != 'publishing')
                 $form[$board_name]['form'] = $button_array['form'];
         }
 
@@ -4692,7 +4691,7 @@ namespace {
         // build the rest of the form and the publish button
         $form['header']['title'] = array("#markup" => "<div class='citation-subheader'>Publication Date</div>");
         $form['header']['date'] = array("#markup" => "<i>Awaiting Publication</i>");
-        $form['header']['#prefix'] = "<div class='left-side'>";
+        $form['header']['#prefix'] = "<div class='left-side full-citation-element'>";
         $form['header']['#suffix'] = "</div>";
 
         $hash = "$articleId|$topicId";

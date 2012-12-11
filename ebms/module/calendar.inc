@@ -47,33 +47,35 @@ function _calendar_get_upcoming_events() {
     return $groupedResults;
 }
 
-function _calendar_left_nav($span = null) {
-    // create the links to month, week, and day views
-    print '<div id="calendar-views">';
-    print '<div class="item-list">';
-    if ($span == 'month')
-        print '<ul><li class="active first">';
-    else
-        print '<ul><li class="inactive first">';
-    print l('Month', 'calendar');
-    if ($span == 'week')
-        print '</li><li class="active">';
-    else
-        print '</li><li class="inactive">';
-    print l('Week', 'calendar/week');
-    if ($span == 'day')
-        print '</li><li class="active last">';
-    else
-        print '</li><li class="inactive last">';
-    print l('Day', 'calendar/day');
-    print '</li></ul>';
-    print '</div>';
-    print '</div>';
+function ebms_calendar_left_nav($span = null) {
+    $output = array();
 
-    print '<div id="upcoming-events" class="more-actions">';
-    print '<div class="item-list">';
-    print '<h3>Upcoming Events</h3>';
-    print '<ul class="ebms_left_nav_block">';
+    // create the links to month, week, and day views
+    $output[] = '<div id="calendar-views">';
+    $output[] = '<div class="item-list">';
+    if ($span == 'month')
+        $output[] = '<ul><li class="active first">';
+    else
+        $output[] = '<ul><li class="inactive first">';
+    $output[] = l('Month', 'calendar');
+    if ($span == 'week')
+        $output[] = '</li><li class="active">';
+    else
+        $output[] = '</li><li class="inactive">';
+    $output[] = l('Week', 'calendar/week');
+    if ($span == 'day')
+        $output[] = '</li><li class="active last">';
+    else
+        $output[] = '</li><li class="inactive last">';
+    $output[] = l('Day', 'calendar/day');
+    $output[] = '</li></ul>';
+    $output[] = '</div>';
+    $output[] = '</div>';
+
+    $output[] = '<div id="upcoming-events" class="more-actions">';
+    $output[] = '<div class="item-list">';
+    $output[] = '<h3>Upcoming Events</h3>';
+    $output[] = '<ul class="ebms_left_nav_block">';
 
     $groupedEvents = _calendar_get_upcoming_events();
     $first = true;
@@ -81,8 +83,8 @@ function _calendar_left_nav($span = null) {
         if ($first)
             $first = false;
         else
-            print "<li class='last'><hr></li>";
-        print "<li class='calendar-date first'>$date</li>";
+            $output[] = "<li class='last'><hr></li>";
+        $output[] = "<li class='calendar-date first'>$date</li>";
         foreach ($events as $event) {
             $path = "node/$event->nid";
 
@@ -107,10 +109,10 @@ function _calendar_left_nav($span = null) {
             }
 
             $timeLink = "$startTime - $endTime E.T.";
-            print "<li class='last'>$timeLink</li>";
+            $output[] = "<li class='last'>$timeLink</li>";
 
             $titleLink = l($event->title, $path);
-            print "<li class='first last'>$titleLink</li>";
+            $output[] = "<li class='first last'>$titleLink</li>";
 
             $event_type = field_get_items('node', $event, 'event_date');
             if ($event_type === false)
@@ -122,14 +124,19 @@ function _calendar_left_nav($span = null) {
                 $typeLabel = 'WebEx/Phone Conf.';
             }
 
-            print "<li class='first last'>$typeLabel</li>";
+            $output[] = "<li class='first last'>$typeLabel</li>";
         }
     }
+    
+    
 
-    print '</ul>';
-    print '</div>';
-    print '<img class="ebms-left-nav-block-bottom" alt="" src="/sites/ebms.cancer.gov/themes/ebmstheme/images/left-nav-box-bottom.png">';
-    print '</div>';
+    $output[] = '</ul>';
+    $output[] = '</div>';
+    $imagesDir = Ebms\IMAGES_DIR;
+    $output[] = "<img class='ebms-left-nav-block-bottom 'alt='' src='$imagesDir/left-nav-box-bottom.png'>";
+    $output[] = '</div>';
+
+    return implode('', $output);
 }
 
 /**
@@ -143,7 +150,7 @@ function _calendar_query_alter(&$view, &$query) {
 
     // if the user is a board memeber...
     if (in_array('board member', $user->roles)) {
-        //dsm($user, 'user');
+       
         // add a condition to the query to ensure the event's board is in the 
         // member's set of boards
         $query->where[1]['conditions'][] = array(
@@ -152,6 +159,141 @@ function _calendar_query_alter(&$view, &$query) {
             'operator' => 'IN',
         );
 
-        //dsm($query, 'calendar view query');
     }
+}
+
+/**
+ * Callback for editing an event node from the calendar.
+ * 
+ * @param string $nid Node id of the event
+ */
+function ebms_calendar_edit_event($nid) {
+    $node = node_load($nid);
+
+    if (!$node || $node->type != 'ebms_event') {
+        return MENU_NOT_FOUND;
+    }
+
+    $form = array();
+    $leftNav = ebms_calendar_left_nav();
+    $form['left_nav']['#markup'] = "<div id='left-nav'>$leftNav</div>";
+    $form['event'] = drupal_get_form('ebms_calendar_event_form', $node);
+    $form['event']['#prefix'] = "<div id='calendar-enclosure'>";
+    $form['event']['#suffix'] = "</div>";
+
+    return $form;
+}
+
+function calendar_node_form_alter(&$form, &$form_state) {
+    require_once('EbmsArticle.inc');
+    require_once('common.inc');
+    
+    
+
+    drupal_add_css(Ebms\CSS_DIR . '/calendar.css');
+
+    $node = $form_state['node'];
+    
+    $form['#prefix'] = "<div id='ebms-event-form-wrapper'>";
+    $form['#suffix'] = "</div>";
+
+    $boards = Ebms\Util::boards();
+
+    $board = field_get_items('node', $node, 'board');
+    if (!empty($board))
+        $board = $board[0]['value'];
+    if (isset($form_state['values']['board']))
+        $board = $form_state['values']['board']['und'][0]['value'];
+
+    $form['board']['und']['#options'] += $boards;
+    if ($board)
+        $form['board']['und']['#default_value'] = array($board);
+    $form['board']['und']['#ajax'] = array(
+        'callback' => 'calendar_event_board_select_js',
+        'wrapper' => 'ebms-event-form-wrapper',
+    );
+
+    $subgroup = field_get_items('node', $node, 'subgroup');
+    if (!empty($subgroup))
+        $subgroup = $subgroup[0]['value'];
+    if (isset($form_state['values']['subgroup']))
+        $subgroup = $form_state['values']['subgroup'];
+
+    $query = db_select('ebms_subgroup', 's');
+    if ($board) {
+        $query->condition('s.board_id', $board);
+    }
+
+    $subgroupOptions = $query->fields('s', array('sg_id', 'sg_name'))
+        ->execute()
+        ->fetchAllKeyed();
+
+    $form['subgroup']['und']['#options'] += $subgroupOptions;
+    if ($subgroup)
+        $form['subgroup']['und']['#default_value'] = array($subgroup);
+
+    $adhoc = field_get_items('node', $node, 'adhoc_group');
+    if ($adhoc)
+        $adhoc = $adhoc[0]['value'];
+
+    $adhocOptions = array();
+    $query = db_select('ebms_ad_hoc_group', 'g');
+    $adhocOptions += $query->fields('g', array('group_id', 'group_name'))
+        ->execute()
+        ->fetchAllKeyed();
+
+    $form['adhoc_group']['und']['#options'] += $adhocOptions;
+    if ($adhoc)
+        $form['adhoc_group']['und']['#default_value'] = array($adhoc);
+
+    $users = entity_load('user');
+
+    $inhouse = array();
+    $boardMembers = array();
+    foreach ($users as $user) {
+        if (in_array('medical librarian', $user->roles) ||
+            in_array('board manager', $user->roles) ||
+            in_array('site manager', $user->roles)) {
+            $inhouse[$user->uid] = $user->name;
+        }
+
+        if ((in_array('board member', $user->roles) ||
+            in_array('board manager', $user->roles)) &&
+            ($board == 0 || in_array($board, $user->boards))) {
+            $boardMembers[$user->uid] = $user->name;
+        }
+    }
+
+    $inhouseChosen = field_get_items('node', $node, 'inhouse_staff');
+    $inhouseDefaults = array();
+    if ($inhouseChosen)
+        foreach ($inhouseChosen as $chosen) {
+            $inhouseDefaults[] = $chosen['value'];
+        }
+
+    $form['inhouse_staff']['und']['#options'] = $inhouse;
+    $form['inhouse_staff']['und']['#multiple'] = true;
+    if (!empty($inhouseDefaults))
+        $form['inhouse_staff']['und']['#default_value'] = $inhouseDefaults;
+
+
+    $chosenMembers = field_get_items('node', $node, 'board_members');
+    $defaultMembers = array();
+    if ($chosenMembers)
+        foreach ($chosenMembers as $chosen) {
+            $defaultMembers[] = $chosen['value'];
+        }
+
+    $form['board_members']['und']['#options'] = $boardMembers;
+    $form['board_members']['und']['#multiple'] = true;
+    if (!empty($inhouseDefaults))
+        $form['board_members']['und']['#default_value'] = $defaultMembers;
+
+    return $form;
+}
+
+function calendar_event_board_select_js($form, &$form_state) {
+    $form_state['rebuild'] = true;
+    
+    return $form;
 }

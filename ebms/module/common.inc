@@ -1091,7 +1091,7 @@ class Util {
         $links = array(
             array('Search Database', 'citations/search'),
             array('Import Citations', 'citations/import'),
-            array('Not List Maintentance', 'citations/not-list'),
+            array('Not List Maintenance', 'citations/not-list'),
         );
         if (in_array('medical librarian', $user->roles))
             $links[] = array('Publish Citations', 'citations/publish');
@@ -1133,7 +1133,7 @@ class Util {
             array('Find/Edit Citations', 'stub', 'full'),
             array('Review Citations', 'stub', 'full'),
             array('Publish Citations', 'citations/publish', 'always'),
-            array('Not List Maintentance', 'citations/not-list', 'always'),
+            array('Not List Maintenance', 'citations/not-list', 'always'),
             array('Manage Journals', 'stub', 'full'),
         );
         $items = array();
