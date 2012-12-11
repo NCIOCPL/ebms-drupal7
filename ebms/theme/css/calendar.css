@@ -10,18 +10,6 @@ td.single-day,
 td.date-box{
     border: 1px solid #CCCCCC;
 }
-/*
-#upcoming-events{
-   float:left;
-    width: 175px;
-}
-*/
-
-/*
-#upcoming-events>ul{
-    list-style-type: none;
-    padding: 0px;
-}*/
 
 #calendar-enclosure{
     float: left;
@@ -49,8 +37,21 @@ li.calendar-date{
     padding-left: 25px;
 }
 
+#calendar-enclosure.editable .indent{
+    padding-left: 50px;
+}
+#calendar-enclosure .edit-button-icon{
+    float: left;
+    margin: 10px 0 0 5px;
+}
+
 #calendar-enclosure .trailing{
     margin-bottom: 20px;
+}
+
+#nav-previous-event,
+#nav-following-event{
+    margin-top: 6px;
 }
 
 #nav-previous-event{
@@ -85,17 +86,17 @@ li.calendar-date{
     border-bottom: 2px solid #A90101;
 }
 
-#calendar-enclosure .calendar-calendar td.today .inner div.day a {
-    color: #A90101;
-}
-
-#calendar-enclosure .calendar-calendar td:not(.today) .inner div.day a {
+#calendar-enclosure .calendar-calendar td .inner div.day a {
     color: #2D2C28;
 }
 
-#calendar-enclosure .calendar-calendar td:not(.today) .inner div.day.empty a {
+#calendar-enclosure .calendar-calendar td .inner div.day.empty a {
     color: #696559;
     opacity: 0.65;
+}
+
+#calendar-enclosure .calendar-calendar td.today .inner div.day a {
+    color: #A90101;
 }
 
 #calendar-enclosure .calendar-calendar .month-view .full td.single-day div.monthview,
@@ -156,4 +157,27 @@ li.calendar-date{
 
 #calendar-enclosure .item-list ul.pager {
     padding-right: 0px;
+}
+
+/* alterations to forms on page */
+.node-ebms_event-form .form-type-date-popup label{
+    margin: auto;
+}
+
+.node-ebms_event-form fieldset.filter-wrapper{
+    border: 0;
+}
+
+.date-nav {
+   padding-bottom: 0px;
+}
+
+#calendar-enclosure .date-heading{
+    z-index: -1;
+}
+
+#calendar-enclosure .button{
+    margin: 0 0 10px 5px;
+    display: inline-block;
+    width: auto;
 }

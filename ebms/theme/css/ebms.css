@@ -110,6 +110,7 @@ ul.no-bullets li { margin-left: 12px; margin-bottom: 12px; }
 .button { border: solid 1px #696559; border-radius: 7px; padding: 7px; }
 .button { text-transform: uppercase; }
 .button:hover { border-color: #a90101; color: #a90101; text-decoration: none; }
+.button:hover * { text-decoration: none; }
 
 /* STATUS AND ERROR MESSAGES */
 body.not-logged-in div.messages { margin-top: 30px; }
@@ -470,7 +471,6 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
 #login-image-wrapper img { padding-left: 12px; }
 #pdq-ebms-login-form { padding-left: 12px; }
 #pdq-ebms-login-form h2 { display: none; }
-#pdq-ebms-login-form span.form-required { display: none; }
 #pdq-ebms-login-form label {
     text-transform: uppercase;
     padding-left: 5px;

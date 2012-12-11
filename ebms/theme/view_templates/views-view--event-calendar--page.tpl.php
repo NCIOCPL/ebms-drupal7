@@ -28,13 +28,12 @@
 ?>
 <?php
 Ebms\Menu::$active = 'Calendar';
-
 ?>
 
 <div id="left-nav">
     <?php
     module_load_include('inc', 'ebms', 'calendar');
-    _calendar_left_nav($display_id);
+    print ebms_calendar_left_nav($display_id);
     ?>
 </div>
 <div id='calendar-enclosure'>

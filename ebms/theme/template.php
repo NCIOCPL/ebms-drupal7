@@ -3,6 +3,7 @@
 /*
  * Implements hook_html_head_alter.
  */
+
 function ebmstheme_html_head_alter(&$head_elements) {
 
     // Force the latest IE rendering engine and Google Chrome Frame.
@@ -66,19 +67,21 @@ function ebmstheme_pager($variables) {
 
     // Create the "next" and "previous" links as appropriate.
     $li_previous = theme(
-        'pager_previous', array(
-            'text' => Ebms\LEFT_ARROW,
-            'element' => $element,
-            'interval' => 1,
-            'parameters' => $parameters,
+        'pager_previous',
+        array(
+        'text' => Ebms\LEFT_ARROW,
+        'element' => $element,
+        'interval' => 1,
+        'parameters' => $parameters,
         )
     );
     $li_next = theme(
-        'pager_next', array(
-            'text' => Ebms\RIGHT_ARROW,
-            'element' => $element,
-            'interval' => 1,
-            'parameters' => $parameters,
+        'pager_next',
+        array(
+        'text' => Ebms\RIGHT_ARROW,
+        'element' => $element,
+        'interval' => 1,
+        'parameters' => $parameters,
         )
     );
 
@@ -104,14 +107,12 @@ function ebmstheme_pager($variables) {
         if ($i == $current_page) {
             $class = array('pager-current');
             $data = $i;
-        }
-        else {
+        } else {
             $class = array('pager-item');
             if ($i < $current_page) {
                 $hook = 'pager_previous';
-                $variables['interval']  = $current_page - $i;
-            }
-            else {
+                $variables['interval'] = $current_page - $i;
+            } else {
                 $hook = 'pager_next';
                 $variables['interval'] = $i - $current_page;
             }
@@ -131,7 +132,7 @@ function ebmstheme_pager($variables) {
 
     // Render the pager items and prefix them with an accessible label.
     $accessible_title = '<h2 class="element-invisible">Pages</h2>';
-    $attributes =  array('class' => array('pager'));
+    $attributes = array('class' => array('pager'));
     $variables = array('items' => $items, 'attributes' => $attributes);
     $pager = theme('item_list', $variables);
     return $accessible_title . $pager;
@@ -153,15 +154,16 @@ function ebmstheme_breadcrumb($variables) {
     return implode($output);
 }
 /*
-function ebms_password($variables) {
-    $element = $variables['element'];
-    $element['#attributes']['type'] = 'password';
-    element_set_attributes($element, array('id', 'name', 'size', 'maxlength'));
-    _form_set_class($element, array('form-text'));
+  function ebms_password($variables) {
+  $element = $variables['element'];
+  $element['#attributes']['type'] = 'password';
+  element_set_attributes($element, array('id', 'name', 'size', 'maxlength'));
+  _form_set_class($element, array('form-text'));
 
-    return '<input' . drupal_attributes($element['#attributes']) . ' />';
-}
-*/
+  return '<input' . drupal_attributes($element['#attributes']) . ' />';
+  }
+ */
+
 /**
  * Custom theming of form elements to get the description attribute
  * tucked in as a subtitle right under the field's title.
@@ -235,6 +237,7 @@ function ebmstheme_form_element($variables) {
     $output[] = "</div>\n";
     return implode($output);
 }
+
 // function ebmstheme_date($variables) {
 //     $variables['element']['month']['#weight'] = -0.001;
 //     $variables['element']['day']['#weight'] = 0;
@@ -275,9 +278,11 @@ function ebmstheme_preprocess_node(&$variables) {
 }
 
 function preprocess_ebms_event(&$variables) {
+    module_load_include('inc', 'ebms', 'EbmsArticle');
+    
     //retrieve the node from the variables
     $node = $variables['node'];
-        
+    
     // retrieve the needed values for the template
     $eventDate = field_get_items('node', $node, 'event_date');
     $variables['eventDate'] = 'unknown';
@@ -305,9 +310,10 @@ function preprocess_ebms_event(&$variables) {
         $time = "$startTime - $endTime E.T.";
 
         // store date and time
+        $variables['startDate'] = $startDate;
         $variables['eventDate'] = $date;
         $variables['eventTime'] = $time;
-        
+
         // need to determine next and previous events
         $sortedNodes = array();
 
@@ -354,7 +360,7 @@ function preprocess_ebms_event(&$variables) {
         $nextResult = $nextQuery->execute();
         if (isset($nextResult['node']))
             $sortedNodes += $nextResult['node'];
-        
+
         $prevNode = null;
         $lastNode = null;
         $nextNode = null;
@@ -366,7 +372,7 @@ function preprocess_ebms_event(&$variables) {
             // if this node follows the current node, keep as next
             if ($lastNode == $node->nid)
                 $nextNode = $nid;
-            
+
             $lastNode = $nid;
         }
 
@@ -382,20 +388,40 @@ function preprocess_ebms_event(&$variables) {
     $board = field_get_items('node', $node, 'board');
     $variables['boardName'] = null;
     if ($board) {
-        $boardId = $boardId[0]['value'];
+        $boardId = $board[0]['value'];
         $variables['boardName'] = Ebms\getBoardNameById($boardId);
     }
-    
+
     $eventNotes = field_get_items('node', $node, 'event_notes');
     $variables['eventNotes'] = null;
     if ($eventNotes)
         $variables['eventNotes'] = $eventNotes[0]['value'];
 
+    $agenda = field_get_items('node', $node, 'event_agenda');
+    $variables['agenda'] = null;
+    if ($agenda)
+        $variables['agenda'] = $agenda[0]['value'];
+
     $submitter = user_load($node->uid);
     $variables['submitter'] = $submitter->name;
     $submitted = $node->created;
     $variables['submitted'] = date('m/d/y', $submitted);
-    
+
+    // save if the current viewer is the editor of the event
+    global $user;
+    $isCreator = false;
+    if ($submitter->uid == $user->uid) {
+        $isCreator = true;
+        $themepath = drupal_get_path('theme', 'ebmstheme');
+        $variables['editIconPath'] =
+            url("$themepath/images/EBMS_Edit_Icon_Inactive.png");
+
+        $variables['editNodePath'] =
+            url("node/$node->nid/edit");
+    }
+
+    $variables['creator'] = $isCreator;
+
     $inhouseStaff = field_get_items('node', $node, 'inhouse_staff');
     $boardMembers = field_get_items('node', $node, 'board_members');
 
@@ -411,12 +437,20 @@ function preprocess_ebms_event(&$variables) {
             $individuals[] = $member['value'];
         }
     }
-    
+
     $users = user_load_multiple($individuals);
     $individualNames = array();
-    foreach($users as $individual)
-    {
+    foreach ($users as $individual) {
         $individualNames[] = $individual->name;
     }
     $variables['individuals'] = implode(', ', $individualNames);
+
+    // build links to the various documents
+    $documents = field_get_items('node', $node, 'event_document');
+    $docLinks = array();
+    foreach($documents as $document){
+        $docLinks[] = l($document['filename'], $document['uri']);
+    }
+    
+    $variables['docLinks'] = $docLinks;
 }
