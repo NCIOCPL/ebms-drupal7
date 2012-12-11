@@ -557,11 +557,8 @@ class EbmsReview {
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
         $title = htmlspecialchars($article->ArticleTitle);
-        if ($add_link) {
-            $url = EbmsReview::$url . '/reviews/' . $this->packet_id . '/' .
-                $article_id;
-            $title = l($title, $url);
-        }
+        if ($add_link)
+            $title = l($title, 'citations/full/' . $article_id);
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
@@ -687,8 +684,10 @@ class EbmsReview {
             'r.article_id = a.article_id');
         $query->join('ebms_review_disposition', 'd',
             'd.review_id = r.review_id');
+        $query->leftJoin('file_managed', 'f', 'f.fid = a.full_text_id');
         $query->fields('a', array('article_id', 'article_title', 'source_id'));
         $query->fields('p', array('archived'));
+        $query->fields('f', array('uri'));
         $query->addExpression('MAX(r.when_posted)', 'updated');
         $query->condition('p.packet_id', $this->packet_id);
         if (!$sa)
@@ -700,7 +699,8 @@ class EbmsReview {
         $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
         $target = array('attributes' => array('target' => '_blank'));
         foreach ($articles as $article) {
-            $citation = $this->get_reviewed_citation($article->article_id);
+            $article_id = $article->article_id;
+            $citation = $this->get_reviewed_citation($article_id);
             $query = db_select('users', 'u');
             $query->fields('u', array('name'));
             $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
@@ -708,7 +708,7 @@ class EbmsReview {
             $query->join('ebms_review_disposition', 'd',
                 'd.review_id = r.review_id');
             $query->condition('r.packet_id', $this->packet_id);
-            $query->condition('r.article_id', $article->article_id);
+            $query->condition('r.article_id', $article_id);
             $query->orderBy('u.name');
             $query->distinct();
             $results = $query->execute();
@@ -734,7 +734,7 @@ class EbmsReview {
             }
             $article_opts = $opts;
             $action = $article->archived ? 'revive' : 'archive';
-            $article_opts['query'][$action] = $article->article_id;
+            $article_opts['query'][$action] = $article_id;
             $href = url($url, $article_opts);
             $type = 'type="checkbox"';
             $onclick = 'onclick=\'location.href="' . $href . '"\'';
@@ -742,8 +742,14 @@ class EbmsReview {
             $checkbox = "<input $type $onclick$checked />";
             $pm_link = $pubmed . $article->source_id;
             $links = '<div class="links">' .
-                l('View Abstract', $pm_link, $target) . ' | ' .
-                l('Download Full Text', 'stub') . '</div>';
+                l('View Abstract', $pm_link, $target);
+            if ($article->uri) {
+                $url = file_create_url($article->uri);
+                $links .= ' | ' . l('Download Full Text', $url, $target);
+            }
+            $url = EbmsReview::$url . '/reviews/' . $this->packet_id . '/' .
+                $article_id;
+            $links .= ' | ' . l('Show Details', $url) . '</div>';
             $data = array(
                 $citation . $links,
                 implode('<br />', $reviewers),
