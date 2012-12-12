@@ -648,6 +648,12 @@ namespace {
 
         //include js to redirect pager links
         $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
+        
+        // hook into ajax completions to apply jQuery to form components
+        drupal_add_js('jQuery(document).ajaxComplete(function(){       
+            addHooks();                                      
+        });',
+            'inline');
 
         // maintain triggered element states
         _update_persistent_elements($form_state);
