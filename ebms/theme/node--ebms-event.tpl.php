@@ -37,44 +37,57 @@
         print $title;
         ?>
     </h2>
-    <div class='indent trailing subheader'> <?php print $eventDate; ?> </div>
-    <div class='indent trailing'> <?php print $eventTime; ?> </div>
+    <div class="content"<?php print $content_attributes; ?>>
+        <div class='indent trailing subheader'> <?php print $eventDate; ?> </div>
+        <div class='indent trailing'> <?php print $eventTime; ?> </div>
 
-    <div class='indent subheader'>Event Type</div>
-    <div class='indent trailing'> <?php print $eventType; ?> </div>
+        <div class='indent subheader'>Event Type</div>
+        <div class='indent trailing'> <?php print $eventType; ?> </div>
 
-    <?php if ($boardName) : ?>
-        <div class='indent subheader'>Board</div>
-        <div class='indent trailing'><?php print $boardName; ?></div>
-        <?php
-    endif;
+        <?php if ($boardName) : ?>
+            <div class='indent subheader'>Board</div>
+            <div class='indent trailing'><?php print $boardName; ?></div>
+            <?php
+        endif;
 
-    if ($individuals) :
-        ?>
-        <div class='indent subheader'>Individuals</div>
-        <div class='indent trailing'> <?php print $individuals; ?> </div>
-        <?php
-    endif;
+        if ($individuals) :
+            ?>
+            <div class='indent subheader'>Individuals</div>
+            <div class='indent trailing'> <?php print $individuals; ?> </div>
+            <?php
+        endif;
 
-    if ($agenda) :
-        ?>
-        <div class='indent subheader'>Agenda</div>
-        <div class='indent trailing'> <?php print $agenda; ?> </div>
+        if ($agenda) :
+            ?>
+            <div class='indent subheader'>Agenda</div>
+            <div class='indent trailing'> <?php print $agenda; ?> </div>
 
-        <?php
-    endif;
+            <?php
+        endif;
 
-    if ($eventNotes) :
-        ?>
-        <div class='indent subheader'>Notes</div>
-        <div class='indent trailing'> <?php print $eventNotes; ?> </div>
-    <?php endif; ?>
+        if ($eventNotes) :
+            ?>
+            <div class='indent subheader'>Notes</div>
+            <div class='indent trailing'> <?php print $eventNotes; ?> </div>
+        <?php endif; ?>
 
-    <div class='indent trailing'> <?php print "<i>Submitted by $submitter on $submitted</i>"; ?> </div>
+        <div class='indent trailing'> <?php print "<i>Submitted by $submitter on $submitted</i>"; ?> </div>
 
-    <div class='trailing subheader indent'>
-        <?php
-        print l('Add to Personal Calendar', "node/$nid/event.ics");
-        ?>
+        <?php if (!empty($docLinks)) : ?>
+            <div class='trailing'>
+                <div class='indent subheader'>Event Documents</div>
+
+                <?php
+                foreach ($docLinks as $link)
+                        print "<div class='indent'>$link</div>";
+                ?>
+            </div>
+        <?php endif; ?>
+
+        <div class='trailing subheader indent'>
+            <?php
+            print l('Add to Personal Calendar', "node/$nid/event.ics");
+            ?>
+        </div>
     </div>
 </div

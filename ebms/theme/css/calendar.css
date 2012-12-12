@@ -13,7 +13,11 @@ td.date-box{
 
 #calendar-enclosure{
     float: left;
-    width: 710px;    
+    width: 710px;
+}
+
+#calendar-enclosure.preview{
+    float: none;
 }
 
 li.calendar-date{
@@ -169,7 +173,7 @@ li.calendar-date{
 }
 
 .date-nav {
-   padding-bottom: 0px;
+    padding-bottom: 0px;
 }
 
 #calendar-enclosure .date-heading{
@@ -180,4 +184,85 @@ li.calendar-date{
     margin: 0 0 10px 5px;
     display: inline-block;
     width: auto;
+}
+
+.region-sidebar-second #calendar-enclosure{
+    width: 302px;
+    margin: 20px 0px 13px 27px;
+    padding-left: 0;
+}
+
+.region-sidebar-second #calendar-enclosure .pager,
+.region-sidebar-second #calendar-enclosure .date-nav{
+    margin: 0px;
+}
+
+.region-sidebar-second #calendar-enclosure h3  {
+    background-image: url("../images/box-title.png");
+    background-repeat: no-repeat;
+    color: white;
+    font-size: 20px;
+    height: 41px;
+    line-height: 41px;
+    padding-left: 10px;
+    text-transform: uppercase;
+}
+
+.region-sidebar-second #calendar-enclosure h3 a{
+    color: white;
+    font-size: 20px;
+    height: 41px;
+    line-height: 41px;
+    padding-left: 10px;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+.region-sidebar-second #calendar-enclosure table{
+    border-left: 1px solid #696559;
+    border-right: 1px solid #696559;
+    margin: 0;
+    padding: 10px 0;
+}
+
+.region-sidebar-second #calendar-enclosure table .days{
+    color: #2D2C28;
+    border: none;
+    background: transparent;
+    padding-top: 5px;
+}
+
+.region-sidebar-second #calendar-enclosure table td {
+    text-align: center;
+}
+
+.region-sidebar-second #calendar-enclosure table td {
+    text-align: center;
+}
+
+.region-sidebar-second #calendar-enclosure table td .mini-day-off a{
+    color: #2D2C28;
+}
+
+.region-sidebar-second #calendar-enclosure table td .mini-day-on a{
+    color: #A90101;
+    text-decoration: inherit;
+}
+
+.region-sidebar-second #calendar-enclosure table td .mini-day-on a:hover{
+    text-decoration: underline;
+}
+
+.region-sidebar-second #calendar-enclosure table td.today{
+    background: #696559;
+    border-radius: 5px;
+}
+
+.region-sidebar-second #calendar-enclosure table td.today a{
+    color: white;
+}
+
+.region-sidebar-second #calendar-enclosure .view .date-nav-wrapper .date-prev a,
+.region-sidebar-second #calendar-enclosure .view .date-nav-wrapper .date-next a{
+    color: white;
 }

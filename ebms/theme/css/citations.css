@@ -21,6 +21,10 @@
     margin-left: 250px;
 }
 
+div.ctools-modal-content #citation-form-div{
+    margin: auto;
+}
+
 .citation-input-div > .form-item > label {
     text-transform: uppercase !important;
     float: right !important;

@@ -28,10 +28,13 @@
  */
 //dsm('Display: '. $display_type .': '. $min_date_formatted .' to '. $max_date_formatted);
 ?>
-
-<div class='button clearfix'><a href='
-    <?php print '/node/add/ebms-event?date=' . $rows['date'] ?> 
-                                '>Add Event</a></div>
+<?php if (user_access('create ebms_event content')) : ?>
+    <div class='button clearfix'>
+        <a href='
+        <?php print '/node/add/ebms-event?date=' . $rows['date'] ?> 
+           '>Add Event</a>
+    </div>
+<?php endif; ?>
 <div class="calendar-calendar"><div class="day-view">
         <div id="multi-day-container">
             <table class="full">
@@ -42,20 +45,23 @@
                     </tr>
                     <tr>
                         <td class="<?php print $agenda_hour_class ?> first">
-                            <span class="calendar-hour"><?php print t('All day',
-            array(), array('context' => 'datetime')) ?></span>
+                            <span class="calendar-hour"><?php
+print t('All day', array(), array('context' => 'datetime'))
+?></span>
                         </td>
                         <td class="calendar-agenda-items multi-day last">
-<?php foreach ($columns as
-        $column): ?>
+                            <?php
+                            foreach ($columns as $column):
+                                ?>
                                 <div class="calendar">
                                     <div class="inner">
-                                <?php print isset($rows['all_day'][$column])
-                                            ? implode($rows['all_day'][$column])
-                                            : '&nbsp;'; ?>
+                                        <?php
+                                        print isset($rows['all_day'][$column]) ? implode($rows['all_day'][$column])
+                                                    : '&nbsp;';
+                                        ?>
                                     </div>
                                 </div>
-<?php endforeach; ?>   
+                            <?php endforeach; ?>   
                         </td>
                     </tr>
                 </tbody>
@@ -63,7 +69,7 @@
         </div>
         <div class="header-body-divider">&nbsp;</div>
         <div id="single-day-container">
-<?php if (!empty($scroll_content)) : ?>
+            <?php if (!empty($scroll_content)) : ?>
                 <script>
                     try {
                         // Hide container while it renders...  Degrade w/o javascript support
@@ -72,7 +78,7 @@
                         // swallow 
                     }
                 </script>
-<?php endif; ?>
+            <?php endif; ?>
             <table class="full">
                 <tbody>
                     <tr class="holder">
@@ -82,8 +88,9 @@
                     <tr>
                         <td class="first">
                             <?php $is_first = TRUE; ?>
-                            <?php foreach ($rows['items'] as
-                                    $time_cnt => $hour): ?>
+                            <?php
+                            foreach ($rows['items'] as $time_cnt => $hour):
+                                ?>
                                 <?php
                                 if ($time_cnt == 0) {
                                     $class = 'first ';
@@ -99,8 +106,9 @@
                             <?php endforeach; ?>   
                         </td>
                         <td class="last">
-                            <?php foreach ($rows['items'] as
-                                    $time_cnt => $hour): ?>
+                            <?php
+                            foreach ($rows['items'] as $time_cnt => $hour):
+                                ?>
                                 <?php
                                 if ($time_cnt == 0) {
                                     $class = 'first ';
@@ -112,20 +120,24 @@
                                 ?>
                                 <div class="<?php print $class ?>calendar-agenda-items single-day">
                                     <div class="half-hour">&nbsp;</div>
-                                            <?php if ($is_first && isset($hour['values'][$column])) : ?>
+                                    <?php if ($is_first && isset($hour['values'][$column])) : ?>
                                         <div class="calendar item-wrapper first_item">
-                                                    <?php $is_first = FALSE; ?>
-                                                <?php else : ?>
+                                            <?php $is_first = FALSE; ?>
+                                        <?php else : ?>
                                             <div class="calendar item-wrapper">
-                                                <?php endif; ?>
+                                            <?php endif; ?>
                                             <div class="inner">
-                                                <?php if (!empty($hour['values']) && is_array($hour['values']) && array_key_exists($column,
-                                                        $hour['values'])): ?>
-                                                    <?php foreach ($hour['values'][$column] as
-                                                            $item): ?>
-            <?php print $item; ?>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
+                                                <?php
+                                                if (!empty($hour['values']) && is_array($hour['values']) && array_key_exists($column,
+                                                        $hour['values'])):
+                                                    ?>
+                                                    <?php
+                                                    foreach ($hour['values'][$column] as
+                                                            $item):
+                                                        ?>
+                                                        <?php print $item; ?>
+                                                    <?php endforeach; ?>
+                                                <?php else: ?>
         <?php print '&nbsp;'; ?>
     <?php endif; ?>
                                             </div>

@@ -1054,3 +1054,20 @@ form.confirmation a#edit-cancel:hover { border: 1px solid #a90101; }
     #banner, #header, #nav, #breadcrumb, #message-wrapper, #tabs,
     #reports-top, #footer { display: none; }
 }
+
+div.ctools-modal-content .modal-header {
+    background-color: #696559;
+    padding: 0.25em 0.5em 0.25em 1em;
+}
+
+div.ctools-modal-content a.close img {
+    margin-left: 10px;
+}
+
+#modalBackdrop{
+    background-color: #2D2C28 !important;
+}
+
+div.ctools-modal-content .form-item label {
+    float: none;
+}
