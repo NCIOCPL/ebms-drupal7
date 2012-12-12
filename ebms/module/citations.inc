@@ -2273,7 +2273,8 @@ namespace {
                 _build_add_tag_comment_button($form_state, $tag->article_tag_id);
         }
 
-        $form['article_tag_comment'] = _format_comments($tag->comments);
+        if ($tag->comments)
+            $form['article_tag_comment'] = _format_comments($tag->comments);
 
         return $form;
     }
