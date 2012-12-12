@@ -1134,6 +1134,7 @@ function pdq_ebms_clear_all_caches() {
 function pdq_ebms_tester_theme() { return 'apitest'; }
 
 function ebms_node_info() {
+    require_once('includes/ebms.nodes.inc');
     global $ebms_event_nodes;
 
     $nodes = array();
