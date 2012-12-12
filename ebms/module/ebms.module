@@ -1139,7 +1139,7 @@ function ebms_node_info() {
 
     $nodes = array();
 
-    $nodes += $ebms_event_nodes;
+    $nodes = $nodes + $ebms_event_nodes;
 
     return $nodes;
 }
