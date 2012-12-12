@@ -2079,9 +2079,10 @@ namespace {
         $links = array(
             array('Refine Search', $searchPath, array()),
             array('View Abstract', $pm_link, $target),
-            array('Download Full Text', $fileUrl, array()),
-            //array('Add Comments', 'citations/search'),
         );
+
+        if ($fileUrl)
+            $links[] = array('Download Full Text', $fileUrl, array());
 
         $items = array();
         foreach ($links as $link) {

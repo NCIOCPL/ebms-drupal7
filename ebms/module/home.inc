@@ -357,7 +357,7 @@ class EbmsHomePage {
      *     into the system.  Stub event links are used.
      */
     private function calendar() {
-        $cal_date = strtotime($this->cal);
+        /*$cal_date = strtotime($this->cal);
         $cal_year = date('Y', $cal_date);
         $cal_month = date('n', $cal_date);
         $title = date('F Y', $cal_date);
@@ -402,7 +402,18 @@ class EbmsHomePage {
         $url = "{$this->url}?focus={$this->focus}&cal=$cal";
         $next = "<div id='$id'><a href='$url'>&gt;</a></div>";
         $prefix = $prev . $next;
-        return $this->table_block($title, 'calendar', $rows, $prefix);
+        return $this->table_block($title, 'calendar', $rows, $prefix);*/
+        
+        drupal_add_css(Ebms\CSS_DIR . '/calendar.css');
+        
+        $view = views_get_view('event_calendar');
+        $display = $view->preview('month_block');
+        
+        return array(
+            '#markup' => $display,
+            '#prefix' => "<div id='calendar-enclosure'>",
+            '#suffix' => $this->block_bottom_img() . "</div>",
+            );
     }
 
     /**

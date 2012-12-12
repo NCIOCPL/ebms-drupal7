@@ -33,6 +33,7 @@ $handler->display->display_options['style_options']['with_weekno'] = '0';
 $handler->display->display_options['style_options']['multiday_theme'] = '1';
 $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
+$handler->display->display_options['style_options']['groupby_times'] = 'half';
 $handler->display->display_options['row_plugin'] = 'calendar_entity';
 /* Field: Content: Event Date */
 $handler->display->display_options['fields']['event_date']['id'] = 'event_date';
@@ -101,6 +102,7 @@ $handler->display->display_options['style_options']['with_weekno'] = '0';
 $handler->display->display_options['style_options']['multiday_theme'] = '1';
 $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
+$handler->display->display_options['style_options']['groupby_times'] = 'half';
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
 $handler->display->display_options['row_plugin'] = 'calendar_entity';
@@ -142,6 +144,7 @@ $handler->display->display_options['style_options']['with_weekno'] = '0';
 $handler->display->display_options['style_options']['multiday_theme'] = '1';
 $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
+$handler->display->display_options['style_options']['groupby_times'] = 'half';
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
 $handler->display->display_options['row_plugin'] = 'calendar_entity';
@@ -180,6 +183,7 @@ $handler->display->display_options['style_options']['with_weekno'] = '0';
 $handler->display->display_options['style_options']['multiday_theme'] = '1';
 $handler->display->display_options['style_options']['theme_style'] = '1';
 $handler->display->display_options['style_options']['max_items'] = '0';
+$handler->display->display_options['style_options']['groupby_times'] = 'half';
 $handler->display->display_options['defaults']['style_options'] = FALSE;
 $handler->display->display_options['defaults']['row_plugin'] = FALSE;
 $handler->display->display_options['row_plugin'] = 'calendar_entity';
@@ -295,4 +299,36 @@ $handler->display->display_options['displays'] = array(
   'day' => 0,
 );
 
+/* Display: Block */
+$handler = $view->new_display('block', 'Block', 'month_block');
+$handler->display->display_options['defaults']['use_ajax'] = FALSE;
+$handler->display->display_options['use_ajax'] = TRUE;
+$handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
+$handler->display->display_options['defaults']['pager'] = FALSE;
+$handler->display->display_options['pager']['type'] = 'date_views_pager';
+$handler->display->display_options['pager']['options']['date_id'] = 'mini';
+$handler->display->display_options['defaults']['style_plugin'] = FALSE;
+$handler->display->display_options['style_plugin'] = 'calendar_style';
+$handler->display->display_options['style_options']['name_size'] = '1';
+$handler->display->display_options['style_options']['mini'] = '1';
+$handler->display->display_options['style_options']['with_weekno'] = '0';
+$handler->display->display_options['style_options']['multiday_theme'] = '1';
+$handler->display->display_options['style_options']['theme_style'] = '1';
+$handler->display->display_options['style_options']['max_items'] = '0';
+$handler->display->display_options['style_options']['groupby_times'] = 'half';
+$handler->display->display_options['defaults']['style_options'] = FALSE;
+$handler->display->display_options['defaults']['row_plugin'] = FALSE;
+$handler->display->display_options['row_plugin'] = 'calendar_entity';
+$handler->display->display_options['defaults']['row_options'] = FALSE;
+$handler->display->display_options['defaults']['arguments'] = FALSE;
+/* Contextual filter: Date: Date (node) */
+$handler->display->display_options['arguments']['date_argument']['id'] = 'date_argument';
+$handler->display->display_options['arguments']['date_argument']['table'] = 'node';
+$handler->display->display_options['arguments']['date_argument']['field'] = 'date_argument';
+$handler->display->display_options['arguments']['date_argument']['default_action'] = 'default';
+$handler->display->display_options['arguments']['date_argument']['summary']['format'] = 'default_summary';
+$handler->display->display_options['arguments']['date_argument']['add_delta'] = 'yes';
+$handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
+  'field_data_event_date.event_date_value' => 'field_data_event_date.event_date_value',
+);
 ?>

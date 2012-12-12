@@ -127,8 +127,8 @@ function ebms_calendar_left_nav($span = null) {
             $output[] = "<li class='first last'>$typeLabel</li>";
         }
     }
-    
-    
+
+
 
     $output[] = '</ul>';
     $output[] = '</div>';
@@ -148,9 +148,8 @@ function ebms_calendar_left_nav($span = null) {
 function _calendar_query_alter(&$view, &$query) {
     global $user;
 
-    // if the user is a board memeber...
+    // if the user is a board member...
     if (in_array('board member', $user->roles)) {
-       
         // add a condition to the query to ensure the event's board is in the 
         // member's set of boards
         $query->where[1]['conditions'][] = array(
@@ -158,7 +157,6 @@ function _calendar_query_alter(&$view, &$query) {
             'value' => $user->ebms_boards,
             'operator' => 'IN',
         );
-
     }
 }
 
@@ -187,14 +185,27 @@ function ebms_calendar_edit_event($nid) {
 function calendar_node_form_alter(&$form, &$form_state) {
     require_once('EbmsArticle.inc');
     require_once('common.inc');
-    
-    
+
+    $params = drupal_get_query_parameters();
+
+    if (isset($params['date'])) {
+        $date = $params['date'];
+
+        $dateTime = "$date 12:00:00";
+
+        $date = new DateTime($dateTime);
+        $timestamp = $date->getTimestamp();
+
+        $form['event_date']['und'][0]['#default_value']['value'] = $timestamp;
+        $form['event_date']['und'][0]['#default_value']['value2'] = $timestamp;
+    }
 
     drupal_add_css(Ebms\CSS_DIR . '/calendar.css');
 
     $node = $form_state['node'];
-    
-    $form['#prefix'] = "<div id='ebms-event-form-wrapper'>";
+
+    $form['#prefix'] = "<div id='ebms-event-form-wrapper'>" . (isset($form['#prefix'])
+            ? $form['#prefix'] : '');
     $form['#suffix'] = "</div>";
 
     $boards = Ebms\Util::boards();
@@ -294,6 +305,6 @@ function calendar_node_form_alter(&$form, &$form_state) {
 
 function calendar_event_board_select_js($form, &$form_state) {
     $form_state['rebuild'] = true;
-    
+
     return $form;
 }
