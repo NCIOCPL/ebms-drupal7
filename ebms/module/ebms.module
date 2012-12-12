@@ -1136,7 +1136,10 @@ function pdq_ebms_tester_theme() { return 'apitest'; }
 function ebms_node_info() {
     module_load_include('nodes.inc', 'ebms');
     global $ebms_event_nodes;
-
+    
+    if(!is_array($ebms_event_nodes))
+        drupal_set_message("Unable to load event node type.", 'error');
+    
     $nodes = array();
 
     $nodes = $nodes + $ebms_event_nodes;
