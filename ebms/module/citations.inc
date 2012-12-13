@@ -603,6 +603,29 @@ namespace {
 
             $ix++;
         }
+        
+        $form['trailing-buttons'] = array(
+            '#prefix' => '<div id="citation-buttons-div">',
+            '#suffix' => '</div>',
+        );
+
+        $form['trailing-buttons']['save_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Save',
+            /* '#ajax' => array(
+              'callback' => 'pdq_ebms_ajax_save_list',
+              ), */
+        );
+
+        $form['trailing-buttons']['cancel_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+            /* '#ajax' => array(
+              'callback' => 'pdq_ebms_ajax_clear_form',
+              'wrapper' => 'citation-results-div',
+              'method' => 'replace',
+              ), */
+        );
 
         $form['bottom-pager'] = array(
             '#theme' => 'pager',
@@ -1600,6 +1623,21 @@ namespace {
             $results['table']['rows'][$ix] = $rows;
             $ix++;
         }
+        
+        $results['trailing-buttons'] = array(
+            '#prefix' => '<div id="citation-buttons-div">',
+            '#suffix' => '</div>',
+        );
+
+        $results['trailing-buttons']['save_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Save',
+        );
+
+        $results['trailing-buttons']['refresh_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Refresh',
+        );
 
         $results['bottom-pager'] = array(
             '#theme' => 'pager',

@@ -490,7 +490,20 @@ class Journal {
 
         // Collect the two list of journals (ours and NLM's).
         $ebmsJournals = Journal::fetch_titles_from_db();
-        $nlmJournals = Journal::fetch_titles_from_nlm();
+        try {
+            $nlmJournals = Journal::fetch_titles_from_nlm();
+        } catch (\Exception $e) {
+            // should a drupal message be shown when unable to connect to nlm?
+            drupal_set_message($e->getMessage(), 'error');
+            
+            // return empty results
+            return array(
+                'fetched' => 0,
+                'checked' => 0,
+                'updated' => 0,
+                'inserted' => 0,
+            );
+        }
 
         // Update the rows for journals whose titles have changed.
         $updated = array();
@@ -552,9 +565,16 @@ class Journal {
         // Fetch the compressed file of journal information.
         $url = 'ftp://ftp.ncbi.nih.gov/pubmed/J_Medline.gz';
         $ch = curl_init($url);
+        
+        curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         $results = curl_exec($ch);
         curl_close($ch);
+        
+        // Throw failure exception if no files retrieved
+        if (!$results)
+            throw new \Exception('Unable to retrieve journals from NLM');
 
         // Write it to a file so we can uncompress it.  PHP won't have
         // full support for uncompressing in memory until PHP6; see
