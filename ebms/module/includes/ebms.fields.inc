@@ -79,6 +79,7 @@ $GLOBALS['ebms_event_fields'] = array(
             'type' => 'options_select',
         ),
         'settings' => array(
+            'allowed_values_function' => 'ebms_board_allowed_values_callback',
         ),
         'bundles' => array(
             'ebms_event'
@@ -98,6 +99,7 @@ $GLOBALS['ebms_event_fields'] = array(
             'type' => 'options_select',
         ),
         'settings' => array(
+            'allowed_values_function' => 'ebms_subgroup_allowed_values_callback',
         ),
         'bundles' => array(
             'ebms_event'
@@ -117,6 +119,7 @@ $GLOBALS['ebms_event_fields'] = array(
             'type' => 'options_select',
         ),
         'settings' => array(
+            'allowed_values_function' => 'ebms_adhoc_group_allowed_values_callback',
         ),
         'bundles' => array(
             'ebms_event'

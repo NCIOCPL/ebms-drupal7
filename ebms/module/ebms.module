@@ -1172,3 +1172,46 @@ function ebms_form_node_form_alter(&$form, &$form_state, $form_id) {
         return;
     }
 }
+
+/**
+ * Allowed values callback function for the EBMS Board Field.
+ * 
+ * @param type $field The field this is controlling.
+ */
+function ebms_board_allowed_values_callback($field) {
+    // This leverages the existing dictionary of Boards as return by the Util static function.
+    $boards = Ebms\Util::boards();
+    return $boards;
+}
+
+/**
+ * Allowed values callback function for the EBMS Subgroup Field.
+ * 
+ * @param type $field The field this is controlling.
+ */
+function ebms_subgroup_allowed_values_callback($field) {
+    $results = db_select('ebms_subgroup', 'sg')
+            ->fields('sg', array('sg_id', 'sg_name'))
+            ->orderBy('sg.sg_name')
+            ->execute();
+    $subgroups = array();
+    foreach ($results as $result)
+        $subgroups[$result->sg_id] = $result->sg_name;
+    return $subgroups;
+}
+
+/**
+ * Allowed values callback function for the EBMS Ad-Hoc Group Field.
+ * 
+ * @param type $field The field this is controlling.
+ */
+function ebms_adhoc_group_allowed_values_callback($field) {
+    $results = db_select('ebms_ad_hoc_group', 'g')
+            ->fields('g', array('group_id', 'group_name'))
+            ->orderBy('g.group_name')
+            ->execute();
+    $groups = array();
+    foreach ($results as $result)
+        $groups[$result->group_id] = $result->group_name;
+    return $groups;
+}
