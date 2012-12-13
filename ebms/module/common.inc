@@ -3,7 +3,9 @@
 /**
  * $Id$
  *
- * Common classes, functions, etc., for the EBMS system.
+ * Common classes, functions, etc., for the EBMS system.  This file is
+ * included by ebms.module, it will always be present (you don't need
+ * to include it yourself).
  *
  */
 
@@ -437,7 +439,7 @@ class Journal {
      * NLM's list.  Writes to the ebms_journal table.  Records the
      * date/time the refresh was done in the drupal variable named
      * ebms_journals_refreshed.
-     * 
+     *
      *  @param bool $forceCheck a flag to skip the once-per-day rate limitation
      *                          of journal refreshes.
      *
@@ -451,7 +453,7 @@ class Journal {
      *            from the National Library of Medicine.
      */
     public static function refresh($forceCheck = false) {
-        
+
         // by default, gate the refreshes to only occur once a day
         if (!$forceCheck) {
             // retrieve the last update time
@@ -463,8 +465,8 @@ class Journal {
                         $lastRefresh);
 
                 if ($refreshDate) {
-                    // check the date by adding a day to it and comparing to the
-                    // current time
+                    // Check the date by adding a day to it and comparing to
+                    // the current time
                     $dayInterval = new \DateInterval('P1D');
                     $refreshDate->add($dayInterval);
 
@@ -473,9 +475,9 @@ class Journal {
                     $diffInterval = $refreshDate->diff($currentDate);
 
                     if ($diffInterval->invert) {
-                        // an inverted interval is negative, implying the refresh
-                        // date (plus a day) is ahead of the current time, hence a
-                        // day has not passed.
+                        // An inverted interval is negative, implying the
+                        // refresh date (plus a day) is ahead of the current
+                        // time, hence a day has not passed.
                         // so, can return from this point.
                         return array(
                             'fetched' => 0,
@@ -1042,6 +1044,20 @@ class Util {
     }
 
     /**
+     * Get the URI for an article's full text document (if we have it).
+     */
+    public static function get_ft_uri($article_id) {
+        $query = db_select('file_managed', 'f');
+        $query->join('ebms_article', 'a', 'a.full_text_id = f.fid');
+        $query->condition('a.article_id', $article_id);
+        $query->fields('f', array('uri'));
+        $results = $query->execute();
+        foreach ($results as $result)
+            return $result->uri;
+        return null;
+    }
+
+    /**
      * Build a dictionary of the PDQ boards.  The keys are the board
      * IDs and the values are the board names.
      */
@@ -1410,9 +1426,9 @@ class EbmsPager extends \PagerDefault {
      */
     public function execute() {
 
-        // Add convenience tag to mark that this is an extended query. We have to
-        // do this in the constructor to ensure that it is set before preExecute()
-        // gets called.
+        // Add convenience tag to mark that this is an extended query. We have
+        // to do this in the constructor to ensure that it is set before
+        // preExecute() gets called.
         if (!$this->preExecute($this)) {
             return NULL;
         }
@@ -1430,12 +1446,13 @@ class EbmsPager extends \PagerDefault {
         if (!isset($parms['pager']) || $parms['pager'] != 'off') {
             // ...perform the normal alterations to the query.
             $total_items = $this->getCountQuery()->execute()->fetchField();
-            $current_page = pager_default_initialize($total_items, $this->limit,
-                $this->element);
+            $current_page = pager_default_initialize($total_items,
+                            $this->limit, $this->element);
             $this->range($current_page * $this->limit, $this->limit);
         }
         // !ALTERATION
-        // Now that we've added our pager-based range instructions, run the query normally.
+        // Now that we've added our pager-based range instructions, run the
+        // query normally.
         return $this->query->execute();
     }
 }

@@ -5,12 +5,24 @@
 /**
  * @file
  *
- * Implementation of EBMS page for general site information.
+ * Implementation of EBMS page for general site information.  This file
+ * contains only a single public function, which is registered for the
+ * site's About page.  It assembles and returns the render array for
+ * the page.
  */
 function pdq_ebms_about() {
+
+    // We have our own style rules.
     drupal_add_css(Ebms\CSS_DIR . '/about.css');
+
+    // Highlight the main menu tab for the page.
     Ebms\Menu::$active = 'About';
+
+    // We construct our own breadcrumbs by hand, because the requirements
+    // for them differ from what the Drupal menu system would give us.
     drupal_set_breadcrumb(array('About'));
+
+    // Assemble the render array.
     $page = array(
         'title' => array(
             '#type' => 'markup',
@@ -192,38 +204,4 @@ function pdq_ebms_about() {
         );
     }
     return $page;
-    return drupal_get_form('pdq_ebms_state_bug_repro');
-    drupal_set_title('About EBMS');
-    return '<i>Stub for \'about\' page</i>';
-}
-
-function pdq_ebms_state_bug_repro($form, &$form_state) {
-    return array(
-        'flags' => array(
-            '#title' => 'Options',
-            '#type' => 'checkboxes',
-            '#options' => array(
-                'show-name-field' => 'Use Name Field',
-                'show-date-field' => 'Use Date Field',
-            ),
-        ),
-        'name' => array(
-            '#type' => 'textfield',
-            '#title' => 'Name',
-            '#states' => array(
-                'visible' => array(
-                    '#edit-flags-show-name-field' => array('checked' => true),
-                ),
-            ),
-        ),
-        'date' => array(
-            '#type' => 'date',
-            '#title' => 'Date',
-            '#states' => array(
-                'visible' => array(
-                    '#edit-flags-show-date-field' => array('checked' => true),
-                ),
-            ),
-        ),
-    );
 }

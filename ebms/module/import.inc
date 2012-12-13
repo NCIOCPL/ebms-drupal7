@@ -5,13 +5,26 @@
 /**
  * @file
  *
- * Implementation of EBMS pages for importing journal articles
+ * Implementation of EBMS pages for importing journal articles.  Processing
+ * flow for this story goes like this (main path, ignoring validation or
+ * other errors, or the cancel button):
+ *
+ *    1. user navigates to citations/import (without a job ID)
+ *    2. the import request form is drawn
+ *    3. the user completes and submits the form
+ *    4. the articles are imported from NLM
+ *    5. the import API returns report information about the job
+ *    6. this information is stored in a database table
+ *    7. the ID for this table row is used as the job ID
+ *    8. the software reroutes the user to citations/import/<job-id>
+ *    9. a fresh import form is drawn, with the report information
+ *       for the completed job displayed below the form
  */
 
 require_once('EbmsImport.inc');
 
 /**
- * Callback registered for /citations pages.
+ * Callback registered for /citations/import pages.
  */
 function pdq_ebms_import($job_id=null) {
     Ebms\Menu::$active = 'Citation Management';
@@ -19,14 +32,35 @@ function pdq_ebms_import($job_id=null) {
     return $control->run();
 }
 
+/**
+ * Wrapper for logic to handle the article import pages.  Keeps our
+ * functions out of the global namespace with less ugly syntax than the
+ * PHP namespace mechanism provides, and lets us pass around the current
+ * state information more easily.
+ */
 class EbmsImport {
 
+    // Class variables.
     public static $url = 'citations/import';
+
+    // Instance data.
     public
         $job_id;
+
+    /**
+     * Construct the control processing object for the import page.  If
+     * $job_id is not null, we just processed an import request, for
+     * which we will display statistics below the import request form.
+     */
     public function __construct($job_id) {
         $this->job_id = $job_id;
     }
+
+    /**
+     * Draw the page, including the left navigation, import request
+     * form, and (possbily) statistics from an import job (if we
+     * just processed such a job).
+     */
     public function run() {
         Ebms\Util::add_js();
         drupal_add_css(Ebms\CSS_DIR . '/import.css');
@@ -47,6 +81,10 @@ class EbmsImport {
         );
     }
 
+    /**
+     * Add a box with additional links under the main left nav links.
+     * Right now there's only one item in this box.
+     */
     function more_actions() {
         $items = array(
             l('View Past Imports', 'reports/import'),
@@ -59,35 +97,22 @@ class EbmsImport {
             '#items' => $items,
             '#attributes' => array('class' => 'ebms_left_nav_block'),
             '#prefix' => '<div class="more-actions">',
-            #. $class . '" id="' . $id . '">',
-            #'#suffix' => $this->block_bottom_img() . '</div>',
             '#suffix' => $img . '</div>',
         );
     }
-    /*
-            '#type' => 'container',
-            '#attributes' => array('id' => 'more-actions'),
-            'title' => array(
-                '#type' => 'markup',
-                '#markup' => '<h3>Import Actions</h3>',
-            ),
-*/
-    public static function fetch_search_spec($search_id) {
-        $json = db_select('ebms_search', 's')
-            ->fields('s', array('search_spec'))
-            ->condition('s.search_id', $search_id)
-            ->execute()
-            ->fetchField();
-        return drupal_json_decode($json);
-    }
 }
 
+/**
+ * Callback to build the import request form.  The $job_id parameter will
+ * be non-null if we just processed an import request, in which case we'll
+ * display statistics from that request's job.
+ */
 function pdq_ebms_import_form($form, &$form_state, $job_id) {
-    #pdq_ebms_debug("IMPORT FORM", array($form, $form_state));
+
+    // Build the picklist value sets.
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $topics = array(0 => ' ');
     if (isset($form_state['values'])) {
-        #pdq_ebms_debug('IMPORT VALUES', array($form_state['values'], $boards));
         if (isset($form_state['values']['board'])) {
             if ($form_state['values']['board']) {
                 $results = db_select('ebms_topic', 't')
@@ -115,6 +140,8 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
     $tags = array();
     foreach ($results as $result)
         $tags[$result->text_id] = $result->tag_name;
+
+    // Assemble the form's render array.
     $form = array(
         '#id' => 'import-form',
         'page title' => array(
@@ -123,7 +150,7 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
         ),
         'board' => array(
             '#type' => 'select',
-            '#title' => 'EDITORIAL BOARD',
+            '#title' => 'EDITORIAL BOARD *',
             '#options' => $boards,
             '#ajax' => array(
                 'callback' => 'pdq_ebms_import_board_ajax',
@@ -132,14 +159,14 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
         ),
         'topic' => array(
             '#type' => 'select',
-            '#title' => 'SUMMARY TOPIC',
+            '#title' => 'SUMMARY TOPIC *',
             '#options' => $topics,
             '#prefix' => '<div id="topic">',
             '#suffix' => '</div>',
         ),
         'cycle' => array(
             '#type' => 'select',
-            '#title' => 'REVIEW CYCLE',
+            '#title' => 'REVIEW CYCLE *',
             '#options' => $review_cycles,
         ),
         'tags' => array(
@@ -168,6 +195,10 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
                 'fast-track' => 'FAST TRACK',
             ),
         ),
+
+        // XXX I wasn't given a list of states to include here, so I picked
+        //     the ones which seemed most appropriate.  Users may wish to
+        //     have others added before we go into production.
         'placement' => array(
             '#type' => 'select',
             '#title' => 'PLACEMENT LEVEL',
@@ -227,6 +258,8 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
             //),
         ),
     );
+
+    // If we just handled an import request, show the statistics from that job.
     if ($job_id) {
         $batch = db_select('ebms_temp_report', 'r')
             ->fields('r', array('report_data'))
@@ -243,10 +276,18 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
     return $form;
 }
 
+/**
+ * Callback to populate the topic dropdown based on which board has been
+ * selected.
+ */
 function pdq_ebms_import_board_ajax($form, $form_state) {
     return $form['topic'];
 }
 
+/**
+ * Make sure the required fields are all present.  The error messages
+ * explain what the rules are, so i won't repeat them here.
+ */
 function pdq_ebms_import_form_validate($form, &$form_state) {
     if (isset($form_state['values']['op'])) {
         if ($form_state['values']['op'] == 'CANCEL') {
@@ -278,7 +319,6 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
                 $pmids = Ebms\findPubmedIDs($file->fid, null, null);
             }
             catch (\Exception $e) {
-                //pdq_ebms_debug('PMID FAILURE', $e);
                 form_set_error('file', Ebms\Util::full_stop($e->getMessage()));
                 ++$errors;
             }
@@ -292,19 +332,22 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
         form_set_error('pmid', 'You must either specify Pubmed IDs or ' .
             'upload a Pubmed search results file');
     $form_state['article-ids'] = $pmids;
-    #pdq_ebms_debug("ARTICLE IDS", $pmids);
-    #pdq_ebms_debug('FORM VALIDATION', $form_state['values']);
 }
 
+/**
+ * Handle the Cancel and Submit buttons.
+ */
 function pdq_ebms_import_form_submit($form, &$form_state) {
-    #pdq_ebms_debug('SUBMIT', $form_state);
+
+    // To cancel, we just route the user to a fresh form.
     if ($form_state['values']['op'] == 'CANCEL') {
         drupal_goto(EbmsImport::$url);
         return;
     }
+
+    // Extract the values entered by the user.
     $pmids = $form_state['article-ids'];
     $values =& $form_state['values'];
-    pdq_ebms_debug('REFERENCE TO IMPORT SUBMIT VALUES', $values);
     $board = $values['board'];
     $topic = $values['topic'];
     $cycle = $values['cycle'];
@@ -312,9 +355,10 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $use_not_list = $values['options']['not-list'] ? false : true;
     $fast_track = $values['options']['fast-track'] ? true : false;
     $test = $values['options']['test-mode'] ? true : false;
-    # $test = true; // for debugging ...
     $mode = $test ? 'test' : 'live';
     $import_type = $fast_track ? 'F' : 'R';
+
+    // Invoke the article import API.
     try {
         $batch = Ebms\importArticlesFromNLM($mode, $pmids, $topic, $cycle,
                  $comments, $use_not_list, $import_type);
@@ -324,18 +368,26 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
         $batch = null;
         $url = EbmsImport::$url;
     }
-    pdq_ebms_debug('IMPORT BATCH', $batch);
+
+    // If we succeeded, store the statistical information about the job,
+    // and do some population of related tables as appropriate.
     if ($batch) {
         if (!$test) {
+
+            // Get a list of articles affected by the import.
             $article_ids = array();
             foreach ($batch->action['reviewReady'] as $info)
                 $article_ids[] = $info[1];
+
+            // If the user checked the "Fast Track" option, add the new state.
             if ($fast_track) {
                 $cmt = $values['ft-comments'];
                 $state = $values['placement'];
                 foreach ($article_ids as $id)
                     Ebms\setArticleState($id, $state, $topic, $board, $cmt);
             }
+
+            // Apply each tag selected to each article.
             foreach ($values['tags'] as $tag_id => $tag_val) {
                 if ($tag_val) {
                     foreach ($article_ids as $article_id)
@@ -343,11 +395,15 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                 }
             }
         }
+
+        // Save the statistical report information.
         $report_data = drupal_json_encode($batch);
         $report_id = db_insert('ebms_temp_report')
             ->fields(array('report_data' => $report_data))
             ->execute();
         $url = EbmsImport::$url . '/' . $report_id;
     }
+
+    // Draw the form again.
     drupal_goto($url);
 }

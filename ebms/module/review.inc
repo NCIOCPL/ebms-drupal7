@@ -72,8 +72,6 @@ class EbmsReview {
             return $this->choose_member_review_page();
         }
         return $this->choose_manager_review_page();
-        // XXX STUB
-        return '<i>Stub for manager literature review page</i>';
     }
 
     /**
@@ -244,8 +242,6 @@ class EbmsReview {
         $del_func = 'javascript:ebmsscript.delete_packet';
         $rows = array();
         foreach ($packets as $p) {
-            #$options = array('query' => array('packet' => $p->packet_id));
-            #$options['query']['action'] = 'edit';
             $edit_url = "$main_url/edit/{$p->packet_id}";
             $edit_link = l('EDIT', $edit_url, $opts);
             $del_parm = url("$main_url/delete/{$p->packet_id}", $opts);
@@ -590,9 +586,21 @@ class EbmsReview {
         return implode($pieces);
     }
 
-    /*
+    /**
+     * The user (a board manager) has selected a specific packet from the
+     * list of reviewed packets displayed on her Literature landing page.
+     * Create a table showing each article in the packet, the reviewers
+     * who have weighed in on the articles, and a visual indication of
+     * whether they gave an article a thumbs up (green check icon) or
+     * down (red X icon).  We also show that last update to the article
+     * activity for the packet, as well as a checkbox allowing the board
+     * manager to suppress ("archive") the article from the packet (or to
+     * turn off that suppression.
      */
     private function show_reviewed_packet($opts) {
+
+        // If the user asked to suppress on of the articles in the
+        // packet, update the table to reflect this request.
         if (isset($opts['query']['archive'])) {
             $article_id = $opts['query']['archive'];
             if ($article_id) {
@@ -609,6 +617,8 @@ class EbmsReview {
             unset($_GET['archive']);
             unset($opts['query']['archive']);
         }
+
+        // Undo the suppression of an article in a packet.
         if (isset($opts['query']['revive'])) {
             $article_id = $opts['query']['revive'];
             if ($article_id) {
@@ -624,6 +634,7 @@ class EbmsReview {
             unset($opts['query']['revive']);
         }
 
+        // Manual breadcrumb setting to match requirements.
         $url = EbmsReview::$url . '/reviews/' . $this->packet_id;
         drupal_set_breadcrumb(
             array(
@@ -632,6 +643,8 @@ class EbmsReview {
                 $this->packet_title,
             )
         );
+
+        // Handle some of the other page state settings.
         if ($this->pager != 'off')
             $pager = array('#theme' => 'pager');
         else {
@@ -654,6 +667,8 @@ class EbmsReview {
             $sa = false;
         }
         $archive_opts['attributes'] = array('title' => $archive_title);
+
+        // Set up sorting via the table column headers.
         $headers = array(
             array(
                 'data' => 'Article',
@@ -672,11 +687,15 @@ class EbmsReview {
                 'class' => array('col-4'),
             ),
         );
+
+        // Get the ID for the disposition for which we display a red X icon.
         $warrants_no_changes = db_select('ebms_review_disposition_value', 'v')
             ->fields('v', array('value_id'))
             ->condition('v.value_name', 'Warrants no changes to the summary')
             ->execute()
             ->fetchField();
+
+        // Construct the query to get the articles in the packet.
         $query = db_select('ebms_packet_article', 'p');
         $query = $query->extend('TableSort');
         $query->join('ebms_article', 'a', 'a.article_id = p.article_id');
@@ -695,10 +714,15 @@ class EbmsReview {
         $query->groupBy('a.article_id');
         $query->orderByHeader($headers);
         $articles = $query->execute();
+
+        // Build up the sequence of table rows.
         $rows = array();
         $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
         $target = array('attributes' => array('target' => '_blank'));
         foreach ($articles as $article) {
+
+            // Collect information about what each reviewer said about the
+            // article.
             $article_id = $article->article_id;
             $citation = $this->get_reviewed_citation($article_id);
             $query = db_select('users', 'u');
@@ -728,10 +752,10 @@ class EbmsReview {
                 $img = '<img src="' . $image_url . '" alt="" />';
                 $reviewers[] = '<div class="reviewer">' .
                     '<span class="reviewer-name">' . $name . '</span> ' .
-                    $img .
-                    #'<span class="review-disposition">' . $image . '</span>' .
-                    '</div>';
+                    $img . '</div>';
             }
+
+            // Assemble the row.
             $article_opts = $opts;
             $action = $article->archived ? 'revive' : 'archive';
             $article_opts['query'][$action] = $article_id;
@@ -764,6 +788,8 @@ class EbmsReview {
                 'no_striping' => true,
             );
         }
+
+        // Put together and return the render array for the table.
         return array(
             'title' => array(
                 '#type' => 'markup',
@@ -787,8 +813,16 @@ class EbmsReview {
         );
     }
 
+    /**
+     * The board manager, wanting to see more information than the thumbs-up/
+     * thumbs-down icons in the page showing the whole packet, has clicked
+     * on the "SHOW DETAILS" link for one of the articles in the packet.
+     * Show all the information we have about the reviews submitted by the
+     * board members for the article.
+     */
     private function show_reviewed_article($opts) {
-        #$results = db_select();
+
+        // Manual breadcrumb construction to match design/requirements.
         drupal_set_breadcrumb(
             array(
                 l('Literature', EbmsReview::$url),
@@ -797,7 +831,8 @@ class EbmsReview {
                     $this->packet_id),
             )
         );
-        $reviews = array();
+
+        // Construct the query to get all the reviews.
         $query = db_select('ebms_article_review', 'r');
         $query->join('users', 'u', 'u.uid = r.reviewer_id');
         $query->fields('r', array('review_id', 'when_posted', 'comments',
@@ -807,6 +842,9 @@ class EbmsReview {
         $query->condition('r.article_id', $this->article_id);
         $query->orderBy('r.when_posted', 'DESC');
         $results = $query->execute();
+
+        // Display each review.
+        $reviews = array();
         foreach ($results as $result) {
             $reviewed = date("m/d/Y | g:i A", strtotime($result->when_posted));
             $markup = array('<div class="review">');
@@ -841,6 +879,8 @@ class EbmsReview {
                 '#markup' => implode('', $markup),
             );
         }
+
+        // Assemble the render array for the page.
         $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
         $target = array('attributes' => array('target' => '_blank'));
         $pmid = db_select('ebms_article', 'a')
@@ -1112,8 +1152,7 @@ class EbmsReview {
         // The section is expanded; show the articles still in the queue.
         else {
 
-            // XXX Link to real full text PDFs when they're ready.
-            $ft_uri = 'public://full-text-article-stub.pdf';
+            // Standard pieces we'll need for the link out to NLM.
             $target = array('attributes' => array('target' => '_blank'));
             $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
 
@@ -1130,10 +1169,14 @@ class EbmsReview {
             $rows = array();
             foreach ($articles as $article) {
                 $pm_id = $article->source_id;
-                $pm_link = l('view abstract', $pubmed . $pm_id, $target);
-                $ft_url = file_create_url($ft_uri);
-                $ft_link = l('download full text', $ft_url, $target);
-                $links = "$pm_link &nbsp; | &nbsp; $ft_link";
+                $links = l('view abstract', $pubmed . $pm_id, $target);
+
+                // Add the link for viewing the full text if we have it.
+                if ($article->uri) {
+                    $ft_url = file_create_url($article->uri);
+                    $ft_link = l('download full text', $ft_url, $target);
+                    $links .= " &nbsp; | &nbsp; $ft_link";
+                }
                 $citation = Ebms\Util::get_full_citation($article->article_id);
                 $options['query']['article'] = $article->article_id;
                 $rows[] = array(
@@ -1403,6 +1446,8 @@ class EbmsReview {
             'r.article_id = a.article_id AND ' .
             'r.packet_id = p.packet_id AND ' .
             'r.reviewer_id = :uid', array(':uid' => $this->user->uid));
+        $query->leftJoin('file_managed', 'f', 'f.fid = a.full_text_id');
+        $query->fields('f', array('uri'));
         $query->condition('p.packet_id', $this->packet_id);
         $query->isNull('r.article_id');
         $query->orderBy('a.import_date', 'desc');
@@ -1716,6 +1761,11 @@ class EbmsPacket {
         $reviewers,
         $articles,
         $summaries;
+
+    /**
+     * Pull the information for the packet from the ebms_packet and
+     * related tables.
+     */
     public function __construct($packet_id) {
         $this->id = $packet_id;
         $this->reviewers = EbmsPacket::fetch_reviewers($packet_id);
@@ -1745,6 +1795,11 @@ class EbmsPacket {
             ->execute()
             ->fetchField();
     }
+
+    /**
+     * Get the list of board members assigned to review the articles in
+     * this packet.
+     */
     public static function fetch_reviewers($packet_id) {
         $results = db_select('ebms_packet_reviewer', 'r')
             ->fields('r', array('reviewer_id'))
@@ -1754,6 +1809,10 @@ class EbmsPacket {
             $reviewers[] = $result->reviewer_id;
         return $reviewers;
     }
+
+    /**
+     * Get the list of articles assigned for review as part of this packet.
+     */
     public static function fetch_articles($packet_id) {
         $results = db_select('ebms_packet_article', 'a')
             ->fields('a', array('article_id'))
@@ -1764,6 +1823,11 @@ class EbmsPacket {
             $articles[] = $result->article_id;
         return $articles;
     }
+
+    /**
+     * Get the list of summary documents attached to this packet by the
+     * board manager.
+     */
     public static function fetch_summaries($packet_id) {
         $results = db_select('ebms_packet_summary', 's')
             ->fields('s', array('doc_id'))
@@ -1791,15 +1855,27 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         $loeSuffix = "$link</div>";
     }
 
-    // XXX Use real full text links when they're ready.
+    // Assemble the rest of the values needed for the form.
+    $article_id = $review->article_id;
     $title = htmlspecialchars($review->packet_title);
     $attrs = array('attributes' => array('target' => '_blank'));
-    $ft_url = file_create_url('public://full-text-article-stub.pdf');
-    $pm_url = EbmsReview::pubmed_url($review->article_id);
-    $pm_link = l('VIEW ABSTRACT', $pm_url, $attrs);
-    $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $attrs);
-    $article_id = $review->article_id;
+    $pm_url = EbmsReview::pubmed_url($article_id);
+    $links = l('VIEW ABSTRACT', $pm_url, $attrs);
     $cite = Ebms\Util::get_full_citation($article_id);
+
+    // Add a link for viewing the article's full text (if we have it).
+    $query = db_select('file_managed', 'f');
+    $query->join('ebms_article', 'a', 'a.full_text_id = f.fid');
+    $query->condition('a.article_id', $article_id);
+    $query->fields('f', array('uri'));
+    $results = $query->execute();
+    foreach ($results as $result) {
+        $ft_url = file_create_url($result->uri);
+        $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $attrs);
+        $links .= " &nbsp; | &nbsp; $ft_link";
+    }
+
+    // Assemble and return the form's render array.
     return array(
         '#id' => 'member-review',
         'packet-title' => array(
@@ -1814,7 +1890,7 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
             '#type' => 'markup',
             '#prefix' => '<p id="article-citation">',
             '#suffix' => '</p>',
-            '#markup' => "$cite <br /> $pm_link &nbsp; | &nbsp; $ft_link",
+            '#markup' => "$cite <br /> $links",
         ),
         'packet' => array(
             '#type' => 'hidden',
@@ -1822,7 +1898,7 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         ),
         'article' => array(
             '#type' => 'hidden',
-            '#value' => $review->article_id,
+            '#value' => $article_id,
         ),
         'expanded' => array(
             '#type' => 'hidden',
@@ -2566,30 +2642,4 @@ function pdq_ebms_packet_topic_ajax($form, $form_state) {
 function pdq_ebms_packet_reviewers_ajax($form, $form_state) {
     return $form['board-specific-fields']['topic-specific-fields']
         ['reviewers-div'];
-}
-function pdq_ebms_board_filter_form($form, &$form_state, $opts) {
-    $checked_boards = array();
-    if (isset($opts['query']['boards']))
-        $checked_boards = explode(',', $opts['query']['boards']);
-    $items = array();
-    $boards = Ebms\Util::boards();
-        foreach ($boards as $id => $name) {
-            $href = '';
-            $type = 'type="checkbox"';
-            $onclick = 'onclick=\'location.href="' . $href . '"\'';
-            $onclick = '';
-            $checked = '';
-            if (in_array($id, $checked_boards))
-                $checked = ' checked="checked"';
-            $checkbox = "<input $type $onclick$checked />";
-            $items[] = "$checkbox <span class='board-name'>$name</span>";
-        }
-    $boards = Ebms\Util::boards();
-    return array(
-        'boards' => array(
-            '#type' => 'checkboxes',
-            '#title' => 'Filter by Board',
-            '#options' => $boards,
-        ),
-    );
 }

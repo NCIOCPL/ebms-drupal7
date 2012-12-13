@@ -5,45 +5,95 @@
 /**
  * @file
  *
- * Implementation of EBMS pages for citation management
+ * Implementation of EBMS pages for searching the database for specific
+ * articles.  This story got implemented in the wake of a management
+ * decision that the development for the system had to be completed
+ * by Halloween, drastically collapsing the amount of time available
+ * for the remaining components.  As a result, some significant shortcuts
+ * were taken.  In particular:
+ *
+ *    o We're using Drupal form field appearance/layout, rather than
+ *      customizing the form layout to conform to the designer's
+ *      mockups.
+ *
+ *    o The "Citation Actions" box has not been created.
+ *
+ *    o Tagging articles with stars for bulk processing of a subset
+ *      of a search result set has not been implemented.
+ *
+ *    o Changing of display options on the results page is not supported.
+ *
+ *    o A count of summary topics selected is not displayed when the
+ *      topics block is collapsed.
+ *
+ *    o Only one display format implemented (following the layout given
+ *      in the design mockups).
+ *
+ *    o Sorting of the results set by author is unsupported.
  */
 
 /**
- * Callback registered for /citations pages.
+ * Callback registered for the /citations/search page.
  */
-function pdq_ebms_search($action=null, $id=null) {
+function pdq_ebms_search($id=null) {
     Ebms\Menu::$active = 'Citation Management';
-    switch ($action) {
-        case 'search':
-        case 'refine':
-            $search = new EbmsSearch($action, $id);
-            return $search->run();
-        default:
-            drupal_set_title('Citation Management');
-            return '<i>Stub for \'Citations\' page</i>';
-    }
+    drupal_add_css(Ebms\CSS_DIR . '/search.css');
+    drupal_set_breadcrumb(
+        array(
+            l('Citation Management', 'citations'),
+            'Search Database',
+        )
+    );
+    $search = new EbmsSearch($id);
+    return $search->run();
 }
 
+/**
+ * Wrapper for logic to handle article searching.  Keeps our functions
+ * out of the global namespace with less ugly syntax than the PHP
+ * namespace mechanism provides, and lets us pass around the current
+ * state information more easily.
+ */
 class EbmsSearch {
 
+    // Instance data.
     public
-        $request,
         $parms,
         $search_id;
+
+    // Class data.
     public static $url = 'citations/search';
-    public function __construct($action, $id) {
-        $this->request = $action;
+
+    /**
+     * The $id parameter will be non-null if we are executing or refining
+     * an existing search request.  Otherwise, we're just displaying a
+     * new search request form.
+     */
+    public function __construct($id) {
         $this->search_id = $id;
         $this->parms = drupal_get_query_parameters();
     }
+
+    /**
+     * Three possibilities here.
+     *
+     *   1. We're being asked to execute a search and display the results.
+     *      This is the case when the invoking URL is in the format:
+     *      .../citations/search/<decimal-number>.  The number at the end
+     *      of the URL is the ID for the row in the database table where
+     *      the parameters for the search are stored.
+     *
+     *   2. We're being asked to let the user refine a previous search.
+     *      For this case we get .../citations/search/R<decimal-number>.
+     *      We use that number to pull the search parameters out so we
+     *      can use them to seed the form with the defaults from that
+     *      search.
+     *
+     *   3. If there is no argument embedded in the URL after ../search
+     *      then we just put up a blank form with no default values
+     *      selected.
+     */
     public function run() {
-        drupal_add_css(Ebms\CSS_DIR . '/search.css');
-        drupal_set_breadcrumb(
-            array(
-                l('Citation Management', 'citations'),
-                'Search Database',
-            )
-        );
         $search_id = null;
         if ($this->search_id) {
             if (substr($this->search_id, 0, 1) == 'R')
@@ -59,6 +109,17 @@ class EbmsSearch {
         );
     }
 
+    /**
+     * Pull the json-encoded search parameters from its row in the
+     * ebms_search table.
+     *
+     *  @param int    $search_id   Primary key for ebms_search table
+     *  @param bool   $decode      If true, return the parameters as
+     *                             a PHP dictionary array; otherwise,
+     *                             return them as a json-encoded string,
+     *                             which is how they are stored in the
+     *                             database table.
+     */
     public static function fetch_search_spec($search_id, $decode=true) {
         $json = db_select('ebms_search', 's')
             ->fields('s', array('search_spec'))
@@ -70,11 +131,19 @@ class EbmsSearch {
         return $json;
     }
 
+    /**
+     * Ask the search API to find out which articles match the user's
+     * search criteria, and display the results.
+     */
     function show_search_results() {
+
+        // Ask the search API to construct a database query for the search.
         require_once('EbmsSearch.inc');
         $json = $this->fetch_search_spec($this->search_id, false);
         $spec = drupal_json_decode($json);
         $query = Ebms\getSearchQuery($json);
+
+        // Figure out whether we're going to need paging.
         $counter = $query->countQuery();
         $count = $counter->execute()->fetchField();
         $per_page = $spec['items-per-page'];
@@ -91,6 +160,8 @@ class EbmsSearch {
             $per_page = $count;
         if ($count >= $per_page)
             $query = $query->extend('PagerDefault')->limit($per_page);
+
+        // Execute the query and build up the rows for the results set.
         $results = $query->execute();
         $items = array();
         $page = 0;
@@ -99,6 +170,8 @@ class EbmsSearch {
         $pos = 1 + $page * $per_page;
         foreach ($results as $result)
             $items[] = $this->list_article($result->article_id, $pos++);
+
+        // Assemble the Drupal render array for the page.
         $refine_url = url(EbmsSearch::$url . '/R' . $this->search_id);
         $list = array(
             '#type' => 'container',
@@ -144,20 +217,41 @@ class EbmsSearch {
         $left = Ebms\Util::build_left_nav('Search Database');
         return array($left, $list);
     }
+
+    /**
+     * Assemble the markup for a single article in the search results set.
+     *
+     *  @param  int     $article_id  Primary key into the ebms_article table
+     *  @param  int     $position    Integer showing where the article fits
+     *                               in the result set; displayed to the left
+     *                               the article.
+     *
+     * XXX May want to replace some of the parsing code below when Alan's
+     *     API for getting citation elements is in place.
+     */
     function list_article($article_id, $position) {
+
+        // Pull NLM's XML document for the article from the database
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
             ->condition('a.article_id', $article_id)
             ->execute()
             ->fetchField();
+
+        // Extract the elements that we need from the XML document.
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = htmlspecialchars($article->ArticleTitle);
+        $title = $article->ArticleTitle;
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
         $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
+        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+        $ta = htmlspecialchars($ta);
+        $pmid = $doc->MedlineCitation->PMID;
+
+        // Build up a sequence of author names
         $authors = array();
         if (isset($doc->MedlineCitation->Article->AuthorList->Author)) {
             foreach ($doc->MedlineCitation->Article->AuthorList->Author
@@ -178,9 +272,8 @@ class EbmsSearch {
         }
         if (count($authors) < 1)
             $authors = array('[No authors listed]');
-        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
-        $ta = htmlspecialchars($ta);
-        $pmid = $doc->MedlineCitation->PMID;
+
+        // Create the links we'll need.
         $full_url = 'citations/full/' . $article_id;
         $full_opts = array('query' => array('search' => $this->search_id));
         $title_opts = array(
@@ -190,6 +283,8 @@ class EbmsSearch {
             )
         );
         $title_link = l($title, $full_url, $title_opts);
+
+        // Assemble the markup pieces into an array.
         $pieces = array(
             '<span class="article-number">' . $position . '</span>',
             '<span class="article-citation">',
@@ -206,56 +301,31 @@ class EbmsSearch {
             $pieces[] = ", $year";
         $edit_link = l('EDIT', $full_url, $full_opts);
         $pub_link = l('PUBLISH', $full_url, $full_opts);
-        $ft_link = l('DOWNLOAD FULL TEXT', $full_url, $full_opts);
         $pieces[] = "<br />PMID: $pmid &nbsp; CMS ID: $article_id<br /><br />";
         $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
-            $pmid . '" target="_blank">VIEW ABSTRACT</a> | ';
-        $pieces[] = $ft_link . ' | ';
-        $pieces[] = $edit_link . ' | ';
-        $pieces[] = l('REVIEW', 'citations/review') . ' | ';
-        $pieces[] = $pub_link . '</span></br /><br />&nbsp;';
-        return implode($pieces);
-    }
+            $pmid . '" target="_blank">VIEW ABSTRACT</a>';
+        $ft_uri = Ebms\Util::get_ft_uri($article_id);
+        if ($ft_uri) {
+            $ft_url = file_create_url($ft_uri);
+            $target = array('attributes' => array('target' => '_blank'));
+            $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $target);
+            $pieces[] = ' | ' . $ft_link;
+        }
+        $pieces[] = ' | ' . $edit_link;
+        $pieces[] = ' | ' . l('REVIEW', 'citations/review');
+        $pieces[] = ' | ' . $pub_link . '</span></br /><br />&nbsp;';
 
-    public static function defaults() {
-        return array(
-            'boards' => array(),
-            'topic-logic' => null,
-            'topics' => array(),
-            'pmid' => '',
-            'cms-id' => '',
-            'author' => '',
-            'title' => '',
-            'advanced-options' => array(
-                'fyi-citation' => 0,
-                'journal-exact-match' => 0,
-            ),
-            'journal' => '',
-            'publication-year' => 0,
-            'publication-month' => 0,
-            'review-cycle' => 0,
-            'nci-reviewer-decision' => null,
-            'full-text-retrieved' => null,
-            'committee-decision' => null,
-            'reviewer' => 0,
-            'response' => 0,
-            'decision' => 0,
-            'comments' => '',
-            'comment-added-start' => $no_date,
-            'comment-added-end' => $no_date,
-            'tag-added-start' => $no_date,
-            'tag-added-end' => $no_date,
-            'input-start' => $no_date,
-            'input-end' => $no_date,
-            'use-comment-date-range' => 0,
-            'use-tag-date-range' => 0,
-            'use-comment-date-range' => 0,
-            'tag' => 0,
-        );
+        // Collapse and return the markup.
+        return implode($pieces);
     }
 }
 
+/**
+ * Separate class for the user's parameters in an article search.
+ */
 class EbmsSearchSpec {
+
+    // Default values for when no search parameters have been specified.
     public $no_date = array('year' => 0, 'month' => 0, 'day' => 0);
     public
         $boards = array(),
@@ -291,6 +361,11 @@ class EbmsSearchSpec {
         $sort_by = 'CMS ID#',
         $format = 'Brief',
         $items_per_page = 10;
+
+    /**
+     * Override the default search parameter values if a search ID
+     * is specified, using the values stored in the database.
+     */
     public function __construct($search_id) {
         if ($search_id) {
             $spec = EbmsSearch::fetch_search_spec($search_id);
@@ -432,16 +507,25 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
             'At least one (non-board) search criterion is required.');
 }
 
+/**
+ * Drupal callback for constructing the search request form.
+ */
 function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
+
+    // Get the default values, possibly drawn from a previous search.
     $defaults = new EbmsSearchSpec($search_id);
+
+    // Find out which board are already selected.
     $checked_boards = $defaults->boards;
-    $topics = array();
     if (isset($form_state['values'])) {
         $checked_boards = array();
         foreach ($form_state['values']['boards'] as $id => $val)
             if ($val)
                 $checked_boards[] = $val;
     }
+
+    // Build the topics picklist, based on which boards are selected.
+    $topics = array();
     if (count($checked_boards) > 0) {
         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
@@ -452,6 +536,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
         foreach ($results as $result)
             $topics[$result->topic_id] = $result->topic_name;
     }
+
+    // Build the tag picklist.
     $results = db_select('ebms_article_tag_type', 't')
         ->fields('t', array('tag_id', 'tag_name'))
         ->orderBy('t.tag_name')
@@ -459,6 +545,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $tags = array(0 => ' ');
     foreach ($results as $result)
         $tags[$result->tag_id] = $result->tag_name;
+
+    // Build the picklist for board decisions
     $results = db_select('ebms_article_board_decision_value', 'v')
         ->fields('v', array('value_id', 'value_name'))
         ->orderBy('v.value_name')
@@ -466,6 +554,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $decisions = array(0 => ' ');
     foreach ($results as $result)
         $decisions[$result->value_id] = $result->value_name;
+
+    // Build the picklist for board member reviewer feedback.
     $results = db_select('ebms_review_disposition_value', 'v')
         ->fields('v', array('value_id', 'value_name'))
         ->orderBy('v.value_name')
@@ -473,6 +563,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $responses = array(0 => ' ');
     foreach ($results as $result)
         $responses[$result->value_id] = $result->value_name;
+
+    // Build the picklist for reviewers.
     $query = db_select('users', 'u');
     $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
     $query->fields('u', array('uid', 'name'));
@@ -481,6 +573,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $reviewers = array(0 => ' ');
     foreach ($results as $result)
         $reviewers[$result->uid] = $result->name;
+
+    // Build picklists for the publishing year and month.
     $pub_months = array(0 => ' ');
     for ($i = 1; $i <= 12; ++$i)
         $pub_months[$i] = date('F', mktime(0, 0, 0, $i));
@@ -488,6 +582,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $last_year = 2013;
     for ($i = 1964; $i <= $last_year; ++$i)
         $pub_years[$i] = $i;
+
+    // Build the review cycle picklist.
     $results = db_select('ebms_cycle', 'c')
         ->fields('c', array('cycle_id', 'cycle_name'))
         ->orderBy('c.start_date', 'desc')
@@ -495,6 +591,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $review_cycles = array(0 => ' ');
     foreach ($results as $result)
         $review_cycles[$result->cycle_id] = $result->cycle_name;
+
+    // Assemble the pieces for the search request form.
     return array(
         '#id' => 'search-db-form',
         'page title' => array(
@@ -515,6 +613,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 'wrapper' => 'topics-boxes',
             ),
         ),
+
+        // This part collapses, and is populated dynamically.
         'topics box' => array(
             '#type' => 'fieldset',
             '#title' => 'SUMMARY TOPIC',
@@ -536,6 +636,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#suffix' => '</div>',
             ),
         ),
+
+        // A few straightforward fields.
         'pmid' => array(
             '#type' => 'textfield',
             '#default_value' => $defaults->pmid,
@@ -556,6 +658,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             '#title' => 'TITLE',
             '#default_value' => $defaults->title,
         ),
+
+        // Another collapsible portion of the form.
         'advanced search' => array(
             '#type' => 'fieldset',
             '#title' => 'ADVANCED SEARCH',
@@ -681,6 +785,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 ),
             ),
         ),
+
+        // Yet another collapsible portion.
         'administrator search' => array(
             '#type' => 'fieldset',
             '#title' => 'ADMINISTRATOR SEARCH',
@@ -750,6 +856,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 ),
              ),
         ),
+
+        // Final collapsible section.
         'display options' => array(
             '#type' => 'fieldset',
             '#title' => 'DISPLAY OPTIONS',
@@ -762,7 +870,6 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                     array(
                         'CMS ID#',
                         'PM ID#',
-                        //'Author',
                         'Title',
                         'Journal',
                         'Publication Date',
@@ -799,10 +906,17 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     );
 }
 
+/**
+ * Callback to pull the dynamically build topic section of the search form.
+ */
 function pdq_ebms_db_search_board_ajax($form, $form_state) {
     return $form['topics box']['topics'];
 }
 
+/**
+ * Store the search parameters and come back in with the ID of the
+ * database row where we stored them.
+ */
 function pdq_ebms_search_db_form_submit($form, &$form_state) {
     $spec = drupal_json_encode($form_state['values']);
     global $user;
@@ -819,6 +933,12 @@ function pdq_ebms_search_db_form_submit($form, &$form_state) {
     drupal_goto(EbmsSearch::$url . '/' . $search_id);
 }
 
+/**
+ * Modify Drupal's stock date field.  For one thing, we need to insert
+ * a value at the top of the picklists which mean the user hasn't selected
+ * a value yet.  For another Drupal has too many years, and in the wrong
+ * order.
+ */
 function pdq_ebms_fix_date($element) {
     $years = array(0 => 'YEAR');
     $today = getdate();
@@ -830,6 +950,13 @@ function pdq_ebms_fix_date($element) {
     return $element;
 }
 
+/**
+ * Override Drupal's default date field validation.  It's OK if the
+ * user specifies incomplete values, as long as no fields which are
+ * more granular are specified when less granular fields are not.
+ * For example, you can't search for everything entered on April 1,
+ * regardless of which year.
+ */
 function pdq_ebms_date_validate($element, &$form_state, $form) {
     $y = $element['#value']['year'];
     $m = $element['#value']['month'];

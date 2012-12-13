@@ -270,18 +270,6 @@ class EbmsPublish {
         if ($this->filter_parms['topic'])
             $query->condition('s.topic_id', $this->filter_parms['topic']);
         $query->orderByHeader($headers);
-        // $query->orderBy('a.last_name');
-//         $query = db_select('ebms_post_conversion_state', 's');
-//         $query->join('ebms_last_article_topic_state', 'l',
-//             'l.article_state_id = s.article_state_id');
-//         $query->leftJoin('ebms_article_author_cite', 'c',
-//             'c.article_id = s.article_id AND c.cite_order = 1');
-//         $query->leftJoin('ebms_article_author', 'a',
-//             'a.author_id = c.author_id');
-//         $query->fields('s', array('article_id'));
-//         $query->distinct();
-//         $query->condition('s.state_id', $passed_initial_review);
-//         $query->orderBy('a.last_name');
 
         // Find out how many articles match query (not just for this page).
         $counter = $query->countQuery();
