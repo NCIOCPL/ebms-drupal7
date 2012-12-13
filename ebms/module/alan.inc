@@ -20,6 +20,7 @@ function pdq_ebms_alantest() {
     require_once('EbmsArticle.inc');
     require_once('EbmsImport.inc');
     require_once('EbmsSearch.inc');
+
     pdq_ebms_debug('ALAN POST', $_POST);
     $test = Ebms\Util::get_request_value('test');
     $op = Ebms\Util::get_request_value('op');
@@ -27,7 +28,6 @@ function pdq_ebms_alantest() {
         case 'import':
             if ($op)
                 return pdq_ebms_import_test();
-            // print(drupal_realpath('public://anal-cancer-201202.rtf'));
             return drupal_get_form('ebms_testapi_import_form');
         case 'oldImport':
             if ($op)
@@ -65,6 +65,14 @@ function pdq_ebms_alantest() {
             if ($op)
                 return pdq_ebms_search_test();
             return drupal_get_form('ebms_testapi_search_form');
+        case 'printPkts':
+            if ($op)
+                return pdq_ebms_printpkt_test();
+            return drupal_get_form('ebms_testapi_printpkt_form');
+        case 'fpdf':
+            if ($op)
+                return pdq_ebms_fpdf_test();
+            return drupal_get_form('ebms_testapi_fpdf_form');
         /* Debug board picker
         case 'pickBoard':
             if ($op) return test_pickBoard_test();
@@ -386,6 +394,76 @@ logw($qryVal);
     return $html;
 }
 
+/**
+ * Function to process print request.
+ */
+function pdq_ebms_printpkt_test() {
+
+    global $user;
+    $userId = $user->uid;
+
+    // Get all form parameters
+    $boardInfo  = boardRequest();
+    $boardId    = $boardInfo['boardId'];
+    $memberName = Ebms\Util::get_request_value('memberId');
+    $packetId   = Ebms\Util::get_request_value('packetId');
+    $startDt    = Ebms\Util::get_request_value('startDate');
+    $endDt      = Ebms\Util::get_request_value('endDate');
+    $oldJobId   = Ebms\Util::get_request_value('oldJobId');
+    $jobMode    = Ebms\Util::get_request_value('jobMode');
+    $comment    = Ebms\Util::get_request_value('comment');
+
+    // Normalize
+    if ($memberName) {
+        $memberId = db_query(
+            'SELECT uid FROM {users} WHERE name = :memberName',
+            array(':memberName' => $memberName));
+    }
+    else $memberId = null;
+
+    if (!$packetId) $packetId = null;
+    if (!$startDt)  $startDt  = null;
+    if (!$endDt)    $endDt    = null;
+    if (!$oldJobId) $oldJobId = null;
+    if (!$jobMode)  $jobMode  = null;
+    if (!$comment)  $comment  = null;
+
+    // Derive the print job type
+    $jobType = 'board';
+    if (!is_null($packetId))
+        $jobType = 'packet';
+    else if (!is_null($memberId))
+        $jobType = 'member';
+    else if (!is_null($boardId))
+        $job_type = 'board';
+    else if (is_null($oldJobId))
+        throw new \Exception(
+            "Must specify board, member, packet or old job ID");
+
+    // Create a new job, ready to run
+    $qry = db_insert('ebms_print_job')
+      ->fields(array(
+              'old_job_id'        => $oldJobId,
+              'user_id'           => $userId,
+              'print_job_type_id' => $jobType,
+              'packet_start_dt'   => $startDt,
+              'packet_end_dt'     => $endDt,
+              'print_dt'          => null,
+              'board_id'          => $boardId,
+              'board_member_id'   => $memberId,
+              'packet_id'         => $packetId,
+              'mode'              => $jobMode,
+              'comment'           => $comment,
+              'status'            => 'queued')
+          );
+    $jobId = $qry->execute();
+
+    // For API test, we'll execute the print job directly
+    require('EbmsPrint.inc');
+
+    return "Email sent to user";
+}
+
 function pdq_ebms_show_dummy_test_results($title, $test) {
     $header = array('Who', 'What', 'When', 'Where');
     $rows = array(
@@ -419,6 +497,8 @@ function pdq_ebms_api_tests() {
         array('Add another comment to a descriptive tag', 'addTagComment'),
         array('Inactivate a descriptive tag and its comments', 'inactivateTag'),
         array('Execute a stored search', 'execSearch'),
+        array('Run a packet printing job', 'printPkts'),
+        array('Test to see if fpdf is accessible', 'fpdf'),
         // array('Pick a board', 'pickBoard'),
     );
     foreach ($tests as $test) {
@@ -464,7 +544,8 @@ function ebms_testapi_import_form($form) {
         '#type' => 'textfield',
         '#size' => 6,
         '#title' => 'Topic id',
-        '#description' => 'Numerical summary topic ID for import (I\'ll make a drop down only if we need it.)',
+        '#description' => 'Numerical summary topic ID for import ' .
+            '(I\'ll make a drop down only if we need it.)',
         '#required' => true,
     );
 
@@ -797,7 +878,7 @@ function ebms_testapi_search_form($form) {
     $form = array();
     $form['title'] = array(
         '#type' => 'markup',
-        '#markup' => '<h3>Test the search API.</h3>'
+        '#markup' => '<h3>Test the search API</h3>'
     );
 
     $form['srchId'] = array(
@@ -813,6 +894,113 @@ function ebms_testapi_search_form($form) {
 
     return $form;
 }
+
+/**
+ * Form for packet printing test.
+ */
+function ebms_testapi_printpkt_form($form) {
+
+    $form = array();
+    $form['title'] = array(
+        '#type' => 'markup',
+        '#markup' => '<h3>Test packet printing</h3>'
+    );
+
+    addBoardIdToForm($form,
+        'To print all packets for a board, select a  board name');
+
+    addMemberIdToForm($form,
+        'To print packets for a single board member, select a member name  ' .
+        'If the person is a member of more than one board, enter board name ' .
+        'above.');
+
+    $form['packetId'] = array(
+        '#type' => 'textfield',
+        '#size' => 8,
+        '#title' => 'Packet internal id',
+        '#description' => 'To print a single packet, regardless of board ' .
+            'or board member, enter the packet internal integer ID.  ' .
+            'Board and member names will be ignored.',
+        '#required' => false
+    );
+
+    $form['startDate'] = array(
+        '#type' => 'textfield',
+        '#size' => 16,
+        '#title' => 'Take packets from on or after this date',
+        '#description' => 'Optionally, print packets created on or after '.
+            'the specified date, entered as "YYYYMMDD {HH:MM:SS}".  ' .
+            'Default is the datetime immediately after the last packet
+            printing for the specified board or member.  ' .
+            'Hours:Minutes:Seconds are optional',
+        '#required' => false
+    );
+
+    $form['endDate'] = array(
+        '#type' => 'textfield',
+        '#size' => 16,
+        '#title' => 'Take packets created before this date',
+        '#description' => 'Optionally, print packets created before '.
+            'the specified date, entered as "YYYYMMDD {HH:MM:SS}".  ' .
+            'Default is right now.',
+        '#required' => false
+    );
+
+    $form['oldJobId'] = array(
+        '#type' => 'textfield',
+        '#size' => 6,
+        '#title' => 'Old print job ID',
+        '#description' => 'Optionally, the ID of a print job to be re-run  ' .
+            'If supplied, all other parameters are ignored and the ' .
+            'parameters of the old job are re-used.',
+        '#required' => false
+    );
+
+    $form['jobMode'] = array(
+        '#type' => 'select',
+        '#title' => 'Job mode',
+        '#description' => 'Test mode shows what would print without ' .
+            'producing all of the printable documents.  Live mode ' .
+            'produces all of the documents and updates the database ' .
+            'to record what was printed.',
+        '#options' => array('test' => 'Test', 'live' => 'Live'),
+        '#default_value' => 'test',
+        '#required' => true
+    );
+
+    addCommentToForm($form,
+            'Store this comment in the record for this print job');
+
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Submit'
+    );
+
+    return $form;
+}
+
+/**
+ * Dumb tester for fpdf, just to see if it works.
+ */
+function ebms_testapi_fpdf_form($form) {
+
+    $form = array();
+    $form['title'] = array(
+        '#type' => 'markup',
+        '#markup' => '<h3>Create a simple pdf file with fpdf</h3>'
+    );
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#description' =>
+            'Click submit to create a trivial file named /tmp/fpdftest.pdf',
+        '#value' => 'Submit'
+    );
+
+    return $form;
+}
+
 
 /**
  * Create form elements to get an article ID or Pubmed ID.
@@ -956,6 +1144,26 @@ function addTagIdToForm(&$form) {
 }
 
 /**
+ * Add a selection list of board memberss to a form
+ *
+ *  @param array reference $form   Add the elements to this form.
+ *  @param string $desc            Description of input element.
+ */
+function addMemberIdToForm(&$form, $desc) {
+
+    // List of board names
+    $members = getAllBoardMembers();
+
+    $form['memberId'] = array(
+        '#type' => 'select',
+        '#title' => 'Board member name',
+        '#description' => $desc,
+        '#options' => $members,
+        '#required' => false
+    );
+}
+
+/**
  * Add a form element to get an article tag ID.
  *
  *  @param array reference $form   Add the element to this form.
@@ -1060,6 +1268,29 @@ function getAllBoards() {
     return $boardNames;
 }
 
+/**
+ * Get an array of all board members from the database.
+ *
+ * @return array        All member names, in alpha order.
+ */
+function getAllBoardMembers() {
+
+    // Create array with blank first line
+    $memberNames = array();
+    $memberNames[] = '';
+
+    $result = db_query('
+        SELECT name
+          FROM {users} u
+          JOIN {ebms_board_member} m
+            ON u.uid = m.user_id
+      ORDER BY u.name');
+    foreach ($result as $row)
+        $memberNames[] = $row->name;
+
+    return $memberNames;
+}
+
 // Return array of board name, ID, using addBoardIdToForm/getAllBoards
 function boardRequest() {
     $allBoards  = getAllBoards();
@@ -1154,7 +1385,66 @@ function test_pickBoard_test() {
     if (is_null($boardId))
         $result .= "  boardId is null";
 
-logw($result);
     return $result;
 }
 
+/**
+ * Dumb tester for fpdf, copied from /home/alan/test/php/fpdftest.php.
+ * XXX We can remove this and related code when fpdf is working.
+ */
+function pdq_ebms_fpdf_test() {
+    require('fpdf/fpdf.php');
+
+    // Start a document orientation=Portrait, measure=points, papersize=Letter
+    $pdf = new FPDF('P', 'pt', 'Letter');
+
+    // Page 1
+    $pdf->AddPage();
+
+    $topMargin  = 70;
+    $leftMargin = 70;
+    $rightMargin = 540;
+    $bottomMargin = 720;
+
+    $pdf->SetTopMargin($topMargin);
+    $pdf->SetLeftMargin($leftMargin);
+
+    // Title of the response sheet, Arial, Bold, 16 point
+    $pdf->SetFont('Arial','B',16);
+    $pdf->setXY($leftMargin, $topMargin);
+    $pdf->Write(15, 'TOENAIL CANCER (MARCH 2011)');
+    $pdf->Line($leftMargin, $topMargin + 20, $rightMargin, $topMargin + 20);
+    $pdf->Ln();
+
+    $pdf->SetFont('Arial','B',14);
+    $pdf->Write(35, 'ARTICLE 1 OF 7');
+    $pdf->Ln();
+
+    $pdf->SetLeftMargin($leftMargin + 10);
+    $pdf->SetFont('Arial', '', 14);
+    $pdf->Write(20, 'Blow j; Doe JT; Filbert FX');
+    $pdf->Ln();
+    $pdf->SetY($pdf->GetY() + 10);
+    $pdf->Write(22, 'This is a fairly long title that I am going to allow to wrap
+    around until it overflows the right margin to see what fpdf does with it.');
+    $pdf->Ln();
+    $pdf->SetY($pdf->GetY() + 10);
+    $pdf->Write(22, 'Here is the journal brief citation');
+
+    // ... More stuff here ...
+    $pdf->Ln();
+    $pdf->SetY($pdf->GetY() + 10);
+
+    $pdf->SetLeftMargin($leftMargin);
+    $pdf->SetX($leftMargin);
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Write(22, 'Summary Topic(s): ');
+    $pdf->SetFont('Times', '', 13);
+    $pdf->Write(22, 'Toenail Cancer, Anal Cancer, Colon Cancer');
+
+
+    // $pdf->Output("/home/alan/test/test1.pdf");
+    $pdf->Output("/tmp/fpdftest.pdf");
+
+    return 'See if /tmp/fpdftest.pdf exists.';
+}
