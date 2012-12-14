@@ -172,12 +172,12 @@ function pdq_ebms_about() {
         $markup[] = '<p class="board-desc">' . $board[1] . '</p>';
         $markup[] = '<p class="board-person">Editor-in-Chief: ' .
             //'<a href="mailto:' . $board[4][1] . '">' .
-            strtoupper($board[4][0] .
+            $board[4][0] .
             //'</a>' .
-            '</p>');
+            '</p>';
         $markup[] = '<p class="board-person">Board Manager: ' .
             '<a href="mailto:' . $board[5][1] . '">' .
-            strtoupper($board[5][0] . '</a></p>');
+            $board[5][0] . '</a></p>';
         $markup[] = '<p class="board-links"><a href="http://www.cancer.gov' .
             '/cancertopics/pdq/' . $board[3] . '-board" target="_blank">' .
             'View Board Roster</a>';
