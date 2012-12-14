@@ -901,6 +901,13 @@ function pdq_embs_profile_membership_form($form, &$form_state, $uid) {
         ->fields('u', array('name'))
         ->execute()
         ->fetchField();
+    drupal_set_breadcrumb(
+        array(
+            l('Home', 'home'),
+            l('User Profiles', EbmsProfile::$url . '/all'),
+            $name,
+        )
+    );
     $name = htmlspecialchars($name);
     $results = db_select('ebms_board_member', 'm')
         ->condition('m.user_id', $uid)
