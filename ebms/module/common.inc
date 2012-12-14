@@ -1098,19 +1098,19 @@ class Util {
         $wrapper->field_title->set($node->title);
 
         // retrieve boards
-        $node_boards = field_get_items('ebms_event', $node, 'board');
+        $node_boards = field_get_items('node', $node, 'field_boards');
         if ($node_boards) {
             $wrapper->board->set($node_boards);
         }
 
         // retrieve subgroups
-        $node_subgroups = field_get_items('ebms_event', $node, 'subgroup');
+        $node_subgroups = field_get_items('node', $node, 'field_subgroups');
         if ($node_subgroups) {
             $wrapper->subgroup->set($node_subgroups);
         }
 
         // retrieve ad-hoc groups
-        $node_adhoc_groups = field_get_items('ebms_event', $node, 'adhoc_group');
+        $node_adhoc_groups = field_get_items('node', $node, 'field_ad_hoc_groups');
         if ($node_adhoc_groups) {
             $wrapper->adhoc_group->set($node_adhoc_groups);
         }
@@ -1129,19 +1129,19 @@ class Util {
         $wrapper->field_title->set($node->title);
 
         // retrieve boards
-        $node_boards = field_get_items('ebms_event', $node, 'board');
+        $node_boards = field_get_items('node', $node, 'field_boards');
         if ($node_boards) {
             $wrapper->board->set($node_boards);
         }
 
         // retrieve subgroups
-        $node_subgroups = field_get_items('ebms_event', $node, 'subgroup');
+        $node_subgroups = field_get_items('node', $node, 'field_subgroups');
         if ($node_subgroups) {
             $wrapper->subgroup->set($node_subgroups);
         }
 
         // retrieve ad-hoc groups
-        $node_adhoc_groups = field_get_items('ebms_event', $node, 'adhoc_group');
+        $node_adhoc_groups = field_get_items('node', $node, 'field_ad_hoc_groups');
         if ($node_adhoc_groups) {
             $wrapper->adhoc_group->set($node_adhoc_groups);
         }

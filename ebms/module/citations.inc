@@ -3328,8 +3328,8 @@ namespace {
                         ->entityCondition('entity_type', 'node')
                         ->entityCondition('bundle', 'ebms_event')
                         ->propertyCondition('status', '1')
-                        ->fieldCondition('event_date', 'value', time(), '>')
-                        ->fieldOrderBy('event_date', 'value')
+                        ->fieldCondition('field_datespan', 'value', time(), '>')
+                        ->fieldOrderBy('field_datespan', 'value')
                         ->entityOrderBy('entity_id');
 
                     $result = $query->execute();
@@ -3347,8 +3347,8 @@ namespace {
                         ->entityCondition('entity_type', 'node')
                         ->entityCondition('bundle', 'ebms_event')
                         ->propertyCondition('status', '1')
-                        ->fieldCondition('event_date', 'value2', time(), '<')
-                        ->fieldOrderBy('event_date', 'value', 'DESC')
+                        ->fieldCondition('field_datespan', 'value2', time(), '<')
+                        ->fieldOrderBy('field_datespan', 'value', 'DESC')
                         ->entityOrderBy('entity_id', 'DESC');
 
                     $result = $query->execute();

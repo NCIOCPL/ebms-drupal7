@@ -88,8 +88,8 @@ function _ebms_install_create_recent_activity() {
         }
     }
 
-    global $recent_activity_fields;
-    _ebms_enable_fields($recent_activity_fields);
+    global $ebms_entity_fields;
+    _ebms_enable_fields($ebms_entity_fields);
 
 
 
@@ -100,19 +100,19 @@ function _ebms_install_create_recent_activity() {
     $message->save();
 
     $wrapper = entity_metadata_wrapper('message', $message);
-    $wrapper->board->set(array(2, 3));
+    $wrapper->board->set(array(1, 2));
     $wrapper->save();
 
     $message = message_load($message->mid);
 
-    dsm($message, 'test message');
+    //dsm($message, 'test message');
 }
 
 function _ebms_install_add_event_fields() {
-    global $ebms_event_fields;
+    global $ebms_node_fields;
 
     node_types_rebuild();
-    _ebms_enable_fields($ebms_event_fields);
+    _ebms_enable_fields($ebms_node_fields);
 }
 
 /**

@@ -19,9 +19,9 @@ function _calendar_get_upcoming_events() {
         ->entityCondition('entity_type', 'node')
         ->entityCondition('bundle', 'ebms_event')
         ->propertyCondition('status', '1')
-        ->fieldCondition('event_date', 'value2', time(), '>')
+        ->fieldCondition('field_datespan', 'value2', time(), '>')
         ->range(0, 6)
-        ->fieldOrderBy('event_date', 'value')
+        ->fieldOrderBy('field_datespan', 'value')
         ->entityOrderBy('entity_id');
 
     $result = $query->execute();
@@ -33,7 +33,7 @@ function _calendar_get_upcoming_events() {
     $events = entity_load('node', $eventNids);
     $groupedResults = array();
     foreach ($events as $event) {
-        $event_date = field_get_items('node', $event, 'event_date');
+        $event_date = field_get_items('node', $event, 'field_datespan');
         if ($event_date === false) {
             watchdog("ebms - calendar", 'bad event date');
             continue;
@@ -88,7 +88,7 @@ function ebms_calendar_left_nav($span = null) {
         foreach ($events as $event) {
             $path = "node/$event->nid";
 
-            $event_date = field_get_items('node', $event, 'event_date');
+            $event_date = field_get_items('node', $event, 'field_datespan');
             if ($event_date === false)
                 continue;
 
@@ -114,7 +114,7 @@ function ebms_calendar_left_nav($span = null) {
             $titleLink = l($event->title, $path);
             $output[] = "<li class='first last'>$titleLink</li>";
 
-            $event_type = field_get_items('node', $event, 'event_date');
+            $event_type = field_get_items('node', $event, 'field_event_type');
             if ($event_type === false)
                 continue;
 
@@ -196,8 +196,8 @@ function calendar_node_form_alter(&$form, &$form_state) {
         $date = new DateTime($dateTime);
         $timestamp = $date->getTimestamp();
 
-        $form['event_date']['und'][0]['#default_value']['value'] = $timestamp;
-        $form['event_date']['und'][0]['#default_value']['value2'] = $timestamp;
+        $form['field_datespan']['und'][0]['#default_value']['value'] = $timestamp;
+        $form['field_datespan']['und'][0]['#default_value']['value2'] = $timestamp;
     }
 
     drupal_add_css(Ebms\CSS_DIR . '/calendar.css');
@@ -221,30 +221,30 @@ function calendar_node_form_alter(&$form, &$form_state) {
         }
     }
 
-    $inhouseChosen = field_get_items('node', $node, 'inhouse_staff');
+    $inhouseChosen = field_get_items('node', $node, 'field_inhouse_staff');
     $inhouseDefaults = array();
     if ($inhouseChosen)
         foreach ($inhouseChosen as $chosen) {
             $inhouseDefaults[] = $chosen['value'];
         }
 
-    $form['inhouse_staff']['und']['#options'] = $inhouse;
-    $form['inhouse_staff']['und']['#multiple'] = true;
+    $form['field_inhouse_staff']['und']['#options'] = $inhouse;
+    $form['field_inhouse_staff']['und']['#multiple'] = true;
     if (!empty($inhouseDefaults))
-        $form['inhouse_staff']['und']['#default_value'] = $inhouseDefaults;
+        $form['field_inhouse_staff']['und']['#default_value'] = $inhouseDefaults;
 
 
-    $chosenMembers = field_get_items('node', $node, 'board_members');
+    $chosenMembers = field_get_items('node', $node, 'field_board_members');
     $defaultMembers = array();
     if ($chosenMembers)
         foreach ($chosenMembers as $chosen) {
             $defaultMembers[] = $chosen['value'];
         }
 
-    $form['board_members']['und']['#options'] = $boardMembers;
-    $form['board_members']['und']['#multiple'] = true;
+    $form['field_board_members']['und']['#options'] = $boardMembers;
+    $form['field_board_members']['und']['#multiple'] = true;
     if (!empty($inhouseDefaults))
-        $form['board_members']['und']['#default_value'] = $defaultMembers;
+        $form['field_board_members']['und']['#default_value'] = $defaultMembers;
 
     return $form;
 }

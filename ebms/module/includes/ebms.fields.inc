@@ -5,14 +5,14 @@
  * and open the template in the editor.
  */
 
-$GLOBALS['ebms_event_fields'] = array(
+$GLOBALS['ebms_node_fields'] = array(
 // event date - 3 fields
 // time - from and to, am | pm
     array(
         'label' => t('Event Date'),
         'entity_type' => 'node',
         'description' => t('Date of the event.'),
-        'field_name' => 'event_date',
+        'field_name' => 'field_datespan',
         'required' => TRUE,
         'type' => 'datestamp',
         'widget' => array(
@@ -45,7 +45,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => t('Event Type'),
         'entity_type' => 'node',
         'description' => t('Select between an in-person or a remote webex/telephone conference.'),
-        'field_name' => 'event_type',
+        'field_name' => 'field_event_type',
         'required' => TRUE,
         'type' => 'list_text',
         'cardinality' => 1,
@@ -68,7 +68,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => t('Board'),
         'entity_type' => 'node',
         'description' => t('Select an editorial board.'),
-        'field_name' => 'board',
+        'field_name' => 'field_boards',
         'required' => FALSE,
         'type' => 'list_integer',
         'cardinality' => FIELD_CARDINALITY_UNLIMITED,
@@ -89,7 +89,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => t('Subgroup'),
         'entity_type' => 'node',
         'description' => t('Select from the available subgroups.'),
-        'field_name' => 'subgroup',
+        'field_name' => 'field_subgroups',
         'required' => FALSE,
         'type' => 'list_integer',
         'cardinality' => FIELD_CARDINALITY_UNLIMITED,
@@ -110,7 +110,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => t('Ad-Hoc Group'),
         'entity_type' => 'node',
         'description' => t('Select from the available ad-hoc groups.'),
-        'field_name' => 'adhoc_group',
+        'field_name' => 'field_ad_hoc_groups',
         'required' => FALSE,
         'type' => 'list_integer',
         'cardinality' => FIELD_CARDINALITY_UNLIMITED,
@@ -138,7 +138,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => t('In-House Staff'),
         'entity_type' => 'node',
         'description' => t('Select from the available in-house staff.'),
-        'field_name' => 'inhouse_staff',
+        'field_name' => 'field_inhouse_staff',
         'required' => FALSE,
         'type' => 'list_integer',
         'cardinality' => FIELD_CARDINALITY_UNLIMITED,
@@ -157,7 +157,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => t('Board Members'),
         'entity_type' => 'node',
         'description' => t('Select from the available board members.'),
-        'field_name' => 'board_members',
+        'field_name' => 'field_board_members',
         'required' => FALSE,
         'type' => 'list_integer',
         'cardinality' => FIELD_CARDINALITY_UNLIMITED,
@@ -176,7 +176,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => t('Agenda'),
         'entity_type' => 'node',
         //'description' => t('The agenda for the event.'),
-        'field_name' => 'event_agenda',
+        'field_name' => 'field_agenda',
         'required' => FALSE,
         'type' => 'text_long',
         'cardinality' => 1,
@@ -195,7 +195,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => 'Meeting Documents',
         'entity_type' => 'node',
         'description' => t('Documents relating to this event.'),
-        'field_name' => 'event_document',
+        'field_name' => 'field_documents',
         'cardinality' => FIELD_CARDINALITY_UNLIMITED,
         'type' => 'file',
         'settings' => array(
@@ -219,7 +219,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'label' => t('Notes'),
         'entity_type' => 'node',
         //'description' => t('Any related notes for the event.'),
-        'field_name' => 'event_notes',
+        'field_name' => 'field_notes',
         'required' => FALSE,
         'type' => 'text_long',
         'cardinality' => 1,
@@ -234,10 +234,29 @@ $GLOBALS['ebms_event_fields'] = array(
             'ebms_event',
         ),
     ),
+    // individuals (list of uids)
+    array(
+        'label' => t('Individuals'),
+        'entity_type' => 'node',
+        'description' => t('Select from the available users.'),
+        'field_name' => 'field_individuals',
+        'required' => FALSE,
+        'type' => 'list_integer',
+        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+        'widget' => array(
+            'weight' => 9,
+            'type' => 'options_select',
+        ),
+        'settings' => array(
+        ),
+        'bundles' => array(
+        // add bundles as needed
+        ),
+    ),
 );
 
 // this global array will be filled with midifications of the array above
-$GLOBALS['recent_activity_fields'] = array(
+$GLOBALS['ebms_entity_fields'] = array(
     array(
         'label' => t('Title'),
         'entity_type' => 'message',
@@ -259,11 +278,12 @@ $GLOBALS['recent_activity_fields'] = array(
     ),
 );
 
-foreach ($GLOBALS['ebms_event_fields'] as $field) {
+foreach ($GLOBALS['ebms_node_fields'] as $field) {
     switch ($field['field_name']) {
-        case 'board':
-        case 'subgroup':
-        case 'adhoc_group':
+        case 'field_boards':
+        case 'field_subgroups':
+        case 'field_ad_hoc_groups':
+        case 'field_individuals':
             $messageField = $field;
             $messageField['entity_type'] = 'message';
             $messageField['bundles'] = array(
@@ -272,7 +292,7 @@ foreach ($GLOBALS['ebms_event_fields'] as $field) {
                 'activity_cancelled_event',
             );
 
-            $GLOBALS['recent_activity_fields'][] = $messageField;
+            $GLOBALS['ebms_entity_fields'][] = $messageField;
 
             break;
     }
