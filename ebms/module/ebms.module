@@ -933,6 +933,8 @@ function ebms_init() {
     drupal_add_js(Ebms\JS_DIR . '/ebms.js');
     drupal_add_css("$sflib/css/superfish.css");
     if ($user->uid) {
+        
+        // $user->ebms_boards
         $result = db_select('ebms_board_member', 'm')
             ->fields('m', array('board_id'))
             ->condition('m.user_id', $user->uid)
@@ -940,6 +942,8 @@ function ebms_init() {
         $user->ebms_boards = array();
         foreach ($result as $record)
             $user->ebms_boards[] = $record->board_id;
+        
+        // $user->ebms_subgroups
         $result = db_select('ebms_subgroup_member', 'm')
             ->fields('m', array('sg_id'))
             ->condition('m.user_id', $user->uid)
@@ -947,6 +951,15 @@ function ebms_init() {
         $user->ebms_subgroups = array();
         foreach ($result as $record)
             $user->ebms_subgroups[] = $record->sg_id;
+        
+        // $user->ebms_ad_hoc_groups
+        $result = db_select('ebms_ad_hoc_group_member', 'm')
+        ->fields('m', array('group_id'))
+                ->condition('m.user_id', $user->uid)
+                        ->execute();
+        $user->ebms_ad_hoc_groups = array();
+        foreach ($result as $record)
+            $user->ebms_ad_hoc_groups[] = $record->group_id;
     }
 }
 
@@ -1205,7 +1218,7 @@ function ebms_subgroup_allowed_values_callback($field) {
  * 
  * @param type $field The field this is controlling.
  */
-function ebms_adhoc_group_allowed_values_callback($field) {
+function ebms_ad_hoc_group_allowed_values_callback($field) {
     $results = db_select('ebms_ad_hoc_group', 'g')
             ->fields('g', array('group_id', 'group_name'))
             ->orderBy('g.group_name')
