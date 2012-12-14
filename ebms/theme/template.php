@@ -388,8 +388,13 @@ function preprocess_ebms_event(&$variables) {
     $board = field_get_items('node', $node, 'board');
     $variables['boardName'] = null;
     if ($board) {
-        $boardId = $board[0]['value'];
-        $variables['boardName'] = Ebms\getBoardNameById($boardId);
+        $values = array();
+        foreach($board as $key => $data){
+            $value = field_view_value('node', $node, 'board', $data);
+            $values[] = render($value);
+        }
+                
+        $variables['boardName'] = implode(', ', $values);
     }
 
     $eventNotes = field_get_items('node', $node, 'event_notes');

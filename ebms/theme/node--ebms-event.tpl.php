@@ -45,7 +45,7 @@
         <div class='indent trailing'> <?php print $eventType; ?> </div>
 
         <?php if ($boardName) : ?>
-            <div class='indent subheader'>Board</div>
+            <div class='indent subheader'>Boards</div>
             <div class='indent trailing'><?php print $boardName; ?></div>
             <?php
         endif;

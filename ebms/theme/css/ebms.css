@@ -540,6 +540,11 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
 .ebms-block-body p a { font-size: 16px; }
 .ebms-block-bottom { margin: 0; padding: 0; border: none; display: block; }
 
+#activity-enclosure.ebms-block p{
+    margin: 0;
+    padding: 0;
+}
+
 /* HOME PAGE */
 body.front div.region-content {
     float: left; margin: 0 0 50px 0; padding-right: 0;
