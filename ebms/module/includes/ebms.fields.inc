@@ -80,7 +80,8 @@ $GLOBALS['ebms_event_fields'] = array(
             'allowed_values_function' => 'ebms_board_allowed_values_callback',
         ),
         'bundles' => array(
-            'ebms_event'
+            'ebms_event',
+            'forum',
         ),
     ),
 // subgroup board - limited to those appropriate for editorial board if chosen
@@ -100,7 +101,8 @@ $GLOBALS['ebms_event_fields'] = array(
             'allowed_values_function' => 'ebms_subgroup_allowed_values_callback',
         ),
         'bundles' => array(
-            'ebms_event'
+            'ebms_event',
+            'forum',
         ),
     ),
 // ad-hoc group
@@ -117,12 +119,20 @@ $GLOBALS['ebms_event_fields'] = array(
             'type' => 'options_select',
         ),
         'settings' => array(
-            'allowed_values_function' => 'ebms_adhoc_group_allowed_values_callback',
+            'allowed_values_function' => 'ebms_ad_hoc_group_allowed_values_callback',
         ),
         'bundles' => array(
-            'ebms_event'
+            'ebms_event',
+            'forum',
         ),
     ),
+    // Individuals who can be selected
+    /*array(
+        'label' => t('Individual Recipients'),
+        'entity_type' => 'node',
+        'description' => t('Select from the list of individual recipients.'),
+        'field_name' => ''
+    ),*/
 // in-house staff (board managers, medical librarians, administrators)
     array(
         'label' => t('In-House Staff'),
