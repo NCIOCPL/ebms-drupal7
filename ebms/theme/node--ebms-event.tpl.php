@@ -16,13 +16,13 @@
     <div id='event-pager'>
         <div id='nav-previous-event'>
             <?php
-            if ($prevNode)
+            if (isset($prevNode))
                 print l('<', "node/$prevNode");
             ?>
         </div>
         <div id='nav-following-event'>
             <?php
-            if ($nextNode)
+            if (isset($nextNode))
                 print l('>', "node/$nextNode");
             ?>
         </div>

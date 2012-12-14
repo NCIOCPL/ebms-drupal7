@@ -284,7 +284,7 @@ function preprocess_ebms_event(&$variables) {
     $node = $variables['node'];
     
     // retrieve the needed values for the template
-    $eventDate = field_get_items('node', $node, 'event_date');
+    $eventDate = field_get_items('node', $node, 'field_datespan');
     $variables['eventDate'] = 'unknown';
     $variables['eventTime'] = 'unknown';
     if ($eventDate) {
@@ -323,8 +323,8 @@ function preprocess_ebms_event(&$variables) {
             ->entityCondition('entity_type', 'node')
             ->entityCondition('bundle', 'ebms_event')
             ->propertyCondition('status', '1')
-            ->fieldCondition('event_date', 'value', $startDate, '<')
-            ->fieldOrderBy('event_date', 'value', 'DESC')
+            ->fieldCondition('field_datespan', 'value', $startDate, '<')
+            ->fieldOrderBy('field_datespan', 'value', 'DESC')
             ->entityOrderBy('entity_id')
             ->range(0, 1);
 
@@ -339,7 +339,7 @@ function preprocess_ebms_event(&$variables) {
             ->entityCondition('entity_type', 'node')
             ->entityCondition('bundle', 'ebms_event')
             ->propertyCondition('status', '1')
-            ->fieldCondition('event_date', 'value', $startDate)
+            ->fieldCondition('field_datespan', 'value', $startDate)
             ->entityOrderBy('entity_id');
 
         $currResult = $currQuery->execute();
@@ -352,8 +352,8 @@ function preprocess_ebms_event(&$variables) {
             ->entityCondition('entity_type', 'node')
             ->entityCondition('bundle', 'ebms_event')
             ->propertyCondition('status', '1')
-            ->fieldCondition('event_date', 'value', $startDate, '>')
-            ->fieldOrderBy('event_date', 'value')
+            ->fieldCondition('field_datespan', 'value', $startDate, '>')
+            ->fieldOrderBy('field_datespan', 'value')
             ->entityOrderBy('entity_id')
             ->range(0, 1);
 
@@ -380,29 +380,29 @@ function preprocess_ebms_event(&$variables) {
         $variables['nextNode'] = $nextNode;
     }
 
-    $eventType = field_get_items('node', $node, 'event_type');
+    $eventType = field_get_items('node', $node, 'field_event_type');
     $variables['eventType'] = 'In Person';
     if ($eventType[0]['value'] != 'in_person')
         $variables['eventType'] = 'Webex/Phone Conference';
 
-    $board = field_get_items('node', $node, 'board');
+    $board = field_get_items('node', $node, 'field_boards');
     $variables['boardName'] = null;
     if ($board) {
         $values = array();
         foreach($board as $key => $data){
-            $value = field_view_value('node', $node, 'board', $data);
+            $value = field_view_value('node', $node, 'field_boards', $data);
             $values[] = render($value);
         }
                 
         $variables['boardName'] = implode(', ', $values);
     }
 
-    $eventNotes = field_get_items('node', $node, 'event_notes');
+    $eventNotes = field_get_items('node', $node, 'field_notes');
     $variables['eventNotes'] = null;
     if ($eventNotes)
         $variables['eventNotes'] = $eventNotes[0]['value'];
 
-    $agenda = field_get_items('node', $node, 'event_agenda');
+    $agenda = field_get_items('node', $node, 'field_agenda');
     $variables['agenda'] = null;
     if ($agenda)
         $variables['agenda'] = $agenda[0]['value'];
@@ -427,8 +427,8 @@ function preprocess_ebms_event(&$variables) {
 
     $variables['creator'] = $isCreator;
 
-    $inhouseStaff = field_get_items('node', $node, 'inhouse_staff');
-    $boardMembers = field_get_items('node', $node, 'board_members');
+    $inhouseStaff = field_get_items('node', $node, 'field_inhouse_staff');
+    $boardMembers = field_get_items('node', $node, 'field_board_members');
 
     $individuals = array();
     if ($inhouseStaff) {
@@ -451,7 +451,7 @@ function preprocess_ebms_event(&$variables) {
     $variables['individuals'] = implode(', ', $individualNames);
 
     // build links to the various documents
-    $documents = field_get_items('node', $node, 'event_document');
+    $documents = field_get_items('node', $node, 'field_documents');
     $docLinks = array();
     if ($documents)
         foreach ($documents as $document) {
