@@ -236,7 +236,12 @@ class EbmsHomePage {
         return $this->list_block('Recent Activity', 'recent-activity', $items);*/
         
         $view = views_get_view('recent_activity');
-        $display = $view->preview('activity_block');
+        
+        $display = "";
+        
+        if ($view) {
+            $display = $view->preview('activity_block');
+        }
         
         return array(
             '#markup' => "<h3>Recent Activity</h3>" . $display,
