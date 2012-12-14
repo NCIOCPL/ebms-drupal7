@@ -39,7 +39,7 @@ function getSearchQuery($json) {
     $srch->srchOrder();
 
     // XXX - Should we limit results?
-    $srch->qry->range(0,500);
+    // $srch->qry->range(0,500);
 
 // DEBUG
 $jspec = print_r($srch->spec, true);
@@ -508,8 +508,8 @@ class EbmsSearch {
      * THERE ARE QUESTIONS ABOUT HOW TO DO IT.
      */
     /*
-    XXX - MAY NOT WANT THIS.  WAIT TO HEAR FROM BOB AND DAN
-    function srchExcludeStates()
+    function srchExcludeStates() {
+
     */
     /**
      * Journal searching.
@@ -897,7 +897,7 @@ class EbmsSearch {
             case 'PM ID#':
                 // This could go awry with non-Pubmed data, but it won't
                 //  do serious harm
-                $this->qry->orderBy('art.source_id');
+                $this->qry->orderBy('art.source_id', 'DESC');
                 break;
             case 'Title':
                 $this->qry->orderBy('art.article_title');
@@ -911,7 +911,7 @@ class EbmsSearch {
                 // XXX TO DO
             case 'CMS_ID':
             default:
-                $this->qry->orderBy('art.article_id');
+                $this->qry->orderBy('art.article_id', 'DESC');
                 break;
         }
     }
