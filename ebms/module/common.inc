@@ -1083,7 +1083,7 @@ class Util {
             $message->save();
 
             $wrapper = entity_metadata_wrapper('message', $message);
-            $wrapper->board->set(array($board_id));
+            $wrapper->field_boards->set(array($board_id));
             $wrapper->save();
     }
     
@@ -1100,19 +1100,19 @@ class Util {
         // retrieve boards
         $node_boards = field_get_items('node', $node, 'field_boards');
         if ($node_boards) {
-            $wrapper->board->set($node_boards);
+            $wrapper->field_boards->set($node_boards);
         }
 
         // retrieve subgroups
         $node_subgroups = field_get_items('node', $node, 'field_subgroups');
         if ($node_subgroups) {
-            $wrapper->subgroup->set($node_subgroups);
+            $wrapper->field_subgroups->set($node_subgroups);
         }
 
         // retrieve ad-hoc groups
         $node_adhoc_groups = field_get_items('node', $node, 'field_ad_hoc_groups');
         if ($node_adhoc_groups) {
-            $wrapper->adhoc_group->set($node_adhoc_groups);
+            $wrapper->field_ad_hoc_groups->set($node_adhoc_groups);
         }
 
         $wrapper->save();
@@ -1131,19 +1131,19 @@ class Util {
         // retrieve boards
         $node_boards = field_get_items('node', $node, 'field_boards');
         if ($node_boards) {
-            $wrapper->board->set($node_boards);
+            $wrapper->field_boards->set($node_boards);
         }
 
         // retrieve subgroups
         $node_subgroups = field_get_items('node', $node, 'field_subgroups');
         if ($node_subgroups) {
-            $wrapper->subgroup->set($node_subgroups);
+            $wrapper->field_subgroups->set($node_subgroups);
         }
 
         // retrieve ad-hoc groups
         $node_adhoc_groups = field_get_items('node', $node, 'field_ad_hoc_groups');
         if ($node_adhoc_groups) {
-            $wrapper->adhoc_group->set($node_adhoc_groups);
+            $wrapper->field_ad_hoc_groups->set($node_adhoc_groups);
         }
 
         $wrapper->save();

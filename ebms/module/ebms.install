@@ -100,7 +100,7 @@ function _ebms_install_create_recent_activity() {
     $message->save();
 
     $wrapper = entity_metadata_wrapper('message', $message);
-    $wrapper->board->set(array(1, 2));
+    $wrapper->field_boards->set(array(1, 2));
     $wrapper->save();
 
     $message = message_load($message->mid);

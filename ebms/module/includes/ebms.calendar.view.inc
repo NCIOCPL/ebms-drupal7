@@ -43,12 +43,12 @@ $handler->display->display_options['fields']['field_datespan']['label'] = '';
 $handler->display->display_options['fields']['field_datespan']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['field_datespan']['hide_alter_empty'] = FALSE;
 $handler->display->display_options['fields']['field_datespan']['settings'] = array(
-  'format_type' => 'short',
-  'fromto' => 'both',
-  'multiple_number' => '',
-  'multiple_from' => '',
-  'multiple_to' => '',
-  'show_repeat_rule' => '',
+    'format_type' => 'short',
+    'fromto' => 'both',
+    'multiple_number' => '',
+    'multiple_from' => '',
+    'multiple_to' => '',
+    'show_repeat_rule' => '',
 );
 $handler->display->display_options['fields']['field_datespan']['group_rows'] = FALSE;
 $handler->display->display_options['fields']['field_datespan']['delta_offset'] = '0';
@@ -84,7 +84,7 @@ $handler->display->display_options['filters']['type']['id'] = 'type';
 $handler->display->display_options['filters']['type']['table'] = 'node';
 $handler->display->display_options['filters']['type']['field'] = 'type';
 $handler->display->display_options['filters']['type']['value'] = array(
-  'ebms_event' => 'ebms_event',
+    'ebms_event' => 'ebms_event',
 );
 
 /* Display: Month */
@@ -117,7 +117,7 @@ $handler->display->display_options['arguments']['date_argument']['default_action
 $handler->display->display_options['arguments']['date_argument']['summary']['format'] = 'default_summary';
 $handler->display->display_options['arguments']['date_argument']['add_delta'] = 'yes';
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
-  'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
+    'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
 $handler->display->display_options['path'] = 'calendar';
 $handler->display->display_options['menu']['type'] = 'default tab';
@@ -159,7 +159,7 @@ $handler->display->display_options['arguments']['date_argument']['summary']['for
 $handler->display->display_options['arguments']['date_argument']['granularity'] = 'week';
 $handler->display->display_options['arguments']['date_argument']['add_delta'] = 'yes';
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
-  'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
+    'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
 $handler->display->display_options['path'] = 'calendar/week';
 $handler->display->display_options['menu']['type'] = 'tab';
@@ -198,7 +198,7 @@ $handler->display->display_options['arguments']['date_argument']['default_action
 $handler->display->display_options['arguments']['date_argument']['summary']['format'] = 'default_summary';
 $handler->display->display_options['arguments']['date_argument']['granularity'] = 'day';
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
-  'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
+    'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
 $handler->display->display_options['path'] = 'calendar/day';
 $handler->display->display_options['menu']['type'] = 'tab';
@@ -206,8 +206,8 @@ $handler->display->display_options['menu']['title'] = 'Day';
 $handler->display->display_options['menu']['weight'] = '3';
 $handler->display->display_options['menu']['context'] = 0;
 
-/* Display: Feed */
-$handler = $view->new_display('feed', 'Feed', 'feed_1');
+/* Display: iCal */
+$handler = $view->new_display('feed', 'iCal', 'feed_1');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['pager']['type'] = 'some';
 $handler->display->display_options['pager']['options']['items_per_page'] = '0';
@@ -232,12 +232,12 @@ $handler->display->display_options['fields']['field_datespan']['label'] = '';
 $handler->display->display_options['fields']['field_datespan']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['field_datespan']['hide_alter_empty'] = FALSE;
 $handler->display->display_options['fields']['field_datespan']['settings'] = array(
-  'format_type' => 'short',
-  'fromto' => 'both',
-  'multiple_number' => '',
-  'multiple_from' => '',
-  'multiple_to' => '',
-  'show_repeat_rule' => '',
+    'format_type' => 'short',
+    'fromto' => 'both',
+    'multiple_number' => '',
+    'multiple_from' => '',
+    'multiple_to' => '',
+    'show_repeat_rule' => '',
 );
 $handler->display->display_options['fields']['field_datespan']['group_rows'] = FALSE;
 $handler->display->display_options['fields']['field_datespan']['delta_offset'] = '0';
@@ -289,18 +289,18 @@ $handler->display->display_options['arguments']['nid']['summary']['format'] = 'd
 $handler->display->display_options['arguments']['nid']['summary_options']['items_per_page'] = '25';
 $handler->display->display_options['arguments']['nid']['validate']['type'] = 'node';
 $handler->display->display_options['arguments']['nid']['validate_options']['types'] = array(
-  'ebms_event' => 'ebms_event',
+    'ebms_event' => 'ebms_event',
 );
 $handler->display->display_options['path'] = 'node/%/event.ics';
 $handler->display->display_options['displays'] = array(
-  'default' => 0,
-  'month' => 0,
-  'week' => 0,
-  'day' => 0,
+    'default' => 0,
+    'month' => 0,
+    'week' => 0,
+    'day' => 0,
 );
 
-/* Display: Block */
-$handler = $view->new_display('block', 'Block', 'month_block');
+/* Display: Mini-Calendar */
+$handler = $view->new_display('block', 'Mini-Calendar', 'month_block');
 $handler->display->display_options['defaults']['use_ajax'] = FALSE;
 $handler->display->display_options['use_ajax'] = TRUE;
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
@@ -329,6 +329,79 @@ $handler->display->display_options['arguments']['date_argument']['default_action
 $handler->display->display_options['arguments']['date_argument']['summary']['format'] = 'default_summary';
 $handler->display->display_options['arguments']['date_argument']['add_delta'] = 'yes';
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
-  'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
+    'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-?>
+
+/* Display: Upcoming Events */
+$handler = $view->new_display('block', 'Upcoming Events', 'block_upcoming');
+$handler->display->display_options['display_description'] = 'Show up to six upcoming events.';
+$handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
+$handler->display->display_options['defaults']['pager'] = FALSE;
+$handler->display->display_options['pager']['type'] = 'some';
+$handler->display->display_options['pager']['options']['items_per_page'] = '6';
+$handler->display->display_options['pager']['options']['offset'] = '0';
+$handler->display->display_options['defaults']['style_plugin'] = FALSE;
+$handler->display->display_options['style_plugin'] = 'list';
+$handler->display->display_options['defaults']['style_options'] = FALSE;
+$handler->display->display_options['defaults']['row_plugin'] = FALSE;
+$handler->display->display_options['row_plugin'] = 'fields';
+$handler->display->display_options['defaults']['row_options'] = FALSE;
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Content: Published */
+$handler->display->display_options['filters']['status']['id'] = 'status';
+$handler->display->display_options['filters']['status']['table'] = 'node';
+$handler->display->display_options['filters']['status']['field'] = 'status';
+$handler->display->display_options['filters']['status']['value'] = 1;
+$handler->display->display_options['filters']['status']['group'] = 0;
+$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+/* Filter criterion: Content: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'node';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+    'ebms_event' => 'ebms_event',
+);
+/* Filter criterion: Content: Event Date -  start date (field_datespan) */
+$handler->display->display_options['filters']['field_datespan_value']['id'] = 'field_datespan_value';
+$handler->display->display_options['filters']['field_datespan_value']['table'] = 'field_data_field_datespan';
+$handler->display->display_options['filters']['field_datespan_value']['field'] = 'field_datespan_value';
+$handler->display->display_options['filters']['field_datespan_value']['operator'] = '>=';
+$handler->display->display_options['filters']['field_datespan_value']['default_date'] = 'now';
+
+/* Display: Next Event */
+$handler = $view->new_display('block', 'Next Event', 'block_next');
+$handler->display->display_options['display_description'] = 'Show up to six upcoming events.';
+$handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
+$handler->display->display_options['defaults']['pager'] = FALSE;
+$handler->display->display_options['pager']['type'] = 'some';
+$handler->display->display_options['pager']['options']['items_per_page'] = '1';
+$handler->display->display_options['pager']['options']['offset'] = '0';
+$handler->display->display_options['defaults']['style_plugin'] = FALSE;
+$handler->display->display_options['style_plugin'] = 'list';
+$handler->display->display_options['defaults']['style_options'] = FALSE;
+$handler->display->display_options['defaults']['row_plugin'] = FALSE;
+$handler->display->display_options['row_plugin'] = 'fields';
+$handler->display->display_options['defaults']['row_options'] = FALSE;
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Content: Published */
+$handler->display->display_options['filters']['status']['id'] = 'status';
+$handler->display->display_options['filters']['status']['table'] = 'node';
+$handler->display->display_options['filters']['status']['field'] = 'status';
+$handler->display->display_options['filters']['status']['value'] = 1;
+$handler->display->display_options['filters']['status']['group'] = 0;
+$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+/* Filter criterion: Content: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'node';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+    'ebms_event' => 'ebms_event',
+);
+/* Filter criterion: Content: Event Date -  start date (field_datespan) */
+$handler->display->display_options['filters']['field_datespan_value']['id'] = 'field_datespan_value';
+$handler->display->display_options['filters']['field_datespan_value']['table'] = 'field_data_field_datespan';
+$handler->display->display_options['filters']['field_datespan_value']['field'] = 'field_datespan_value';
+$handler->display->display_options['filters']['field_datespan_value']['operator'] = '>=';
+$handler->display->display_options['filters']['field_datespan_value']['default_date'] = 'now';
