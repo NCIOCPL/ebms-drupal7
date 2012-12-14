@@ -1,0 +1,11 @@
+name = EBMS Forums
+description = Customization for Forums on EBMS
+core = 7.x
+version = "1.0"
+package = EBMS
+
+dependencies[]=ebms
+dependencies[]=forum
+dependencies[]=chain_menu_access
+
+stylesheets[all][] = "ebms_forums.css"

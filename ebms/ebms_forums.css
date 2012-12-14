@@ -1,0 +1,126 @@
+/*
+* Applicable to All Forum Templates
+*/
+#forums-right {
+    float:left;
+    margin-bottom: 50px;
+    width: 730px;
+}
+
+.forum-title {
+    color: #a90101;
+    text-transform: uppercase;
+}
+
+.forum-topic-started-info, .forum-topic-started-info span {
+    color: #696559;
+}
+
+
+.forum-info {
+    color: lime;
+}
+
+
+
+
+/*
+* forums-topic-list.tpl
+*/
+.forum-topic-on-forum {
+    border-bottom: 2px solid black;
+    margin-bottom: 40px;
+}
+.forum-topic-on-forum .forum-description p {
+    margin: 10px 0px;
+    padding: 0px;
+}
+.forum-topic-recent-activity {
+    margin: 25px 0px;
+}
+.forum-topic-recent-activity-words {
+    vertical-align: top;
+    display: inline-block;
+    width: 17%;
+}
+.forum-topic-recent-activity-activity {
+    display: inline-block;
+    width: 81%;
+}
+.forum-topic-on-forum .forum-topic-comment-wrapper {
+    border: 0px;
+    padding: 0px;
+    margin: 0px;
+}
+
+
+
+/*
+*/
+.forum-topic-comment-wrapper {
+    
+    position: relative;
+    width: 100%;
+    display: block;
+    padding-bottom: 50px;
+    border-bottom: 2px solid black;
+    margin-bottom: 30px;
+}
+.forum-topic-comment-and-info {
+    margin-left: 50px;
+}
+.forum-topic-commenter-pic {
+    float: left;
+    width: 50px;
+}
+
+.forum-topic-comment-info {
+    width: 100%;
+    padding-bottom: 10px;
+    margin-bottom: 0px;
+}
+.forum-topic-commenter {
+    text-align: left;
+    display: inline-block;
+    text-transform: uppercase;
+    
+}
+.forum-topic-comment-date {
+    display: inline-block;
+    text-align: right;
+    float: right;
+}
+.forum-topic-comment {
+    clear: both;
+    padding-top: 0px;
+    margin-top: 0px;
+}
+.forum-topic-comment p {
+    padding-left: 0px;
+    padding-right: 0px;
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+#forum-topic-add-comment {
+}
+#forum-topic-add-author-pic {
+    width: 50px;
+    float: left;
+}
+#forum-topic-add-author {
+}
+#forum-topic-add-author-and-form {
+    margin-left: 50px;
+}
+#forum-topic-comment-form {
+    border: 1px solid red;
+}
+#forum-topic-comment-form form div {
+    margin: 0px;
+    padding: 0px;
+    border: 1px solid red;
+}
+form.comment-form fieldset {
+    border: 0px;
+}

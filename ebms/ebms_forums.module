@@ -1,0 +1,146 @@
+<?php
+/**
+ * hook_form_alter(&$form, &$form_state, $form_id);
+ * 
+ * Performs alterations before a form is rendered.
+ * This one controls the comment form on Forums.
+ * 
+ * @param type $form Nested array of form elements that comprise the form.
+ * @param type $form_state A keyed array containing the current state of the form. The arguments 
+ * that drupal_get_form() was originally called with are available in the array 
+ * $form_state['build_info']['args'].
+ * @param type $form_id String representing the name of the form itself. Typically this is the name 
+ * of the function that generated the form.
+ */
+function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
+    if ($form_id == 'comment_node_forum_form') {
+        
+        
+        // Turn off the ability to preview
+        $form['actions']['preview'] = FALSE;
+        
+        // The Save button should say Add a Comment
+        $form['actions']['submit']['#value'] = 'Add a Comment';
+        
+        // The comment cannot have a subject
+        $form['subject']['#access'] = FALSE;
+    }
+}
+
+function ebms_forums_enable() {
+    dsm("EBMS Forums Enabled.");
+}
+function ebms_forums_disable() {
+    dsm("EBMS Forums Disabled.");
+}
+
+/* http://www.metachunk.com/blog/adding-module-path-drupal-7-theme-registry*/
+function ebms_forums_theme_registry_alter(&$theme_registry) {
+    $mod_path = drupal_get_path('module', 'ebms_forums');
+    $mod_path .= '/templates';
+   $theme_registry_copy = $theme_registry;       // munge on a copy
+  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'ebmstheme', $mod_path);
+  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+  $hooks = array('node', 'comment',); // 'forums', 'forum_list', 'forum_topic_list', 'forum_icon', 'forum_submitted', 'forum_form');
+  foreach ($hooks as $h) {
+      //kprint_r($theme_registry[$h]);
+    _ebms_forums_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
+  }
+  $modifications = array ('forums', 'forum_list', 'forum_topic_list',
+      /*'forum_icon',*/ /*'forum_submitted',*/ /*'forum_form'*/);
+  foreach ($modifications as $m) {
+      $theme_registry[$m]['template'] = $mod_path . '/'.str_replace('_', '-', $m);
+      $theme_registry[$m]['theme path'] = $mod_path;
+  }
+  //kprint_r($theme_registry);
+}
+/**
+ * Helper function for re-ordering arrays (needed by theme_registry_alter)
+*/
+function _ebms_forums_insert_after_first_element(&$a, $element) {
+  if(is_array($a)) {
+    $first_element = array_shift($a);
+    array_unshift($a, $first_element, $element);
+  }
+}
+
+function _ebms_forums_fields () {
+    return array(
+        array(
+            'field_name' => 'field_forum_is_archived',
+            'entity_type' => 'node',
+            'cardinality' => 1,
+            'type' => 'list_boolean',
+            'settings' => array(
+                'allowed_values' => array(
+                    0 => 'Not Archived',
+                    1 => 'Archived',
+                )
+            )
+        ),
+    );
+}
+
+/*
+function _ebms_forums_update_fields_and_instances () {
+    $archiveField = array(
+        'field_name' => 'field_forum_archived',
+        'type' => 'list_boolean',
+        'cardinality' => '1',
+        'entity_type' => 'node',
+        'bundle' => 'forum',
+        'description' => 'If checked, this indicates that a Forum Topic is archived.',
+        'label' => 'Archived',
+        'widget' => array(
+            'type' => 'options_onoff',
+        ),
+        'settings' => array(
+            'allowed_values' => array(
+                '0' => 'Not Archived',
+                '1' => 'Archived',
+            )
+        ),
+    );
+    
+    if (field_info_field($archiveField['field_name']))
+        field_create_field($archiveField);
+    else
+        field_update_field($archiveField);
+
+}*/
+
+function ebms_forums_menu_alter(&$items) {
+    //drupal_set_message(implode('<br>',array_keys($items)), 'status');
+    
+    chain_menu_access_chain($items, 'forum', '_ebms_forums_new_view_access_callback', array(), FALSE);
+    chain_menu_access_chain($items, 'forum/%forum_forum', '_ebms_forums_new_view_access_callback', array(1), FALSE);
+}
+
+function _ebms_forums_new_view_access_callback ($forum = NULL) {
+    if ($forum) {
+        
+    }
+    drupal_set_message('forum: '.print_r($forum), 'status');
+    //$query = drupal_get_query_parameters();
+    //drupal_set_message(print_r($query), 'status');
+    //drupal_set_message(implode('<br>', array_keys($query)), 'status');
+    return TRUE;
+}
+
+function _ebms_forums_menu () {
+    $links = array(
+        array('/forum/', 'Frousdfsd sdf'),
+        array('/forum/', 'sdfdsfklsd'),
+    );
+    $output = '<div id="left-nav" class="report-left-nav">';
+    $output .= '<div class="item-list"><ul>';
+    foreach ($links as $link) {
+        $output .= '<li class="parent inactive first">';
+        $output .= '<a href="' . $link[0] . '">' . $link[1] . '</a>';
+        $output .= '</li>';
+    }
+    $output .= '</ul></div>'; //Closes class=item-list
+    $output .= '</div>'; //Closes id=left-nav
+    return $output;
+}
+
