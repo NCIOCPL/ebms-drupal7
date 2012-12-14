@@ -97,7 +97,7 @@ function pdq_ebms_about() {
             ),
             'adult-treatment',
             array(***REDACTED***),
-            array('Victoria Shields, MS', '***REMOVED***'),
+            array('VICTORIA SHIELDS, MS', '***REMOVED***'),
         ),
         array(
             'Cancer Complementary and Alternative Medicine',
@@ -109,7 +109,7 @@ function pdq_ebms_about() {
             ),
             'cancer-cam',
             array(***REDACTED***),
-            array('Robin Baldwin, BSN', '***REMOVED***'),
+            array('ROBIN BALDWIN, BSN', '***REMOVED***'),
         ),
         array(
             'Cancer Genetics',
@@ -119,8 +119,8 @@ function pdq_ebms_about() {
                 array('Summaries', 'genetics'),
             ),
             'cancer-genetics',
+            array('MARY B. DALY, MD, PhD', ''),
             array(***REDACTED***),
-            array('Robin Juthe, MPH', 'h***REMOVED***'),
         ),
         array(
             'Pediatric Treatment',
@@ -131,7 +131,7 @@ function pdq_ebms_about() {
             ),
             'pediatric-treatment',
             array(***REDACTED***),
-            array('Sharon Quint-Kasner, MS', '***REMOVED***'),
+            array('SHARON QUINT-KASNER, MS', '***REMOVED***'),
         ),
         array(
             'Screening and Prevention',
@@ -144,7 +144,7 @@ function pdq_ebms_about() {
             ),
             'screening-prevention',
             array(***REDACTED***),
-            array('Valerie Dyer, BSN', '***REMOVED***'),
+            array('VALERIE DYER, BSN', '***REMOVED***'),
         ),
         array(
             'Supportive and Palliative Care',
@@ -155,10 +155,10 @@ function pdq_ebms_about() {
             ),
             'supportive-care',
             array(
-                'Debra Barton, RN, PhD, AOCN, FAAN',
+                'DEBRA BARTON, RN, PhD, AOCN, FAAN',
                 'barton.debra@mayo.edu',
             ),
-            array('Robin Baldwin, BSN', '***REMOVED***'),
+            array('ROBIN BALDWIN, BSN', '***REMOVED***'),
         ),
     );
     $page['boards']['title'] = array(
