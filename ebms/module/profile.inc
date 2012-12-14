@@ -59,6 +59,9 @@ class EbmsProfile {
             case 'active':
                 return $this->show_all();
                 break;
+            case 'memberships':
+                $u = $this->user->uid;
+                return drupal_get_form('pdq_embs_profile_membership_form', $u);
             case 'view':
             case 'crop':
             case 'edit-email':
@@ -77,6 +80,7 @@ class EbmsProfile {
         global $user;
         switch ($this->action) {
             case 'all':
+            case 'memberships':
                 return user_access('administer');
             default:
                 if ($user->uid == $this->user->uid)
@@ -161,6 +165,9 @@ class EbmsProfile {
                 $pw_changed = date('m/d/y', strtotime($u->password_changed));
             else
                 $pw_changed = '&mdash;';
+            $boards = EbmsProfile::get_boards($u->uid, '<br />');
+            $boards_url = EbmsProfile::$url . '/memberships/' . $u->uid;
+            $boards_link = l($boards, $boards_url, array('html' => true));
             $rows[] = array(
                 'data' => array(
                     array(
@@ -177,7 +184,7 @@ class EbmsProfile {
                         'class' => array('c3'),
                     ),
                     array(
-                        'data' => EbmsProfile::get_boards($u->uid, '<br />'),
+                        'data' => $boards_link,
                         'class' => array('c4'),
                     ),
                     array(
@@ -418,7 +425,7 @@ class EbmsProfile {
     }
 
     /**
-     * Generate the board to display the boards of which the specified
+     * Generate the render array to display the boards of which the specified
      * user is a member.
      */
     private function boards_row() {
@@ -880,4 +887,108 @@ function pdq_ebms_profile_picture_crop_form_submit($form, &$form_state) {
         user_save($account, array('picture' => $file));
     }
     drupal_goto(EbmsProfile::$url . '/view/' . $user_id);
+}
+
+/**
+ * Didn't think we'd need this for the first release, but we no longer
+ * have direct access to the database on the production or pre-production
+ * tiers, so we have to have it after all.  This is the form where
+ * board and subgroup membership is assigned for a given member.
+ */
+function pdq_embs_profile_membership_form($form, &$form_state, $uid) {
+    $name = db_select('users', 'u')
+        ->condition('u.uid', $uid)
+        ->fields('u', array('name'))
+        ->execute()
+        ->fetchField();
+    $name = htmlspecialchars($name);
+    $results = db_select('ebms_board_member', 'm')
+        ->condition('m.user_id', $uid)
+        ->fields('m', array('board_id'))
+        ->execute();
+    $current_boards = array();
+    foreach ($results as $result)
+        $current_boards[] = $result->board_id;
+    $boards = Ebms\Util::boards();
+    $results = db_select('ebms_subgroup_member', 'm')
+        ->condition('m.user_id', $uid)
+        ->fields('m', array('sg_id'))
+        ->execute();
+    $current_subgroups = array();
+    foreach ($results as $result)
+        $current_subgroups[] = $result->sg_id;
+    $results = db_select('ebms_subgroup', 's')
+        ->fields('s', array('sg_id', 'sg_name'))
+        ->orderBy('s.sg_name')
+        ->execute();
+    $subgroups = array();
+    foreach ($results as $result)
+        $subgroups[$result->sg_id] = $result->sg_name;
+    return array(
+        'title' => array(
+            '#type' => 'markup',
+            '#markup' => "<h2>$name</h2>",
+        ),
+        'uid' => array(
+            '#type' => 'hidden',
+            '#value' => $uid,
+        ),
+        'boards' => array(
+            '#type' => 'checkboxes',
+            '#title' => 'Boards',
+            '#description' => 'Of which PDQ board(s) is this user a member?',
+            '#options' => $boards,
+            '#default_value' => $current_boards,
+        ),
+        'subgroups' => array(
+            '#type' => 'checkboxes',
+            '#title' => 'Subgroups',
+            '#description' => 'Of which sub groups is this user a member?',
+            '#options' => $subgroups,
+            '#default_value' => $current_subgroups,
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'save',
+        ),
+    );
+}
+
+/**
+ * Clear out the rows for this user's board and subgroup memberships and
+ * repopulate based on the submitted form's values.
+ */
+function pdq_embs_profile_membership_form_submit($form, &$form_state) {
+    $values = $form_state['values'];
+    $uid = $values['uid'];
+    $boards = $values['boards'];
+    $subgroups = $values['subgroups'];
+    db_delete('ebms_board_member')
+        ->condition('user_id', $uid)
+        ->execute();
+    db_delete('ebms_subgroup_member')
+        ->condition('user_id', $uid)
+        ->execute();
+    foreach ($boards as $board) {
+        if ($board)
+            db_insert('ebms_board_member')
+                ->fields(
+                    array(
+                        'user_id' => $uid,
+                        'board_id' => $board,
+                    )
+                )
+                ->execute();
+    }
+    foreach ($subgroups as $subgroup) {
+        if ($subgroup)
+            db_insert('ebms_subgroup_member')
+                ->fields(
+                    array(
+                        'user_id' => $uid,
+                        'sg_id' => $subgroup,
+                    )
+                )
+                ->execute();
+    }
 }
