@@ -1071,6 +1071,83 @@ class Util {
             $boards[$result->board_id] = $result->board_name;
         return $boards;
     }
+    
+    /**
+     * Creates a recent activity message indicating the given board has new
+     * articles
+     * 
+     * @param int $board_id the new articles' board id
+     */
+    public static function activityArticlesPublished($board_id){
+            $message = message_create('activity_new_articles');
+            $message->save();
+
+            $wrapper = entity_metadata_wrapper('message', $message);
+            $wrapper->board->set(array($board_id));
+            $wrapper->save();
+    }
+    
+    public static function activityEventPublished($node) {
+        if ($node->type != 'ebms_event' || !$node->status)
+            return;
+
+        $message = message_create('activity_new_event');
+        $message->save();
+
+        $wrapper = entity_metadata_wrapper('message', $message);
+        $wrapper->field_title->set($node->title);
+
+        // retrieve boards
+        $node_boards = field_get_items('ebms_event', $node, 'board');
+        if ($node_boards) {
+            $wrapper->board->set($node_boards);
+        }
+
+        // retrieve subgroups
+        $node_subgroups = field_get_items('ebms_event', $node, 'subgroup');
+        if ($node_subgroups) {
+            $wrapper->subgroup->set($node_subgroups);
+        }
+
+        // retrieve ad-hoc groups
+        $node_adhoc_groups = field_get_items('ebms_event', $node, 'adhoc_group');
+        if ($node_adhoc_groups) {
+            $wrapper->adhoc_group->set($node_adhoc_groups);
+        }
+
+        $wrapper->save();
+    }
+
+    public static function activityEventCancelled($node) {
+        if ($node->type != 'ebms_event' || $node->status)
+            return;
+
+        $message = message_create('activity_cancelled_event');
+        $message->save();
+
+        $wrapper = entity_metadata_wrapper('message', $message);
+        $wrapper->field_title->set($node->title);
+
+        // retrieve boards
+        $node_boards = field_get_items('ebms_event', $node, 'board');
+        if ($node_boards) {
+            $wrapper->board->set($node_boards);
+        }
+
+        // retrieve subgroups
+        $node_subgroups = field_get_items('ebms_event', $node, 'subgroup');
+        if ($node_subgroups) {
+            $wrapper->subgroup->set($node_subgroups);
+        }
+
+        // retrieve ad-hoc groups
+        $node_adhoc_groups = field_get_items('ebms_event', $node, 'adhoc_group');
+        if ($node_adhoc_groups) {
+            $wrapper->adhoc_group->set($node_adhoc_groups);
+        }
+
+        $wrapper->save();
+    }
 
     /**
      * Build a dictionary of EBMS review cycles.  The keys are the cycle

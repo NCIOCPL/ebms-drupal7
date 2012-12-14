@@ -160,6 +160,10 @@ class EbmsPublish {
         );
         $results = $query->execute();
         $count = 0;
+        
+        // collect boards for recent activity
+        $boards = array();
+        
         foreach ($results as $result) {
             $new_state_id = Ebms\setArticleState(
                 $result->article_id,
@@ -171,17 +175,23 @@ class EbmsPublish {
 
             // XXX Eventually Alan will take care of the next steps and we
             // can drop this code.
-            db_update('ebms_article_state')
+            /*db_update('ebms_article_state')
                 ->fields(array('current' => 'N'))
                 ->condition('article_state_id', $result->article_state_id)
                 ->execute();
             db_update('ebms_article_state')
                 ->fields(array('current' => 'Y'))
                 ->condition('article_state_id', $new_state_id)
-                ->execute();
+                ->execute();*/
+            
+            $boards[$result->board_id] = $result->board_id;
+        }
+        
+        // create a message for each board found
+        foreach ($boards as $board_id) {
+            \Ebms\Util::activityArticlesPublished($board_id);
         }
     }
-
     /*
      * Workhorse for the page: builds and returns the render array
      * for the queue of articles eligible to be moved into the "Published"

@@ -4893,6 +4893,9 @@ namespace {
             $topicName = Ebms\getTopicNameById($topicId);
 
             drupal_set_message("Successfully published article '$articleTitle' to topic '$topicName'");
+            
+            // also create message for publishing
+            activityArticlesPublished(Ebms\getTopicBoard($topicId));
         }
 
         return;

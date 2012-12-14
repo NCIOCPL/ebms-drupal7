@@ -1215,3 +1215,26 @@ function ebms_adhoc_group_allowed_values_callback($field) {
         $groups[$result->group_id] = $result->group_name;
     return $groups;
 }
+
+/**
+ * Implementation of hook_node_presave.  Triggers appropriate recent activity
+ * messages based on changes to event nodes.
+ * 
+ * @param node $node the node about to be saved
+ */
+function ebms_node_presave($node) {
+    if ($node->type == 'ebms_event') {
+        // if the node is published and either is new or was previously
+        // unpublished
+        if ($node->status && ($node->is_new || !$node->original->status)) {
+            // note the publish activity
+            \Ebms\Util::activityEventPublished($node);
+        }
+
+        // vice versa, if the node is not new and was previously published
+        if (!$node->status && !$node->is_new && $node->original->status) {
+            // note the unpublish activity
+            \Ebms\Util::activityEventCancelled($node);
+        }
+    }
+}

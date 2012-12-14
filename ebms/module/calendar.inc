@@ -204,59 +204,6 @@ function calendar_node_form_alter(&$form, &$form_state) {
 
     $node = $form_state['node'];
 
-    $form['#prefix'] = "<div id='ebms-event-form-wrapper'>" . (isset($form['#prefix'])
-            ? $form['#prefix'] : '');
-    $form['#suffix'] = "</div>";
-
-    $boards = Ebms\Util::boards();
-
-    $board = field_get_items('node', $node, 'board');
-    if (!empty($board))
-        $board = $board[0]['value'];
-    if (isset($form_state['values']['board']))
-        $board = $form_state['values']['board']['und'][0]['value'];
-
-    $form['board']['und']['#options'] += $boards;
-    if ($board)
-        $form['board']['und']['#default_value'] = array($board);
-    $form['board']['und']['#ajax'] = array(
-        'callback' => 'calendar_event_board_select_js',
-        'wrapper' => 'ebms-event-form-wrapper',
-    );
-
-    $subgroup = field_get_items('node', $node, 'subgroup');
-    if (!empty($subgroup))
-        $subgroup = $subgroup[0]['value'];
-    if (isset($form_state['values']['subgroup']))
-        $subgroup = $form_state['values']['subgroup'];
-
-    $query = db_select('ebms_subgroup', 's');
-    if ($board) {
-        $query->condition('s.board_id', $board);
-    }
-
-    $subgroupOptions = $query->fields('s', array('sg_id', 'sg_name'))
-        ->execute()
-        ->fetchAllKeyed();
-
-    $form['subgroup']['und']['#options'] += $subgroupOptions;
-    if ($subgroup)
-        $form['subgroup']['und']['#default_value'] = array($subgroup);
-
-    $adhoc = field_get_items('node', $node, 'adhoc_group');
-    if ($adhoc)
-        $adhoc = $adhoc[0]['value'];
-
-    $adhocOptions = array();
-    $query = db_select('ebms_ad_hoc_group', 'g');
-    $adhocOptions += $query->fields('g', array('group_id', 'group_name'))
-        ->execute()
-        ->fetchAllKeyed();
-
-    $form['adhoc_group']['und']['#options'] += $adhocOptions;
-    if ($adhoc)
-        $form['adhoc_group']['und']['#default_value'] = array($adhoc);
-
     $users = entity_load('user');
 
     $inhouse = array();
@@ -269,8 +216,7 @@ function calendar_node_form_alter(&$form, &$form_state) {
         }
 
         if ((in_array('board member', $user->roles) ||
-            in_array('board manager', $user->roles)) &&
-            ($board == 0 || in_array($board, $user->boards))) {
+            in_array('board manager', $user->roles))) {
             $boardMembers[$user->uid] = $user->name;
         }
     }

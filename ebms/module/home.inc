@@ -226,14 +226,23 @@ class EbmsHomePage {
      *     system have been implemented.
      */
     private function recent() {
-        $events = array(
+        /*$events = array(
             array('Genetics Board meeting time updated.', '02/01/12'),
             array('New genetics articles posted.', '01/30/12'),
             array('New event Genetics Board event posted.', '01/23/12'),
         );
         foreach ($events as $e)
             $items[] = "{$e[0]} <span class='date nobreak'>{$e[1]}</span>";
-        return $this->list_block('Recent Activity', 'recent-activity', $items);
+        return $this->list_block('Recent Activity', 'recent-activity', $items);*/
+        
+        $view = views_get_view('recent_activity');
+        $display = $view->preview('activity_block');
+        
+        return array(
+            '#markup' => "<h3>Recent Activity</h3>" . $display,
+            '#prefix' => "<div id='activity-enclosure' class='ebms-block'>",
+            '#suffix' => $this->block_bottom_img() . "</div>",
+            );
     }
 
     /**

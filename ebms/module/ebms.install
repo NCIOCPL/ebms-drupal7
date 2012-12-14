@@ -8,12 +8,104 @@
 module_load_include('inc', 'ebms', 'includes/ebms.fields');
 
 function ebms_enable() {
-    _ebms_install_create_event();
     _ebms_install_add_event_fields();
-}
 
-function _ebms_install_create_event() {
-    
+    _ebms_install_create_recent_activity();
+}
+$GLOBALS['recent_activity_types'] = array(
+    'activity_new_articles' => '{
+            "name" : "activity_new_articles",
+            "description" : "New Articles",
+            "argument_keys" : [],
+            "argument" : [],
+            "category" : "message_type",
+            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
+            "language" : "",
+            "arguments" : null,
+            "message_text" : { "und" : [
+                {
+                  "value" : "New [message:board] articles posted.  [message:timestamp:custom:m\/d\/Y]",
+                  "format" : "plain_text",
+                  "safe_value" : "\u003Cp\u003ENew [message:board] articles posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+                }
+              ]
+            }
+          }',
+    'activity_new_event' => '{
+            "name" : "activity_new_event",
+            "description" : "New Event",
+            "argument_keys" : [],
+            "argument" : [],
+            "category" : "message_type",
+            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
+            "language" : "",
+            "arguments" : null,
+            "message_text" : { "und" : [
+                {
+                  "value" : "New event [message:field_title] posted.  [message:timestamp:custom:m\/d\/Y]",
+                  "format" : "plain_text",
+                  "safe_value" : "\u003Cp\u003ENew event [message:field_title] posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+                }
+              ]
+            }
+          }',
+    'activity_cancelled_event' => '{
+            "name" : "activity_cancelled_event",
+            "description" : "Cancelled Event",
+            "argument_keys" : [],
+            "argument" : [],
+            "category" : "message_type",
+            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
+            "language" : "",
+            "arguments" : null,
+            "message_text" : { "und" : [
+                {
+                  "value" : "Event [message:field_title] cancelled.  [message:timestamp:custom:m\/d\/Y]",
+                  "format" : "plain_text",
+                  "safe_value" : "\u003Cp\u003EEvent [message:field_title] cancelled.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+                }
+              ]
+            }
+          }',
+);
+
+function _ebms_install_create_recent_activity() {
+
+    // create the 'recent activity' category type
+    $category = message_type_category_load('recent_activity');
+    if (!$category) {
+        $category = message_type_category_create('recent_activity');
+        $category->save();
+    }
+
+    // check for each message type and import if missing
+    global $recent_activity_types;
+    foreach ($recent_activity_types as $id => $export) {
+        $type = message_type_load($id);
+        if (!$type) {
+            $type = entity_import('message_type', $export);
+            $type->save();
+        }
+    }
+
+    global $recent_activity_fields;
+    _ebms_enable_fields($recent_activity_fields);
+
+
+
+    return;
+
+    // example of creating a message and adding field data
+    $message = message_create('activity_new_articles');
+    $message->save();
+
+    $wrapper = entity_metadata_wrapper('message', $message);
+    $wrapper->board->set(array(2, 3));
+    $wrapper->save();
+
+    $message = message_load($message->mid);
+
+    dsm($message, 'test message');
 }
 
 function _ebms_install_add_event_fields() {

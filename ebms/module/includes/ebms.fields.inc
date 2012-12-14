@@ -5,8 +5,6 @@
  * and open the template in the editor.
  */
 
-
-
 $GLOBALS['ebms_event_fields'] = array(
 // event date - 3 fields
 // time - from and to, am | pm
@@ -18,7 +16,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'required' => TRUE,
         'type' => 'datestamp',
         'widget' => array(
-            'weight' => '2',
+            'weight' => 2,
             'type' => 'date_popup',
             'settings' => array(
                 'input_format' => 'Y-m-d H:i',
@@ -26,7 +24,7 @@ $GLOBALS['ebms_event_fields'] = array(
                 'increment' => 1,
             ),
         ),
-        'cardinality' => '1',
+        'cardinality' => 1,
         'settings' => array(
             'repeat' => 0,
             'todate' => 'required',
@@ -41,7 +39,7 @@ $GLOBALS['ebms_event_fields'] = array(
         'bundles' => array(
             'ebms_event',
         ),
-    ),    
+    ),
 // event type - in person | webex / phone conf.
     array(
         'label' => t('Event Type'),
@@ -50,9 +48,9 @@ $GLOBALS['ebms_event_fields'] = array(
         'field_name' => 'event_type',
         'required' => TRUE,
         'type' => 'list_text',
-        'cardinality' => '1',
+        'cardinality' => 1,
         'widget' => array(
-            'weight' => '4',
+            'weight' => 4,
             'type' => 'options_select',
         ),
         'settings' => array(
@@ -73,9 +71,9 @@ $GLOBALS['ebms_event_fields'] = array(
         'field_name' => 'board',
         'required' => FALSE,
         'type' => 'list_integer',
-        'cardinality' => '1',
+        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
         'widget' => array(
-            'weight' => '5',
+            'weight' => 5,
             'type' => 'options_select',
         ),
         'settings' => array(
@@ -93,9 +91,9 @@ $GLOBALS['ebms_event_fields'] = array(
         'field_name' => 'subgroup',
         'required' => FALSE,
         'type' => 'list_integer',
-        'cardinality' => '1',
+        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
         'widget' => array(
-            'weight' => '6',
+            'weight' => 6,
             'type' => 'options_select',
         ),
         'settings' => array(
@@ -113,9 +111,9 @@ $GLOBALS['ebms_event_fields'] = array(
         'field_name' => 'adhoc_group',
         'required' => FALSE,
         'type' => 'list_integer',
-        'cardinality' => '1',
+        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
         'widget' => array(
-            'weight' => '7',
+            'weight' => 7,
             'type' => 'options_select',
         ),
         'settings' => array(
@@ -133,9 +131,9 @@ $GLOBALS['ebms_event_fields'] = array(
         'field_name' => 'inhouse_staff',
         'required' => FALSE,
         'type' => 'list_integer',
-        'cardinality' => 'FIELD_CARDINALITY_UNLIMITED',
+        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
         'widget' => array(
-            'weight' => '8',
+            'weight' => 8,
             'type' => 'options_select',
         ),
         'settings' => array(
@@ -152,9 +150,9 @@ $GLOBALS['ebms_event_fields'] = array(
         'field_name' => 'board_members',
         'required' => FALSE,
         'type' => 'list_integer',
-        'cardinality' => 'FIELD_CARDINALITY_UNLIMITED',
+        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
         'widget' => array(
-            'weight' => '9',
+            'weight' => 9,
             'type' => 'options_select',
         ),
         'settings' => array(
@@ -171,9 +169,9 @@ $GLOBALS['ebms_event_fields'] = array(
         'field_name' => 'event_agenda',
         'required' => FALSE,
         'type' => 'text_long',
-        'cardinality' => '1',
+        'cardinality' => 1,
         'widget' => array(
-            'weight' => '10',
+            'weight' => 10,
         ),
         'settings' => array(
             'max_length' => '',
@@ -191,15 +189,16 @@ $GLOBALS['ebms_event_fields'] = array(
         'cardinality' => FIELD_CARDINALITY_UNLIMITED,
         'type' => 'file',
         'settings' => array(
-            'display_field' => '1',
-            'display_default' => '1',
-             'file_extensions' => 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg gif bmp png tiff mpg mpeg mp4 3gp avi htm html',
+            'display_field' => 1,
+            'display_default' => 1,
+            'file_extensions' => 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg gif bmp png tiff mpg mpeg mp4 3gp avi htm html',
         ),
         'widget' => array(
             'type' => 'file_generic',
             'settings' => array(
-                'description_field' => '1',
+                'description_field' => 1,
             ),
+            'weight' => 11,
         ),
         'bundles' => array(
             'ebms_event',
@@ -213,9 +212,9 @@ $GLOBALS['ebms_event_fields'] = array(
         'field_name' => 'event_notes',
         'required' => FALSE,
         'type' => 'text_long',
-        'cardinality' => '1',
+        'cardinality' => 1,
         'widget' => array(
-            'weight' => '11',
+            'weight' => 12,
         ),
         'settings' => array(
             'max_length' => '',
@@ -226,4 +225,46 @@ $GLOBALS['ebms_event_fields'] = array(
         ),
     ),
 );
+
+// this global array will be filled with midifications of the array above
+$GLOBALS['recent_activity_fields'] = array(
+    array(
+        'label' => t('Title'),
+        'entity_type' => 'message',
+        'description' => t('A replicated node title.'),
+        'field_name' => 'field_title',
+        'required' => TRUE,
+        'type' => 'text',
+        'cardinality' => '1',
+        'widget' => array(
+            'weight' => '-1',
+        ),
+        'settings' => array(
+            'max_length' => '60',
+        ),
+        'bundles' => array(
+            'activity_new_event',
+            'activity_cancelled_event',
+        ),
+    ),
+);
+
+foreach ($GLOBALS['ebms_event_fields'] as $field) {
+    switch ($field['field_name']) {
+        case 'board':
+        case 'subgroup':
+        case 'adhoc_group':
+            $messageField = $field;
+            $messageField['entity_type'] = 'message';
+            $messageField['bundles'] = array(
+                'activity_new_articles',
+                'activity_new_event',
+                'activity_cancelled_event',
+            );
+
+            $GLOBALS['recent_activity_fields'][] = $messageField;
+
+            break;
+    }
+}
 ?>
