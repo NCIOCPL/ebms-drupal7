@@ -350,6 +350,7 @@ class EbmsHomePage {
      *     of the system has been implemented.
      */
     private function next_meeting() {
+        /*
         $now = date_create();
         $then = date_modify($now, '+ 14 days');
         $date = date_format($then, 'F j, Y');
@@ -359,6 +360,21 @@ class EbmsHomePage {
                 array('html' => true));
         $items = array($link);
         return $this->list_block('Next Meeting', 'next-meeting', $items);
+         * 
+         */
+        $view = views_get_view('event_calendar');
+        
+        $display = "";
+        
+        if ($view) {
+            $display = $view->preview('block_next');
+        }
+        
+        return array(
+            '#markup' => "<h3>Next Meeting</h3>" . $display,
+            '#prefix' => "<div id='activity-enclosure' class='ebms-block'>",
+            '#suffix' => $this->block_bottom_img() . "</div>",
+            );
     }
 
     /**
