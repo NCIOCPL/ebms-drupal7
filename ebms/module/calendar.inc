@@ -72,7 +72,22 @@ function ebms_calendar_left_nav($span = null) {
     $output[] = '</div>';
     $output[] = '</div>';
 
-    $output[] = '<div id="upcoming-events" class="more-actions">';
+    $imagesDir = Ebms\IMAGES_DIR;
+
+    // retrieve upcoming events view
+    $view = views_get_view('event_calendar');
+    if ($view) {
+
+        $display = $view->preview('block_upcoming');
+
+        $output[] = '<div id="upcoming-events">';
+        $output[] = $display;
+        $output[] = "<div class='ebms-left-nav-block-bottom'><img alt='' src='$imagesDir/left-nav-box-bottom.png'></div>";
+        $output[] = '</div>';
+    }
+
+
+    /*$output[] = '<div id="upcoming-events" class="more-actions">';
     $output[] = '<div class="item-list">';
     $output[] = '<h3>Upcoming Events</h3>';
     $output[] = '<ul class="ebms_left_nav_block">';
@@ -132,9 +147,8 @@ function ebms_calendar_left_nav($span = null) {
 
     $output[] = '</ul>';
     $output[] = '</div>';
-    $imagesDir = Ebms\IMAGES_DIR;
     $output[] = "<img class='ebms-left-nav-block-bottom 'alt='' src='$imagesDir/left-nav-box-bottom.png'>";
-    $output[] = '</div>';
+    $output[] = '</div>';*/
 
     return implode('', $output);
 }
@@ -152,23 +166,21 @@ function _calendar_query_alter(&$view, &$query) {
     //events
     if (user_access("administer ebms"))
         return;
-    
+
     //TODO: If power users are viewing all items, then don't filter
     //if viewing all then just return.
-        
     //Determine if we should show all board meetings or not
     $filter_boards = true;
-    
+
     //If the user is an icrdb or board manager they are a power user
     //if we are looking at the month, week, or day calendar, then we
     //should not filter boards.
-    if ((in_array('icrdb manager', $user->roles) || 
-            in_array('board manager', $user->roles))
-        && in_array($view->current_display, array('month', 'week', 'day'))) 
-    {
+    if ((in_array('icrdb manager', $user->roles) ||
+        in_array('board manager', $user->roles))
+        && in_array($view->current_display, array('month', 'week', 'day'))) {
         $filter_boards = false;
     }
-    
+
     //Initialize an OR conditional for selects
     $or_conditions = db_or();
 
@@ -176,7 +188,8 @@ function _calendar_query_alter(&$view, &$query) {
     if ($filter_boards && $user->ebms_boards) {
         //Add table to query    
         $boardsjoin = new views_join();
-        $boardsjoin->construct("field_data_field_boards", 'node', 'nid', 'entity_id');
+        $boardsjoin->construct("field_data_field_boards", 'node', 'nid',
+            'entity_id');
         $query->table_queue['node__field_data_field_boards'] = array(
             'table' => 'field_data_field_boards',
             'num' => 1,
@@ -187,17 +200,20 @@ function _calendar_query_alter(&$view, &$query) {
 
         //Add where condition
         if (!$filter_boards) {
-            $or_conditions -> condition('field_data_field_boards.field_boards_value', '', 'IS NOT NULL');
+            $or_conditions->condition('field_data_field_boards.field_boards_value',
+                '', 'IS NOT NULL');
         } else {
-            $or_conditions -> condition('field_data_field_boards.field_boards_value', $user->ebms_boards , 'IN');
+            $or_conditions->condition('field_data_field_boards.field_boards_value',
+                $user->ebms_boards, 'IN');
         }
     }
-    
+
     //Subgroups:
     if ($user->ebms_subgroups) {
         //Add table to query
         $subgroupsjoin = new views_join();
-        $subgroupsjoin->construct("field_data_field_subgroups", 'node', 'nid', 'entity_id');
+        $subgroupsjoin->construct("field_data_field_subgroups", 'node', 'nid',
+            'entity_id');
         $query->table_queue['node__field_data_field_subgroups'] = array(
             'table' => 'field_data_field_subgroups',
             'num' => 1,
@@ -205,15 +221,17 @@ function _calendar_query_alter(&$view, &$query) {
             'join' => $subgroupsjoin,
             'relationship' => 'node'
         );
-        
+
         //Add where condition
-        $or_conditions -> condition('field_data_field_subgroups.field_subgroups_value', $user->ebms_subgroups , 'IN');
+        $or_conditions->condition('field_data_field_subgroups.field_subgroups_value',
+            $user->ebms_subgroups, 'IN');
     }
     //Ad hoc groups:
     if ($user->ebms_ad_hoc_groups) {
         //Add table to query
         $adhocgroupsjoin = new views_join();
-        $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups", 'node', 'nid', 'entity_id');
+        $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups", 'node',
+            'nid', 'entity_id');
         $query->table_queue['node__field_data_field_ad_hoc_groups'] = array(
             'table' => 'field_data_field_ad_hoc_groups',
             'num' => 1,
@@ -221,14 +239,14 @@ function _calendar_query_alter(&$view, &$query) {
             'join' => $adhocgroupsjoin,
             'relationship' => 'node'
         );
-        
+
         //Add where condition
-        $or_conditions -> condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value', $user->ebms_ad_hoc_groups , 'IN');
+        $or_conditions->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
+            $user->ebms_ad_hoc_groups, 'IN');
     }
     $query->add_where(
-            'membership', 
-            $or_conditions               
-    );    
+        'membership', $or_conditions
+    );
 }
 
 /**

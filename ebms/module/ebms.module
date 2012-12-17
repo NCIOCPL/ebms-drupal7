@@ -1335,3 +1335,26 @@ function ebms_node_presave($node) {
 
     }
 }
+
+function ebms_date_formats() {
+    return array(
+        array(
+            'format' => 'F j, Y',
+            'type' => 'ebms_date',
+            'locales' => array(),
+        ),
+        array(
+            'format' => 'g:i A',
+            'type' => 'ebms_time',
+            'locale' => array(),
+        )
+    );
+}
+
+function ebms_date_format_types() {
+    $format_type = array();
+    $format_type['ebms_date'] = t('Date Only');
+    $format_type['ebms_time'] = t('Time Only');
+
+    return $format_type;
+}

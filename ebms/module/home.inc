@@ -435,8 +435,10 @@ class EbmsHomePage {
         return $this->table_block($title, 'calendar', $rows, $prefix);*/
         
         drupal_add_css(Ebms\CSS_DIR . '/calendar.css');
-        
+
         $view = views_get_view('event_calendar');
+        if(!$view)
+            return array();
         $display = $view->preview('month_block');
         
         return array(
