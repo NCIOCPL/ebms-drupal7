@@ -1076,3 +1076,8 @@ div.ctools-modal-content a.close img {
 div.ctools-modal-content .form-item label {
     float: none;
 }
+
+/* VIEWS */
+.view-display-id-block_next .views-field-field-datespan-1 .date-display-single {
+    font-weight: bold;
+}
