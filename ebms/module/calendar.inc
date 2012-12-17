@@ -148,16 +148,87 @@ function ebms_calendar_left_nav($span = null) {
 function _calendar_query_alter(&$view, &$query) {
     global $user;
 
-    // if the user is a board member...
-    if (in_array('board member', $user->roles)) {
-        // add a condition to the query to ensure the event's board is in the 
-        // member's set of boards
-        $query->where[1]['conditions'][] = array(
-            'field' => 'field_data_board.board_value',
-            'value' => $user->ebms_boards,
-            'operator' => 'IN',
-        );
+    //If the user is UID 1 or an EBMS administrator, there is no filtering of
+    //events
+    if (user_access("administer ebms"))
+        return;
+    
+    //TODO: If power users are viewing all items, then don't filter
+    //if viewing all then just return.
+        
+    //Determine if we should show all board meetings or not
+    $filter_boards = true;
+    
+    //If the user is an icrdb or board manager they are a power user
+    //if we are looking at the month, week, or day calendar, then we
+    //should not filter boards.
+    if ((in_array('icrdb manager', $user->roles) || 
+            in_array('board manager', $user->roles))
+        && in_array($view->current_display, array('month', 'week', 'day'))) 
+    {
+        $filter_boards = false;
     }
+    
+    //Initialize an OR conditional for selects
+    $or_conditions = db_or();
+
+    //Boards:
+    if ($filter_boards && $user->ebms_boards) {
+        //Add table to query    
+        $boardsjoin = new views_join();
+        $boardsjoin->construct("field_data_field_boards", 'node', 'nid', 'entity_id');
+        $query->table_queue['node__field_data_field_boards'] = array(
+            'table' => 'field_data_field_boards',
+            'num' => 1,
+            'alias' => 'field_data_field_boards',
+            'join' => $boardsjoin,
+            'relationship' => 'node'
+        );
+
+        //Add where condition
+        if (!$filter_boards) {
+            $or_conditions -> condition('field_data_field_boards.field_boards_value', '', 'IS NOT NULL');
+        } else {
+            $or_conditions -> condition('field_data_field_boards.field_boards_value', $user->ebms_boards , 'IN');
+        }
+    }
+    
+    //Subgroups:
+    if ($user->ebms_subgroups) {
+        //Add table to query
+        $subgroupsjoin = new views_join();
+        $subgroupsjoin->construct("field_data_field_subgroups", 'node', 'nid', 'entity_id');
+        $query->table_queue['node__field_data_field_subgroups'] = array(
+            'table' => 'field_data_field_subgroups',
+            'num' => 1,
+            'alias' => 'field_data_field_subgroups',
+            'join' => $subgroupsjoin,
+            'relationship' => 'node'
+        );
+        
+        //Add where condition
+        $or_conditions -> condition('field_data_field_subgroups.field_subgroups_value', $user->ebms_subgroups , 'IN');
+    }
+    //Ad hoc groups:
+    if ($user->ebms_ad_hoc_groups) {
+        //Add table to query
+        $adhocgroupsjoin = new views_join();
+        $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups", 'node', 'nid', 'entity_id');
+        $query->table_queue['node__field_data_field_ad_hoc_groups'] = array(
+            'table' => 'field_data_field_ad_hoc_groups',
+            'num' => 1,
+            'alias' => 'field_data_field_ad_hoc_groups',
+            'join' => $adhocgroupsjoin,
+            'relationship' => 'node'
+        );
+        
+        //Add where condition
+        $or_conditions -> condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value', $user->ebms_ad_hoc_groups , 'IN');
+    }
+    $query->add_where(
+            'membership', 
+            $or_conditions               
+    );    
 }
 
 /**
