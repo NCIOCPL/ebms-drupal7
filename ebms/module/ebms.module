@@ -29,11 +29,24 @@ module_load_include('inc', 'ebms', 'includes/ebms.nodes');
  */
 function ebms_permission() {
     return array(
+        /*Administer EBMS vs Administer:
+          The Administer permission below should be changed to be something 
+          other than "administer" since that permission is not really 
+          an admin type permission.  'administer ebms' will be used for managing
+          board membership, subgroup membership, and adhoc membership.  Also
+          this permission will grant access to all EBMS content.
+          --BryanP 12/16/2012
+         * 
+         */
+        'administer ebms' => array(
+            'title' => t('Administer EBMS'),
+            'description' => t('Manage EBMS Membership and Users.  Note: Also enables access to all EBMS content.')
+        ),
         'administer' => array(
             'title' => t('Perform Administrative Tasks'),
             'description' =>
             t('Post documents, manage groups, send messages, etc.'),
-        ),
+        ),        
         'manage citations' => array(
             'title' => t('Manage Citations'),
             'description' =>
@@ -980,6 +993,25 @@ function ebms_user_load($users) {
         foreach ($results as $result)
             $boards[] = $result->board_id;
         $users[$uid]->boards = $boards;
+        
+        $sgresults = db_select('ebms_subgroup_member', 'm')
+            ->fields('m', array('sg_id'))
+            ->condition('m.user_id', $uid)
+            ->execute();
+        $subgroups = array();
+        foreach ($sgresults as $sgresult)
+            $subgroups[] = $sgresult->sg_id;
+        $users[$uid]->subgroups = $subgroups;
+        
+        $ahgresults = db_select('ebms_ad_hoc_group_member', 'm')
+            ->fields('m', array('group_id'))
+            ->condition('m.user_id', $uid)
+            ->execute();
+        $adhocgroups = array();
+        foreach ($ahgresults as $ahgresult)
+            $adhocgroups[] = $ahgresult->group_id;
+        $users[$uid]->adhocgroups = $adhocgroups;
+                
     }
     $results = db_select('ebms_user', 'u')
         ->fields('u', array('user_id', 'password_changed'))
@@ -1172,6 +1204,7 @@ function ebms_views_api() {
 function ebms_views_query_alter(&$view, &$query) {
     switch ($view->name) {
         case 'event_calendar':
+        case 'activity_block': //Using the same function - same functionality   
             require_once 'calendar.inc';
             _calendar_query_alter($view, $query);
             break;
