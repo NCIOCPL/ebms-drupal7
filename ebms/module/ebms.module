@@ -1204,7 +1204,7 @@ function ebms_views_api() {
 function ebms_views_query_alter(&$view, &$query) {
     switch ($view->name) {
         case 'event_calendar':
-        case 'activity_block': //Using the same function - same functionality   
+        case 'recent_activity': //Using the same function - same functionality   
             require_once 'calendar.inc';
             _calendar_query_alter($view, $query);
             break;
