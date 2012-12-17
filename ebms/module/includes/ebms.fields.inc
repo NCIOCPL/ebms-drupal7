@@ -127,14 +127,17 @@ $GLOBALS['ebms_node_fields'] = array(
         ),
     ),
     // Individuals who can be selected
-    /*array(
-        'label' => t('Individual Recipients'),
-        'entity_type' => 'node',
-        'description' => t('Select from the list of individual recipients.'),
-        'field_name' => ''
-    ),*/
+    /* array(
+      'label' => t('Individual Recipients'),
+      'entity_type' => 'node',
+      'description' => t('Select from the list of individual recipients.'),
+      'field_name' => ''
+      ), */
+    
+    // in-house staff and board members merged into 'Individuals' field
+    
 // in-house staff (board managers, medical librarians, administrators)
-    array(
+    /*array(
         'label' => t('In-House Staff'),
         'entity_type' => 'node',
         'description' => t('Select from the available in-house staff.'),
@@ -149,7 +152,6 @@ $GLOBALS['ebms_node_fields'] = array(
         'settings' => array(
         ),
         'bundles' => array(
-            'ebms_event'
         ),
     ),
 // board members - multiple select, populated/limited from editorial board?
@@ -168,9 +170,8 @@ $GLOBALS['ebms_node_fields'] = array(
         'settings' => array(
         ),
         'bundles' => array(
-            'ebms_event'
         ),
-    ),
+    ),*/
     // agenda - rich text
     array(
         'label' => t('Agenda'),
@@ -248,9 +249,10 @@ $GLOBALS['ebms_node_fields'] = array(
             'type' => 'options_select',
         ),
         'settings' => array(
+            'allowed_values_function' => 'ebms_individuals_allowed_values_callback',
         ),
         'bundles' => array(
-        // add bundles as needed
+            'ebms_event',
         ),
     ),
 );
@@ -274,6 +276,7 @@ $GLOBALS['ebms_entity_fields'] = array(
         'bundles' => array(
             'activity_new_event',
             'activity_cancelled_event',
+            'activity_changed_event',
         ),
     ),
 );
@@ -290,6 +293,7 @@ foreach ($GLOBALS['ebms_node_fields'] as $field) {
                 'activity_new_articles',
                 'activity_new_event',
                 'activity_cancelled_event',
+                'activity_changed_event',
             );
 
             $GLOBALS['ebms_entity_fields'][] = $messageField;

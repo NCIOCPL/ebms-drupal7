@@ -67,6 +67,24 @@ $GLOBALS['recent_activity_types'] = array(
               ]
             }
           }',
+    'activity_changed_event' => '{
+            "name" : "activity_changed_event",
+            "description" : "Changed Event",
+            "argument_keys" : [],
+            "argument" : [],
+            "category" : "message_type",
+            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
+            "language" : "",
+            "arguments" : null,
+            "message_text" : { "und" : [
+                {
+                  "value" : "[message:field_title] time updated.  [message:timestamp:custom:m\/d\/Y]",
+                  "format" : "plain_text",
+                  "safe_value" : "\u003Cp\u003ENew event [message:field_title] posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+                }
+              ]
+            }
+          }',
 );
 
 function _ebms_install_create_recent_activity() {

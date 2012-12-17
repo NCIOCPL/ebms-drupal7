@@ -100,6 +100,7 @@ $handler->display->display_options['filters']['type']['table'] = 'message';
 $handler->display->display_options['filters']['type']['field'] = 'type';
 $handler->display->display_options['filters']['type']['value'] = array(
   'activity_cancelled_event' => 'activity_cancelled_event',
+  'activity_changed_event' => 'activity_changed_event',
   'activity_new_articles' => 'activity_new_articles',
   'activity_new_event' => 'activity_new_event',
 );

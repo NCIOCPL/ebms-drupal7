@@ -253,10 +253,15 @@ function ebms_calendar_edit_event($nid) {
     return $form;
 }
 
+/**
+ * Local implementation of hook_form_alter.  Adds a default date to the event's
+ * date fields.
+ * 
+ * @param array $form       The existing form to alter.
+ * @param array $form_state The form's state.
+ * @return array $form      The updated form.
+ */
 function calendar_node_form_alter(&$form, &$form_state) {
-    require_once('EbmsArticle.inc');
-    require_once('common.inc');
-
     $params = drupal_get_query_parameters();
 
     if (isset($params['date'])) {
@@ -270,52 +275,6 @@ function calendar_node_form_alter(&$form, &$form_state) {
         $form['field_datespan']['und'][0]['#default_value']['value'] = $timestamp;
         $form['field_datespan']['und'][0]['#default_value']['value2'] = $timestamp;
     }
-
-    drupal_add_css(Ebms\CSS_DIR . '/calendar.css');
-
-    $node = $form_state['node'];
-
-    $users = entity_load('user');
-
-    $inhouse = array();
-    $boardMembers = array();
-    foreach ($users as $user) {
-        if (in_array('medical librarian', $user->roles) ||
-            in_array('board manager', $user->roles) ||
-            in_array('site manager', $user->roles)) {
-            $inhouse[$user->uid] = $user->name;
-        }
-
-        if ((in_array('board member', $user->roles) ||
-            in_array('board manager', $user->roles))) {
-            $boardMembers[$user->uid] = $user->name;
-        }
-    }
-
-    $inhouseChosen = field_get_items('node', $node, 'field_inhouse_staff');
-    $inhouseDefaults = array();
-    if ($inhouseChosen)
-        foreach ($inhouseChosen as $chosen) {
-            $inhouseDefaults[] = $chosen['value'];
-        }
-
-    $form['field_inhouse_staff']['und']['#options'] = $inhouse;
-    $form['field_inhouse_staff']['und']['#multiple'] = true;
-    if (!empty($inhouseDefaults))
-        $form['field_inhouse_staff']['und']['#default_value'] = $inhouseDefaults;
-
-
-    $chosenMembers = field_get_items('node', $node, 'field_board_members');
-    $defaultMembers = array();
-    if ($chosenMembers)
-        foreach ($chosenMembers as $chosen) {
-            $defaultMembers[] = $chosen['value'];
-        }
-
-    $form['field_board_members']['und']['#options'] = $boardMembers;
-    $form['field_board_members']['und']['#multiple'] = true;
-    if (!empty($inhouseDefaults))
-        $form['field_board_members']['und']['#default_value'] = $defaultMembers;
 
     return $form;
 }

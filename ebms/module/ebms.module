@@ -1263,6 +1263,44 @@ function ebms_ad_hoc_group_allowed_values_callback($field) {
 }
 
 /**
+ * Allowed values callback function for the EBMS Individuals Field.
+ * 
+ * @param type $field The field this is controlling.
+ */
+function ebms_individuals_allowed_values_callback($field) {
+
+    // collect all non-anonymous users
+    // TODO: prevent other roles from appearing as well?
+    $roles = array();
+    $roles[] = user_role_load_by_name('anonymous user')->rid;
+    $roles[] = user_role_load_by_name('administrator')->rid;
+    $roleResult = db_select('users_roles', 'ur')
+                    ->fields('ur', array('uid'))
+                    ->condition('rid', $roles, 'NOT IN')
+                    ->execute()->fetchCol();
+    
+    // use the UIDs to limit the query
+    $query = new EntityFieldQuery();
+    $uidResult = $query->entityCondition('entity_type', 'user')
+            ->propertyCondition('status', '1')
+            ->propertyCondition('uid', $roleResult)
+            ->execute();
+    
+    if(isset($uidResult['user'])){
+        $users = user_load_multiple(array_keys($uidResult['user']));
+                
+        $userOptions = array();
+        foreach($users as $key => $user){
+            $userOptions[$key] = $user->name;
+        }
+        
+        return $userOptions;
+    }
+
+    return array();
+}
+
+/**
  * Implementation of hook_node_presave.  Triggers appropriate recent activity
  * messages based on changes to event nodes.
  * 
@@ -1278,9 +1316,22 @@ function ebms_node_presave($node) {
         }
 
         // vice versa, if the node is not new and was previously published
-        if (!$node->status && !$node->is_new && $node->original->status) {
+        else if (!$node->status && !$node->is_new && $node->original->status) {
             // note the unpublish activity
             \Ebms\Util::activityEventCancelled($node);
         }
+
+        // if the node is not new and the time has changed
+        if (!$node->is_new && $node->status && $node->original->status) {
+            // compare the two dates
+            $origDate = field_get_items('node', $node->original, 'field_datespan');
+            $currentDate = field_get_items('node', $node, 'field_datespan');
+
+            $diff = array_diff($origDate[0], $currentDate[0]);
+
+            if (!empty($diff))
+                \Ebms\Util::activityEventChanged($node);
+        }
+
     }
 }

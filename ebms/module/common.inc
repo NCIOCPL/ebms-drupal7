@@ -1095,25 +1095,8 @@ class Util {
         $message->save();
 
         $wrapper = entity_metadata_wrapper('message', $message);
-        $wrapper->field_title->set($node->title);
 
-        // retrieve boards
-        $node_boards = field_get_items('node', $node, 'field_boards');
-        if ($node_boards) {
-            $wrapper->field_boards->set($node_boards);
-        }
-
-        // retrieve subgroups
-        $node_subgroups = field_get_items('node', $node, 'field_subgroups');
-        if ($node_subgroups) {
-            $wrapper->field_subgroups->set($node_subgroups);
-        }
-
-        // retrieve ad-hoc groups
-        $node_adhoc_groups = field_get_items('node', $node, 'field_ad_hoc_groups');
-        if ($node_adhoc_groups) {
-            $wrapper->field_ad_hoc_groups->set($node_adhoc_groups);
-        }
+        \Ebms\Util::wrapEventMetadata($node, $wrapper);
 
         $wrapper->save();
     }
@@ -1126,6 +1109,30 @@ class Util {
         $message->save();
 
         $wrapper = entity_metadata_wrapper('message', $message);
+       
+        \Ebms\Util::wrapEventMetadata($node, $wrapper);
+
+        $wrapper->save();
+    }
+    
+    
+    public static function activityEventChanged($node) {
+        if ($node->type != 'ebms_event' || !$node->status)
+            return;
+        
+        $message = message_create('activity_changed_event');
+        $message->save();
+
+        $wrapper = entity_metadata_wrapper('message', $message);
+       
+        \Ebms\Util::wrapEventMetadata($node, $wrapper);
+
+        $wrapper->save();
+    }
+    
+    public static function wrapEventMetadata($node, $wrapper)
+    {
+        // retrieve title
         $wrapper->field_title->set($node->title);
 
         // retrieve boards
@@ -1145,8 +1152,11 @@ class Util {
         if ($node_adhoc_groups) {
             $wrapper->field_ad_hoc_groups->set($node_adhoc_groups);
         }
-
-        $wrapper->save();
+        
+        // collect inhouse staff, board members, and individuals data
+        $node_individuals = field_get_items('node', $node, 'field_individuals');
+        if($node_individuals)
+            $wrapper->field_individuals->set($node_individuals);        
     }
 
     /**
