@@ -940,6 +940,9 @@ function ebms_page_build(&$page) {
  */
 function ebms_init() {
     global $user;
+    if (!user_is_logged_in() && $_GET['q'] != 'login')
+        drupal_goto('login');
+    
     $sflib = libraries_get_path('superfish');
     drupal_add_js("$sflib/superfish.js");
     drupal_add_js("$sflib/supersubs.js");
