@@ -65,6 +65,12 @@ function pdq_ebms_alantest() {
             if ($op)
                 return pdq_ebms_search_test();
             return drupal_get_form('ebms_testapi_search_form');
+        /*
+        case 'setPrintMember':
+            if ($op)
+                return pdq_ebms_setprintmember_test();
+            return drupal_get_form('ebms_testapi_setprintmember_form');
+        */
         case 'printPkts':
             if ($op)
                 return pdq_ebms_printpkt_test();
@@ -896,6 +902,11 @@ function ebms_testapi_search_form($form) {
 }
 
 /**
+ * Form to manage who gets printouts
+ * XXX LEFT OFF HERE XXX
+ */
+
+/**
  * Form for packet printing test.
  */
 function ebms_testapi_printpkt_form($form) {
@@ -907,20 +918,24 @@ function ebms_testapi_printpkt_form($form) {
     );
 
     addBoardIdToForm($form,
-        'To print all packets for a board, select a  board name');
+        'To print all packets for a board, select a  board name.');
 
     addMemberIdToForm($form,
-        'To print packets for a single board member, select a member name  ' .
-        'If the person is a member of more than one board, enter board name ' .
-        'above.');
+        'To print all packets for a single board member, select a member  ' .
+        'name.<br />' .
+        'If the person is a member of more than one board, enter ' .
+        'the board name above.<br />' .
+        'To print just one packet for a board member, enter the packet ' .
+        'ID below.');
 
     $form['packetId'] = array(
         '#type' => 'textfield',
         '#size' => 8,
         '#title' => 'Packet internal id',
         '#description' => 'To print a single packet, regardless of board ' .
-            'or board member, enter the packet internal integer ID.  ' .
-            'Board and member names will be ignored.',
+            'or board member, enter the packet internal integer ID.<br />' .
+            'If a member name is entered, response sheets will be created, ' .
+            'otherwise no response sheets will be created.',
         '#required' => false
     );
 
@@ -929,10 +944,10 @@ function ebms_testapi_printpkt_form($form) {
         '#size' => 16,
         '#title' => 'Take packets from on or after this date',
         '#description' => 'Optionally, print packets created on or after '.
-            'the specified date, entered as "YYYYMMDD {HH:MM:SS}".  ' .
-            'Default is the datetime immediately after the last packet
-            printing for the specified board or member.  ' .
-            'Hours:Minutes:Seconds are optional',
+            'the specified date, entered as "YYYY-MM-DD {HH:MM:SS}".<br />' .
+            'Default is the datetime immediately after the last packet ' .
+            'printing for the specified board or member.<br />' .
+            'Hours:Minutes:Seconds are optional.',
         '#required' => false
     );
 
@@ -941,7 +956,7 @@ function ebms_testapi_printpkt_form($form) {
         '#size' => 16,
         '#title' => 'Take packets created before this date',
         '#description' => 'Optionally, print packets created before '.
-            'the specified date, entered as "YYYYMMDD {HH:MM:SS}".  ' .
+            'the specified date, entered as "YYYY-MM-DD {HH:MM:SS}".  ' .
             'Default is right now.',
         '#required' => false
     );
@@ -950,9 +965,10 @@ function ebms_testapi_printpkt_form($form) {
         '#type' => 'textfield',
         '#size' => 6,
         '#title' => 'Old print job ID',
-        '#description' => 'Optionally, the ID of a print job to be re-run  ' .
-            'If supplied, all other parameters are ignored and the ' .
-            'parameters of the old job are re-used.',
+        '#description' =>
+            'Optionally, the ID of a print job to be re-run.<br />' .
+            'If supplied, all other parameters except Job mode and comment ' .
+            'are ignored and the parameters of the old job are re-used.',
         '#required' => false
     );
 
@@ -960,9 +976,9 @@ function ebms_testapi_printpkt_form($form) {
         '#type' => 'select',
         '#title' => 'Job mode',
         '#description' => 'Test mode shows what would print without ' .
-            'producing all of the printable documents.  Live mode ' .
-            'produces all of the documents and updates the database ' .
-            'to record what was printed.',
+            'producing all of the printable documents.<br />' .
+            'Live mode produces all of the documents and updates the ' .
+            'database to record what was printed.',
         '#options' => array('test' => 'Test', 'live' => 'Live'),
         '#default_value' => 'test',
         '#required' => true
