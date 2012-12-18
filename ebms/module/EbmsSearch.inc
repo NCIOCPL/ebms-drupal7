@@ -42,11 +42,9 @@ function getSearchQuery($json) {
     // $srch->qry->range(0,500);
 
 // DEBUG
-$jspec = print_r($srch->spec, true);
-pdq_ebms_debug("SEARCH: ", "Full decoded json spec:\n$jspec\n");
-pdq_ebms_debug("SEARCH: ", "SQL for query:\n{$srch->qry}\n");
-// $query = print_r($srch->qry, true);
-// logw("Query object for query:\n$query\n");
+// $jspec = print_r($srch->spec, true);
+// logw("Full decoded json spec:\n$jspec\n");
+// logw("SQL for query:\n{$srch->qry}\n");
 
 
     return $srch->qry;
@@ -519,9 +517,9 @@ class EbmsSearch {
         $jrnlTitle = $this->spec['journal'];
         if ($jrnlTitle) {
             if ($this->chkWildCards($jrnlTitle))
-                $this->qry->condition('art.jrnl_title', $jrnlTitle, 'LIKE');
+                $this->qry->condition('art.journal_title', $jrnlTitle, 'LIKE');
             else
-                $this->qry->condition('art.jrnl_title', $jrnlTitle);
+                $this->qry->condition('art.journal_title', $jrnlTitle);
         }
     }
 
@@ -690,6 +688,8 @@ class EbmsSearch {
      */
     function srchInputDate() {
 
+$xxx = print_r($this->spec['input-start']);
+
         if ($this->spec['input-start']['year']) {
             $dateLimits = $this->chkDates(
                     $this->spec['input-start'],
@@ -814,9 +814,9 @@ class EbmsSearch {
             return null;
 
         // Set year relative to origin
-        $startYear = $sYear + 1899;
-        if ($eYear > 0)
-            $endYear = $eYear + 1899;
+        //     $startYear = $sYear + 1899;
+        // if ($eYear > 0)
+        //     $endYear = $eYear + 1899;
 
         // No start month means start in Jan 1.
         if ($sMonth == 0) {
