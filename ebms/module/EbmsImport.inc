@@ -843,7 +843,8 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
 
     // Instantiate an ImportBatch to contain stats and report
     $ib = new ImportBatch();
-    $ib->init('Pubmed', $topicId, $cycleId, $useNotList, $inputType,
+    $initNotList = $useNotList ? 'Y' : 'N';
+    $ib->init('Pubmed', $topicId, $cycleId, $initNotList, $inputType,
                $comment, $userId);
 
     // Get batches of articles from NLM until we got them all
@@ -1004,7 +1005,8 @@ function getCurrentCycleId() {
           )')->fetchField();
 
     if (!$cycleId)
-        throw new \Exception('EbmsImport->init() could not init cycleId');
+        throw new \Exception(
+                'EbmsImport->getCurrentCycleId() could not init cycleId');
 
     return $cycleId;
 }
@@ -1061,7 +1063,13 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
         throw new \Exception(
             "findPubmedIDs: Pass exactly one fileId, filename or string");
 
-    // One way or the other, we now have a string
+    // One way or the other we now have a string
+    // If downloaded via browser it might have a Unicode Byte Order Mark
+    // BOM = Hex: EF BB BF.  It's only legal at the start of a string.
+    $BOM = chr(239) . chr(187) . chr(191);
+    if (substr($dataStr, 0, 3) == $BOM)
+        $dataStr = substr($dataStr, 3);
+
     // Is there a Medline format Pubmed ID?
     $matches = array();
     $found = preg_match(MEDLINE_PMID_PAT, $dataStr, $matches,
