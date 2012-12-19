@@ -65,12 +65,6 @@ function pdq_ebms_alantest() {
             if ($op)
                 return pdq_ebms_search_test();
             return drupal_get_form('ebms_testapi_search_form');
-        /*
-        case 'setPrintMember':
-            if ($op)
-                return pdq_ebms_setprintmember_test();
-            return drupal_get_form('ebms_testapi_setprintmember_form');
-        */
         case 'printPkts':
             if ($op)
                 return pdq_ebms_printpkt_test();
@@ -376,10 +370,8 @@ function pdq_ebms_search_test() {
     // Get the query object
     $qry = Ebms\getSearchQuery($json);
 
-$qryVal = print_r($qry, true);
-logw($qryVal);
-$qryVal = (string) $qry;
-logw($qryVal);
+// $qryVal = (string) $qry;
+// logw($qryVal);
 
     // Execute the search
     $result = $qry->execute();
@@ -411,7 +403,7 @@ function pdq_ebms_printpkt_test() {
     // Get all form parameters
     $boardInfo  = boardRequest();
     $boardId    = $boardInfo['boardId'];
-    $memberName = Ebms\Util::get_request_value('memberId');
+    $memberIdx  = Ebms\Util::get_request_value('memberId');
     $packetId   = Ebms\Util::get_request_value('packetId');
     $startDt    = Ebms\Util::get_request_value('startDate');
     $endDt      = Ebms\Util::get_request_value('endDate');
@@ -420,12 +412,16 @@ function pdq_ebms_printpkt_test() {
     $comment    = Ebms\Util::get_request_value('comment');
 
     // Normalize
-    if ($memberName) {
-        $memberId = db_query(
+    if ($memberIdx) {
+        // Convert member array index to name, then ID
+        $memberList = getAllBoardMembers();
+        $memberName = $memberList[$memberIdx];
+        $memberId   = db_query(
             'SELECT uid FROM {users} WHERE name = :memberName',
-            array(':memberName' => $memberName));
+            array(':memberName' => $memberName))->fetchField();
     }
-    else $memberId = null;
+    else
+        $memberId = null;
 
     if (!$packetId) $packetId = null;
     if (!$startDt)  $startDt  = null;
