@@ -1251,8 +1251,8 @@ CREATE TABLE ebms_print_status_type (
  *                       of that one.  Else null.
  *  user_id             Drupal user ID of person who requested the printing.
  *  print_job_type_id   Why was this job printed.
- *  packet_start_dt     Only include packets created on or after this date.
- *  packet_end_dt       Only include packets created before this date.
+ *  packet_start_dt     Only include packets created on or after this datetime.
+ *  packet_end_dt       Only include packets created before this datetime.
  *  print_dt            Date time of actual printing.
  *  board_id            ID of board for which job was run.
  *  board_member_id     ID of board member for 'package' job type, optional
@@ -1267,8 +1267,8 @@ CREATE TABLE ebms_print_job (
     old_job_id          INTEGER NULL,
     user_id             INTEGER UNSIGNED NOT NULL,
     print_job_type_id   VARCHAR(16) NOT NULL,
-    packet_start_dt     DATE NULL,
-    packet_end_dt       DATE NULL,
+    packet_start_dt     DATETIME NULL,
+    packet_end_dt       DATETIME NULL,
     print_dt            DATETIME NULL,
     board_id            INTEGER NULL,
     board_member_id     INTEGER UNSIGNED NULL,
