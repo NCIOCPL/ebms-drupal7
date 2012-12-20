@@ -81,6 +81,10 @@ class EbmsReview {
         Ebms\Util::add_js();
         drupal_add_css(Ebms\CSS_DIR . '/review.css');
         Ebms\Menu::$active = 'Literature';
+        
+        if(!$this->check_permissions())
+            return MENU_ACCESS_DENIED;
+                     
         if (in_array('board member', $this->user->roles)) {
             if ($this->action == 'reviewer-upload') {
                 return $this->reviewer_upload_page();
@@ -1505,6 +1509,21 @@ class EbmsReview {
     }
 
     /**
+     * Determines if the chosen user is a reviewer for the current packet.
+     * 
+     * @return boolean TRUE if th euser is in the reviewer list, else FALSE.
+     */
+    private function is_reviewer() {
+        $count = db_select('ebms_packet_reviewer', 'r')
+            ->condition('r.reviewer_id', $this->user->uid)
+            ->condition('r.packet_id', $this->packet_id)
+            ->countQuery()
+            ->execute()
+            ->fetchField();
+        return ($count > 0);
+    }
+
+    /**
      * Don't want a board member bookmarking a review page and coming back
      * to an article she's already reviewed.
      */
@@ -1552,6 +1571,31 @@ class EbmsReview {
      */
     private function reviewer_packets() {
         return EbmsReview::reviewer_packets_by_id($this->user->uid);
+    }
+    
+    /**
+     * Checks the state of the review against the user's permissions to
+     * determine if any disallowed actions are being attempted.
+     * 
+     * @return boolean
+     */
+    private function check_permissions(){
+        // if the user is trying to act on behalf of another
+        if($this->on_behalf) {
+            // check their 'manage boards' access
+            if(!user_access('manage boards')){
+                return false;
+            }
+        }
+        
+        // if the packet is chosen and the user is not assigned, prevent further
+        // display of that packet
+        if ($this->packet_id && !$this->is_reviewer()) {
+            $this->packet_id = 0;
+            $this->article_id = 0;
+        }
+        
+        return true;
     }
 
     /*
