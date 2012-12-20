@@ -13,10 +13,11 @@
  * landing page, so there are no access restrictions.  Any user who is
  * logged in can view this page.  A visitor who is not logged in is
  * redirected to the login page.
+ *
+ * 2012-12-18 (RMK): that last bit (the redirect to the login page) is
+ * now handled earlier, in ebms_init().
  */
 function pdq_ebms_home() {
-    if (!user_is_logged_in())
-        drupal_goto('login');
     $page = new EbmsHomePage();
     return $page->build();
 }
