@@ -353,6 +353,7 @@ class Menu {
                     'Literature', 'review/reviews', array(
                         new Menu('Assigned Packets', 'review/packets'),
                         new Menu('Create Packet', 'review/add'),
+                        new Menu('Record Responses', 'review/record'),
                     )
                 );
             case 'member':
@@ -1072,6 +1073,70 @@ class Util {
         return $boards;
     }
     
+    /**
+     * Retrieves a list of active users, optionally limited by role and board.
+     * 
+     * @param array $role_names An optional array of role names.
+     * @param array $board_ids An optional array of board ids.
+     * @return array An array of valid users based on the arguments, indexed
+     *               by uid with a value of the user's name.
+     */
+    public static function get_active_users($role_names = array(),
+        $board_ids = array()) {
+        // screen the entity query against lists of role and board user ids
+        $board_users = false;
+        if (!empty($board_ids)) {
+            $board_query = db_select('ebms_board_member', 'm')
+                ->condition('m.board_id', $board_ids);
+            $board_query->addExpression('DISTINCT m.user_id', 'uid');
+            $board_users = $board_query->execute()
+                ->fetchCol();
+        }
+
+        $role_users = false;
+        if (!empty($role_names)) {
+            // look up role ids
+            $role_ids = array();
+            foreach ($role_names as $role_name) {
+                $role = user_role_load_by_name($role_name);
+                if ($role !== false) {
+                    $role_ids[] = $role->rid;
+                }
+            }
+
+            $role_query = db_select('users_roles', 'r')
+                ->condition('r.rid', $role_ids);
+            $role_query->addExpression('DISTINCT r.uid', 'uid');
+            $role_users = $role_query->execute()
+                ->fetchCol();
+        }
+
+        // use the UIDs to limit the query if set
+        $user_query = new \EntityFieldQuery();
+        $user_query->entityCondition('entity_type', 'user')
+            ->propertyCondition('status', '1')
+            ->propertyOrderBy('name');
+        
+        if($role_users !== false)
+            $user_query->propertyCondition('uid', $role_users);
+        
+        if($board_users !== false)
+            $user_query->propertyCondition('uid', $board_users);
+        
+        $uids_result = $user_query->execute();
+        
+        $user_options = array();
+        if (isset($uids_result['user'])) {
+            $users = user_load_multiple(array_keys($uids_result['user']));
+
+            foreach ($users as $key => $user) {
+                $user_options[$key] = $user->name;
+            }
+        }
+
+        return $user_options;
+    }
+
     /**
      * Creates a recent activity message indicating the given board has new
      * articles

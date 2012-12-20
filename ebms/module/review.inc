@@ -34,7 +34,8 @@ class EbmsReview {
         $sort_dir,
         $action,
         $reviewed,
-        $pager;
+        $pager,
+        $on_behalf;
     public static $url = 'review';
 
     /**
@@ -43,8 +44,6 @@ class EbmsReview {
      * browser.
      */
     public function __construct($action, $packet_id, $article_id) {
-        global $user;
-        $this->user         = $user;
         $this->packet_id    = Ebms\Util::get_request_value('packet',
                               $packet_id);
         $this->article_id   = Ebms\Util::get_request_value('article',
@@ -55,7 +54,24 @@ class EbmsReview {
         $this->action = $action;
         $this->reviewed     = Ebms\Util::get_request_value('reviewed');
         $this->pager        = Ebms\Util::get_request_value('pager');
+        $this->on_behalf    = Ebms\Util::get_request_value('obo');
         $this->packet_title = EbmsPacket::fetch_title($this->packet_id);
+        
+        // determine user
+        global $user;
+        $this->user = $user;
+
+        // if viewing page on behalf of another, load that account instead
+        if ($this->on_behalf) {
+            $account = user_load($this->on_behalf);
+            if ($account !== false) {
+                // use the account if it loaded
+                $this->user = $account;
+            } else {
+                // otherwise, clear out on_behalf as well
+                $this->on_behalf = '';
+            }
+        }
     }
 
     /**
@@ -80,20 +96,26 @@ class EbmsReview {
     private function choose_manager_review_page() {
         if (false)
             pdq_ebms_debug('SWITCHER', $this->action);
-        if ($this->action == 'packets')
-            return $this->manager_packets();
-        if ($this->action == 'reviews')
-            return $this->manager_reviews();
-        if ($this->action == 'add')
-            return drupal_get_form('pdq_ebms_edit_packet_form');
-        if ($this->action == 'edit')
-            return drupal_get_form('pdq_ebms_edit_packet_form',
-                $this->packet_id);
-        if ($this->action == 'delete')
-            return $this->delete_packet();
-        return $this->manager_literature_landing_page();
-    }
 
+        switch ($this->action) {
+            case 'packets':
+                return $this->manager_packets();
+            case 'reviews':
+                return $this->manager_reviews();
+            case 'add':
+                return drupal_get_form('pdq_ebms_edit_packet_form');
+            case 'edit':
+                return drupal_get_form('pdq_ebms_edit_packet_form',
+                        $this->packet_id);
+            case 'delete':
+                return $this->delete_packet();
+            case 'record':
+                return $this->record_responses();
+            default:
+                return $this->manager_literature_landing_page();
+        }
+    }
+    
     /*
      * Marks the current packet as inactive so it won't show up
      * in users' queues, then redirects to the page which shows
@@ -112,6 +134,23 @@ class EbmsReview {
             drupal_set_message("Failure deleting packet '$title'.", "error");
         $opts = array('query' => drupal_get_query_parameters());
         drupal_goto(EbmsReview::$url . '/packets', $opts);
+    }
+    
+    /**
+     * Shows the form to select a user and optionally a packet in order to enter
+     * responses on behalf of a board member.
+     * 
+     * @return array a Drupal render array containing the form and left nav.
+     */
+    private function record_responses() {
+        return array(
+            'left-nav' => $this->build_left_nav('Record Responses'),
+            'right-panel' => array(
+                'form' => drupal_get_form('pdq_ebms_record_responses_form'),
+                '#prefix' => "<div id='main-right-panel'><h2>Record Responses</h2>",
+                '#suffix' => "</div>",
+            ),
+        );
     }
 
     /**
@@ -310,12 +349,13 @@ class EbmsReview {
      *
      *  @param string $active  Current action, highlighted by CSS
      *
-     *  @return                Render array for left nav panel
+     *  @return array          Render array for left nav panel
      */
     public static function build_left_nav($active=null) {
         $links = array(
             array('Reviewed Packets', 'review/reviews'),
             array('View / Edit Packets', 'review/packets'),
+            array('Record Responses', 'review/record'),
         );
         $items = array();
         foreach ($links as $link_info) {
@@ -421,7 +461,7 @@ class EbmsReview {
         if (isset($opts['query']['boards']))
             $boards = explode(',', $opts['query']['boards']);
 
-        // If not, find the boards of she's a member.
+        // If not, find the boards of which she's a member.
         if (count($boards) < 1) {
             $results = db_select('ebms_board_member', 'm')
                 ->fields('m', array('board_id'))
@@ -456,6 +496,7 @@ class EbmsReview {
             array(
                 'data' => 'Updated',
                 'field' => 'updated',
+                'sort' => 'desc',
             ),
         );
 
@@ -1003,8 +1044,22 @@ class EbmsReview {
                 "REVIEW",
             )
         );
+        
+        // check for this page being used on behalf of another
+        $account = pdq_ebms_find_effective_user(false);
 
-        return drupal_get_form('pdq_ebms_board_member_review_form', $this);
+        $page = array();
+        if ($account) {
+            // append the name of the intended user and add the manager's left
+            // nav
+            $page['left-nav'] = $this->build_left_nav('Record Responses');
+            $page['main']['#prefix'] = "<div id='main-right-panel'>";
+            $page['main']['#suffix'] = "</div>";
+        }
+
+        $page['main']['form'] = drupal_get_form('pdq_ebms_board_member_review_form', $this);
+        
+        return $page;
     }
 
     /**
@@ -1012,17 +1067,32 @@ class EbmsReview {
      * in the member's queue for review.
      */
     private function member_packets() {
+        // check for this page being used on behalf of another
+        $account = pdq_ebms_find_effective_user(false);
+        $header_suffix = '';
+        $body_prefix = '';
+        $body_suffix = '';
+        $page = array();
+        if ($account) {
+            // append the name of the intended user and add the manager's left
+            // nav
+            $header_suffix = "for $account->name";
+            $page['left-nav'] = $this->build_left_nav('Record Responses');
+            $body_prefix = "<div id='main-right-panel'>";
+            $body_suffix = "</div>";
+        }
 
         drupal_set_breadcrumb(array('Literature'));
         $packets = $this->reviewer_packets();
-        $page = array(
-            '#prefix' => '<div id="member-packets">',
-            '#suffix' => '</div>',
+        $body = array(
+            '#prefix' => "$body_prefix<div id='member-packets'><h2>Assigned Packets $header_suffix</h2>",
+            '#suffix' => "</div>$body_suffix",
         );
         $options = array('html' => true);
         $url = EbmsReview::$url;
         foreach ($packets as $p) {
             $options['query'] = array('packet' => $p->packet_id);
+            pdq_ebms_preserve_on_behalf($options);
             $packet_link = l($p->packet_title, $url, $options);
             $options['query']['expanded'] = 's';
             $summaries_link = l('Summary Documents &nbsp; +', $url, $options);
@@ -1030,7 +1100,7 @@ class EbmsReview {
             $articles_link = l('Articles &nbsp; +', $url, $options);
             $options['query']['expanded'] = 'u';
             $uploads_link = l('Reviewer Uploads &nbsp; +', $url, $options);
-            $page["packet-{$p->packet_id}"] = array(
+            $body["packet-{$p->packet_id}"] = array(
                 'packet-title' => array(
                     '#type' => 'markup',
                     '#markup' => "<h2>$packet_link</h2>",
@@ -1049,9 +1119,10 @@ class EbmsReview {
                 ),
             );
         }
+        $page['body'] = $body;
+
         return $page;
     }
-
     /*
      * Display page for a single literature review packet.
      */
@@ -1065,21 +1136,38 @@ class EbmsReview {
                 $title,
             )
         );
+        
+        // check for this page being used on behalf of another
+        $account = pdq_ebms_find_effective_user(false);
+        $header_suffix = '';
+        $body_prefix = '';
+        $body_suffix = '';
+        $page = array();
+        if ($account) {
+            // append the name of the intended user and add the manager's left
+            // nav
+            $header_suffix = "(On behalf of $account->name)";
+            $page['left-nav'] = $this->build_left_nav('Record Responses');
+            $body_prefix = "<div id='main-right-panel'>";
+            $body_suffix = "</div>";
+        }
 
         // Build the page content.
-        $page = array(
-            '#prefix' => '<div id="member-packet">',
-            '#suffix' => '</div>',
+        $body = array(
+            '#prefix' => "$body_prefix<div id='member-packet'>",
+            '#suffix' => "</div>$body_suffix",
             'packet-title' => array(
                 '#type' => 'markup',
-                '#markup' => "<h2>{$this->packet_title}</h2>",
+                '#markup' => "<h2>{$this->packet_title} $header_suffix</h2>",
             ),
         );
 
         // Fold in the three sections and we're done.
-        $this->show_packet_summaries($page);
-        $this->show_packet_articles($page, $articles);
-        $this->show_reviewer_uploads($page);
+        $this->show_packet_summaries($body);
+        $this->show_packet_articles($body, $articles);
+        $this->show_reviewer_uploads($body);
+        
+        $page['body'] = $body;
         return $page;
     }
 
@@ -1463,27 +1551,7 @@ class EbmsReview {
      * at least one article is still waiting to be reviewed.
      */
     private function reviewer_packets() {
-        $query = db_select('ebms_packet', 'p');
-        $query->fields('p', array('packet_id', 'packet_title'));
-        $query->join('ebms_packet_reviewer', 'm', 'p.packet_id = m.packet_id');
-        $query->join('ebms_packet_article', 'a', 'a.packet_id = p.packet_id');
-        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
-        $query->leftJoin('ebms_article_review', 'r',
-            implode(' AND ',
-                array(
-                    'r.article_id = a.article_id',
-                    'r.reviewer_id = m.reviewer_id',
-                    'r.packet_id = p.packet_id',
-                )
-            )
-        );
-        $query->condition('m.reviewer_id', $this->user->uid);
-        $query->condition('p.active_status', 'A');
-        $query->isNull('r.article_id');
-        $query->distinct();
-        $query->orderBy('t.topic_name');
-        $query->orderBy('p.created_at', 'desc');
-        return $query->execute();
+        return EbmsReview::reviewer_packets_by_id($this->user->uid);
     }
 
     /*
@@ -1554,6 +1622,7 @@ class EbmsReview {
             'sort-col' => $this->sort_col,
             'sort-dir' => $this->sort_dir,
             'expanded' => $this->expanded,
+            'obo' => $this->on_behalf,
         );
         foreach ($names as $name => $value)
             if ($value)
@@ -1749,6 +1818,34 @@ SELECT DISTINCT t.topic_id, t.topic_name
             pdq_ebms_debug("REVIEWERS", $reviewers);
         return $reviewers;
     }
+
+    /**
+     * Fetch all of the packets assigned to the board member, in which
+     * at least one article is still waiting to be reviewed.
+     */
+    public static function reviewer_packets_by_id($user_id) {
+        $query = db_select('ebms_packet', 'p');
+        $query->fields('p', array('packet_id', 'packet_title'));
+        $query->join('ebms_packet_reviewer', 'm', 'p.packet_id = m.packet_id');
+        $query->join('ebms_packet_article', 'a', 'a.packet_id = p.packet_id');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->leftJoin('ebms_article_review', 'r',
+            implode(' AND ',
+                array(
+                'r.article_id = a.article_id',
+                'r.reviewer_id = m.reviewer_id',
+                'r.packet_id = p.packet_id',
+                )
+            )
+        );
+        $query->condition('m.reviewer_id', $user_id);
+        $query->condition('p.active_status', 'A');
+        $query->isNull('r.article_id');
+        $query->distinct();
+        $query->orderBy('p.created_at', 'desc');
+        $query->orderBy('t.topic_name');
+        return $query->execute();
+    }
 }
 
 /**
@@ -1874,13 +1971,23 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $attrs);
         $links .= " &nbsp; | &nbsp; $ft_link";
     }
+    
+    // check for this page being used on behalf of another
+    $account = pdq_ebms_find_effective_user(false);
+    $header_suffix = '';
+
+    if ($account) {
+        // append the name of the intended user and add the manager's left
+        // nav
+        $header_suffix = "(On behalf of $account->name)";
+    }
 
     // Assemble and return the form's render array.
     return array(
         '#id' => 'member-review',
         'packet-title' => array(
             '#type' => 'markup',
-            '#markup' => "<h2>$title</h2>"
+            '#markup' => "<h2>$title $header_suffix</h2>"
         ),
         'packet-subtitle' => array(
             '#type' => 'markup',
@@ -2014,7 +2121,22 @@ function pdq_ebms_board_member_review_form_validate($form, &$form_state) {
  * Store the board member's feedback on this article.
  */
 function pdq_ebms_store_review($form, &$form_state) {
+    $account = pdq_ebms_find_effective_user(false);
+    
+    // check for this page being used on behalf of another
     global $user;
+    $comment_suffix = '';
+    if ($account) {
+        // append the name of the intended user and add the manager's left
+        // nav        
+        
+        $comment_suffix = "<br /><br /><i>Recorded by $user->name on behalf of $account->name.</i>";
+    }
+    else
+    {
+        $account = $user;
+    }
+    
     $packet_id = $form_state['values']['packet'];
     $article_id = $form_state['values']['article'];
     $expanded = $form_state['values']['expanded'];
@@ -2028,9 +2150,9 @@ function pdq_ebms_store_review($form, &$form_state) {
             array(
                 'packet_id'   => $packet_id,
                 'article_id'  => $article_id,
-                'reviewer_id' => $user->uid,
+                'reviewer_id' => $account->uid,
                 'when_posted' => $now,
-                'comments'    => $comments,
+                'comments'    => $comments.$comment_suffix,
                 'loe_info'    => $loe,
             )
         )
@@ -2067,6 +2189,7 @@ function pdq_ebms_store_review($form, &$form_state) {
             'sort-dir' => $sort_dir,
         ),
     );
+    pdq_ebms_preserve_on_behalf($options);
     drupal_goto(EbmsReview::$url, $options);
 }
 
@@ -2150,7 +2273,7 @@ function pdq_ebms_doc_file_required($element, &$form_state) {
 function pdq_ebms_save_reviewer_file($form, &$form_state) {
 
     // Collect state information.
-    global $user;
+    $account = pdq_ebms_find_effective_user();
     $packet_id = $form_state['values']['packet'];
     $expanded = $form_state['values']['expanded'];
     $sort_col = $form_state['values']['sort-col'];
@@ -2171,7 +2294,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
             ->fields(
                 array(
                     'file_id' => $file->fid,
-                    'reviewer_id' => $user->uid,
+                    'reviewer_id' => $account->uid,
                     'packet_id' => $packet_id,
                     'when_posted' => $now,
                     'doc_title' => $file->filename,
@@ -2191,6 +2314,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
             'sort-dir' => $sort_dir,
         ),
     );
+    pdq_ebms_preserve_on_behalf($options);
     drupal_goto(EbmsReview::$url, $options);
 }
 
@@ -2642,4 +2766,168 @@ function pdq_ebms_packet_topic_ajax($form, $form_state) {
 function pdq_ebms_packet_reviewers_ajax($form, $form_state) {
     return $form['board-specific-fields']['topic-specific-fields']
         ['reviewers-div'];
+}
+
+/**
+ * Allows searching through boards and board members in order to find all
+ * packets available for review or a specific packet.
+ * 
+ * @param type $form
+ * @param type $form_state
+ */
+function pdq_ebms_record_responses_form($form, &$form_state) {
+    module_load_include('inc', 'ebms', 'EbmsArticle');
+    
+    // define an attribute to turn off field autocompletes
+    $attributes = array(
+        'autocomplete' => 'off',
+    );
+    
+    $form['board'] = array(
+        '#type' => 'select',
+        '#title' => t('Board'),
+        '#required' => true,
+        '#options' => Ebms\Util::boards(),
+        '#attributes' => $attributes,
+        '#ajax' => array(
+            'callback' => 'pdq_ebms_record_responses_board_js',
+            'wrapper' => 'member-field',
+        ),
+    );
+
+    $memberOptions = array(false => t('Please select a board.'));
+    $memberRequired = false;
+
+    if (isset($form_state['values']['board'])) {
+        $boardId = $form_state['values']['board'];
+
+        if ($boardId) {
+            $memberOptions = Ebms\Util::get_active_users(array('board member'),
+                    array($boardId));
+            $memberRequired = true;
+        }
+    }
+
+    $form['member'] = array(
+        '#type' => 'select',
+        '#title' => t('Board Member'),
+        '#required' => $memberRequired,
+        '#disabled' => !$memberRequired,
+        '#options' => $memberOptions,
+        '#attributes' => $attributes,
+        '#prefix' => "<div id='member-field'>",
+        '#suffix' => "</div>",
+        '#ajax' => array(
+            'callback' => 'pdq_ebms_record_responses_member_js',
+            'wrapper' => 'packet-field',
+        ),
+    );
+
+    $packetOptions = array(false => t('Please select a member.'));
+    if (isset($form_state['values']['member'])) {
+        $memberId = $form_state['values']['member'];
+
+        if ($memberId) {
+            $packetOptions = array(false => '');
+            $packets = EbmsReview::reviewer_packets_by_id($memberId);
+
+            foreach ($packets as $p) {
+                $packetOptions[$p->packet_id] = $p->packet_title;
+            }
+        }
+    }
+
+    $form['packet'] = array(
+        '#type' => 'select',
+        '#title' => t('Packet'),
+        '#options' => $packetOptions,
+        '#attributes' => $attributes,
+        '#disabled' => sizeof($packetOptions) == 1,
+        '#prefix' => "<div id='packet-field'>",
+        '#suffix' => "</div>",
+    );
+
+    $form['search_button'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search',
+    );
+
+    $form['cancel_button'] = array(
+        '#type' => 'submit',
+        '#value' => 'Cancel',
+        '#limit_validation_errors' => array(),
+        '#submit' => array('pdq_ebms_record_responses_form_cancel'),
+    );
+
+    return $form;
+}
+
+function pdq_ebms_record_responses_board_js($form, $form_state){
+    return $form['member'];
+}
+
+function pdq_ebms_record_responses_member_js($form, $form_state){
+    return $form['packet'];
+}
+
+function pdq_ebms_record_responses_form_submit($form, &$form_state) {
+    // retrieve the selected user
+    $memberId = $form_state['values']['member'];
+    $url = EbmsReview::$url . '/assigned';
+
+    // build the redirect options, namely the query
+    $opts['query']['obo'] = $memberId;
+
+    // if the packet is also set, add to the query and alter the destination
+    $packetId = $form_state['values']['packet'];
+    if ($packetId) {
+        $url = EbmsReview::$url;
+        $opts['query']['packet'] = $packetId;
+    }
+
+    drupal_goto($url, $opts);
+}
+
+function pdq_ebms_record_responses_form_cancel($form, &$form_state) {
+    $form_state['rebuild'] = false;
+}
+
+/**
+ * Takes an option array by reference and adds the on-behalf query if it exists
+ * for the current page.
+ * 
+ * @param array $opts The option array.
+ */
+function pdq_ebms_preserve_on_behalf(&$opts) {
+    $params = drupal_get_query_parameters();
+    if (isset($params['obo'])) {
+        $opts['query']['obo'] = $params['obo'];
+    }
+}
+
+/**
+ * Finds for which particular user reviews should be attributed.  This will
+ * usually be the current user, but may be another if entering print responses.
+ * 
+ * @global type $user
+ * @param bool $include_user Flag to include the current (global) user as a 
+ *                           potential output.
+ * @return mixed             Returns the effective user, which is possibly the 
+ *                           current user.  Can return FALSE if the global user
+ *                           is not to be included.
+ */
+function pdq_ebms_find_effective_user($include_user = true) {
+    $params = drupal_get_query_parameters();
+    if (isset($params['obo'])) {
+        $account = user_load($params['obo']);
+        if ($account !== false)
+            return $account;
+    }
+
+    if ($include_user) {
+        global $user;
+        return $user;
+    }
+
+    return false;
 }
