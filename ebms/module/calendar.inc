@@ -80,6 +80,9 @@ function ebms_calendar_left_nav($span = null) {
 
         $display = $view->preview('block_upcoming');
 
+
+        
+        
         $output[] = '<div id="upcoming-events">';
         $output[] = $display;
         $output[] = "<div class='ebms-left-nav-block-bottom'><img alt='' src='$imagesDir/left-nav-box-bottom.png'></div>";
@@ -169,14 +172,18 @@ function _calendar_query_alter(&$view, &$query) {
 
     //TODO: If power users are viewing all items, then don't filter
     //if viewing all then just return.
+    if (user_access("view all events")
+        && in_array($view->current_display, array('month_all', 'week_all', 'day_all'))) {
+        return;
+    }
+    
     //Determine if we should show all board meetings or not
     $filter_boards = true;
 
     //If the user is an icrdb or board manager they are a power user
     //if we are looking at the month, week, or day calendar, then we
     //should not filter boards.
-    if ((in_array('icrdb manager', $user->roles) ||
-        in_array('board manager', $user->roles))
+    if (user_access("view all events")
         && in_array($view->current_display, array('month', 'week', 'day'))) {
         $filter_boards = false;
     }
@@ -189,7 +196,10 @@ function _calendar_query_alter(&$view, &$query) {
         //Add table to query    
         $boardsjoin = new views_join();
         $boardsjoin->construct("field_data_field_boards", 'node', 'nid',
-            'entity_id');
+            'entity_id', array(
+                array('field' => 'entity_type', 'value' => $view->base_table),
+                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+            ));
         $query->table_queue['node__field_data_field_boards'] = array(
             'table' => 'field_data_field_boards',
             'num' => 1,
@@ -213,7 +223,10 @@ function _calendar_query_alter(&$view, &$query) {
         //Add table to query
         $subgroupsjoin = new views_join();
         $subgroupsjoin->construct("field_data_field_subgroups", 'node', 'nid',
-            'entity_id');
+            'entity_id', array(
+                array('field' => 'entity_type', 'value' => $view->base_table),
+                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+            ));
         $query->table_queue['node__field_data_field_subgroups'] = array(
             'table' => 'field_data_field_subgroups',
             'num' => 1,
@@ -231,7 +244,10 @@ function _calendar_query_alter(&$view, &$query) {
         //Add table to query
         $adhocgroupsjoin = new views_join();
         $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups", 'node',
-            'nid', 'entity_id');
+            'nid', 'entity_id', array(
+                array('field' => 'entity_type', 'value' => $view->base_table),
+                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+            ));
         $query->table_queue['node__field_data_field_ad_hoc_groups'] = array(
             'table' => 'field_data_field_ad_hoc_groups',
             'num' => 1,
@@ -244,6 +260,28 @@ function _calendar_query_alter(&$view, &$query) {
         $or_conditions->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
             $user->ebms_ad_hoc_groups, 'IN');
     }
+    
+    //Individual Users:
+    //Add table to query
+    $userjoin = new views_join();
+    $userjoin->construct("field_data_field_individuals", 'node',
+        'nid', 'entity_id',array(
+                array('field' => 'entity_type', 'value' => $view->base_table),
+                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+            ));
+    $query->table_queue['node__field_data_field_individuals'] = array(
+        'table' => 'field_data_field_individuals',
+        'num' => 1,
+        'alias' => 'field_data_field_individuals',
+        'join' => $userjoin,
+        'relationship' => 'node'
+    );
+
+    //Add where condition
+    $or_conditions->condition('field_data_field_individuals.field_individuals_value',
+        array($user->uid), 'IN'); //Note the use of array here.  IN must have an array
+    
+    
     $query->add_where(
         'membership', $or_conditions
     );

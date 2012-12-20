@@ -65,6 +65,13 @@ function ebms_permission() {
                 'for incorporation information from those articles into ' .
                 'PDQ Cancer Summaries'),
         ),
+        'view all events' => array(
+            'title' => t('View All Events'),
+            'description' =>
+            t('Determines if the user can access all events views in the ' .
+                'calendar. Note: This will also show all board events in ' .
+                "the user's filtered view. ")
+        ),        
     );
 }
 
