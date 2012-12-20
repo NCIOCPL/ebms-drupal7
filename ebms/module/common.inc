@@ -1362,6 +1362,30 @@ class Util {
     }
 
     /**
+     * Fetches the primary key for a state type, given the
+     * text ID for that type's row.
+     *
+     *  @param string    $text_id   The text ID for a row in the
+     *                              ebms_article_state_type table;
+     *                              these IDs are stable, and will
+     *                              not change between conversions,
+     *                              or if the user-visible state_name
+     *                              is altered.  Use state_text_id
+     *                              values in code to work with specific
+     *                              states.
+     *
+     *  @return                     Primary key from the
+     *                              ebms_article_state_type table.
+     */
+    public static function get_state_id($text_id) {
+        return db_select('ebms_article_state_type', 't')
+            ->fields('t', array('state_id'))
+            ->condition('t.state_text_id', $text_id)
+            ->execute()
+            ->fetchField();
+    }
+
+    /**
      * Adds a condition to a DB query, restricting the results to
      * the date range represented by a specified review cycle.
      *
