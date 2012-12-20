@@ -1727,6 +1727,21 @@ last_modified DATETIME              NULL,
   FOREIGN KEY (posted_by)   REFERENCES users (uid),
   FOREIGN KEY (modified_by) REFERENCES users (uid))
        ENGINE=InnoDB DEFAULT CHARSET=utf8;
+	   
+/*
+ * Rows in the state table with associated events/meetings.
+ *
+ * nid               foreign key into the nodes table
+ * article_state_id  foreign key into the ebms_article_state table
+ */
+    CREATE TABLE ebms_agenda_meeting
+            (nid INTEGER UNSIGNED NOT NULL,
+article_state_id INTEGER NOT NULL,
+     PRIMARY KEY (nid, article_state_id),
+     FOREIGN KEY (nid) REFERENCES node (nid),
+     FOREIGN KEY (article_state_id)
+                 REFERENCES ebms_article_state (article_state_id))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Summary secondary page.
