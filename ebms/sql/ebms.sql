@@ -1259,7 +1259,9 @@ CREATE TABLE ebms_print_status_type (
  *                       for 'packet' type and null for 'board' type.
  *  packet_id           For job_type 'packet', just printing this one.
  *  status              One of the legal status values.
- *  mode                'live' updates the database, 'test' just reports.
+ *  mode                'live' produces files and updates the database.
+ *                      'test' produces files but no update.
+ *                      'report' just produces the report listing files.
  *  comment             Optional free text comment about job.
  */
 CREATE TABLE ebms_print_job (
@@ -1273,7 +1275,7 @@ CREATE TABLE ebms_print_job (
     board_id            INTEGER NULL,
     board_member_id     INTEGER UNSIGNED NULL,
     packet_id           INTEGER NULL,
-    mode                ENUM('live', 'test') NOT NULL,
+    mode                ENUM('live', 'test', 'report') NOT NULL,
     status              VARCHAR(16) NOT NULL,
     comment             VARCHAR(2048) NULL,
     FOREIGN KEY (old_job_id) REFERENCES ebms_print_job (print_job_id),
