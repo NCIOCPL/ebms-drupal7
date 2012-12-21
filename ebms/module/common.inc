@@ -378,14 +378,14 @@ class Menu {
     public static function travel($role) {
         $menu = new Menu(
             'Travel', 'travel', array(
-                new Menu('Travel Information', 'travel/info'),
-                new Menu('Hotel Request', 'travel/hotel'),
-                new Menu('Reimbursement Request', 'travel/reimbursement'),
+                new Menu('Directions', 'travel/directions'),
+                new Menu('Local Travel', 'travel/local-travel'),
+                new Menu('Long Distance Travel', 'travel/long-distance-travel'),
+                new Menu('Hotel Request', 'travel/hotel-request'),
+                new Menu('Reimbursement Request', 'travel/reimbursement-request'),
             )
         );
-        if ($role == 'admin')
-            $menu->children[] =
-                new Menu('Travel Reports', 'travel/reports');
+        
         return $menu;
     }
 

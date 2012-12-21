@@ -304,7 +304,8 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        // TRAVEL
+        
+       /* // TRAVEL
         'travel' => array(
             'page callback' => 'pdq_ebms_travel',
             'file' => 'travel.inc',
@@ -342,7 +343,7 @@ function ebms_menu() {
             'file' => 'travel.inc',
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
-        ),
+        ),*/
 
         // FORUMS
         'forum' => array(
