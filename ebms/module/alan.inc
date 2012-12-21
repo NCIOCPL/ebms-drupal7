@@ -435,12 +435,12 @@ function pdq_ebms_printpkt_test() {
     if (!is_null($packetId))
         $jobType = 'packet';
     else if (!is_null($memberId))
-        $jobType = 'member';
+        $jobType = 'package';
     else if (!is_null($boardId))
         $job_type = 'board';
     else if (is_null($oldJobId))
         throw new \Exception(
-            "Must specify board, member, packet or old job ID");
+            "Must specify board, board member, packet or old job ID");
 
     // Create a new job, ready to run
     $qry = db_insert('ebms_print_job')
@@ -463,7 +463,7 @@ function pdq_ebms_printpkt_test() {
     // For API test, we'll execute the print job directly
     require('EbmsPrint.inc');
 
-    return "Email sent to user";
+    return "Processing complete.";
 }
 
 function pdq_ebms_show_dummy_test_results($title, $test) {
@@ -587,8 +587,9 @@ function ebms_testapi_import_form($form) {
     $form['impmode'] = array(
         '#type' => 'select',
         '#title' => 'Import mode',
-        '#description' => 'Test mode shows what would happen. Live mode updates the actual database and shows what actually happened.',
-        '#options' => array('test' => 'Test', 'live' => 'Live'),
+        '#description' => 'Test mode shows what would happen.<br />'.
+        'Live mode updates the database and shows what actually happened.',
+        '#options' => $modeOpts,
         '#default_value' => 'test',
         '#required' => true
     );
@@ -968,15 +969,20 @@ function ebms_testapi_printpkt_form($form) {
         '#required' => false
     );
 
+    $modeOpts = array(
+        'report' => 'Report mode',
+        'test' => 'Test mode',
+        'live' => 'Live mode'
+    );
     $form['jobMode'] = array(
         '#type' => 'select',
         '#title' => 'Job mode',
-        '#description' => 'Test mode shows what would print without ' .
-            'producing all of the printable documents.<br />' .
-            'Live mode produces all of the documents and updates the ' .
-            'database to record what was printed.',
-        '#options' => array('test' => 'Test', 'live' => 'Live'),
-        '#default_value' => 'test',
+        '#description' =>
+          'Report mode only reports what would print.<br /> ' .
+          'Test mode produces printouts but does not update packet printed data. <br />' .
+          'Live mode produces printouts and records what was printed.',
+        '#options' => $modeOpts,
+        '#default_value' => 'report',
         '#required' => true
     );
 
@@ -1458,5 +1464,14 @@ function pdq_ebms_fpdf_test() {
     // $pdf->Output("/home/alan/test/test1.pdf");
     $pdf->Output("/tmp/fpdftest.pdf");
 
+/*
+ * Test of spawning with exec
+ * whoami worked but the other has not yet.  Don't know why.
+$output=array();
+// $result=exec("pdfinfo '/var/www/html/ebmsdev/sites/ebms.nci.nih.gov/files267990_22095472.pdf'", $output);
+$result=exec("whoami", $output);
+$xxx=print_r($output, true);
+logw("result of exec=$xxx");
+*/
     return 'See if /tmp/fpdftest.pdf exists.';
 }
