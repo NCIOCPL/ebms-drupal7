@@ -1,6 +1,10 @@
 /*
 * Applicable to All Forum Templates
 */
+.page-forum .action-links {
+    display: none;
+}
+
 #forums-right {
     float:left;
     margin-bottom: 50px;
@@ -21,12 +25,37 @@
     color: lime;
 }
 
+/*
+* forums.tpl
+*/
+#forum-description {
+    margin: 5px 0px 30px 0px;
+}
+
 
 
 
 /*
 * forums-topic-list.tpl
 */
+#forum-topic-list {
+    margin: 20px 0px;
+    padding: 20px 0px;
+}
+.forum-topics-none-found {
+    font-style: italic;
+    text-transform: uppercase;
+    word-spacing: 5px;
+}
+.forum-archived {
+    text-transform: uppercase;
+    vertical-align: middle;
+    font-size: 20px;
+    margin: 20px 0px;
+}
+.forum-archived img {
+    vertical-align: middle;
+}
 .forum-topic-on-forum {
     border-bottom: 2px solid black;
     margin-bottom: 40px;
@@ -114,13 +143,22 @@
     margin-left: 50px;
 }
 #forum-topic-comment-form {
-    border: 1px solid red;
+    margin-top: 10px;
 }
 #forum-topic-comment-form form div {
     margin: 0px;
     padding: 0px;
-    border: 1px solid red;
+    
 }
 form.comment-form fieldset {
     border: 0px;
+}
+form.comment-form label {
+    /*
+    This is a horrible fix for not getting the Comment * label to appear
+    in the add a comment form.
+    */
+    padding: 0px;
+    margin: 0px;
+    display: none;
 }

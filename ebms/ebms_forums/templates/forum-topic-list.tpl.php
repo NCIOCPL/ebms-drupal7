@@ -36,37 +36,68 @@
  * @ingroup themeable
  */
 ?>
-<?php foreach ($topics as $topic): ?>
-    <?php $topicLoaded = node_load($topic->nid); ?>
-    <div class="forum-topic-on-forum" id="forum-topic-<?php print $topic_id; ?>">
-        <div class="forum-title"><?php print $topic->title; ?></div>
-        <div class="forum-description">
-            <?php
-            $teaser = node_view($topicLoaded, 'teaser');
-            if (array_key_exists('body', $teaser) && array_key_exists(0, $teaser['body']) && array_key_exists('#markup', $teaser['body'][0])) {
-                print $teaser['body'][0]['#markup'];
-            } else {
-                print "<p>No Summary Available</p>";
-            }
+<div id="forum-topic-list">
+    <?php
+    if (count($topics) > 0):
+        foreach ($topics as $topic):
             ?>
-        </div>
-        <div class="forum-topic-started-info">Started by: <?php print $topicLoaded->name; ?> | <?php print format_date($topicLoaded->created, 'forum_started_by', 'Y'); ?></div>
-        <div class="forum-topic-recent-activity">
-            <?php if ($topic->comment_count > 0): ?>
-
-                <div class="forum-topic-recent-activity-words">Recent Activity:</div>
-                <div class="forum-topic-recent-activity-activity">
+        <?php $topicLoaded = node_load($topic->nid); ?>
+            <div class="forum-topic-on-forum" id="forum-topic-<?php print $topic_id; ?>">
+                <div class="forum-title"><?php print $topic->title; ?></div>
+                <?php 
+                // Determine if a Topic is Archived
+                $archived = FALSE;
+                $archivedField = field_get_items('node', $topicLoaded, 'field_archived');
+                if ($archivedField)
+                    $archived = $archivedField[0]['value'];
+                
+                // If a Topic is Archived, add the special field
+                if ($archived): ?>
+                <div class="forum-archived">
+                    <img src="<?php print drupal_get_path('theme', 'ebmstheme'); ?>/images/checkbox-checked.png" alt="This forum topic is archived."/>
+                    Archived
+                </div>
+                <?php endif; ?>
+                <div class="forum-description">
                     <?php
-                    // Broken down structure here compensates for strict warnings.
-                    $lastComment = comment_get_recent(1);
-                    $lastComment = array_pop($lastComment);
-                    $lastComment = comment_load($lastComment->cid);
-                    $comment_view = comment_view($lastComment, $topicLoaded);
-                    print render($comment_view);
+                    $teaser = node_view($topicLoaded, 'teaser');
+                    if (array_key_exists('body', $teaser) && array_key_exists(0, $teaser['body']) && array_key_exists('#markup', $teaser['body'][0])) {
+                        print $teaser['body'][0]['#markup'];
+                    } else {
+                        print "<p>No Summary Available</p>";
+                    }
                     ?>
                 </div>
-            <?php endif; ?>
-        </div>
-    </div>
-<?php endforeach; ?>
-<?php print $pager; ?>
+                <div class="forum-topic-started-info">Started by: <?php print $topicLoaded->name; ?> | <?php print format_date($topicLoaded->created, 'forum_started_by', 'Y'); ?></div>
+                <div class="forum-topic-recent-activity">
+        <?php if ($topic->comment_count > 0): ?>
+
+                        <div class="forum-topic-recent-activity-words">Recent Activity:</div>
+                        <div class="forum-topic-recent-activity-activity">
+                            <?php
+                            // Broken down structure here compensates for strict warnings.
+                            $lastComment = comment_get_recent(1);
+                            $lastComment = array_pop($lastComment);
+                            $lastComment = comment_load($lastComment->cid);
+                            $comment_view = comment_view($lastComment, $topicLoaded);
+                            print render($comment_view);
+                            ?>
+                        </div>
+        <?php endif; ?>
+                </div>
+            </div>
+            <?php
+        endforeach;
+
+        print $pager;
+
+    else:
+        ?>
+
+        <div class="forum-topics-none-found">No Topics Were Found on This Forum</div>
+
+    <?php
+    endif;
+    ?>
+        
+</div>

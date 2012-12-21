@@ -16,7 +16,6 @@
  * @ingroup themeable
  */
 
-kprint_r($content['comment_form']);
 global $user;
 module_load_include('inc', 'ebms', 'profile');
 $authorPicture = EbmsProfile::get_picture($user);
@@ -24,17 +23,28 @@ if ($authorPicture) {
     $authorPicture['picture']['#width'] = 45;
     $authorPicture['picture']['#height'] = 45;
 }
-
+//ToDo: This needs to be moved to the module.
 // Updates to the comment form
 $commentForm = &$content['comment_form'];
 $commentForm['author']['#title_display'] = 'invisible';
 $commentForm['author']['_author']['#markup'] = '';
 $commentForm['author']['_author']['#title_display'] = 'invisible';
 //$commentForm['comment_body']['und']['#title_display'] = 'invisible';
-kprint_r(get_defined_vars());
+
 ?>
 <div id="forum-topic-comments"><?php print render($content['comments']); ?></div>
 <br/>
+    <?php
+    // Determine if this topic is archived
+    $archived = FALSE;
+    $archivedField = field_get_items('node', $node, 'field_archived');
+    if ($archivedField)
+        $archived = $archivedField[0]['value'];
+    
+    // If it is archived, then comments cannot be added.
+    // So hide the comment wrapper if it's archived.
+    if (!$archived):
+    ?>
 <div id="forum-topic-add-comment">
     <div id="forum-topic-add-author-pic"><?php print render($authorPicture); ?></div>
     <div id="forum-topic-add-author-and-form">
@@ -42,3 +52,6 @@ kprint_r(get_defined_vars());
     <div id="forum-topic-comment-form"><?php print render($content['comment_form']); ?></div>
     </div>
 </div>
+<?php
+endif;
+?>

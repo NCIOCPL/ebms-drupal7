@@ -1,4 +1,5 @@
 <?php
+
 /**
  * hook_form_alter(&$form, &$form_state, $form_id);
  * 
@@ -14,133 +15,635 @@
  */
 function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
     if ($form_id == 'comment_node_forum_form') {
-        
-        
+
+
         // Turn off the ability to preview
         $form['actions']['preview'] = FALSE;
-        
+
         // The Save button should say Add a Comment
         $form['actions']['submit']['#value'] = 'Add a Comment';
-        
+
         // The comment cannot have a subject
         $form['subject']['#access'] = FALSE;
     }
 }
 
 function ebms_forums_enable() {
-    dsm("EBMS Forums Enabled.");
-}
-function ebms_forums_disable() {
-    dsm("EBMS Forums Disabled.");
+
+    // Rebuild node access to make sure our hook registers its stuff
+    node_access_rebuild();
+
+    // Rebuild the menu to make sure our hook registers its stuff
+    menu_rebuild();
+
+    // Add or update instances to the Forums Taxonomy that are the same fields that exist on the EBMS Event node type
+    drupal_set_message('The EBMS Forums module assumes there is an instance of certain fields on the EBMS Event type upon enable.', 'warning');
+    $vocab = taxonomy_vocabulary_machine_name_load('forums');
+    if (!$vocab) {
+        drupal_set_message('Enable FAILED: Forums vocabualry does not exist. It should be created when the core Forums module is enabled', 'error');
+        return;
+    }
+    $fields = array('field_boards', 'field_subgroups', 'field_ad_hoc_groups', 'field_individuals');
+    foreach ($fields as $field) {
+        if (!field_info_instance('taxonomy_term', $field, 'forums')) {
+            $instance = field_info_instance('node', $field, 'ebms_event');
+            $instance['entity_type'] = 'taxonomy_term';
+            $instance['bundle'] = 'forums';
+            field_create_instance($instance);
+        }
+    }
+
+    // Define the Archived field
+    $field = array(
+        'field_name' => 'field_archived',
+        'type' => 'list_boolean',
+        'entity_types' => array('taxonomy_term', 'node'),
+        'cardinality' => 1,
+        'settings' => array(
+            'allowed_values' => array(
+                0 => 'Not Archived',
+                1 => 'Archived',
+            ),
+        ),
+        'default_value' => array(array('value' => 0)),
+    );
+    // Add or update the Archived field
+    if (field_info_field('field_archived'))
+        field_update_field($field);
+    else
+        field_create_field($field);
+
+    // Define the Archived instance for the taxonomy term
+    $instance = array(
+        'field_name' => 'field_archived',
+        'label' => t('Archived'),
+        'description' => t('If checked, this Forum or Forum topic will become archived. This will prevent users from adding comments and may change visibility settings.'),
+        'widget' => array(
+            'type' => 'options_onoff',
+            'settings' => array('display_label' => 1),
+            'weight' => -5,
+        ),
+        'entity_type' => 'taxonomy_term',
+        'bundle' => 'forums',
+    );
+    // Add or update the Archived instance
+    if (field_info_instance('taxonomy_term', 'field_archived', 'forums'))
+        field_update_instance($instance);
+    else
+        field_create_instance($instance);
+
+    // Define the Archived instance for the node
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = 'forum';
+    // Add or update the Archived instance
+    if (field_info_instance('node', 'field_archived', 'forum'))
+        field_update_instance($instance);
+    else
+        field_create_instance($instance);
+
+
+
+    drupal_set_message('EBMS Forums was enabled. Node Access and the Menu were rebuilt as well.', 'status');
 }
 
-/* http://www.metachunk.com/blog/adding-module-path-drupal-7-theme-registry*/
+function ebms_forums_disable() {
+    
+}
+
+/* http://www.metachunk.com/blog/adding-module-path-drupal-7-theme-registry */
+
 function ebms_forums_theme_registry_alter(&$theme_registry) {
     $mod_path = drupal_get_path('module', 'ebms_forums');
     $mod_path .= '/templates';
-   $theme_registry_copy = $theme_registry;       // munge on a copy
-  _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'ebmstheme', $mod_path);
-  $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
-  $hooks = array('node', 'comment',); // 'forums', 'forum_list', 'forum_topic_list', 'forum_icon', 'forum_submitted', 'forum_form');
-  foreach ($hooks as $h) {
-      //kprint_r($theme_registry[$h]);
-    _ebms_forums_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
-  }
-  $modifications = array ('forums', 'forum_list', 'forum_topic_list',
-      /*'forum_icon',*/ /*'forum_submitted',*/ /*'forum_form'*/);
-  foreach ($modifications as $m) {
-      $theme_registry[$m]['template'] = $mod_path . '/'.str_replace('_', '-', $m);
-      $theme_registry[$m]['theme path'] = $mod_path;
-  }
-  //kprint_r($theme_registry);
+    $theme_registry_copy = $theme_registry;       // munge on a copy
+    _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'ebmstheme', $mod_path);
+    $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+    $hooks = array('node', 'comment',); // 'forums', 'forum_list', 'forum_topic_list', 'forum_icon', 'forum_submitted', 'forum_form');
+    foreach ($hooks as $h) {
+        
+        _ebms_forums_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
+    }
+    $modifications = array('forums', 'forum_list', 'forum_topic_list',
+            /* 'forum_icon', */ /* 'forum_submitted', */ /* 'forum_form' */            );
+    foreach ($modifications as $m) {
+        $theme_registry[$m]['template'] = $mod_path . '/' . str_replace('_', '-', $m);
+        $theme_registry[$m]['theme path'] = $mod_path;
+    }
+    
 }
+
 /**
  * Helper function for re-ordering arrays (needed by theme_registry_alter)
-*/
+ */
 function _ebms_forums_insert_after_first_element(&$a, $element) {
-  if(is_array($a)) {
-    $first_element = array_shift($a);
-    array_unshift($a, $first_element, $element);
-  }
+    if (is_array($a)) {
+        $first_element = array_shift($a);
+        array_unshift($a, $first_element, $element);
+    }
 }
 
-function _ebms_forums_fields () {
-    return array(
-        array(
-            'field_name' => 'field_forum_is_archived',
-            'entity_type' => 'node',
-            'cardinality' => 1,
-            'type' => 'list_boolean',
-            'settings' => array(
-                'allowed_values' => array(
-                    0 => 'Not Archived',
-                    1 => 'Archived',
-                )
-            )
-        ),
-    );
+/**
+ * Forum Form Page
+ * 
+ * @param type $forumID Argument from the URL; Empty if creating
+ * @return type Returns a Drupal form to edit or create Forum
+ */
+function _ebms_forum_form_page($forumID = NULL) {
+
+    // If there is an argument, then we are editing a forum. If not, we're creating.
+    $forum = array();
+    if ($forumID)
+        $forum = taxonomy_term_load($forumID);
+
+    // Send a blank object or the existing forum object to the form.
+    return drupal_get_form('_ebms_forum_form', $forum);
 }
 
-/*
-function _ebms_forums_update_fields_and_instances () {
-    $archiveField = array(
-        'field_name' => 'field_forum_archived',
-        'type' => 'list_boolean',
-        'cardinality' => '1',
-        'entity_type' => 'node',
-        'bundle' => 'forum',
-        'description' => 'If checked, this indicates that a Forum Topic is archived.',
-        'label' => 'Archived',
-        'widget' => array(
-            'type' => 'options_onoff',
-        ),
-        'settings' => array(
-            'allowed_values' => array(
-                '0' => 'Not Archived',
-                '1' => 'Archived',
-            )
-        ),
-    );
-    
-    if (field_info_field($archiveField['field_name']))
-        field_create_field($archiveField);
-    else
-        field_update_field($archiveField);
+/**
+ * Forum Form (Drupal Form)
+ * Majority of this copied from taxonomy_form_term in taxonomy.admin.inc
+ * 
+ * @param type $form Inherent to a Drupal form
+ * @param type $form_state Where we're at in our Drupal form cycle
+ * @param type $edit Object to be edited (if it exists)
+ * @return string HTML version of this form
+ */
+function _ebms_forum_form($form, &$form_state, $edit = array()) {
 
-}*/
+    // Determine if we are editing an existing Forum object or creating a new one
+    if (!isset($form_state['term'])) {
+        $term = is_object($edit) ? $edit : (object) $edit;
+        $vocabulary = taxonomy_vocabulary_machine_name_load('forums');
+        $defaults = array(
+            'name' => '',
+            'description' => '',
+            'format' => NULL,
+            'vocabulary_machine_name' => isset($vocabulary) ? $vocabulary->machine_name : NULL,
+            'tid' => NULL,
+            'weight' => 0,
+        );
+        foreach ($defaults as $key => $value) {
+            if (!isset($term->$key)) {
+                $term->$key = $value;
+            }
+        }
+        $form_state['term'] = $term;
+    } else {
+        $term = $form_state['term'];
+        if (!isset($vocabulary) && isset($term->vid)) {
+            $vocabulary = taxonomy_vocabulary_load($term->vid);
+        }
+    }
+
+    // I have no idea why this is needed...
+    $parent = array_keys(taxonomy_get_parents($term->tid));
+    $form['#term'] = (array) $term;
+    $form['#term']['parent'] = $parent;
+    $form['#vocabulary'] = $vocabulary;
+
+
+    // Taxonomy fields that we need
+    $form['name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Forum'),
+        '#default_value' => $term->name,
+        '#maxlength' => 255,
+        '#required' => TRUE,
+        '#weight' => -5,
+    );
+    $form['description'] = array(
+        '#type' => 'text_format',
+        '#title' => t('Description'),
+        '#default_value' => $term->description,
+        '#format' => $term->format,
+        '#weight' => 0,
+    );
+    $form['vocabulary_machine_name'] = array(
+        '#type' => 'value',
+        '#value' => isset($term->vocabulary_machine_name) ? $term->vocabulary_machine_name : $vocabulary->name,
+    );
+
+    // This includes all of the fields we have attached to the Forum vocabulary
+    field_attach_form('taxonomy_term', $term, $form, $form_state);
+
+    // I have no idea what this is for... it's copied. See original function for a description.
+    if (!variable_get('taxonomy_override_selector', FALSE)) {
+        $parent = array_keys(taxonomy_get_parents($term->tid));
+        $children = taxonomy_get_tree($vocabulary->vid, $term->tid);
+
+        // A term can't be the child of itself, nor of its children.
+        foreach ($children as $child) {
+            $exclude[] = $child->tid;
+        }
+        $exclude[] = $term->tid;
+
+        $tree = taxonomy_get_tree($vocabulary->vid);
+        $options = array('<' . t('root') . '>');
+        if (empty($parent)) {
+            $parent = array(0);
+        }
+        foreach ($tree as $item) {
+            if (!in_array($item->tid, $exclude)) {
+                $options[$item->tid] = str_repeat('-', $item->depth) . $item->name;
+            }
+        }
+    }
+
+    // More taxonomy form fields...
+    $form['vid'] = array(
+        '#type' => 'value',
+        '#value' => $vocabulary->vid,
+    );
+    $form['tid'] = array(
+        '#type' => 'value',
+        '#value' => $term->tid,
+    );
+
+    // Actions
+    $form['actions'] = array('#type' => 'actions');
+    // Cancel is not innate, added
+    $form['actions']['cancel'] = array(
+        '#markup' => l(t('Cancel'), 'forum'),
+        '#weight' => 4,
+    );
+    // Submit
+    $form['actions']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save'),
+        '#weight' => 5,
+    );
+
+    // Change the action of submit
+    $form['#submit'] = array('_ebms_forum_form_submit');
+
+    // This kind of works... just leave it here.
+    $form_state['redirect'] = 'forum';
+
+    return $form;
+}
+
+/**
+ * Controls what happens when the EBMS Forum Form is submitted.
+ * Primarily copied from taxonomy_form_term_submit in taxonomy.admin.inc
+ * 
+ * @param type $form Drupal form
+ * @param type $form_state The state of the form
+ * @return type This doesn't really return anything, it's just an escape at one point.
+ */
+function _ebms_forum_form_submit($form, &$form_state) {
+
+    // Load up the term from the form
+    module_load_include('inc', 'taxonomy', 'taxonomy.admin');
+    $term = taxonomy_form_term_submit_build_taxonomy_term($form, $form_state);
+
+    // Save the term
+    $status = taxonomy_term_save($term);
+
+    // Determine if it was new (created) or old (edited). Display a message accordingly.
+    switch ($status) {
+        case SAVED_NEW:
+            drupal_set_message(t('The Forum "%term" has been created.', array('%term' => $term->name)));
+            watchdog('taxonomy', 'Created new term %term. (Forum)', array('%term' => $term->name), WATCHDOG_NOTICE, l(t('edit'), 'taxonomy/term/' . $term->tid . '/edit'));
+            break;
+        case SAVED_UPDATED:
+            drupal_set_message(t('The Forum "%term" has been updated.', array('%term' => $term->name)));
+            watchdog('taxonomy', 'Updated term %term. (Forum)', array('%term' => $term->name), WATCHDOG_NOTICE, l(t('edit'), 'taxonomy/term/' . $term->tid . '/edit'));
+            // Clear the page and block caches to avoid stale data.
+            cache_clear_all();
+            break;
+    }
+
+    // This sets the values in the form state... I think it's best for if it's new?
+    $form_state['values']['tid'] = $term->tid;
+    $form_state['tid'] = $term->tid;
+
+    // Redirect to the main forums page after completetion
+    drupal_goto('forum');
+}
+
+/**
+ * Registers Editing and Creating pages for Forums
+ * @return string The new menu items
+ */
+function ebms_forums_menu() {
+    $items['forum/%/edit'] = array(
+        'title' => 'Edit Forum',
+        'page callback' => '_ebms_forum_form_page',
+        'page arguments' => array(1),
+        'access callback' => '_ebms_forums_administer_forums_callback',
+        'access arguments' => array(1)
+    );
+    $items['forum/create'] = array(
+        'title' => 'Create New Forum',
+        'page callback' => '_ebms_forum_form_page',
+        'access callback' => '_ebms_forums_administer_forums_callback',
+        'access arguments' => array(NULL),
+    );
+    return $items;
+}
+
+function _ebms_forums_administer_forums_callback($forumID = NULL) {
+
+    // Setup the variables we will need for access
+    global $user;
+    // If dealing with a forum, load it and make sure it's correct
+    $forum = NULL;
+    if ($forumID) {
+        $forum = taxonomy_term_load($forumID);
+        // If we can't load the $forum, something is wrong (like a bad ID value), so let's deny access
+        if (!$forum)
+            drupal_goto(variable_get('site_404'));
+    }
+
+
+    /*
+     * A user may create a forum IF:
+     *  (1) They are User 1.
+     *  (2) They have the Administer EBMS Permission.
+     *  (3) They have the Administer EBMS Forums Permission.
+     * 
+     * A user may edit a unarchived forum IF:
+     *  (1) They are User 1.
+     *  (2) They have the Administer EBMS Permission.
+     *  (3) They have the Administer EBMS Forums Permisssion and have permission to view that forum.
+     * 
+     * A user may edit an archived forum IF:
+     *  (1) They are User 1.
+     *  (2) They have the Administer EBMS Permission.
+     * 
+     */
+
+    // (1) They are User 1
+    if ($user->uid == 1)
+        return TRUE;
+
+    // (2) They have the Administer EBMS Permission
+    $administerEBMS = user_access('administer ebms');
+    if ($administerEBMS)
+        return TRUE;
+
+    // From this point on, we will need to know if they have the Administer EBMS Permission.
+    $administerForums = user_access('administer ebms forums');
+
+    // Create(3) They have the Administer EBMS Forums Permission
+    if (!$forumID && $administerForums) // If no forum was passed in, then we're dealing with create
+        return TRUE;
+    elseif (!$forumID) // If we're doing a create and they don't have the permission, we know it should fail
+        return FALSE;
+
+    // From this point on, we will need to know if the forum is archived.
+    // We can assume a forum is defined now due to the elseif(!forumID) return FALSE; above.
+    $archived = FALSE;
+    $archivedField = field_get_items('taxonomy_term', $forum, 'field_archived');
+    if ($archivedField)
+        $archived = $archivedField[0]['value'];
+
+
+    // Edit Unarchived(3) They have the Administer EBMS Forums Permission and have permission to view that forum.
+    $viewAccess = _ebms_forums_view_forum_access_callback($forum);
+    if ($viewAccess && $administerForums && !$archived)
+        return TRUE;
+    elseif ($viewAccess && !$administerForums) // If you don't have the permission, even if you're in the form, you can't access this.
+        return FALSE;
+    elseif ($viewAccess && $administerForums && $archived) // If it's archived, only Administer EBMS people can edit it
+        return FALSE;
+}
 
 function ebms_forums_menu_alter(&$items) {
-    //drupal_set_message(implode('<br>',array_keys($items)), 'status');
-    
-    chain_menu_access_chain($items, 'forum', '_ebms_forums_new_view_access_callback', array(), FALSE);
-    chain_menu_access_chain($items, 'forum/%forum_forum', '_ebms_forums_new_view_access_callback', array(1), FALSE);
+    chain_menu_access_chain($items, 'forum', '_ebms_forums_view_forum_access_callback', array(), FALSE);
+    chain_menu_access_chain($items, 'forum/%forum_forum', '_ebms_forums_view_forum_access_callback', array(1), FALSE);
 }
 
-function _ebms_forums_new_view_access_callback ($forum = NULL) {
+function _ebms_forums_view_forum_access_callback($forum = NULL) {
+    global $user;
     if ($forum) {
-        
+        /*
+         * A user may see an unarchived forum IF:
+         *  1) They are User 1.
+         *  2) They have the Administer EBMS Permission.
+         *  3) They are in the list of individuals that are on that forum.
+         *  4) They are part of a Board that is in the list of Boards on that forum.
+         *  5) They are part of a Subgroup that is in the list of Subgroups on that forum.
+         *  6) They are part of an Ad Hoc Group that is in the list of Ad Hoc Groups on that forum.
+         * 
+         * A user may see an archived forum IF:
+         *  1) They are User 1.
+         *  2) They have the Administer EBMS Permission.
+         * 
+         */
+
+        // (1) They are User 1
+        if ($user->uid == 1)
+            return TRUE;
+
+        // (2) They have the Administer EBMS Permission
+        $administer = user_access('administer ebms');
+        if ($administer)
+            return TRUE;
+
+
+        // Archived Forum Interception
+        // Find out if the Forum is Archived
+        $archived = FALSE;
+        $archivedField = field_get_items('taxonomy_term', $forum, 'field_archived');
+        if ($archivedField)
+            $archived = $archivedField[0]['value'];
+        // Prevent access if it is
+        if ($archived)
+            return FALSE;
+
+
+        // (3) If the user is in the list of individuals that are on the fourm
+        if (count($forum->field_individuals) > 0) {
+            $individuals = array();
+            $tmp = $forum->field_individuals;
+            $tmp = $tmp['und'];
+            foreach ($tmp as $t)
+                $individuals[] = $t['value'];
+            if (in_array($user->uid, $individuals))
+                return TRUE;
+        }
+
+        // (4) If the user is part of a Board that is in the list of Boards on this forum
+        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_board_member', 'board_id', $forum->field_boards);
+        if (count($matchedGroups) > 0)
+            return TRUE;
+
+        // (5) If the user is part of a Subgroup that is in the list of Subgroups on this forum
+        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_subgroup_member', 'sg_id', $forum->field_subgroups);
+        if (count($matchedGroups) > 0)
+            return TRUE;
+
+        // (6) If the user is part of an Ad Hoc Group that is in the list of Ad Hoc Groups on this forum
+        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_ad_hoc_group_member', 'group_id', $forum->field_ad_hoc_groups);
+        if (count($matchedGroups) > 0)
+            return TRUE;
+
+        return FALSE;
     }
-    drupal_set_message('forum: '.print_r($forum), 'status');
-    //$query = drupal_get_query_parameters();
-    //drupal_set_message(print_r($query), 'status');
-    //drupal_set_message(implode('<br>', array_keys($query)), 'status');
     return TRUE;
 }
 
-function _ebms_forums_menu () {
-    $links = array(
-        array('/forum/', 'Frousdfsd sdf'),
-        array('/forum/', 'sdfdsfklsd'),
-    );
-    $output = '<div id="left-nav" class="report-left-nav">';
+function ebms_forums_node_access($node, $op, $account) {
+
+    // We're only looking to change access for viewing forum node types
+    $type = is_string($node) ? $node : $node->type;
+
+    if ($type == 'forum' && $op == 'view') {
+
+        // If we can't load the term this is a part of, then there's a problem.
+        $term = taxonomy_term_load($node->forum_tid);
+        if (!$term)
+            return NODE_ACCESS_DENY;
+
+        // Determine if they have any sort of access to even view this node.
+        $access = _ebms_forums_view_forum_access_callback($term);
+        if (!$access)
+            return NODE_ACCESS_DENY;
+    }
+    return NODE_ACCESS_IGNORE;
+}
+function _ebms_forums_for_global_user () {
+    global $user;
+    
+    // Assume the user belongs to no forums
+    $forums = array();
+
+    // Load the Forums vocabulary
+    $vocabulary = taxonomy_vocabulary_machine_name_load('forums');
+    
+    // Get all terms in the vocabulary
+    $taxonomyQuery = new EntityFieldQuery();
+    $taxonomyTerms = $taxonomyQuery->entityCondition('entity_type', 'taxonomy_term')
+            ->propertyCondition('vid', $vocabulary->vid)
+            ->execute();
+    
+    // For each term in the vocabulary, return the access on it.
+    // If a user can view it, add it to this list.
+    foreach ($taxonomyTerms['taxonomy_term'] as $termID) {
+        $forum = taxonomy_term_load($termID->tid);
+        $access = _ebms_forums_view_forum_access_callback($forum);
+        if ($access) {
+            $forums[] = $forum;
+        }
+    }
+    
+    // Return the list of forums the global $user can see
+    return $forums;
+    
+}
+function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
+    global $user;
+
+    $links = array();
+    
+    $forums = _ebms_forums_for_global_user();
+    foreach ($forums as $forum) {
+            $archived = FALSE;
+            $archivedField = field_get_items('taxonomy_term', $forum, 'field_archived');
+            if ($archivedField)
+                $archived = $archivedField[0]['value'];
+
+            $links[] = array(
+                url('forum/' . $forum->tid),
+                $forum->name,
+                $forum->tid == $activeForumID ? 'active' : 'inactive',
+                $archived,
+            );
+        
+    }
+
+
+    $output = '<div id="left-nav">';
+    $output .= '<div class="calendar-views">';
     $output .= '<div class="item-list"><ul>';
+
     foreach ($links as $link) {
-        $output .= '<li class="parent inactive first">';
+        $output .= '<li class="parent ' . $link[2] . ' first">';
+        if ($link[3] == TRUE)
+            $output .= '<img src="' . drupal_get_path ('theme', 'ebmstheme'). '/images/checkbox-checked.png"/> ';
         $output .= '<a href="' . $link[0] . '">' . $link[1] . '</a>';
         $output .= '</li>';
     }
     $output .= '</ul></div>'; //Closes class=item-list
+    $output .= '</div>'; // Closes forum-left-nav
+
+    $administerEBMS = user_access('administer ebms');
+    $administerForums = user_access('administer ebms forums');
+
+    if ($activeForumID || $administerEBMS || $administerForums || $user->uid == 1) {
+        $output .= '<div id="upcoming-events" class="more-actions"><div class="item-list"><h3>Forum Actions</h3>
+        <ul class="ebms_left_nav_block">';
+    if ($activeForumID)
+        $output .= '<li><a href="' . url('node/add/forum') . '">Create New Topic</a></li>';
+    if ($administerEBMS || $administerForums || $user->uid == 1) {
+        if ($activeNodeID) 
+            $output .= '<li><a href="'.url('node/'.$activeNodeID.'/edit').'">Edit This Topic</a></li>';
+        
+        $output .= '<li><a href="' . url('forum/create') . '">Create New Forum</a></li>';
+        if ($activeForumID)
+            $output .= '<li><a href="'.url('forum/'.$activeForumID.'/edit').'">Edit This Forum</a></li>';
+    }
+
+    $output .= '</ul></div>
+        <img class="ebms-left-nav-block-bottom " alt="" 
+        src="' . drupal_get_path('theme', 'ebmstheme') . '/images/left-nav-box-bottom.png">
+        </div></div>';
+    }
+
     $output .= '</div>'; //Closes id=left-nav
     return $output;
 }
 
+/**
+ * Determine if a user is a member of a certain set. The name of the table and
+ * an identifying column ID must be used.
+ * 
+ * @param type $uid User's ID
+ * @param type $tableName Name of EBMS table. Should be a member table, e.g. ebms_board_member
+ * @param type $tableID Name of column in table that is the ID, e.g. board_id
+ * @param type $groups Set that we are seeing if a user can belong to.
+ * @return type The subset of $groups that a user is in. Empty will result in FALSE access.
+ */
+function _ebms_forums_determine_membership($uid, $tableName, $tableID, $groups) {
+    $matchedGroups = array();
+
+    // If there are no elligible groups to even check, then return an empty array.
+    // An empty array well be read as FALSE access
+    if ($groups) {
+
+        // Groups is a field so we must first break that down into an array of values
+        $tmp = $groups['und'];
+        $groups = array();
+        foreach ($tmp as $group)
+            $groups[] = $group['value'];
+
+        // Query the database
+        $result = db_select($tableName, 'm')
+                ->fields('m', array($tableID))
+                ->condition('m.user_id', $uid)
+                ->condition('m.' . $tableID, $groups, 'IN')
+                ->execute();
+
+        // Format the results
+        foreach ($result as $record)
+            $matchedGroups[] = $record->$tableID;
+    }
+
+    // Return the results
+    // Empty results indicate FALSE access. Any results indicate TRUE access
+    return $matchedGroups;
+}
+
+/**
+ * Register the Drupal Permissions: Administer EBMS Forums
+ * @return type New permissions.
+ */
+function ebms_forums_permission() {
+    return array(
+        'administer ebms forums' => array(
+            'title' => t('Administer EBMS Forums'),
+            'description' => t("Ability to create and edit Forums for topics."),
+        ),
+    );
+}

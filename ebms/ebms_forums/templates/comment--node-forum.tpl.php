@@ -16,7 +16,6 @@
  */
 
 $commentAuthor = user_load($comment->uid);
-
 module_load_include('inc', 'ebms', 'profile');
 $authorPicture = EbmsProfile::get_picture($commentAuthor);
 if ($authorPicture) {
