@@ -195,12 +195,12 @@ function _calendar_query_alter(&$view, &$query) {
     if ($filter_boards && $user->ebms_boards) {
         //Add table to query    
         $boardsjoin = new views_join();
-        $boardsjoin->construct("field_data_field_boards", 'node', 'nid',
+        $boardsjoin->construct("field_data_field_boards", $view->base_table, $view->base_field,
             'entity_id', array(
                 array('field' => 'entity_type', 'value' => $view->base_table),
                 array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
             ));
-        $query->table_queue['node__field_data_field_boards'] = array(
+        $query->table_queue[$view->base_table . '__field_data_field_boards'] = array(
             'table' => 'field_data_field_boards',
             'num' => 1,
             'alias' => 'field_data_field_boards',
@@ -222,12 +222,12 @@ function _calendar_query_alter(&$view, &$query) {
     if ($user->ebms_subgroups) {
         //Add table to query
         $subgroupsjoin = new views_join();
-        $subgroupsjoin->construct("field_data_field_subgroups", 'node', 'nid',
+        $subgroupsjoin->construct("field_data_field_subgroups", $view->base_table, $view->base_field,
             'entity_id', array(
                 array('field' => 'entity_type', 'value' => $view->base_table),
                 array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
             ));
-        $query->table_queue['node__field_data_field_subgroups'] = array(
+        $query->table_queue[$view->base_table . '__field_data_field_subgroups'] = array(
             'table' => 'field_data_field_subgroups',
             'num' => 1,
             'alias' => 'field_data_field_subgroups',
@@ -243,12 +243,12 @@ function _calendar_query_alter(&$view, &$query) {
     if ($user->ebms_ad_hoc_groups) {
         //Add table to query
         $adhocgroupsjoin = new views_join();
-        $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups", 'node',
-            'nid', 'entity_id', array(
+        $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups", 
+                $view->base_table, $view->base_field, 'entity_id', array(
                 array('field' => 'entity_type', 'value' => $view->base_table),
                 array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
             ));
-        $query->table_queue['node__field_data_field_ad_hoc_groups'] = array(
+        $query->table_queue[$view->base_table . '__field_data_field_ad_hoc_groups'] = array(
             'table' => 'field_data_field_ad_hoc_groups',
             'num' => 1,
             'alias' => 'field_data_field_ad_hoc_groups',
@@ -264,12 +264,12 @@ function _calendar_query_alter(&$view, &$query) {
     //Individual Users:
     //Add table to query
     $userjoin = new views_join();
-    $userjoin->construct("field_data_field_individuals", 'node',
-        'nid', 'entity_id',array(
+    $userjoin->construct("field_data_field_individuals", 
+        $view->base_table, $view->base_field, 'entity_id',array(
                 array('field' => 'entity_type', 'value' => $view->base_table),
                 array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
             ));
-    $query->table_queue['node__field_data_field_individuals'] = array(
+    $query->table_queue[$view->base_table . '__field_data_field_individuals'] = array(
         'table' => 'field_data_field_individuals',
         'num' => 1,
         'alias' => 'field_data_field_individuals',
