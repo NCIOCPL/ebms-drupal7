@@ -81,7 +81,6 @@ $GLOBALS['ebms_node_fields'] = array(
         ),
         'bundles' => array(
             'ebms_event',
-            'forum',
         ),
     ),
 // subgroup board - limited to those appropriate for editorial board if chosen
@@ -102,7 +101,6 @@ $GLOBALS['ebms_node_fields'] = array(
         ),
         'bundles' => array(
             'ebms_event',
-            'forum',
         ),
     ),
 // ad-hoc group
@@ -123,7 +121,6 @@ $GLOBALS['ebms_node_fields'] = array(
         ),
         'bundles' => array(
             'ebms_event',
-            'forum',
         ),
     ),
     // Individuals who can be selected

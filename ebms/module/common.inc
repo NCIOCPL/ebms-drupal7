@@ -399,7 +399,7 @@ class Menu {
         //pdq_ebms_debug('MENU FORUMS', $forums);
         foreach ($forums as $forum) {
             if ($forum->visible()) {
-                $url = "discussion/{$forum->id}";
+                $url = "forum/{$forum->id}";
                 $children[] = new Menu($forum->name, $url);
             }
         }

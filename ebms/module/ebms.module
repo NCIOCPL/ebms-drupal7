@@ -345,7 +345,7 @@ function ebms_menu() {
         ),
 
         // FORUMS
-        'discussion' => array(
+        'forum' => array(
             'page callback' => 'pdq_ebms_forum',
             'file' => 'forum.inc',
             'access callback' => 'user_is_logged_in',
