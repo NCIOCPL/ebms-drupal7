@@ -1,0 +1,45 @@
+<?php
+
+/*
+ * This module's purpose is to define content types and templates for the
+ * basic content on the EBMS website. Primarily focused on the Travel section
+ * for starters. 
+ * 
+ * This module is expected to expand as different sections of the site get built 
+ * out and add additional requirements.
+ * 
+ * We are going to use the out of the box "Basic Page" content type for regular pages.
+ */
+
+/**
+ * Implements hook_enable()
+ */
+function ebms_content_enable(){
+    //build the shell for the travel menu.
+    _ebms_content_create_travel_menu();
+}
+
+/**
+ * Implements hook_disable()
+ */
+function ebms_content_disable(){
+    
+}
+
+/**
+ * 
+ */
+function _ebms_content_create_travel_menu(){
+
+     menu_rebuild();
+    $menu = array(
+        'menu_name' => t('ebms-travel-menu'),
+        'title' => t('EBMS Travel Subnav'),
+        'description' => t('Contains menu items for the EBMS Travel section')
+    );
+    menu_save($menu);
+}
+
+
+
+?>

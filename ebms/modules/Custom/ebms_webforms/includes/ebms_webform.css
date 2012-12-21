@@ -1,0 +1,13 @@
+/* 
+    Document   : ebms_webform.css
+    Created on : Dec 20, 2012, 9:34:04 AM
+    Author     : doylejd
+    Description:
+        Purpose of the stylesheet follows.
+*/
+
+
+#webform-component-amount.hidden {
+    display:none;
+}
+
