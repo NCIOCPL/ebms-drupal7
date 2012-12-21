@@ -10,8 +10,8 @@
     float: left; width: 730px; margin-bottom: 50px;
 }
 #report-form h2 { margin-top: 25px; }
-#report-form .form-select.fixed-width,
-#report-form .form-text.fixed-width{ width: 500px; }
+#report-form .form-select.fixed-width { width: 500px; }
+#report-form .form-text.fixed-width { width: 498px; }
 #report-form .form-type-select label,
 #report-form .form-type-textfield label{ text-transform: uppercase; }
 #left-nav .child { padding-left: 25px; }
@@ -97,8 +97,26 @@ div.import-reports ul li a { text-transform: uppercase; }
 #import-report td, #import-report th { border-left: none; }
 #documents-top div.form-item-archived { clear: both; margin-left: 476px; }
 #doc-report { margin-top: 35px; }
+
 /*
 #doc-report .col-1 { width: 325px; }
 #doc-report .col-2 { width: 275px; }
 #doc-report .col-3 { width: 150px; }
 */
+
+#cites-by-status-report,
+#review-report { width: 1027px; margin-left: -67px; }
+#review-report .col-0 { text-align: right; width: 50px; font-size: 24px; }
+#review-report .col-1 { border-left: none; width: 350px; }
+#review-report .col-2 { width: 6    0px; }
+#review-report .col-3 { width: 200px; }
+#review-report .col-3 .reviewer-name { 150px; }
+#review-report .col-3 img { float: right; }
+#review-report .col-4 { width: 300px; }
+.article-title { font-style: italic; }
+#review-report .col-2, td.need-left-border:first-child,
+#review-report .col-3 { border-left: 1px solid #696559; }
+.col-0 { text-align: right; width: 50px; font-size: 24px; }
+#cites-by-status-report .col-1 { border-left: none; }
+/* #disposition-field.hidden { display: none; } */
+
