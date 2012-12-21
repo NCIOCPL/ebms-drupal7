@@ -5,7 +5,7 @@
 /**
  * @file
  *
- * Implementation of EBMS page for uploading full-text PDFs.
+ * Implementation of EBMS page for running system reports.
  */
 function pdq_ebms_reports($report=null, $request_id=0) {
     $control = new EbmsReports($report, $request_id);
@@ -19,16 +19,13 @@ function pdq_ebms_reports($report=null, $request_id=0) {
  */
 class EbmsReports {
 
+    // Class attributes.
     public static $url = 'reports';
+
+    // Used internally by the manager_actions() class method.
     private static $_manager_actions = null;
-//  = array(
-//         'FullEnd',
-//         'NotForAgenda',
-//         'AgendaNoPaprChg',
-//         'AgendaFutureChg',
-//         'AgendaBoardDiscuss',
-//         'AgendaWrkGrpDiscuss',
-//     );
+
+    // Instance attributes.
     public $report, $request_id;
 
     /**
@@ -42,7 +39,10 @@ class EbmsReports {
     }
 
     /*
-     * Show the articles which need full text uploaded.
+     * Routes the report request to the appropriate form.  Also handles
+     * routing of URLs which are intended for a higher-level Reports
+     * landing page.  For the documents report, handles any additional
+     * actions embedded in the URL's request parameters.
      */
     public function run() {
 
@@ -63,10 +63,6 @@ class EbmsReports {
             case 'import':
                 return drupal_get_form('pdq_ebms_import_reports_form',
                     $this->request_id);
-            case 'board':
-                return $this->landing_page('Board Management');
-            case 'cite':
-                return $this->landing_page('Citation Management');
             case 'documents':
                 if (isset($parms['archive'])) {
                     $doc_id = $parms['archive'];
@@ -84,11 +80,28 @@ class EbmsReports {
                 }
                 return drupal_get_form('pdq_ebms_documents_report_form',
                     $this->request_id);
+            case 'board':
+                return $this->landing_page('Board Management');
+            case 'cite':
+                return $this->landing_page('Citation Management');
             default:
                 return $this->landing_page();
         }
     }
 
+    /**
+     * Builds the Drupal render array for the Reports landing page.
+     * There are possible variations, determining whether a section
+     * of the left nav should be expanded.  The page consists of
+     * a left navigation column, a title, a Reports landing page
+     * image, and links to all of the available reports.  The
+     * links below the image are never collapsed, unlike those
+     * in the left nav column.
+     *
+     *  @param string  $open  Passed to build_left_nav() to indicate
+     *                        a section of the left navigation
+     *                        which should be expanded.
+     */
     function landing_page($open=null) {
         $uri = Ebms\IMAGES_DIR . '/reports-image-730x242.jpg';
         drupal_set_breadcrumb(array('Reports'));
@@ -142,7 +155,7 @@ class EbmsReports {
      * XXX To be rewritten when Alan has the API for getting the abstract
      *     elements ready.
      */
-    public static function format_citation($article_id, $counter=null) {
+    static function format_citation($article_id, $counter=null) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
             ->condition('a.article_id', $article_id)
@@ -207,7 +220,16 @@ class EbmsReports {
         return implode($pieces);
     }
 
-    public static function get_nav_links() {
+    /**
+     * Medical librarians have different reports available than do
+     * the rest of the users who can get to the reports.  This
+     * method returns a dictionary array containing the links
+     * to the reports available for the current user.  The links
+     * are used in two places: the left navigation column, and
+     * in the list of links below the Reports image on the landing
+     * page.
+     */
+    static function get_nav_links() {
         global $user;
         if (in_array('medical librarian', $user->roles))
             $role = 'librarian';
@@ -266,11 +288,13 @@ class EbmsReports {
     }
 
     /**
-     * Creates the render array for the left nav panel for Citation
-     * Management page.  Cloned from common.inc, where I had originally
-     * placed this functionality, not realizing that the left nav block
-     * was going to be different for every page.
+     * Creates the render array for the left nav panel for the Reports
+     * pages.
      *
+     *  @param string $open    Name of the group in the navigation
+     *                         column whose child links should be
+     *                         shown; null if all groups are to be
+     *                         collapsed
      *  @param string $active  Current action, highlighted by CSS
      *
      *  @return                Render array for left nav panel
@@ -319,106 +343,30 @@ class EbmsReports {
         );
     }
 
-    /*
-     * This version mimics the legacy system's behavior, showing rows
-     * for topics for which no articles were published.
+    /**
+     * Builds the Drupal render array for the report on published
+     * citations.  "Published" in this context means release for the
+     * board manager's initial review (from the abstract).
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().
+     *
+     *  @param  int    $board   ID of board (if the user specified
+     *                          one for the report)
+     *  @param  int    $cycle   ID of the cycle used for filtering
+     *                          the report
+     *
+     *  @return array           Drupal render array for the report
      */
-    public static function cites_published_0($boards, $board, $cycle) {
-        if ($board)
-            $boards = array($board => $boards[$board]);
-        $query = db_select('ebms_cycle', 'c')
-            ->fields('c', array('cycle_name', 'start_date'))
-            ->condition('c.cycle_id', $cycle);
-        $query->addExpression(
-            'DATE_ADD(c.start_date, INTERVAL 1 MONTH)',
-            'end_date'
-        );
-        $results = $query->execute();
-        $cycle_name = null;
-        foreach ($results as $result) {
-            $date_range = array($result->start_date, $result->end_date);
-            $cycle_name = $result->cycle_name;
-        }
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-        $d = date('m/d/Y');
-        $report = array(
-            '#type' => 'container',
-            '#attributes' => array(
-                'id' => 'report',
-                'class' => array('cites-pub'),
-            ),
-            'title' => array(
-                '#type' => 'markup',
-                '#markup' => '<h2>Citations Published</h2>' .
-                "<div class='meta'><span class='label'>Date:</span>$d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span>" .
-                $cycle_name . '</div>',
-            )
-        );
-        $published = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'Published')
-            ->execute()
-            ->fetchField();
-        $query = db_select('ebms_article_state', 's');
-        $query->fields('s', array('topic_id'));
-        $query->condition('s.board_id', array_keys($boards), 'IN');
-        $query->condition('s.status_dt', $date_range, 'BETWEEN');
-        $query->condition('s.state_id', $published);
-        $query->groupBy('s.topic_id');
-        $query->addExpression('COUNT(*)', 'n');
-        $results = $query->execute();
-        $stats = array();
-        foreach ($results as $result)
-            $stats[$result->topic_id] = $result->n;
-        foreach ($boards as $board_id => $board_name) {
-            if ($board_id) {
-                $results = db_select('ebms_topic', 't')
-                    ->fields(
-                        't',
-                        array('topic_id', 'topic_name', 'active_status')
-                    )
-                    ->condition('t.board_id', $board_id)
-                    ->orderBy('t.topic_name')
-                    ->execute();
-                $rows = array();
-                $total = 0;
-                foreach ($results as $result) {
-                    $id = $result->topic_id;
-                    $name = $result->topic_name;
-                    $status = $result->active_status;
-                    $count = 0;
-                    if (array_key_exists($id, $stats)) {
-                        $count = $stats[$id];
-                        $total += $count;
-                    }
-                    if ($count || $status == 'A')
-                        $rows[] = array(
-                            'data' => array($name, $count),
-                            'no_striping' => false,
-                        );
-                }
-                $report[$board_name] = array(
-                    '#theme' => 'table',
-                    '#caption' => "$board_name (Total $total)",
-                    '#header' => array('Topic Name', 'Articles Published'),
-                    '#rows' => $rows,
-                );
-            }
-        }
-        return $report;
-    }
-    public static function cites_published($boards, $board, $cycle) {
+    public static function cites_published($board, $cycle) {
+
+        // Will be caught by validation.
         $cycle_name = Ebms\Util::get_cycle_name($cycle);
         if (!$cycle_name) {
             drupal_set_message('Cycle is required for this report', 'error');
             return array();
         }
-        if ($board)
-            $boards = array($board => $boards[$board]);
+
+        // Start the render array with the title and meta data.
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -434,17 +382,16 @@ class EbmsReports {
                 $cycle_name . '</div>',
             )
         );
-        $published = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'Published')
-            ->execute()
-            ->fetchField();
+
+        // Construct the report's query.
+        $published = Ebms\Util::state_id_from_text_id('Published');
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
         $query->fields('b', array('board_name'));
         $query->fields('t', array('topic_name'));
-        $query->condition('s.board_id', array_keys($boards), 'IN');
+        if ($board)
+            $query->condition('s.board_id', $board);
         if (!Ebms\Util::add_cycle_to_query($query, $cycle, 's.status_dt')) {
             drupal_set_message('Failure restricting query by cycle', 'error');
             return array();
@@ -455,6 +402,8 @@ class EbmsReports {
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
         $query->orderBy('t.topic_name');
+
+        // Collect the query result in an array indexed by board.
         $results = $query->execute();
         $stats = array();
         foreach ($results as $result) {
@@ -463,6 +412,9 @@ class EbmsReports {
                 $stats[$board_name] = array();
             $stats[$board_name][$result->topic_name] = $result->n;
         }
+
+        // Add a section for each board, showing counts for "publications"
+        // by topic.
         foreach ($stats as $board_name => &$topic_array) {
             $rows = array();
             $total = 0;
@@ -480,14 +432,30 @@ class EbmsReports {
         }
         return $report;
     }
-    public static function cites_imported($boards, $board, $cycle) {
+
+    /**
+     * Build a statistical report of the counts of articles imported
+     * for each topic.
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().
+     *
+     *  @param  int    $board   ID of board (if the user specified
+     *                          one for the report)
+     *  @param  int    $cycle   ID of the cycle used for filtering
+     *                          the report
+     *
+     *  @return array           Drupal render array for the report
+     */
+    public static function cites_imported($board, $cycle) {
+
+        // Will be caught by validation function.
         $cycle_name = Ebms\Util::get_cycle_name($cycle);
         if (!$cycle_name) {
             drupal_set_message('Cycle is required for this report', 'error');
             return array();
         }
-        if ($board)
-            $boards = array($board => $boards[$board]);
+
+        // Start the render array with the title and meta data.
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -503,27 +471,28 @@ class EbmsReports {
                 $cycle_name . '</div>',
             )
         );
-        $published = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'ReadyInitReview')
-            ->execute()
-            ->fetchField();
+
+        // Construct the report's query.
+        $state_id = Ebms\Util::state_id_from_text_id('ReadyInitReview');
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
         $query->fields('b', array('board_name'));
         $query->fields('t', array('topic_name'));
-        $query->condition('s.board_id', array_keys($boards), 'IN');
+        if ($board)
+            $query->condition('s.board_id', $board);
         if (!Ebms\Util::add_cycle_to_query($query, $cycle, 's.status_dt')) {
             drupal_set_message('Failure restricting query by cycle', 'error');
             return array();
         }
-        $query->condition('s.state_id', $published);
+        $query->condition('s.state_id', $state_id);
         $query->groupBy('b.board_name');
         $query->groupBy('t.topic_name');
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
         $query->orderBy('t.topic_name');
+
+        // Collect the query result in an array indexed by board.
         $results = $query->execute();
         $stats = array();
         foreach ($results as $result) {
@@ -532,6 +501,9 @@ class EbmsReports {
                 $stats[$board_name] = array();
             $stats[$board_name][$result->topic_name] = $result->n;
         }
+
+        // Add a section for each board, showing counts for imports
+        // by topic.
         foreach ($stats as $board_name => &$topic_array) {
             $rows = array();
             $total = 0;
@@ -549,14 +521,32 @@ class EbmsReports {
         }
         return $report;
     }
-    public static function initial_decision($boards, $board, $cycle) {
+
+    /**
+     * Produces a three-column report, in sections by board, showing
+     * each topic for which any initial winnowing decisions were made
+     * by the librarians, the number of articles rejected for the topic,
+     * and the number accepted.
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().
+     *
+     *  @param  int    $board   ID of board (if the user specified
+     *                          one for the report)
+     *  @param  int    $cycle   ID of the cycle used for filtering
+     *                          the report
+     *
+     *  @return array           Drupal render array for the report
+     */
+    public static function initial_decision($board, $cycle) {
+
+        // Will be caught by validation function.
         $cycle_name = Ebms\Util::get_cycle_name($cycle);
         if (!$cycle_name) {
             drupal_set_message('Cycle is required for this report', 'error');
             return array();
         }
-        if ($board)
-            $boards = array($board => $boards[$board]);
+
+        // Start the render array with the title and meta data.
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -573,16 +563,10 @@ class EbmsReports {
                 $cycle_name . '</div>',
             )
         );
-        $rejected = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'RejectInitReview')
-            ->execute()
-            ->fetchField();
-        $accepted = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'PassedInitReview')
-            ->execute()
-            ->fetchField();
+
+        // Construct the report's query.
+        $rejected = Ebms\Util::state_id_from_text_id('RejectInitReview');
+        $accepted = Ebms\Util::state_id_from_text_id('PassedInitReview');
         $state_ids = array($rejected, $accepted);
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
@@ -590,7 +574,8 @@ class EbmsReports {
         $query->fields('b', array('board_name'));
         $query->fields('t', array('topic_name'));
         $query->fields('s', array('state_id'));
-        $query->condition('s.board_id', array_keys($boards), 'IN');
+        if ($board)
+            $query->condition('s.board_id', $board);
         if (!Ebms\Util::add_cycle_to_query($query, $cycle, 's.status_dt')) {
             drupal_set_message('Failure restricting query by cycle', 'error');
             return array();
@@ -602,6 +587,8 @@ class EbmsReports {
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
         $query->orderBy('t.topic_name');
+
+        // Collect the query result in an array indexed by board.
         $results = $query->execute();
         $stats = array();
         foreach ($results as $result) {
@@ -617,6 +604,9 @@ class EbmsReports {
                 );
             $stats[$board_name][$topic_name][$state_id] = $result->n;
         }
+
+        // Add a section for each board, showing counts for librarian
+        // rejections and passes.
         foreach ($stats as $board_name => &$topic_array) {
             $rows = array();
             $total_rejected = $total_accepted = 0;
@@ -635,48 +625,31 @@ class EbmsReports {
         }
         return $report;
     }
-    static function format_report_date() {
-        $d = date('m/d/Y');
-        return '<div class="meta"><span class="label">Report Date:</span> ' .
-            $d . '</div>';
-    }
-    static function format_board($board_name) {
-        return '<div class="meta"><span class="label">Board:</span> '.
-            $board_name . '</div>';
-    }
-    static function format_cycle_name($cycle) {
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        return '<div class="meta"><span class="label">Review Cycle:</span> ' .
-            $cycle_name . '</div>';
-    }
-    static function format_date($date) {
-        $y = $date['year'];
-        $m = $date['month'];
-        $d = $date['day'];
-        if (!$y || !$m || !$d)
-            return '';
-        $t = mktime(0, 0, 0, $m, $d, $y);
-        return date('m/d/Y', $t);
-    }
-    static function format_date_range($start, $end) {
-        $s = EbmsReports::format_date($start);
-        $e = EbmsReports::format_date($end);
-        if (!$s || !$e)
-            return '';
-        return '<div class="meta"><span class="label">Date Range:</span> ' .
-            $s . ' - ' . $e . '</div>';
-    }
-    public static function manager_rejection($board, $cycle, $start, $end)
-    {
-        $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
-            'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
-        $pubmed_opts = array('attributes' => array('target' => '_blank'));
+
+    /**
+     * Build a report showing all of the article-topic combinations
+     * rejected by the board manager in her first pass.
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().
+     *
+     *  @param  int    $board   ID of board (if the user specified
+     *                          one for the report)
+     *  @param  int    $cycle   ID of the cycle used for filtering
+     *                          the report
+     *  @param  array  $start   Drupal form date field for the beginning
+     *                          of a filtering date range
+     *  @param  array  $end     Drupal form date field for the end
+     *                          of a filtering date range
+     *
+     *  @return array           Drupal render array for the report
+     */
+    public static function manager_rejection($board, $cycle, $start, $end) {
+
+        // Build up the markup for the report's title.
         $title = '<h2>Citations Not Selected for Full Text Retrieval</h2>';
         $title .= EbmsReports::format_report_date();
-        $boards = Ebms\Util::boards();
         if ($board) {
-            $board_name = $boards[$board];
-            $boards = array($board => $board_name);
+            $board_name = Ebms\Util::get_board_name($board);
             $title .= EbmsReports::format_board($board_name);
         }
         if ($cycle)
@@ -690,6 +663,8 @@ class EbmsReports {
             }
             $title .= $range;
         }
+
+        // Start the render array with the title.
         $report = array(
             '#type' => 'container',
             '#attributes' => array(
@@ -701,11 +676,9 @@ class EbmsReports {
                 '#markup' => $title,
             )
         );
-        $state_id = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'RejectBMReview')
-            ->execute()
-            ->fetchField();
+
+        // Construct the query for the report.
+        $state_id = Ebms\Util::state_id_from_text_id('RejectBMReview');
         $header = array(
             'EBMS ID',
             'PMID',
@@ -713,7 +686,6 @@ class EbmsReports {
             array('data' => 'NCI Reviewer', 'class' => array('col-4')),
             'Comments',
         );
-        $board_ids = array_keys($boards);
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
         $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
@@ -722,7 +694,8 @@ class EbmsReports {
         $query->fields('t', array('topic_name'));
         $query->fields('u', array('name'));
         $query->fields('s', array('article_state_id'));
-        $query->condition('s.board_id', $board_ids, 'IN');
+        if ($board)
+            $query->condition('s.board_id', $board);
         if ($cycle) {
             if (!Ebms\Util::add_cycle_to_query($query, $cycle,
                     's.status_dt')) {
@@ -742,6 +715,14 @@ class EbmsReports {
         $query->condition('s.state_id', $state_id);
         $query->orderBy('a.article_id');
         $query->orderBy('t.topic_name');
+
+        // Prep for links to NLM's PubMed.
+        $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
+            'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
+        $pubmed_opts = array('attributes' => array('target' => '_blank'));
+
+        // Walk through the query results, assembling the rows for the
+        // report table.
         $results = $query->execute();
         $rows = array();
         $last_article_id = null;
@@ -782,6 +763,20 @@ class EbmsReports {
         );
         return $report;
     }
+
+    /**
+     * Generates the HTML markup for the list of topics associated with
+     * an article for a particular article state.  Used by the report
+     * which compares the topics chosen by the librarians with those
+     * approved by the board manager (see function below).
+     *
+     *  @param  int  $article_id  Primary key into the ebms_article table
+     *  @param  int  $state_id    Primary key into the ebms_article_state_type
+     *                            table
+     *
+     *  @return                   String containing markup for list of
+     *                            topics
+     */
     static function get_topics($article_id, $state_id) {
         $query = db_select('ebms_topic', 't');
         $query->join('ebms_article_state', 's', 's.topic_id = t.topic_id');
@@ -796,11 +791,27 @@ class EbmsReports {
             $topics[] = htmlspecialchars($result->topic_name);
         return implode('<br />', $topics);
     }
-    public static function topic_changes($start, $end)
-    {
-        $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
-            'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
-        $pubmed_opts = array('attributes' => array('target' => '_blank'));
+
+    /**
+     * Build a report showing all of the articles for which the board
+     * manager has added topics which weren't in the set of topics
+     * approved for the article by the librarians.
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().  The date range represented
+     * by the parameters is used to find matching states created by
+     * the board managers.
+     *
+     *  @param  array  $start   Drupal form date field for the beginning
+     *                          of a filtering date range
+     *  @param  array  $end     Drupal form date field for the end
+     *                          of a filtering date range
+     *
+     *  @return array           Drupal render array for the report
+     */
+    public static function topic_changes($start, $end) {
+
+
+        // Build up the markup for the report's title.
         $title = '<h2>Citation Summary Topic Changes</h2>';
         $title .= EbmsReports::format_report_date();
         $title .= EbmsReports::format_date_range($start, $end);
@@ -815,16 +826,11 @@ class EbmsReports {
                 '#markup' => $title,
             )
         );
-        $librarian_approval = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'PassedInitReview')
-            ->execute()
-            ->fetchField();
-        $manager_approval = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'PassedBMReview')
-            ->execute()
-            ->fetchField();
+
+        // Construct the query for the report.
+        $manager_approval = Ebms\Util::state_id_from_text_id('PassedBMReview');
+        $librarian_approval =
+            Ebms\Util::state_id_from_text_id('PassedInitReview');
         $header = array(
             array('data' => 'EBMS ID', 'class' => array('col-1')),
             array('data' => 'PMID', 'class' => array('col-2')),
@@ -849,6 +855,14 @@ class EbmsReports {
             return array();
         }
         $query->orderBy('a.article_id');
+
+        // Prep for links to NLM's PubMed.
+        $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
+            'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
+        $pubmed_opts = array('attributes' => array('target' => '_blank'));
+
+        // Walk through the query results, assembling the rows for the
+        // report table.
         $results = $query->execute();
         $rows = array();
         foreach ($results as $result) {
@@ -873,9 +887,29 @@ class EbmsReports {
         return $report;
     }
 
-    public static function import_reports(
-        $board, $topic, $cycle, $start, $end, $range
-    ) {
+    /**
+     * Display the list of import jobs matching the report criteria.
+     * This display is the interim display for the "Import Reports"
+     * page.
+     *
+     *  @param  int    $board   Primary key for ebms_board table
+     *  @param  int    $topic   Primary key for ebms_topic table
+     *  @param  int    $cycle   Primary key for ebms_cycle table
+     *  @param  array  $start   Drupal form date array for beginning
+     *                          of date range for filtering
+     *  @param  array  $end     Drupal form date array for end
+     *                          of date range for filtering
+     *  @param  bool   $range   Flag indicating whether both dates
+     *                          ($start and $end) should be used
+     *                          for filtering
+     *
+     *  @return array           Drupal render array for the list
+     *                          of import batch jobs
+     */
+    public static function import_reports($board, $topic, $cycle, $start,
+                                          $end, $range) {
+
+        // Construct the query object for the report.
         $query = db_select('ebms_import_batch', 'j');
         $query->join('ebms_import_action', 'a',
             'a.import_batch_id = j.import_batch_id');
@@ -912,7 +946,8 @@ class EbmsReports {
         $query->groupBy('t.topic_name');
         $query->groupBy('b.board_name');
         $query->orderBy('j.import_date');
-        //pdq_ebms_debug('IMPORT REPORT QUERY', 'query: ' . $query);
+
+        // Execute the query and assemble the list of items for the display.
         $results = $query->execute();
         $items = array();
         foreach ($results as $result) {
@@ -925,6 +960,8 @@ class EbmsReports {
             $line = "$date | $board_name | $topic_name | $count";
             $items[] = l($line, 'reports/import/' . $result->import_batch_id);
         }
+
+        // Assemble and return the render array for the list.
         return array(
             '#type' => 'container',
             '#attributes' => array(
@@ -942,10 +979,21 @@ class EbmsReports {
             ),
         );
     }
+
+    /**
+     * Builds the Drupal render array for a report on an article import
+     * job.  This method is almost trivial, since we're using the
+     * common logic built for showing the same information immediately
+     * after the job was run.
+     *
+     *  @param  int  $id      Primary key into the EBMS table used to
+     *                        record import batches
+     *
+     *  @return array         Drupal render array for the report.
+     */
     public static function import_job($id) {
         require_once('EbmsImport.inc');
         $batch = new Ebms\ImportBatch($id);
-        //pdq_ebms_debug('IMPORT BATCH', $batch);
         $title = 'Import Batch ' . $id;
         return Ebms\Util::import_report($batch, $title);
         return;
@@ -962,10 +1010,20 @@ class EbmsReports {
         );
     }
 
-    //public static function docs($board, $tag, $keyword, $inhouse,
-    //    $member, $archived, $range, $start, $end) {
+    /**
+     * Builds up the Drupal render array for a report on documents
+     * posted to the EBMS.
+     *
+     *  @param  int  $request_id   Primary key into the EBMS table
+     *                             holding the parameters for the
+     *                             report request.
+     *
+     *  @return array              Drupal render array for the
+     *                             report.
+     */
     public static function docs($request_id) {
 
+        // Collect the report parameters.
         $board = $tag = $keyword = $inhouse = $member = $archived =
             $range = null;
         $start = $end = Ebms\Util::empty_date();
@@ -983,7 +1041,15 @@ class EbmsReports {
                 $end = $params['upload-end'];
             pdq_ebms_debug('DOCS PARAMS', $params);
         }
+
+        // In the interest of keeping up with the development schedule,
+        // the paging mechanism implemented here is simpler than it
+        // might be; we're not providing a way for the user to toggle
+        // between paged output and unpaged output.
         $pager = true;
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
         $headers = array(
             array(
                 'data' => 'File Name',
@@ -1011,6 +1077,8 @@ class EbmsReports {
                 'class' => array('col-6'),
             ),
         );
+
+        // Construct the query for the report.
         $query = db_select('ebms_doc', 'd');
         $query = $query->extend('TableSort');
         if ($pager)
@@ -1042,7 +1110,6 @@ class EbmsReports {
         $query->orderByHeader($headers);
         $count_query = $query->countQuery();
         $total = $count_query->execute()->fetchField();
-        $docs = $query->execute();
 
         // Collect information we'll use repeatedly in the loop.
         $divider = '<span class="action-divider">|</span>';
@@ -1052,6 +1119,7 @@ class EbmsReports {
         $edit_parms = drupal_get_query_parameters();
 
         // Build the array of table rows.
+        $docs = $query->execute();
         $rows = array();
         foreach ($docs as $d) {
             $edit_parms['edit'] = $d->doc_id;
@@ -1131,7 +1199,27 @@ class EbmsReports {
         return $table;
     }
 
+
+    /**
+     * Create the Drupal render array for a report on articles which
+     * have been put on a meeting agenda for discussion by the PDQ
+     * board members.
+     *
+     * This report is one of eight different reports on articles by
+     * status.  Called by the cites_by_status() method below.
+     *
+     *  @param  array  $params   Values specified by the user
+     *                           requesting the report, to be
+     *                           used for selecting the articles
+     *                           to appear on that report.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
     static function cites_by_status_rd($params) {
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
         $headers = array(
             '',
             array(
@@ -1145,16 +1233,10 @@ class EbmsReports {
             'Date Reviewed',
             'Reviewer',
         );
-        $passed = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'PassedBMReview')
-            ->execute()
-            ->fetchField();
-        $rejected = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'RejectBMReview')
-            ->execute()
-            ->fetchField();
+
+        // Construct the query for the report.
+        $passed = Ebms\Util::state_id_from_text_id('PassedBMReview');
+        $rejected = Ebms\Util::state_id_from_text_id('RejectBMReview');
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
@@ -1186,6 +1268,8 @@ class EbmsReports {
         $query->fields('u', array('name'));
         $query->orderByHeader($headers);
         $query->distinct();
+
+        // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
         $counter = 0;
         $rows = array();
@@ -1244,7 +1328,27 @@ class EbmsReports {
         );
         return $table;
     }
+
+    /**
+     * Create the Drupal render array for a report on articles which
+     * have been put on a meeting agenda for discussion by the PDQ
+     * board members.
+     *
+     * This report is one of eight different reports on articles by
+     * status.  Called by the cites_by_status() method below.
+     *
+     *  @param  array  $params   Values specified by the user
+     *                           requesting the report, to be
+     *                           used for selecting the articles
+     *                           to appear on that report.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
     static function cites_by_status_cd($params) {
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
         $headers = array(
             '',
             array(
@@ -1257,21 +1361,11 @@ class EbmsReports {
             'Review Cycle',
             'Date Reviewed',
         );
-        $passed = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'PassedFullReview')
-            ->execute()
-            ->fetchField();
-        $rejected = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'RejectFullReview')
-            ->execute()
-            ->fetchField();
-        $fyi = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'FYI')
-            ->execute()
-            ->fetchField();
+
+        // Construct the query for the report.
+        $passed = Ebms\Util::state_id_from_text_id('PassedFullReview');
+        $rejected = Ebms\Util::state_id_from_text_id('RejectFullReview');
+        $fyi = Ebms\Util::state_id_from_text_id('FYI');
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
@@ -1305,6 +1399,8 @@ class EbmsReports {
                                   'state_id', 'status_dt'));
         $query->orderByHeader($headers);
         $query->distinct();
+
+        // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
         $counter = 0;
         $rows = array();
@@ -1371,7 +1467,27 @@ class EbmsReports {
         );
         return $table;
     }
+
+    /**
+     * Create the Drupal render array for a report on articles which
+     * have been put on a meeting agenda for discussion by the PDQ
+     * board members.
+     *
+     * This report is one of eight different reports on articles by
+     * status.  Called by the cites_by_status() method below.
+     *
+     *  @param  array  $params   Values specified by the user
+     *                           requesting the report, to be
+     *                           used for selecting the articles
+     *                           to appear on that report.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
     static function cites_by_status_ftr($params) {
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
         $headers = array(
             '',
             array(
@@ -1380,11 +1496,9 @@ class EbmsReports {
                 'class' => array('col-1'),
             ),
         );
-        $passed_bm_review = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'PassedBMReview')
-            ->execute()
-            ->fetchField();
+
+        // Construct the query for the report.
+        $passed_bm_review = Ebms\Util::state_id_from_text_id('PassedBMReview');
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
         $query->condition('s.current', 'Y');
@@ -1419,6 +1533,8 @@ class EbmsReports {
 
         $query->orderByHeader($headers);
         $query->distinct();
+
+        // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
         $counter = 0;
         $rows = array();
@@ -1467,7 +1583,26 @@ class EbmsReports {
         return $table;
     }
 
+    /**
+     * Create the Drupal render array for a report on articles which
+     * have been put on a meeting agenda for discussion by the PDQ
+     * board members.
+     *
+     * This report is one of eight different reports on articles by
+     * status.  Called by the cites_by_status() method below.
+     *
+     *  @param  array  $params   Values specified by the user
+     *                           requesting the report, to be
+     *                           used for selecting the articles
+     *                           to appear on that report.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
     static function cites_by_status_afr($params) {
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
         $headers = array(
             '',
             array(
@@ -1479,11 +1614,10 @@ class EbmsReports {
             'Date Assigned',
             'Review Cycle',
         );
-        $passed_full_review = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'PassedFullReview')
-            ->execute()
-            ->fetchField();
+
+        // Construct the query for the report.
+        $passed_full_review =
+            Ebms\Util::state_id_from_text_id('PassedFullReview');
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
         $query->condition('s.current', 'Y');
@@ -1511,6 +1645,11 @@ class EbmsReports {
         $query->fields('p', array('packet_id', 'created_at'));
         $query->orderByHeader($headers);
         $query->distinct();
+
+        // Execute the query and collect the results in an array
+        // indexed by article, each element of the array containing
+        // the review cycle for the article and an array of packet
+        // information.
         $results = $query->execute();
         $articles = array();
         foreach ($results as $result) {
@@ -1525,6 +1664,8 @@ class EbmsReports {
                 date('m/d/y', strtotime($result->created_at)),
             );
         }
+
+        // Assemble the rows for the report table.
         $counter = 0;
         $rows = array();
         foreach ($articles as $article_id => $article_info) {
@@ -1594,7 +1735,26 @@ class EbmsReports {
         return $table;
     }
 
+    /**
+     * Create the Drupal render array for a report on articles which
+     * have been put on a meeting agenda for discussion by the PDQ
+     * board members.
+     *
+     * This report is one of eight different reports on articles by
+     * status.  Called by the cites_by_status() method below.
+     *
+     *  @param  array  $params   Values specified by the user
+     *                           requesting the report, to be
+     *                           used for selecting the articles
+     *                           to appear on that report.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
     static function cites_by_status_bmr($params) {
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
         $headers = array(
             '',
             array(
@@ -1611,11 +1771,10 @@ class EbmsReports {
             'Review Cycle',
         );
 
-        $passed_full_review = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'PassedFullReview')
-            ->execute()
-            ->fetchField();
+
+        // Construct the query for the report.
+        $passed_full_review =
+            Ebms\Util::state_id_from_text_id('PassedFullReview');
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
         $query->condition('s.current', 'Y');
@@ -1646,6 +1805,11 @@ class EbmsReports {
         }
         $query->orderByHeader($headers);
         $query->distinct();
+
+        // Execute the query and collect the results in an array
+        // indexed by article, each element of the array containing
+        // the review cycle for the article and an array of review
+        // IDs.
         $results = $query->execute();
         $articles = array();
         foreach ($results as $result) {
@@ -1657,6 +1821,8 @@ class EbmsReports {
                 );
             $articles[$article_id]['reviews'][] = $result->review_id;
         }
+
+        // Assemble the rows for the report table.
         $counter = 0;
         $rows = array();
         foreach ($articles as $article_id => $article_info) {
@@ -1747,70 +1913,29 @@ class EbmsReports {
         );
         return $table;
     }
-//         $query = db_select('ebms_review_disposition', 'd');
-//         $query = $query->extend('TableSort');
-//         $query->join('ebms_article_review', 'r', 'r.review_id = d.review_id');
-//         $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
-//         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
-//         $query->leftJoin('ebms_article_author_cite', 'c',
-//             'c.article_id = r.article_id AND c.cite_order = 1');
-//         $query->leftJoin('ebms_article_author', 'a',
-//             'a.author_id = c.author_id');
-//         $query->fields('r', array('review_id', 'when_posted', 'comments',
-//                        'article_id'));
-//         $query->fields('p', array('created_at'));
-//         $query->fields('u', array('name'));
-//         $query->condition('t.board_id', $params['board']);
-//         if ($params['topic'])
-//             $query->condition('t.topic_id', $params['topic']);
-//         if ($params['disposition']) {
-//             $no_change = db_select('ebms_review_disposition_value', 'v')
-//                 ->fields('v', array('value_id'))
-//                 ->condition('v.value_pos', 1)
-//                 ->execute()
-//                 ->fetchField();
-//             switch ($params['disposition']) {
-//             case 'yes':
-//                 $query->condition('d.value_id', $no_change, '<>');
-//                 break;
-//             case 'no':
-//                 $query->condition('d.value_id', $no_change);
-//                 break;
-//             }
-//         }
 
-//         // XXX Is cycle for packet creation or review? Robin: packet creation.
-//         if ($params['cycle'])
-//             Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-//                                           'p.created_at');
-
-//         // XXX Need logic for meeting type/meeting date.  Robin: ignore.
-//         $query->fields('r', array('article_id'));
-//         //$query->orderBy('r.article_id');
-//         //$query->orderBy('r.when_posted');
-//         $query->orderByHeader($headers);
-//         $query->distinct();
-//         $results = $query->execute();
-//         $articles = array();
-//         foreach ($results as $result) {
-//             $article_id = $result->article_id;
-//             if (!array_key_exists($article_id, $articles))
-//                 $articles[$article_id] = array();
-//             $articles[$article_id] = $result;
-//         }
-//         $rows = array();
-//         foreach ($articles as $article_id => $reviews) {
-//             $citation_shown = false;
-//             foreach ($reviews as $review) {
-//                 $row = array();
-//                 if (!$citation_shown) {
-//                 }
-//             }
-//         }
-//     }
-
+    /**
+     * Create the Drupal render array for a report on articles for
+     * which a board member has taken an action after having looked
+     * at the responses provided by her board members in their review
+     * of the article assigned to their packets.
+     *
+     * This report is one of eight different reports on articles by
+     * status.  Called by the cites_by_status() method below.
+     *
+     *  @param  array  $params   Values specified by the user
+     *                           requesting the report, to be
+     *                           used for selecting the articles
+     *                           to appear on that report.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
     static function cites_by_status_bma($params) {
         $manager_actions = EbmsReports::manager_actions();
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
         $headers = array(
             '',
             array(
@@ -1824,6 +1949,8 @@ class EbmsReports {
         $headers[] = 'Comments';
         // $headers[] = 'Review Cycle'; XXX wait for article/topic table.
         $headers[] = 'Date Assigned';
+
+        // Construct the query for the report.
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
@@ -1847,6 +1974,8 @@ class EbmsReports {
                                   'state_id', 'status_dt'));
         $query->orderByHeader($headers);
         $query->distinct();
+
+        // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
         $counter = 0;
         $rows = array();
@@ -1903,7 +2032,134 @@ class EbmsReports {
         return $table;
     }
 
+    /**
+     * Create the Drupal render array for a report on articles which
+     * have been put on a meeting agenda for discussion by the PDQ
+     * board members.
+     *
+     * This report is one of eight different reports on articles by
+     * status.  Called by the cites_by_status() method below.
+     *
+     *  @param  array  $params   Values specified by the user
+     *                           requesting the report, to be
+     *                           used for selecting the articles
+     *                           to appear on that report.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
+    static function cites_by_status_oa($params) {
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
+        $headers = array(
+            '',
+            array(
+                'data' => 'Citation',
+                'field' => 'a.last_name',
+                'class' => array('col-1'),
+            ),
+            'Meeting Date (Type)',
+            'Comments',
+            // 'Review Cycle', XXX wait for article/topic table
+        );
+
+        // Construct the query for the report.
+        $state_id = Ebms\Util::state_id_from_text_id('OnAgenda');
+        $query = db_select('ebms_article_state', 's');
+        $query = $query->extend('TableSort');
+        $query->leftJoin('ebms_article_author_cite', 'c',
+            'c.article_id = s.article_id AND c.cite_order = 1');
+        $query->leftJoin('ebms_article_author', 'a',
+            'a.author_id = c.author_id');
+        $query->condition('s.board_id', $params['board']);
+        if ($params['topic'])
+            $query->condition('s.topic_id', $params['topic']);
+        $query->condition('s.current', 'Y');
+        $query->condition('s.state_id', $state_id);
+        if ($params['cycle'])
+            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
+                                          's.status_dt');
+        $query->fields('s',
+            array('article_id', 'article_state_id', 'status_dt'));
+        $query->orderByHeader($headers);
+        $query->distinct();
+
+        // Execute the query and assemble the rows for the report table.
+        $results = $query->execute();
+        $counter = 0;
+        $rows = array();
+        foreach ($results as $result) {
+            $article_id = $result->article_id;
+            $citation = EbmsReports::format_citation($article_id);
+            $article_state_id = $result->article_state_id;
+            $comment_rows = db_select('ebms_article_state_comment', 'c')
+                ->fields('c', array('comment'))
+                ->condition('c.article_state_id', $article_state_id)
+                ->orderBy('c.comment_dt')
+                ->execute();
+            $comments = array();
+            foreach ($comment_rows as $comment_row)
+                $comments[] = htmlspecialchars($comment_row->comment);
+            $col2 = '??? TBD ???';
+            $col3 = implode('<br />', $comments);
+            // $col4 = ...
+            $row = array(
+                array(
+                    'data' => ++$counter,
+                    'class' => array('col-0'),
+                ),
+                array(
+                    'data' => $citation,
+                    'class' => array('col-1'),
+                ),
+                $col2,
+                $col3,
+                // $col4,
+            );
+            $rows[] = array(
+                'data' => $row,
+                'no_striping' => true,
+            );
+        }
+
+        // Assemble and return the table.
+        $id = 'report-title';
+        $title = 'Citations by Status';
+        $table = array(
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => "<h2 id='$id'>$title ($counter)</h2>",
+            ),
+            'table' => array(
+                '#attributes' => array('id' => 'cites-by-status-report'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+        );
+        return $table;
+    }
+
+    /**
+     * Create the Drupal render array for a report on articles for
+     * which a final editorial board decision has been made.  This
+     * status is the end of the line for EBMS processing.  One of
+     * eight different reports on articles by status.  Called by
+     * the cites_by_status() method below.
+     *
+     *  @param  array  $params   Values specified by the user
+     *                           requesting the report, to be
+     *                           used for selecting the articles
+     *                           to appear on that report.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
     static function cites_by_status_ebd($params) {
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
         $headers = array(
             '',
             array(
@@ -1918,11 +2174,9 @@ class EbmsReports {
             // 'Discussed By', XXX find out where this comes from!
         );
 
-        $final_board_decision = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('state_id'))
-            ->condition('t.state_text_id', 'FinalBoardDecision')
-            ->execute()
-            ->fetchField();
+        // Construct the query for the report.
+        $final_board_decision =
+            Ebms\Util::state_id_from_text_id('FinalBoardDecision');
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
@@ -1947,6 +2201,8 @@ class EbmsReports {
             array('article_id', 'article_state_id', 'status_dt'));
         $query->orderByHeader($headers);
         $query->distinct();
+
+        // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
         $counter = 0;
         $rows = array();
@@ -1993,7 +2249,7 @@ class EbmsReports {
             );
         }
 
-        // Assemble the table.
+        // Assemble and return the table.
         $id = 'report-title';
         $title = 'Citations by Status';
         $table = array(
@@ -2011,10 +2267,19 @@ class EbmsReports {
         return $table;
     }
 
-    // XXX do the statuses need to be current?  Yes.
+    /**
+     * Retrieves the request values for one of the eight "Citations
+     * by Status" reports and routes the request to the appropriate
+     * method for generating the report.
+     *
+     *  @param  int  $request_id    Primary key into the ebms_report_request
+     *                              table.
+     *
+     *  @return array               Drupal render array for the report
+     *                              portion of the page.
+     */
     public static function cites_by_status($request_id) {
         $params = EbmsReports::fetch_report_request($request_id);
-        pdq_ebms_debug('CITE BY STATUS REPORT TABLE', $params);
         switch ($params['status']) {
             case 'reviewer decision':
                 return EbmsReports::cites_by_status_rd($params);
@@ -2028,21 +2293,56 @@ class EbmsReports {
                 return EbmsReports::cites_by_status_bmr($params);
             case 'board manager action':
                 return EbmsReports::cites_by_status_bma($params);
+            case 'on agenda':
+                return EbmsReports::cites_by_status_oa($params);
             case 'editorial board decision':
                 return EbmsReports::cites_by_status_ebd($params);
-            case 'on agenda':
             default:
+                $name = htmlspecialchars($params['status']);
+                drupal_set_message("Unsupported report request \"$name.\"",
+                    'error');
                 return array();
         }
-        $query = db_select('ebms_article_state', 's');
-        $query->condition('s.board_id', $params['board']);
-        if ($params['topic'])
-            $query->condition('s.topic_id', $params['topic']);
-            $citation = EbmsReports::format_citation($article_id);
-
     }
 
+    /**
+     * Build the Drupal render array for the "Literature Reviews" report.
+     *
+     *  @param  int  $request_id   Primary key for the EBMS table used
+     *                             to store the paramaters for report
+     *                             requests
+     *
+     *  @return array              Drupal render array for the report
+     */
     public static function reviews($request_id) {
+
+        // Create the table column headers, specifying the column which
+        // can be used for sorting.
+        $headers = array(
+            array(
+                'data' => '',
+                'class' => array('col-0'),
+            ),
+            array(
+                'data' => 'CITATION',
+                'field' => 'a.last_name',
+                'class' => array('col-1'),
+            ),
+            array(
+                'data' => 'CYCLE',
+                'class' => array('col-2'),
+            ),
+            array(
+                'data' => 'REVIEWER | DISPOSITION',
+                'class' => array('col-3'),
+            ),
+            array(
+                'data' => 'COMMENTS',
+                'class' => array('col-4'),
+            ),
+        );
+
+        // Retrieve the filtering values from the database.
         $params = EbmsReports::fetch_report_request($request_id);
         pdq_ebms_debug('REVIEWS TABLE PARAMS', $params);
         $board = $params['board'];
@@ -2056,6 +2356,8 @@ class EbmsReports {
         $prange = $params['prange'];
         $pstart = $params['pstart'];
         $pend = $params['pend'];
+
+        // Build the database query for the report.
         $query = db_select('ebms_article_review', 'r');
         $query = $query->extend('TableSort');
         $query->join('users', 'u', 'u.uid = r.reviewer_id');
@@ -2088,31 +2390,13 @@ class EbmsReports {
         else
             Ebms\Util::add_date_to_query($query, $pstart, 'p.created_at');
         $query->distinct();
-        //$query->range(0, 25);
-        $headers = array(
-            array(
-                'data' => '',
-                'class' => array('col-0'),
-            ),
-            array(
-                'data' => 'CITATION',
-                'field' => 'a.last_name',
-                'class' => array('col-1'),
-            ),
-            array(
-                'data' => 'CYCLE',
-                'class' => array('col-2'),
-            ),
-            array(
-                'data' => 'REVIEWER | DISPOSITION',
-                'class' => array('col-3'),
-            ),
-            array(
-                'data' => 'COMMENTS',
-                'class' => array('col-4'),
-            ),
-        );
         $query->orderByHeader($headers);
+
+        // Execute the database query and assemble an array indexed by
+        // article ID, each element of the array containing a list of
+        // packets for which the article was reviewed, with enough
+        // information about those reviews that we can build the report
+        // table.
         $results = $query->execute();
         $articles = array();
         foreach ($results as $result) {
@@ -2128,8 +2412,6 @@ class EbmsReports {
                 $articles[$article_id][$packet][$reviewer] = array();
             $articles[$article_id][$packet][$reviewer][] = $review_id;
         }
-        $counter = 0;
-        $rows = array();
 
         // Look up the ID of the disposition for rejecting the article
         // (always in the first position).
@@ -2138,12 +2420,27 @@ class EbmsReports {
             ->condition('v.value_pos', 1)
             ->execute()
             ->fetchField();
+
+        // Assemble the table rows for the report.  Moderately complicated
+        // by the need to use HTML rowspan markup to keep information about
+        // the same article aligned properly, and information about the same
+        // packet aligned properly as well.  Each article can have multiple
+        // packet cycle values, and each packet cycle value can have multiple
+        // reviews.  Everything has to match visually.
+        $counter = 0;
+        $rows = array();
         foreach ($articles as $article_id => $packets) {
             $citation = EbmsReports::format_citation($article_id);
             $query = db_select('ebms_article_review', 'r');
             $article_rowspan = 0;
             ksort($packets);
             $packet_rows = array();
+
+            // Construct an array indexed by the cycle string for each
+            // packet for which we have reviews for this article.
+            // Each element of the array contains a nested array of
+            // information about each review returned for the article
+            // and packet combination.
             foreach ($packets as $packet => $reviews) {
                 list($year, $month) = explode('/', $packet);
                 $p = "$month/$year";
@@ -2179,10 +2476,18 @@ class EbmsReports {
                     ++$article_rowspan;
                 }
             }
+
+            // We only display the article abstract once, no matter how
+            // many reviews we have.
             $have_abstract_row = false;
-            //pdq_ebms_debug('PACKET ROWS', $packet_rows);
+
             foreach ($packet_rows as $packet => $reviews) {
+
+                // We only display the cycle date once, no matter how many
+                // reviews we show for packets created in that cycle.
                 $have_packet_row = false;
+
+                // Create a row for each board member's review.
                 foreach ($reviews as $review) {
                     $row = array();
                     list($reviewer, $disp, $comments) = $review;
@@ -2258,6 +2563,21 @@ class EbmsReports {
         return $table;
     }
 
+    /**
+     * The processing model has the submit callback handler for
+     * the report request form save the user's filtering criteria
+     * for a report in the database and then invoke the report
+     * URL indicating which row in the database table has the
+     * report criteria.  The values are serialized using json
+     * encoding.
+     *
+     *  @param  array   $params    The user's criteria for the
+     *                             report
+     *  @param  string  $name      The name of the requested report
+     *
+     *  @return int                Primary key into the EBMS table
+     *                             which stores the report requests
+     */
     public static function save_report_request($params, $name) {
         global $user;
         $now = strftime('%Y-%m-%d %H:%M:%S');
@@ -2272,6 +2592,17 @@ class EbmsReports {
             )
             ->execute();
     }
+
+    /**
+     * Retrieves the array of report request parameters from the
+     * database.  Decodes the string used for serializing the
+     * value.
+     *
+     *  @param  int   $request_id   Primary key into the EBMS table
+     *                              which stores the report requests
+     *
+     *  @return array               Report request parameters
+     */
     public static function fetch_report_request($request_id) {
         $json = db_select('ebms_report_request', 'r')
             ->fields('r', array('parameters'))
@@ -2280,6 +2611,32 @@ class EbmsReports {
             ->fetchField();
         return drupal_json_decode($json);
     }
+
+    /**
+     * Returns the array of article states representing actions
+     * taken by the board manager after she has looked over the
+     * reviews of an article sent back by her board members.
+     * The technique used here is to find the sequence number
+     * of a state which is known to be in this group of states
+     * (and which we are assured will always be in this group)
+     * and then find all of the states which share this same
+     * sequence number.  For further information on article
+     * states and sequence numbers see the documentation of the
+     * ebms_article_state and ebms_article_state_type tables
+     * in ebms.sql.
+     *
+     * Because we can need to use this array in more than one place
+     * in a single page request, we cache the results of the
+     * database queries in a static class property, and only
+     * execute the queries once per page request.
+     *
+     *  @return array         Dictionary of article state types,
+     *                        with primary keys into the
+     *                        ebms_article_state_type table as
+     *                        the array indexes, and the display
+     *                        string for the state as the element
+     *                        values
+     */
     public static function manager_actions() {
         if (!EbmsReports::$_manager_actions) {
             $full_end_sequence = db_select('ebms_article_state_type', 't')
@@ -2297,11 +2654,79 @@ class EbmsReports {
         }
         return EbmsReports::$_manager_actions;
     }
+
+    /**
+     * Common routine to generate the HTML markup for the report date
+     * block for the meta-data at the top of one of the citation reports.
+     */
+    static function format_report_date() {
+        $d = date('m/d/Y');
+        return '<div class="meta"><span class="label">Report Date:</span> ' .
+            $d . '</div>';
+    }
+
+    /**
+     * Common routine to generate the HTML markup for the board name
+     * block for the meta-data at the top of one of the citation reports.
+     */
+    static function format_board($board_name) {
+        return '<div class="meta"><span class="label">Board:</span> '.
+            $board_name . '</div>';
+    }
+
+    /**
+     * Common routine to generate the HTML markup for the cyclename
+     * block for the meta-data at the top of one of the citation reports.
+     */
+    static function format_cycle_name($cycle) {
+        $cycle_name = Ebms\Util::get_cycle_name($cycle);
+        return '<div class="meta"><span class="label">Review Cycle:</span> ' .
+            $cycle_name . '</div>';
+    }
+
+    /**
+     * Common routine to format a Drupal form date field in the pattern
+     * MM/DD/YYYY.
+     *
+     *  @param  array  $date    Drupal form date field with separate
+     *                          elements for 'year', 'month', and 'day'
+     *
+     *  @return string          Date string as MM/DD/YYYY
+     */
+    static function format_date($date) {
+        $y = $date['year'];
+        $m = $date['month'];
+        $d = $date['day'];
+        if (!$y || !$m || !$d)
+            return '';
+        $t = mktime(0, 0, 0, $m, $d, $y);
+        return date('m/d/Y', $t);
+    }
+
+    /**
+     * Common routine to generate the HTML markup for a report's date
+     * range block for the meta-data at the top of one of the citation
+     * reports.
+     *
+     *  @param  array  $start   Drupal form date field for the beginning
+     *                          of a date range
+     *  @param  array  $end     Drupal form date field for the end of a
+     *                          date range
+     *
+     *  @return string          HTML markup for date range block
+     */
+    static function format_date_range($start, $end) {
+        $s = EbmsReports::format_date($start);
+        $e = EbmsReports::format_date($end);
+        if (!$s || !$e)
+            return '';
+        return '<div class="meta"><span class="label">Date Range:</span> ' .
+            $s . ' - ' . $e . '</div>';
+    }
 }
 
 function pdq_ebms_citation_reports_form_submit($form, &$form_state) {
     $form_state['rebuild'] = true;
-    return;
 }
 
 function pdq_ebms_report_ajax($form, $form_state) {
@@ -2494,15 +2919,15 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
         switch ($report) {
             case 'Citations Published':
                 $form['report'] =
-                    EbmsReports::cites_published($boards, $board, $cycle);
+                    EbmsReports::cites_published($board, $cycle);
                 break;
             case 'Citations Rejected/Accepted for Publishing':
                 $form['report'] =
-                    EbmsReports::initial_decision($boards, $board, $cycle);
+                    EbmsReports::initial_decision($board, $cycle);
                 break;
             case 'Citations Imported':
                 $form['report'] =
-                    EbmsReports::cites_imported($boards, $board, $cycle);
+                    EbmsReports::cites_imported($board, $cycle);
                 break;
             case 'Citations Not Selected for Full Text Retrieval':
                 $form['report'] =
@@ -3160,14 +3585,6 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         $review_dispositions[$result->value_id] = $result->value_name;
 
     $manager_actions = array(0 => ' ') + EbmsReports::manager_actions();
-//     foreach (EbmsReports::$manager_actions as $text_id) {
-//         $results = db_select('ebms_article_state_type', 't')
-//             ->fields('t', array('state_id', 'state_name'))
-//             ->condition('t.state_text_id', $text_id)
-//             ->execute();
-//         foreach ($results as $result)
-//             $manager_actions[$result->state_id] = $result->state_name;
-//     }
     $board_decisions = array(0 => ' ');
     $results = db_select('ebms_article_board_decision_value', 'v')
         ->fields('v', array('value_id', 'value_name'))
