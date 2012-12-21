@@ -1377,7 +1377,7 @@ class Util {
      *  @return                     Primary key from the
      *                              ebms_article_state_type table.
      */
-    public static function get_state_id($text_id) {
+    public static function state_id_from_text_id($text_id) {
         return db_select('ebms_article_state_type', 't')
             ->fields('t', array('state_id'))
             ->condition('t.state_text_id', $text_id)
