@@ -425,6 +425,7 @@ function ebms_webforms_webform_submission_presave($node, &$submission) {
 function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) {
     
     //If this is an edit for, unserialize the value.
+    $count = 0;
     $val_array = array();
     if(is_array($value)){
         $val_array = unserialize($value[0]);
@@ -453,7 +454,7 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
   }
   for ($i = 0; $i < $component['extra']['num_trans']; $i++) {
       $val = '';
-      if(count($val_array) >= $i)
+      if(count($val_array) > $i)
       {
           $val = $val_array[$i];
       }
@@ -702,7 +703,6 @@ function _webform_csv_headers_ebms_travel($component, $export_options) {
 function _webform_csv_data_ebms_travel($component, $export_options, $value) {
     return !isset($value[0]) ? '' : webform_ebms_travel_display_format($value[0]);
 }
-
 
 
 ?>
