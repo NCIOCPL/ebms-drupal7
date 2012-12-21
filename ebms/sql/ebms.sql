@@ -36,6 +36,7 @@ DROP TABLE IF EXISTS ebms_packet_article;
 DROP TABLE IF EXISTS ebms_packet_reviewer;
 DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
+DROP TABLE IF EXISTS ebms_agenda_meeting;
 DROP TABLE IF EXISTS ebms_article_board_decision;
 DROP TABLE IF EXISTS ebms_article_board_decision_value;
 DROP TABLE IF EXISTS ebms_article_board_decision_member;
@@ -71,7 +72,6 @@ DROP TABLE IF EXISTS ebms_board_member;
 DROP TABLE IF EXISTS ebms_board;
 DROP TABLE IF EXISTS ebms_doc;
 DROP TABLE IF EXISTS ebms_user;
-DROP TABLE IF EXISTS ebms_agenda_meeting;
 SET sql_mode='NO_AUTO_VALUE_ON_ZERO';
 
 /********************************************************
