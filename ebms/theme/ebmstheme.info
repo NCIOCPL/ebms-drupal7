@@ -5,6 +5,7 @@ core = 7.x
 engine = phptemplate
 stylesheets[all][] = css/ebms.css
 stylesheets[all][] = css/calendar.css
+stylesheets[all][] = css/page.css
 regions[header] = Header
 regions[ebms_menu] = EBMS Menu
 regions[content] = Main Content
