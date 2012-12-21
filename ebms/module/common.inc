@@ -338,7 +338,7 @@ class Menu {
         if ($role == 'admin' || $role == 'librarian')
             $menu->children = array(
                 new Menu('View', 'calendar/view'),
-                new Menu('Create Event', 'calendar/create'),
+                new Menu('Create Event', 'node/add/ebms-event'),
             );
         return $menu;
     }

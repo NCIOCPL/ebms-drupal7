@@ -119,12 +119,12 @@ class EbmsHomePage {
     private function right_panel() {
         if ($this->role == 'librarian')
             return array(
-                'alerts' => $this->alerts(),
+                //'alerts' => $this->alerts(),
                 'calendar' => $this->calendar(),
                 'admin tasks' => $this->admin(),
             );
         $blocks = array(
-            'alerts' => $this->alerts(),
+            //'alerts' => $this->alerts(),
             'next meeting' => $this->next_meeting(),
             'calendar' => $this->calendar(),
         );
