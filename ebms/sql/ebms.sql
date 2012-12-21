@@ -3,7 +3,6 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
-DROP TABLE IF EXISTS ebms_agenda_meeting;
 DROP TABLE IF EXISTS ebms_temp_report;
 DROP TABLE IF EXISTS ebms_publish_queue_flag;
 DROP TABLE IF EXISTS ebms_publish_queue;
@@ -72,6 +71,7 @@ DROP TABLE IF EXISTS ebms_board_member;
 DROP TABLE IF EXISTS ebms_board;
 DROP TABLE IF EXISTS ebms_doc;
 DROP TABLE IF EXISTS ebms_user;
+DROP TABLE IF EXISTS ebms_agenda_meeting;
 SET sql_mode='NO_AUTO_VALUE_ON_ZERO';
 
 /********************************************************
