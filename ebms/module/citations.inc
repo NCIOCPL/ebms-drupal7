@@ -97,7 +97,8 @@ namespace Ebms {
                         EbmsArticleStates::AgendaWrkGrpDiscuss,
                         EbmsArticleStates::FullEnd,));
             self::$ONAGENDA =
-                new EbmsTopicDecisions($index++, 'On Agenda', null,
+                new EbmsTopicDecisions($index++, 'On Agenda',
+                    '_format_topic_on_agenda_decision',
                     array(EbmsArticleStates::OnAgenda));
             self::$EDITORIALBOARD =
                 new EbmsTopicDecisions($index++, 'Editorial Board Decision',
@@ -603,7 +604,7 @@ namespace {
 
             $ix++;
         }
-        
+
         $form['trailing-buttons'] = array(
             '#prefix' => '<div id="citation-buttons-div">',
             '#suffix' => '</div>',
@@ -671,7 +672,7 @@ namespace {
 
         //include js to redirect pager links
         $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
-        
+
         // hook into ajax completions to apply jQuery to form components
         drupal_add_js('jQuery(document).ajaxComplete(function(){       
             addHooks();                                      
@@ -1623,7 +1624,7 @@ namespace {
             $results['table']['rows'][$ix] = $rows;
             $ix++;
         }
-        
+
         $results['trailing-buttons'] = array(
             '#prefix' => '<div id="citation-buttons-div">',
             '#suffix' => '</div>',
@@ -3505,6 +3506,16 @@ namespace {
                     "At least one rejection reason must be chosen.");
             }
         }
+
+        // reject if both a future and past meeting are chosen
+        if (isset($values['on_agenda']['future']) &&
+            isset($values['on_agenda']['past']) &&
+            $values['on_agenda']['future'] &&
+            $values['on_agenda']['past']) {
+
+            form_set_error("on_agenda_past_$hash",
+                "Only one meeting may be chosen.");
+        }
     }
 
     function _edit_decision_save($form, &$form_state) {
@@ -3802,13 +3813,21 @@ namespace {
         $past = $values['past'];
         $comment = $values['comment'];
 
+        $eventId = $future ? $future : $past;
+
         if (empty($comment))
             $comment = null;
-        if ($comment == null)
+
+        if ($eventId == null)
             return;
 
-        Ebms\setArticleState($articleId, Ebms\EbmsArticleStates::OnAgenda,
-            $topicId, null, $comment);
+        // create the article state and add the event relation
+        $stateId = Ebms\setArticleState($articleId,
+            Ebms\EbmsArticleStates::OnAgenda, $topicId, null, $comment);
+
+        $result = db_merge('ebms_agenda_meeting')
+            ->key(array('nid' => $eventId, 'article_state_id' => $stateId))
+            ->execute();
 
         drupal_set_message("Added On Agenda decision to article $articleId");
     }
@@ -4893,7 +4912,7 @@ namespace {
             $topicName = Ebms\getTopicNameById($topicId);
 
             drupal_set_message("Successfully published article '$articleTitle' to topic '$topicName'");
-            
+
             // also create message for publishing
             activityArticlesPublished(Ebms\getTopicBoard($topicId));
         }
@@ -4996,6 +5015,36 @@ namespace {
             //drop in 'add comment' button
             $form['comments_add_button'] =
                 _build_add_state_comment_button($form_state, $status);
+        }
+
+        $form['comments'] = _format_comments($status->comments);
+
+        if (empty($form['comments']) && !empty($form['comments_add_button'])) {
+            // set the weight of the add comment button to move it level with the decision
+            $form['comments_add_button']['#weight'] = -1;
+        }
+
+        return $form;
+    }
+
+    function _format_topic_on_agenda_decision($status, &$form_state) {
+        $form = array();
+
+        // look up the related event for this state
+        $nid = db_select('ebms_agenda_meeting', 'm')
+            ->condition('m.article_state_id', $status->article_state_id)
+            ->fields('m', array('nid'))
+            ->execute()
+            ->fetchField();
+
+        $event = node_load($nid);
+
+        if ($event) {
+            $form[] = array("#markup" => "<div class='full-citation-indent'>MEETING: $event->title</div>");
+            /* $date = $decision->cycle_name;
+              if (!$date)
+              $date = '';
+              $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $date</div>"); */
         }
 
         $form['comments'] = _format_comments($status->comments);
