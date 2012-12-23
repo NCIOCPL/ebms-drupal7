@@ -2725,73 +2725,26 @@ class EbmsReports {
     }
 }
 
-function pdq_ebms_citation_reports_form_submit($form, &$form_state) {
-    $form_state['rebuild'] = true;
-}
-
-function pdq_ebms_report_ajax($form, $form_state) {
-    return $form['top']['report-form']['ajax fields'];
-}
-function pdq_ebms_cit_status_report_ajax($form, $form_state) {
-    return $form['top']['report-form']['status-dep'];
-}
-
-function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
-    $values = $form_state['values'];
-    $report = $values['report'];
-    $cycle = isset($values['cycle']) ? $values['cycle'] : 0;
-    if (!$report)
-        form_set_error('report', 'No report selected');
-    else {
-        switch ($report) {
-            case 'Citations Published':
-            case 'Citations Rejected/Accepted for Publishing':
-            case 'Citations Imported':
-                if (!$cycle)
-                    form_set_error('cycle', 'Please select a review cycle');
-                break;
-            case 'Citations Not Selected for Full Text Retrieval':
-                $start = $values['start-date'];
-                $end = $values['end-date'];
-                $have_start = $have_end = false;
-                $start_complete = $end_complete = true;
-                foreach ($start as $val)
-                    if ($val)
-                        $have_start = true;
-                    else
-                        $start_complete = false;
-                foreach ($end as $val)
-                    if ($val)
-                        $have_end = true;
-                    else
-                        $end_complete = false;
-                if ($cycle) {
-                    if ($have_start)
-                        form_set_error('start-date',
-                            'Cannot specify cycle and date range');
-                    elseif ($have_end)
-                        form_set_error('end-date',
-                            'Cannot specify cycle and date range');
-                }
-                elseif (!$start_complete || !$end_complete)
-                    form_set_error('cycle',
-                        'Must specify cycle or complete date range');
-                break;
-            case 'Citation Summary Topic Changes':
-                $s = $values['start-date'];
-                $e = $values['end-date'];
-                if (!$s['year'] || !$s['month'] || !$s['day'])
-                    form_set_error('start-date',
-                        'A complete date range is required');
-                elseif (!$e['year'] || !$e['month'] || !$e['day'])
-                    form_set_error('end-date',
-                        'A complete date range is required');
-                break;
-        }
-    }
-}
-
+/**
+ * Drupal form API callback which generates the form for all five
+ * of the "Citation Reports" available for the librarians.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_citation_reports_form($form, &$form_state) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
@@ -2799,10 +2752,12 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             'Citation Reports',
         )
     );
-    $left_nav = EbmsReports::build_left_nav('Citation Management',
-                                            'Citation Reports');
+
+    // Initialize defaults for the form field's values.
     $board = $cycle = $report = 0;
     $start_date = $end_date = array('year' => 0, 'month' => 0, 'day' => 0);
+
+    // Check for overrides of the defaults from the form's current state.
     $values = array();
     if (isset($form_state['values'])) {
         $values = $form_state['values'];
@@ -2817,6 +2772,8 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
         if (isset($values['end-date']))
             $end_date = $values['end-date'];
     }
+
+    // Build picklist arrays.
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $cycles = array(0 => ' ');
     $reports = array(0 => ' ') + drupal_map_assoc(
@@ -2828,13 +2785,19 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             'Citation Summary Topic Changes',
         )
     );
-
     $results = db_select('ebms_cycle', 'c')
         ->fields('c', array('cycle_id', 'cycle_name'))
         ->orderBy('c.start_date', 'DESC')
         ->execute();
     foreach ($results as $result)
         $cycles[$result->cycle_id] = $result->cycle_name;
+
+    // Begin the form structure, including the left nav penel.
+    // Leave a placeholder for the fields controlled dynamically
+    // by an ajax callback invoked when the user changes the
+    // Report field's selection.
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
+                                            'Citation Reports');
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'reports-top'),
@@ -2876,6 +2839,9 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             ),
         ),
     );
+
+    // Only one of the five citation reports needs the Board and
+    // Cycle fields.
     if (strcmp($report, 'Citation Summary Topic Changes')) {
         $form['top']['report-form']['ajax fields']['board'] = array(
             '#type' => 'select',
@@ -2894,6 +2860,9 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             '#attributes' => array('class' => array('fixed-width')),
         );
     }
+
+    // Two of the five reports allow the user to specify a date range
+    // for filtering.
     if (!strcmp($report, 'Citation Summary Topic Changes') ||
         !strcmp($report, 'Citations Not Selected for Full Text Retrieval')) {
         $form['top']['report-form']['ajax fields']['start-date'] = array(
@@ -2915,6 +2884,10 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             '#element_validate' => array('pdq_ebms_date_validate'),
         );
     }
+
+    // If we actually have a request for one of the reports, invoke
+    // the appropriate class method to build the render array for the
+    // report's display, and plug that into the form structure.
     if ($report && $values['op'] == 'Submit') {
         switch ($report) {
             case 'Citations Published':
@@ -2943,14 +2916,139 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
     return $form;
 }
 
-function pdq_ebms_import_reports_form_submit($form, &$form_state) {
-    if ($form_state['values']['op'] == 'Reset')
-        drupal_goto('reports/import');
-    $form_state['rebuild'] = true;
-    return;
+/**
+ * The librarians' five citation reports have different requirements,
+ * depending on which report was selected.  Flag any violiations of
+ * these requirements.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
+
+    // Collect the values we need for validation.
+    $values = $form_state['values'];
+    $report = $values['report'];
+    $cycle = isset($values['cycle']) ? $values['cycle'] : 0;
+
+    // No matter what else is wrong, a report selection is required.
+    if (!$report)
+        form_set_error('report', 'No report selected');
+    else {
+        switch ($report) {
+
+            // Three of the reports only require a review cycle selection.
+            case 'Citations Published':
+            case 'Citations Rejected/Accepted for Publishing':
+            case 'Citations Imported':
+                if (!$cycle)
+                    form_set_error('cycle', 'Please select a review cycle');
+                break;
+
+            // For the report on articles rejected by the board manager
+            // in her first review pass, make sure the user has not
+            // specified both date(s) and a review cycle.  Also,
+            // ensure that both dates are complete if a date range is
+            // specified.
+            case 'Citations Not Selected for Full Text Retrieval':
+                $start = $values['start-date'];
+                $end = $values['end-date'];
+                $have_start = $have_end = false;
+                $start_complete = $end_complete = true;
+                foreach ($start as $val)
+                    if ($val)
+                        $have_start = true;
+                    else
+                        $start_complete = false;
+                foreach ($end as $val)
+                    if ($val)
+                        $have_end = true;
+                    else
+                        $end_complete = false;
+                if ($cycle) {
+                    if ($have_start)
+                        form_set_error('start-date',
+                            'Cannot specify cycle and date range');
+                    elseif ($have_end)
+                        form_set_error('end-date',
+                            'Cannot specify cycle and date range');
+                }
+                elseif (!$start_complete || !$end_complete)
+                    form_set_error('cycle',
+                        'Must specify cycle or complete date range');
+                break;
+
+            // For the report on articles for which the board manager
+            // have added topics not included by the librarian,
+            // we must have a fully specified date range.
+            case 'Citation Summary Topic Changes':
+                $s = $values['start-date'];
+                $e = $values['end-date'];
+                if (!$s['year'] || !$s['month'] || !$s['day'])
+                    form_set_error('start-date',
+                        'A complete date range is required');
+                elseif (!$e['year'] || !$e['month'] || !$e['day'])
+                    form_set_error('end-date',
+                        'A complete date range is required');
+                break;
+        }
+    }
 }
 
+/**
+ * Not much to do here, as all the work, including building the
+ * report, is handled in the report form's callback.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_citation_reports_form_submit($form, &$form_state) {
+    $form_state['rebuild'] = true;
+}
+
+/**
+ * Drupal form API callback which generates the form for the
+ * report on previous article import jobs.  The report processing
+ * works in several steps.  First we display the form, then the
+ * user selects filter criteria and submits her request.  We
+ * then use those criteria to find the matching jobs and present
+ * them in a list.  Then the user selects one of the jobs and
+ * we build and display the report showing what happend during
+ * the import job.  All of these steps involved this function.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $job          Primary key into the EBMS table
+ *                                for import batch jobs, appended
+ *                                to the URL for the links attached
+ *                                to each of the jobs listed in the
+ *                                intermediate step described above
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
@@ -2958,12 +3056,14 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
             'Import Reports',
         )
     );
-    $left_nav = EbmsReports::build_left_nav('Citation Management',
-                                            'Import Reports');
+
+    // Initialize defaults for the form field's values.
     $board = $cycle = $topic = 0;
     $op = '';
     $range = false;
     $start = $end = array('year' => 0, 'month' => 0, 'day' => 0);
+
+    // Check for overrides of the defaults from the form's current state.
     if (isset($form_state['values'])) {
         $values = $form_state['values'];
         $board = $values['board'];
@@ -2974,6 +3074,8 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
         $range = $values['use-import-date-range'];
         $op = $values['op'];
     }
+
+    // Build picklist arrays.
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $topics = array(0 => ' ');
     $results = db_select('ebms_topic', 't')
@@ -2989,6 +3091,10 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
         ->execute();
     foreach ($results as $result)
         $cycles[$result->cycle_id] = $result->cycle_name;
+
+    // Begin the form structure, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
+                                            'Import Reports');
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'fulltext-top'),
@@ -3072,25 +3178,67 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
             ),
         ),
     );
+
+    // If the user has selected a specific import job, show what
+    // happened during that job.
     if ($job)
         $form['report'] = EbmsReports::import_job($job);
+
+    // If the user has given us the criteria for selecting import
+    // jobs, build and display the list of matching jobs.
     elseif ($op == 'Submit')
         $form['report'] = EbmsReports::import_reports($board, $topic,
                           $cycle, $start, $end, $range);
     return $form;
 }
 
-function pdq_ebms_documents_report_form_submit($form, &$form_state) {
+/**
+ * If the user clicks the "Reset" button, clear the form by routing
+ * back to the URL for the import reports.  Otherwise let the form
+ * callback do the work of displaying either a list of import jobs
+ * or the report for a single job.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_import_reports_form_submit($form, &$form_state) {
     if ($form_state['values']['op'] == 'Reset')
-        drupal_goto('reports/documents');
-    $values = $form_state['values'];
-    global $user;
-    $now = strftime('%Y-%m-%d %H:%M:%S');
-    $request_id = EbmsReports::save_report_request($values, 'Documents');
-    drupal_goto('reports/documents/' . $request_id);
+        drupal_goto('reports/import');
+    $form_state['rebuild'] = true;
+    return;
 }
 
+/**
+ * Drupal form API callback which generates the form for the
+ * report on non-article documents posted to the system.  We store
+ * the report request parameters in a database table and then
+ * launch the form with a modified URL which incorporates the
+ * ID of the database row where the request parameters was saved.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
@@ -3098,10 +3246,15 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
             'Documents',
         )
     );
+
+    // Initialize defaults for the form field's values.
     $board = $tag = $inhouse = $member = 0;
     $keyword = '';
     $range = $archived = false;
     $start = $end = array('year' => 0, 'month' => 0, 'day' => 0);
+
+    // Check for overrides of the defaults by request parameters
+    // stored in the database.
     if ($request_id) {
         $params = EbmsReports::fetch_report_request($request_id);
         $board = $params['board'];
@@ -3115,8 +3268,8 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
         if ($range)
             $end = $params['upload-end'];
     }
-    $left_nav = EbmsReports::build_left_nav('Board Management',
-                                            'Documents');
+
+    // Build picklist arrays for boards, tags, roles, etc..
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $tags = array(0 => ' ');
     $results = db_select('ebms_tag', 't')
@@ -3149,6 +3302,10 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
             $board_members[$result->uid] = $result->name;
         else
             $inhouse_users[$result->uid] = $result->name;
+
+    // Begin the form structure, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Board Management',
+                                            'Documents');
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'documents-top'),
@@ -3250,17 +3407,70 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
             ),
         ),
     );
+
+    // Even before the user has given us any filter criteria, we are
+    // required to show a report showing all posted documents.
     $form['report'] = EbmsReports::docs($request_id);
-    // $board, $tag, $keyword, $inhouse,
-    //$member, $archived, $range, $start, $end);
     return $form;
 }
 
+/**
+ * If the user clicks the "Reset" button, clear the form by routing
+ * back to the URL for the import reports.  Otherwise store the report
+ * request parameters in the database and send the user to the URL
+ * which knows where those parameters were stored.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_documents_report_form_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/documents');
+    $values = $form_state['values'];
+    global $user;
+    $now = strftime('%Y-%m-%d %H:%M:%S');
+    $request_id = EbmsReports::save_report_request($values, 'Documents');
+    drupal_goto('reports/documents/' . $request_id);
+}
+
+/**
+ * Drupal form API callback which generates the form for replacing
+ * the file uploaded for a document posted in the EBMS.  This
+ * form is invoked from links provided on the Documents report.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $doc_id       Primary key for the document we are
+ *                                editing
+ *  @param  int     $report_id    ID of the report from which we got
+ *                                to this page (so the user can return
+ *                                via the breadcrumb links)
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_doc_edit_form($form, &$form_state, $doc_id, $report_id) {
+
+    // Fetch the name of the file from the database
     $query = db_select('ebms_doc', 'd');
     $query->join('file_managed', 'f', 'f.fid = d.file_id');
     $query->fields('f', array('filename'));
     $file_name = htmlspecialchars($query->execute()->fetchField());
+
+    // Set up the custom breadcrumbs, including a link back to the
+    // report from which we came, with all the parameters controlling
+    // things like report sorting and paging.
     $parms = drupal_get_query_parameters();
     $parent_url = 'reports/documents';
     if ($report_id)
@@ -3273,6 +3483,8 @@ function pdq_ebms_doc_edit_form($form, &$form_state, $doc_id, $report_id) {
             $file_name,
         )
     );
+
+    // Send back the structured array specifying the form's fields.
     return array(
         'parent-url' => array(
             '#type' => 'hidden',
@@ -3306,6 +3518,23 @@ function pdq_ebms_doc_edit_form($form, &$form_state, $doc_id, $report_id) {
     );
 }
 
+/**
+ * Swap in the replacement file for the document being edited.
+ * Post a message indicating success or failure, as appropriate.
+ * Send the user back to the report from which she launched this form.
+ * XXX Consider possibly marking the file being replaced for garbage
+ * collection, if we can determine safely that it's not being used
+ * anywhere else.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_doc_edit_form_submit($form, &$form_state) {
     if ($form_state['values']['op'] == 'Submit') {
         $doc_id = $form_state['values']['doc_id'];
@@ -3329,7 +3558,29 @@ function pdq_ebms_doc_edit_form_submit($form, &$form_state) {
     drupal_goto($url, array('query' => $parms));
 }
 
+/**
+ * Drupal form API callback which generates the form for the
+ * report on board member reviews for articles in packets
+ * assigned to them.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
@@ -3337,15 +3588,14 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
             'Literature Reviews',
         )
     );
-    $left_nav = EbmsReports::build_left_nav('Citation Management',
-                                            'Literature Reviews');
-    $boards = array(0 => ' ') + Ebms\Util::boards();
-    $topics = array(0 => ' ');
+
+    // Initialize defaults for the form field's values.
     $board = $topic = $reviewer = $cycle = $rrange = $prange = 0;
-    $packet = $op = '';
-    $cycles = array(0 => ' ') + Ebms\Util::cycles(true);
-    $reviewers = array(0 => ' ');
     $rstart = $rend = $pstart = $pend = Ebms\Util::empty_date();
+    $packet = '';
+
+    // Check for overrides of the defaults by request parameters
+    // stored in the database.
     if ($request_id) {
         $values = EbmsReports::fetch_report_request($request_id);
         $board = $values['board'];
@@ -3360,20 +3610,11 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
         $rend = $values['rend'];
         $pend = $values['pend'];
     }
-    if (isset($form_state['values'])) {
-        $values = $form_state['values'];
-        $op = $values['op'];
-        $board = $values['board'];
-    }
-    if ($board) {
-        $results = db_select('ebms_topic', 't')
-            ->fields('t', array('topic_id', 'topic_name'))
-            ->condition('t.board_id', $board)
-            ->orderBy('t.topic_name')
-            ->execute();
-        foreach ($results as $result)
-            $topics[$result->topic_id] = $result->topic_name;
-    }
+
+    // Build picklist arrays (except topics, handled below).
+    $boards = array(0 => ' ') + Ebms\Util::boards();
+    $cycles = array(0 => ' ') + Ebms\Util::cycles(true);
+    $reviewers = array(0 => ' ');
     $board_member_role = db_select('role', 'r')
         ->fields('r', array('rid'))
         ->condition('r.name', 'board member')
@@ -3386,6 +3627,30 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
     $results = $query->execute();
     foreach ($results as $result)
         $reviewers[$result->uid] = $result->name;
+
+    // See if the board field has changed value since the last request
+    // was stored in the database (needed in case of an ajax callback).
+    if (isset($form_state['values'])) {
+        $values = $form_state['values'];
+        $board = $values['board'];
+    }
+
+    // Use the board choice to fill the topic picklist with the topics
+    // connected with the chosen board.
+    $topics = array(0 => ' ');
+    if ($board) {
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->orderBy('t.topic_name')
+            ->execute();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+    }
+
+    // Begin the form structure, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
+                                            'Literature Reviews');
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'lit-review-report-top'),
@@ -3524,13 +3789,30 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
             ),
         ),
     );
+
+    // If the user has given us report filter parameters, build and
+    // show the report below the form.
     if ($request_id)
         $form['report'] = EbmsReports::reviews($request_id);
     return $form;
 }
 
+/**
+ * If the user clicks the "Reset" button, clear the form by routing
+ * back to the URL for the literature review reports.  Otherwise store
+ * the report request parameters in the database and send the user to
+ * the URL which knows where those parameters were stored.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_lit_review_report_form_submit($form, &$form_state) {
-    pdq_ebms_debug('REVIEW REPORT FORM SUBMIT', $form_state['values']);
     if ($form_state['values']['op'] == 'Reset')
         drupal_goto('reports/lit-review');
     if ($form_state['values']['op'] == 'Submit') {
@@ -3541,7 +3823,33 @@ function pdq_ebms_lit_review_report_form_submit($form, &$form_state) {
     }
 }
 
+/**
+ * Drupal form API callback which generates the form for the eight
+ * reports on articles based on what the current status of the articles
+ * is.  Each status has different filtering criteria available,
+ * different logic for selecting the articles, and different columns
+ * for the various kinds of information required by the report for
+ * that particular status.  Routing to the correct report logic
+ * is handled by the EbmsReports class method cites_by_status().
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
@@ -3549,13 +3857,15 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             'Citations By Status',
         )
     );
-    $left_nav = EbmsReports::build_left_nav('Citation Management',
-                                            'Citations By Status');
+
+    // Initialize defaults for the form field's values.
     $board = $topic = $cycle = $status = $meeting_type = $disposition = 0;
     $meeting_date = Ebms\Util::empty_date();
+
+    // Check for overrides of the defaults by request parameters
+    // stored in the database.
     if ($request_id) {
         $values = EbmsReports::fetch_report_request($request_id);
-        pdq_ebms_debug('BY STATUS FORM VALUES', array($request_id, $values));
         $board = $values['board'];
         $topic = $values['topic'];
         $status = $values['status'];
@@ -3567,32 +3877,16 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         if (isset($values['meeting-date']))
             $meeting_date = $values['meeting-date'];
     }
+
+    // Create the picklists for cycles, boards, meeting types,
+    // and article states (these are the easy, static picklists).
+    $cycles = array(0 => ' ') + Ebms\Util::cycles();
+    $boards = array(0 => ' ') + Ebms\Util::boards();
     $meeting_types = array(
         0 => '',
         'subgroup' => 'Subgroup',
         'board' => 'Board',
     );
-    $cycles = array(0 => ' ') + Ebms\Util::cycles();
-    $boards = array(0 => ' ') + Ebms\Util::boards();
-    $yes_no = $yes_no_fyi = array(0 => ' ', 'yes' => 'Yes', 'no' => 'No');
-    $yes_no_fyi['fyi'] = 'Flag for FYI';
-    $review_dispositions = array(0 => ' ');
-    $results = db_select('ebms_review_disposition_value', 'v')
-        ->fields('v', array('value_id', 'value_name'))
-        ->orderBy('v.value_pos')
-        ->execute();
-    foreach ($results as $result)
-        $review_dispositions[$result->value_id] = $result->value_name;
-
-    $manager_actions = array(0 => ' ') + EbmsReports::manager_actions();
-    $board_decisions = array(0 => ' ');
-    $results = db_select('ebms_article_board_decision_value', 'v')
-        ->fields('v', array('value_id', 'value_name'))
-        ->orderBy('v.value_name')
-        ->execute();
-    foreach ($results as $result)
-        $board_decisions[$result->value_id] = $result->value_name;
-    $topics = array(0 => ' ');
     $statuses = array(
         0 => '',
         'reviewer decision' => 'Reviewer Decision',
@@ -3604,22 +3898,54 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         'on agenda' => 'On Agenda',
         'editorial board decision' => 'Editorial Board Decision',
     );
+
+    // The "Disposition" picklist, if shown at all, has a composition
+    // which is determined by the user's selection in the "Status"
+    // field.  Assemble the possible Disposition picklists value sets.
+    $yes_no = $yes_no_fyi = array(0 => ' ', 'yes' => 'Yes', 'no' => 'No');
+    $yes_no_fyi['fyi'] = 'Flag for FYI';
+    $manager_actions = array(0 => ' ') + EbmsReports::manager_actions();
+    $review_dispositions = array(0 => ' ');
+    $results = db_select('ebms_review_disposition_value', 'v')
+        ->fields('v', array('value_id', 'value_name'))
+        ->orderBy('v.value_pos')
+        ->execute();
+    foreach ($results as $result)
+        $review_dispositions[$result->value_id] = $result->value_name;
+    $board_decisions = array(0 => ' ');
+    $results = db_select('ebms_article_board_decision_value', 'v')
+        ->fields('v', array('value_id', 'value_name'))
+        ->orderBy('v.value_name')
+        ->execute();
+    foreach ($results as $result)
+        $board_decisions[$result->value_id] = $result->value_name;
+
+    // Now plug those picklist arrays into the lookup dictionary
+    // used by the ajax callback to dynamically change the picklist
+    // available for the Disposition field when the users changes
+    // the selection in the Status field.  For two of the eight
+    // possible state ("Status") values there is no selection
+    // for Disposition needed, and the Disposition field is suppressed.
     $all_dispositions = array(
         'reviewer decision' => $yes_no,
         'full text retrieved' => $yes_no,
         'committee decision' => $yes_no_fyi,
-        'assigned for review' => array(0 => ''),
         'board member responses' => $review_dispositions,
         'board manager action' => $manager_actions,
         'editorial board decision' => $board_decisions,
     );
 
+    // Get the values of interest for ajax callbacks.
     if (isset($form_state['values'])) {
         $board = $form_state['values']['board'];
         $status = $form_state['values']['status'];
         $topic = $form_state['values']['topic'];
         $disposition = $form_state['values']['disposition'];
     }
+
+    // Use the board choice to fill the topic picklist with the topics
+    // connected with the chosen board.
+    $topics = array(0 => ' ');
     if ($board) {
         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
@@ -3628,15 +3954,29 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             ->execute();
         foreach ($results as $result)
             $topics[$result->topic_id] = $result->topic_name;
+
+        // Make sure we unselect any leftover topic selection which
+        // isn't valid with a change in the composition of the Summary
+        // Topic picklist.
         if ($topic && !array_key_exists($topic, $topics))
             $topic = $form_state['values']['topic'] = 0;
     }
+
+    // Just as we used the board value to populate the Summary
+    // Topic picklist, we use the current Status value to
+    // plug in the picklist for the Disposition field.
     $dispositions = array(0 => '');
     if (array_key_exists($status, $all_dispositions))
         $dispositions = $all_dispositions[$status];
+
+    // Unselect any leftover Disposition selection which is no longer
+    // valid after the Status select has changed.
     if ($disposition && !array_key_exists($disposition, $dispositions))
         $disposition = $form_state['values']['disposition'] = 0;
-    pdq_ebms_debug('DISPOSITIONS', array($status, $dispositions));
+
+    // Begin the form structure, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
+                                            'Citations By Status');
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'cites-by-status-report-top'),
@@ -3691,6 +4031,9 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             ),
         ),
     );
+
+    // Six of the Status field selections call for display of the
+    // Disposition picklist field.
     if (strcmp($status, '0') && strcmp($status, 'assigned for review') &&
         strcmp($status, 'on agenda'))
         $form['top']['report-form']['status-dep']['disposition'] = array(
@@ -3703,6 +4046,12 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
                 'class' => array('fixed-width')
             ),
         );
+
+    // The Review Cycle field is always required, but it's sandwiched
+    // between fields which depend on what has been selected for the
+    // Status field, and the Drupal field states mechanism is broken,
+    // so this field always gets redrawn by the ajax callback for
+    // the change of Status.
     $form['top']['report-form']['status-dep']['cycle'] = array(
         '#type' => 'select',
         '#title' => 'Review Cycle',
@@ -3711,6 +4060,9 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         '#default_value' => $cycle,
         '#attributes' => array('class' => array('fixed-width')),
     );
+
+    // The last two Status choices call for two additional fields,
+    // related to board meetings.
     if (!strcmp($status, 'on agenda') ||
         !strcmp($status, 'editorial board decision')) {
         $form['top']['report-form']['status-dep']['meeting-type'] = array(
@@ -3731,6 +4083,8 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             '#element_validate' => array('pdq_ebms_date_validate'),
         );
     }
+
+    // Add the buttons to the form to complete it.
     $form['top']['report-form']['buttons'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'report-buttons'),
@@ -3743,12 +4097,28 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             '#value' => 'Submit',
         ),
     );
-    pdq_ebms_debug('AJAX MYSTERY', array($form, $status));
+
+    // If the user has given us report filter parameters, build and
+    // show the report below the form.
     if ($request_id)
         $form['report'] = EbmsReports::cites_by_status($request_id);
     return $form;
 }
 
+/**
+ * The Editorial Board and Status fields are required for this
+ * form, everything else is optional, no matter which of the eight
+ * reports is requested.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_cites_by_status_form_validate($form, &$form_state) {
     $values = $form_state['values'];
     if (!$values['board'])
@@ -3756,6 +4126,22 @@ function pdq_ebms_cites_by_status_form_validate($form, &$form_state) {
     if (!$values['status'])
         form_set_error('status', 'No status selected.');
 }
+
+/**
+ * If the user clicks the "Reset" button, clear the form by routing
+ * back to the URL for the Citations by Status  reports.  Otherwise store
+ * the report request parameters in the database and send the user to
+ * the URL which knows where those parameters were stored.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_cites_by_status_form_submit($form, &$form_state) {
     if ($form_state['values']['op'] == 'Reset')
         drupal_goto('reports/cites-status');
@@ -3767,6 +4153,22 @@ function pdq_ebms_cites_by_status_form_submit($form, &$form_state) {
     }
 }
 
+/**
+ * Modify the stock Drupal date field to conform to the requirements
+ * of the EBMS design.  These requirements include a label at the
+ * top of each picklist for year, month, or day indicating that
+ * a value has not (yet) been selected.  Also, a more limited year
+ * range is used than the one shown on the stock Drupal date field,
+ * and the most recent years are at the top, since they are the
+ * most frequently selected.
+ *
+ *  @param  array   $element    Structured array controlling the
+ *                              values available for the components
+ *                              of a date on a Drupal form
+ *
+ *  @return array               Modified copy reflecting EBMS
+ *                              requirements
+ */
 function pdq_ebms_fix_date($element) {
     $years = array(0 => 'YEAR');
     $today = getdate();
@@ -3778,6 +4180,15 @@ function pdq_ebms_fix_date($element) {
     return $element;
 }
 
+/**
+ * We have a more lenient approach to date validation than is used
+ * by the stock Drupal date field.  Our requirements ask us to accept
+ * partially-specified dates, provide no less granular components are
+ * omitted when more granular components are specified.  For example,
+ * it is not permitted to specify a month and day, but fail to
+ * specify the year, whereas it is OK to give the year without
+ * specifying the month or day.
+ */
 function pdq_ebms_date_validate($element, &$form_state, $form) {
     $y = $element['#value']['year'];
     $m = $element['#value']['month'];
@@ -3801,4 +4212,21 @@ function pdq_ebms_doc_file_required($element, &$form_state) {
     if ($_FILES['files']['name']['file'] == '') {
         form_set_error('file', t('Please select a document'));
     }
+}
+
+/**
+ * Return the portion of a form dynamically controlled by values
+ * selected elsewhere on the form.  Used in common by several of
+ * the report forms.
+ */
+function pdq_ebms_report_ajax($form, $form_state) {
+    return $form['top']['report-form']['ajax fields'];
+}
+
+/**
+ * Return the refreshed portion of the Citations by Status request
+ * form when the value of the Status field has changed.
+ */
+function pdq_ebms_cit_status_report_ajax($form, $form_state) {
+    return $form['top']['report-form']['status-dep'];
 }
