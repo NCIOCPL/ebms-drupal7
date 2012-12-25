@@ -185,7 +185,6 @@ function getPdoConn () {
     $driver   = $dbConVals['driver'];
 
     $connStr = "$driver:host=$host;port=$port;dbname=$dbName";
-logw("connStr=$connStr\n");
 
     try {
         // Get the connection
@@ -277,7 +276,6 @@ function createPrintJob() {
     // The current database date is the print date for this job
     $row = $pj->dbh->query("SELECT NOW()")->fetch();
     $now = $row[0];
-logw("now=$now");
 
     // Look for a job waiting to run
     // Fatal error if none found
@@ -354,7 +352,6 @@ logw("execute01");
                          "before start_date '{$pj->packet_start_dt}'");
 
     // Update the new job in the database
-logw("Job ID = {$pj->print_job_id}\n");
     $pj->update();
 
     // Define server pathnames
@@ -431,10 +428,15 @@ class EbmsPrintJob {
 
     public
         // Board members, packages, docs in job
-        $boardMemberList,
-        $packageList,
-        $docList,
-        $uniqPathList;
+        $boardMemberList,   // List of board members wanting print for this job
+                            //  Not all of them will have anything ready
+        $packageList,       // One package/board member needing printouts
+        $docList,           // One EbmsPrintFile for each doc needing printing
+                            //  Includes all docs, response sheets, report,
+                            //  cmd file, articles, summaries
+        $uniqPathList;      // One EbmsPrintFile for each unique file to print
+                            //  Some docs are printed individually for each of
+                            //  a number of board members
 
     public
         // Some special files
@@ -501,13 +503,11 @@ class EbmsPrintJob {
      */
     function createServerDirPath($serverPath) {
 
-logw("creating server dir path '$serverPath'");
         // Is it already there?
         if (is_dir($serverPath))
             return true;
 
         // Try to create it using mkdir() with the recursive=true option
-logw("about to call mkdir");
         if (!mkdir($serverPath, 0777, true)) {
             // Fatal error, mkdir failed
             $this->reportError(
@@ -531,7 +531,6 @@ logw("about to call mkdir");
 
         // Find the scheme
         $dir = getFilesPath($uri);
-logw("in getFullPath: dir=$dir");
         return "$dir/$filename";
     }
 
@@ -1367,7 +1366,7 @@ logw("firstTopic=$firstTopic, topicString=$topicString");
         $this->createResponseFixedText($pdf);
 
         // Save the pdf to temp storage
-        $fname = sprintf("%s/ResponseSheetArticle%dMbr%d.pdf",
+        $fname = sprintf("%s/ResponseSheetArticle%d_Mbr%d.pdf",
                           $this->serverSavePath,
                           $epf->ebmsArticleId, $epf->boardMemberId);
         if ($this->mode != 'report') {
@@ -1382,7 +1381,8 @@ logw("firstTopic=$firstTopic, topicString=$topicString");
         $newEpf->purpose       = 'response';
         $newEpf->path          = $fname;
         $newEpf->description   =
-                "Response sheet for $reviewerName: {$epf->description}";
+            "Response sheet for $reviewerName (ID={$epf->boardMemberId}): " .
+            "{$epf->description}";
         $newEpf->filetype      = 'pdf';
         $newEpf->numPages      = 2;
 
@@ -1806,6 +1806,10 @@ EOS;
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
  <title>Report of documents included in print job {$this->print_job_id}</title>
+ <style type='text/css'>
+  li {margin-top: 8pt; margin-bottom: 8pt;}
+  li.respSheet {background-color: #A9D0F5;}
+ </style>
 </head>
 <body>
 <h2>Documents included in Print Job {$this->print_job_id}</h2>
@@ -1834,6 +1838,9 @@ EOS;
 <p>
 <p>The following documents will be printed in the order that they appear
 in the list.</p>
+<p>Any highlighted documents are system generated response sheets, each
+of which is a response sheet for the immediately following article
+document.</p>
 <ol>
 EOS;
             fwrite($fp, $hdr);
@@ -1841,7 +1848,13 @@ EOS;
             // Info about each file
             foreach ($fileList as $epf) {
                 $fname = basename($epf->path);
-                fwrite($fp, "<li>$fname:</br> {$epf->description}</li>\n");
+                if ($epf->purpose == 'response')
+                    $classId = " class='respSheet'";
+                else
+                    $classId = '';
+
+                fwrite($fp,
+                    "<li$classId>$fname:</br> {$epf->description}</li>\n");
             }
 
             // Trailer
@@ -2048,10 +2061,10 @@ logw("Starting main");
 $pj = createPrintJob();
 
 // If we're printing documents in a specified packet, we know what
-//  docs to assemble regardless off who want them.
+//  docs to assemble regardless off who wants them.
 if ($pj->print_job_type_id == 'packet') {
     // Get the list of docs.  If the member ID is not null, response
-    //  sheets will be included
+    //  sheet EPFs will be interspersed, one before each article pdf EPF
     $pj->docList = $pj->getPacketPrintList($packetId, $this->board_member_id);
 }
 
@@ -2073,20 +2086,22 @@ else if ($pj->print_job_type_id == 'package') {
 // Then find their packages, if any
 // Then their documents, if any
 else if ($pj->print_job_type_id == 'board') {
-logw("Building boardMemberList");
+
+    // Board member who want print, we'll see later if they need any
     $pj->boardMemberList = $pj->getBoardMemberPrintUsers();
-$xxx=count($pj->boardMemberList);
-logw("count boardMemberList = $xxx");
+
+    // Build list of packages actually needed by those board members
     foreach ($pj->boardMemberList as $memberId) {
-logw("Getting packages for member=$memberId");
-        $package = $pj->getMemberPackage($memberId, $pj->board_id);
+        $pj->packageList[$memberId] =
+            $pj->getMemberPackage($memberId, $pj->board_id);
+    }
+
+    // Build list of document EbmsPrintFile objects for all files in all
+    //  packets in all packages
+    foreach ($pj->packageList as $package) {
         foreach ($package as $packetId) {
-logw("Getting docs for packet$packetId");
             $docs = $pj->getPacketPrintList($packetId, $memberId);
             $pj->docList = array_merge($pj->docList, $docs);
-$xxx1=count($docs);
-$xxx2=count($pj->docList);
-logw("Adding $xxx1 docs to docList, total now=$xxx2");
         }
     }
 }
@@ -2101,13 +2116,10 @@ if ($pj->print_job_type_id == 'board') {
 
 // Couldn't find any docs ready to print
 if (count($pj->docList) == 0) {
-    $pj->reportError('There are no documents ready for printing at this time');
+  $pj->reportError(
+    'There are no documents ready for printing at this time for this job spec');
 }
 
-
-$xxx=print_r($pj->boardMemberList, true);
-$xxxCount=count($pj->boardMemberList);
-logw("boardMember IDs for 'board' type job count=$xxxCount, =$xxx");
 
 // Construct report report html that says what will be printed, in what order
 // Report is stored in tmp storage and an object representing is returned
