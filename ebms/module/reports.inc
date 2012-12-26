@@ -235,7 +235,6 @@ class EbmsReports {
             $role = 'librarian';
         else
             $role = 'manager';
-        //$role = 'librarian'; // XXX debugging
         $links = array(
             'librarian' => array(
                 array(
