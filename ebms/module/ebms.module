@@ -22,6 +22,8 @@
  */
 
 require_once('common.inc');
+require_once('not_for_production.inc'); // XXX drop when we're done developing.
+
 module_load_include('inc', 'ebms', 'includes/ebms.nodes');
 
 /**
@@ -30,13 +32,13 @@ module_load_include('inc', 'ebms', 'includes/ebms.nodes');
 function ebms_permission() {
     return array(
         /*Administer EBMS vs Administer:
-          The Administer permission below should be changed to be something 
-          other than "administer" since that permission is not really 
+          The Administer permission below should be changed to be something
+          other than "administer" since that permission is not really
           an admin type permission.  'administer ebms' will be used for managing
           board membership, subgroup membership, and adhoc membership.  Also
           this permission will grant access to all EBMS content.
           --BryanP 12/16/2012
-         * 
+         *
          */
         'administer ebms' => array(
             'title' => t('Administer EBMS'),
@@ -46,7 +48,7 @@ function ebms_permission() {
             'title' => t('Perform Administrative Tasks'),
             'description' =>
             t('Post documents, manage groups, send messages, etc.'),
-        ),        
+        ),
         'manage citations' => array(
             'title' => t('Manage Citations'),
             'description' =>
@@ -304,7 +306,6 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        
        /* // TRAVEL
         'travel' => array(
             'page callback' => 'pdq_ebms_travel',
@@ -1056,40 +1057,17 @@ function pdq_ebms_refresh_journals() {
 }
 
 /**
- * XXX Everything below here will be jettisoned once we're in production.
+ * Write debugging information to a file in the /tmp directory.  Only
+ * does anything on the development and QA system.  Each log entry is
+ * date/time stamped.
+ *
+ *  @param  string  $where  Label used at the top of the debug log
+ *                          entry
+ *  @param  any     $what   Arbitrary value, possibly an object or
+ *                          structured array, to be dumped as part
+ *                          of the log entry in human-readable format
  */
-class EbmsUploadFile extends stdClass {
-    function EbmsUploadFile($path, $mimetype, $uid) {
-        $this->uid = $uid;
-        $this->uri = $path; //'public://' . $path;
-        $this->filename = basename($path);
-        $this->filesize = filesize($path);
-        $this->timestamp = time();
-        $this->status = 1;
-        $this->filemime = $mimetype;
-    }
-}
-
-function pdq_ebms_upload_files() {
-    return '<p>Already done</p>';
-    global $user;
-    $files = file('/tmp/upload-file-list');
-    $html = array('<ul>');
-    foreach ($files as $line) {
-        $line = trim($line);
-        $list = explode(' ', $line, 2);
-        $mimetype = $list[0];
-        $path = $list[1];
-        $f = new EbmsUploadFile($path, $mimetype, $user->uid);
-        $html[] = '<li>' . $path . ' (' . $mimetype . ')</li>';
-        file_copy($f, 'public://' . $f->filename);
-    }
-    return '<p>Uploaded:</p>' . implode('', $html);
-}
-
 function pdq_ebms_debug($where, $what) {
-    //$host = $_SERVER['HTTP_HOST'];
-    //if (strpos($host, 'ebms-dev') === 0 || strpos($host, 'ebms-qa') === 0) {
     if (Ebms\DEV || Ebms\QA) {
         $now = date('c');
         file_put_contents(
@@ -1099,95 +1077,6 @@ function pdq_ebms_debug($where, $what) {
         drupal_chmod('/tmp/ebms.debug', 0644);
     }
 }
-
-function pdq_ebms_stub() {
-    return '<h2>Placeholder</h2>' .
-        '<p>Stub used while functionality is being developed!</p>';
-    return drupal_get_form('pdq_ebms_demo_form_1',
-        array(
-            'foo' => 1234,
-            'bar' => array(
-                'buzz' => 'lightyear',
-                'prince' => 'hamlet',
-            ),
-        )
-    );
-}
-
-/**
- * Form template for Alan.
- */
-function pdq_ebms_demo_form_1($form, &$form_state, $extra) {
-    return array(
-        'name' => array(
-            '#title' => 'Name',
-            '#type' => 'textfield',
-            '#description' => 'Use the format <i>Surname, First Names(s)</i>',
-        ),
-        'desc' => array(
-            '#title' => 'Notes',
-            '#type' => 'textarea',
-            '#description' => 'Tell me everything you know about him/her.',
-        ),
-        'gender' => array(
-            '#title' => 'Gender',
-            '#type' => 'checkboxes',
-            '#options' => array('Male', 'Female', 'Other'),
-            '#description' => 'Check all that apply',
-        ),
-        'submit' => array(
-            '#type' => 'submit',
-            '#value' => 'Initiate Test',
-            '#submit' => array('pdq_ebms_demo_form_1_submit'),
-        ),
-        '#validate' => array('testform_validation'),
-        'foo' => array(
-            '#type' => 'hidden',
-            '#value' => $extra['bar']['prince'],
-        ),
-    );
-}
-
-function pdq_ebms_demo_form_1_submit($form, $form_state) {
-    drupal_set_message('wrong name', 'error');
-    return '<p>Your test failed.</p>';
-}
-function testform_validation($form, &$form_state) {
-    form_set_error('desc', $form_state['values']['name'] . ' is bad.');
-    drupal_set_message(print_r($form_state, true));
-}
-
-/**
- * We won't need this in production, but it certainly
- * comes in handy during development.  Hooked in temporarily
- * to a link in the footer.
- */
-function pdq_ebms_clear_theme_cache() {
-    drupal_theme_rebuild();
-    return '<p>Theme cache cleared ' . date('c') . '.</p>';
-}
-
-/**
- * We won't need this in production, but it certainly
- * comes in handy during development.  Hooked in temporarily
- * to a link in the footer.
- */
-function pdq_ebms_rebuild_menus() {
-    menu_rebuild();
-    return '<p>Caches cleared ' . date('c') . '.</p>';
-}
-
-/**
- * We won't need this in production, but it certainly
- * comes in handy during development.  Hooked in temporarily
- * to a link in the footer.
- */
-function pdq_ebms_clear_all_caches() {
-    cache_clear_all();
-    return '<p>Caches cleared ' . date('c') . '.</p>';
-}
-
-function pdq_ebms_tester_theme() { return 'apitest'; }
 
 function ebms_node_info() {
     global $ebms_event_nodes;
