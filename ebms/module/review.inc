@@ -51,12 +51,12 @@ class EbmsReview {
         $this->expanded     = Ebms\Util::get_request_value('expanded');
         $this->sort_col     = Ebms\Util::get_request_value('sort-col', 'f');
         $this->sort_dir     = Ebms\Util::get_request_value('sort-dir', 'a');
-        $this->action = $action;
+        $this->action       = $action;
         $this->reviewed     = Ebms\Util::get_request_value('reviewed');
         $this->pager        = Ebms\Util::get_request_value('pager');
         $this->on_behalf    = Ebms\Util::get_request_value('obo');
         $this->packet_title = EbmsPacket::fetch_title($this->packet_id);
-        
+
         // determine user
         global $user;
         $this->user = $user;
@@ -81,10 +81,10 @@ class EbmsReview {
         Ebms\Util::add_js();
         drupal_add_css(Ebms\CSS_DIR . '/review.css');
         Ebms\Menu::$active = 'Literature';
-        
-        if(!$this->check_permissions())
+
+        if (!$this->check_permissions())
             return MENU_ACCESS_DENIED;
-                     
+
         if (in_array('board member', $this->user->roles)) {
             if ($this->action == 'reviewer-upload') {
                 return $this->reviewer_upload_page();
@@ -98,9 +98,6 @@ class EbmsReview {
      * Pick the page for the board manager.
      */
     private function choose_manager_review_page() {
-        if (false)
-            pdq_ebms_debug('SWITCHER', $this->action);
-
         switch ($this->action) {
             case 'packets':
                 return $this->manager_packets();
@@ -119,7 +116,7 @@ class EbmsReview {
                 return $this->manager_literature_landing_page();
         }
     }
-    
+
     /*
      * Marks the current packet as inactive so it won't show up
      * in users' queues, then redirects to the page which shows
@@ -139,11 +136,11 @@ class EbmsReview {
         $opts = array('query' => drupal_get_query_parameters());
         drupal_goto(EbmsReview::$url . '/packets', $opts);
     }
-    
+
     /**
      * Shows the form to select a user and optionally a packet in order to enter
      * responses on behalf of a board member.
-     * 
+     *
      * @return array a Drupal render array containing the form and left nav.
      */
     private function record_responses() {
@@ -1572,29 +1569,31 @@ class EbmsReview {
     private function reviewer_packets() {
         return EbmsReview::reviewer_packets_by_id($this->user->uid);
     }
-    
+
     /**
      * Checks the state of the review against the user's permissions to
      * determine if any disallowed actions are being attempted.
-     * 
+     *
      * @return boolean
      */
     private function check_permissions(){
+
         // if the user is trying to act on behalf of another
-        if($this->on_behalf) {
+        if ($this->on_behalf) {
+
             // check their 'manage boards' access
-            if(!user_access('manage boards')){
+            if(!user_access('manage boards')) {
                 return false;
             }
+
+            // if the packet is chosen and the user is not assigned, prevent
+            // further display of that packet
+            if ($this->packet_id && !$this->is_reviewer()) {
+                $this->packet_id = 0;
+                $this->article_id = 0;
+            }
         }
-        
-        // if the packet is chosen and the user is not assigned, prevent further
-        // display of that packet
-        if ($this->packet_id && !$this->is_reviewer()) {
-            $this->packet_id = 0;
-            $this->article_id = 0;
-        }
-        
+
         return true;
     }
 
@@ -1709,7 +1708,6 @@ SELECT DISTINCT t.topic_id, t.topic_name
           FROM ebms_packet
          WHERE topic_id = s.topic_id
            AND active_status = 'A'))";
-        pdq_ebms_debug('TOPICS FOR BOARD QUERY', $query);
         $results = db_query($query);
         $topics = array();
         foreach ($results as $result)
@@ -1727,8 +1725,6 @@ SELECT DISTINCT t.topic_id, t.topic_name
     ) {
         if (!$topic_id)
             return array();
-        if (false)
-            pdq_ebms_debug('ARTICLES FOR TOPIC', array($topic, $state_id));
         $subquery = db_select('ebms_packet', 'p')
             ->fields('p', array('packet_id'))
             ->condition('p.active_status', 'A')
@@ -1754,14 +1750,6 @@ SELECT DISTINCT t.topic_id, t.topic_name
         }
         if (false)
             dpq($query);
-        if (false)
-            pdq_ebms_debug(
-                'ARTICLE QUERY', array(
-                    'query' => $query->__toString(),
-                    'topic' => $topic_id,
-                    'passed full text review status' => $state_id,
-                )
-            );
         $results = $query->execute();
         $articles = array();
         foreach ($results as $result) {
@@ -1822,11 +1810,6 @@ SELECT DISTINCT t.topic_id, t.topic_name
     public static function reviewers_for_topic(
         $topic_id, $board_id=0, $packet_id=0
     ) {
-        if (false)
-            pdq_ebms_debug("REVIEWERS FOR TOPIC", array(
-                               "TOPIC ID" => $topic_id,
-                               "BOARD ID" => $board_id,
-                               "PACKET ID" => $packet_id));
         if (!$topic_id && !$board_id)
             return array();
         $query = db_select('users', 'u');
@@ -1851,15 +1834,11 @@ SELECT DISTINCT t.topic_id, t.topic_name
             $union->condition('pr.packet_id', $packet_id);
             $query->union($union);
         }
-        if (false)
-            pdq_ebms_debug("DPQ", dpq($query, true));
         $results = $query->execute();
         $reviewers = array();
         foreach ($results as $result)
             $reviewers[$result->uid] = $result->name;
         natsort($reviewers);
-        if (false)
-            pdq_ebms_debug("REVIEWERS", $reviewers);
         return $reviewers;
     }
 
@@ -2368,9 +2347,6 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
  * lower portions depend on the selections made in the upper portions.
  */
 function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
-    if (false)
-        pdq_ebms_debug('EDIT PACKET FORM', array('FORM' => $form,
-                'FORM STATE' => $form_state));
 
     // We'll use this more than once, so fetch and save it now.
     $state_id = Ebms\Util::get_state_id('Passed full text review');
