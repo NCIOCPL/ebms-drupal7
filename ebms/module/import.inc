@@ -199,14 +199,15 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
         // XXX I wasn't given a list of states to include here, so I picked
         //     the ones which seemed most appropriate.  Users may wish to
         //     have others added before we go into production.
+        // 2012-12-26 (Bob): Robin has told us which state are to be used;
+        //                   see TIR #2206.
         'placement' => array(
             '#type' => 'select',
             '#title' => 'PLACEMENT LEVEL',
             '#options' => array(
                 '' => ' ',
-                'PassedBMReview' => 'Passed Board Manager',
+                'PassedBMReview' => 'Passed abstract review',
                 'PassedFullReview' => 'Passed full text review',
-                'OnAgenda' => 'On agenda',
             ),
             '#states' => array(
                 'visible' => array(
