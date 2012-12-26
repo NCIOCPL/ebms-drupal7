@@ -227,23 +227,25 @@ class EbmsHomePage {
      *     system have been implemented.
      */
     private function recent() {
-        /*$events = array(
+        /*
+        $events = array(
             array('Genetics Board meeting time updated.', '02/01/12'),
             array('New genetics articles posted.', '01/30/12'),
             array('New event Genetics Board event posted.', '01/23/12'),
         );
         foreach ($events as $e)
             $items[] = "{$e[0]} <span class='date nobreak'>{$e[1]}</span>";
-        return $this->list_block('Recent Activity', 'recent-activity', $items);*/
-        
+        return $this->list_block('Recent Activity', 'recent-activity', $items);
+        */
+
         $view = views_get_view('recent_activity');
-        
+
         $display = "";
-        
+
         if ($view) {
             $display = $view->preview('activity_block');
         }
-        
+
         return array(
             '#markup' => "<h3>Recent Activity</h3>" . $display,
             '#prefix' => "<div id='activity-enclosure' class='ebms-block'>",
@@ -361,16 +363,16 @@ class EbmsHomePage {
                 array('html' => true));
         $items = array($link);
         return $this->list_block('Next Meeting', 'next-meeting', $items);
-         * 
+         *
          */
         $view = views_get_view('event_calendar');
-        
+
         $display = "";
-        
+
         if ($view) {
             $display = $view->preview('block_next');
         }
-        
+
         return array(
             '#markup' => "<h3>Next Meeting</h3>" . $display,
             '#prefix' => "<div id='activity-enclosure' class='ebms-block'>",
@@ -434,14 +436,14 @@ class EbmsHomePage {
         $next = "<div id='$id'><a href='$url'>&gt;</a></div>";
         $prefix = $prev . $next;
         return $this->table_block($title, 'calendar', $rows, $prefix);*/
-        
+
         drupal_add_css(Ebms\CSS_DIR . '/calendar.css');
 
         $view = views_get_view('event_calendar');
         if(!$view)
             return array();
         $display = $view->preview('month_block');
-        
+
         return array(
             '#markup' => $display,
             '#prefix' => "<div id='calendar-enclosure'>",
