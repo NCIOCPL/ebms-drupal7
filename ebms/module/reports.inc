@@ -2032,10 +2032,14 @@ class EbmsReports {
         return $table;
     }
 
+
     /**
      * Create the Drupal render array for a report on articles which
      * have been put on a meeting agenda for discussion by the PDQ
-     * board members.
+     * board members.  Robin said we should leave off state rows
+     * from the legacy system for this report, since we don't have
+     * any information about the meetings on whose agendas the
+     * articles were to be discussed.
      *
      * This report is one of eight different reports on articles by
      * status.  Called by the cites_by_status() method below.
@@ -2064,63 +2068,97 @@ class EbmsReports {
             // 'Review Cycle', XXX wait for article/topic table
         );
 
-        // Construct the query for the report.
-        $state_id = Ebms\Util::state_id_from_text_id('OnAgenda');
-        $query = db_select('ebms_article_state', 's');
-        $query = $query->extend('TableSort');
-        $query->leftJoin('ebms_article_author_cite', 'c',
-            'c.article_id = s.article_id AND c.cite_order = 1');
-        $query->leftJoin('ebms_article_author', 'a',
-            'a.author_id = c.author_id');
-        $query->condition('s.board_id', $params['board']);
-        if ($params['topic'])
-            $query->condition('s.topic_id', $params['topic']);
-        $query->condition('s.current', 'Y');
-        $query->condition('s.state_id', $state_id);
-        if ($params['cycle'])
-            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                                          's.status_dt');
-        $query->fields('s',
-            array('article_id', 'article_state_id', 'status_dt'));
-        $query->orderByHeader($headers);
-        $query->distinct();
-
-        // Execute the query and assemble the rows for the report table.
-        $results = $query->execute();
+        // Start off with an empty report table.
         $counter = 0;
         $rows = array();
-        foreach ($results as $result) {
-            $article_id = $result->article_id;
-            $citation = EbmsReports::format_citation($article_id);
-            $article_state_id = $result->article_state_id;
-            $comment_rows = db_select('ebms_article_state_comment', 'c')
-                ->fields('c', array('comment'))
-                ->condition('c.article_state_id', $article_state_id)
-                ->orderBy('c.comment_dt')
-                ->execute();
-            $comments = array();
-            foreach ($comment_rows as $comment_row)
-                $comments[] = htmlspecialchars($comment_row->comment);
-            $col2 = '??? TBD ???';
-            $col3 = implode('<br />', $comments);
-            // $col4 = ...
-            $row = array(
-                array(
-                    'data' => ++$counter,
-                    'class' => array('col-0'),
-                ),
-                array(
-                    'data' => $citation,
-                    'class' => array('col-1'),
-                ),
-                $col2,
-                $col3,
-                // $col4,
-            );
-            $rows[] = array(
-                'data' => $row,
-                'no_striping' => true,
-            );
+
+        // We construct the list of eligible meetings first.
+        $query = new EbmsEventQuery();
+        $query->restrict_by_date($params['meeting-date']);
+        $query->restrict_by_type($params['meeting-type']);
+        $results = $query->execute();
+
+        // If there are no eligible meetings, the report will be empty.
+        if (isset($results['node'])) {
+
+            // Construct the query for the report.
+            $meeting_ids = array_keys($results['node']);
+            pdq_ebms_debug('MEETING IDS', $meeting_ids);
+            $state_id = Ebms\Util::state_id_from_text_id('OnAgenda');
+            $query = db_select('ebms_article_state', 's');
+            $query = $query->extend('TableSort');
+            $query->join('ebms_agenda_meeting', 'm',
+                'm.article_state_id = s.article_state_id');
+            $query->condition('m.nid', $meeting_ids, 'IN');
+            $query->leftJoin('ebms_article_author_cite', 'c',
+                'c.article_id = s.article_id AND c.cite_order = 1');
+            $query->leftJoin('ebms_article_author', 'a',
+                'a.author_id = c.author_id');
+            $query->condition('s.board_id', $params['board']);
+            if ($params['topic'])
+                $query->condition('s.topic_id', $params['topic']);
+            $query->condition('s.current', 'Y');
+            $query->condition('s.state_id', $state_id);
+            if ($params['cycle'])
+                Ebms\Util::add_cycle_to_query($query, $params['cycle'],
+                    's.status_dt');
+            $query->fields('s',
+                array('article_id', 'article_state_id', 'status_dt'));
+            $query->fields('m', array('nid'));
+            $query->orderByHeader($headers);
+            $query->distinct();
+
+            // Execute the query and assemble the rows for the report table.
+            $results = $query->execute();
+            foreach ($results as $result) {
+                $article_id = $result->article_id;
+                $citation = EbmsReports::format_citation($article_id);
+                $article_state_id = $result->article_state_id;
+                $comment_rows = db_select('ebms_article_state_comment', 'c')
+                    ->fields('c', array('comment'))
+                    ->condition('c.article_state_id', $article_state_id)
+                    ->orderBy('c.comment_dt')
+                    ->execute();
+                $comments = array();
+                foreach ($comment_rows as $comment_row)
+                    $comments[] = htmlspecialchars($comment_row->comment);
+                $col2 = 'N/A';
+                $meetings = entity_load('node', array($result->nid));
+                foreach ($meetings as $meeting) {
+                    $event_date = field_get_items('node', $meeting,
+                                  'field_datespan');
+                    $start_date = date('m/d/Y', $event_date[0]['value']);
+                    $meeting_type = 'no type';
+                    $boards = field_get_items('node', $meeting,
+                              'field_boards');
+                    $subgroups = field_get_items('node', $meeting,
+                              'field_subgroups');
+                    if (count($boards))
+                        $meeting_type = 'Board';
+                    elseif (count($subgroups))
+                        $meeting_type = 'Subgroup';
+                    $col2 = "$start_date ($meeting_type)";
+                }
+                $col3 = implode('<br />', $comments);
+                // $col4 = ...
+                $row = array(
+                    array(
+                        'data' => ++$counter,
+                        'class' => array('col-0'),
+                    ),
+                    array(
+                        'data' => $citation,
+                        'class' => array('col-1'),
+                    ),
+                    $col2,
+                    $col3,
+                    // $col4,
+                );
+                $rows[] = array(
+                    'data' => $row,
+                    'no_striping' => true,
+                );
+            }
         }
 
         // Assemble and return the table.
@@ -2722,6 +2760,84 @@ class EbmsReports {
             return '';
         return '<div class="meta"><span class="label">Date Range:</span> ' .
             $s . ' - ' . $e . '</div>';
+    }
+}
+
+/**
+ * Extension of the core Drupal EntityFieldQuery class.  Used for
+ * filtering meeting events by date and/or type.  By default the
+ * query represented by the object will find all nodes with type
+ * ebms_event, but there are methods for narrowing down the results.
+ */
+class EbmsEventQuery extends EntityFieldQuery {
+
+    /**
+     * Set some defaults for the query object.
+     */
+    public function __construct() {
+        $this->entityCondition('entity_type', 'node')
+            ->propertyCondition('status', 1)
+            ->entityCondition('bundle', 'ebms_event');
+    }
+
+    /**
+     * If the user has asked to filter meetings by date, apply the
+     * appropriate field condition.  It is acceptable for the user
+     * to have specified more general components of the date (for
+     * example, a year and month without a day, or just a year) but
+     * not the other way around (can't have a day without both a
+     * month and year specified, for example).  The form validation
+     * routine will have enforced this assumption.
+     *
+     *  @param  array   $date   Structured array representing the
+     *                          separate values for year, month,
+     *                          and day components of a Drupal
+     *                          stock date form field.
+     *
+     *  @return                 None
+     */
+    public function restrict_by_date($date) {
+        $y = $date['year'];
+        $m = $date['month'];
+        $d = $date['day'];
+        if ($d) {
+            $start = mktime(0, 0, 0, $m, $d, $y);
+            $end = mktime(0, 0, -1, $m, $d + 1, $y);
+        }
+        elseif ($m) {
+            $start = mktime(0, 0, 0, $m, 1, $y);
+            $end = mktime(0, 0, -1, $m + 1, 1, $y);
+        }
+        elseif ($y) {
+            $start = mktime(0, 0, 0, 1, 1, $y);
+            $end = mktime(0, 0, -1, 1, 1, $y + 1);
+        }
+        else
+            return;
+        $field = 'field_datespan';
+        $this->fieldCondition($field, 'value', array($start, $end), 'BETWEEN');
+    }
+
+    /**
+     * If the user wants to filter meetings by whether they were board-
+     * specific or subgroup-specific, apply the appropriate conditions
+     * by detecting whether a board (or subgroup) has been specified
+     * for the event.  There is an event type field in the event node,
+     * but it's used for something else (designating whether a meeting
+     * is face-to-face, or teleconferenced).
+     *
+     *  @param  string  $type    If a type has been specified, it will
+     *                           be "board" or "subgroup."
+     *
+     *  @return                 None
+     */
+    public function restrict_by_type($type) {
+        if (!$type)
+            return;
+        if ($type == 'board')
+            $this->fieldCondition('field_boards', 'value', 0, '>');
+        elseif ($type == 'subgroup')
+            $this->fieldCondition('field_subgroups', 'value', 0, '>');
     }
 }
 
