@@ -172,21 +172,9 @@ class EbmsPublish {
                 $result->board_id
             );
             $count++;
-
-            // XXX Eventually Alan will take care of the next steps and we
-            // can drop this code.
-            /*db_update('ebms_article_state')
-                ->fields(array('current' => 'N'))
-                ->condition('article_state_id', $result->article_state_id)
-                ->execute();
-            db_update('ebms_article_state')
-                ->fields(array('current' => 'Y'))
-                ->condition('article_state_id', $new_state_id)
-                ->execute();*/
-            
             $boards[$result->board_id] = $result->board_id;
         }
-        
+
         // create a message for each board found
         foreach ($boards as $board_id) {
             \Ebms\Util::activityArticlesPublished($board_id);
