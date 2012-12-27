@@ -49,6 +49,16 @@ class EbmsSummaries {
 
     /**
      * Assemble the render array for the requested summaries page.
+     * The landing page for summaries shows all of the user's boards
+     * (or all boards, for roles not tied to a specific board).  From
+     * the landing page the user can navigate to the page showing a
+     * specific board, and all of the summary subpages created for
+     * that board (as well as any summary supporting documents for
+     * the board).  From the board page, the user can drill down
+     * into a specific subpage where links to individidual summaries
+     * on cancer.gov are shown, as well as summary documents posted
+     * by board managers ("documents posted by NCI") and by board
+     * members ("documents posted by board members").
      */
     public function run() {
         Ebms\Util::add_js();
@@ -142,6 +152,12 @@ class EbmsSummaries {
         }
 
         // Assemble and return the render array for the page.
+        // The query parameter "se" controls which sections of the
+        // subpage (s) are expanded (e): each section is represented
+        // in the value of the parameter by a single character:
+        //   c - Cancer.gov summaries section
+        //   n - Section for documents uploaded by NCI
+        //   m - Section for documents uploaded by board Members
         $expanded = isset($this->parms['se']) ? $this->parms['se'] : '';
         $url = "$url/page/$this->board_id/$this->subpage_id";
         return array(
@@ -165,8 +181,8 @@ class EbmsSummaries {
      *
      *     $expanded  string containing one letter for each section
      *                of the sub-page which has been expanded:
-     *                'c' for cancer.gov summaries; 'p' for
-     *                summary documents posted by NCI; or 'r'
+     *                'c' for cancer.gov summaries; 'n' for
+     *                summary documents posted by NCI; or 'm'
      *                for documents returned by board members.
      */
     private function cg_summaries($url, $expanded) {
@@ -277,8 +293,8 @@ class EbmsSummaries {
      *
      *     $expanded  string containing one letter for each section
      *                of the sub-page which has been expanded:
-     *                'c' for cancer.gov summaries; 'p' for
-     *                summary documents posted by NCI; or 'r'
+     *                'c' for cancer.gov summaries; 'n' for
+     *                summary documents posted by NCI; or 'm'
      *                for documents returned by board members.
      */
     private function nci_docs($url, $expanded) {
@@ -379,43 +395,6 @@ class EbmsSummaries {
             $block['post ncidoc form'] = $form;
         }
         return $block;
-        /* xxxxxxxxxxxxxxxxxxxxxx */
-        $items = array();
-        $results = db_select('ebms_summary_link', 'l')
-            ->fields('l', array('link_url', 'link_label'))
-            ->condition('l.page_id', $this->subpage_id)
-            ->orderBy('l.link_label')
-            ->execute();
-        $options = array('attributes' => array('target' => '_blank'));
-        foreach ($results as $link)
-            $items[] = l($link->link_label, $link->link_url, $options);
-        $block['wrapper']['left side']['links'] = array(
-            '#theme' => 'item_list',
-            '#items' => $items,
-            '#attributes' => array('class' => array('no-bullets')),
-        );
-        if ($admin) {
-            $href = 'javascript:ebmsscript.show_new_cg_summary_form();';
-            $right_side = array(
-                'wrapper' => array(
-                    '#type' => 'container',
-                    '#attributes' => array(
-                        'class' => array('float-right', 'pad-top-10'),
-                    ),
-                    'button' => array(
-                        '#type' => 'markup',
-                        '#markup' =>
-                        "<a href='$href' class='button'>Add New Link</a>",
-                    ),
-                ),
-            );
-            $block['wrapper']['right side'] = $right_side;
-            $form = drupal_get_form('pdq_ebms_new_cg_summary_form', $this);
-            $form['#prefix'] = '<div id="new-cg-summary-form" class="popup">';
-            $form['#suffix'] = '</div>';
-            $block['new link form'] = $form;
-        }
-        return $block;
     }
 
     /**
@@ -428,8 +407,8 @@ class EbmsSummaries {
      *
      *     $expanded  string containing one letter for each section
      *                of the sub-page which has been expanded:
-     *                'c' for cancer.gov summaries; 'p' for
-     *                summary documents posted by NCI; or 'r'
+     *                'c' for cancer.gov summaries; 'n' for
+     *                summary documents posted by NCI; or 'm'
      *                for documents returned by board members.
      */
     private function member_docs($url, $expanded) {
@@ -547,6 +526,8 @@ class EbmsSummaries {
      *                the board and sub-page embedded in it)
      */
     private function file_table_headers($code, $url) {
+
+        // Start with the columns that everyone sees.
         $headers = array(
             array(
                 'data' => 'File Name',
@@ -658,11 +639,12 @@ class EbmsSummaries {
                 $parms = $this->parms;
                 $action = $doc->archived ? 'revive' : 'archive';
                 $parms[$action] = $code . '-' . $doc->doc_id;
+                pdq_ebms_debug('ARCHIVE BUTTON', array($code, $parms));
                 $href = url($url, array('query' => $parms));
                 $type = 'type="checkbox"';
                 $onclick = 'onclick=\'location.href="' . $href . '"\'';
                 $checked = $doc->archived ? ' checked="checked"' : '';
-                $checkbox = "<input $type $onclick$checked />";
+                $checkbox = "<input class='xyz' $type $onclick$checked />";
                 $data[] = array(
                     'data' => $checkbox,
                     'class' => array('col-5'),
@@ -827,8 +809,19 @@ class EbmsSummaries {
     /**
      * Assembles the menu of summaries subpages for a given board.
      * The menu will be collapsed by default.
+     *
+     *  @return  array     Drupal render array for the (possibly
+     *                     collapsed) list of links to subpages
+     *                     for a single board
      */
     private function subpage_menu() {
+
+        // The 'be' parameter in the query request conveys which
+        // sections of the Board (b) page are Expanded (e).  If
+        // the parameter's value contains the letter 's' anywhere
+        // then the menu of Subpages is expanded.  By default
+        // it won't be, and we'll just show the header for the
+        // Subpages section collapsed, with a link to expand it.
         $query = $this->parms;
         $expanded = isset($query['be']) ? $query['be'] : '';
         if (strpos($expanded, 's') === false) {
@@ -850,6 +843,10 @@ class EbmsSummaries {
                 ),
             );
         }
+
+        // If we get here, the Subpage menu section has been expanded.
+        // Find all of the summary subpages created for this board and
+        // create a list of links to those pages.
         $results = db_select('ebms_summary_page', 'p')
             ->fields('p', array('page_id', 'page_name'))
             ->condition('p.board_id', $this->board_id)
@@ -865,6 +862,9 @@ class EbmsSummaries {
         $options = array('query' => $query, 'html' => true);
         $label = 'Summaries &nbsp; <span>&ndash;</span>';
         $link = l($label, $url, $options);
+
+        // Put together the Drupal render array for the list of links
+        // to summary subpages.
         $block = array(
             'wrapper' => array(
                 '#type' => 'container',
@@ -889,6 +889,8 @@ class EbmsSummaries {
                 ),
             ),
         );
+
+        // If the user is a board manager, allow her to create new subpages.
         if ($this->role == 'admin') {
             $href = 'javascript:ebmsscript.show_new_summaries_page_form();';
             $right_side = array(
@@ -911,10 +913,29 @@ class EbmsSummaries {
             $form['#suffix'] = '</div>';
             $block['new page form'] = $form;
         }
+
+        // Return the Drupal render array to the caller.
         return $block;
     }
+
+    /**
+     * Assembles the list of supporting documents uploaded for a particular
+     * board.  These are documents which are not specific to any of the
+     * board's summary subpages.  The list will be collapsed by default.
+     *
+     *  @return  array     Drupal render array for the (possibly
+     *                     collapsed) list of links to supporting
+     *                     documents for a single board
+     */
     private function supporting_docs() {
-        $admin = $this->role == 'admin';
+
+        // The 'be' parameter in the query request conveys which
+        // sections of the Board (b) page are Expanded (e).  If
+        // the parameter's value contains the letter 'd' anywhere
+        // then the list of supporting documents is expanded.  By
+        // default it won't be, and we'll just show the header for
+        // the Supporting Documents  section collapsed, with a link
+        // to expand it.
         $parms = $this->parms;
         $expanded = isset($parms['be']) ? $parms['be'] : '';
         $url = EbmsSummaries::$url . '/board/' . $this->board_id;
@@ -936,6 +957,11 @@ class EbmsSummaries {
                 ),
             );
         }
+
+        // If we get here, the Supporting Documents section has been
+        // expanded.  Assemble a table showing those documents.  We
+        // start with a header line which has the title of the section
+        // as a link for collapsing the section.
         $parms['be'] = str_replace('d', '', $expanded);
         $options = array('query' => $parms, 'html' => true);
         $label = 'Supporting Documents &nbsp; <span>&ndash;</span>';
@@ -959,6 +985,14 @@ class EbmsSummaries {
                 ),
             ),
         );
+
+        // If the current user is a board manager, and there are any
+        // documents posted to the system for the page's board, tagged
+        // with both the 'summary' and the 'support' tags, then
+        // add a button on the right side of the section header line
+        // which the board manager can use to add more documents to
+        // the section.
+        $admin = $this->role == 'admin';
         if ($admin) {
             $picklist = $this->get_supporting_doc_picklist();
             if (count($picklist) > 0) {
@@ -979,6 +1013,9 @@ class EbmsSummaries {
                 $block['wrapper']['right side'] = $right_side;
             }
         }
+
+        // The documents will be displayed in a table.  Start with the
+        // table headers.
         $headers = array(
             array(
                 'data' => 'File Name',
@@ -1001,6 +1038,10 @@ class EbmsSummaries {
                 'class' => array('col-4'),
             ),
         );
+
+        // Board managers get a fifth column, allowing the user to
+        // see supporting documents which have been archived, and
+        // to control which supporting documents are archived.
         if ($admin) {
             $sa_parm = isset($parms['sa']) ? $parms['sa'] : '';
             $parms = $this->parms;
@@ -1021,6 +1062,9 @@ class EbmsSummaries {
                 'class' => array('col-5'),
             );
         }
+
+        // Build the query to find the supporting documents for
+        // this board's summary page.
         $query = db_select('ebms_summary_supporting_doc', 's');
         $query = $query->extend('TableSort');
         $query->join('ebms_doc', 'd', 'd.doc_id = s.doc_id');
@@ -1034,6 +1078,8 @@ class EbmsSummaries {
         if (!$admin || strpos($sa_parm, 's') === false)
             $query->isNull('s.archived');
         $query->orderByHeader($headers);
+
+        // Build up the rows for the table from the query results.
         $results = $query->execute();
         $rows = array();
         foreach ($results as $doc) {
@@ -1048,7 +1094,7 @@ class EbmsSummaries {
             if ($admin) {
                 $parms = $this->parms;
                 $action = $doc->archived ? 'revive' : 'archive';
-                $parms[$action] = 'sd-' . $doc->doc_id;
+                $parms[$action] = 's-' . $doc->doc_id;
                 $url = EbmsSummaries::$url . '/board/' . $this->board_id;
                 $url = url($url, array('query' => $parms));
                 $type = 'type="checkbox"';
@@ -1065,6 +1111,8 @@ class EbmsSummaries {
                 'no_striping' => true,
             );
         }
+
+        // Plug the table in the render array.
         $class = $admin ? 'admin' : 'non-admin';
         $block['table'] = array(
             '#attributes' => array(
@@ -1075,6 +1123,11 @@ class EbmsSummaries {
             '#rows' => $rows,
             '#header' => $headers,
         );
+
+        // If we have a button for adding more documents to the table,
+        // we'll need the form that the button launches.  The form
+        // is hidden at first, and Javascript brings it to life when
+        // the button is clicked.
         if ($admin && count($picklist) > 0) {
             $form = drupal_get_form('pdq_ebms_post_summary_sd_form', $this,
                     $picklist);
@@ -1084,36 +1137,18 @@ class EbmsSummaries {
             $form['#suffix'] = '</div>';
             $block['post supporting doc form'] = $form;
         }
+
+        // Return the Drupal render array to the caller.
         return $block;
     }
-    private function get_nci_doc_picklist() {
-        $subquery1 = db_select('ebms_summary_posted_doc', 'd')
-            ->fields('d', array('doc_id'))
-            ->condition('d.page_id', $this->subpage_id);
-        $subquery2 = db_select('ebms_summary_page_topic', 't')
-            ->fields('t', array('topic_id'))
-            ->condition('t.page_id', $this->subpage_id);
-        $query = db_select('ebms_doc', 'd');
-        $query->join('ebms_doc_topic', 'topic', 'topic.doc_id = d.doc_id');
-        $query->join('ebms_doc_tag', 'dt1', 'dt1.doc_id = d.doc_id');
-        $query->join('ebms_tag', 't1', 't1.tag_id = dt1.tag_id');
-        $query->leftJoin('ebms_doc_tag', 'dt2', 'dt2.doc_id = d.doc_id');
-        $query->leftJoin('ebms_tag', 't2',
-            't2.tag_id = dt2.tag_id AND t2.tag_name = \'support\'');
-        $query->fields('d', array('doc_id', 'description'));
-        $query->condition('t1.tag_name', 'summary');
-        $query->condition('t2.tag_id', null);
-        $query->condition('d.doc_id', $subquery1, 'NOT IN');
-        $query->condition('topic.topic_id', $subquery2, 'IN');
-        $query->orderBy('d.description');
-        if (false)
-            dpq($query);
-        $results = $query->execute();
-        $picklist = array();
-        foreach ($results as $doc)
-            $picklist[] = $doc;
-        return $picklist;
-    }
+
+    /**
+     * Finds all of the documents uploaded to the EBMS with the 'summary'
+     * tag and with the 'support' tag, and which have been linked with
+     * at the board for which we are building the current summary page,
+     * and which have not already been assigned to the board's summary
+     * page.
+     */
     private function get_supporting_doc_picklist() {
         $subquery = db_select('ebms_summary_supporting_doc', 'd')
             ->fields('d', array('doc_id'))
@@ -1138,8 +1173,190 @@ class EbmsSummaries {
             $picklist[] = $doc;
         return $picklist;
     }
+
+    /**
+     * Finds all of the documents uploaded to the EBMS with the 'summary'
+     * tag but not the 'support' tag, and which have been linked with
+     * at least one of the topics connected with this summary subpage,
+     * and which have not already been assigned to the current subpage.
+     */
+    private function get_nci_doc_picklist() {
+        $subquery1 = db_select('ebms_summary_posted_doc', 'd')
+            ->fields('d', array('doc_id'))
+            ->condition('d.page_id', $this->subpage_id);
+        $subquery2 = db_select('ebms_summary_page_topic', 't')
+            ->fields('t', array('topic_id'))
+            ->condition('t.page_id', $this->subpage_id);
+        $query = db_select('ebms_doc', 'd');
+        $query->join('ebms_doc_topic', 'topic', 'topic.doc_id = d.doc_id');
+        $query->join('ebms_doc_tag', 'dt1', 'dt1.doc_id = d.doc_id');
+        $query->join('ebms_tag', 't1', 't1.tag_id = dt1.tag_id');
+        $query->leftJoin('ebms_doc_tag', 'dt2', 'dt2.doc_id = d.doc_id');
+        $query->leftJoin('ebms_tag', 't2',
+            't2.tag_id = dt2.tag_id AND t2.tag_name = \'support\'');
+        $query->fields('d', array('doc_id', 'description'));
+        $query->condition('t1.tag_name', 'summary');
+        $query->condition('t2.tag_id', null);
+        $query->condition('d.doc_id', $subquery1, 'NOT IN');
+        $query->condition('topic.topic_id', $subquery2, 'IN');
+        $query->distinct()
+        $query->orderBy('d.description');
+        $results = $query->execute();
+        $picklist = array();
+        foreach ($results as $doc)
+            $picklist[] = $doc;
+        return $picklist;
+    }
 }
 
+/**
+ * Drupal form API callback which generates the form for creating a
+ * new summary subpage for a specific board.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  array   $control      EbmsSummaries object carrying
+ *                                information about the current
+ *                                request
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_new_summary_page_form($form, &$form_state, $control) {
+
+    // Assemble a picklist of topics associated with the current board.
+    $results = db_select('ebms_topic', 't')
+        ->fields('t', array('topic_id', 'topic_name'))
+        ->condition('t.board_id', $control->board_id)
+        ->condition('t.active_status', 'A')
+        ->orderBy('t.topic_name')
+        ->execute();
+    $topics = array();
+    foreach ($results as $topic)
+        $topics[$topic->topic_id] = htmlspecialchars($topic->topic_name);
+
+    // Build the Drupal form array for the request.
+    $form = array(
+        'title' => array(
+            '#type' => 'textfield',
+        ),
+        'topics' => array(
+            '#type' => 'select',
+            '#multiple' => true,
+            '#options' => $topics,
+            '#title' => 'Summary Topics',
+            '#size' => min(count($topics), 15),
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Add Subpage',
+        ),
+        'board' => array(
+            '#type' => 'hidden',
+            '#value' => $control->board_id,
+        ),
+        'query-parms' => array(
+            '#type' => 'hidden',
+            '#value' => drupal_json_encode($control->parms),
+        ),
+    );
+    return $form;
+}
+
+/**
+ * Ensures that the request to create a new summaries subpage specifies
+ * both a title for the subpage and at least one topic.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_new_summary_page_form_validate($form, &$form_state) {
+    $title = trim($form_state['values']['title']);
+    $topics = $form_state['values']['topics'];
+    $selected_topics = array();
+    foreach ($topics as $id => $val) {
+        if ($val)
+            $selected_topics[] = $id;
+    }
+    if (!$title || $title == 'Subpage Title')
+        form_set_error('title', 'Title is required for new subpage.');
+    if (count($selected_topics) < 1)
+        form_set_error('topics', 'At least one topic must be selected.');
+    $form_state['selected topics'] = $selected_topics;
+}
+
+/**
+ * Create a new row in the table for summary subpages, as well as one
+ * row for each topic associated with the subpage in a second table.
+ * When we're done we construct a URL which we use to take the user
+ * back to the page from which the form was launched.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_new_summary_page_form_submit($form, &$form_state) {
+
+    $title = trim($form_state['values']['title']);
+    $board = $form_state['values']['board'];
+    $topics = $form_state['selected topics'];
+    $page_id = db_insert('ebms_summary_page')
+        ->fields(
+            array(
+                'board_id' => $board,
+                'page_name' => $title,
+            )
+        )
+        ->execute();
+    foreach ($topics as $topic) {
+        db_insert('ebms_summary_page_topic')
+            ->fields(
+                array(
+                    'page_id' => $page_id,
+                    'topic_id' => $topic,
+                )
+            )
+            ->execute();
+    }
+    $parms = drupal_json_decode($form_state['values']['query-parms']);
+    $options = array('query' => $parms);
+    drupal_goto(EbmsSummaries::$url . '/board/' . $board, $options);
+}
+
+/**
+ * Drupal form API callback which generates the form for creating a
+ * new link to a PDQ summary on an EBMS summary subpage.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  array   $control      EbmsSummaries object carrying
+ *                                information about the current
+ *                                request
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_new_cg_summary_form($form, &$form_state, $control) {
     return array(
         'url' => array(
@@ -1167,6 +1384,19 @@ function pdq_ebms_new_cg_summary_form($form, &$form_state, $control) {
     );
 }
 
+/**
+ * Ensures that the request to create a new link to a PDQ summary
+ * on cancer.gov specifies both a URL and a label.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_new_cg_summary_form_validate($form, &$form_state) {
     $url = trim($form_state['values']['url']);
     $title = trim($form_state['values']['title']);
@@ -1175,6 +1405,21 @@ function pdq_ebms_new_cg_summary_form_validate($form, &$form_state) {
     if (!$title)
         form_set_error('url', 'Title field is required.');
 }
+
+/**
+ * Create a new row in the table for links to PDQ summaries in cancer.gov.
+ * When we're done we construct a URL which we use to take the user
+ * back to the page from which the form was launched.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_new_cg_summary_form_submit($form, &$form_state) {
     $url = trim($form_state['values']['url']);
     $title = trim($form_state['values']['title']);
@@ -1196,10 +1441,43 @@ function pdq_ebms_new_cg_summary_form_submit($form, &$form_state) {
     drupal_goto($url, $options);
 }
 
+/**
+ * Drupal form API callback which generates the form for including
+ * a document posted by the EBMS on the current subpage as a summmary
+ * document provided by NCI which board members can download and possibly
+ * edit and return with changes.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  array   $control      EbmsSummaries object carrying
+ *                                information about the current
+ *                                request
+ *  @param  array   $docs         Results of the query to find the
+ *                                documents eligible for inclusion
+ *                                on the current subpage; this
+ *                                query is performed in advance
+ *                                because we need to know when
+ *                                we're building the page on which
+ *                                the link for this form would appear
+ *                                whether any documents are eligible
+ *                                at all
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_nci_doc_form($form, &$form_state, $control, $docs) {
+
+    // Build the picklist of documents eligible to be included on the page.
     $options = array(0 => 'SELECT DOCUMENT');
     foreach ($docs as $doc)
         $options[$doc->doc_id] = htmlspecialchars($doc->description);
+
+    // Construct the structured array for the Drupal form API.
     $form = array(
         'doc' => array(
             '#type' => 'select',
@@ -1238,13 +1516,40 @@ function pdq_ebms_nci_doc_form($form, &$form_state, $control, $docs) {
     return $form;
 }
 
+/**
+ * Ensures that the request to include another summary document on
+ * a summary subpage has selected the document to be included.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_nci_doc_form_validate($form, &$form_state) {
-    #pdq_ebms_debug('SD FORM VALIDATE', $form_state['values']);
     $doc_id = $form_state['values']['doc'];
     if (!$doc_id)
         form_set_error('title', 'No document selected.');
 }
 
+/**
+ * Create a new row in the table for summary documents included by NCI
+ * on one of the Summary subpages for the current board.  When we're
+ * done we construct a URL which we use to take the user back to the
+ * page from which the form was launched.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_nci_doc_form_submit($form, &$form_state) {
     $doc_id = $form_state['values']['doc'];
     $notes = $form_state['values']['notes'];
@@ -1266,10 +1571,42 @@ function pdq_ebms_nci_doc_form_submit($form, &$form_state) {
     drupal_goto($url, $options);
 }
 
+/**
+ * Drupal form API callback which generates the form for including
+ * a document posted by the EBMS as a supporting document on the Summaries
+ * page for the current board.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  array   $control      EbmsSummaries object carrying
+ *                                information about the current
+ *                                request
+ *  @param  array   $docs         Results of the query to find the
+ *                                documents eligible for inclusion
+ *                                on the current page; this
+ *                                query is performed in advance
+ *                                because we need to know when
+ *                                we're building the page on which
+ *                                the link for this form would appear
+ *                                whether any documents are eligible
+ *                                at all
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_post_summary_sd_form($form, &$form_state, $control, $docs) {
+
+    // Build the picklist of documents eligible to be included on the page.
     $options = array(0 => 'SELECT DOCUMENT');
     foreach ($docs as $doc)
         $options[$doc->doc_id] = htmlspecialchars($doc->description);
+
+    // Construct the structured array for the Drupal form API.
     $form = array(
         'doc' => array(
             '#type' => 'select',
@@ -1304,13 +1641,41 @@ function pdq_ebms_post_summary_sd_form($form, &$form_state, $control, $docs) {
     return $form;
 }
 
+/**
+ * Ensures that the request to include another supporting document on
+ * the Summaries page for the current board has selected the document
+ * to be included.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_post_summary_sd_form_validate($form, &$form_state) {
-    #pdq_ebms_debug('SD FORM VALIDATE', $form_state['values']);
     $doc_id = $form_state['values']['doc'];
     if (!$doc_id)
         form_set_error('title', 'No document selected.');
 }
 
+/**
+ * Create a new row in the table for supporting documents posted by
+ * the board manager for the current board's Summaries page.  When we're
+ * done we construct a URL which we use to take the user back to the
+ * page from which the form was launched.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
 function pdq_ebms_post_summary_sd_form_submit($form, &$form_state) {
     $doc_id = $form_state['values']['doc'];
     $notes = $form_state['values']['notes'];
@@ -1329,103 +1694,28 @@ function pdq_ebms_post_summary_sd_form_submit($form, &$form_state) {
     drupal_goto(EbmsSummaries::$url . '/board/' . $board, $options);
 }
 
-function pdq_ebms_new_summary_page_form($form, &$form_state, $summaries) {
-    $results = db_select('ebms_topic', 't')
-        ->fields('t', array('topic_id', 'topic_name'))
-        ->condition('t.board_id', $summaries->board_id)
-        ->condition('t.active_status', 'A')
-        ->orderBy('t.topic_name')
-        ->execute();
-    $topics = array();
-    foreach ($results as $topic)
-        $topics[$topic->topic_id] = htmlspecialchars($topic->topic_name);
-    // Build the render array for the form.
-    $form = array(
-        'title' => array(
-            '#type' => 'textfield',
-        ),
-        'topics' => array(
-            '#type' => 'select',
-            '#multiple' => true,
-            '#options' => $topics,
-            '#title' => 'Summary Topics',
-            '#size' => min(count($topics), 15),
-        ),
-        /*
-        'submit' => array(
-            '#type' => 'markup',
-            '#markup' =>
-            '<a class="button" id="new-subpage-submit-button">Add Subpage</a>',
-        ),*/
-        'submit' => array(
-            '#type' => 'submit',
-            '#value' => 'Add Subpage',
-        ),
-        'board' => array(
-            '#type' => 'hidden',
-            '#value' => $summaries->board_id,
-        ),
-        'query-parms' => array(
-            '#type' => 'hidden',
-            '#value' => drupal_json_encode($summaries->parms),
-        ),
-    );
-/*
-   foreach ($summaries->parms as $name => $value)
-        $form[$name] = array(
-            '#type' => 'hidden',
-            '#value' => $value,
-        );
-*/
-    return $form;
-}
-
-function pdq_ebms_new_summary_page_form_validate($form, &$form_state) {
-    $title = trim($form_state['values']['title']);
-    $topics = $form_state['values']['topics'];
-    $selected_topics = array();
-    foreach ($topics as $id => $val) {
-        if ($val)
-            $selected_topics[] = $id;
-    }
-    if (!$title || $title == 'Subpage Title')
-        form_set_error('title', 'Title is required for new subpage.');
-    if (count($selected_topics) < 1)
-        form_set_error('topics', 'At least one topic must be selected.');
-    $form_state['selected topics'] = $selected_topics;
-}
-
-function pdq_ebms_new_summary_page_form_submit($form, &$form_state) {
-    //pdq_ebms_debug('NEW SUMMARY PAGE SUBMIT', $form_state['values']);
-    $title = trim($form_state['values']['title']);
-    $board = $form_state['values']['board'];
-    $topics = $form_state['selected topics'];
-    $page_id = db_insert('ebms_summary_page')
-        ->fields(
-            array(
-                'board_id' => $board,
-                'page_name' => $title,
-            )
-        )
-        ->execute();
-    foreach ($topics as $topic) {
-        db_insert('ebms_summary_page_topic')
-            ->fields(
-                array(
-                    'page_id' => $page_id,
-                    'topic_id' => $topic,
-                )
-            )
-            ->execute();
-    }
-    $parms = drupal_json_decode($form_state['values']['query-parms']);
-    $options = array('query' => $parms);
-    drupal_goto(EbmsSummaries::$url . '/board/' . $board, $options);
-}
-
+/**
+ * Drupal form API callback which generates the form used by a board
+ * member for posting an edited summary document back to the current
+ * Summaries subpage.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  array   $control      EbmsSummaries object carrying
+ *                                information about the current
+ *                                request
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
 function pdq_ebms_member_doc_form($form, &$form_state, $control) {
 
-    // Build the render array for the form.
+    // Construct the structured array for the Drupal form API.
     return array(
         '#id' => 'member-doc-form',
         'title' => array(
@@ -1478,18 +1768,20 @@ function pdq_ebms_member_doc_form($form, &$form_state, $control) {
 }
 
 /**
- * Validation function to ensure that a document was selected for a file
- * upload field (Drupal's validation of required file upload fields is
- * broken).
- */
-function pdq_ebms_doc_file_required($element, &$form_state) {
-    if ($_FILES['files']['name']['filepath'] == '') {
-        form_set_error('filepath', t('Please select a document'));
-    }
-}
-
-/*
- * Store the file the reviewer posted.
+ * Save the document posted by a board member for a summary subpage.
+ * We add a row to the ebms_docs table after first installing the
+ * file in Drupal's file_managed table.  When we're done we construct
+ * a URL which will take the user back to the page from which the
+ * upload form was launched.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
  */
 function pdq_ebms_member_doc_form_submit($form, &$form_state) {
 
@@ -1535,4 +1827,24 @@ function pdq_ebms_member_doc_form_submit($form, &$form_state) {
     $options = array('query' => $parms);
     $url = EbmsSummaries::$url . '/page/' . $board . '/' . $page;
     drupal_goto($url, $options);
+}
+
+/**
+ * Validation function to ensure that a document was selected for a file
+ * upload field (Drupal's validation of required file upload fields is
+ * broken).
+
+ *  @param  array   $element      Structured array containing the
+ *                                information about the current form
+ *                                elements (ignored by this callback)
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information (ignored
+ *                                by this callback)
+ */
+function pdq_ebms_doc_file_required($element, &$form_state) {
+    if ($_FILES['files']['name']['filepath'] == '') {
+        form_set_error('filepath', t('Please select a document'));
+    }
 }
