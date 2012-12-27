@@ -238,6 +238,13 @@ class EbmsSearch {
             ->execute()
             ->fetchField();
 
+        // See if the article was converted from the legacy system.
+        $legacy_id = db_select('ebms_legacy_article_id', 'i')
+            ->fields('i', array('legacy_id'))
+            ->condition('i.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+
         // Extract the elements that we need from the XML document.
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
@@ -301,7 +308,10 @@ class EbmsSearch {
             $pieces[] = ", $year";
         $edit_link = l('EDIT', $full_url, $full_opts);
         $pub_link = l('PUBLISH', $full_url, $full_opts);
-        $pieces[] = "<br />PMID: $pmid &nbsp; CMS ID: $article_id<br /><br />";
+        $pieces[] = "<br />PMID: $pmid &nbsp; EBMS ID: $article_id";
+        if ($legacy_id)
+            $pieces[] = " &nbsp; Legacy CMS ID: $legacy_id";
+        $pieces[] = '<br /><br />';
         $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
             $pmid . '" target="_blank">VIEW ABSTRACT</a>';
         $ft_uri = Ebms\Util::get_ft_uri($article_id);
