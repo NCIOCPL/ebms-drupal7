@@ -96,8 +96,10 @@ class EbmsFullText {
         $pieces[] = ' &nbsp; EBMS ID: ' . l($article_id,
                     'citations/full/' . $article_id);
 
-        // XXX Add real link when Dan's finished his current story.
-        $pieces[] = '<br /><br />' . l('View Abstract', 'stub');
+        // Link to NLM's abstract for the article.
+        $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $pmid;
+        $target = array('attributes' => array('target' => '_blank'));
+        $pieces[] = '<br /><br />' . l('View Abstract', $url, $target);
         return implode($pieces);
     }
 }
