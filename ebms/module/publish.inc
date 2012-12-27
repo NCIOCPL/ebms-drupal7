@@ -160,10 +160,10 @@ class EbmsPublish {
         );
         $results = $query->execute();
         $count = 0;
-        
+
         // collect boards for recent activity
         $boards = array();
-        
+
         foreach ($results as $result) {
             $new_state_id = Ebms\setArticleState(
                 $result->article_id,
