@@ -4236,15 +4236,17 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
  */
 function pdq_ebms_cites_by_status_form_validate($form, &$form_state) {
     $values = $form_state['values'];
-    if (!$values['board'])
-        form_set_error('board', 'No board selected.');
-    if (!$values['status'])
-        form_set_error('status', 'No status selected.');
+    if ($values['op'] == 'Submit') {
+        if (!$values['board'])
+            form_set_error('board', 'No board selected.');
+        if (!$values['status'])
+            form_set_error('status', 'No status selected.');
+    }
 }
 
 /**
  * If the user clicks the "Reset" button, clear the form by routing
- * back to the URL for the Citations by Status  reports.  Otherwise store
+ * back to the URL for the Citations by Status reports.  Otherwise store
  * the report request parameters in the database and send the user to
  * the URL which knows where those parameters were stored.
  *
