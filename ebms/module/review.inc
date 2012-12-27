@@ -979,44 +979,6 @@ class EbmsReview {
                 '#type' => 'container',
                 '#attributes' => array('id' => 'article-reviews-right'),
                 'reviews' => $reviews,
-                /*array(
-                    array(
-                        '#type' => 'markup',
-                        '#markup' => '<h3>Reviewer</h3><p>Ilana Cass</p>' .
-                        '<h3>Options</h3><p>Merits revision of the text' .
-                        '</p><p>Discuss at next meeting' .
-                        '</p><h3>Comments</h3><p>Quo usque tandem ' .
-                        'abutere Catalina patientia nostra?  Quamdiu ' .
-                        'etiam furor iste nos eludet?  Quem ad finem ' .
-                        'efranata iactabit audacia?</p>',
-                        '#prefix' => '<div class="review">',
-                        '#suffix' => '</div>',
-                    ),
-                    array(
-                        '#type' => 'markup',
-                        '#markup' => '<h3>Reviewer</h3>',
-                        '#prefix' => '<div class="review">',
-                        '#suffix' => '</div>',
-                    ),
-                    array(
-                        '#type' => 'markup',
-                        '#markup' => '<h3>Reviewer</h3>',
-                        '#prefix' => '<div class="review">',
-                        '#suffix' => '</div>',
-                    ),
-                    array(
-                        '#type' => 'markup',
-                        '#markup' => '<h3>Reviewer</h3>',
-                        '#prefix' => '<div class="review">',
-                        '#suffix' => '</div>',
-                    ),
-                    array(
-                        '#type' => 'markup',
-                        '#markup' => '<h3>Reviewer</h3>',
-                        '#prefix' => '<div class="review">',
-                        '#suffix' => '</div>',
-                    ),
-                ),*/
             ),
         );
     }
@@ -1055,7 +1017,7 @@ class EbmsReview {
                 "REVIEW",
             )
         );
-        
+
         // check for this page being used on behalf of another
         $account = pdq_ebms_find_effective_user(false);
 
@@ -1069,12 +1031,12 @@ class EbmsReview {
         }
 
         $page['main']['form'] = drupal_get_form('pdq_ebms_board_member_review_form', $this);
-        
+
         return $page;
     }
 
     /**
-     * Member landing page for literature; display's all the packets
+     * Member landing page for literature; displays all the packets
      * in the member's queue for review.
      */
     private function member_packets() {
@@ -1147,7 +1109,7 @@ class EbmsReview {
                 $title,
             )
         );
-        
+
         // check for this page being used on behalf of another
         $account = pdq_ebms_find_effective_user(false);
         $header_suffix = '';
@@ -1177,7 +1139,7 @@ class EbmsReview {
         $this->show_packet_summaries($body);
         $this->show_packet_articles($body, $articles);
         $this->show_reviewer_uploads($body);
-        
+
         $page['body'] = $body;
         return $page;
     }
@@ -1517,7 +1479,7 @@ class EbmsReview {
 
     /**
      * Determines if the chosen user is a reviewer for the current packet.
-     * 
+     *
      * @return boolean TRUE if th euser is in the reviewer list, else FALSE.
      */
     private function is_reviewer() {
@@ -2155,21 +2117,21 @@ function pdq_ebms_board_member_review_form_validate($form, &$form_state) {
  */
 function pdq_ebms_store_review($form, &$form_state) {
     $account = pdq_ebms_find_effective_user(false);
-    
+
     // check for this page being used on behalf of another
     global $user;
     $comment_suffix = '';
     if ($account) {
         // append the name of the intended user and add the manager's left
-        // nav        
-        
+        // nav
+
         $comment_suffix = "<br /><br /><i>Recorded by $user->name on behalf of $account->name.</i>";
     }
     else
     {
         $account = $user;
     }
-    
+
     $packet_id = $form_state['values']['packet'];
     $article_id = $form_state['values']['article'];
     $expanded = $form_state['values']['expanded'];
@@ -2801,18 +2763,18 @@ function pdq_ebms_packet_reviewers_ajax($form, $form_state) {
 /**
  * Allows searching through boards and board members in order to find all
  * packets available for review or a specific packet.
- * 
+ *
  * @param type $form
  * @param type $form_state
  */
 function pdq_ebms_record_responses_form($form, &$form_state) {
     module_load_include('inc', 'ebms', 'EbmsArticle');
-    
+
     // define an attribute to turn off field autocompletes
     $attributes = array(
         'autocomplete' => 'off',
     );
-    
+
     $form['board'] = array(
         '#type' => 'select',
         '#title' => t('Board'),
