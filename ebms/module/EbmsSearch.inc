@@ -688,8 +688,6 @@ class EbmsSearch {
      */
     function srchInputDate() {
 
-$xxx = print_r($this->spec['input-start']);
-
         if ($this->spec['input-start']['year']) {
             $dateLimits = $this->chkDates(
                     $this->spec['input-start'],
