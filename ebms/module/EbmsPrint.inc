@@ -7,8 +7,9 @@ require_once('logw.inc');
 
 // Constants for locating system dependent paths
 define ('SERVER_SETTINGS_PATH', 100);
-define ('SERVER_SAVE_PATH',     101);
-define ('SERVER_FILES_PATH',    102);
+define ('SERVER_BASE_PATH',     101);
+define ('SERVER_SAVE_PATH',     102);
+define ('SERVER_FILES_PATH',    103);
 
 // Font info for response sheets
 define ('DFT_FONT_HEIGHT', 13);         // Default font
@@ -58,13 +59,16 @@ function getServerPath($whichPath, $jobId=null) {
         case SERVER_FILES_PATH:
             return $base . 'files';
 
+        case SERVER_BASE_PATH:
+            // Same on all systems (so far)
+            return '/tmp/ebms/PrintJobs';
+
         case SERVER_SAVE_PATH:
             if (is_null($jobId))
                 throw new \Exception('getServerPath: missing requried jobId');
 
-            // Same on all systems (so far)
-            $template = '/tmp/ebms/PrintJobs/PrintJob%06d';
-            return (sprintf($template, $jobId));
+            $baseDir = getServerPath(SERVER_BASE_PATH);
+            return (sprintf("$baseDir/PrintJob%05d", $jobId));
 
         throw new \Exception("getServerPath: unknown path id=$whichPath");
     }
@@ -324,7 +328,6 @@ function createPrintJob() {
                 $stmt = $pj->dbh->prepare(
               "SELECT board_id FROM ebms_board_member WHERE user_id=:member");
                 $stmt->bindParam(':member', $pj->board_member_id);
-logw("execute01");
                 $stmt->execute();
                 $rows = $stmt->fetchAll();
 
@@ -355,19 +358,16 @@ logw("execute01");
     $pj->update();
 
     // Define server pathnames
+    $pj->serverBasePath = getServerPath(SERVER_BASE_PATH);
     $pj->serverSavePath = getServerPath(SERVER_SAVE_PATH, $pj->print_job_id);
 
-    // Create them unless we're just reporting
-    // XXX Not sure yet about this
-    //if ($pj->mode != 'report') {
-        $pj->createServerDirPath($pj->serverSavePath);
-    //}
+    // Create them (recurses downward as needed to build the tree
+    $pj->createServerDirPath($pj->serverSavePath);
 
     // Define Windows workstation filenames and paths
     $pj->windowsTempPath  = '\\temp\\EBMS\\PrintJobs';
-      sprintf("\\tmp\\ebms\\PrintJobs\\PrintJob%05d", $pj->print_job_id);
     $pj->cmdFileName = 'PrintPackets.cmd';
-    $pj->rptFileName = 'PrintJobReport.html';
+    $pj->rptFileName = sprintf("PrintJobReport%05d.html", $pj->print_job_id);
 
     return $pj;
 }
@@ -446,7 +446,8 @@ class EbmsPrintJob {
 
     public
         // Important paths
-        $serverSavePath,    // Temporary files created here
+        $serverBasePath,    // Job directory path
+        $serverSavePath,    // Temporary files created here, beneath base path
         $windowsTempPath,   // Unarchive file here on windows client
         $cmdFileName,       // Name of the Windows command file to print docs
         $rptFileName;       // Name of the document with a full report
@@ -463,7 +464,7 @@ class EbmsPrintJob {
         $packet_end_dt,     // Datetime > last packet in the printout
         $print_dt,          // Datetime at start of job run
         $board_id,          // If printing is for one editorial board
-        $board_member_id,   // If printing is for one member
+        $board_member_id,   // ID of single board member requested by user
         $mode,              // 'live', 'test', 'report'
         $status,            // Status of the job queued ... success
         $comment;           // Optional free text description of the job
@@ -543,7 +544,6 @@ class EbmsPrintJob {
         try {
             $stmt = $this->dbh->prepare(
               "SELECT print_job_id FROM ebms_print_job WHERE status='queued'");
-logw("execute02");
             $stmt->execute();
             $rows = $stmt->fetchAll();
             $rowCount = count($rows);
@@ -577,7 +577,6 @@ logw("execute02");
             $stmt = $this->dbh->prepare(
                 'SELECT * FROM ebms_print_job WHERE print_job_id = :jobId');
             $stmt->bindParam(':jobId', $dbJobId);
-logw("execute03");
             $stmt->execute();
             $row = $stmt->fetch();
 
@@ -642,7 +641,6 @@ logw("execute03");
             $stmt->bindParam(':status', $this->status);
             $stmt->bindParam(':comment', $this->comment);
 
-logw("execute04");
             $stmt->execute();
             $errInfo1 = $this->dbh->errorInfo();
             $errInfo1p = print_r($errInfo1, true);
@@ -652,9 +650,6 @@ logw("execute04");
             if (!$this->print_job_id) {
                 $errInfo2 = $this->dbh->errorInfo();
                 $errInfo2p = print_r($errInfo2, true);
-logw("lastInsertId={$this->print_job_id}\n");
-logw("errInfo1 = $errInfo1p\n");
-logw("errInfo2 = $errInfo2p\n");
             }
         }
         catch (PDOException $e) {
@@ -673,7 +668,6 @@ logw("errInfo2 = $errInfo2p\n");
             $this->reportError(
                 "EbmsPrintJob.update: Can't update new job " .
                  $this->print_job_id);
-logw("updating: print_job_type='$this->print_job_type_id'");
 
         try {
             // Prepared statement
@@ -702,7 +696,6 @@ logw("updating: print_job_type='$this->print_job_type_id'");
             $stmt->bindParam(':status',            $this->status);
             $stmt->bindParam(':print_job_id',      $this->print_job_id);
 
-logw("execute05");
             $stmt->execute();
         }
         catch (PDOException $e) {
@@ -726,7 +719,6 @@ logw("execute05");
                   WHERE print_job_id = :job_id');
             $stmt->bindParam(':status', $status);
             $stmt->bindParam(':job_id', $this->print_job_id);
-logw("execute06");
             $stmt->execute();
         }
         catch (\PDOException $e) {
@@ -765,12 +757,10 @@ logw("execute06");
             $stmt->bindParam(':boardId', $this->board_id);
             $stmt->bindParam(':jobEndDate', $this->packet_end_dt);
             $stmt->bindParam(':jobStartDate', $this->packet_start_dt);
-logw("execute07");
             $stmt->execute();
 
             $rows = $stmt->fetchAll();
             foreach ($rows as $row) {
-logw("Found board member ID={$row['board_member_id']}");
                 $memberIds[] = $row['board_member_id'];
             }
         }
@@ -812,7 +802,6 @@ logw("Found board member ID={$row['board_member_id']}");
             $stmt = $this->dbh->prepare($qry);
             $stmt->bindParam(':board_id', $this->board_id);
 
-logw("execute08");
             $stmt->execute();
             $row = $stmt->fetch();
 
@@ -864,14 +853,14 @@ logw("execute08");
            AND pkt.created_at >= :packetStartDt
            AND pkt.created_at <  :packetEndDt
            AND rev.reviewer_id = :memberId
-           AND pkt.active_status = 'A'";
+           AND pkt.active_status = 'A'
+           AND mwp.start_dt <= pkt.created_at
+           AND (mwp.end_dt IS NULL OR mwp.end_dt > pkt.created_at)";
 
         // If this is not an unconditional job, add the following
         if (!$always)
             $sql .= "
            -- Note interpretation of wants_print start and end date
-           AND mwp.start_dt <= pkt.created_at
-           AND (mwp.end_dt IS NULL OR mwp.end_dt > pkt.created_at)
            AND pkt.packet_id NOT IN (
              SELECT pktp.packet_id
                FROM ebms_packet_printed pktp
@@ -884,13 +873,10 @@ logw("execute08");
         $sql .= "
          ORDER BY pkt.packet_id
         ";
-logw("sql=\n$sql");
-
-        // "IN" parameters need to be constructed as strings for PDO
-        $inMembers = implode(',', $this->boardMemberList);
-logw("Members=$inMembers");
-logw("board_id={$this->board_id}");
-logw("pkt_start_dt={$this->packet_start_dt} end_dt={$this->packet_end_dt}");
+pdq_ebms_debug("SQL for package:", $sql);
+pdq_ebms_debug("Parms:",
+ "board={$this->board_id}  start={$this->packet_start_dt}  " .
+ "end={$this->packet_end_dt}  member=$memberId");
 
         try {
             $stmt = $this->dbh->prepare($sql);
@@ -900,28 +886,19 @@ logw("pkt_start_dt={$this->packet_start_dt} end_dt={$this->packet_end_dt}");
             $stmt->bindParam(':memberId', $memberId);
             $stmt->bindParam(':sameMemberId', $memberId);
 
-logw("execute09");
             $stmt->execute();
-$xxx=print_r($stmt->errorInfo(), true);
-logw("errorInfo from execute09=$xxx");
 
             $rows = $stmt->fetchAll();
-$xxx=count($rows);
-logw("execute09 row count=$xxx");
-$xxx=print_r($rows,true);
-logw("execute09 rows=$xxx");
         }
         catch (PDOException $e) {
             $this->reportError(
                 "EbmsPrint.getMemberPackage: PDOException $e");
         }
 
-        // Look for transition boundaries to the next board member
-        $lastMemberId = -1;
-
         // Assemble the packets for this member
         $packetList = array();
         foreach ($rows as $row) {
+pdq_ebms_debug("Packaging packetId=", $row['packet_id']);
             $packetList[] = $row['packet_id'];
         }
 
@@ -949,7 +926,6 @@ logw("execute09 rows=$xxx");
      */
     public function getPacketPrintList($packetId, $memberId=null) {
 
-logw("In getPacketPrintingList: packetId=$packetId, memberId=$memberId");
         // Array of EbmsPrintFile objects to return
         $epfList = array();
 
@@ -957,12 +933,10 @@ logw("In getPacketPrintingList: packetId=$packetId, memberId=$memberId");
         $stmt = $this->dbh->prepare(
                 "SELECT topic_id FROM ebms_packet WHERE packet_id=:packetId");
         $stmt->bindParam(':packetId', $packetId);
-logw("execute10");
         $stmt->execute();
         $row = $stmt->fetch();
         if (is_array($row) && array_key_exists('topic_id', $row)) {
             $topicId = $row['topic_id'];
-logw("topicId=$topicId");
         }
         else
             reportError("No topic for packet ID=$packetId - can't happen");
@@ -983,13 +957,10 @@ logw("topicId=$topicId");
              WHERE p.packet_id = :packetId";
         $stmt = $this->dbh->prepare($sumQry);
         $stmt->bindParam(':packetId', $packetId);
-logw("execute11");
         $stmt->execute();
 
         // There's usually exactly one, but could be zero or more
         $rows = $stmt->fetchAll();
-$rowCount=count($rows);
-logw("Count of summaries = $rowCount");
         foreach ($rows as $row) {
 
             // Construct an object to represent this file
@@ -1024,10 +995,10 @@ logw("Count of summaries = $rowCount");
                 ON p.article_id = a.article_id
               JOIN file_managed f
                 ON a.full_text_id = f.fid
-             WHERE p.packet_id = :packetId";
+             WHERE p.packet_id = :packetId
+               AND p.drop_flag = 0";
         $stmt = $this->dbh->prepare($artQry);
         $stmt->bindParam(':packetId', $packetId);
-logw("execute12");
         $stmt->execute();
 
         // Packets often have multple articles
@@ -1036,7 +1007,6 @@ logw("execute12");
         // First article in the packet is 1 of total num rows
         $packetPos = 1;
         $packetMax = count($rows);
-logw("article search found $packetMax articles");
 
         foreach ($rows as $row) {
 
@@ -1060,21 +1030,16 @@ logw("article search found $packetMax articles");
             //   this file and append its EbmsPrintFile object to our list
             // EbmsPrintFile will be created in all modes but actual file
             //   is not created if it's just a report
-logw("Board member ID={$epf->boardMemberId}");
             if ($epf->boardMemberId) {
                 $respEpf = $this->createResponseSheet($epf, $packetPos,
                                           $packetMax, array($topicId));
                 $epfList[] = $respEpf;
-logw("Created response sheet");
             }
 
             // Followed by the article object
             $epfList[] = $epf;
-logw("Adding {$epf->path} to epfList");
             ++$packetPos;
         }
-$xxx=count($epfList);
-logw("Total epfs added=$xxx");
 
         return $epfList;
     }
@@ -1103,7 +1068,6 @@ logw("Total epfs added=$xxx");
 
         foreach ($epfList as $epf) {
             $path = $epf->path;
-logw("path from epfList=$path");
             if (!array_key_exists($path, $pathIndex)) {
                 $pathList[] = $path;
                 $pathIndex[$path] = 1;
@@ -1111,58 +1075,6 @@ logw("path from epfList=$path");
         }
 
         return $pathList;
-    }
-
-    /**
-     * Get the path to the directory where we'll create files.
-     *
-     * Using /tmp/ebms/PrintJobs/PrintJobN unless someone wants it otherwise.
-     *
-     * /tmp is world readable and writeable, it's available on all Linux and
-     * UNIX systems, and gets regularly cleaned by the OS.
-     *
-     * If the path we want doesn't exist, we create it.
-     *
-     * XXX ISSUE: Do we need to worry about ebms vs. ebmsdev?
-     * XXX ISSUE: Should these be stored semi-permanently in:
-     *            /home/drupal/ebms/PrintJobs/PrintJobN?
-     *
-     *  @return string      Path.
-     */
-    function getPrintJobTempDir() {
-
-        // Final directory component
-        $bottomDir = 'PrintJob' . $this->print_job_id;
-        $fullPath  = "/tmp/ebms/PrintJobs/$bottomDir";
-
-        // Quick short circuit
-        if (is_dir($fullPath))
-            return $fullPath;
-
-        // Slower check/create if that didn't work
-
-        // Path components
-        $pathComps = array('ebms', 'PrintJobs', $bottomDir);
-
-        $chkPath = '/tmp';
-        foreach ($pathComps as $path) {
-            $chkPath = $chkPath . '/' . $path;
-            if (!file_exists($chkPath)) {
-                $result = mkdir($chkPath);
-                if (!$result) {
-                    $this->reportError(
-                        "getPrintJobTempDir: Could not create directory " .
-                        "'$chkPath'");
-                }
-            }
-            elseif (!is_dir($chkPath)) {
-                throw new \Exception(
-                    "getPrintJobTempDir: '$chkPath' is not a directory");
-            }
-        }
-
-        // If we emerged here, we found or created what we want
-        return $chkPath;
     }
 
     /**
@@ -1184,7 +1096,6 @@ logw("path from epfList=$path");
         $stmt = $this->dbh->prepare(
                 'SELECT name FROM users WHERE uid = :memberId');
         $stmt->bindParam(':memberId', $epf->boardMemberId);
-logw("execute12.5");
         $stmt->execute();
         $row = $stmt->fetch();
         if (!$row) {
@@ -1195,7 +1106,6 @@ logw("execute12.5");
                 "'{$epf->boardMemberId}' not found.");
         }
         $reviewerName = $row['name'];
-logw("reviewer id={$epf->boardMemberId}, name=$reviewerName");
 
         // We're not relying on Drupal being present, so we have to
         //  get article info without using the EbmsArticle class
@@ -1204,7 +1114,6 @@ logw("reviewer id={$epf->boardMemberId}, name=$reviewerName");
                 'SELECT source, source_id, article_title, brf_citation ' .
                 '  FROM ebms_article WHERE article_id = :artId');
         $stmt->bindParam(':artId', $articleId);
-logw("execute13");
         $stmt->execute();
         $row = $stmt->fetch();
 
@@ -1236,7 +1145,6 @@ SELECT auth.collective_name, auth.last_name, auth.initials
 EOS;
         $stmt = $this->dbh->prepare($qry);
         $stmt->bindParam(':artId', $articleId);
-logw("execute14");
         $stmt->execute();
         $rows = $stmt->fetchAll();
 
@@ -1262,7 +1170,6 @@ logw("execute14");
             'SELECT topic_id, topic_name FROM ebms_topic '.
             ' WHERE topic_id IN (:topicList)');
         $stmt->bindParam(':topicList', $topicList);
-logw("execute15");
         $stmt->execute();
         $rows = $stmt->fetchAll();
         $topicCount  = 0;
@@ -1286,7 +1193,6 @@ logw("execute15");
                       "No topic found for topic_id = $topicId, can't happen");
             }
         }
-logw("firstTopic=$firstTopic, topicString=$topicString");
 
         require_once('fpdf/fpdf.php');
 
@@ -1582,8 +1488,6 @@ logw("firstTopic=$firstTopic, topicString=$topicString");
      *                          More may be added to the tar file after this.
      */
     function packagePrintFiles($fileList) {
-$xxx=count($fileList);
-logw("packagePrintFiles has $xxx files to packup");
 
         // Used for tarring files in php
         require_once('Archive/Tar.php');
@@ -1591,7 +1495,7 @@ logw("packagePrintFiles has $xxx files to packup");
         // Use this as the directory path inside the tar file
         // It will be expanded in the Windows workstation
         // It need not mirror what's in the server path
-        $newPath = sprintf("PrintJobs/PrintJob%06d", $this->print_job_id);
+        $newPath = sprintf("PrintJobs/PrintJob%05d", $this->print_job_id);
 
         // Initialize the tar file in a known place
         $tarPath = $this->serverSavePath . '.tar';
@@ -1609,7 +1513,6 @@ logw("packagePrintFiles has $xxx files to packup");
             $baseName    = basename($prtFile);
             $tempName[0] = $prtFile;
 
-logw("Tarring $prtFile");
             // Add it to the archive
             $tarObj->addModify($tempName, $newPath, $oldPath);
         }
@@ -1665,14 +1568,11 @@ logw("Tarring $prtFile");
 
         // Actual print commands using file type specific print software
         $scriptIdx = 1;
-foreach($fileList as $epf) {
-logw("full fileList path={$epf->path}, type={$epf->filetype}");
-}
         foreach ($fileList as $epf) {
 
             $fname = basename($epf->path);
             $ftype = $epf->filetype;
-logw("PS: scriptIdx=$scriptIdx, type=$ftype, name=$fname");
+
             // Setup
             fwrite($fp, ":L$scriptIdx\n");
             fwrite($fp, "if %3. == $scriptIdx. goto :done\n");
@@ -1681,10 +1581,10 @@ logw("PS: scriptIdx=$scriptIdx, type=$ftype, name=$fname");
             switch ($ftype) {
                 case 'pdf':
                 case 'application/pdf':
-                    fwrite($fp, "pdfprint -duplex 2 -printer %1 $fname\n");
+                    fwrite($fp, "call pdfprint -duplex 2 -printer %1 $fname\n");
                     break;
                 case 'word':
-                    fwrite($fp, "abiword -p %1 $fname\n");
+                    fwrite($fp, "call abiword -p %1 $fname\n");
                     break;
                 case 'text':
                     fwrite($fp, "copy $fname %1\n");
@@ -1710,8 +1610,8 @@ EOS;
         fwrite($fp, $usageMsg);
 
         // Count requested
-        fwrite($fp, ":showcount\n");
-        fwrite($fp, "This script contains $docCount files\n");
+        fwrite($fp, "\n:showcount\n");
+        fwrite($fp, "echo This script contains $docCount files\n");
 
         fwrite($fp, ":done\n");
 
@@ -1745,21 +1645,14 @@ EOS;
 
         // If fatal error, cleanup
         if ($fatal) {
-            // Cleanup will rollback transaction, if necessary
-            $this->cleanup('failure');
 
-            // But try to mark this job as failed
-            try {
-                $this->setJobStatus('failure');
-            }
-            catch (PDOException $e) {
-                // XXX - email admin?
-                // But can't do much else
-            }
+            // Cleanup and mark the job as failed
+            $this->cleanup('failure');
 
             pdq_ebms_debug("Fatal error: jobId={$this->print_job_id}", $msgs);
 
-            exit("Packet printing for job {$this->print_job_id} failed: $msgs");
+            exit("<p>Packet printing for job {$this->print_job_id} " .
+                 "failed.  See errors below:</p>\n<p>$msgs</p>");
         }
         $inError = false;
     }
@@ -1951,7 +1844,6 @@ EOS;
                     $stmt->bindParam(':packet_id', $packetId);
 
                     // Update the table
-logw("execute16");
                     $stmt->execute();
                 }
             }
@@ -1994,8 +1886,36 @@ logw("execute16");
             $stmt = $this->dbh->prepare(
                 "UPDATE ebms_print_job SET status='failure' " .
                 " WHERE status='queued'");
-logw("execute17");
             $stmt->execute();
+        }
+
+        // On success, remove any no longer needed files
+        // This will remove the temporary dir and all files, leaving either
+        //   a single tar file, or a single report file
+        if ($status == 'success') {
+            // For report type jobs, only need the html file, move it up
+            if ($this->mode == 'report') {
+                $oldPath = $this->serverSavePath . '/' . $this->rptFileName;
+                $newPath = $this->serverBasePath . '/' . $this->rptFileName;
+                rename($oldPath, $newPath);
+logw("renamed $oldPath -> $newPath");
+            }
+            // For all job types, remove the now unneeded directory
+            $rmPath  = $this->serverSavePath . '/*';
+            $rmFiles = glob($rmPath);
+            foreach($rmFiles as $fname)
+                unlink($fname);
+            rmdir($this->serverSavePath);
+        }
+
+        // Else if no outputs were created, we also don't need the directory
+        else {
+logw("in else path");
+            $rmPath  = $this->serverSavePath . '/*';
+            $rmFiles = glob($rmPath);
+            if (count($rmFiles) == 0)
+                rmdir($this->serverSavePath);
+            // Else we leave the stuff for debugging
         }
 
         // XXX TEMPORARY.  Mail should go to user running the job and
@@ -2056,7 +1976,6 @@ EOS;
  * via require_once().
  *************************************************************/
 
-logw("Starting main");
 // Create a print job from a recently created row in the table
 $pj = createPrintJob();
 
@@ -2065,7 +1984,7 @@ $pj = createPrintJob();
 if ($pj->print_job_type_id == 'packet') {
     // Get the list of docs.  If the member ID is not null, response
     //  sheet EPFs will be interspersed, one before each article pdf EPF
-    $pj->docList = $pj->getPacketPrintList($packetId, $this->board_member_id);
+    $pj->docList = $pj->getPacketPrintList($packetId, $pj->board_member_id);
 }
 
 // If we're printing one board member's package, we already know who it is
@@ -2090,10 +2009,13 @@ else if ($pj->print_job_type_id == 'board') {
     // Board member who want print, we'll see later if they need any
     $pj->boardMemberList = $pj->getBoardMemberPrintUsers();
 
+    // If it's a re-run of an older job, override the packets_printed table
+    $forcePrint = $pj->old_job_id ? true : false;
+
     // Build list of packages actually needed by those board members
     foreach ($pj->boardMemberList as $memberId) {
         $pj->packageList[$memberId] =
-            $pj->getMemberPackage($memberId, $pj->board_id);
+            $pj->getMemberPackage($memberId, $pj->board_id, $forcePrint);
     }
 
     // Build list of document EbmsPrintFile objects for all files in all
@@ -2116,8 +2038,19 @@ if ($pj->print_job_type_id == 'board') {
 
 // Couldn't find any docs ready to print
 if (count($pj->docList) == 0) {
-  $pj->reportError(
-    'There are no documents ready for printing at this time for this job spec');
+    $msgs = <<<EOS
+<p>There are no documents ready for printing at this time for this
+job spec.  Some reasons why this may happen include:</p>
+<ul>
+ <li>No specified packets were created within the specified
+start and end dates.</li>
+ <li>There are no articles in the packet(s).</li>
+ <li>No PDFs have been uploaded for the articles in the packet(s).</li>
+ <li>None of the board members who would receive the specified packets
+want printouts at this time.</li>
+</ul>
+EOS;
+    $pj->reportError($msgs);
 }
 
 
