@@ -231,6 +231,18 @@ class EbmsSearch {
      */
     function list_article($article_id, $position) {
 
+        // Get the cached state ID for 'Ready for Initial Review'.
+        $cached = &drupal_static(__FUNCTION__);
+        if (!isset($cached)) {
+            $state_id = db_select('ebms_article_state_type', 't')
+                ->condition('t.state_text_id', 'ReadyInitReview')
+                ->fields('t', array('state_id'))
+                ->execute()
+                ->fetchField();
+            $cached = array('ready_for_initial_review' => $state_id);
+        }
+        $ready_for_initial_review = $cached['ready_for_initial_review'];
+
         // Pull NLM's XML document for the article from the database
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
@@ -280,6 +292,20 @@ class EbmsSearch {
         if (count($authors) < 1)
             $authors = array('[No authors listed]');
 
+        // Find out which topics were assigned at import (TIR 2209).
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->condition('s.article_id', $article_id);
+        $query->condition('s.active_status', 'A');
+        $query->condition('s.state_id', $ready_for_initial_review);
+        $query->fields('t', array('topic_name'));
+        $query->orderBy('t.topic_name');
+        $results = $query->execute();
+        $topics = array();
+        foreach ($results as $result)
+            $topics[] = htmlspecialchars($result->topic_name);
+        $topics = implode('; ', $topics);
+
         // Create the links we'll need.
         $full_url = 'citations/full/' . $article_id;
         $full_opts = array('query' => array('search' => $this->search_id));
@@ -311,6 +337,8 @@ class EbmsSearch {
         $pieces[] = "<br />PMID: $pmid &nbsp; EBMS ID: $article_id";
         if ($legacy_id)
             $pieces[] = " &nbsp; Legacy CMS ID: $legacy_id";
+        if ($topics)
+            $pieces[] = "<br />Topics: $topics";
         $pieces[] = '<br /><br />';
         $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
             $pmid . '" target="_blank">VIEW ABSTRACT</a>';
