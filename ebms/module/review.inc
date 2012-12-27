@@ -931,6 +931,21 @@ class EbmsReview {
             ->execute()
             ->fetchField();
         $pm_url = $pubmed . $pmid;
+        $download_full_text = array();
+        $ft_query = db_select('ebms_article', 'a');
+        $ft_query->join('file_managed', 'f', 'f.fid = a.full_text_id');
+        $ft_query->fields('f', array('uri'));
+        $ft_query->condition('a.article_id', $this->article_id);
+        $ft_uri = $ft_query->execute()->fetchField();
+        if ($ft_uri) {
+            $ft_url = file_create_url($ft_uri);
+            $download_full_text = array(
+                '#type' => 'markup',
+                '#markup' => l('Download Full Text', $ft_url, $target),
+                '#prefix' => '<div id="download-full-text-link">',
+                '#suffix' => '</div>',
+            );
+        }
         return array(
             'title' => array(
                 '#type' => 'markup',
@@ -958,12 +973,7 @@ class EbmsReview {
                     '#prefix' => '<div id="view-abstract-link">',
                     '#suffix' => '</div>',
                 ),
-                'download full text' => array(
-                    '#type' => 'markup',
-                    '#markup' => l('Download Full Text', 'stub'),
-                    '#prefix' => '<div id="download-full-text-link">',
-                    '#suffix' => '</div>',
-                ),
+                'download full text' => $download_full_text,
             ),
             'right' => array(
                 '#type' => 'container',
@@ -1994,7 +2004,7 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $attrs);
         $links .= " &nbsp; | &nbsp; $ft_link";
     }
-    
+
     // check for this page being used on behalf of another
     $account = pdq_ebms_find_effective_user(false);
     $header_suffix = '';
@@ -2915,7 +2925,7 @@ function pdq_ebms_record_responses_form_cancel($form, &$form_state) {
 /**
  * Takes an option array by reference and adds the on-behalf query if it exists
  * for the current page.
- * 
+ *
  * @param array $opts The option array.
  */
 function pdq_ebms_preserve_on_behalf(&$opts) {
@@ -2928,11 +2938,11 @@ function pdq_ebms_preserve_on_behalf(&$opts) {
 /**
  * Finds for which particular user reviews should be attributed.  This will
  * usually be the current user, but may be another if entering print responses.
- * 
+ *
  * @global type $user
- * @param bool $include_user Flag to include the current (global) user as a 
+ * @param bool $include_user Flag to include the current (global) user as a
  *                           potential output.
- * @return mixed             Returns the effective user, which is possibly the 
+ * @return mixed             Returns the effective user, which is possibly the
  *                           current user.  Can return FALSE if the global user
  *                           is not to be included.
  */
