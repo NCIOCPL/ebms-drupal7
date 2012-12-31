@@ -657,7 +657,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             '#type' => 'fieldset',
             '#title' => 'SUMMARY TOPIC',
             '#collapsible' => true,
-            '#collapsed' => true,
+            '#collapsed' => count($defaults->topics) < 1,
             'topic-logic' => array(
                 '#type' => 'radios',
                 '#title' => 'SEARCH CONNECTOR',
