@@ -806,8 +806,8 @@ class EbmsArticle {
         if ($this->authors) {
             foreach ($this->authors as $auth) {
                 $text .= "          " . $auth->author_id . ': ';
-                if ($collectName)
-                    $text .= $collectName;
+                if ($auth->collective_name)
+                    $text .= $auth->collective_name;
                 else
                     $text .= $auth->last_name . ', ' .
                     $auth->forename . " (" . $auth->initials . ")";
@@ -2164,10 +2164,10 @@ function getTagTypeNames($articleOnly = true) {
     // query for the tag text IDs and tag names
     $query = db_select('ebms_article_tag_type', 'a')
         ->condition('a.active_status', 'A');
-    
+
     if($articleOnly)
         $query->condition('a.topic_required', 'N');
-    
+
     $result = $query->fields('a', array('text_id', 'tag_name'))
         ->execute();
 
@@ -2600,7 +2600,7 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
             ->condition('p.topic_id', $topic_id)
             ->execute()
             ->fetchAll();
-    
+
     foreach ($responses as $index => $response) {
         // get all rejection reasons for the response
         $reviewId = $response->review_id;
@@ -2615,7 +2615,7 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
 
         $responses[$index]->reasons = $reasons;
     }
-    
+
     return $responses;
 }
 
