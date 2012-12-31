@@ -1364,7 +1364,7 @@ pdq_ebms_debug("Packaging packetId=", $row->packet_id);
         // Add each of them to the archive
         foreach ($fileList as $prtFile) {
             $oldPath = dirname($prtFile);
-            $tarObj->addModify(array($tempName), $newPath, $oldPath);
+            $tarObj->addModify(array($prtFile), $newPath, $oldPath);
         }
 
         return $tarPath;
@@ -1863,4 +1863,6 @@ function runPrintJob() {
 
     // That's it!
     $pj->cleanup('success');
+
+    return $pj->status;
 }
