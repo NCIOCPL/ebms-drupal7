@@ -2023,7 +2023,7 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         ),
         'reasons' => array(
             '#type' => 'checkboxes',
-            '#title' => 'Reason(s) for Exclusion From PDQ Summary',
+            '#title' => 'Reason(s) for Exclusion From PDQ&reg; Summary',
             '#description' =>
             'Please indicate which of the reasons below led to your ' .
             'decision to exclude the article. You may choose more than ' .
