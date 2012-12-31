@@ -460,8 +460,10 @@ function pdq_ebms_printpkt_test() {
           );
     $jobId = $qry->execute();
 
-    // For API test, we'll execute the print job directly
+    // Execute the print job
+    // XXX - get some results
     require('EbmsPrint.inc');
+    Ebms\runPrintJob();
 
     return "Processing complete.";
 }
