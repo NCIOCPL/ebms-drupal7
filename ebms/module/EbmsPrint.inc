@@ -142,7 +142,7 @@ function estimatePageCount($fileName, $fileSize) {
         'docx' => 7000,
         'odt'  => 7000,
         'rtf'  => 7500,
-        'pdf'  => 3000,
+        'pdf'  => 30000,
         null   => 15000
     );
 
@@ -195,7 +195,6 @@ function chkParm($parms, $key, $default, $required=true) {
  *  @return string      The name.
  */
 function getNameByUid($userId) {
-logw("execute18");
     $name = db_query(
         'SELECT name
            FROM {users}
@@ -217,7 +216,6 @@ function createPrintJob() {
     $pj = new EbmsPrintJob();
 
     // The current database date is the print date for this job
-logw("execute01");
     $now = db_query('SELECT NOW()')->fetchField();
 
     // Look for a job waiting to run
@@ -252,7 +250,6 @@ logw("execute01");
                 $pj->reportError(
                     "No board member specified for 'package' type job");
 
-logw("execute02");
             $qry = db_select('ebms_board_member', 'bm');
             $qry->addField('bm', 'board_id');
             $qry->condition('bm.user_id', $pj->board_member_id, '=');
@@ -261,7 +258,7 @@ logw("execute02");
             // It is rare for there to be more than one, but allow it
             $boardIdList = array();
             foreach ($rows as $row)
-                $boardList[] = $row->board_id;
+                $boardIdList[] = $row->board_id;
 
             // If a board was specified, does it match?
             if ($pj->board_id) {
@@ -488,7 +485,6 @@ class EbmsPrintJob {
      */
     public function findJobToRun() {
         try {
-logw("execute03");
             $qry = db_select('ebms_print_job', 'job');
             $qry->addField('job', 'print_job_id');
             $qry->condition('job.status', 'queued', '=');
@@ -518,12 +514,12 @@ logw("execute03");
             $qry->condition('job.status', 'in-process', '=');
             $result = $qry->execute();
             $rowCount = $result->rowCount();
-logw("rowCount from in-process check=$rowCount");
 
             if ($rowCount > 0) {
                 $this->reportError(
-                    "WARNING: There were $rowCount print jobs in the ".
-                    "'in-process' state at the outset of this job.",
+                    "WARNING: There were $rowCount print job(s) in the ".
+                    "'in-process' state at the outset of this job. " .
+                    "The job(s) have been marked as failures.",
                     null, true);
             }
         }
@@ -541,7 +537,6 @@ logw("rowCount from in-process check=$rowCount");
      */
     public function load($dbJobId) {
         try {
-logw("execute04");
             $row = db_query('
                 SELECT *
                   FROM {ebms_print_job}
@@ -615,7 +610,6 @@ logw("execute04");
             $fields = $this->loadFields();
 
             // Insert the new row, saving the primary key
-logw("execute05");
             $qry = db_insert('ebms_print_job')
              ->fields($fields);
 
@@ -640,7 +634,6 @@ logw("execute05");
         try {
             // What we'll update
             $fields = $this->loadFields();
-logw("execute06");
             $qry = db_update('ebms_print_job')
              ->fields($fields)
              ->condition('print_job_id', $this->print_job_id, '=')
@@ -661,7 +654,6 @@ logw("execute06");
     function setJobStatus($status) {
 
         try {
-logw("execute07");
             $qry = db_update('ebms_print_job')
              ->fields(array('status' => $status))
              ->condition('print_job_id', $this->print_job_id, '=')
@@ -691,7 +683,6 @@ logw("execute07");
 
         $memberIds = array();
         try {
-logw("execute08");
             $qry = db_select('ebms_member_wants_print', 'wp');
             $qry->join('ebms_board_member', 'bm',
                     'wp.board_member_id = bm.user_id');
@@ -703,7 +694,6 @@ logw("execute08");
                   db_or()->isNull('wp.end_dt')
                       ->condition('wp.end_dt', $this->packet_start_dt, '>')
                );
-logw("SQL3=$qry");
             $result = $qry->execute();
 
             // Save them in an array
@@ -735,7 +725,6 @@ logw("SQL3=$qry");
     public function getBoardStartPrintDate() {
 
         try {
-logw("execute09");
             $maxEndDt = db_query("
                 SELECT MAX(packet_end_dt)
                   FROM {ebms_print_job}
@@ -744,7 +733,6 @@ logw("execute09");
                    AND status = 'success'",
                array(':boardId' => $this->board_id))->fetchField();
 
-logw("maxEndDt=$maxEndDt");
             if (!$maxEndDt) {
                 // This should only ever happen if there's never been a
                 //  successful live run
@@ -778,7 +766,6 @@ logw("maxEndDt=$maxEndDt");
      */
     public function getMemberPackage($memberId, $boardId, $always=false) {
 
-logw("always=$always");
         // Subquery to restrict returns to packets
         //  never before printed for this member
         $subqry = db_select('ebms_packet_printed', 'pktp');
@@ -787,10 +774,8 @@ logw("always=$always");
         $subqry->addField('pktp', 'packet_id');
         $subqry->condition('pktp.board_member_id', $memberId, '=')
                ->condition('job.status', 'success', '=');
-logw("Subqry=$subqry");
 
         // Get all the packets for this specific reviewer
-logw("execute10");
         $qry = db_select('ebms_packet', 'pkt');
         $qry->join('ebms_packet_reviewer', 'rev',
                    'pkt.packet_id = rev.packet_id');
@@ -811,7 +796,6 @@ logw("execute10");
         if (!$always)
             $qry->condition('pkt.packet_id', $subqry, 'NOT IN');
         $qry->orderBy('pkt.packet_id');
-logw("SQLx=$qry");
 
 pdq_ebms_debug("SQL for package:", $qry);
 pdq_ebms_debug("Parms:",
@@ -863,11 +847,9 @@ pdq_ebms_debug("Packaging packetId=", $row->packet_id);
         $epfList = array();
 
         // Find the topic ID for this packet
-logw("execute11");
         $topicId = db_query(
             'SELECT topic_id FROM {ebms_packet} WHERE packet_id = :packet',
             array(':packet' => $packetId))->fetchField();
-logw("topicId=$topicId");
 
         // XXX Create a separator page?  Mailing label?  Ask users XXX
         // Could use a different color from a different tray
@@ -875,7 +857,6 @@ logw("topicId=$topicId");
         // Selection for summaries
         // XXX - Is there a better way to do it using drupal calls?
 
-logw("execute12");
         $qry = db_select('ebms_packet_summary', 'psum');
         $qry->join('ebms_doc', 'doc', 'psum.doc_id = doc.doc_id');
         $qry->join('file_managed', 'fman', 'doc.file_id = fman.fid');
@@ -916,7 +897,6 @@ logw("execute12");
             $epfList[] = $epf;
         }
 
-logw("execute13");
         // Selection for articles in the packet that have full text PDFs
         $qry = db_select('ebms_packet_article', 'pktart');
         $qry->join('ebms_article', 'art', 'pktart.article_id = art.article_id');
@@ -1173,8 +1153,8 @@ logw("execute13");
         $newEpf->purpose       = 'response';
         $newEpf->path          = $fname;
         $newEpf->description   = "Response sheet for $reviewerName (ID=" .
-                                  $epf->boardMemberId . "): " .
-                                  $epf->description;
+                                  $epf->boardMemberId .
+                                  "): $sheetTitle<br />" . $epf->description;
         $newEpf->filetype      = 'pdf';
         $newEpf->numPages      = 2;
 
@@ -1543,13 +1523,18 @@ EOS;
      */
     function createPrintReport($fileList) {
         try {
+            // Displayable board member info
             if ($this->board_member_id) {
                 // Get the board member name
-                $memberName = getNameByUid($memberId);
+                $memberName = getNameByUid($this->board_member_id);
                 $showMember = "$memberName ($this->board_member_id)";
             }
             else
                 $showMember = "Not specified";
+
+            // Displayable board info
+            $boardName = getBoardNameById($this->board_id);
+            $showBoard = "$boardName ($this->board_id)";
 
             // Estimate stats
             $docCount  = count($fileList);
@@ -1572,11 +1557,9 @@ EOS;
  <style type='text/css'>
   li {margin-top: 8pt; margin-bottom: 8pt;}
   li.respSheet {background-color: #A9D0F5;}
-  .toppart {margin-left: 30 pts;}
  </style>
 </head>
 <body>
-<div class='toppart'>
 <h2>Documents included in Print Job {$this->print_job_id}</h2>
 
 <h3>Print Job Parameters</h3>
@@ -1589,7 +1572,7 @@ EOS;
  <tr><td>Start date</td><td>$this->packet_start_dt</td></tr>
  <tr><td>End date</td><td>$this->packet_end_dt</td></tr>
  <tr><td>Print date</td><td>$this->print_dt</td></tr>
- <tr><td>Board ID</td><td>$this->board_id</td></tr>
+ <tr><td>Board ID</td><td>$showBoard</td></tr>
  <tr><td>Board member ID</td><td>$showMember</td></tr>
  <tr><td>Mode</td><td>$this->mode</td></tr>
  <tr><td>Comment</td><td>$this->comment</td></tr>
@@ -1606,7 +1589,6 @@ in the list.</p>
 <p>Any highlighted documents are system generated response sheets, each
 of which is a response sheet for the immediately following article
 document.</p>
-</div>
 <ol>
 EOS;
             fwrite($fp, $hdr);
@@ -1693,7 +1675,6 @@ EOS;
     function recordPrintedPackets() {
 
         // Prepare the statement
-logw("execute16");
         $qry = db_insert('ebms_packet_printed', 'pktptd')
          ->fields(array('board_member_id', 'packet_id', 'print_job_id'));
 
@@ -1735,7 +1716,6 @@ logw("execute16");
             // Primary way we could get here is if there is more than one
             //  job row in the queued state.
             // Fail all of them.
-logw("execute17");
             $qry = db_update('ebms_print_job')
              ->fields(array('status' => 'failure'))
              ->condition('status', array('queued', 'in-process', 'IN'));
@@ -1801,11 +1781,11 @@ function runPrintJob() {
             // Find his package, if any, then his docs, if any
             // Get the packets for him within the packet print dates
             // Don't care if he's already seen them or not
-            $package = $pj->getMemberPackage($this->board_member_id,
-                                             $this->board_id, true);
+            $package = $pj->getMemberPackage($pj->board_member_id,
+                                             $pj->board_id, true);
             foreach ($package as $packetId) {
                 $docs = $pj->getPacketPrintList($packetId,
-                                                $this->board_member_id);
+                                                $pj->board_member_id);
                 $pj->docList = array_merge($pj->docList, $docs);
             }
             break;
