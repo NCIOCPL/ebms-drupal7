@@ -69,6 +69,10 @@ function pdq_ebms_alantest() {
             if ($op)
                 return pdq_ebms_printpkt_test();
             return drupal_get_form('ebms_testapi_printpkt_form');
+        case 'getPrintouts':
+            if ($op)
+                return pdq_ebms_printouts_test();
+            return drupal_get_form('ebms_testapi_printouts_form');
         case 'fpdf':
             if ($op)
                 return pdq_ebms_fpdf_test();
@@ -370,17 +374,14 @@ function pdq_ebms_search_test() {
     // Get the query object
     $qry = Ebms\getSearchQuery($json);
 
-// $qryVal = (string) $qry;
-// logw($qryVal);
-
     // Execute the search
     $result = $qry->execute();
     $rowCount = $result->rowCount();
     $html = "<p>Found $rowCount articles</p>\n<table border='1'>\n";
     $count = 0;
     $maxShow = $rowCount;
-    if ($maxShow > 20)
-        $maxShow = 20;
+    if ($maxShow > 40)
+        $maxShow = 40;
     for ($i=0; $i<$maxShow; $i++) {
         $artId = $result->fetchField();
         $artObj = new Ebms\EbmsArticle($artId);
@@ -403,13 +404,13 @@ function pdq_ebms_printpkt_test() {
     // Get all form parameters
     $boardInfo  = boardRequest();
     $boardId    = $boardInfo['boardId'];
-    $memberIdx  = Ebms\Util::get_request_value('memberId');
-    $packetId   = Ebms\Util::get_request_value('packetId');
-    $startDt    = Ebms\Util::get_request_value('startDate');
-    $endDt      = Ebms\Util::get_request_value('endDate');
-    $oldJobId   = Ebms\Util::get_request_value('oldJobId');
-    $jobMode    = Ebms\Util::get_request_value('jobMode');
-    $comment    = Ebms\Util::get_request_value('comment');
+    $memberIdx  = Ebms\Util::get_request_value('memberId', null);
+    $packetId   = Ebms\Util::get_request_value('packetId', null);
+    $startDt    = Ebms\Util::get_request_value('startDate', null);
+    $endDt      = Ebms\Util::get_request_value('endDate', null);
+    $oldJobId   = Ebms\Util::get_request_value('oldJobId', null);
+    $jobMode    = Ebms\Util::get_request_value('jobMode', null);
+    $comment    = Ebms\Util::get_request_value('comment', null);
 
     // Normalize
     if ($memberIdx) {
@@ -423,6 +424,7 @@ function pdq_ebms_printpkt_test() {
     else
         $memberId = null;
 
+    // Sometimes a returned value is '', which we want to be null
     if (!$packetId) $packetId = null;
     if (!$startDt)  $startDt  = null;
     if (!$endDt)    $endDt    = null;
@@ -440,7 +442,7 @@ function pdq_ebms_printpkt_test() {
         $job_type = 'board';
     else if (is_null($oldJobId))
         throw new \Exception(
-            "Must specify board, board member, packet or old job ID");
+            "Must specify board, board member, packet ID, or old job ID");
 
     // Create a new job, ready to run
     $qry = db_insert('ebms_print_job')
@@ -461,9 +463,10 @@ function pdq_ebms_printpkt_test() {
     $jobId = $qry->execute();
 
     // Execute the print job
-    // XXX - get some results
     require('EbmsPrint.inc');
-    Ebms\runPrintJob();
+    $status = Ebms\runPrintJob();
+    if ($status == 'success')
+        downloadPrintResults($jobId);
 
     return "Processing complete.";
 }
@@ -488,6 +491,20 @@ function pdq_ebms_show_dummy_test_results($title, $test) {
     );
 }
 
+/**
+ * Function to display print job results.
+ */
+function pdq_ebms_printouts_test() {
+
+    // Did the user want to see a job output?
+    $jobId = Ebms\Util::get_request_value('jobId');
+
+    if ($jobId)
+        downloadPrintResults($jobId);
+    else
+        return;
+}
+
 function pdq_ebms_api_tests() {
     $tests = array(
         array('Import articles from NLM', 'import'),
@@ -502,6 +519,7 @@ function pdq_ebms_api_tests() {
         array('Inactivate a descriptive tag and its comments', 'inactivateTag'),
         array('Execute a stored search', 'execSearch'),
         array('Run a packet printing job', 'printPkts'),
+        array('View print jobs', 'getPrintouts'),
         array('Test to see if fpdf is accessible', 'fpdf'),
         // array('Pick a board', 'pickBoard'),
     );
@@ -930,7 +948,7 @@ function ebms_testapi_printpkt_form($form) {
     $form['packetId'] = array(
         '#type' => 'textfield',
         '#size' => 8,
-        '#title' => 'Packet internal id',
+        '#title' => 'Packet internal ID',
         '#description' => 'To print a single packet, regardless of board ' .
             'or board member, enter the packet internal integer ID.<br />' .
             'If a member name is entered, response sheets will be created, ' .
@@ -941,11 +959,14 @@ function ebms_testapi_printpkt_form($form) {
     $form['startDate'] = array(
         '#type' => 'textfield',
         '#size' => 16,
-        '#title' => 'Take packets from on or after this date',
+        '#title' => 'Only print packets created on or after this start date',
         '#description' => 'Optionally, print packets created on or after '.
             'the specified date, entered as "YYYY-MM-DD {HH:MM:SS}".<br />' .
-            'Default is the datetime immediately after the last packet ' .
+            'Default for "board" or "package" printing is the datetime ' .
+            'immediately after the last packet ' .
             'printing for the specified board or member.<br />' .
+            'If a single packet ID is specified, start and end dates are ' .
+            'ignored.<br />' .
             'Hours:Minutes:Seconds are optional.',
         '#required' => false
     );
@@ -953,7 +974,7 @@ function ebms_testapi_printpkt_form($form) {
     $form['endDate'] = array(
         '#type' => 'textfield',
         '#size' => 16,
-        '#title' => 'Take packets created before this date',
+        '#title' => 'Only print packets created before this end date',
         '#description' => 'Optionally, print packets created before '.
             'the specified date, entered as "YYYY-MM-DD {HH:MM:SS}".  ' .
             'Default is right now.',
@@ -991,6 +1012,50 @@ function ebms_testapi_printpkt_form($form) {
     addCommentToForm($form,
             'Store this comment in the record for this print job');
 
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Submit'
+    );
+
+    return $form;
+}
+
+/**
+ * Form to request download of printouts
+ */
+function ebms_testapi_printouts_form($form) {
+
+    $form = array();
+    $form['title'] = array(
+        '#type' => 'markup',
+        '#markup' => '<h3>Download Printing Outputs</h3>'
+    );
+
+    $jobRows = getPrintJobData();
+    $header = array('Job', 'Date', 'Board', 'Member', 'Mode',
+                    'Status', 'Comment');
+    $tblRows = array();
+    foreach ($jobRows as $row) {
+        $tblRows[] = array($row->print_job_id, $row->print_dt,
+                           $row->board_name, $row->name, $row->mode,
+                           $row->status, $row->comment);
+    }
+
+    $form['jobTbl'] = array(
+        '#theme' => 'table',
+        '#caption' => 'Print Jobs',
+        '#header' => $header,
+        '#rows' => $tblRows,
+    );
+
+    $form['jobId'] = array(
+        '#type' => 'textfield',
+        '#size' => 8,
+        '#title' => 'Job ID',
+        '#description' => 'Enter a job number to download the output for ' .
+            'job."
+        '#required' => false
+    );
 
     $form['submit'] = array(
         '#type' => 'submit',
@@ -1326,6 +1391,39 @@ function boardRequest() {
 }
 
 /**
+ * Get stored print job information, in reverse job number order.
+ *
+ *  @param int $numJobs     How many to retrieve
+ *  @param int $latest      ID of latest job to retrieve, null=latest possible
+ *  @param string $status   Desired status, null = all
+ */
+function getPrintJobData($numJobs=20, $latest=null, $status='success') {
+
+    // Fetch the data
+    $qry = db_select('ebms_print_job', 'job');
+    $qry->leftjoin('ebms_board', 'board', 'job.board_id = board.board_id');
+    $qry->leftjoin('users', 'user', 'job.board_member_id = user.name');
+    $qry->fields('job', array('print_job_id', 'mode', 'print_dt',
+                 'status', 'comment'));
+    $qry->fields('user', array('name'));
+    $qry->fields('board', array('board_name'));
+
+    // Conditions based on passed parms
+    if (!is_null($latest))
+        $qry->condition('job.print_job_id', $latest, '<=');
+    if (!is_null($status))
+        $qry->condition('job.status', $status, '=');
+
+    // Limits
+    $qry->range(0, $numJobs);
+    $qry->orderBy('job.print_job_id', 'DESC');
+
+    // Format into a selection list
+    $result = $qry->execute();
+    return $result->fetchAllAssoc('print_job_id');
+}
+
+/**
  * Get an array of all tags from the database.
  *
  * @return array        All tag names, in fixed order.
@@ -1477,3 +1575,44 @@ logw("result of exec=$xxx");
 */
     return 'See if /tmp/fpdftest.pdf exists.';
 }
+
+/**
+ * Downlad a print report or tar file to the workstation.
+ *
+ *  @param int $jobId       Job ID of successful print job
+ */
+function downloadPrintResults($jobId) {
+
+    // Is this a tar file, a report, or a failure?
+    $rptName = sprintf("/tmp/ebms/PrintJobs/PrintJobReport%05d.html", $jobId);
+    $tarName = sprintf("/tmp/ebms/PrintJobs/PrintJob%05d.tar", $jobId);
+
+    if (file_exists($rptName)) {
+        $filepath = $rptName;
+        drupal_add_http_header('Content-type', 'text.html');
+    }
+    else if (file_exists($tarName)) {
+        $filepath = $tarName;
+        drupal_add_http_header('Content-type', 'x-tar');
+        drupal_add_http_header('Content-disposition',
+                               "attachment; filename=$filepath");
+    }
+    else {
+        // We're done
+        return ("Sorry, job $jobId doesn't exist, produced no usable output," .
+                " or the output is gone from the server.");
+    }
+
+    // Send what we've got
+    drupal_send_headers();
+    $fd = fopen($filepath, 'rb');
+    if (!$fd)
+        return "Error opening $filepath for reading.";
+    while (!feof($fd))
+        print(fread($fd, 1024));
+    fclose($fd);
+
+    // Exit causes data to be sent independently of drupal
+    drupal_exit();
+}
+
