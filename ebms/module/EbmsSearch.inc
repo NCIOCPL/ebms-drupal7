@@ -1,5 +1,7 @@
 <?PHP
 
+// $Id$
+
 namespace Ebms;
 
 // require_once('logw.inc'); // XXX DEBUG
