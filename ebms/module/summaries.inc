@@ -1199,7 +1199,7 @@ class EbmsSummaries {
         $query->condition('t2.tag_id', null);
         $query->condition('d.doc_id', $subquery1, 'NOT IN');
         $query->condition('topic.topic_id', $subquery2, 'IN');
-        $query->distinct()
+        $query->distinct();
         $query->orderBy('d.description');
         $results = $query->execute();
         $picklist = array();
