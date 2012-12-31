@@ -283,6 +283,8 @@ class Menu {
                     Menu::about(),
                 );
         }
+        if ($user->uid == 1)
+            self::$menus[] = new Menu('Admin', 'admin');
     }
 
     /**
@@ -1581,6 +1583,17 @@ class Util {
             'month' => 0,
             'day' => 0
         );
+    }
+
+    /**
+     * Converts a Drupal date field value into a Unix date/time stamp.
+     *
+     *  @param  array   $date    Stock Drupal date field structured array
+     *
+     *  @return int              Standard Unix epoch-based seconds counter
+     */
+    public static function date_field_to_timestamp($date) {
+        return mktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
     }
 
     /**
