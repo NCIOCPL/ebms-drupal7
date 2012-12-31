@@ -65,7 +65,7 @@ function ebms_permission() {
             'description' =>
             t('Review journal articles on cancer and make recommendations ' .
                 'for incorporation information from those articles into ' .
-                'PDQ Cancer Summaries'),
+                'PDQ\xc2\xae Cancer Summaries'),
         ),
         'view all events' => array(
             'title' => t('View All Events'),
@@ -73,7 +73,7 @@ function ebms_permission() {
             t('Determines if the user can access all events views in the ' .
                 'calendar. Note: This will also show all board events in ' .
                 "the user's filtered view. ")
-        ),        
+        ),
     );
 }
 

@@ -31,15 +31,15 @@ function pdq_ebms_about() {
         'image' => array(
             '#theme' => 'image',
             '#path' => Ebms\IMAGES_DIR . '/EBMS_AboutPage_Image_101212.jpg',
-            '#title' => 'About PDQ',
+            '#title' => "About PDQ\xc2\xae",
             '#attributes' => array('id' => 'about-img'),
         ),
         'prologue' => array(
             '#type' => 'markup',
-            '#markup' => '<p id="lead">The PDQ cancer information summaries ' .
-            'are produced, maintained, and updated regularly by six ' .
-            'editorial boards comprised of oncology specialists in fields ' .
-            'including medical, surgical, and radiation oncology; ' .
+            '#markup' => '<p id="lead">The PDQ&reg; cancer information ' .
+            'summaries are produced, maintained, and updated regularly by ' .
+            'six editorial boards comprised of oncology specialists in ' .
+            'fields including medical, surgical, and radiation oncology; ' .
             'epidemiology; psychology; genetics; and complementary and ' .
             'alternative medicine. Each Board reviews published research ' .
             'findings on a monthly basis and meets several times a year ' .
@@ -52,10 +52,10 @@ function pdq_ebms_about() {
     $links = array(
         array(
             l(
-                'PDQ on NCI\'s Web Site',
+                "PDQ\xc2\xae on NCI's Web Site",
                 'http://cancer.gov/cancertopics/pdq/cancerdatabase'
             ),
-            'Background information on PDQ',
+            "Background information on PDQ\xc2\xae",
         ),
     );
     $query = db_select('ebms_doc', 'd');
