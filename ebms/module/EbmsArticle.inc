@@ -1,5 +1,7 @@
 <?php
 
+// $Id$
+
 namespace Ebms;
 
 // Maximum author elements, truncate if necessary
