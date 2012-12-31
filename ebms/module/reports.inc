@@ -1200,9 +1200,9 @@ class EbmsReports {
 
 
     /**
-     * Create the Drupal render array for a report on articles which
-     * have been put on a meeting agenda for discussion by the PDQ
-     * board members.
+     * Create the Drupal render array for a report on articles whose
+     * current status is approval or rejection by the NCI reviewer
+     * based on the articles' abstractions
      *
      * This report is one of eight different reports on articles by
      * status.  Called by the cites_by_status() method below.
@@ -1329,9 +1329,14 @@ class EbmsReports {
     }
 
     /**
-     * Create the Drupal render array for a report on articles which
-     * have been put on a meeting agenda for discussion by the PDQ
-     * board members.
+     * Create the Drupal render array for a report on articles whose
+     * current status is approval or rejection (or in some cases,
+     * marked as an "FYI" with no further action required) based on
+     * review of the full text of the articles by NCI.  The label
+     * used for this status is the somewhat anachronistic "Literature
+     * Surveillance Committee Decision"; even though the use of
+     * committees for this review step has long been abandoned, the
+     * users insistent on retaining this language.
      *
      * This report is one of eight different reports on articles by
      * status.  Called by the cites_by_status() method below.
@@ -1468,9 +1473,9 @@ class EbmsReports {
     }
 
     /**
-     * Create the Drupal render array for a report on articles which
-     * have been put on a meeting agenda for discussion by the PDQ
-     * board members.
+     * Create the Drupal render array for a report on articles whose
+     * current status is that the full text for the articles has been
+     * retrieved, or that the full text is needed but unobtainable.
      *
      * This report is one of eight different reports on articles by
      * status.  Called by the cites_by_status() method below.
@@ -1584,8 +1589,9 @@ class EbmsReports {
 
     /**
      * Create the Drupal render array for a report on articles which
-     * have been put on a meeting agenda for discussion by the PDQ
-     * board members.
+     * have been assigned to packets for review for specific topics,
+     * but for which no board member has returned a response for that
+     * topic.
      *
      * This report is one of eight different reports on articles by
      * status.  Called by the cites_by_status() method below.
@@ -1735,9 +1741,12 @@ class EbmsReports {
     }
 
     /**
-     * Create the Drupal render array for a report on articles which
-     * have been put on a meeting agenda for discussion by the PDQ
-     * board members.
+     * Create the Drupal render array for a report on articles whose
+     * current state is "passed full text review" and which have been
+     * assigned to packets for review by board members, and for which
+     * at least one board member has returned a response.  The report
+     * can be narrowed by specifying which response disposition to
+     * filter by.
      *
      * This report is one of eight different reports on articles by
      * status.  Called by the cites_by_status() method below.
@@ -2370,7 +2379,7 @@ class EbmsReports {
                 'class' => array('col-2'),
             ),
             array(
-                'data' => 'REVIEWER | DISPOSITION',
+                'data' => 'REVIEWER&nbsp;|&nbsp;DISPOSITION',
                 'class' => array('col-3'),
             ),
             array(
@@ -3913,6 +3922,54 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
 }
 
 /**
+ * Only the Editorial Board field is required for this report (though
+ * specifying only a board runs a high risk of timing out the request,
+ * and would provide a report which wouldn't be very useful, so it's
+ * unlikely to be invoked that way).
+ *
+ * 2012-12-31: added code to ensure that date ranges don't specify
+ * a 'from' date which is later than the 'to' date (TIR #2226).
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_lit_review_report_form_validate($form, &$form_state) {
+    $values = $form_state['values'];
+    if ($values['op'] == 'Submit') {
+        if (!$values['board'])
+            form_set_error('board', 'No board selected.');
+        if ($values['prange']) {
+            if (!$values['pend']['day'] || !$values['pstart']['day'])
+                form_set_error('pstart',
+                    'Complete from and to dates required for date range.');
+            else {
+                $from = Ebms\Util::date_field_to_timestamp($values['pstart']);
+                $to = Ebms\Util::date_field_to_timestamp($values['pend']);
+                if ($from > $to)
+                    form_set_error('pstart', 'Invalid date range.');
+            }
+        }
+        if ($values['rrange']) {
+            if (!$values['rend']['day'] || !$values['rstart']['day'])
+                form_set_error('rstart',
+                    'Complete from and to dates required for date range.');
+            else {
+                $from = Ebms\Util::date_field_to_timestamp($values['rstart']);
+                $to = Ebms\Util::date_field_to_timestamp($values['rend']);
+                if ($from > $to)
+                    form_set_error('rstart', 'Invalid date range');
+            }
+        }
+    }
+}
+
+/**
  * If the user clicks the "Reset" button, clear the form by routing
  * back to the URL for the literature review reports.  Otherwise store
  * the report request parameters in the database and send the user to
@@ -4323,11 +4380,14 @@ function pdq_ebms_date_validate($element, &$form_state, $form) {
 /**
  * Validation function to ensure that a document was selected for a file
  * upload field (Drupal's validation of required file upload fields is
- * broken).
+ * broken).  Make sure we don't make this check if the Cancel button
+ * has been pressed (TIR #2237).
  */
 function pdq_ebms_doc_file_required($element, &$form_state) {
-    if ($_FILES['files']['name']['file'] == '') {
-        form_set_error('file', t('Please select a document'));
+    if ($form_state['values']['op'] == 'Submit') {
+        if ($_FILES['files']['name']['file'] == '') {
+            form_set_error('file', t('Please select a document'));
+        }
     }
 }
 
