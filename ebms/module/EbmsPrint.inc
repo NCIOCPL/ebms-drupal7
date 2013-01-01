@@ -283,7 +283,7 @@ function createPrintJob() {
                 }
 
                 // No board specified, only one in the list, we've got it
-                $pj->board_id = $boardList[0];
+                $pj->board_id = $boardIdList[0];
             }
         }
 
@@ -1817,8 +1817,8 @@ function runPrintJob() {
 
             // Build list of EbmsPrintFile objects for all files in all
             //  packets in all packages
-            foreach ($pj->packageList as $package) {
-                foreach ($package as $packetId) {
+            foreach ($pj->packageList as $memberId => $packetList) {
+                foreach ($packetList as $packetId) {
                     $docs = $pj->getPacketPrintList($packetId, $memberId);
                     $pj->docList = array_merge($pj->docList, $docs);
                 }
