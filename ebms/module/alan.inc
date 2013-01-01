@@ -1397,7 +1397,7 @@ function boardRequest() {
  *  @param int $latest      ID of latest job to retrieve, null=latest possible
  *  @param string $status   Desired status, null = all
  */
-function getPrintJobData($numJobs=20, $latest=null, $status='success') {
+function getPrintJobData($numJobs=50, $latest=null, $status='success') {
 
     // Fetch the data
     $qry = db_select('ebms_print_job', 'job');
@@ -1593,9 +1593,10 @@ function downloadPrintResults($jobId) {
     }
     else if (file_exists($tarName)) {
         $filepath = $tarName;
+        $filename = pathinfo($tarName, PATHINFO_BASENAME);
         drupal_add_http_header('Content-type', 'x-tar');
         drupal_add_http_header('Content-disposition',
-                               "attachment; filename=$filepath");
+                               "attachment; filename=$filename");
     }
     else {
         // We're done
@@ -1615,4 +1616,3 @@ function downloadPrintResults($jobId) {
     // Exit causes data to be sent independently of drupal
     drupal_exit();
 }
-
