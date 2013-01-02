@@ -1068,11 +1068,14 @@ class EbmsReview {
             pdq_ebms_preserve_on_behalf($options);
             $packet_link = l($p->packet_title, $url, $options);
             $options['query']['expanded'] = 's';
-            $summaries_link = l('Summary Documents &nbsp; +', $url, $options);
+            $summaries_link = l('<span>Summary Documents</span> &nbsp; +',
+                              $url, $options);
             $options['query']['expanded'] = 'a';
-            $articles_link = l('Articles &nbsp; +', $url, $options);
+            $articles_link = l('<span>Articles</span> &nbsp; +', $url,
+                             $options);
             $options['query']['expanded'] = 'u';
-            $uploads_link = l('Reviewer Uploads &nbsp; +', $url, $options);
+            $uploads_link = l('<span>Reviewer Uploads</span> &nbsp; +', $url,
+                            $options);
             $body["packet-{$p->packet_id}"] = array(
                 'packet-title' => array(
                     '#type' => 'markup',
@@ -1080,15 +1083,17 @@ class EbmsReview {
                 ),
                 'summary-docs' => array(
                     '#type' => 'markup',
-                    '#markup' => "<h3 class='h3-first'>$summaries_link</h3>",
+                    '#markup' =>
+                    "<h3 class='h3-first collapsed'>$summaries_link</h3>",
                 ),
                 'articles' => array(
                     '#type' => 'markup',
-                    '#markup' => "<h3>$articles_link</h3>",
+                    '#markup' => "<h3 class='collapsed'>$articles_link</h3>",
                 ),
                 'reviewer-uploads' => array(
                     '#type' => 'markup',
-                    '#markup' => "<h3 class='h3-last'>$uploads_link</h3>",
+                    '#markup' =>
+                    "<h3 class='h3-last collapsed'>$uploads_link</h3>",
                 ),
             );
         }
@@ -1156,11 +1161,11 @@ class EbmsReview {
         // If the section is collapsed, just show the link to expand it.
         if (strpos($this->expanded, 's') === false) {
             $options['query']['expanded'] = $this->expanded . 's';
-            $link = l('Summary Documents &nbsp; +', EbmsReview::$url,
-                    $options);
+            $link = l('<span>Summary Documents</span> &nbsp; +',
+                    EbmsReview::$url, $options);
             $page['summaries'] = array(
                 '#type' => 'markup',
-                '#markup' => "<h3>$link</h3><br />",
+                '#markup' => "<h3 class='collapsed'>$link</h3><br />",
             );
         }
 
@@ -1168,7 +1173,7 @@ class EbmsReview {
         else {
             $expanded = str_replace('s', '', $this->expanded);
             $options['query']['expanded'] = $expanded;
-            $label = 'Summary Documents &nbsp <span>&ndash;</span>';
+            $label = '<span>Summary Documents</span> &nbsp &ndash;';
             $link = l($label, EbmsReview::$url, $options);
             $page['summaries']['heading'] = array(
                 '#type' => 'markup',
@@ -1203,10 +1208,11 @@ class EbmsReview {
         // If the section is collapsed, just show the link to expand it.
         if (strpos($this->expanded, 'a') === false) {
             $options['query']['expanded'] = $this->expanded . 'a';
-            $link = l('Articles &nbsp; +', EbmsReview::$url, $options);
+            $link = l('<span>Articles</span> &nbsp; +', EbmsReview::$url,
+                    $options);
             $page['articles'] = array(
                 '#type' => 'markup',
-                '#markup' => "<h3>$link</h3><br />",
+                '#markup' => "<h3 class='collapsed'>$link</h3><br />",
             );
         }
 
@@ -1220,7 +1226,7 @@ class EbmsReview {
             // Squeeze out article expansion for the "collapse" URL.
             $expanded = str_replace('a', '', $this->expanded);
             $options['query']['expanded'] = $expanded;
-            $label = 'Articles &nbsp <span>&ndash;</span>';
+            $label = '<span>Articles</span> &nbsp &ndash;';
             $collapse_link = l($label, EbmsReview::$url, $options);
 
             // Restore article expansion for the review links.
@@ -1284,10 +1290,13 @@ class EbmsReview {
         // If the section is collapsed, just show the link to expand it.
         if (strpos($this->expanded, 'u') === false) {
             $options['query']['expanded'] = $this->expanded . 'u';
-            $link = l('Reviewer Uploads &nbsp; +', EbmsReview::$url, $options);
+            $link = l('<span>Reviewer Uploads</span> &nbsp; +',
+                    EbmsReview::$url, $options);
             $page['uploads'] = array(
                 '#type' => 'markup',
-                '#markup' => "<h3 id='reviewer-uploads-h3'>$link</h3><br />",
+                '#markup' =>
+                "<h3 class='collapsed' id='reviewer-uploads-h3'>$link</h3>" .
+                '<br />',
             );
         }
 
@@ -1300,7 +1309,7 @@ class EbmsReview {
             // Squeeze out section expansion for the "collapse" URL.
             $expanded = str_replace('u', '', $this->expanded);
             $options['query']['expanded'] = $expanded;
-            $label = 'Reviewer Uploads &nbsp; <span>&ndash;</span>';
+            $label = '<span>Reviewer Uploads</span> &nbsp; &ndash;';
             $collapse_link = l($label, EbmsReview::$url, $options);
 
             // Restore the expanded option.
@@ -2371,9 +2380,10 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
     if (!empty($form_state['values']['all-reviewers']))
         $all_reviewers = $form_state['values']['all-reviewers'];
     if ($all_reviewers)
-        $all_reviewers_title = 'Show Only Topic Reviewers &ndash;';
+        $all_reviewers_title =
+            '<span class="expanded">Show Only Topic Reviewers</span> &ndash;';
     else
-        $all_reviewers_title = 'Show All Board Members +';
+        $all_reviewers_title = '<span>Show All Board Members</span> +';
 
     // Initialize default arrays (replaced below as appropriate).
     $article_defaults = $summary_defaults = $reviewer_defaults = array();

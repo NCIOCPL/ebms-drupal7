@@ -15,6 +15,11 @@ a:focus, li a:hover, a:hover, div.breadcrumb a:hover,
 a:focus span, a:hover span {
     color: #a90101; text-decoration: underline;
 }
+h3.collapsed a:focus, h3.collapsed a:hover,
+h3.expanded a:focus, h3.expanded a:hover,
+a.expanded:focus, a.expanded:hover,
+a.collapsed:focus, a.collapsed:hover { text-decoration: none; }
+
 li.active a:hover,
 li.active a:focus,
 li.inactive a:hover,
@@ -41,10 +46,14 @@ h3 {
     color: #a90101;
     margin-top: 10px; margin-bottom: 10px;
 }
-h3 a { color: #2d2c28; }
+h3 a, a.expanded { color: #2d2c28; }
+/*
 h3.expanded, h3.expanded a { color: #a90101; }
 h3.expanded a span { color: #2d2c28; }
 h3.expanded a:hover span { color: #a90101; }
+*/
+h3.expanded a span, a.expanded span, span.expanded { color: #a90101; }
+
 .pad-top-10 { padding-top: 10px; }
 .left-indent { padding-left: 11px; }
 .nobreak { white-space: nowrap; }
@@ -183,7 +192,8 @@ div.messages.error {
 #nav * { margin: 0; padding: 0; }
 #nav div.section { margin: 0 auto; height: 43px; }
 #nav div.section { width: 1013px; }
-#nav.manager div.section { width: 975px; padding-left: 12px; }
+#nav.manager div.section { width: 975px; padding-left: 11.5px; }
+#nav.manager.admin div.section { width: 975px; padding-left: 10px; }
 #ebms-menu, .ebms-submenu { list-style-type: none; }
 #ebms-menu, #ebms-menu li { float: left; }
 #ebms-menu li, #ebms-menu a { position: relative;}
@@ -196,7 +206,10 @@ div.messages.error {
 #ebms-menu > li.active > a { color: #a90101; }
 #nav #ebms-menu a { padding-left: 35px; padding-right: 35px; }
 #nav.manager #ebms-menu a {
-    padding-left: 12px; padding-right: 12px; font-size: 17px;
+    padding-left: 11.5px; padding-right: 12px; font-size: 17px;
+}
+#nav.manager.admin #ebms-menu a {
+    padding-left: 10px; padding-right: 12px; font-size: 15px;
 }
 #nav.librarian #ebms-menu a { padding-left: 25px; padding-right: 25px; }
 #ebms-menu li li a {
@@ -657,9 +670,9 @@ body.front #next-meeting span { font-weight: bold; }
 #member-packet h3.h3-last { margin-bottom: 50px; }
 #member-packet h3 { margin-bottom: 15px; margin-top: 5px; }
 #member-packet label h3 { margin-bottom: 5px; color: inherit; }
-#member-packet h3.expanded { color: #a90101; }
-#member-packet h3.expanded a span { color: #2d2c28; }
-#member-packet h3.expanded a:hover span { color: #a90101; }
+#member-packet h3.expanded a { color: #2d2c28; }
+#member-packet h3.expanded a span { color: #a90101; }
+#member-packet h3.expanded a:hover { color: #a90101; }
 
 /* REVIEWER UPLOADS DISPLAY */
 #reviewer-uploads tbody { border: none; }
@@ -735,7 +748,8 @@ body.front #next-meeting span { font-weight: bold; }
     float: none;
     padding: 0 0 0 12px;
 }
-#pdq-ebms-edit-packet-form .form-item-all-reviewers label:hover {
+#pdq-ebms-edit-packet-form .form-item-all-reviewers label:hover,
+#pdq-ebms-edit-packet-form .form-item-all-reviewers label:hover span {
     color: #a90101;
 }
 #pdq-ebms-edit-packet-form:not(#foo) .all-reviewers-visible { display: block; }
@@ -1032,7 +1046,7 @@ form.confirmation a#edit-cancel:hover { border: 1px solid #a90101; }
 #groups-table thead th.col-2 { text-align: right; padding: 0 0 15px 0; }
 #groups-table tbody tr:first-child td { padding-top: 20px; }
 #groups-table tbody .col-2 { text-align: right; }
-#groups-table a.expanded, #groups-table a:hover span { color: #a90101; }
+#groups-table a.expanded span, #groups-table a:hover { color: #a90101; }
 #groups-table ul {
     list-style-type: none; margin-top: 15px; margin-bottom: 25px;
 }

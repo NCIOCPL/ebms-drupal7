@@ -117,7 +117,7 @@ class EbmsGroups {
             'query' => $this->parms,
             'attributes' => array('class' => array('collapsed')),
         );
-        $label = "$name &nbsp; <span>+</span>";
+        $label = "<span>$name</span> &nbsp; +";
         $url = EbmsGroups::$url . '/expand/' . $id;
         return l($label, $url, $options);
     }
@@ -132,7 +132,7 @@ class EbmsGroups {
             'query' => $this->parms,
             'attributes' => array('class' => array('expanded')),
         );
-        $label = "$name &nbsp; <span>&ndash;</span>";
+        $label = "<span>$name</span> &nbsp; &ndash;";
         $url = EbmsGroups::$url . '/collapse/' . $id;
         $link = l($label, $url, $options);
         $query = db_select('users', 'u');

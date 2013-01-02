@@ -196,7 +196,8 @@ class EbmsSummaries {
         if (strpos($expanded, 'c') === false) {
             $parms['se'] = $expanded . 'c';
             $options = array('query' => $parms, 'html' => true);
-            $link = l('Cancer.gov Summaries &nbsp; +', $url, $options);
+            $label = $this->collapsed('Cancer.gov Summaries');
+            $link = l($label, $url, $options);
             return array(
                 '#type' => 'container',
                 '#attributes' => array(
@@ -216,7 +217,7 @@ class EbmsSummaries {
         // of the render array for the block.
         $parms['se'] = str_replace('c', '', $expanded);
         $options = array('query' => $parms, 'html' => true);
-        $label = 'Cancer.gov Summaries &nbsp; <span>&ndash;</span>';
+        $label = $this->expanded('Cancer.gov Summaries');
         $link = l($label, $url, $options);
         $block = array(
             'wrapper' => array(
@@ -308,7 +309,8 @@ class EbmsSummaries {
         if (strpos($expanded, 'n') === false) {
             $parms['se'] = $expanded . 'n';
             $options = array('query' => $parms, 'html' => true);
-            $link = l('Documents Posted By NCI &nbsp; +', $url, $options);
+            $label = $this->collapsed('Documents Posted By NCI');
+            $link = l($label, $url, $options);
             return array(
                 '#type' => 'container',
                 '#attributes' => array(
@@ -329,7 +331,7 @@ class EbmsSummaries {
         // to control spacing, one to wrap floats.
         $parms['se'] = str_replace('n', '', $expanded);
         $options = array('query' => $parms, 'html' => true);
-        $label = 'Documents Posted By NCI &nbsp; <span>&ndash;</span>';
+        $label = $this->expanded('Documents Posted By NCI');
         $link = l($label, $url, $options);
         $block = array(
             'outer' => array(
@@ -419,8 +421,8 @@ class EbmsSummaries {
             $parms = $this->parms;
             $parms['se'] = $expanded . 'm';
             $options = array('query' => $parms, 'html' => true);
-            $link = l('Documents Posted by Board Members &nbsp; +', $url,
-                    $options);
+            $label = $this->collapsed('Documents Posted by Board Members');
+            $link = l($label, $url, $options);
             return array(
                 '#type' => 'container',
                 '#attributes' => array(
@@ -442,8 +444,7 @@ class EbmsSummaries {
         $admin = $this->role == 'admin';
         $parms['se'] = str_replace('m', '', $expanded);
         $options = array('query' => $parms, 'html' => true);
-        $label = 'Documents Posted By Board Members &nbsp; ' .
-            '<span>&ndash;</span>';
+        $label = $this->expanded('Documents Posted By Board Members');
         $link = l($label, $url, $options);
         $block = array(
             'outer' => array(
@@ -701,9 +702,11 @@ class EbmsSummaries {
             $board_name = htmlspecialchars($b->board_name);
             $board_link = l($board_name, $url, $options);
             $options['query']['be'] = 's';
-            $s_link = l('Summaries &nbsp; +', $url, $options);
+            $label = $this->collapsed('Summaries');
+            $s_link = l($label, $url, $options);
             $options['query']['be'] = 'd';
-            $d_link = l('Supporting Documents &nbsp; +', $url, $options);
+            $label = $this->collapsed('Supporting Documents');
+            $d_link = l($label, $url, $options);
             $boards[$b->board_id] = array(
                 'board-link' => array(
                     '#type' => 'markup',
@@ -711,11 +714,11 @@ class EbmsSummaries {
                 ),
                 'expand summaries' => array(
                     '#type' => 'markup',
-                    '#markup' => "<h3 class='h3-first'>$s_link</h3>",
+                    '#markup' => "<h3 class='h3-first collapsed'>$s_link</h3>",
                 ),
                 'expand supporting docs' => array(
                     '#type' => 'markup',
-                    '#markup' => "<h3 class='h3-last'>$d_link</h3>",
+                    '#markup' => "<h3 class='h3-last collapsed'>$d_link</h3>",
                 ),
             );
         }
@@ -828,7 +831,8 @@ class EbmsSummaries {
             $url = EbmsSummaries::$url . '/board/' . $this->board_id;
             $query['be'] = $expanded . 's';
             $options = array('query' => $query, 'html' => true);
-            $link = l('Summaries &nbsp; +', $url, $options);
+            $label = $this->collapsed('Summaries');
+            $link = l($label, $url, $options);
             return array(
                 '#type' => 'container',
                 '#attributes' => array(
@@ -860,7 +864,7 @@ class EbmsSummaries {
         $url = EbmsSummaries::$url . '/board/' . $this->board_id;
         $query['be'] = str_replace('s', '', $expanded);
         $options = array('query' => $query, 'html' => true);
-        $label = 'Summaries &nbsp; <span>&ndash;</span>';
+        $label = $this->expanded('Summaries');
         $link = l($label, $url, $options);
 
         // Put together the Drupal render array for the list of links
@@ -942,7 +946,8 @@ class EbmsSummaries {
         if (strpos($expanded, 'd') === false) {
             $parms['be'] = $expanded . 'd';
             $options = array('query' => $parms, 'html' => true);
-            $link = l('Supporting Documents &nbsp; +', $url, $options);
+            $label = $this->collapsed('Supporting Documents');
+            $link = l($label, $url, $options);
             return array(
                 '#type' => 'container',
                 '#attributes' => array(
@@ -964,7 +969,7 @@ class EbmsSummaries {
         // as a link for collapsing the section.
         $parms['be'] = str_replace('d', '', $expanded);
         $options = array('query' => $parms, 'html' => true);
-        $label = 'Supporting Documents &nbsp; <span>&ndash;</span>';
+        $label = $this->expanded('Supporting Documents');
         $link = l($label, $url, $options);
         $block = array(
             'wrapper' => array(
@@ -1206,6 +1211,13 @@ class EbmsSummaries {
         foreach ($results as $doc)
             $picklist[] = $doc;
         return $picklist;
+    }
+
+    private static function collapsed($title) {
+        return "<span>$title</span> &nbsp; +";
+    }
+    private static function expanded($title) {
+        return "<span>$title</span> &nbsp; &ndash;";
     }
 }
 
