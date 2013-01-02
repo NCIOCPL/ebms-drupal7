@@ -576,15 +576,14 @@ class EbmsHomePage {
                 '1' => array(
                     'title' => l('Literature Surveillance', 'review'),
                     'links' => array(
-                        l('Review the Latest Literature Surveillance',
-                            'review'),
+                        l('Review Assigned Articles', 'review'),
                     )
                 ),
                 '2' => array(
                     'title' => l('Summaries', 'summaries'),
                     'links' => array(
                         l('Download and Review Summaries', 'summaries'),
-                        l('Submit Summaries with Changes', 'summaries'),
+                        l('Post Summaries with Changes', 'summaries'),
                     )
                 ),
                 '3' => array(
