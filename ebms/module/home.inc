@@ -306,13 +306,35 @@ class EbmsHomePage {
         $query->join('ebms_doc_tag', 't', 't.doc_id = d.doc_id');
         $query->join('ebms_tag', 'r', 'r.tag_id = t.tag_id');
         $query->fields('f', array('uri', 'filename'));
-        $query->fields('d', array('description'));
+        $query->fields('d', array('description', 'doc_id'));
         $query->condition('r.tag_name', 'roster');
         $query->condition('d.drop_flag', 0);
         $query->orderBy('d.description');
         $results = $query->execute();
-        foreach ($results as $result)
-            $items[] = l($result->description, file_create_url($result->uri));
+        foreach ($results as $result) {
+
+            // Change request (TIR #2185): don't show document to user
+            // if the document has been tagged with one or more boards
+            // and the current user is not connected with any of those
+            // boards.
+            $board_rows = db_select('ebms_doc_board', 'b')
+                ->fields('b', array('board_id'))
+                ->condition('b.doc_id', $result->doc_id)
+                ->execute();
+            $board_ids = array();
+            foreach ($board_rows as $board_row)
+                $board_ids[] = $board_row->board_id;
+            $wanted = true;
+            if (count($board_ids) > 0) {
+                $both = array_intersect($board_ids, $this->user->ebms_boards);
+                if (count($both) < 1)
+                    $wanted = false;
+            }
+            if ($wanted) {
+                $item = l($result->description, file_create_url($result->uri));
+                $items[] = $item;
+            }
+        }
         $title = 'PDQ&reg; Board Rosters';
         $id = 'board-rosters';
         return $this->list_block($title, $id, $items, $middle);
