@@ -736,8 +736,11 @@ namespace {
 
                     $result = array();
                     try {
-                        $result = db_select('ebms_topic', 't')->condition('board_id',
-                                $board_id)->fields('t')->execute();
+                        $result = db_select('ebms_topic', 't')
+                            ->condition('board_id', $board_id)
+                            ->fields('t')
+                            ->orderBy('t.topic_name')
+                            ->execute();
                     } catch (Exception $e) {
                         
                     }
@@ -749,15 +752,13 @@ namespace {
             }
         } else {
             $form['citation_queue']['topic_select'] = array(
-                '#type' => 'fieldset',
+                '#type' => 'select',
                 '#title' => 'Summary Topic',
                 '#title_display' => 'after',
-                //'options' => array(0 => 'Please select a board.'),
+                '#options' => array(0 => 'Please select a board.'),
                 '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
                 '#suffix' => '</div>',
-                '#collapsible' => true,
-                '#collapsed' => true,
-                '#tree' => true,
+                
             );
 
             // use the default board id, or dig the value from the form state
@@ -771,6 +772,7 @@ namespace {
                 $topicRows = db_select('ebms_topic', 't')
                     ->condition('t.board_id', $board_id)
                     ->fields('t')
+                    ->orderBy('t.topic_name')
                     ->execute()
                     ->fetchAll();
 
@@ -803,11 +805,9 @@ namespace {
                     $topicOptions[$topicRow->topic_id] = "$topicRow->topic_name ($count)";
                 }
 
-                $form['citation_queue']['topic_select']['options'] = array(
-                    '#type' => 'checkboxes',
-                    '#title' => '',
-                    '#options' => $topicOptions,
-                );
+                $form['citation_queue']['topic_select']['#options'] = $topicOptions;
+                $form['citation_queue']['topic_select']['#multiple'] = true;
+                $form['citation_queue']['topic_select']['#size'] = 10;
             }
         }
 
@@ -972,7 +972,7 @@ namespace {
                 if (is_array($topic_id)) {
                     // grab any non-zero value from the topic_select options
                     $selectedTopics = array();
-                    foreach ($topic_id['options'] as $selected_id) {
+                    foreach ($topic_id as $selected_id) {
                         if ($selected_id)
                             $selectedTopics[] = $selected_id;
                     }
