@@ -80,13 +80,7 @@ function ebms_calendar_left_nav($span = null) {
 
         $display = $view->preview('block_upcoming');
 
-
-        
-        
-        $output[] = '<div id="upcoming-events">';
         $output[] = $display;
-        $output[] = "<div class='ebms-left-nav-block-bottom'><img alt='' src='$imagesDir/left-nav-box-bottom.png'></div>";
-        $output[] = '</div>';
     }
 
 
