@@ -74,6 +74,8 @@ if ($logged_in) {
         $menu_class = 'librarian';
     elseif (in_array('board member', $user->roles))
         $menu_class = 'member';
+    elseif ($user->uid == 1)
+        $menu_class = 'manager admin';
     else
         $menu_class = 'manager';
     $user_name = htmlspecialchars($user->name);
@@ -151,7 +153,8 @@ if ($logged_in) {
                 <a href="<?php print $front_page; ?>"
                    title="Home" rel="home">EBMS</a>
               </div>
-              <div id="site-slogan">PDQ Editorial Board Management System</div>
+              <div id="site-slogan"
+                             >PDQ&reg; Editorial Board Management System</div>
             </div> <!-- /#name-and-slogan -->
 <?php if ($logged_in) { ?>
             <div id="user-profile">
@@ -197,7 +200,7 @@ if ($logged_in) {
 <?php } /* if logged in*/ else { /* not logged in */ ?>
         <div id="login-image-wrapper">
           <img src="<?php print $images ?>/login.jpg"
-               alt="PDQ Editorial Board Management System" />
+               alt="PDQ&reg; Editorial Board Management System" />
         </div>
 <?php } /* not logged in */ ?>
 
