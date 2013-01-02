@@ -79,11 +79,12 @@ $handler->display->display_options['filters']['type']['value'] = array(
   'ebms_event' => 'ebms_event',
 );
 
-/* Display: Month */
-$handler = $view->new_display('page', 'Month', 'month');
+/* Display: Month All */
+$handler = $view->new_display('page', 'Month All', 'month_all');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['access'] = FALSE;
 $handler->display->display_options['access']['type'] = 'perm';
+$handler->display->display_options['access']['perm'] = 'view all events';
 $handler->display->display_options['defaults']['pager'] = FALSE;
 $handler->display->display_options['pager']['type'] = 'date_views_pager';
 $handler->display->display_options['pager']['options']['date_id'] = 'month';
@@ -113,8 +114,7 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar';
-$handler->display->display_options['menu']['type'] = 'default tab';
+$handler->display->display_options['path'] = 'calendar/%/all';
 $handler->display->display_options['menu']['title'] = 'Month';
 $handler->display->display_options['menu']['weight'] = '0';
 $handler->display->display_options['menu']['context'] = 0;
@@ -122,11 +122,12 @@ $handler->display->display_options['tab_options']['type'] = 'normal';
 $handler->display->display_options['tab_options']['title'] = 'Calendar';
 $handler->display->display_options['tab_options']['weight'] = '0';
 
-/* Display: Week */
-$handler = $view->new_display('page', 'Week', 'week');
+/* Display: Week All */
+$handler = $view->new_display('page', 'Week All', 'week_all');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['access'] = FALSE;
 $handler->display->display_options['access']['type'] = 'perm';
+$handler->display->display_options['access']['perm'] = 'view all events';
 $handler->display->display_options['defaults']['pager'] = FALSE;
 $handler->display->display_options['pager']['type'] = 'date_views_pager';
 $handler->display->display_options['pager']['options']['date_id'] = 'week';
@@ -157,17 +158,17 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar/week';
-$handler->display->display_options['menu']['type'] = 'tab';
+$handler->display->display_options['path'] = 'calendar/week/%/all';
 $handler->display->display_options['menu']['title'] = 'Week';
 $handler->display->display_options['menu']['weight'] = '2';
 $handler->display->display_options['menu']['context'] = 0;
 
-/* Display: Day */
-$handler = $view->new_display('page', 'Day', 'day');
+/* Display: Day All */
+$handler = $view->new_display('page', 'Day All', 'day_all');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['access'] = FALSE;
 $handler->display->display_options['access']['type'] = 'perm';
+$handler->display->display_options['access']['perm'] = 'view all events';
 $handler->display->display_options['defaults']['pager'] = FALSE;
 $handler->display->display_options['pager']['type'] = 'date_views_pager';
 $handler->display->display_options['pager']['options']['date_id'] = 'day';
@@ -198,8 +199,7 @@ $handler->display->display_options['arguments']['date_argument']['granularity'] 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar/day';
-$handler->display->display_options['menu']['type'] = 'tab';
+$handler->display->display_options['path'] = 'calendar/day/%/all';
 $handler->display->display_options['menu']['title'] = 'Day';
 $handler->display->display_options['menu']['weight'] = '3';
 $handler->display->display_options['menu']['context'] = 0;
@@ -412,12 +412,11 @@ $handler->display->display_options['filters']['field_datespan_value']['field'] =
 $handler->display->display_options['filters']['field_datespan_value']['operator'] = '>=';
 $handler->display->display_options['filters']['field_datespan_value']['default_date'] = 'now';
 
-/* Display: Month All */
-$handler = $view->new_display('page', 'Month All', 'month_all');
+/* Display: Month */
+$handler = $view->new_display('page', 'Month', 'month');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['access'] = FALSE;
 $handler->display->display_options['access']['type'] = 'perm';
-$handler->display->display_options['access']['perm'] = 'view all events';
 $handler->display->display_options['defaults']['pager'] = FALSE;
 $handler->display->display_options['pager']['type'] = 'date_views_pager';
 $handler->display->display_options['pager']['options']['date_id'] = 'month';
@@ -447,7 +446,8 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar/%/all';
+$handler->display->display_options['path'] = 'calendar';
+$handler->display->display_options['menu']['type'] = 'default tab';
 $handler->display->display_options['menu']['title'] = 'Month';
 $handler->display->display_options['menu']['weight'] = '0';
 $handler->display->display_options['menu']['context'] = 0;
@@ -455,12 +455,11 @@ $handler->display->display_options['tab_options']['type'] = 'normal';
 $handler->display->display_options['tab_options']['title'] = 'Calendar';
 $handler->display->display_options['tab_options']['weight'] = '0';
 
-/* Display: Week All */
-$handler = $view->new_display('page', 'Week All', 'week_all');
+/* Display: Week */
+$handler = $view->new_display('page', 'Week', 'week');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['access'] = FALSE;
 $handler->display->display_options['access']['type'] = 'perm';
-$handler->display->display_options['access']['perm'] = 'view all events';
 $handler->display->display_options['defaults']['pager'] = FALSE;
 $handler->display->display_options['pager']['type'] = 'date_views_pager';
 $handler->display->display_options['pager']['options']['date_id'] = 'week';
@@ -491,17 +490,17 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar/week/%/all';
+$handler->display->display_options['path'] = 'calendar/week';
+$handler->display->display_options['menu']['type'] = 'tab';
 $handler->display->display_options['menu']['title'] = 'Week';
 $handler->display->display_options['menu']['weight'] = '2';
 $handler->display->display_options['menu']['context'] = 0;
 
-/* Display: Day All */
-$handler = $view->new_display('page', 'Day All', 'day_all');
+/* Display: Day */
+$handler = $view->new_display('page', 'Day', 'day');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['access'] = FALSE;
 $handler->display->display_options['access']['type'] = 'perm';
-$handler->display->display_options['access']['perm'] = 'view all events';
 $handler->display->display_options['defaults']['pager'] = FALSE;
 $handler->display->display_options['pager']['type'] = 'date_views_pager';
 $handler->display->display_options['pager']['options']['date_id'] = 'day';
@@ -532,7 +531,8 @@ $handler->display->display_options['arguments']['date_argument']['granularity'] 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar/day/%/all';
+$handler->display->display_options['path'] = 'calendar/day';
+$handler->display->display_options['menu']['type'] = 'tab';
 $handler->display->display_options['menu']['title'] = 'Day';
 $handler->display->display_options['menu']['weight'] = '3';
 $handler->display->display_options['menu']['context'] = 0;
