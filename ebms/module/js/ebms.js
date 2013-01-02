@@ -84,7 +84,7 @@ ebmsscript.init_login_form = function() {
     jQuery.ajaxSetup({ cache: false });
     jQuery("#forgot-password-form-js").dialog({
         autoOpen: false,
-        width: 400,
+        width: 420,
         modal: true,
         draggable: true,
         resizable: false,

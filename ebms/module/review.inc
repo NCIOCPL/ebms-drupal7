@@ -433,19 +433,16 @@ class EbmsReview {
             $onclick = 'onclick=\'location.href="' . $href . '"\'';
             $cb_id = "edit-boards-$id";
             $checkbox = "<input id='$cb_id' $type $onclick$checked />";
-            $label = "<label class='board-name' for='$cb_id'>$name</label>";
-            $item = "<div>$checkbox $label</div>";
+            $label = "<label for='$cb_id'>$name</label>";
+            $item = "<div class='review-board'>$checkbox $label</div>";
             $items[] = $item;
         }
         $url = Ebms\IMAGES_DIR . '/left-nav-box-bottom.png';
-        $img = "<img class='ebms-left-nav-block-bottom' src='$url' alt='' />";
         return array(
-            '#theme' => 'item_list',
-            '#title' => 'Filter by Board',
-            '#items' => $items,
-            '#attributes' => array('class' => 'ebms_left_nav_block'),
-            '#prefix' => '<div class="more-actions">',
-            '#suffix' => '</div>',
+            '#type' => 'markup',
+            '#markup' => '<div class="more-actions left-nav-box">' .
+            '<div class="left-nav-box-title">Filter by Board</div>' .
+            implode('', $items) . '<br class="float-clear" /></div>',
         );
     }
 
@@ -530,12 +527,16 @@ class EbmsReview {
             $results = $query->execute();
             $reviewers = array();
             foreach ($results as $result)
-                $reviewers[] = htmlspecialchars($result->name);
+                $reviewers[] = '<div>' . htmlspecialchars($result->name) .
+                '</div>';
             $url = EbmsReview::$url . '/reviews/' . $p->packet_id;
             $link = l($title, $url); #, $opts);
             $data = array(
                 $link,
-                implode('<br />', $reviewers),
+                array(
+                    'data' => implode('', $reviewers),
+                    'class' => array('reviewers'),
+                ),
                 date("m/d/Y", strtotime($p->updated)),
             );
             $rows[] = array(
@@ -1231,12 +1232,14 @@ class EbmsReview {
 
             // Restore article expansion for the review links.
             $options['query']['expanded'] = $expanded . 'a';
+            $options['attributes']['class'] = array('button');
 
             // Build the array of rows for the article table.
             $rows = array();
             foreach ($articles as $article) {
                 $pm_id = $article->source_id;
-                $links = l('view abstract', $pubmed . $pm_id, $target);
+                $links = '<div class="links">' .
+                    l('view abstract', $pubmed . $pm_id, $target);
 
                 // Add the link for viewing the full text if we have it.
                 if ($article->uri) {
@@ -1244,6 +1247,7 @@ class EbmsReview {
                     $ft_link = l('download full text', $ft_url, $target);
                     $links .= " &nbsp; | &nbsp; $ft_link";
                 }
+                $links .= '</div>';
                 $citation = Ebms\Util::get_full_citation($article->article_id);
                 $options['query']['article'] = $article->article_id;
                 $rows[] = array(
@@ -1351,6 +1355,7 @@ class EbmsReview {
             }
 
             // Plug the "Reviewer Uploads" heading and table into the page.
+            $options['attributes']['class'] = array('button');
             $page['uploads'] = array(
                 '#prefix' => '<div id="reviewer-uploads">',
                 '#suffix' => '</div>',
@@ -1961,7 +1966,7 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
     $title = htmlspecialchars($review->packet_title);
     $attrs = array('attributes' => array('target' => '_blank'));
     $pm_url = EbmsReview::pubmed_url($article_id);
-    $links = l('VIEW ABSTRACT', $pm_url, $attrs);
+    $links = '<div class="links">' . l('VIEW ABSTRACT', $pm_url, $attrs);
     $cite = Ebms\Util::get_full_citation($article_id);
 
     // Add a link for viewing the article's full text (if we have it).
@@ -1975,6 +1980,7 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $attrs);
         $links .= " &nbsp; | &nbsp; $ft_link";
     }
+    $links .= '</div>';
 
     // check for this page being used on behalf of another
     $account = pdq_ebms_find_effective_user(false);

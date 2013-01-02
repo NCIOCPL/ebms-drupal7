@@ -19,6 +19,7 @@ h3.collapsed a:focus, h3.collapsed a:hover,
 h3.expanded a:focus, h3.expanded a:hover,
 a.expanded:focus, a.expanded:hover,
 a.collapsed:focus, a.collapsed:hover { text-decoration: none; }
+div.links { margin: 10px 0px; }
 
 li.active a:hover,
 li.active a:focus,
@@ -323,11 +324,18 @@ select { border-radius: 7px; background: white; }
     background-color: white !important;
     color: #2d2c28;
 }
+
+/* Let's simplify this, and suppress Chrome's extra border.
 input:focus, input:hover, select:focus, select:hover,
-.form-type-textfield input:focus, .form-type-textfield input:hover
+.form-type-textarea textarea:focus, .form-type-textarea textarea:hover,
+.form-type-textfield input:focus, .form-type-textfield input:hover,
 .form-type-password input:focus, .form-type-password input:hover
 { border-color: #a90101; }
-input.form-submit:focus { color: #a90101; }
+*/
+input:hover, textarea:hover,
+input:focus, textarea:focus { border: #a90101 1px solid; outline: none; }
+
+input.form-submit:focus, input.form-submit:hover { color: #a90101; }
 
 /* Have to separate this, or Firefox ignores the rules for the others */
 input:-webkit-autofill {
@@ -530,7 +538,12 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
 #forgot-password-form-js { display: none; padding-bottom: 30px; }
 #forgot-password-form-js #edit-email.form-text { margin-top: 25px; }
 #forgot-password-form-js .form-submit { margin-top: 20px; }
-#forgot-password-form-js #edit-forgot-both + label { padding-right: 0; }
+#forgot-password-form-js .form-type-radio.form-item-forgot:not(#foo)
+#edit-forgot-both + label { padding-right: 0; }
+
+#edit-forgot .form-type-radio.form-item-forgot:not(#foo) label {
+    padding-right: 10px;
+}
 
 /* BLOCK FORMATTING */
 .ebms-block { margin: 20px 20px 13px 0px; width: 302px; float: left; }
@@ -569,7 +582,7 @@ body.front div.block-ebms {
     height: 450px; width: 630px; position: relative;
     margin: 20px 0 13px 0;
 }
-.ebms-featured-block a:hover { text-decoration: none; }
+.ebms-featured-block a:hover { text-decoration: underline; }
 .ebms-featured-block div { position: relative; }
 .ebms-featured-block h3 {
     line-height: 16px; padding: 1px 0; margin: 0;
@@ -660,7 +673,7 @@ body.front #next-meeting span { font-weight: bold; }
 #member-packet #articles td { padding: 8px 0; border: 0; }
 #member-packet #articles a { text-transform: uppercase; }
 #member-packet #articles td.c1 { width: 730px; padding-right: 20px; }
-#member-packet #articles td.c2 { padding-left: 15px; }
+#member-packet #articles td.c2 { padding-left: 15px; padding-top: 15px; }
 #member-packet #articles td.c2 a {
     border: 1px solid #696559;
     border-radius: 7px; padding: 10px;
@@ -761,6 +774,7 @@ form.confirmation a#edit-cancel {
 }
 form.confirmation a#edit-cancel:hover { border: 1px solid #a90101; }
 #confirm-packet-delete { display: none; }
+td.reviewers div { margin-bottom: 10px; }
 
 /* USER PROFILE SETTINGS */
 h2.tight-below { margin-bottom: 0px; }
