@@ -2559,12 +2559,16 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
             '#suffix' => '</div>',
         );
         if ($topic_id) {
+            $name = '';
+            if (array_key_exists($topic_id, $topics))
+                $name = $topics[$topic_id];
             $form[$bsf][$tsf]['articles'] = $articles_field;
             $form[$bsf][$tsf]['summaries'] = $summaries_field;
             $form[$bsf][$tsf]['reviewers-div'] = $reviewers_div;
             $form[$bsf][$tsf]['name'] = array(
                 '#type' => 'textfield',
                 '#title' => 'Packet Name',
+                '#default_value' => $name,
             );
             $form[$bsf][$tsf]['submit'] = $submit_field;
         }
