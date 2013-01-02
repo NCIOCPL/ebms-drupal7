@@ -758,7 +758,6 @@ namespace {
                 '#options' => array(0 => 'Please select a board.'),
                 '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
                 '#suffix' => '</div>',
-                
             );
 
             // use the default board id, or dig the value from the form state
@@ -950,10 +949,7 @@ namespace {
         $results = &$form['citation_queue_results'];
 
         try {
-            $query = db_select('ebms_article_state', 's');
-
-            $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
-
+            // find the proper source state for the articles
             $source_state = \Ebms\EbmsArticleStates::ReadyInitReview;
             if (!$is_librarian) {
                 $source_state = \Ebms\EbmsArticleStates::Published;
@@ -962,28 +958,46 @@ namespace {
             }
             $state = Ebms\getStateTypebyTextId($source_state);
 
-            $query->condition('s.state_id', $state->state_id);
-            if ($fulltext_review)
-                $query->isNotNull('a.full_text_id');
-
-            // add the other filter fields
-            // $topic_id implies $board_id
+            // first generate a list of valid article ids if the topic is specified
             if ($topic_id) {
+                $selectedTopics = array();
                 if (is_array($topic_id)) {
                     // grab any non-zero value from the topic_select options
-                    $selectedTopics = array();
                     foreach ($topic_id as $selected_id) {
                         if ($selected_id)
                             $selectedTopics[] = $selected_id;
                     }
-
-                    if (!empty($selectedTopics))
-                        $query->condition('s.topic_id', $selectedTopics, 'IN');
                 }
-                else
-                    $query->condition('s.topic_id', $topic_id);
+                else {
+                    $selectedTopics[] = $topic_id;
+                }
             }
 
+            $query = db_select('ebms_article_state', 's');
+
+            // if filter topics exist, select all articles that belong to 
+            // any of them
+            if (!empty($selectedTopics)) {
+                $topicArticleQuery = db_select('ebms_article_state', 'ta');
+                $topicArticleQuery->condition('ta.topic_id', $selectedTopics,
+                        'IN')
+                    ->condition('ta.current', 'Y')
+                    ->condition('ta.state_id', $state->state_id)
+                    ->groupBy('ta.article_id')
+                    ->fields('ta', array('article_id'));
+
+                $query->join($topicArticleQuery, 'taq',
+                    'taq.article_id = s.article_id');
+            }
+
+            $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
+
+            $query->condition('s.state_id', $state->state_id);
+
+            if ($fulltext_review)
+                $query->isNotNull('a.full_text_id');
+
+            // add the other filter fields
             if ($board_id)
                 $query->condition('s.board_id', $board_id);
 
@@ -4914,7 +4928,7 @@ namespace {
             drupal_set_message("Successfully published article '$articleTitle' to topic '$topicName'");
 
             // also create message for publishing
-            activityArticlesPublished(Ebms\getTopicBoard($topicId));
+            Ebms\Util::activityArticlesPublished(Ebms\getTopicBoard($topicId));
         }
 
         return;
