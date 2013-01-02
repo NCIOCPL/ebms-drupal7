@@ -262,7 +262,7 @@ class EbmsHomePage {
         switch ($this->role) {
             case 'librarian':
                 $items = array(
-                    l('Send a Message', 'stub'),
+                    // l('Send a Message', 'stub'),
                     l('Search Database', 'citations/search'),
                     l('Find/Edit a Record', 'stub'),
                     l('Manage Journals', 'stub'),
@@ -273,9 +273,10 @@ class EbmsHomePage {
                 break;
             default:
                 $items = array(
-                    l('Post a Document', 'docs'),
+                    l('Post a Document', 'docs/post'),
+                    l('Manage Documents', 'docs'),
                     l('Manage Groups', 'groups'),
-                    l('Send a Message', 'stub'),
+                    // l('Send a Message', 'stub'),
                 );
                 break;
         }
@@ -363,7 +364,7 @@ class EbmsHomePage {
         $items = array(EbmsHomePage::alert('stub', 'Messages', 1));
         if ($this->role != 'librarian') {
             $items[] = EbmsHomePage::alert('forum', 'Forum', 5);
-            $items[] = EbmsHomePage::alert('review', 'Reviews', 6);
+            $items[] = EbmsHomePage::alert('review/reviews', 'Reviews', 6);
         }
         return $this->list_block($title, 'alerts', $items);
     }
@@ -541,8 +542,8 @@ class EbmsHomePage {
                     'title' => l('Citation Management', 'citations'),
                     'links' => array(
                         l('Search Database', 'citations/search'),
-                        l('Review Abstracts', 'stub'),
-                        l('Add Citation', 'stub'),
+                        l('Review Citations', 'citations'),
+                        l('Add Citation', 'citations/import'),
                     ),
                 ),
                 '2' => array(
@@ -553,7 +554,7 @@ class EbmsHomePage {
                         l('Edit a Literature Surveillance Packet',
                             'review/packets'),
                         l('Review Responses to a Literature Surveillance ' .
-                            'Packet', 'review'),
+                            'Packet', 'review/reviews'),
                     ),
                 ),
                 '3' => array(
