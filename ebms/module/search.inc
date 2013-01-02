@@ -347,11 +347,12 @@ class EbmsSearch {
             $ft_url = file_create_url($ft_uri);
             $target = array('attributes' => array('target' => '_blank'));
             $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $target);
-            $pieces[] = ' | ' . $ft_link;
+            $pieces[] = ' &nbsp;|&nbsp; ' . $ft_link;
         }
-        $pieces[] = ' | ' . $edit_link;
-        $pieces[] = ' | ' . l('REVIEW', 'citations/review');
-        $pieces[] = ' | ' . $pub_link . '</span></br /><br />&nbsp;';
+        $pieces[] = ' &nbsp;|&nbsp; ' . $edit_link;
+        $pieces[] = ' &nbsp;|&nbsp; ' . l('REVIEW', 'citations/review');
+        $pieces[] = ' &nbsp;|&nbsp; ' . $pub_link .
+            '</span></br /><br />&nbsp;';
 
         // Collapse and return the markup.
         return implode($pieces);
