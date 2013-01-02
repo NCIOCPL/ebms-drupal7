@@ -26,11 +26,11 @@
 
 $showEnd = $view->current_display != 'month';
 
-$value = $row->field_event_date[0]['raw']['value'];
+$value = $row->field_field_datespan[0]['raw']['value'];
 $timeStamp = ($value % 3600) ? date('g:iA', $value) : date('gA', $value);
 
 if ($showEnd) {
-    $value2 = $row->field_event_date[0]['raw']['value2'];
+    $value2 = $row->field_field_datespan[0]['raw']['value2'];
     $timeStamp2 = ($value2 % 3600) ? date('g:iA', $value2) : date('gA', $value2);
 
     print "<span class='date-display-single'>

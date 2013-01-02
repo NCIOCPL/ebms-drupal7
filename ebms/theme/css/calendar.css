@@ -23,11 +23,6 @@ td.date-box{
 li.calendar-date{
     text-transform: uppercase;
 }
-#upcoming-events a{
-    color: #2D2C28;
-    opacity: 1.0;
-    font-size: 1em;
-}
 
 #calendar-enclosure h2{
     margin-top: 0px;
@@ -267,15 +262,7 @@ li.calendar-date{
     color: white;
 }
 
-#left-nav #upcoming-events{
-    margin: 30px 10px;
-}
-
-#left-nav .view-display-id-block_upcoming .view-content{
-    border-left: 1px solid #696559;
-    border-right: 1px solid #696559;
-}
-
+/*
 #left-nav .view-display-id-block_upcoming li{
     border: none;
     padding-bottom: 0;
@@ -321,3 +308,4 @@ li.calendar-date{
     height: 7px;
     margin-top: -20px;
 }
+*/

@@ -266,7 +266,10 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
 #left-nav li.active { border-bottom: 1px #a90101 solid; }
 #left-nav li.inactive{ opacity: 0.65; }
 #left-nav a {
-    text-transform: uppercase; font-size: 14px; color: #696559; opacity: .65;
+    text-transform: uppercase;
+}
+#left-nav li.inactive a {
+    color: #696559; opacity: .65;
 }
 
 #left-nav li.active:hover, 
@@ -278,6 +281,60 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
 #left-nav li.inactive:hover a{ color: #a90101; opacity: 1.0;}
 #left-nav li.active a { color: #a90101; opacity: 1; font-weight: bold; }
 
+#left-nav > .view {
+    margin: 30px 10px;
+}
+
+#left-nav .view-header * {
+    background-image: url("../images/left-nav-box-title.png");
+    background-repeat: no-repeat;
+    color: white;
+    height: 41px;
+    line-height: 41px;
+    margin: 0;
+    padding: 0;
+    text-transform: uppercase;
+    text-align: center;
+    font-weight: bold;
+}
+
+#left-nav .view-footer * {
+    background-image: url("../images/left-nav-box-bottom.png");
+    background-repeat: no-repeat;
+    height: 7px;
+    line-height: 7px;
+    margin: 0;
+    padding: 0;
+}
+
+#left-nav .view-content{
+    border-left: 1px solid #696559;
+    border-right: 1px solid #696559;
+    padding: 0 10px 10px;
+}
+
+/* clear interfering styling from above*/
+#left-nav .view-content h3,
+#left-nav .view-content ul,
+#left-nav .view-content li{
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+#left-nav .view-content h3{
+    color: #2D2C28;
+}
+
+#left-nav .view-content .item-list,
+#left-nav .view-content li{
+    padding-top: 10px;
+}
+
+#left-nav .view-content .item-list + .item-list{
+    border-top: 1px solid #696559;
+    margin-top: 10px;
+}
 /* BREADCRUMBS */
 #breadcrumb {
     text-transform: uppercase;
