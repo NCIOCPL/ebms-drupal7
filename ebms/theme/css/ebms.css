@@ -307,10 +307,16 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
     padding: 0;
 }
 
-#left-nav .view-content{
+#left-nav .view-content,
+#left-nav .view-empty{
     border-left: 1px solid #696559;
     border-right: 1px solid #696559;
     padding: 0 10px 10px;
+}
+
+#left-nav .view-empty > *{
+    margin: 0;
+    padding: 10px 0 0;    
 }
 
 /* clear interfering styling from above*/
