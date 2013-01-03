@@ -41,23 +41,24 @@
     if (count($topics) > 0):
         foreach ($topics as $topic):
             ?>
-        <?php $topicLoaded = node_load($topic->nid); ?>
-            <div class="forum-topic-on-forum" id="forum-topic-<?php print $topic_id; ?>">
-                <div class="forum-title"><?php print $topic->title; ?></div>
-                <?php 
-                // Determine if a Topic is Archived
+        <?php
+        $topicLoaded = node_load($topic->nid);
+        // Determine if a Topic is Archived
                 $archived = FALSE;
                 $archivedField = field_get_items('node', $topicLoaded, 'field_archived');
                 if ($archivedField)
                     $archived = $archivedField[0]['value'];
-                
-                // If a Topic is Archived, add the special field
+                ?>
+            <div class="forum-topic-on-forum" id="forum-topic-<?php print $topic_id; ?>">
+                <div class="forum-title"><?php print $topic->title; if ($archived) print ' <i>(Archived)</i>';?></div>
+                <?php 
+                /* // If a Topic is Archived, add the special field
                 if ($archived): ?>
                 <div class="forum-archived">
                     <img src="<?php print drupal_get_path('theme', 'ebmstheme'); ?>/images/checkbox-checked.png" alt="This forum topic is archived."/>
                     Archived
                 </div>
-                <?php endif; ?>
+                <?php endif; */?>
                 <div class="forum-description">
                     <?php
                     $teaser = node_view($topicLoaded, 'teaser');
@@ -75,10 +76,7 @@
                         <div class="forum-topic-recent-activity-words">Recent Activity:</div>
                         <div class="forum-topic-recent-activity-activity">
                             <?php
-                            // Broken down structure here compensates for strict warnings.
-                            $lastComment = comment_get_recent(1);
-                            $lastComment = array_pop($lastComment);
-                            $lastComment = comment_load($lastComment->cid);
+                            $lastComment = _get_last_comment_by_node($topicLoaded->nid);
                             $comment_view = comment_view($lastComment, $topicLoaded);
                             print render($comment_view);
                             ?>

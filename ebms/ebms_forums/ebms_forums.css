@@ -1,6 +1,14 @@
 /*
 * Applicable to All Forum Templates
 */
+#cancel-button {
+    padding: 14px;
+    color: #696559;
+    border-color: #696559;
+}
+#cancel-button:hover {
+    border-color: #a90101;
+}
 .page-forum .action-links {
     display: none;
 }
@@ -9,6 +17,21 @@
     float:left;
     margin-bottom: 50px;
     width: 730px;
+}
+#no-forums {
+    float: left;
+    margin-bottom: 50px;
+    width: 730px;
+    
+}
+#edit-forum-icon {
+}
+
+#edit-forum-icon a,
+#edit-forum-icon a:hover, 
+#edit-forum-icon a:visited,
+#edit-forum-icon a:link {
+    text-decoration: none;
 }
 
 .forum-title {

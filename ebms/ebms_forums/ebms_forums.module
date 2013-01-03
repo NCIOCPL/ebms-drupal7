@@ -14,6 +14,41 @@
  * of the function that generated the form.
  */
 function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
+
+    if ($form_id == 'forum_node_form') {
+
+        // Turn off the ability to preview
+        $form['actions']['preview'] = FALSE;
+
+        // Cancel is not innate
+        $form['actions']['cancel'] = array(
+            '#prefix' => '<span class="button" id="cancel-button">',
+            '#suffix' => '</span>',
+            '#markup' => l(t('Cancel'), 'forum'),
+            '#weight' => 4,
+        );
+
+        // Control the Forums that are presented to add a topic to
+        // Users can only add topics to Forums they are a member of
+        // And are not archived (unless its Margaret)
+        if (array_key_exists('und', $form['taxonomy_forums'])) {
+            if (array_key_exists('#options', $form['taxonomy_forums']['und'])) {
+                // Keep none as part of the options
+                $updatedOptions = array(
+                    '_none' => '- Select a Forum -',
+                );
+                // Get the forums a user can see
+                $applicableForums = _ebms_forums_for_global_user();
+                // Add the forums a user can see to a new options list
+                foreach ($applicableForums as $forumID => $forum) {
+                    $updatedOptions[$forumID] = $forum->name;
+                }
+                // Overwrite the options list
+                $form['taxonomy_forums']['und']['#options'] = $updatedOptions;
+            }
+        }
+    }
+
     if ($form_id == 'comment_node_forum_form') {
 
 
@@ -25,6 +60,14 @@ function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
 
         // The comment cannot have a subject
         $form['subject']['#access'] = FALSE;
+        
+        // Moved from comment-wrapper--node-forum & should be cleaned up
+        // Updates to the comment form
+        $commentForm = &$content['comment_form'];
+        $commentForm['author']['#title_display'] = 'invisible';
+        $commentForm['author']['_author']['#markup'] = '';
+        $commentForm['author']['_author']['#title_display'] = 'invisible';
+        //$commentForm['comment_body']['und']['#title_display'] = 'invisible';
     }
 }
 
@@ -263,6 +306,8 @@ function _ebms_forum_form($form, &$form_state, $edit = array()) {
     $form['actions'] = array('#type' => 'actions');
     // Cancel is not innate, added
     $form['actions']['cancel'] = array(
+        '#prefix' => '<span class="button" id="cancel-button">',
+        '#suffix' => '</span>',
         '#markup' => l(t('Cancel'), 'forum'),
         '#weight' => 4,
     );
@@ -561,8 +606,11 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
     foreach ($links as $link) {
         $output .= '<li class="parent ' . $link[2] . ' first">';
         if ($link[3] == TRUE)
-            $output .= '<img src="' . drupal_get_path ('theme', 'ebmstheme'). '/images/checkbox-checked.png"/> ';
+            //$output .= '<img src="' . drupal_get_path ('theme', 'ebmstheme'). '/images/checkbox-checked.png"/> ';
+            $output .= '<i>';
         $output .= '<a href="' . $link[0] . '">' . $link[1] . '</a>';
+        if ($link[3] == TRUE)
+            $output .= '</i>';
         $output .= '</li>';
     }
     $output .= '</ul></div>'; //Closes class=item-list
@@ -585,10 +633,10 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
             $output .= '<li><a href="'.url('forum/'.$activeForumID.'/edit').'">Edit This Forum</a></li>';
     }
 
-    $output .= '</ul></div>
+    $output .= '</ul></div><div class="ebms-left-nav-block-bottom">
         <img class="ebms-left-nav-block-bottom " alt="" 
         src="' . drupal_get_path('theme', 'ebmstheme') . '/images/left-nav-box-bottom.png">
-        </div></div>';
+        </div></div></div>';
     }
 
     $output .= '</div>'; //Closes id=left-nav
@@ -646,4 +694,37 @@ function ebms_forums_permission() {
             'description' => t("Ability to create and edit Forums for topics."),
         ),
     );
+}
+
+/**
+ * Returns the last comment on a node, given the nid.
+ * This takes Drupal permissioning into account.
+ * It was mainly copied from comment_get_recent($number);
+ * WARNING: This does not check to see if the node is published. And this only
+ * returns the most recent.
+ * 
+ * @param type $nid The node we are examining.
+ */
+function _get_last_comment_by_node ($nid) {
+    
+  $query = db_select('comment', 'c');
+  
+  $query->addTag('node_access');
+  $comments = $query
+    ->fields('c')
+    ->condition('c.status', COMMENT_PUBLISHED)
+    ->condition('c.nid', $nid)
+    ->orderBy('c.created', 'DESC')
+    // Additionally order by cid to ensure that comments with the same timestamp
+    // are returned in the exact order posted.
+    ->orderBy('c.cid', 'DESC')
+    ->range(0, 1)
+    ->execute()
+    ->fetchAll();
+  if (!$comments)
+      return NULL;
+  $lastComment = array_pop($comments);
+  $lastComment = comment_load($lastComment->cid);
+  return $lastComment;
+
 }

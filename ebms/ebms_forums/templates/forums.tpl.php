@@ -14,17 +14,25 @@
  *
  * @ingroup themeable
  */
-$forum = taxonomy_term_load($tid);
 if (!$tid):
     $forums = _ebms_forums_for_global_user();
     if (count($forums) > 0):
         $forum = array_pop($forums);
         drupal_goto('forum/'.$forum->tid);
     else: ?>
-<h2><?php print drupal_get_title(); ?></h2>
-<div id="no-forums">You do not belong to any forums.</div>
+<?php print _ebms_forums_menu_html(); ?>
+
+<div id="no-forums">
+    <h2><?php print drupal_get_title(); ?></h2>
+    You do not belong to any forums.</div>
     <?php endif;
 else:
+    $forum = taxonomy_term_load($tid);
+    $administer = user_access('administer ebms forums');
+    $archived = FALSE;
+$archivedField = field_get_items('taxonomy_term', $forum, 'field_archived');
+    if ($archivedField)
+        $archived = $archivedField[0]['value'];
 ?>
 
 <?php print _ebms_forums_menu_html($tid); ?>
@@ -33,7 +41,32 @@ else:
 
     <div id="forums-right">
 
-        <h2><?php print drupal_get_title(); ?></h2>
+        <h2>
+            <?php
+            
+            if ($administer):
+                drupal_add_js("(function ($) {
+                    $(document).ready(function() {
+$('#edit-forum-icon').hover(function () {
+$(this).children('a').children('img').attr('src', '".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Active.png');
+}, function () {
+$(this).children('a').children('img').attr('src', '".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Inactive.png');
+});                   
+}); }) (jQuery);", 'inline');
+                ?>
+            <span id="edit-forum-icon">
+            <a href="<?php print url('/forum/'.$tid.'/edit'); ?>">
+            <img src="<?php print 
+                drupal_get_path('theme', 'ebmstheme');?>/images/EBMS_Edit_Icon_Inactive.png" alt="Edit This Forum"/>
+            </a> 
+            </span>
+        <?php endif;
+        print drupal_get_title();
+        
+        
+        if ($archived) print ' <i>(Archived)</i>';
+        ?>
+        </h2>
         
         <?php if ($forum): ?>
         <div id="forum-description">

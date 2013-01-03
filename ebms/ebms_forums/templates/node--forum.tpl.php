@@ -15,6 +15,9 @@
  * @ingroup themeable
  */
 global $user;
+
+// Determine if a user has access to edit this topic
+$administer = user_access('edit forum topic');
     
     // Determine if this topic is archived
     $archived = FALSE;
@@ -27,14 +30,39 @@ global $user;
 
 <div id="forums-right">
     
-    <h2><?php print $title; ?></h2>
+    <h2>
+        <?php
+            
+            if ($administer):
+                drupal_add_js("(function ($) {
+                    $(document).ready(function() {
+$('#edit-forum-icon').hover(function () {
+$(this).children('a').children('img').attr('src', '".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Active.png');
+}, function () {
+$(this).children('a').children('img').attr('src', '".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Inactive.png');
+});                   
+}); }) (jQuery);", 'inline');
+                ?>
+            <span id="edit-forum-icon">
+            <a href="<?php print url('/node/'.$nid.'/edit'); ?>">
+            <img src="<?php print 
+                drupal_get_path('theme', 'ebmstheme');?>/images/EBMS_Edit_Icon_Inactive.png" alt="Edit This Forum Topic"/>
+            </a> 
+            </span>
+        <?php endif;
+        print $title;
+        
+        
+        if ($archived) print ' <i>(Archived)</i>';
+        ?>
+    </h2>
     
-    <?php if ($archived): ?>
+    <?php /*if ($archived): ?>
     <div class="forum-archived">
         <img src="<?php print drupal_get_path('theme', 'ebmstheme'); ?>/images/checkbox-checked.png" alt="This forum topic is archived."/>
         Archived
     </div>
-    <?php endif; ?>
+    <?php endif; */?>
     
     <div id="forum-topic-first-post">
         <?php print render($elements['body']); ?>

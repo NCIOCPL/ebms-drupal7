@@ -23,13 +23,6 @@ if ($authorPicture) {
     $authorPicture['picture']['#width'] = 45;
     $authorPicture['picture']['#height'] = 45;
 }
-//ToDo: This needs to be moved to the module.
-// Updates to the comment form
-$commentForm = &$content['comment_form'];
-$commentForm['author']['#title_display'] = 'invisible';
-$commentForm['author']['_author']['#markup'] = '';
-$commentForm['author']['_author']['#title_display'] = 'invisible';
-//$commentForm['comment_body']['und']['#title_display'] = 'invisible';
 
 ?>
 <div id="forum-topic-comments"><?php print render($content['comments']); ?></div>
