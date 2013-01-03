@@ -308,11 +308,16 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
 }
 
 #left-nav .view-content,
-.ebms-block .view-empty,
 #left-nav .view-empty{
     border-left: 1px solid #696559;
     border-right: 1px solid #696559;
     padding: 0 10px 10px;
+}
+
+.ebms-block .view-empty{
+    border-left: 1px solid #696559;
+    border-right: 1px solid #696559;
+    padding: 10px;
 }
 
 .ebms-block .view-empty > *,
