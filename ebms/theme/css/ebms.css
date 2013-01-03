@@ -315,7 +315,7 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
     padding: 0 10px 10px;
 }
 
-.ebms-block .view-empty,
+.ebms-block .view-empty > *,
 #left-nav .view-empty > *{
     margin: 0;
     padding: 10px 0 0;    
