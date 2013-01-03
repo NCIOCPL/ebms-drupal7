@@ -374,8 +374,17 @@ $handler->display->display_options['footer']['area']['id'] = 'area';
 $handler->display->display_options['footer']['area']['table'] = 'views';
 $handler->display->display_options['footer']['area']['field'] = 'area';
 $handler->display->display_options['footer']['area']['label'] = 'Block Bottom';
+$handler->display->display_options['footer']['area']['empty'] = TRUE;
 $handler->display->display_options['footer']['area']['content'] = '<div class="view-block-bottom" />';
 $handler->display->display_options['footer']['area']['format'] = 'full_html';
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['empty'] = TRUE;
+$handler->display->display_options['empty']['area']['content'] = '<em>You have no events currently scheduled.</em>';
+$handler->display->display_options['empty']['area']['format'] = 'filtered_html';
 $handler->display->display_options['defaults']['fields'] = FALSE;
 /* Field: Event Time */
 $handler->display->display_options['fields']['field_datespan']['id'] = 'field_datespan';
@@ -472,6 +481,14 @@ $handler->display->display_options['row_options']['inline'] = array(
 );
 $handler->display->display_options['row_options']['separator'] = ',';
 $handler->display->display_options['defaults']['row_options'] = FALSE;
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['empty'] = TRUE;
+$handler->display->display_options['empty']['area']['content'] = '<em>You have no events currently scheduled.</em>';
+$handler->display->display_options['empty']['area']['format'] = 'filtered_html';
 $handler->display->display_options['defaults']['fields'] = FALSE;
 /* Field: Event Day */
 $handler->display->display_options['fields']['field_datespan_1']['id'] = 'field_datespan_1';
@@ -669,6 +686,5 @@ $handler->display->display_options['menu']['type'] = 'tab';
 $handler->display->display_options['menu']['title'] = 'Day';
 $handler->display->display_options['menu']['weight'] = '3';
 $handler->display->display_options['menu']['context'] = 0;
-
 
 ?>
