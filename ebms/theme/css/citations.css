@@ -313,8 +313,7 @@ td.board-cell {
     border: none;
 }
 
-.citation-subheader,
-.left-nav-box-title{
+.citation-subheader{
     font-weight: bold;
     text-transform: uppercase !important;
 }
@@ -384,8 +383,7 @@ td.board-cell {
     opacity: 75%;
 }
 
-#citation-form-div .full-citation-decision-icon,
-.left-nav-icon{
+#citation-form-div .full-citation-decision-icon{
     padding: 0px 5px;
 }
 
@@ -418,37 +416,12 @@ td.board-cell {
     display: none;
 }
 
-.left-nav-box{
-    border: 1px solid #696559;
-    border-radius: 7px 7px 7px 7px;
-    margin: 15px 5px;
-}
-
-.left-nav-box-title{
-    background-color: #696559;
-    color: white;
-    border-radius: 4px 4px 0px 0px
-}
-
-.left-nav-box-text{
-    margin: 5px;
-}
-
-.left-nav-box-title,
-.left-nav-box-text{
-    padding: 5px;
-}
-
-.left-nav-box-text,
 .left-nav-most-recent{
-    font-size: 14px;
-}
-
-.left-nav-most-recent{
-    height: 20px;
-    margin-left: 10px;
-    padding: 2px 0px 2px 10px;
+    min-height: 40px;
+    margin: 0 0 0 5px;
+    padding: 0 10px 0 0;
     border-left: 10px #0000BB solid;
+    float: left;
 }
 
 #view-abstract-div .citation-abstract-label,

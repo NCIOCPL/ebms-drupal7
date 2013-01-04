@@ -33,7 +33,8 @@ Ebms\Menu::$active = 'Calendar';
 <div id="left-nav">
     <?php
     module_load_include('inc', 'ebms', 'calendar');
-    print ebms_calendar_left_nav($display_id);
+    $args = $view->args;
+    print ebms_calendar_left_nav($display_id, $args);
     ?>
 </div>
 <div id='calendar-enclosure'>

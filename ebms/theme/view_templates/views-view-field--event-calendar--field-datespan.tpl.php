@@ -24,7 +24,8 @@
 ?>
 <?php
 
-$showEnd = $view->current_display != 'month';
+$display_parts = explode('_', $view->current_display);
+$showEnd = $display_parts[0] != 'month';
 
 $value = $row->field_field_datespan[0]['raw']['value'];
 $timeStamp = ($value % 3600) ? date('g:iA', $value) : date('gA', $value);

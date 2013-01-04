@@ -29,11 +29,12 @@
 //dsm('Display: '. $display_type .': '. $min_date_formatted .' to '. $max_date_formatted);
 ?>
 <?php if (user_access('create ebms_event content')) : ?>
-    <div class='button clearfix'>
+    <div class='button'>
         <a href='
         <?php print '/node/add/ebms-event?date=' . $rows['date'] ?> 
            '>Add Event</a>
     </div>
+    <div class='clearfix' />
 <?php endif; ?>
 <div class="calendar-calendar"><div class="day-view">
         <div id="multi-day-container">
@@ -138,12 +139,12 @@ print t('All day', array(), array('context' => 'datetime'))
                                                         <?php print $item; ?>
                                                     <?php endforeach; ?>
                                                 <?php else: ?>
-        <?php print '&nbsp;'; ?>
-    <?php endif; ?>
+                                                    <?php print '&nbsp;'; ?>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
-<?php endforeach; ?>   
+                                <?php endforeach; ?>   
                         </td>
                     </tr>
                 </tbody>
