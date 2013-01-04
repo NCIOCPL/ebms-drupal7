@@ -50,8 +50,6 @@ function _calendar_get_upcoming_events() {
 function ebms_calendar_left_nav($span = null, $args = array()) {
     $output = array();
 
-    dsm($args, 'view args');
-
     $span_parts = explode('_', $span);
 
     $all = sizeof($span_parts) > 1;
