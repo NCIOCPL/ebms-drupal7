@@ -2107,10 +2107,9 @@ namespace {
 
     function _build_full_citation_actions($articleId) {
         $form = array();
-        _wrap_in_classes($form, array('left-nav-box'));
+        _wrap_in_classes($form, array('nav-block'));
 
-        $form['title']['#markup'] = t('Citation Actions');
-        _wrap_in_classes($form['title'], array('left-nav-box-title'));
+        $form['title']['#markup'] = '<h3>' . t('Citation Actions') . '</h3>';
 
         $article = new Ebms\EbmsArticle($articleId);
 
@@ -2153,21 +2152,25 @@ namespace {
                 $item = "<a>$label</a>";
             }
 
-            $items[]['#markup'] = "<div class='left-nav-box-text'>$item</div>";
+            $items[]['#markup'] = "<li>$item</li>";
         }
 
         $form['links'] = $items;
+        
+        $form['links']['#prefix'] = "<div class='actions'><ul>";
+        $form['links']['#suffix'] = "</ul></div>";
+        
+        $form['footer']['#markup'] = "<div class='footer'></div>";
 
         return $form;
     }
 
     function _build_full_citation_icon_key() {
         $form = array();
-        _wrap_in_classes($form, array('left-nav-box'));
+        _wrap_in_classes($form, array('nav-block'));
 
-        $form['title']['#markup'] = t('Icon Key');
-        _wrap_in_classes($form['title'], array('left-nav-box-title'));
-
+        $form['title']['#markup'] = '<h3>' . t('Icon Key') . '</h3>';
+        
         $editIcon = Ebms\EDIT_INACTIVE;
         $tagIcon = Ebms\TAG_INACTIVE;
         $addIcon = Ebms\ADD_DECISION_INACTIVE;
@@ -2186,20 +2189,24 @@ namespace {
 
             $markup = '';
             if ($icon)
-                $markup .= "<img class='left-nav-icon' src='$icon'>";
+                $markup .= "<img class='line-icon' src='$icon'>";
             else
-                $text = "<div class='left-nav-most-recent'>$text</div>";
+                $text = "<div class='left-nav-most-recent'></div>$text";
 
             $markup .= $text;
 
             $element = array();
-            $element['#markup'] = $markup;
-            _wrap_in_classes($element, array('left-nav-box-text'));
+            $element['#markup'] = "<li>$markup</li>";
 
             $markups[] = $element;
         }
 
         $form['text'] = $markups;
+        
+        $form['text']['#prefix'] = "<div class='actions'><ul>";
+        $form['text']['#suffix'] = "</ul></div>";
+        
+        $form['footer']['#markup'] = "<div class='footer'></div>";
 
         return $form;
     }

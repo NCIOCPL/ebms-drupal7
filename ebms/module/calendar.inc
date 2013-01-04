@@ -47,29 +47,61 @@ function _calendar_get_upcoming_events() {
     return $groupedResults;
 }
 
-function ebms_calendar_left_nav($span = null) {
+function ebms_calendar_left_nav($span = null, $args = array()) {
     $output = array();
+
+    dsm($args, 'view args');
+
+    $span_parts = explode('_', $span);
+
+    $all = sizeof($span_parts) > 1;
+    $granularity = '/' . $span_parts[0];
+
+    $suffix = $all ? '/all' : '';
 
     // create the links to month, week, and day views
     $output[] = '<div id="calendar-views">';
     $output[] = '<div class="item-list">';
-    if ($span == 'month')
+    if ($granularity == '/month') {
+        $granularity = '';
         $output[] = '<ul><li class="active first">';
+    }
     else
         $output[] = '<ul><li class="inactive first">';
-    $output[] = l('Month', 'calendar');
-    if ($span == 'week')
+    $output[] = l('Month', "calendar$suffix");
+    if ($granularity == '/week')
         $output[] = '</li><li class="active">';
     else
         $output[] = '</li><li class="inactive">';
-    $output[] = l('Week', 'calendar/week');
-    if ($span == 'day')
+    $output[] = l('Week', "calendar/week$suffix");
+    if ($granularity == '/day')
         $output[] = '</li><li class="active last">';
     else
         $output[] = '</li><li class="inactive last">';
-    $output[] = l('Day', 'calendar/day');
+    $output[] = l('Day', "calendar/day$suffix");
+
     $output[] = '</li></ul>';
     $output[] = '</div>';
+    $output[] = '</div>';
+
+    // build an action box
+    $output[] = '<div class="nav-block">';
+
+    $output[] = '<h3>Calendar Actions</h3>';
+
+    $output[] = '<div class="actions">';
+    $output[] = '<ul><li>';
+    if ($all) {
+        $output[] = l('Show Own Events', "calendar$granularity");
+    } else {
+        $output[] = l('Show All Events', "calendar$granularity/all");
+    }
+    $output[] = '</li></ul>';
+
+    $output[] = '</div>';
+
+    $output[] = "<div class='footer'></div>";
+
     $output[] = '</div>';
 
     $imagesDir = Ebms\IMAGES_DIR;
@@ -84,68 +116,68 @@ function ebms_calendar_left_nav($span = null) {
     }
 
 
-    /*$output[] = '<div id="upcoming-events" class="more-actions">';
-    $output[] = '<div class="item-list">';
-    $output[] = '<h3>Upcoming Events</h3>';
-    $output[] = '<ul class="ebms_left_nav_block">';
+    /* $output[] = '<div id="upcoming-events" class="more-actions">';
+      $output[] = '<div class="item-list">';
+      $output[] = '<h3>Upcoming Events</h3>';
+      $output[] = '<ul class="ebms_left_nav_block">';
 
-    $groupedEvents = _calendar_get_upcoming_events();
-    $first = true;
-    foreach ($groupedEvents as $date => $events) {
-        if ($first)
-            $first = false;
-        else
-            $output[] = "<li class='last'><hr></li>";
-        $output[] = "<li class='calendar-date first'>$date</li>";
-        foreach ($events as $event) {
-            $path = "node/$event->nid";
+      $groupedEvents = _calendar_get_upcoming_events();
+      $first = true;
+      foreach ($groupedEvents as $date => $events) {
+      if ($first)
+      $first = false;
+      else
+      $output[] = "<li class='last'><hr></li>";
+      $output[] = "<li class='calendar-date first'>$date</li>";
+      foreach ($events as $event) {
+      $path = "node/$event->nid";
 
-            $event_date = field_get_items('node', $event, 'field_datespan');
-            if ($event_date === false)
-                continue;
+      $event_date = field_get_items('node', $event, 'field_datespan');
+      if ($event_date === false)
+      continue;
 
-            $start = $event_date[0]['value'];
-            $end = $event_date[0]['value2'];
+      $start = $event_date[0]['value'];
+      $end = $event_date[0]['value2'];
 
-            // render out separate pieces of the dates
-            $startTime = ($start % 3600) ? date('g:i', $start) : date('g',
-                    $start);
-            $endTime = ($end % 3600) ? date('g:i', $end) : date('g', $end);
+      // render out separate pieces of the dates
+      $startTime = ($start % 3600) ? date('g:i', $start) : date('g',
+      $start);
+      $endTime = ($end % 3600) ? date('g:i', $end) : date('g', $end);
 
-            $startMeridiem = date('A', $end);
-            $endMeridiem = date('A', $end);
+      $startMeridiem = date('A', $end);
+      $endMeridiem = date('A', $end);
 
-            $endTime .= $endMeridiem;
-            if ($startMeridiem != $endMeridiem) {
-                $startTime .= $startMeridiem;
-            }
+      $endTime .= $endMeridiem;
+      if ($startMeridiem != $endMeridiem) {
+      $startTime .= $startMeridiem;
+      }
 
-            $timeLink = "$startTime - $endTime E.T.";
-            $output[] = "<li class='last'>$timeLink</li>";
+      $timeLink = "$startTime - $endTime E.T.";
+      $output[] = "<li class='last'>$timeLink</li>";
 
-            $titleLink = l($event->title, $path);
-            $output[] = "<li class='first last'>$titleLink</li>";
+      $titleLink = l($event->title, $path);
+      $output[] = "<li class='first last'>$titleLink</li>";
 
-            $event_type = field_get_items('node', $event, 'field_event_type');
-            if ($event_type === false)
-                continue;
+      $event_type = field_get_items('node', $event, 'field_event_type');
+      if ($event_type === false)
+      continue;
 
-            $type = $event_type[0]['value'];
-            $typeLabel = 'In Person';
-            if ($type != 'in_person') {
-                $typeLabel = 'WebEx/Phone Conf.';
-            }
+      $type = $event_type[0]['value'];
+      $typeLabel = 'In Person';
+      if ($type != 'in_person') {
+      $typeLabel = 'WebEx/Phone Conf.';
+      }
 
-            $output[] = "<li class='first last'>$typeLabel</li>";
-        }
-    }
+      $output[] = "<li class='first last'>$typeLabel</li>";
+      }
+      }
 
 
 
-    $output[] = '</ul>';
-    $output[] = '</div>';
-    $output[] = "<img class='ebms-left-nav-block-bottom 'alt='' src='$imagesDir/left-nav-box-bottom.png'>";
-    $output[] = '</div>';*/
+      $output[] = '</ul>';
+      $output[] = '</div>';
+      $output[] = "<img class='ebms-left-nav-block-bottom 'alt='' src='$imagesDir/left-nav-box-bottom.png'>";
+      $output[] = '</div>'; */
 
     return implode('', $output);
 }
@@ -167,10 +199,11 @@ function _calendar_query_alter(&$view, &$query) {
     //TODO: If power users are viewing all items, then don't filter
     //if viewing all then just return.
     if (user_access("view all events")
-        && in_array($view->current_display, array('month_all', 'week_all', 'day_all'))) {
+        && in_array($view->current_display,
+            array('month_all', 'week_all', 'day_all'))) {
         return;
     }
-    
+
     //Determine if we should show all board meetings or not
     $filter_boards = true;
 
@@ -189,11 +222,12 @@ function _calendar_query_alter(&$view, &$query) {
     if ($filter_boards && $user->ebms_boards) {
         //Add table to query    
         $boardsjoin = new views_join();
-        $boardsjoin->construct("field_data_field_boards", $view->base_table, $view->base_field,
-            'entity_id', array(
-                array('field' => 'entity_type', 'value' => $view->base_table),
-                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
-            ));
+        $boardsjoin->construct("field_data_field_boards", $view->base_table,
+            $view->base_field, 'entity_id',
+            array(
+            array('field' => 'entity_type', 'value' => $view->base_table),
+            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+        ));
         $query->table_queue[$view->base_table . '__field_data_field_boards'] = array(
             'table' => 'field_data_field_boards',
             'num' => 1,
@@ -216,11 +250,12 @@ function _calendar_query_alter(&$view, &$query) {
     if ($user->ebms_subgroups) {
         //Add table to query
         $subgroupsjoin = new views_join();
-        $subgroupsjoin->construct("field_data_field_subgroups", $view->base_table, $view->base_field,
-            'entity_id', array(
-                array('field' => 'entity_type', 'value' => $view->base_table),
-                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
-            ));
+        $subgroupsjoin->construct("field_data_field_subgroups",
+            $view->base_table, $view->base_field, 'entity_id',
+            array(
+            array('field' => 'entity_type', 'value' => $view->base_table),
+            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+        ));
         $query->table_queue[$view->base_table . '__field_data_field_subgroups'] = array(
             'table' => 'field_data_field_subgroups',
             'num' => 1,
@@ -237,11 +272,12 @@ function _calendar_query_alter(&$view, &$query) {
     if ($user->ebms_ad_hoc_groups) {
         //Add table to query
         $adhocgroupsjoin = new views_join();
-        $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups", 
-                $view->base_table, $view->base_field, 'entity_id', array(
-                array('field' => 'entity_type', 'value' => $view->base_table),
-                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
-            ));
+        $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups",
+            $view->base_table, $view->base_field, 'entity_id',
+            array(
+            array('field' => 'entity_type', 'value' => $view->base_table),
+            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+        ));
         $query->table_queue[$view->base_table . '__field_data_field_ad_hoc_groups'] = array(
             'table' => 'field_data_field_ad_hoc_groups',
             'num' => 1,
@@ -254,15 +290,16 @@ function _calendar_query_alter(&$view, &$query) {
         $or_conditions->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
             $user->ebms_ad_hoc_groups, 'IN');
     }
-    
+
     //Individual Users:
     //Add table to query
     $userjoin = new views_join();
-    $userjoin->construct("field_data_field_individuals", 
-        $view->base_table, $view->base_field, 'entity_id',array(
-                array('field' => 'entity_type', 'value' => $view->base_table),
-                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
-            ));
+    $userjoin->construct("field_data_field_individuals", $view->base_table,
+        $view->base_field, 'entity_id',
+        array(
+        array('field' => 'entity_type', 'value' => $view->base_table),
+        array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+    ));
     $query->table_queue[$view->base_table . '__field_data_field_individuals'] = array(
         'table' => 'field_data_field_individuals',
         'num' => 1,
@@ -274,8 +311,8 @@ function _calendar_query_alter(&$view, &$query) {
     //Add where condition
     $or_conditions->condition('field_data_field_individuals.field_individuals_value',
         array($user->uid), 'IN'); //Note the use of array here.  IN must have an array
-    
-    
+
+
     $query->add_where(
         'membership', $or_conditions
     );

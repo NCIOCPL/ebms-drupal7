@@ -4,7 +4,6 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 $view = new view();
 $view->name = 'event_calendar';
 $view->description = '';
@@ -48,6 +47,7 @@ $handler->display->display_options['fields']['field_datespan']['settings'] = arr
   'multiple_number' => '',
   'multiple_from' => '',
   'multiple_to' => '',
+  'show_repeat_rule' => '',
 );
 $handler->display->display_options['fields']['field_datespan']['group_rows'] = FALSE;
 $handler->display->display_options['fields']['field_datespan']['delta_offset'] = '0';
@@ -114,7 +114,7 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar/%/all';
+$handler->display->display_options['path'] = 'calendar/all';
 $handler->display->display_options['menu']['title'] = 'Month';
 $handler->display->display_options['menu']['weight'] = '0';
 $handler->display->display_options['menu']['context'] = 0;
@@ -158,7 +158,7 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar/week/%/all';
+$handler->display->display_options['path'] = 'calendar/week/all';
 $handler->display->display_options['menu']['title'] = 'Week';
 $handler->display->display_options['menu']['weight'] = '2';
 $handler->display->display_options['menu']['context'] = 0;
@@ -199,7 +199,7 @@ $handler->display->display_options['arguments']['date_argument']['granularity'] 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
-$handler->display->display_options['path'] = 'calendar/day/%/all';
+$handler->display->display_options['path'] = 'calendar/day/all';
 $handler->display->display_options['menu']['title'] = 'Day';
 $handler->display->display_options['menu']['weight'] = '3';
 $handler->display->display_options['menu']['context'] = 0;
@@ -373,9 +373,8 @@ $handler->display->display_options['defaults']['footer'] = FALSE;
 $handler->display->display_options['footer']['area']['id'] = 'area';
 $handler->display->display_options['footer']['area']['table'] = 'views';
 $handler->display->display_options['footer']['area']['field'] = 'area';
-$handler->display->display_options['footer']['area']['label'] = 'Block Bottom';
 $handler->display->display_options['footer']['area']['empty'] = TRUE;
-$handler->display->display_options['footer']['area']['content'] = '<div class="view-block-bottom" />';
+$handler->display->display_options['footer']['area']['content'] = '<div></div>';
 $handler->display->display_options['footer']['area']['format'] = 'full_html';
 $handler->display->display_options['defaults']['empty'] = FALSE;
 /* No results behavior: Global: Text area */
@@ -383,7 +382,7 @@ $handler->display->display_options['empty']['area']['id'] = 'area';
 $handler->display->display_options['empty']['area']['table'] = 'views';
 $handler->display->display_options['empty']['area']['field'] = 'area';
 $handler->display->display_options['empty']['area']['empty'] = TRUE;
-$handler->display->display_options['empty']['area']['content'] = '<em>You have no events currently scheduled.</em>';
+$handler->display->display_options['empty']['area']['content'] = '<em>You have no upcoming scheduled events.</em>';
 $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
 $handler->display->display_options['defaults']['fields'] = FALSE;
 /* Field: Event Time */
@@ -487,7 +486,7 @@ $handler->display->display_options['empty']['area']['id'] = 'area';
 $handler->display->display_options['empty']['area']['table'] = 'views';
 $handler->display->display_options['empty']['area']['field'] = 'area';
 $handler->display->display_options['empty']['area']['empty'] = TRUE;
-$handler->display->display_options['empty']['area']['content'] = '<em>You have no events currently scheduled.</em>';
+$handler->display->display_options['empty']['area']['content'] = '<em>You have no upcoming scheduled events.</em>';
 $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
 $handler->display->display_options['defaults']['fields'] = FALSE;
 /* Field: Event Day */
