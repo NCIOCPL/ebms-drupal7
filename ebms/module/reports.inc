@@ -68,6 +68,13 @@ class EbmsReports {
         Ebms\Menu::$active = 'Reports';
         drupal_add_css(Ebms\CSS_DIR . '/reports.css');
         switch ($this->report) {
+            case 'meeting-dates':
+            case 'not-list':
+            case 'yes-list':
+            case 'no-responses':
+            case 'citation-followup':
+            case 'boards-and-topics':
+                return $this->not_yet_implemented();
             case 'cites-status':
                 return drupal_get_form('pdq_ebms_cites_by_status_form',
                                        $this->request_id);
@@ -111,6 +118,53 @@ class EbmsReports {
             default:
                 return $this->landing_page();
         }
+    }
+
+    /**
+     * Put up custom stub pages for the reports which haven't yet been
+     * implemented so the user doesn't lose the left navigation links
+     * for reports.
+     */
+    private function not_yet_implemented() {
+        $reports = array(
+            'meeting-dates' => array('Board Management', 'Meeting Dates'),
+            'not-list' => array('Citation Management', 'Not List'),
+            'yes-list' => array('Citation Management', 'Yes List'),
+            'no-responses' => array('Citation Management', 'No Responses'),
+            'citation-followup' => array(
+                'Citation Management',
+                'Citation Follow-up'
+            ),
+            'boards-and-topics' => array(
+                'Citation Management',
+                'Board and Topic Lists',
+            ),
+        );
+        $report = $this->report;
+        if (!array_key_exists($report, $reports)) {
+            drupal_set_message("Unrecognized report URL $report.", 'error');
+            drupal_goto('reports');
+        }
+        list($group, $title) = $reports[$report];
+        $left_nav = EbmsReports::build_left_nav($group, $title);
+        return array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'not-implemented'),
+            'left-nav' => $left_nav,
+            'stub' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'report-stub'),
+                'title' => array(
+                    '#type' => 'markup',
+                    '#markup' => "<h2>$title</h2>",
+                ),
+                'explanation' => array(
+                    '#type' => 'markup',
+                    '#markup' =>
+                    '<p>This report is planned for a future release.</p>',
+                ),
+            ),
+        );
     }
 
     /**
@@ -266,7 +320,7 @@ class EbmsReports {
                     'reports/board',
                     array(
                         array('Documents', 'reports/documents'),
-                        array('Meeting Dates', 'stub'),
+                        array('Meeting Dates', 'reports/meeting-dates'),
                         array('Hotel Requests', 'stub'),
                         array('Reimbursement Requests', 'stub'),
                     ),
@@ -277,8 +331,8 @@ class EbmsReports {
                     array(
                         array('Citation Reports', 'reports/citations'),
                         array('Import Reports', 'reports/import'),
-                        array('Not List', 'stub'),
-                        array('Yes List', 'stub'),
+                        array('Not List', 'reports/not-list'),
+                        array('Yes List', 'reports/yes-list'),
                     ),
                 ),
             ),
@@ -288,7 +342,7 @@ class EbmsReports {
                     'reports/board',
                     array(
                         array('Documents', 'reports/documents'),
-                        array('Meeting Dates', 'stub'),
+                        array('Meeting Dates', 'reports/meeting-dates'),
                         array('Hotel Requests', 'stub'),
                         array('Reimbursement Requests', 'stub'),
                     ),
@@ -300,9 +354,15 @@ class EbmsReports {
                         array('Import Reports', 'reports/import'),
                         array('Citations By Status', 'reports/cites-status'),
                         array('Literature Reviews', 'reports/lit-review'),
-                        array('No Responses', 'stub'),
-                        array('Citation Follow-up', 'stub'),
-                        array('Board and Topic Lists', 'stub'),
+                        array('No Responses', 'reports/no-responses'),
+                        array(
+                            'Citation Follow-up',
+                            'reports/citation-followup',
+                        ),
+                        array(
+                            'Board and Topic Lists',
+                            'reports/boards-and-topics',
+                        ),
                     ),
                 ),
             ),

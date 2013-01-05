@@ -8,7 +8,7 @@
 }
 #reports-right-links li:first-child { margin-left: 10px; }
 #reports-right-links li:first-child a { font-weight: bold; }
-#report-form, #reports-right {
+#report-form, #reports-right, #report-stub {
     float: left; width: 730px; margin-bottom: 50px;
 }
 #report-form h2 { margin-top: 25px; }
