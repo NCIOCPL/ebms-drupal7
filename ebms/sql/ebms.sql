@@ -3,6 +3,7 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_article_topic;
 DROP TABLE IF EXISTS ebms_temp_report;
 DROP TABLE IF EXISTS ebms_publish_queue_flag;
 DROP TABLE IF EXISTS ebms_publish_queue;
@@ -1901,3 +1902,30 @@ CREATE TABLE ebms_temp_report
   (report_id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
  report_data text    NOT NULL)
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Record of the topics associated with an article, along with the review
+ * cycle assigned to the article-topic combination.  The link into the
+ * article state table provides all of the remaining information about
+ * who was responsible for the association, when it happened, what the
+ * status of the article was at the time for that topic, etc.  Populated
+ * by the conversion software for the legacy data, and by the API for
+ * setting article state going forward.
+ *
+ * article_id         foreign key into the ebms_article table
+ * topic_id           foreign key into the ebms_topic table
+ * cycle_id           foreign key into the ebms_cycle table
+ * article_state_id   foreign key into the ebms_article_state table
+ */
+    CREATE TABLE ebms_article_topic
+     (article_id INTEGER NOT NULL,
+        topic_id INTEGER NOT NULL,
+        cycle_id INTEGER NOT NULL,
+article_state_id INTEGER NOT NULL,
+     PRIMARY KEY (article_id, topic_id),
+     FOREIGN KEY (article_id)       REFERENCES ebms_article (article_id),
+     FOREIGN KEY (topic_id)         REFERENCES ebms_topic (topic_id),
+     FOREIGN KEY (cycle_id)         REFERENCES ebms_cycle (cycle_id),
+     FOREIGN KEY (article_state_id)
+     REFERENCES ebms_article_state (article_state_id))
+          ENGINE=InnoDB DEFAULT CHARSET=utf8;
