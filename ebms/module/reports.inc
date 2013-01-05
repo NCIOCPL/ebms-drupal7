@@ -8,8 +8,24 @@
  * Implementation of EBMS page for running system reports.
  */
 function pdq_ebms_reports($report=null, $request_id=0) {
+    register_shutdown_function('pdq_ebms_shutdown');
     $control = new EbmsReports($report, $request_id);
     return $control->run();
+}
+
+/**
+ * Don't let PHP terminate the request with a blank screen (TIR #2231).
+ */
+function pdq_ebms_shutdown() {
+    $e = error_get_last();
+    if ($e !== null) {
+        if (is_array($e) && isset($e['message']))
+            $message = $e['message'];
+        else
+            $message = 'Report failure (timeout?)';
+        watchdog('reports', $message, array(), WATCHDOG_ERROR);
+        drupal_goto('reports/timeout');
+    }
 }
 
 /*
@@ -84,6 +100,14 @@ class EbmsReports {
                 return $this->landing_page('Board Management');
             case 'cite':
                 return $this->landing_page('Citation Management');
+            case 'failure':
+            case 'timeout':
+                drupal_set_message(
+                    'Report request exceeded available resources.<br />' .
+                    'Please use the Back button to return to your request ' .
+                    'form and try refining the report filter criteria.',
+                    'error');
+                // Fall through.
             default:
                 return $this->landing_page();
         }
