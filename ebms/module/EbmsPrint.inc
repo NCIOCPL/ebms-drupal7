@@ -335,6 +335,77 @@ function createPrintJob() {
 }
 
 /**
+ * Add or update a row to the ebms_member_wants_print table.
+ *
+ *  @param int $memberId    Board member user ID.
+ *  @param string $startDt  Start date.
+ *  @param string $endDt    End date.
+ *
+ *  @return                 True = success, else failure, e.g., bad date
+ *                           format, missing start date.
+ */
+function setPrintMember($memberId, $startDt, $endDt=null) {
+
+    // Normalize dates
+    if (!$startDt)
+        $startDt = null;
+    if (!$endDt)
+        $endDt = null;
+
+    $fields = array('board_member_id' => $memberId,
+                    'start_dt'        => $startDt,
+                    'end_dt'          => $endDt);
+
+    // If we already have an entry for this person, it's an update
+    $countMbr = db_query('
+        SELECT count(*)
+          FROM {ebms_member_wants_print}
+         WHERE board_member_id = :memberId',
+        array(':memberId' => $memberId))->fetchField();
+
+    if ($countMbr == 1) {
+        $qry = db_update('ebms_member_wants_print');
+        $qry->condition('board_member_id', $memberId, '=');
+    }
+    else {
+        $qry = db_insert('ebms_member_wants_print');
+    }
+
+    // Commonalities for insert or update
+    $qry->fields($fields);
+
+    try {
+        $qry->execute();
+    }
+    catch (\Exception $e) {
+        pdq_ebms_debug("setPrintMember() failed: ", "memberId=$memberId, ".
+                "startDt=$startDt, endDt=$endDt:\n$e");
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Delete a row in the ebms_member_wants_print table.
+ *
+ *  @param int $memberId    Board member user ID.
+ *
+ *  @return                 True = success, else failure, e.g., delete a
+ *                           board member who was not in the table.
+ */
+function delPrintMember($memberId) {
+
+    $qry = db_delete('ebms_member_wants_print')
+     ->condition('board_member_id', $memberId, '=');
+
+    $delCount = $qry->execute();
+
+    if ($delCount > 0)
+        return true;
+    return false;
+}
+
+/**
  * Records everything we know of interest about a file that is to be
  * printed.  This object is a stand-in for the file in various lists.
  */
@@ -815,7 +886,6 @@ pdq_ebms_debug("Parms:",
         // Assemble the packets for this member
         $packetList = array();
         foreach ($rows as $row) {
-pdq_ebms_debug("Packaging packetId=", $row->packet_id);
             $packetList[] = $row->packet_id;
         }
 
@@ -1538,6 +1608,15 @@ EOS;
             $boardName = getBoardNameById($this->board_id);
             $showBoard = "$boardName ($this->board_id)";
 
+            // Displayable packet title (useless for legacy but better later)
+            $packetTitle = db_query('
+                SELECT packet_title
+                  FROM {ebms_packet}
+                 WHERE packet_id = :packetId',
+              array(':packetId' => $this->packet_id))->fetchField();
+            if ($packetTitle)
+                $showPacket = "$packetTitle (ID=" . $this->packet_id . ')';
+
             // Estimate stats
             $docCount  = count($fileList);
             $pageCount = 0;
@@ -1576,6 +1655,7 @@ EOS;
  <tr><td>Print date</td><td>$this->print_dt</td></tr>
  <tr><td>Board ID</td><td>$showBoard</td></tr>
  <tr><td>Board member ID</td><td>$showMember</td></tr>
+ <tr><td>Packet ID</td><td>$showPacket</td></tr>
  <tr><td>Mode</td><td>$this->mode</td></tr>
  <tr><td>Comment</td><td>$this->comment</td></tr>
 </table>
@@ -1773,7 +1853,7 @@ function runPrintJob() {
             //  response sheet EPFs will be interspersed, one before
             //  each article pdf EPF
             $pj->docList =
-                $pj->getPacketPrintList($packetId, $pj->board_member_id);
+                $pj->getPacketPrintList($pj->packet_id, $pj->board_member_id);
             break;
 
         case 'package':
