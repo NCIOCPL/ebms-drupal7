@@ -20,6 +20,7 @@ function pdq_ebms_alantest() {
     require_once('EbmsArticle.inc');
     require_once('EbmsImport.inc');
     require_once('EbmsSearch.inc');
+    require_once('EbmsPrint.inc');
 
     pdq_ebms_debug('ALAN POST', $_POST);
     $test = Ebms\Util::get_request_value('test');
@@ -73,6 +74,10 @@ function pdq_ebms_alantest() {
             if ($op)
                 return pdq_ebms_printouts_test();
             return drupal_get_form('ebms_testapi_printouts_form');
+        case 'setPrintMbrs':
+            if ($op)
+                return pdq_ebms_setprintmbrs_test();
+            return drupal_get_form('ebms_testapi_setprintmbrs_form');
         case 'fpdf':
             if ($op)
                 return pdq_ebms_fpdf_test();
@@ -414,12 +419,8 @@ function pdq_ebms_printpkt_test() {
 
     // Normalize
     if ($memberIdx) {
-        // Convert member array index to name, then ID
-        $memberList = getAllBoardMembers();
-        $memberName = $memberList[$memberIdx];
-        $memberId   = db_query(
-            'SELECT uid FROM {users} WHERE name = :memberName',
-            array(':memberName' => $memberName))->fetchField();
+        $member = decodeMemberIdx($memberIdx);
+        $memberId = $member['memberId'];
     }
     else
         $memberId = null;
@@ -463,7 +464,6 @@ function pdq_ebms_printpkt_test() {
     $jobId = $qry->execute();
 
     // Execute the print job
-    require('EbmsPrint.inc');
     $status = Ebms\runPrintJob();
     if ($status == 'success')
         downloadPrintResults($jobId);
@@ -505,6 +505,43 @@ function pdq_ebms_printouts_test() {
         return;
 }
 
+/**
+ * Add, edit, or delete a member in the ebms_member_wants_print table.
+ */
+function pdq_ebms_setprintmbrs_test() {
+
+    // Has to be a member selected to do anything
+    $memberIdx = Ebms\Util::get_request_value('memberId', null);
+    if (!$memberIdx)
+        return 'No changes made';
+
+    // Resolve member index into names to member ID
+    $mm         = decodeMemberIdx($memberIdx);
+    $memberId   = $mm['memberId'];
+    $memberName = $mm['memberName'];
+
+    $delBox  = Ebms\Util::get_request_value('delBox');
+    $startDt = Ebms\Util::get_request_value('startDate', null);
+    $endDt   = Ebms\Util::get_request_value('endDate', null);
+
+    if ($delBox) {
+        $rc = Ebms\delPrintMember($memberId);
+        if ($rc)
+            return "$memberName has been deleted from the wants-print list";
+        else
+            return "No changes to the wants-print list";
+    }
+    else {
+        // Try an insert or update
+        $rc = Ebms\setPrintMember($memberId, $startDt, $endDt);
+        if (!$rc) {
+            return "Unable to update the wants-print list for $memberName.  ".
+                   "Is there a start date in YYYY-MM-DD format?";
+        }
+        return "$memberName updated in wants-print list";
+    }
+}
+
 function pdq_ebms_api_tests() {
     $tests = array(
         array('Import articles from NLM', 'import'),
@@ -520,6 +557,7 @@ function pdq_ebms_api_tests() {
         array('Execute a stored search', 'execSearch'),
         array('Run a packet printing job', 'printPkts'),
         array('View print jobs', 'getPrintouts'),
+        array('Modify the list of member wanting print', 'setPrintMbrs'),
         array('Test to see if fpdf is accessible', 'fpdf'),
         // array('Pick a board', 'pickBoard'),
     );
@@ -1066,6 +1104,87 @@ function ebms_testapi_printouts_form($form) {
 }
 
 /**
+ * Simple form to add, edit, delete members from the members_want_print table.
+ */
+function ebms_testapi_setprintmbrs_form($form) {
+
+    $form = array();
+    $form['title'] = array(
+        '#type' => 'markup',
+        '#markup' => "<h3>Edit the Board Members Printing Table</h3>\n".
+            '<p>Use this form to view the list of board members '.
+            'who want printouts, to add a member to the list, to delete a '.
+            'member from the list, or to change the start or end dates for '.
+            'printing for a member.</p>',
+    );
+
+    // Load all of the rows from the table into an array
+    $qry = db_select('ebms_member_wants_print', 'wp');
+    $qry->join('users', 'usr', 'wp.board_member_id = usr.uid');
+    $qry->fields('usr', array('name'));
+    $qry->fields('wp', array('start_dt', 'end_dt'));
+    $qry->orderBy('usr.name');
+    // $rows = $qry->execute()->fetchAll();
+    $rows = $qry->execute()->fetchAll(PDO::FETCH_ASSOC);
+
+    $header = array('Board Member', 'Start Printing', 'End Printing');
+    // Display them to the user
+    $form['wantPrint'] = array(
+        '#theme' => 'table',
+        '#caption' => ' Members currently registered for printing',
+        '#header' => $header,
+        '#rows' => $rows,
+    );
+
+    $form['title'] = array(
+        '#type' => 'markup',
+        '#markup' => "<p>To add a board member to the list, select the board ".
+            "member, enter start and end dates, and click Submit.<br />\n".
+            "To delect a board member, select the member's name, check ".
+            "the Delete checkbox, and click Submit.<br />\n".
+            "To alter the dates, select the member, enter the new dates, ".
+            "and click Submit.</p>\n".
+            "<p>Only packets created after the Start Date will be printed ".
+            "the board member.<br />\n".
+            "The end date is a day on or after which, no printing will ".
+            "be done for this board member.  Leave the end date empty if ".
+            "printing should continue for the indefinite future.</p>\n",
+    );
+
+    addMemberIdToForm($form, 'Select a member to add, delete, or modify');
+
+    $form['startDate'] = array(
+        '#type' => 'textfield',
+        '#size' => 16,
+        '#title' => 'Only print packets created on or after this start date '.
+                    '(YYYY-MM-DD {hh:mm:ss optional}',
+        '#required' => false
+    );
+
+    $form['endDate'] = array(
+        '#type' => 'textfield',
+        '#size' => 16,
+        '#title' => 'No printing for this member after this date '.
+                    '(YYYY-MM-DD {hh:mm:ss optional}',
+        '#required' => false
+    );
+
+    $form['delBox'] = array(
+        '#type' => 'checkbox',
+        '#title' => 'Delete the selected board member from printing',
+        '#required' => false
+    );
+
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Submit'
+    );
+
+    return $form;
+}
+
+
+/**
  * Dumb tester for fpdf, just to see if it works.
  */
 function ebms_testapi_fpdf_form($form) {
@@ -1374,6 +1493,31 @@ function getAllBoardMembers() {
         $memberNames[] = $row->name;
 
     return $memberNames;
+}
+
+/**
+ * Given a member selection from getAllBoardMembers, find the member
+ * name and ID.
+ *
+ *  @param int $memberIdx   Index into array produced by getAllBoardMembers().
+ *
+ *  @return array           ('memberId'=>memberId, 'memberName'=>name).
+ */
+function decodeMemberIdx($memberIdx) {
+
+    $result = array();
+
+    if ($memberIdx) {
+        // Convert member array index to name, then ID
+        $memberList = getAllBoardMembers();
+        $memberName = $memberList[$memberIdx];
+        $memberId   = db_query(
+            'SELECT uid FROM {users} WHERE name = :memberName',
+            array(':memberName' => $memberName))->fetchField();
+        $result['memberId']   = $memberId;
+        $result['memberName'] = $memberName;
+    }
+    return $result;
 }
 
 // Return array of board name, ID, using addBoardIdToForm/getAllBoards
