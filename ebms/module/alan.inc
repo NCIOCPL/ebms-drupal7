@@ -459,6 +459,23 @@ function pdq_ebms_printpkt_test() {
         if (!$val)
             return "Invalid Old job ID.  Job $oldJobId does not exist.";
     }
+    if ($startDt) {
+        // Returns 1 if start date < now, 0 if >, Null if invalid start date
+        $val = db_query('SELECT DATE(:startDt) <= NOW()',
+                  array(':startDt'=>$startDt))->fetchField();
+        if (is_null($val))
+            return "Invalid format start date '$startDt'";
+        if ($val == 0)
+            return "Start date '$startDt' is in the future.  That won't work";
+    }
+    if ($endDt) {
+        $val = db_query('SELECT DATE(:endDt) > :startDt',
+                  array(':endDt'=>$endDt, ':startDt'=>$startDt))->fetchField();
+        if (is_null($val))
+            return "Invalid format end date '$endDt'";
+        if ($val == 0)
+            return "Start date '$startDt' is after end date '$endDt'";
+    }
 
     // Create a new job, ready to run
     $qry = db_insert('ebms_print_job')
