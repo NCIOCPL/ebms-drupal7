@@ -264,13 +264,15 @@ if ($logged_in) {
         <div id="footer">
           <div class="section">
             <?php print l('EBMS Home', 'home') ?> |
-            <?php print l('Contact Us', 'stub') ?> |
-            <?php print l('Policies', 'stub') ?> |
-            <?php print l('Accessibility', 'stub') ?> |
-            <?php print l('Viewing Files', 'alantest') ?> |
-            <?php print l('FOIA', 'clear-theme-cache') ?> |
-            <?php print l('Site Help', 'admin') ?> |
-            <?php print l('Site Map', 'clear-all-caches') ?> <br />
+            <a href="http://www.cancer.gov/global/web/policies"
+               target="_blank">Policies</a> |
+            <a href="http://www.cancer.gov/global/web/policies/page3"
+               target="_blank">Accessibility</a> |
+            <a href="http://www.cancer.gov/global/viewing-files"
+               target="_blank">Viewing Files</a> |
+            <a href="http://www.cancer.gov/global/web/policies/page6"
+               target="_blank">FOIA</a> |
+            <?php print l('Site Help', 'help') ?> <br />
             <a href="http://www.hhs.gov" target="_blank"
               ><img src="<?php print $images; ?>/hhs.png" alt="HHS" />
             </a> &nbsp;
