@@ -1594,6 +1594,10 @@ EOS;
      *  @return EbmsPrintFile for the file list itself.
      */
     function createPrintReport($fileList) {
+
+        // Replacement for unspecified paramters
+        $noSpec = "Not specified";
+
         try {
             // Displayable board member info
             if ($this->board_member_id) {
@@ -1602,20 +1606,33 @@ EOS;
                 $showMember = "$memberName ($this->board_member_id)";
             }
             else
-                $showMember = "Not specified";
+                $showMember = $noSpec;
 
             // Displayable board info
-            $boardName = getBoardNameById($this->board_id);
-            $showBoard = "$boardName ($this->board_id)";
+            if ($this->board_id) {
+                $boardName = getBoardNameById($this->board_id);
+                $showBoard = "$boardName ($this->board_id)";
+            }
+            else
+                $showBoard = $noSpec;
+
+            if ($this->old_job_id)
+                $showOldJob = $this->old_job_id;
+            else
+                $showOldJob = $noSpec;
 
             // Displayable packet title (useless for legacy but better later)
-            $packetTitle = db_query('
-                SELECT packet_title
-                  FROM {ebms_packet}
-                 WHERE packet_id = :packetId',
-              array(':packetId' => $this->packet_id))->fetchField();
-            if ($packetTitle)
-                $showPacket = "$packetTitle (ID=" . $this->packet_id . ')';
+            if ($this->packet_id) {
+                $packetTitle = db_query('
+                    SELECT packet_title
+                      FROM {ebms_packet}
+                     WHERE packet_id = :packetId',
+                  array(':packetId' => $this->packet_id))->fetchField();
+                if ($packetTitle)
+                    $showPacket = "$packetTitle (ID=" . $this->packet_id . ')';
+            }
+            else
+                $showPacket = $noSpec;
 
             // Estimate stats
             $docCount  = count($fileList);
@@ -1648,7 +1665,7 @@ EOS;
 <table border='2'>
  <tr><th>Parameter</th><th>Value</th></tr>
  <tr><td>Job ID</td><td>$this->print_job_id</td></tr>
- <tr><td>Old job ID</td><td>$this->old_job_id</td></tr>
+ <tr><td>Old job ID</td><td>$showOldJob</td></tr>
  <tr><td>Job type</td><td>$this->print_job_type</td></tr>
  <tr><td>Start date</td><td>$this->packet_start_dt</td></tr>
  <tr><td>End date</td><td>$this->packet_end_dt</td></tr>
