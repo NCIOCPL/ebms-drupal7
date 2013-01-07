@@ -444,6 +444,22 @@ function pdq_ebms_printpkt_test() {
     else if (is_null($oldJobId))
         return("Must specify board, board member, packet ID, or old job ID");
 
+    // Validate foreign keys before attempting an insert
+    if ($packetId) {
+        $val = db_query('SELECT packet_id FROM {ebms_packet}
+                         WHERE packet_id = :packetId',
+                        array(':packetId'=>$packetId))->fetchField();
+        if (!$val)
+            return "Invalid Packet ID.  Packet $packetId does not exist.";
+    }
+    if ($oldJobId) {
+        $val = db_query('SELECT print_job_id FROM {ebms_print_job}
+                         WHERE print_job_id = :oldJobId',
+                        array(':oldJobId'=>$oldJobId))->fetchField();
+        if (!$val)
+            return "Invalid Old job ID.  Job $oldJobId does not exist.";
+    }
+
     // Create a new job, ready to run
     $qry = db_insert('ebms_print_job')
       ->fields(array(
