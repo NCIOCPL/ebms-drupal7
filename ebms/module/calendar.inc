@@ -347,6 +347,13 @@ function ebms_calendar_edit_event($nid) {
  * @return array $form      The updated form.
  */
 function calendar_node_form_alter(&$form, &$form_state) {
+    drupal_set_breadcrumb(
+        array(
+            l('Calendar', 'calendar'),
+            'Create Event',
+        )
+    );
+
     $params = drupal_get_query_parameters();
 
     if (isset($params['date'])) {

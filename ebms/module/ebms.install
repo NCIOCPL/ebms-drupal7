@@ -259,9 +259,9 @@ function _ebms_instance_info($field = array(), $bundle = FALSE) {
 }
 
 function ebms_enable_test() {
-    drupal_set_message('Cycling ebms module.');
+    drupal_set_message('Cycling ebms + ebms_forums modules.');
     module_disable(array('ebms'));
-    $ret = module_enable(array('ebms'));
+    $ret = module_enable(array('ebms_forums'));
 
     //dsm(field_info_field_types(), 'fields types');
     //dsm(field_info_fields(), 'field descs');
