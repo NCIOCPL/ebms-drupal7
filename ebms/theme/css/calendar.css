@@ -168,7 +168,7 @@ li.calendar-date{
 }
 
 .date-nav {
-    padding-bottom: 0px;
+    padding-bottom: 0px !important;
 }
 
 #calendar-enclosure .date-heading{
