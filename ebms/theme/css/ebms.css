@@ -739,6 +739,22 @@ body.front #calendar td.today {
 body.front #next-meeting li { line-height: 24px; }
 body.front #next-meeting span { font-weight: bold; }
 
+/* Formatting for the Create Event form */
+.file-widget input.form-file{
+    display: block;
+    margin: 0 0 20px 10px;
+
+}
+
+.file-widget input.form-submit,
+.form-managed-file input.form-submit.progress-disabled{
+    margin: 0 0 0 10px;
+}
+
+.form-type-managed-file div.description{
+    line-height: 20px;
+}
+
 /* ALL MEMBER PACKETS */
 #member-packets h3.h3-last { margin-bottom: 50px; }
 #member-packets h3 { color: inherit; margin-bottom: 15px; margin-top: 5px; }
