@@ -1578,7 +1578,7 @@ function getPrintJobData($numJobs=50, $latest=null, $status='success') {
     // Fetch the data
     $qry = db_select('ebms_print_job', 'job');
     $qry->leftjoin('ebms_board', 'board', 'job.board_id = board.board_id');
-    $qry->leftjoin('users', 'user', 'job.board_member_id = user.name');
+    $qry->leftjoin('users', 'user', 'job.board_member_id = user.uid');
     $qry->fields('job', array('print_job_id', 'mode', 'print_dt',
                  'status', 'comment'));
     $qry->fields('user', array('name'));
