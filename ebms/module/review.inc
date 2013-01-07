@@ -288,6 +288,7 @@ class EbmsReview {
             $del_url = "$del_func('$del_parm');";
             $del_link = '<a href="' . $del_url . '">DELETE</a>';
             $title = str_replace(' [Legacy]', '', $p->packet_title);
+            $title .= " [Packet #{$p->packet_id}]";
             $title_link = l(htmlspecialchars($title), $edit_url, $opts);
             $data = array(
                 $title_link,
@@ -519,6 +520,7 @@ class EbmsReview {
         $opts = array('query' => drupal_get_query_parameters());
         foreach ($packets as $p) {
             $title = str_replace(' [Legacy]', '', $p->packet_title);
+            $title .= " [Packet #{$p->packet_id}]";
             $query = db_select('users', 'u');
             $query->fields('u', array('name'));
             $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
@@ -1031,7 +1033,8 @@ class EbmsReview {
             $page['main']['#suffix'] = "</div>";
         }
 
-        $page['main']['form'] = drupal_get_form('pdq_ebms_board_member_review_form', $this);
+        $page['main']['form'] =
+            drupal_get_form('pdq_ebms_board_member_review_form', $this);
 
         return $page;
     }
@@ -1200,6 +1203,9 @@ class EbmsReview {
      * there was actually a reason to display this page (which we don't
      * do if there are no more articles in the packet left for this
      * reviewer to look at).
+     *
+     * 2013-01-05 (TIR 2176): Robin wants us to show articles which have
+     * already been reviewed (without the Review) button.
      */
     private function show_packet_articles(&$page, $articles) {
 
@@ -1218,6 +1224,8 @@ class EbmsReview {
         }
 
         // The section is expanded; show the articles still in the queue.
+        // Changed 2013-01-05 (TIR 2176): show all the articles in the
+        // packet.
         else {
 
             // Standard pieces we'll need for the link out to NLM.
@@ -1250,6 +1258,13 @@ class EbmsReview {
                 $links .= '</div>';
                 $citation = Ebms\Util::get_full_citation($article->article_id);
                 $options['query']['article'] = $article->article_id;
+                if ($article->when_posted) {
+                    $when_posted = date('m/d/Y',
+                                   strtotime($article->when_posted));
+                    $c2 = "<i>reviewed<br />$when_posted</i>";
+                }
+                else
+                    $c2 = l('Review', EbmsReview::$url, $options);
                 $rows[] = array(
                     'data' => array(
                         array(
@@ -1257,7 +1272,7 @@ class EbmsReview {
                             'class' => array('c1'),
                         ),
                         array(
-                            'data' => l('Review', EbmsReview::$url, $options),
+                            'data' => $c2,
                             'class' => array('c2'),
                             'valign' => 'bottom',
                         ),
@@ -1524,6 +1539,10 @@ class EbmsReview {
     /**
      * Get the list of articles in this packet which still need to be
      * reviewed by the logged-in board member.
+     *
+     * 2013-01-05 (TIR 2176): Robin has asked us to change the board
+     * member's packet display so that it no longer excludes articles
+     * which have already been reviewed.
      */
     private function reviewer_articles() {
         $query = db_select('ebms_article', 'a');
@@ -1538,8 +1557,8 @@ class EbmsReview {
             'r.reviewer_id = :uid', array(':uid' => $this->user->uid));
         $query->leftJoin('file_managed', 'f', 'f.fid = a.full_text_id');
         $query->fields('f', array('uri'));
+        $query->fields('r', array('review_id', 'when_posted'));
         $query->condition('p.packet_id', $this->packet_id);
-        $query->isNull('r.article_id');
         $query->orderBy('a.import_date', 'desc');
         $result = $query->execute();
         $articles = array();
