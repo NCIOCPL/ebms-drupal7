@@ -442,8 +442,7 @@ function pdq_ebms_printpkt_test() {
     else if (!is_null($boardId))
         $job_type = 'board';
     else if (is_null($oldJobId))
-        throw new \Exception(
-            "Must specify board, board member, packet ID, or old job ID");
+        return("Must specify board, board member, packet ID, or old job ID");
 
     // Create a new job, ready to run
     $qry = db_insert('ebms_print_job')
