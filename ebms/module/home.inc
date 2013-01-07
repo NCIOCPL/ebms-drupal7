@@ -119,12 +119,15 @@ class EbmsHomePage {
     private function right_panel() {
         if ($this->role == 'librarian')
             return array(
-                //'alerts' => $this->alerts(),
+                // Librarians only get alerts for unread messages,
+                // and the message feature has been deferred to a
+                // later release.
+                // 'alerts' => $this->alerts(),
                 'calendar' => $this->calendar(),
                 'admin tasks' => $this->admin(),
             );
         $blocks = array(
-            //'alerts' => $this->alerts(),
+            'alerts' => $this->alerts(),
             'next meeting' => $this->next_meeting(),
             'calendar' => $this->calendar(),
         );
@@ -359,14 +362,77 @@ class EbmsHomePage {
      *     system have been implemented.
      */
     private function alerts() {
-        $total = $this->role == 'librarian' ? 1 : 12;
+
+        // Start with a blank slate.
+        $total = 0;
+        $items = array();
+
+        // Deferred to a later release.
+        // $total += $count = $this->get_message_count();
+        // $items[] = EbmsHomePage::alert('messages', 'Messages', $count);
+
+        // XXX FORUM COUNT METHOD TO BE IMPLEMENTED (BY LAUREN?)
+        // $total += $count = $this->get_forum_count();
+        // $items[] = EbmsHomePage::alert('forum', 'Forum', $count);
+
+        // Show unreviewed articles for board members, unseen reviews
+        // for board managers.
+        $total += $count = $this->get_review_count();
+        $page = $this->role == 'member' ? 'assigned' : 'reviews';
+        $items[] = EbmsHomePage::alert("review/$page", 'Reviews', $count);
+
+        // Assemble and return the box.
         $title = "Alerts <span class='alert-count'>$total</span>";
-        $items = array(EbmsHomePage::alert('stub', 'Messages', 1));
-        if ($this->role != 'librarian') {
-            $items[] = EbmsHomePage::alert('forum', 'Forum', 5);
-            $items[] = EbmsHomePage::alert('review/reviews', 'Reviews', 6);
-        }
         return $this->list_block($title, 'alerts', $items);
+    }
+
+    /**
+     * Determines the count of unreviewed articles for a board member.
+     * Otherwise, finds the count of board member reviews posted to packets
+     * created by the current user since the last time the user looked
+     * at the packet.
+     */
+    private function get_review_count() {
+
+        // To count unreviewed articles, we need to know:
+        //    1.  is the article in a packet assigned to this board member?
+        //    2.  is the packet still active?
+        //    3.  has the board member already posted a review for the article?
+        if ($this->role == 'member') {
+            $query = db_select('ebms_packet_article', 'a');
+            $query->fields('a', array('article_id'));
+            $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
+            $query->join('ebms_packet_reviewer', 'm',
+                'a.packet_id = m.packet_id');
+            $query->leftJoin('ebms_article_review', 'r',
+                implode(' AND ',
+                    array(
+                        'r.article_id = a.article_id',
+                        'r.reviewer_id = m.reviewer_id',
+                        'r.packet_id = a.packet_id',
+                    )
+                )
+            );
+            $query->condition('m.reviewer_id', $this->user->uid);
+            $query->condition('p.active_status', 'A');
+            $query->isNull('r.article_id');
+            $query->distinct();
+            $query = $query->countQuery();
+            return $query->execute()->fetchField();
+        }
+
+        // To find unseen reviews, we check:
+        //    1. is the review for a packet this user created?
+        //    2. was the review posted since the last time the board
+        //       manager looked at the packet?
+        $query = db_select('ebms_article_review', 'r');
+        $query->fields('r', array('review_id'));
+        $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+        $query->condition('p.created_by', $this->user->uid);
+        $query->where('(p.last_seen IS NULL OR r.when_posted > p.last_seen)');
+        $query->distinct();
+        $query = $query->countQuery();
+        return $query->execute()->fetchField();
     }
 
     /**
