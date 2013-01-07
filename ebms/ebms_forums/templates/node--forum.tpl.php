@@ -37,9 +37,9 @@ $administer = user_access('edit forum topic');
                 drupal_add_js("(function ($) {
                     $(document).ready(function() {
 $('#edit-forum-icon').hover(function () {
-$(this).children('a').children('img').attr('src', '".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Active.png');
+$(this).children('a').children('img').attr('src', '/".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Active.png');
 }, function () {
-$(this).children('a').children('img').attr('src', '".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Inactive.png');
+$(this).children('a').children('img').attr('src', '/".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Inactive.png');
 });                   
 }); }) (jQuery);", 'inline');
                 ?>
