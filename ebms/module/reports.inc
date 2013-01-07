@@ -308,6 +308,27 @@ class EbmsReports {
      * page.
      */
     static function get_nav_links() {
+
+        // Get the URLs for webform-based reports.
+        $hotel_report_node = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->condition('n.type', 'webform')
+            ->condition('n.title', 'Hotel Request')
+            ->execute()
+            ->fetchField();
+        $reimbursement_report_node = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->condition('n.type', 'webform')
+            ->condition('n.title', 'Reimbursement Request')
+            ->execute()
+            ->fetchField();
+        $hotel_report_url = $reimbursement_report_url = 'stub';
+        if ($hotel_report_node)
+            $hotel_report_url =
+                "node/$hotel_report_node/webform-results/table";
+        if ($reimbursement_report_node)
+            $reimbursement_report_url =
+                "node/$reimbursement_report_node/webform-results/table";
         global $user;
         if (in_array('medical librarian', $user->roles))
             $role = 'librarian';
@@ -321,8 +342,9 @@ class EbmsReports {
                     array(
                         array('Documents', 'reports/documents'),
                         array('Meeting Dates', 'reports/meeting-dates'),
-                        array('Hotel Requests', 'stub'),
-                        array('Reimbursement Requests', 'stub'),
+                        array('Hotel Requests', $hotel_report_url),
+                        array('Reimbursement Requests',
+                            $reimbursement_report_url),
                     ),
                 ),
                 array(
@@ -343,8 +365,9 @@ class EbmsReports {
                     array(
                         array('Documents', 'reports/documents'),
                         array('Meeting Dates', 'reports/meeting-dates'),
-                        array('Hotel Requests', 'stub'),
-                        array('Reimbursement Requests', 'stub'),
+                        array('Hotel Requests', $hotel_report_url),
+                        array('Reimbursement Requests',
+                            $reimbursement_report_url),
                     ),
                 ),
                 array(
