@@ -4,7 +4,7 @@
 
 namespace Ebms;
 
-// require_once('logw.inc'); // XXX DEBUG
+require_once('logw.inc'); // XXX DEBUG
 
 /**
  * Call this function to create and return a Drupal db_select
@@ -46,7 +46,7 @@ function getSearchQuery($json) {
 // DEBUG
 // $jspec = print_r($srch->spec, true);
 // logw("Full decoded json spec:\n$jspec\n");
-// logw("SQL for query:\n{$srch->qry}\n");
+logw("SQL for query:\n{$srch->qry}\n");
 
 
     return $srch->qry;
@@ -124,25 +124,43 @@ class EbmsSearch {
             if ($this->spec['topic-logic'] == 'OR')
                 $this->qry->condition('state.topic_id', $this->topics, 'IN');
             else {
-                foreach ($this->topics as $topic)
-                    $this->qry->condition('state.topic_id', $topic);
+                // Create a join for each possible state
+                $idx = 1;
+                foreach ($this->topics as $topicId) {
+                    $nextState = "topState$idx";
+                    $this->qry->join('ebms_article_state', $nextState,
+                                     "$nextState.article_id = art.article_id");
+                    $this->qry->condition("$nextState.topic_id", $topicId);
+                    ++$idx;
+                }
             }
         }
 
         // Board specs only exist in the json if specified by user
         // If board(s) specified with no topic
-        // XXX Maybe I'm too restrictive here.
-        //     Easy to change if so, just remove the else {}
+        // This code doesn't search boards, it just creates a list of them
         foreach ($this->spec['boards'] as $key => $val)
             $this->boards[] = $val;
 
         // Join to same article states as topics
         // Might be able to optimize it away if we have topics, but might not
         //  because some conditions only check board.
+        // Boards are always and'ed together.
         if (empty($this->topics) && !empty($this->boards)) {
+            // Same technique as AND'ing multiple topics
+            $idx = 1;
+            foreach ($this->boards as $boardId) {
+                $nextState = "bdState$idx";
+                $this->qry->join('ebms_article_state', $nextState,
+                                 "$nextState.article_id = art.article_id");
+                $this->qry->condition("$nextState.board_id", $boardId);
+                ++$idx;
+            }
+            /* This is how we do it if we are OR'ing them
             $this->qry->join('ebms_article_state', 'state',
                              'state.article_id = art.article_id');
             $this->qry->condition('state.board_id', $this->boards, 'IN');
+            */
         }
     }
 
@@ -235,9 +253,11 @@ class EbmsSearch {
      * upon request.
      */
     function srchIncludeNotList() {
-        // This is a negative condition.  Only do something if user did not
-        //  ask to include articles from NOT listed journals
+        // This is a negative condition.  Do something _unless_ user
+        //  asked to include articles from NOT listed journals
+logw("In the not list processor");
         if (!$this->spec['advanced-options']['not-list']) {
+logw("Processing not list");
 
             // Create a subquery to find not listed articles
             // Don't think active/inactive state matters here?
@@ -248,7 +268,7 @@ class EbmsSearch {
             $subqry->condition('notjrntype.state_text_id',
                                'RejectJournalTitle');
 
-            //
+            // Not lists are board specific, so have to check further
             if (!empty($this->boards))
                 $subqry->condition('notjrnstate.board_id', $this->boards, 'IN');
 
