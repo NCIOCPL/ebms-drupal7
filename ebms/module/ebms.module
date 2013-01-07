@@ -196,6 +196,12 @@ function ebms_menu() {
         ),
 
         // SYSTEM HELP
+        'help' => array(
+            'page callback' => 'pdq_ebms_help',
+            'file' => 'help.inc',
+            'access callback' => 'user_is_logged_in',
+            'type' => MENU_CALLBACK,
+        ),
         'citations/help' => array(
             'page callback' => 'pdq_ebms_citations',
             'page arguments' => array(1),
