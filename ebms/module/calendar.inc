@@ -82,26 +82,26 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
     $output[] = '</div>';
     $output[] = '</div>';
 
-    // build an action box
-    $output[] = '<div class="nav-block">';
+    if (user_access('view all events')) {
+        // build an action box
+        $output[] = '<div class="nav-block">';
 
-    $output[] = '<h3>Calendar Actions</h3>';
+        $output[] = '<h3>Calendar Actions</h3>';
 
-    $output[] = '<div class="actions">';
-    $output[] = '<ul><li>';
-    if ($all) {
-        $output[] = l('Show Own Events', "calendar$granularity");
-    } else {
-        $output[] = l('Show All Events', "calendar$granularity/all");
+        $output[] = '<div class="actions">';
+        $output[] = '<ul><li>';
+        if ($all) {
+            $output[] = l('Show Own Events', "calendar$granularity");
+        } else {
+            $output[] = l('Show All Events', "calendar$granularity/all");
+        }
+        $output[] = '</li></ul>';
+        $output[] = '</div>';
+
+        $output[] = "<div class='footer'></div>";
+        $output[] = '</div>';
     }
-    $output[] = '</li></ul>';
-
-    $output[] = '</div>';
-
-    $output[] = "<div class='footer'></div>";
-
-    $output[] = '</div>';
-
+    
     $imagesDir = Ebms\IMAGES_DIR;
 
     // retrieve upcoming events view

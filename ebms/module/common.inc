@@ -337,11 +337,13 @@ class Menu {
      */
     public static function calendar($role) {
         $menu = new Menu('Calendar', 'calendar');
-        if ($role == 'admin' || $role == 'librarian')
-            $menu->children = array(
-                new Menu('View', 'calendar/view'),
-                new Menu('Create Event', 'node/add/ebms-event'),
-            );
+        $menu->children = array();
+        if (user_access('view all events')) {
+            $menu->children[] = new Menu('View All Events', 'calendar/all');
+        }
+        if (user_access('create ebms_event content')) {
+            $menu->children[] = new Menu('Create Event', 'node/add/ebms-event');
+        }
         return $menu;
     }
 
