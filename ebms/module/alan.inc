@@ -531,8 +531,19 @@ function pdq_ebms_printouts_test() {
     // Did the user want to see a job output?
     $jobId = Ebms\Util::get_request_value('jobId');
 
-    if ($jobId)
+
+    if ($jobId) {
+        // Check job
+        $status = db_query(
+            'SELECT status FROM {ebms_print_job} WHERE print_job_id = :jobId',
+            array(':jobId' => $jobId))->fetchField();
+
+        if (!$status)
+            return "Print job $jobId not found";
+        if ($status != 'success')
+            return "Job $jobId is marked as '$status', no output is available";
         downloadPrintResults($jobId);
+    }
     else
         return;
 }
@@ -1573,7 +1584,7 @@ function boardRequest() {
  *  @param int $latest      ID of latest job to retrieve, null=latest possible
  *  @param string $status   Desired status, null = all
  */
-function getPrintJobData($numJobs=50, $latest=null, $status='success') {
+function getPrintJobData($numJobs=50, $latest=null, $status=null) {
 
     // Fetch the data
     $qry = db_select('ebms_print_job', 'job');
