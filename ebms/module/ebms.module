@@ -20,7 +20,6 @@
  *   - rosters and other reports
  *   - request forms (e.g., hotel reservations, reimbursements)
  */
-
 require_once('common.inc');
 require_once('not_for_production.inc'); // XXX drop when we're done developing.
 
@@ -31,49 +30,49 @@ module_load_include('inc', 'ebms', 'includes/ebms.nodes');
  */
 function ebms_permission() {
     return array(
-        /*Administer EBMS vs Administer:
-          The Administer permission below should be changed to be something
-          other than "administer" since that permission is not really
-          an admin type permission.  'administer ebms' will be used for managing
-          board membership, subgroup membership, and adhoc membership.  Also
-          this permission will grant access to all EBMS content.
-          --BryanP 12/16/2012
-         *
-         */
-        'administer ebms' => array(
-            'title' => t('Administer EBMS'),
-            'description' => t('Manage EBMS Membership and Users.  Note: Also enables access to all EBMS content.')
-        ),
-        'administer' => array(
-            'title' => t('Perform Administrative Tasks'),
-            'description' =>
-            t('Post documents, manage groups, send messages, etc.'),
-        ),
-        'manage citations' => array(
-            'title' => t('Manage Citations'),
-            'description' =>
-            t('Import and screen journal articles, and set their statuses'),
-        ),
-        'manage boards' => array(
-            'title' => t('Manage Boards'),
-            'description' =>
-            t('Make final determination of status for journal articles, ' .
-                'and assign literature for review'),
-        ),
-        'review literature' => array(
-            'title' => t('Review Literature'),
-            'description' =>
-            t('Review journal articles on cancer and make recommendations ' .
-                'for incorporation information from those articles into ' .
-                'PDQ\xc2\xae Cancer Summaries'),
-        ),
-        'view all events' => array(
-            'title' => t('View All Events'),
-            'description' =>
-            t('Determines if the user can access all events views in the ' .
-                'calendar. Note: This will also show all board events in ' .
-                "the user's filtered view. ")
-        ),
+            /* Administer EBMS vs Administer:
+              The Administer permission below should be changed to be something
+              other than "administer" since that permission is not really
+              an admin type permission.  'administer ebms' will be used for managing
+              board membership, subgroup membership, and adhoc membership.  Also
+              this permission will grant access to all EBMS content.
+              --BryanP 12/16/2012
+             *
+             */
+            'administer ebms' => array(
+                    'title' => t('Administer EBMS'),
+                    'description' => t('Manage EBMS Membership and Users.  Note: Also enables access to all EBMS content.')
+            ),
+            'administer' => array(
+                    'title' => t('Perform Administrative Tasks'),
+                    'description' =>
+                    t('Post documents, manage groups, send messages, etc.'),
+            ),
+            'manage citations' => array(
+                    'title' => t('Manage Citations'),
+                    'description' =>
+                    t('Import and screen journal articles, and set their statuses'),
+            ),
+            'manage boards' => array(
+                    'title' => t('Manage Boards'),
+                    'description' =>
+                    t('Make final determination of status for journal articles, ' .
+                        'and assign literature for review'),
+            ),
+            'review literature' => array(
+                    'title' => t('Review Literature'),
+                    'description' =>
+                    t('Review journal articles on cancer and make recommendations ' .
+                        'for incorporation information from those articles into ' .
+                        'PDQ\xc2\xae Cancer Summaries'),
+            ),
+            'view all events' => array(
+                    'title' => t('View All Events'),
+                    'description' =>
+                    t('Determines if the user can access all events views in the ' .
+                        'calendar. Note: This will also show all board events in ' .
+                        "the user's filtered view. ")
+            ),
     );
 }
 
@@ -98,430 +97,389 @@ function ebms_permission() {
  */
 function ebms_menu() {
     return array(
-
-        // CUSTOM LOGIN PAGE
-        'login' => array(
-            'page callback' => 'pdq_ebms_login',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // REQUEST FOR NEW PASSWORD
-        'password' => array(
-            'page callback' => 'pdq_ebms_password',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // FORM FOR MANAGING USER'S PROFILE
-        'profile' => array(
-            'page callback' => 'pdq_ebms_profile',
-            'file' => 'profile.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // LANDING PAGE
-        'home' => array(
-            'page callback' => 'pdq_ebms_home',
-            'file' => 'home.inc',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // CITATION MANAGEMENT
-        'citations' => array(
-            'page callback' => 'pdq_ebms_citations',
-            'file' => 'citations.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // CITATION IMPORT
-        'citations/import' => array(
-            'page callback' => 'pdq_ebms_import',
-            'file' => 'import.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // PUBLISH CITATIONS
-        'citations/publish' => array(
-            'page callback' => 'pdq_ebms_publish',
-            'file' => 'publish.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // AJAX CALLBACK FOR THE PUBLISH PAGE
-        'publish-checkbox-ajax' => array(
-            'page callback' => 'pdq_ebms_publish_checkbox_ajax',
-            'file' => 'publish.inc',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // UPLOAD FULL-TEXT PDF FOR ARTICLES
-        'citations/fulltext' => array(
-            'page callback' => 'pdq_ebms_fulltext',
-            'file' => 'fulltext.inc',
-            'access callback' => 'pdq_ebms_is_admin_assistant',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // SEARCH DATABASE
-        'citations/search' => array(
-            'page callback' => 'pdq_ebms_search',
-            'file' => 'search.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // SEARCH DATABASE
-        'citations/review' => array(
-            'page callback' => 'pdq_ebms_citations',
-            'page arguments' => array(1),
-            'file' => 'citations.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // SEARCH DATABASE
-        'citations/add' => array(
-            'page callback' => 'pdq_ebms_citations',
-            'page arguments' => array(1),
-            'file' => 'citations.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // SYSTEM HELP
+            // CUSTOM LOGIN PAGE
+            'login' => array(
+                    'page callback' => 'pdq_ebms_login',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // REQUEST FOR NEW PASSWORD
+            'password' => array(
+                    'page callback' => 'pdq_ebms_password',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // FORM FOR MANAGING USER'S PROFILE
+            'profile' => array(
+                    'page callback' => 'pdq_ebms_profile',
+                    'file' => 'profile.inc',
+                    'access callback' => 'user_is_logged_in',
+                    'type' => MENU_CALLBACK,
+            ),
+            // LANDING PAGE
+            'home' => array(
+                    'page callback' => 'pdq_ebms_home',
+                    'file' => 'home.inc',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // CITATION MANAGEMENT
+            'citations' => array(
+                    'page callback' => 'pdq_ebms_citations',
+                    'file' => 'citations.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // CITATION IMPORT
+            'citations/import' => array(
+                    'page callback' => 'pdq_ebms_import',
+                    'file' => 'import.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // PUBLISH CITATIONS
+            'citations/publish' => array(
+                    'page callback' => 'pdq_ebms_publish',
+                    'file' => 'publish.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // AJAX CALLBACK FOR THE PUBLISH PAGE
+            'publish-checkbox-ajax' => array(
+                    'page callback' => 'pdq_ebms_publish_checkbox_ajax',
+                    'file' => 'publish.inc',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // UPLOAD FULL-TEXT PDF FOR ARTICLES
+            'citations/fulltext' => array(
+                    'page callback' => 'pdq_ebms_fulltext',
+                    'file' => 'fulltext.inc',
+                    'access callback' => 'pdq_ebms_is_admin_assistant',
+                    'type' => MENU_CALLBACK,
+            ),
+            // SEARCH DATABASE
+            'citations/search' => array(
+                    'page callback' => 'pdq_ebms_search',
+                    'file' => 'search.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // SEARCH DATABASE
+            'citations/review' => array(
+                    'page callback' => 'pdq_ebms_citations',
+                    'page arguments' => array(1),
+                    'file' => 'citations.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // SEARCH DATABASE
+            'citations/add' => array(
+                    'page callback' => 'pdq_ebms_citations',
+                    'page arguments' => array(1),
+                    'file' => 'citations.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // SYSTEM HELP
         'help' => array(
             'page callback' => 'pdq_ebms_help',
             'file' => 'help.inc',
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
-        'citations/help' => array(
-            'page callback' => 'pdq_ebms_citations',
-            'page arguments' => array(1),
-            'file' => 'citations.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
+            'citations/help' => array(
+                    'page callback' => 'pdq_ebms_citations',
+                    'page arguments' => array(1),
+                    'file' => 'citations.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // CITATIONS ADMIN
+            'citations/admin' => array(
+                    'page callback' => 'pdq_ebms_citations',
+                    'page arguments' => array(1),
+                    'file' => 'citations.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // CITATIONS NOT LIST
+            'citations/not-list' => array(
+                    'page callback' => 'pdq_ebms_citations',
+                    'page arguments' => array(1),
+                    'file' => 'citations.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // FULL CITATION PAGE
+            'citations/full' => array(
+                    'page callback' => 'pdq_ebms_citations',
+                    'page arguments' => array(1, 2),
+                    'file' => 'citations.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            'citations/%ctools_js/add_tag' => array(
+                    'title' => 'Add Tag',
+                    'page callback' => '_ajax_modal_add_tag',
+                    'page arguments' => array(1, 3, 4),
+                    'file' => 'citations.inc',
+                    'access callback' => TRUE,
+                    'type' => MENU_CALLBACK,
+            ),
+            'citations/%ctools_js/view_abstract/%' => array(
+                    'title' => 'View Abstract',
+                    'page callback' => '_ajax_modal_view_abstract',
+                    'page arguments' => array(1, 3),
+                    'file' => 'citations.inc',
+                    'access callback' => TRUE,
+                    'type' => MENU_CALLBACK,
+            ),
+            // CALENDAR
+            /* 'calendar' => array(
+              'page callback' => 'pdq_ebms_calendar',
+              'file' => 'calendar.inc',
+              'access callback' => 'user_is_logged_in',
+              'type' => MENU_CALLBACK,
+              ),
 
-        // CITATIONS ADMIN
-        'citations/admin' => array(
-            'page callback' => 'pdq_ebms_citations',
-            'page arguments' => array(1),
-            'file' => 'citations.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
+              // CREATE EVENT
+              'calendar/create' => array(
+              'page callback' => 'pdq_ebms_calendar',
+              'file' => 'calendar.inc',
+              'access arguments' => array('manage citations'),
+              'type' => MENU_CALLBACK,
+              ),
 
-        // CITATIONS NOT LIST
-        'citations/not-list' => array(
-            'page callback' => 'pdq_ebms_citations',
-            'page arguments' => array(1),
-            'file' => 'citations.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
+              // EDIT EVENT
+              'calendar/edit/%' => array(
+              'page callback' => 'ebms_calendar_edit_event',
+              'page arguments' => array(2),
+              'file' => 'calendar.inc',
+              'access arguments' => array('manage citations'),
+              'type' => MENU_CALLBACK,
+              ), */
 
-        // FULL CITATION PAGE
-        'citations/full' => array(
-            'page callback' => 'pdq_ebms_citations',
-            'page arguments' => array(1, 2),
-            'file' => 'citations.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
+            // LITERATURE REVIEW
+            'review' => array(
+                    'page callback' => 'pdq_ebms_review',
+                    'file' => 'review.inc',
+                    'access callback' => 'user_is_logged_in',
+                    'type' => MENU_CALLBACK,
+            ),
+            // ASSIGNED PACKETS
+            'review/assigned' => array(
+                    'page callback' => 'pdq_ebms_review',
+                    'file' => 'review.inc',
+                    'access callback' => 'user_is_logged_in',
+                    'type' => MENU_CALLBACK,
+            ),
+            // CREATE PACKET
+            'review/create' => array(
+                    'page callback' => 'pdq_ebms_review',
+                    'file' => 'review.inc',
+                    'access arguments' => array('manage citations'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // SUMMARIES
+            'summaries' => array(
+                    'page callback' => 'pdq_ebms_summaries',
+                    'file' => 'summaries.inc',
+                    'access callback' => 'user_is_logged_in',
+                    'type' => MENU_CALLBACK,
+            ),
+            /* // TRAVEL
+              'travel' => array(
+              'page callback' => 'pdq_ebms_travel',
+              'file' => 'travel.inc',
+              'access callback' => 'user_is_logged_in',
+              'type' => MENU_CALLBACK,
+              ),
 
-        'citations/%ctools_js/add_tag' => array(
-            'title' => 'Add Tag',
-            'page callback' => '_ajax_modal_add_tag',
-            'page arguments' => array(1, 3, 4),
-            'file' => 'citations.inc',
-            'access callback' => TRUE,
-            'type' => MENU_CALLBACK,
-        ),
+              // TRAVEL INFO
+              'travel/info' => array(
+              'page callback' => 'pdq_ebms_travel',
+              'file' => 'travel.inc',
+              'access callback' => 'user_is_logged_in',
+              'type' => MENU_CALLBACK,
+              ),
 
-        'citations/%ctools_js/view_abstract/%' => array(
-            'title' => 'View Abstract',
-            'page callback' => '_ajax_modal_view_abstract',
-            'page arguments' => array(1, 3),
-            'file' => 'citations.inc',
-            'access callback' => TRUE,
-            'type' => MENU_CALLBACK,
-        ),
+              // HOTEL REQUEST
+              'travel/hotel' => array(
+              'page callback' => 'pdq_ebms_travel',
+              'file' => 'travel.inc',
+              'access callback' => 'user_is_logged_in',
+              'type' => MENU_CALLBACK,
+              ),
 
-        // CALENDAR
-        /*'calendar' => array(
-            'page callback' => 'pdq_ebms_calendar',
-            'file' => 'calendar.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
+              // REIMBURSEMENT REQUEST
+              'travel/reimbursement' => array(
+              'page callback' => 'pdq_ebms_travel',
+              'file' => 'travel.inc',
+              'access callback' => 'user_is_logged_in',
+              'type' => MENU_CALLBACK,
+              ),
 
-        // CREATE EVENT
-        'calendar/create' => array(
-            'page callback' => 'pdq_ebms_calendar',
-            'file' => 'calendar.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
+              // TRAVEL REPORTS
+              'travel/reports' => array(
+              'page callback' => 'pdq_ebms_travel',
+              'file' => 'travel.inc',
+              'access arguments' => array('manage citations'),
+              'type' => MENU_CALLBACK,
+              ), */
 
-        // EDIT EVENT
-        'calendar/edit/%' => array(
-            'page callback' => 'ebms_calendar_edit_event',
-            'page arguments' => array(2),
-            'file' => 'calendar.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),*/
+            // FORUMS
+            'forum' => array(
+                    'page callback' => 'pdq_ebms_forum',
+                    'file' => 'forum.inc',
+                    'access callback' => 'user_is_logged_in',
+                    'type' => MENU_CALLBACK,
+            ),
+            // ABOUT
+            'about' => array(
+                    'page callback' => 'pdq_ebms_about',
+                    'file' => 'about.inc',
+                    'access callback' => 'user_is_logged_in',
+                    'type' => MENU_CALLBACK,
+            ),
+            // GENERAL INFORMATION ABOUT EBMS
+            'about/info' => array(
+                    'page callback' => 'pdq_ebms_about',
+                    'file' => 'about.inc',
+                    'access callback' => 'user_is_logged_in',
+                    'type' => MENU_CALLBACK,
+            ),
+            // Information on PDQ Boards
+            'about#pdq-boards' => array(
+                    'page callback' => 'pdq_ebms_about',
+                    'file' => 'about.inc',
+                    'access callback' => 'user_is_logged_in',
+                    'type' => MENU_CALLBACK,
+            ),
+            // POSTING DOCUMENTS
+            'docs' => array(
+                    'page callback' => 'pdq_ebms_docs',
+                    'file' => 'docs.inc',
+                    'access arguments' => array('administer'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // REPORTS
+            'reports' => array(
+                    'page callback' => 'pdq_ebms_reports',
+                    'file' => 'reports.inc',
+                    'access arguments' => array('administer'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // AD-HOC GROUPS
+            'groups' => array(
+                    'page callback' => 'pdq_ebms_groups',
+                    'file' => 'groups.inc',
+                    'access arguments' => array('administer'),
+                    'type' => MENU_CALLBACK,
+            ),
+            // CUSTOM 403 PAGE
+            'access-denied' => array(
+                    'title' => 'Access Denied',
+                    'page callback' => 'pdq_ebms_403',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // CUSTOM 404 PAGE
+            'not-found' => array(
+                    'title' => 'Page Not Found',
+                    'page callback' => 'pdq_ebms_404',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // REFRESH JOURNAL TABLE
+            'admin/refresh-journals' => array(
+                    'title' => 'Journal Table Refresh',
+                    'page callback' => 'pdq_ebms_refresh_journals',
+                    'access arguments' => array('administer'),
+            ),
+            /*
+              // TESTING ARTICLE SEARCH
+              'articlesearch' => array(
+              'title' => 'Search for Articles',
+              'page callback' => 'pdq_ebms_artsearch',
+              'file' => 'art_search.inc',
+              'access callback' => 'user_is_logged_in',
+              'menu_name' => 'main-menu',
+              'weight' => 6,
+              ), */
 
-        // LITERATURE REVIEW
-        'review' => array(
-            'page callback' => 'pdq_ebms_review',
-            'file' => 'review.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // ASSIGNED PACKETS
-        'review/assigned' => array(
-            'page callback' => 'pdq_ebms_review',
-            'file' => 'review.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // CREATE PACKET
-        'review/create' => array(
-            'page callback' => 'pdq_ebms_review',
-            'file' => 'review.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // SUMMARIES
-        'summaries' => array(
-            'page callback' => 'pdq_ebms_summaries',
-            'file' => 'summaries.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-       /* // TRAVEL
-        'travel' => array(
-            'page callback' => 'pdq_ebms_travel',
-            'file' => 'travel.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // TRAVEL INFO
-        'travel/info' => array(
-            'page callback' => 'pdq_ebms_travel',
-            'file' => 'travel.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // HOTEL REQUEST
-        'travel/hotel' => array(
-            'page callback' => 'pdq_ebms_travel',
-            'file' => 'travel.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // REIMBURSEMENT REQUEST
-        'travel/reimbursement' => array(
-            'page callback' => 'pdq_ebms_travel',
-            'file' => 'travel.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // TRAVEL REPORTS
-        'travel/reports' => array(
-            'page callback' => 'pdq_ebms_travel',
-            'file' => 'travel.inc',
-            'access arguments' => array('manage citations'),
-            'type' => MENU_CALLBACK,
-        ),*/
-
-        // FORUMS
-        'forum' => array(
-            'page callback' => 'pdq_ebms_forum',
-            'file' => 'forum.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // ABOUT
-        'about' => array(
-            'page callback' => 'pdq_ebms_about',
-            'file' => 'about.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // GENERAL INFORMATION ABOUT EBMS
-        'about/info' => array(
-            'page callback' => 'pdq_ebms_about',
-            'file' => 'about.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // Information on PDQ Boards
-        'about#pdq-boards' => array(
-            'page callback' => 'pdq_ebms_about',
-            'file' => 'about.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // POSTING DOCUMENTS
-        'docs' => array(
-            'page callback' => 'pdq_ebms_docs',
-            'file' => 'docs.inc',
-            'access arguments' => array('administer'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // REPORTS
-        'reports' => array(
-            'page callback' => 'pdq_ebms_reports',
-            'file' => 'reports.inc',
-            'access arguments' => array('administer'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // AD-HOC GROUPS
-        'groups' => array(
-            'page callback' => 'pdq_ebms_groups',
-            'file' => 'groups.inc',
-            'access arguments' => array('administer'),
-            'type' => MENU_CALLBACK,
-        ),
-
-        // CUSTOM 403 PAGE
-        'access-denied' => array(
-            'title' => 'Access Denied',
-            'page callback' => 'pdq_ebms_403',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // CUSTOM 404 PAGE
-        'not-found' => array(
-            'title' => 'Page Not Found',
-            'page callback' => 'pdq_ebms_404',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // REFRESH JOURNAL TABLE
-        'admin/refresh-journals' => array(
-            'title' => 'Journal Table Refresh',
-            'page callback' => 'pdq_ebms_refresh_journals',
-            'access arguments' => array('administer'),
-        ),
-
-        /*
-        // TESTING ARTICLE SEARCH
-        'articlesearch' => array(
-            'title' => 'Search for Articles',
-            'page callback' => 'pdq_ebms_artsearch',
-            'file' => 'art_search.inc',
-            'access callback' => 'user_is_logged_in',
-            'menu_name' => 'main-menu',
-            'weight' => 6,
-        ),*/
-
-        // TESTING FOR ALAN
-        'alantest' => array(
-            'title' => 'Article API Testing',
-            'page callback' => 'pdq_ebms_alantest',
-            'file' => 'alan.inc',
-            'access callback' => true,
-            'theme callback' => 'pdq_ebms_tester_theme',
+            // TESTING FOR ALAN
+            'alantest' => array(
+                    'title' => 'Article API Testing',
+                    'page callback' => 'pdq_ebms_alantest',
+                    'file' => 'alan.inc',
+                    'access callback' => true,
+                    'theme callback' => 'pdq_ebms_tester_theme',
             //'menu_name' => 'main-menu',
             //'weight' => 20,
-        ),
-
-        // TESTING FOR ALAN
-        'admin/apitest' => array(
-            'title' => 'AlanTest',
-            'page callback' => 'pdq_ebms_alantest',
-            'file' => 'alan.inc',
-            'access callback' => true,
-            'theme callback' => 'pdq_ebms_tester_theme',
+            ),
+            // TESTING FOR ALAN
+            'admin/apitest' => array(
+                    'title' => 'AlanTest',
+                    'page callback' => 'pdq_ebms_alantest',
+                    'file' => 'alan.inc',
+                    'access callback' => true,
+                    'theme callback' => 'pdq_ebms_tester_theme',
             //'menu_name' => 'main-menu',
             //'weight' => 20,
-        ),
-
-        // TESTING FOR DAN
-        'admin/ebms/enable' => array(
-            'title' => 'EBMS Enable',
-            'page callback' => 'ebms_enable_test',
-            'file' => 'ebms.install',
-            'access callback' => true,
-            'theme callback' => 'pdq_ebms_tester_theme',
+            ),
+            // TESTING FOR DAN
+            'admin/ebms/enable' => array(
+                    'title' => 'EBMS Enable',
+                    'page callback' => 'ebms_enable_test',
+                    'file' => 'ebms.install',
+                    'access callback' => true,
+                    'theme callback' => 'pdq_ebms_tester_theme',
             //'menu_name' => 'main-menu',
             //'weight' => 20,
-        ),
-
-        // AJAX CALLBACK FOR THE NEW PASSWORD FORM.
-        'account-email-status' => array(
-            'page callback' => 'pdq_ebms_account_email_status',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // USED ONLY BY DEVELOPER.
-        'upload-files' => array(
-            'title' => 'Upload Files',
-            'page callback' => 'pdq_ebms_upload_files',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // PLACEHOLDER DURING DEVELOPMENT
-        'stub' => array(
-            'title' => 'Place Holder',
-            'page callback' => 'pdq_ebms_stub',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // TEMPLATE USED FOR PUTTING UP TEST FORMS
-        'testform' => array(
-            'title' => 'Test Form',
-            'page callback' => 'pdq_ebms_testform',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-            'file' => 'testform.inc',
-        ),
-
-        // CLEAR THEME CACHE
-        'clear-theme-cache' => array(
-            'title' => 'Clear Theme Cache',
-            'page callback' => 'pdq_ebms_clear_theme_cache',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // CLEAR ALL CACHES
-        'clear-all-caches' => array(
-            'title' => 'Clear Theme Cache',
-            'page callback' => 'pdq_ebms_clear_all_caches',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
+            ),
+            // AJAX CALLBACK FOR THE NEW PASSWORD FORM.
+            'account-email-status' => array(
+                    'page callback' => 'pdq_ebms_account_email_status',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // USED ONLY BY DEVELOPER.
+            'upload-files' => array(
+                    'title' => 'Upload Files',
+                    'page callback' => 'pdq_ebms_upload_files',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // PLACEHOLDER DURING DEVELOPMENT
+            'stub' => array(
+                    'title' => 'Place Holder',
+                    'page callback' => 'pdq_ebms_stub',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // TEMPLATE USED FOR PUTTING UP TEST FORMS
+            'testform' => array(
+                    'title' => 'Test Form',
+                    'page callback' => 'pdq_ebms_testform',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+                    'file' => 'testform.inc',
+            ),
+            // CLEAR THEME CACHE
+            'clear-theme-cache' => array(
+                    'title' => 'Clear Theme Cache',
+                    'page callback' => 'pdq_ebms_clear_theme_cache',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
+            // CLEAR ALL CACHES
+            'clear-all-caches' => array(
+                    'title' => 'Clear Theme Cache',
+                    'page callback' => 'pdq_ebms_clear_all_caches',
+                    'access callback' => true,
+                    'type' => MENU_CALLBACK,
+            ),
     );
 }
 
@@ -554,21 +512,21 @@ function pdq_ebms_login_form($form, &$form_state) {
     $prompt = 'Can\'t access your account?';
     $pw_request = "<a href='$url' title='$title' id='$id'>$prompt</a>";
     return array(
-        'name' => array(
-            '#type' => 'textfield',
-            '#title' => 'Username',
-        ),
-        'pass' => array(
-            '#type' => 'password',
-            '#title' => 'Password',
-        ),
-        'submit' => array(
-            '#type' => 'submit',
-            '#value' => 'LOGIN',
-            '#suffix' => $pw_request,
-            '#submit' => array('pdq_ebms_login_form_submit'),
-        ),
-        '#validate' => array('pdq_ebms_login_form_validate'),
+            'name' => array(
+                    '#type' => 'textfield',
+                    '#title' => 'Username',
+            ),
+            'pass' => array(
+                    '#type' => 'password',
+                    '#title' => 'Password',
+            ),
+            'submit' => array(
+                    '#type' => 'submit',
+                    '#value' => 'LOGIN',
+                    '#suffix' => $pw_request,
+                    '#submit' => array('pdq_ebms_login_form_submit'),
+            ),
+            '#validate' => array('pdq_ebms_login_form_validate'),
     );
 }
 
@@ -691,23 +649,23 @@ function pdq_ebms_password() {
  */
 function pdq_ebms_password_form() {
     return array(
-        'forgot' => array(
-            '#type' => 'radios',
-            '#options' => array(
-                'username' => 'Username &nbsp; &nbsp;',
-                'password' => 'Password &nbsp; &nbsp;',
-                'both' => 'Both'),
-            '#title' => 'Forgot My',
-        ),
-        'email' => array(
-            '#type' => 'textfield',
-            '#suffix' => '<p>Please enter the email address associated with ' .
-            'your EBMS account.</p>',
-        ),
-        'submit' => array(
-            '#type' => 'submit',
-            '#value' => 'Submit',
-        ),
+            'forgot' => array(
+                    '#type' => 'radios',
+                    '#options' => array(
+                            'username' => 'Username &nbsp; &nbsp;',
+                            'password' => 'Password &nbsp; &nbsp;',
+                            'both' => 'Both'),
+                    '#title' => 'Forgot My',
+            ),
+            'email' => array(
+                    '#type' => 'textfield',
+                    '#suffix' => '<p>Please enter the email address associated with ' .
+                    'your EBMS account.</p>',
+            ),
+            'submit' => array(
+                    '#type' => 'submit',
+                    '#value' => 'Submit',
+            ),
     );
 }
 
@@ -729,8 +687,7 @@ function pdq_ebms_password_form_validate($form, &$form_state) {
     if (empty($address)) {
         form_set_error('email', 'Email address is required.');
         $errors++;
-    }
-    else {
+    } else {
         $account = user_load_by_mail($address);
         if (empty($account)) {
             form_set_error('email',
@@ -849,15 +806,15 @@ function pdq_ebms_404() {
  */
 function ebms_theme() {
     return array(
-        'ebms_menu_item_list' => array(
-            'variables' => array(
-                'items' => array(),
-                'attributes' => array(),
+            'ebms_menu_item_list' => array(
+                    'variables' => array(
+                            'items' => array(),
+                            'attributes' => array(),
+                    ),
             ),
-        ),
-        'pdq_ebms_profile_email_form' => array(
-            'render element' => 'form',
-        ),
+            'pdq_ebms_profile_email_form' => array(
+                    'render element' => 'form',
+            ),
     );
 }
 
@@ -906,9 +863,9 @@ function theme_ebms_menu_item_list($variables) {
                 $data .= '<div class="ebms-menu-restore-pixel"></div>';
                 $data .= theme_ebms_menu_item_list(
                     array(
-                        'items' => $children,
-                        'attributes' => $attributes,
-                        'level' => 'child',
+                            'items' => $children,
+                            'attributes' => $attributes,
+                            'level' => 'child',
                     )
                 );
             }
@@ -933,15 +890,14 @@ function theme_ebms_menu_item_list($variables) {
 function ebms_page_build(&$page) {
     $menus = Ebms\Menu::menus();
     $items = array();
-    foreach ($menus as $m)
-        $items[] = $m->render_array();
+    foreach ($menus as $m) $items[] = $m->render_array();
     $page['ebms_menu'] = array(
-        '#attributes' => array(
-            'class' => array('sf-menu'),
-            'id' => 'ebms-menu',
-        ),
-        '#theme' => 'ebms_menu_item_list',
-        '#items' => $items,
+            '#attributes' => array(
+                    'class' => array('sf-menu'),
+                    'id' => 'ebms-menu',
+            ),
+            '#theme' => 'ebms_menu_item_list',
+            '#items' => $items,
     );
 }
 
@@ -959,40 +915,38 @@ function ebms_init() {
         if (!function_exists('drush_main'))
             drupal_goto('login');
     }
-    
+
     $sflib = libraries_get_path('superfish');
     drupal_add_js("$sflib/superfish.js");
     drupal_add_js("$sflib/supersubs.js");
     drupal_add_js(Ebms\JS_DIR . '/ebms.js');
     drupal_add_css("$sflib/css/superfish.css");
     if ($user->uid) {
-        
+
         // $user->ebms_boards
         $result = db_select('ebms_board_member', 'm')
             ->fields('m', array('board_id'))
             ->condition('m.user_id', $user->uid)
             ->execute();
         $user->ebms_boards = array();
-        foreach ($result as $record)
-            $user->ebms_boards[] = $record->board_id;
-        
+        foreach ($result as $record) $user->ebms_boards[] = $record->board_id;
+
         // $user->ebms_subgroups
         $result = db_select('ebms_subgroup_member', 'm')
             ->fields('m', array('sg_id'))
             ->condition('m.user_id', $user->uid)
             ->execute();
         $user->ebms_subgroups = array();
-        foreach ($result as $record)
-            $user->ebms_subgroups[] = $record->sg_id;
-        
+        foreach ($result as $record) $user->ebms_subgroups[] = $record->sg_id;
+
         // $user->ebms_ad_hoc_groups
         $result = db_select('ebms_ad_hoc_group_member', 'm')
-        ->fields('m', array('group_id'))
-                ->condition('m.user_id', $user->uid)
-                        ->execute();
+            ->fields('m', array('group_id'))
+            ->condition('m.user_id', $user->uid)
+            ->execute();
         $user->ebms_ad_hoc_groups = array();
         foreach ($result as $record)
-            $user->ebms_ad_hoc_groups[] = $record->group_id;
+                $user->ebms_ad_hoc_groups[] = $record->group_id;
     }
 }
 
@@ -1010,35 +964,32 @@ function ebms_user_load($users) {
             ->condition('m.user_id', $uid)
             ->execute();
         $boards = array();
-        foreach ($results as $result)
-            $boards[] = $result->board_id;
+        foreach ($results as $result) $boards[] = $result->board_id;
         $users[$uid]->boards = $boards;
-        
+
         $sgresults = db_select('ebms_subgroup_member', 'm')
             ->fields('m', array('sg_id'))
             ->condition('m.user_id', $uid)
             ->execute();
         $subgroups = array();
-        foreach ($sgresults as $sgresult)
-            $subgroups[] = $sgresult->sg_id;
+        foreach ($sgresults as $sgresult) $subgroups[] = $sgresult->sg_id;
         $users[$uid]->subgroups = $subgroups;
-        
+
         $ahgresults = db_select('ebms_ad_hoc_group_member', 'm')
             ->fields('m', array('group_id'))
             ->condition('m.user_id', $uid)
             ->execute();
         $adhocgroups = array();
         foreach ($ahgresults as $ahgresult)
-            $adhocgroups[] = $ahgresult->group_id;
+                $adhocgroups[] = $ahgresult->group_id;
         $users[$uid]->adhocgroups = $adhocgroups;
-                
     }
     $results = db_select('ebms_user', 'u')
         ->fields('u', array('user_id', 'password_changed'))
         ->condition('u.user_id', array_keys($users), 'IN')
         ->execute();
     foreach ($results as $record)
-        $users[$record->user_id]->password_changed = $record->password_changed;
+            $users[$record->user_id]->password_changed = $record->password_changed;
 }
 
 /**
@@ -1058,7 +1009,7 @@ function pdq_ebms_refresh_journals() {
     $result = Ebms\Journal::refresh();
     $report = array();
     foreach ($result as $action => $count)
-        $report[] = "$count journals $action";
+            $report[] = "$count journals $action";
     drupal_set_message('Refreshed: ' .
         variable_get('ebms_journals_refreshed'));
     return '<p>' . implode('; ', $report) . '</p>';
@@ -1079,8 +1030,7 @@ function pdq_ebms_debug($where, $what) {
     if (Ebms\DEV || Ebms\QA) {
         $now = date('c');
         file_put_contents(
-            '/tmp/ebms.debug',
-            "$now $where\n" . print_r($what, TRUE) . "\n",
+            '/tmp/ebms.debug', "$now $where\n" . print_r($what, TRUE) . "\n",
             FILE_APPEND);
         drupal_chmod('/tmp/ebms.debug', 0644);
     }
@@ -1100,7 +1050,7 @@ function ebms_node_info() {
  * Implements hook_views_api().
  */
 function ebms_views_api() {
-	return array('api' => 2.0);
+    return array('api' => 2.0);
 }
 
 /**
@@ -1145,12 +1095,11 @@ function ebms_board_allowed_values_callback($field) {
  */
 function ebms_subgroup_allowed_values_callback($field) {
     $results = db_select('ebms_subgroup', 'sg')
-            ->fields('sg', array('sg_id', 'sg_name'))
-            ->orderBy('sg.sg_name')
-            ->execute();
+        ->fields('sg', array('sg_id', 'sg_name'))
+        ->orderBy('sg.sg_name')
+        ->execute();
     $subgroups = array();
-    foreach ($results as $result)
-        $subgroups[$result->sg_id] = $result->sg_name;
+    foreach ($results as $result) $subgroups[$result->sg_id] = $result->sg_name;
     return $subgroups;
 }
 
@@ -1161,12 +1110,12 @@ function ebms_subgroup_allowed_values_callback($field) {
  */
 function ebms_ad_hoc_group_allowed_values_callback($field) {
     $results = db_select('ebms_ad_hoc_group', 'g')
-            ->fields('g', array('group_id', 'group_name'))
-            ->orderBy('g.group_name')
-            ->execute();
+        ->fields('g', array('group_id', 'group_name'))
+        ->orderBy('g.group_name')
+        ->execute();
     $groups = array();
     foreach ($results as $result)
-        $groups[$result->group_id] = $result->group_name;
+            $groups[$result->group_id] = $result->group_name;
     return $groups;
 }
 
@@ -1183,25 +1132,25 @@ function ebms_individuals_allowed_values_callback($field) {
     $roles[] = user_role_load_by_name('anonymous user')->rid;
     $roles[] = user_role_load_by_name('administrator')->rid;
     $roleResult = db_select('users_roles', 'ur')
-                    ->fields('ur', array('uid'))
-                    ->condition('rid', $roles, 'NOT IN')
-                    ->execute()->fetchCol();
-    
+            ->fields('ur', array('uid'))
+            ->condition('rid', $roles, 'NOT IN')
+            ->execute()->fetchCol();
+
     // use the UIDs to limit the query
     $query = new EntityFieldQuery();
     $uidResult = $query->entityCondition('entity_type', 'user')
-            ->propertyCondition('status', '1')
-            ->propertyCondition('uid', $roleResult)
-            ->execute();
-    
-    if(isset($uidResult['user'])){
+        ->propertyCondition('status', '1')
+        ->propertyCondition('uid', $roleResult)
+        ->execute();
+
+    if (isset($uidResult['user'])) {
         $users = user_load_multiple(array_keys($uidResult['user']));
-                
+
         $userOptions = array();
-        foreach($users as $key => $user){
+        foreach ($users as $key => $user) {
             $userOptions[$key] = $user->name;
         }
-        
+
         return $userOptions;
     }
 
@@ -1232,7 +1181,8 @@ function ebms_node_presave($node) {
         // if the node is not new and the time has changed
         if (!$node->is_new && $node->status && $node->original->status) {
             // compare the two dates
-            $origDate = field_get_items('node', $node->original, 'field_datespan');
+            $origDate = field_get_items('node', $node->original,
+                'field_datespan');
             $currentDate = field_get_items('node', $node, 'field_datespan');
 
             $diff = array_diff($origDate[0], $currentDate[0]);
@@ -1240,22 +1190,21 @@ function ebms_node_presave($node) {
             if (!empty($diff))
                 \Ebms\Util::activityEventChanged($node);
         }
-
     }
 }
 
 function ebms_date_formats() {
     return array(
-        array(
-            'format' => 'F j, Y',
-            'type' => 'ebms_date',
-            'locales' => array(),
-        ),
-        array(
-            'format' => 'g:i A',
-            'type' => 'ebms_time',
-            'locale' => array(),
-        )
+            array(
+                    'format' => 'F j, Y',
+                    'type' => 'ebms_date',
+                    'locales' => array(),
+            ),
+            array(
+                    'format' => 'g:i A',
+                    'type' => 'ebms_time',
+                    'locale' => array(),
+            )
     );
 }
 
@@ -1265,4 +1214,75 @@ function ebms_date_format_types() {
     $format_type['ebms_time'] = t('Time Only');
 
     return $format_type;
+}
+
+function ebms_query_event_filter_alter(SelectQuery $query) {
+    global $user;
+    $account = user_load($user->uid);
+
+    //If the user is UID 1 or an EBMS administrator, there is no filtering of
+    //events
+    if (user_access("administer ebms"))
+        return;
+
+    //Determine if we should show all board meetings or not
+    $filter_boards = true;
+
+    if (user_access("view all events")) {
+        $filter_boards = false;
+    }
+
+    //Initialize an OR conditional for selects
+    $or_conditions = db_or();
+
+    //Boards:
+    if (!$filter_boards || $account->boards) {
+        //Add table to query
+        $query->leftJoin('field_data_field_boards', 'b',
+            'node.nid = b.entity_id AND b.bundle = :event AND b.deleted = 0',
+            array(':event' => "ebms_event"));
+
+        //Add where condition
+        if (!$filter_boards) {
+            $or_conditions->condition('b.field_boards_value', '', 'IS NOT NULL');
+        } else {
+            $or_conditions->condition('b.field_boards_value', $account->boards,
+                'IN');
+        }
+    }
+
+    //Subgroups:
+    if ($account->subgroups) {
+        //Add table to query
+        $query->leftJoin('field_data_field_subgroups', 's',
+            'node.nid = s.entity_id AND s.bundle = :event AND s.deleted = 0',
+            array(':event' => "ebms_event"));
+
+        //Add where condition
+        $or_conditions->condition('s.field_subgroups_value',
+            $account->subgroups, 'IN');
+    }
+    //Ad hoc groups:
+    if ($account->adhocgroups) {
+        //Add table to query
+        $query->leftJoin('field_data_field_ad_hoc_groups', 'g',
+            'node.nid = g.entity_id AND g.bundle = :event AND g.deleted = 0',
+            array(':event' => "ebms_event"));
+
+        //Add where condition
+        $or_conditions->condition('g.field_ad_hoc_groups_value',
+            $account->adhocgroups, 'IN');
+    }
+
+    //Individual Users:
+    //Add table to query
+    $query->leftJoin('field_data_field_individuals', 'i',
+        'node.nid = i.entity_id AND i.bundle = :event AND i.deleted = 0',
+        array(':event' => "ebms_event"));
+
+    //Add where condition
+    $or_conditions->condition('i.field_individuals_value', array($user->uid),
+        'IN'); //Note the use of array here.  IN must have an array
+
+    $query->condition($or_conditions);
 }
