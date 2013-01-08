@@ -11,7 +11,7 @@
     print ebms_calendar_left_nav();
     ?>
 </div>
-<div id='calendar-enclosure' <?php if ($creator) print 'class="editable"'; ?>>
+<div id='calendar-enclosure' <?php if ($editor) print 'class="editable"'; ?>>
 
     <div id='event-pager'>
         <div id='nav-previous-event'>
@@ -29,7 +29,7 @@
     </div>
 
     <?php
-    if ($creator)
+    if ($editor)
         print "<div class='edit-button-icon'><a href='$editNodePath'><img src='$editIconPath'></a></div>";
     ?> 
     <h2 class='indent trailing'> 

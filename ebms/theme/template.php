@@ -8,12 +8,12 @@ function ebmstheme_html_head_alter(&$head_elements) {
 
     // Force the latest IE rendering engine and Google Chrome Frame.
     $head_elements['chrome_frame'] = array(
-        '#type' => 'html_tag',
-        '#tag' => 'meta',
-        '#attributes' => array(
-            'http-equiv' => 'X-UA-Compatible',
-            'content' => 'IE=edge,chrome=1'
-        ),
+            '#type' => 'html_tag',
+            '#tag' => 'meta',
+            '#attributes' => array(
+                    'http-equiv' => 'X-UA-Compatible',
+                    'content' => 'IE=edge,chrome=1'
+            ),
     );
 }
 
@@ -69,19 +69,19 @@ function ebmstheme_pager($variables) {
     $li_previous = theme(
         'pager_previous',
         array(
-        'text' => Ebms\LEFT_ARROW,
-        'element' => $element,
-        'interval' => 1,
-        'parameters' => $parameters,
+            'text' => Ebms\LEFT_ARROW,
+            'element' => $element,
+            'interval' => 1,
+            'parameters' => $parameters,
         )
     );
     $li_next = theme(
         'pager_next',
         array(
-        'text' => Ebms\RIGHT_ARROW,
-        'element' => $element,
-        'interval' => 1,
-        'parameters' => $parameters,
+            'text' => Ebms\RIGHT_ARROW,
+            'element' => $element,
+            'interval' => 1,
+            'parameters' => $parameters,
         )
     );
 
@@ -96,8 +96,8 @@ function ebmstheme_pager($variables) {
     // Add the "previous" link if we're not on the first page.
     if ($li_previous) {
         $items[] = array(
-            'class' => array('pager-previous'),
-            'data' => $li_previous,
+                'class' => array('pager-previous'),
+                'data' => $li_previous,
         );
     }
 
@@ -125,8 +125,8 @@ function ebmstheme_pager($variables) {
     // Add the "next" link if we're not on the last page.
     if ($li_next) {
         $items[] = array(
-            'class' => array('pager-next'),
-            'data' => $li_next,
+                'class' => array('pager-next'),
+                'data' => $li_next,
         );
     }
 
@@ -282,7 +282,7 @@ function preprocess_ebms_event(&$variables) {
 
     //retrieve the node from the variables
     $node = $variables['node'];
-    
+
     // retrieve the needed values for the template
     $eventDate = field_get_items('node', $node, 'field_datespan');
     $variables['eventDate'] = 'unknown';
@@ -326,7 +326,8 @@ function preprocess_ebms_event(&$variables) {
             ->fieldCondition('field_datespan', 'value', $startDate, '<')
             ->fieldOrderBy('field_datespan', 'value', 'DESC')
             ->entityOrderBy('entity_id')
-            ->range(0, 1);
+            ->range(0, 1)
+            ->addTag('event_filter');
 
         $prevResult = $prevQuery->execute();
         if (isset($prevResult['node']))
@@ -340,7 +341,8 @@ function preprocess_ebms_event(&$variables) {
             ->entityCondition('bundle', 'ebms_event')
             ->propertyCondition('status', '1')
             ->fieldCondition('field_datespan', 'value', $startDate)
-            ->entityOrderBy('entity_id');
+            ->entityOrderBy('entity_id')
+            ->addTag('event_filter');
 
         $currResult = $currQuery->execute();
         if (isset($currResult['node']))
@@ -355,7 +357,8 @@ function preprocess_ebms_event(&$variables) {
             ->fieldCondition('field_datespan', 'value', $startDate, '>')
             ->fieldOrderBy('field_datespan', 'value')
             ->entityOrderBy('entity_id')
-            ->range(0, 1);
+            ->range(0, 1)
+            ->addTag('event_filter');
 
         $nextResult = $nextQuery->execute();
         if (isset($nextResult['node']))
@@ -389,11 +392,11 @@ function preprocess_ebms_event(&$variables) {
     $variables['boardName'] = null;
     if ($board) {
         $values = array();
-        foreach($board as $key => $data){
+        foreach ($board as $key => $data) {
             $value = field_view_value('node', $node, 'field_boards', $data);
             $values[] = render($value);
         }
-                
+
         $variables['boardName'] = implode(', ', $values);
     }
 
@@ -414,9 +417,8 @@ function preprocess_ebms_event(&$variables) {
 
     // save if the current viewer is the editor of the event
     global $user;
-    $isCreator = false;
-    if ($submitter->uid == $user->uid) {
-        $isCreator = true;
+    $editor = user_access('edit any ebms_event content');
+    if ($editor) {
         $themepath = drupal_get_path('theme', 'ebmstheme');
         $variables['editIconPath'] =
             url("$themepath/images/EBMS_Edit_Icon_Inactive.png");
@@ -424,8 +426,7 @@ function preprocess_ebms_event(&$variables) {
         $variables['editNodePath'] =
             url("node/$node->nid/edit");
     }
-
-    $variables['creator'] = $isCreator;
+    $variables['editor'] = $editor;
 
     $inhouseStaff = field_get_items('node', $node, 'field_inhouse_staff');
     $boardMembers = field_get_items('node', $node, 'field_board_members');
@@ -455,7 +456,8 @@ function preprocess_ebms_event(&$variables) {
     $docLinks = array();
     if ($documents)
         foreach ($documents as $document) {
-            $docLinks[] = l($document['filename'], file_create_url($document['uri']));
+            $docLinks[] = l($document['filename'],
+                file_create_url($document['uri']));
         }
 
     $variables['docLinks'] = $docLinks;
