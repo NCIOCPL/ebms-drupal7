@@ -745,6 +745,13 @@ class EbmsPrintJob {
      * Get a list of board member IDs who may need to have packets printed.
      * Being on this list only means that the board member wants packet
      * printouts at some time during the period covered by this print job.
+     *
+     * Dates are handled as:
+     *    The board member started wanting packets before the end date of
+     *      this print job (which is usually right now but could be earlier.)
+     *    The board member has no end date, or it's after the print date
+     *      (i.e., right now.)
+     *
      * It doesn't mean that:
      *    Any packets are ready to be printed.
      *    Any packets ready to print are assigned to him.
@@ -765,7 +772,7 @@ class EbmsPrintJob {
             $qry->condition('wp.start_dt', $this->packet_end_dt, '<=');
             $qry->condition(
                   db_or()->isNull('wp.end_dt')
-                      ->condition('wp.end_dt', $this->packet_start_dt, '>')
+                      ->condition('wp.end_dt', $this->print_dt, '>')
                );
             $result = $qry->execute();
 
@@ -869,11 +876,6 @@ class EbmsPrintJob {
         if (!$always)
             $qry->condition('pkt.packet_id', $subqry, 'NOT IN');
         $qry->orderBy('pkt.packet_id');
-
-pdq_ebms_debug("SQL for package:", $qry);
-pdq_ebms_debug("Parms:",
- "board={$this->board_id}  start={$this->packet_start_dt}  " .
- "end={$this->packet_end_dt}  member=$memberId");
 
         try {
             // Execute
@@ -1605,8 +1607,9 @@ EOS;
                 $memberName = getNameByUid($this->board_member_id);
                 $showMember = "$memberName ($this->board_member_id)";
             }
-            else
+            else {
                 $showMember = $noSpec;
+            }
 
             // Displayable board info
             if ($this->board_id) {
@@ -1775,7 +1778,8 @@ EOS;
 
         // Prepare the statement
         $qry = db_insert('ebms_packet_printed', 'pktptd')
-         ->fields(array('board_member_id', 'packet_id', 'print_job_id'));
+         ->fields('pktptd',
+                  array('board_member_id', 'packet_id', 'print_job_id'));
 
         // Build an array of value arrays, one per row to insert
         $values = array();
