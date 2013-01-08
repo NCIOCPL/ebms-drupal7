@@ -855,6 +855,7 @@ class EbmsPrintJob {
         $subqry->join('ebms_print_job', 'job',
                       'pktp.print_job_id = job.print_job_id');
         $subqry->addField('pktp', 'packet_id');
+        $subqry->distinct();
         $subqry->condition('pktp.board_member_id', $memberId, '=')
                ->condition('job.status', 'success', '=');
 
@@ -1890,9 +1891,11 @@ function runPrintJob() {
             //  know who it is.
             // Find his package, if any, then his docs, if any
             // Get the packets for him within the packet print dates
-            // Don't care if he's already seen them or not
+            // But don't get anything he's already seen.
+            // We may need to be able to do that.  If so, we'll need a
+            //  parameter to request it.  But for now, this is what we do.
             $package = $pj->getMemberPackage($pj->board_member_id,
-                                             $pj->board_id, true);
+                                             $pj->board_id, false);
             $pj->packageList[$pj->board_member_id] = $package;
             foreach ($package as $packetId) {
                 $docs = $pj->getPacketPrintList($packetId,
