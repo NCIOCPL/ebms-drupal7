@@ -6,7 +6,7 @@ namespace Ebms;
 
 require_once('EbmsArticle.inc');
 require_once('fpdf/fpdf.php');
-require_once('logw.inc');
+// require_once('logw.inc');
 
 // Constants for locating system dependent paths
 define ('SERVER_BASE_PATH',     100);
@@ -27,6 +27,8 @@ define ('TOP_MARGIN', 70);
 define ('LEFT_MARGIN', 70);
 define ('RIGHT_MARGIN', 540);
 
+// Registered trademark symbol in Unicode, hex x00AE
+define ('RTM', chr(174));
 /**
  * This function was built when I was working outside of Drupal, using
  * the PDO database API.  I could replace this with calls to drupal_realpath(),
@@ -809,6 +811,7 @@ class EbmsPrintJob {
                 SELECT MAX(packet_end_dt)
                   FROM {ebms_print_job}
                  WHERE board_id = :boardId
+                   AND print_job_type_id = 'board'
                    AND mode = 'live'
                    AND status = 'success'",
                array(':boardId' => $this->board_id))->fetchField();
@@ -964,8 +967,11 @@ class EbmsPrintJob {
             // Figure out the file type
             $epf->filetype = $this->getFileType($epf->path, $row->filemime);
 
-            // Invoke our heuristic for page counts
-            $epf->numPages = estimatePageCount($epf->path, $epf->filesize);
+            // Response sheets are always two pages, else use heuristics
+            if ($epf->purpose == 'response')
+                $epf->numPages = 2;
+            else
+                $epf->numPages = estimatePageCount($epf->path, $epf->filesize);
 
             // Append it to the array
             $epfList[] = $epf;
@@ -1375,8 +1381,11 @@ class EbmsPrintJob {
         );
 
         // $pdf->Ln();
+        // Copyright symbol after PDQ
         $pdf->SetFont(DFT_FONT_FAMILY, 'B', DFT_FONT_HEIGHT);
-        $pdf->Write(WIDE_HEIGHT, 'Reason(s) for Exclusion From PDQ Summary');
+        $pdf->Write(WIDE_HEIGHT, 'Reason(s) for Exclusion From PDQ');
+        $pdf->cell(12, 16, RTM, 0, 0);
+        $pdf->Write(WIDE_HEIGHT, 'Summary');
         $pdf->Ln(NARROW_HEIGHT);
         $pdf->SetFont(DFT_FONT_FAMILY, '', DFT_FONT_HEIGHT);
         $pdf->Write(NARROW_HEIGHT,
@@ -1777,22 +1786,20 @@ EOS;
     function recordPrintedPackets() {
 
         // Prepare the statement
-        $qry = db_insert('ebms_packet_printed', 'pktptd')
-         ->fields('pktptd',
-                  array('board_member_id', 'packet_id', 'print_job_id'));
 
         // Build an array of value arrays, one per row to insert
-        $values = array();
+        $cnt = 0;
         foreach ($this->packageList as $memberId => $packetList) {
             foreach ($packetList as $packetId) {
-                $values[] = array(
-                    $memberId, $packetId, $this->print_job_id);
+                $qry = db_insert('ebms_packet_printed')
+                 ->fields(array(
+                    'board_member_id' => $memberId,
+                    'packet_id'       => $packetId,
+                    'print_job_id'    => $this->print_job_id));
+                $qry->execute();
+                ++$cnt;
             }
         }
-
-        // Execute a multi-insert
-        // Drupal with MySQL is supposed to wrap it in a transaction
-        $qry->execute();
     }
 
     /**
@@ -1886,6 +1893,7 @@ function runPrintJob() {
             // Don't care if he's already seen them or not
             $package = $pj->getMemberPackage($pj->board_member_id,
                                              $pj->board_id, true);
+            $pj->packageList[$pj->board_member_id] = $package;
             foreach ($package as $packetId) {
                 $docs = $pj->getPacketPrintList($packetId,
                                                 $pj->board_member_id);
