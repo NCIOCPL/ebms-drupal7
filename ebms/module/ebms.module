@@ -921,6 +921,10 @@ function ebms_init() {
     drupal_add_js("$sflib/supersubs.js");
     drupal_add_js(Ebms\JS_DIR . '/ebms.js');
     drupal_add_css("$sflib/css/superfish.css");
+
+    // Going for the side effect of bringing the cycle table up to date.
+    $default_cycle = Ebms\Util::get_default_cycle();
+
     if ($user->uid) {
 
         // $user->ebms_boards

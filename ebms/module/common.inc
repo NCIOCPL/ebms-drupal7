@@ -1366,6 +1366,105 @@ class Util {
     }
 
     /**
+     * Fetches primary key for row in cycle table, give the start date
+     * for the desired cycle.
+     *
+     *  @param   string  $start_date  String in the form YYYY-MM-DD
+     *
+     *  @return  int                  Primary key of row in cycle table
+     */
+    public static function get_cycle_id_from_start_date($start_date) {
+        return db_select('ebms_cycle', 'c')
+            ->fields('c', array('cycle_id'))
+            ->condition('c.start_date', $start_date)
+            ->execute()
+            ->fetchField();
+    }
+
+    /**
+     * Returns the highest start_date value in the ebms_cycle table.
+     *
+     *  @return  string              Latest cycle start date
+     */
+    public static function get_last_cycle_date() {
+        $query = db_select('ebms_cycle', 'c');
+        $query->addExpression('MAX(start_date)');
+        return $query->execute()->fetchField();
+    }
+
+    /**
+     * Add a row in the cycle table for the cycle immediately following
+     * the one which starts on the caller's date parameter.
+     *
+     *  @param   string        Starting date of the last cycle
+     *
+     *  @returns               Nothing
+     */
+    public static function add_next_cycle($prev_start_date) {
+        list($year, $month) = explode('-', $prev_start_date);
+        if ($month++ == 12) {
+            $year++;
+            $month = 1;
+        }
+        $start_date = sprintf('%04d-%02d-01', $year, $month);
+        $time = mktime(0, 0, 0, $month, 1, $year);
+        $cycle_name = date('F Y', $time);
+        pdq_ebms_debug('ADD NEXT CYCLE', array(
+                           'start date' => $start_date,
+                           'time' => $time,
+                           'cycle name' => $cycle_name,
+            )
+        );
+        db_insert('ebms_cycle')
+            ->fields(
+                array(
+                    'cycle_name' => $cycle_name,
+                    'start_date' => $start_date,
+                )
+            )
+            ->execute();
+    }
+
+    /**
+     * Determines what the default cycle should be for a picklist.
+     * As a side effect, the cycle table is brought up to date so
+     * that the default cycle is always available.
+     *
+     *  @return   int           Foreign key into the ebms_cycle table
+     */
+    public static function get_default_cycle() {
+        $now = getdate();
+        $y = $now['year'];
+        $m = $now['mon'];
+        $d = $now['mday'];
+        if ($d > 5) {
+            if ($m++ == 12) {
+                $y++;
+                $m = 1;
+            }
+        }
+        $start_date = sprintf('%04d-%02d-01', $y, $m);
+        $cycle_id = Util::get_cycle_id_from_start_date($start_date);
+        pdq_ebms_debug('GET DEFAULT CYCLE', array(
+                           'now' => $now,
+                           'start_date' => $start_date,
+                           'cycle_id' => $cycle_id,
+            )
+        );
+        $safety = 0;
+        while (!$cycle_id) {
+            $last_cycle = Util::get_last_cycle_date();
+            pdq_ebms_debug('DEFAULT CYCLE - LAST CYCLE', $last_cycle);
+            if ($last_cycle > $start_date)
+                throw new \Exception('Fatal error: gaps in cycle table');
+            Util::add_next_cycle($last_cycle);
+            $cycle_id = Util::get_cycle_id_from_start_date($start_date);
+            pdq_ebms_debug('DEFAULT CYCLE - TRYING AGAIN', $cycle_id);
+        }
+        return $cycle_id;
+    }
+
+    /**
      * Fetches the primary key for a state type, given the
      * text ID for that type's row.
      *
