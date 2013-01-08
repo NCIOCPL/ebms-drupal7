@@ -45,7 +45,7 @@ $(this).children('a').children('img').attr('src', '/".drupal_get_path('theme', '
                 ?>
             <span id="edit-forum-icon">
             <a href="<?php print url('/node/'.$nid.'/edit'); ?>">
-            <img src="<?php print 
+            <img src="/<?php print 
                 drupal_get_path('theme', 'ebmstheme');?>/images/EBMS_Edit_Icon_Inactive.png" alt="Edit This Forum Topic"/>
             </a> 
             </span>
