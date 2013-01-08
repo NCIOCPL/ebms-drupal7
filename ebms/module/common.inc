@@ -1437,7 +1437,7 @@ class Util {
         $y = $now['year'];
         $m = $now['mon'];
         $d = $now['mday'];
-        if ($d > 5) {
+        if ($d > 10) {
             if ($m++ == 12) {
                 $y++;
                 $m = 1;
