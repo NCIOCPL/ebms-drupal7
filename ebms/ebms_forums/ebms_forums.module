@@ -548,6 +548,14 @@ function ebms_forums_node_access($node, $op, $account) {
     }
     return NODE_ACCESS_IGNORE;
 }
+
+
+
+/**
+ * Gets the eligible forms for the global $user objected (the logged in user).
+ * @global type $user
+ * @return type An array of Forum IDs.
+ */
 function _ebms_forums_for_global_user () {
     global $user;
     
@@ -620,8 +628,8 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
     $administerForums = user_access('administer ebms forums');
 
     if ($activeForumID || $administerEBMS || $administerForums || $user->uid == 1) {
-        $output .= '<div id="upcoming-events" class="more-actions"><div class="item-list"><h3>Forum Actions</h3>
-        <ul class="ebms_left_nav_block">';
+        $output .= '<div id="nav-block"><div class="item-list"><h3>Forum Actions</h3>
+        <div class="actions"><ul class="ebms_left_nav_block">';
     if ($activeForumID)
         $output .= '<li><a href="' . url('node/add/forum') . '">Create New Topic</a></li>';
     if ($administerEBMS || $administerForums || $user->uid == 1) {
@@ -633,10 +641,7 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
             $output .= '<li><a href="'.url('forum/'.$activeForumID.'/edit').'">Edit This Forum</a></li>';
     }
 
-    $output .= '</ul></div><div class="ebms-left-nav-block-bottom">
-        <img class="ebms-left-nav-block-bottom " alt="" 
-        src="' . drupal_get_path('theme', 'ebmstheme') . '/images/left-nav-box-bottom.png">
-        </div></div></div>';
+    $output .= '</ul></div><div class="footer"></div></div></div>';
     }
 
     $output .= '</div>'; //Closes id=left-nav
