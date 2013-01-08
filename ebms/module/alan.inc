@@ -1113,13 +1113,14 @@ function ebms_testapi_printouts_form($form) {
     );
 
     $jobRows = getPrintJobData();
-    $header = array('Job', 'Date', 'Board', 'Member', 'Mode',
-                    'Status', 'Comment');
+    $header = array('Job', 'Type', 'Date', 'Start', 'End', 'Board',
+                    'Member', 'Packet', 'Mode', 'Status', 'Comment');
     $tblRows = array();
     foreach ($jobRows as $row) {
-        $tblRows[] = array($row->print_job_id, $row->print_dt,
-                           $row->board_name, $row->name, $row->mode,
-                           $row->status, $row->comment);
+        $tblRows[] = array($row->print_job_id, $row->print_job_type_id,
+               $row->print_dt, $row->packet_start_dt, $row->packet_end_dt,
+               $row->board_name, $row->name, $row->packet_id,
+               $row->mode, $row->status, $row->comment);
     }
 
     $form['jobTbl'] = array(
@@ -1584,14 +1585,15 @@ function boardRequest() {
  *  @param int $latest      ID of latest job to retrieve, null=latest possible
  *  @param string $status   Desired status, null = all
  */
-function getPrintJobData($numJobs=50, $latest=null, $status=null) {
+function getPrintJobData($numJobs=60, $latest=null, $status=null) {
 
     // Fetch the data
     $qry = db_select('ebms_print_job', 'job');
     $qry->leftjoin('ebms_board', 'board', 'job.board_id = board.board_id');
     $qry->leftjoin('users', 'user', 'job.board_member_id = user.uid');
-    $qry->fields('job', array('print_job_id', 'mode', 'print_dt',
-                 'status', 'comment'));
+    $qry->fields('job', array('print_job_id', 'print_job_type_id', 'mode',
+                 'print_dt', 'packet_start_dt', 'packet_end_dt',
+                 'packet_id', 'status', 'comment'));
     $qry->fields('user', array('name'));
     $qry->fields('board', array('board_name'));
 
