@@ -14,6 +14,8 @@
  *
  * @ingroup themeable
  */
+//$stored_feed_links = &drupal_static(__FUNCTION__, array());
+//kprint_r($stored_feed_links);
 if (!$tid):
     $forums = _ebms_forums_for_global_user();
     if (count($forums) > 0):
@@ -56,7 +58,7 @@ $(this).children('a').children('img').attr('src', '/".drupal_get_path('theme', '
                 ?>
             <span id="edit-forum-icon">
             <a href="<?php print url('/forum/'.$tid.'/edit'); ?>">
-            <img src="<?php print 
+            <img src="/<?php print 
                 drupal_get_path('theme', 'ebmstheme');?>/images/EBMS_Edit_Icon_Inactive.png" alt="Edit This Forum"/>
             </a> 
             </span>
