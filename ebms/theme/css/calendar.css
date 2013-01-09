@@ -6,11 +6,6 @@
         Purpose of the stylesheet follows.
 */
 
-td.single-day,
-td.date-box{
-    border: 1px solid #CCCCCC;
-}
-
 #calendar-enclosure{
     float: left;
     width: 710px;
@@ -67,49 +62,18 @@ li.calendar-date{
     font-weight: bold;
 }
 
-#calendar-enclosure .calendar-calendar .month-view .full tr td.today,
-#calendar-enclosure .calendar-calendar .month-view .full tr.odd td.today,
-#calendar-enclosure .calendar-calendar .month-view .full tr.even td.today {
-    background: none repeat scroll 0 0 transparent;
-    border-left: 2px solid #A90101;
-    border-right: 2px solid #A90101;
-}
-
-#calendar-enclosure .calendar-calendar .month-view .full td.date-box.today {
-    border-color: #A90101;
-    border-style: solid;
-    border-width: 2px 2px 0;
-}
-
-#calendar-enclosure .calendar-calendar .month-view .full tr td.single-day.today {
-    border-bottom: 2px solid #A90101;
-}
-
-#calendar-enclosure .calendar-calendar td .inner div.day a {
-    color: #2D2C28;
-}
-
-#calendar-enclosure .calendar-calendar td .inner div.day.empty a {
-    color: #696559;
-    opacity: 0.65;
-}
-
-#calendar-enclosure .calendar-calendar td.today .inner div.day a {
-    color: #A90101;
-}
-
 #calendar-enclosure .calendar-calendar .month-view .full td.single-day div.monthview,
 #calendar-enclosure .calendar-calendar .week-view .full td.single-day div.weekview,
 #calendar-enclosure .calendar-calendar .day-view .full td.single-day div.dayview {
-    background: none repeat scroll 0 0 #FFFFFF;
+    background-color: #FFFFFF;
 }
 
 #calendar-enclosure .calendar-calendar .week-view .full div.single-day div.weekview,
 #calendar-enclosure .calendar-calendar .day-view .full div.single-day div.dayview {
-    background: none repeat scroll 0 0 #FFFFFF;
-    overflow: hidden;
+    background-color: #FFFFFF;
+    /*overflow: hidden;
     padding: 0 3px;
-    width: auto;
+    width: auto;*/
 }
 
 #calendar-enclosure .calendar-calendar td span.date-display-single,
@@ -261,51 +225,3 @@ li.calendar-date{
 .region-sidebar-second #calendar-enclosure .view .date-nav-wrapper .date-next a{
     color: white;
 }
-
-/*
-#left-nav .view-display-id-block_upcoming li{
-    border: none;
-    padding-bottom: 0;
-}
-
-#left-nav .view-display-id-block_upcoming .item-list{
-
-}
-
-#left-nav .view-display-id-block_upcoming .item-list ul{
-
-    margin: 0;
-}
-
-#left-nav .view-display-id-block_upcoming .item-list + .item-list{
-    border-top: 1px solid #696559;
-}
-
-#left-nav .view-header h3 {
-    background-image: url("../images/left-nav-box-title.png");
-    background-repeat: no-repeat;
-    color: white;
-    font-size: 16px;
-    height: 41px;
-    line-height: 41px;
-    margin-bottom: 0;
-    margin-top: 0;
-    padding-left: 10px;
-    text-transform: uppercase;
-}
-
-#left-nav .item-list h3{
-    color: #2D2C28;
-    font-family: Arial,Verdana,sans-serif;
-    font-size: 16px;
-    font-weight: normal;
-    
-    margin: 0 0 10px 0;
-    padding: 10px 10px 0 10px;
-}
-
-#left-nav .ebms-left-nav-block-bottom{
-    height: 7px;
-    margin-top: -20px;
-}
-*/

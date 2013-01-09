@@ -264,12 +264,12 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
     padding-bottom: 10px; 
 }
 #left-nav li.active { border-bottom: 1px #a90101 solid; }
-#left-nav li.inactive{ opacity: 0.65; }
+#left-nav li.inactive{ opacity: 0.75; }
 #left-nav a {
     text-transform: uppercase;
 }
 #left-nav li.inactive a {
-    color: #696559; opacity: .65;
+    color: #696559; opacity: .75;
 }
 
 #left-nav li.active:hover, 
@@ -735,6 +735,100 @@ body.front #calendar td.today {
     background-repeat: no-repeat;
 }
 
+/* calendar view-specific styling */
+.calendar-calendar .week-view .full div.single-day .inner,
+.calendar-calendar .day-view .full div.single-day .inner{
+    z-index: auto;
+}
+
+.calendar-calendar .week-view div.single-day .view-item,
+.calendar-calendar .day-view div.single-day .view-item {
+    z-index: auto;
+}
+
+.calendar-calendar .week-view div.single-day .half-hour,
+.calendar-calendar .day-view div.single-day .half-hour {
+    z-index: auto;
+}
+
+.calendar-calendar .month-view .full .inner .monthview,
+.calendar-calendar .week-view .full .inner .weekview,
+.calendar-calendar .day-view .full .inner .dayview {
+    z-index: 1;
+}
+
+.calendar-calendar .week-view .full div.single-day div.weekview,
+.calendar-calendar .day-view .full div.single-day div.dayview {
+    border: 1px solid #A90101;
+}
+
+.calendar-calendar .month-view .full td.single-day .calendar-empty,
+.calendar-calendar .month-view .full td.single-day.empty,
+.calendar-calendar .month-view .full td.date-box.empty {
+    background-color: #FFFFFF;
+}
+
+.view .date-nav-wrapper .date-heading h3 {
+    color: #2D2C28;
+}
+
+.calendar-calendar th,
+.calendar-calendar th.days {
+    background-color: #696559;
+    color: #FFFFFF;
+}
+
+.calendar-calendar td.empty .inner {
+    position: relative;
+    z-index: -1;
+}
+
+.calendar-calendar tbody,
+.calendar-calendar thead tr,
+.calendar-calendar td,
+.calendar-calendar td.empty {
+    border: 1px solid #696559;
+    border-color: rgba(105, 101, 89, 0.75);
+    border-collapse: collapse;
+}
+
+.calendar-calendar th.days,
+.calendar-calendar td.empty {
+    border-style: inset;
+}
+
+.calendar-calendar td .inner div.day.empty a {
+    color: #696559;
+    opacity: 0.75;
+}
+
+.calendar-calendar .month-view .full tr td.today,
+.calendar-calendar .month-view .full tr.odd td.today,
+.calendar-calendar .month-view .full tr.even td.today {
+    background: none repeat scroll 0 0 transparent;
+    border-left: 2px solid #A90101;
+    border-right: 2px solid #A90101;
+}
+
+.calendar-calendar .month-view .full td.date-box.today {
+    border-color: #A90101;
+    border-style: solid;
+    border-width: 2px 2px 0;
+}
+
+.calendar-calendar .month-view .full tr td.single-day.today {
+    border-bottom: 2px solid #A90101;
+}
+
+.calendar-calendar td .inner div.day a {
+    color: #2D2C28;
+}
+
+.calendar-calendar td .inner div.day a:hover,
+.calendar-calendar td.today .inner div.day a {
+    color: #A90101;
+}
+
 /* Special handling for Next Meeting block */
 body.front #next-meeting li { line-height: 24px; }
 body.front #next-meeting span { font-weight: bold; }
@@ -1195,7 +1289,8 @@ div.ctools-modal-content a.close img {
 }
 
 #modalBackdrop{
-    background-color: #2D2C28 !important;
+    background-color: #696559 !important;
+    opacity: 0.8 !important;
 }
 
 div.ctools-modal-content .form-item label {
