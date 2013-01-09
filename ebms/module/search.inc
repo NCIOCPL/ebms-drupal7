@@ -332,8 +332,6 @@ class EbmsSearch {
             $pieces[] = ": $pgn";
         if ($year)
             $pieces[] = ", $year";
-        $edit_link = l('EDIT', $full_url, $full_opts);
-        $pub_link = l('PUBLISH', $full_url, $full_opts);
         $pieces[] = "<br />PMID: $pmid &nbsp; EBMS ID: $article_id";
         if ($legacy_id)
             $pieces[] = " &nbsp; Legacy CMS ID: $legacy_id";
@@ -349,10 +347,7 @@ class EbmsSearch {
             $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $target);
             $pieces[] = ' &nbsp;|&nbsp; ' . $ft_link;
         }
-        $pieces[] = ' &nbsp;|&nbsp; ' . $edit_link;
-        $pieces[] = ' &nbsp;|&nbsp; ' . l('REVIEW', 'citations/review');
-        $pieces[] = ' &nbsp;|&nbsp; ' . $pub_link .
-            '</span></br /><br />&nbsp;';
+        $pieces[] = '</span></br /><br />&nbsp;';
 
         // Collapse and return the markup.
         return implode($pieces);
