@@ -14,8 +14,7 @@
  *
  * @ingroup themeable
  */
-//$stored_feed_links = &drupal_static(__FUNCTION__, array());
-//kprint_r($stored_feed_links);
+
 if (!$tid):
     $forums = _ebms_forums_for_global_user();
     if (count($forums) > 0):

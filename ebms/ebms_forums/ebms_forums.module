@@ -608,7 +608,8 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
 
 
     $output = '<div id="left-nav">';
-    $output .= '<div class="calendar-views">';
+    
+    $output .= '<div class="forum-left-nav">';
     $output .= '<div class="item-list"><ul>';
 
     foreach ($links as $link) {
@@ -621,30 +622,37 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
             $output .= '</i>';
         $output .= '</li>';
     }
-    $output .= '</ul></div>'; //Closes class=item-list
-    $output .= '</div>'; // Closes forum-left-nav
+    
+    $output .= '</ul></div>'; //Closes .item-list
+    $output .= '</div>'; // Closes .forum-left-nav
 
     $administerEBMS = user_access('administer ebms');
     $administerForums = user_access('administer ebms forums');
 
     if ($activeForumID || $administerEBMS || $administerForums || $user->uid == 1) {
-        $output .= '<div id="nav-block"><div class="item-list"><h3>Forum Actions</h3>
-        <div class="actions"><ul class="ebms_left_nav_block">';
-    if ($activeForumID)
-        $output .= '<li><a href="' . url('node/add/forum') . '">Create New Topic</a></li>';
-    if ($administerEBMS || $administerForums || $user->uid == 1) {
-        if ($activeNodeID) 
-            $output .= '<li><a href="'.url('node/'.$activeNodeID.'/edit').'">Edit This Topic</a></li>';
         
-        $output .= '<li><a href="' . url('forum/create') . '">Create New Forum</a></li>';
+        $output .= '<div class="nav-block">';
+        $output .= '<h3>Forum Actions</h3>';
+        $output .= '<div class="actions"><ul>';
+        
         if ($activeForumID)
-            $output .= '<li><a href="'.url('forum/'.$activeForumID.'/edit').'">Edit This Forum</a></li>';
+            $output .= '<li><a href="' . url('node/add/forum') . '">Create New Topic</a></li>';
+        if ($administerEBMS || $administerForums || $user->uid == 1) {
+            if ($activeNodeID)
+                $output .= '<li><a href="' . url('node/' . $activeNodeID . '/edit') . '">Edit This Topic</a></li>';
+
+            $output .= '<li><a href="' . url('forum/create') . '">Create New Forum</a></li>';
+            if ($activeForumID)
+                $output .= '<li><a href="' . url('forum/' . $activeForumID . '/edit') . '">Edit This Forum</a></li>';
+        }
+        $output .= '</ul></div>'; //Closes ul and .actions
+        
+        $output .= '<div class="footer"></div>';
+        
+        $output .= '</div>'; //Closes .nav-block
     }
 
-    $output .= '</ul></div><div class="footer"></div></div></div>';
-    }
-
-    $output .= '</div>'; //Closes id=left-nav
+    $output .= '</div>'; //Closes #left-nav
     return $output;
 }
 
@@ -732,4 +740,17 @@ function _get_last_comment_by_node ($nid) {
   $lastComment = comment_load($lastComment->cid);
   return $lastComment;
 
+}
+
+/**
+ * Just unsetting the link to the RSS for forum pages.
+ * 
+ * @param type $vars
+ */
+function ebms_forums_preprocess_page(&$vars) {
+    if (array_key_exists('theme_hook_suggestions', $vars)
+            && in_array('page__forum', $vars['theme_hook_suggestions'])) {
+        if (array_key_exists('feed_icons', $vars))
+            unset($vars['feed_icons']);
+    }
 }
