@@ -1382,7 +1382,11 @@ function addArticleStateComment($articleStateId, $comment,
 function getCurrentState($articleId, $topicId) {
 
     $qry = db_select('ebms_article_state', 'state');
+    $qry->join('ebms_article_state_type', 'type', 
+        'state.state_id = type.state_id');
     $qry->fields('state');
+    $qry->fields('type', array('state_text_id', 'state_name', 'description',
+            'completed', 'sequence'));
     $qry->condition('state.article_id', $articleId);
     $qry->condition('state.topic_id', $topicId);
     $qry->condition('state.current', 'Y');
