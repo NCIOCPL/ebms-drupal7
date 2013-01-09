@@ -398,6 +398,10 @@ class Menu {
      * pages.
      */
     public static function forums($user) {
+        // The forums menu should just go to the main page.
+        return new Menu('Forums', 'forum', array());
+        
+        // None of this is accessed. This is old code prior to ebms_forums module.
         $children = array();
         $forums = Forum::forums();
         //pdq_ebms_debug('MENU FORUMS', $forums);
