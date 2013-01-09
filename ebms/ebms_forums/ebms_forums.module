@@ -751,6 +751,20 @@ function ebms_forums_preprocess_page(&$vars) {
     if (array_key_exists('theme_hook_suggestions', $vars)
             && in_array('page__forum', $vars['theme_hook_suggestions'])) {
         if (array_key_exists('feed_icons', $vars))
-            unset($vars['feed_icons']);
+            $vars['feed_icons'] = '';
     }
+}
+
+/**
+ * Determines the number of unread Forum Topics for Forums that you can see.
+ * @global type $user
+ * @return type A count of unread forum topics.
+ */
+function _ebms_forums_count_new_topics () {
+    global $user;
+    $count = 0;
+    $forums = _ebms_forums_for_global_user();
+    foreach ($forums as $forum)
+        $count += _forum_topics_unread($forum->tid, $user->uid);
+    return $count;
 }
