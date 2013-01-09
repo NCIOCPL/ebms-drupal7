@@ -950,6 +950,24 @@ class EbmsReview {
             $dispositions = $query->execute();
             foreach ($dispositions as $d)
                 $markup[] = '<p>' . htmlspecialchars($d->value_name) . '</p>';
+
+            // Enhancement request from TIR 2256: show exclusion reasons.
+            $query = db_select('ebms_review_rejection_value', 'v');
+            $query->join('ebms_review_rejection_reason', 'r',
+                'r.value_id = v.value_id');
+            $query->fields('v', array('value_name'));
+            $query->condition('r.review_id', $result->review_id);
+            $query->orderBy('v.value_pos');
+            $query->distinct();
+            $reasons = $query->execute();
+            $lines = array();
+            foreach ($reasons as $r)
+                $lines[] = '<p>' . htmlspecialchars($r->value_name) . '</p>';
+            if (count($lines)) {
+                $markup[] = '<h3>Exclusion Reason(s)</h3>';
+                $markup = array_merge($markup, $lines);
+            }
+
             $markup[] = '<h3>Comments</h3>';
             if ($result->comments) {
                 $markup[] = '<p>' . htmlspecialchars($result->comments) .
