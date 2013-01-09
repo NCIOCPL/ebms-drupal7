@@ -121,6 +121,7 @@ class EbmsSummaries {
                 db_update($table)
                     ->fields(array('archived' => $now))
                     ->condition('doc_id', $doc_id)
+                    ->condition('page_id', $this->subpage_id)
                     ->execute();
             }
 
@@ -143,6 +144,7 @@ class EbmsSummaries {
                 db_update($table)
                     ->fields(array('archived' => null))
                     ->condition('doc_id', $doc_id)
+                    ->condition('page_id', $this->subpage_id)
                     ->execute();
             }
 

@@ -2373,10 +2373,53 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
                 )
             )
             ->execute();
+
+        // Find all the summaries subpages associated with the packet's topic.
+        $query = db_select('ebms_summary_page_topic', 't');
+        $query->fields('t', array('page_id'));
+        $query->join('ebms_packet', 'p', 'p.topic_id = t.topic_id');
+        $query->condition('p.packet_id', $packet_id);
+        $results = $query->execute();
+        $page_ids = array();
+        foreach ($results as $result)
+            $page_ids[] = $result->page_id;
+
+        // If there are any such subpages, also link this document with
+        // each of them (TIR 2177).
+        if (count($page_ids)) {
+
+            $path_parts = pathinfo($file->filename);
+            $filename = $path_parts['filename'];
+            $doc_id = db_insert('ebms_doc')
+                ->fields(
+                    array(
+                        'file_id' => $file->fid,
+                        'when_posted' => $now,
+                        'description' => $filename,
+                    )
+                )
+                ->execute();
+            foreach ($page_ids as $page_id)
+                db_insert('ebms_summary_returned_doc')
+                ->fields(
+                    array(
+                        'doc_id' => $doc_id,
+                        'page_id' => $page_id,
+                        'notes' => $filenotes,
+                    )
+                )
+                ->execute();
+        }
+
+        // Tell the user that we succeeded.
         drupal_set_message('Posted document ' . $file->filename . '.');
     }
     else
+
+        // Tell the user that we failed.
         drupal_set_message('File not found', 'error');
+
+    // Go back to the user's packet.
     $options = array(
         'query' => array(
             'packet' => $packet_id,
