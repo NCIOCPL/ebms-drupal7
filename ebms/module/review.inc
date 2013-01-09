@@ -604,15 +604,14 @@ class EbmsReview {
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
         $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
         $authors = array();
-        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
-        {
+        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
             if (sizeof($authors) == 3) {
                 $authors[] = 'et al.';
                 break;
             }
-            $name = $author->LastName;
-            if ($author->Initials)
-                $name .= ' ' . $author->Initials;
+            $name = $a->LastName;
+            if ($a->Initials)
+                $name .= ' ' . $a->Initials;
             $authors[] = htmlspecialchars($name);
         }
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;

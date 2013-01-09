@@ -1496,13 +1496,13 @@ class Util {
      * Adds a condition to a DB query, restricting the results to
      * the date range represented by a specified review cycle.
      *
-     *  @param SelectQuery $query   Reference to query object
-     *  @param int         $cycle   Primary key of row in cycle table
-     *  @param string      $field   Qualified string for date column
-     *                              to be tested against date range
+     *  @param SelectQuery $query     Reference to query object
+     *  @param int         $cycle_id  Primary key of row in cycle table
+     *  @param string      $field     Qualified string for date column
+     *                                to be tested against date range
      *
-     *  @return                     Boolean indicating whether query
-     *                              was successfully modified.
+     *  @return                       Boolean indicating whether query
+     *                                was successfully modified.
      */
     public static function add_cycle_to_query(&$query, $cycle_id, $field) {
         $cycle_query = db_select('ebms_cycle', 'c')
