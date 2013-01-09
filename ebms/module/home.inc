@@ -380,6 +380,8 @@ class EbmsHomePage {
         $total += $count = $this->get_review_count();
         $page = $this->role == 'member' ? 'assigned' : 'reviews';
         $items[] = EbmsHomePage::alert("review/$page", 'Reviews', $count);
+        if (module_exists('ebms_forums'))
+            $items[] = EbmsHomePage::alert("forum", "Forums", _ebms_forums_count_new_topics());
 
         // Assemble and return the box.
         $title = "Alerts <span class='alert-count'>$total</span>";
