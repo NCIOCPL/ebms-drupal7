@@ -1815,7 +1815,7 @@ EOS;
 
         // Preserve any error messages as part of the comment text
         if (count($this->errMsgs) > 0) {
-            $errStr = "ERRORS: " . implode('; ', $this->errMsgs);
+            $errStr = "Msgs: " . implode('; ', $this->errMsgs);
             $this->comment .= "  [$errStr]";
         }
 
