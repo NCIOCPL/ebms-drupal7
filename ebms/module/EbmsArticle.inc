@@ -4,7 +4,7 @@
 
 namespace Ebms;
 
-require_once('logw.inc');
+// require_once('logw.inc');
 
 // Maximum author elements, truncate if necessary
 define('Ebms\MAX_COLLECTNAME', 1023);
@@ -512,7 +512,7 @@ class EbmsArticle {
      * and Exception information.
      */
     public function setArticleState($textId, $topicId=null, $boardId=null,
-            $comment=null, $userId=null, $dateTime=null, $cycle_id=null) {
+            $comment=null, $userId=null, $dateTime=null, $cycleId=null) {
 
         return setArticleState($this->article_id, $textId, $topicId,
             $boardId, $comment, $userId, $dateTime, $cycleId);
@@ -1298,7 +1298,6 @@ function setArticleState($articleId, $textId, $topicId, $boardId=null,
                                    $dateTime);
 
         // If there is a new cycle, create a row for it
-logw("cycleId prior to test for insert of ebms_article_topic=$cycleId");
         if ($cycleId) {
             try {
                 $qry = db_insert('ebms_article_topic');
