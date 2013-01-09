@@ -16,7 +16,7 @@ ini_set('display_startup_errors', TRUE);
 function pdq_ebms_alantest() {
     // Test
     // return '<i>Stub for Alan\'s testing</i>';
-    require_once('logw.inc');
+    // require_once('logw.inc');
     require_once('EbmsArticle.inc');
     require_once('EbmsImport.inc');
     require_once('EbmsSearch.inc');
@@ -163,12 +163,17 @@ function pdq_ebms_setstatus_test() {
     // Topic - optional
     $topicId = Ebms\Util::get_request_value('topicId');
 
+    // Cycle ID
+    $cycleId = Ebms\Util::get_request_value('cycleId');
+    if (!$cycleId)
+        $cycleId = null;
+
     // Text to add
     $comment = Ebms\Util::get_request_value('comment', null);
 
     // Set the requested status
     $stRowId = Ebms\setArticleState($articleId, $statusName, $topicId,
-                                    $boardId, $comment);
+                                    $boardId, $comment, null, null, $cycleId);
 
     // Show effect on the history - show the whole history
     $hist = Ebms\getStatusHistory($articleId, null, null, true, true);
@@ -224,10 +229,6 @@ function pdq_ebms_getcurrentstatus_test() {
     if (!$articleId)
         return $errMsg;
 
-    // Board or topic identifer
-    $boardInfo = boardRequest();
-    $boardId   = $boardInfo['boardId'];
-
     $topicStr = Ebms\Util::get_request_value('topicId', null);
     $topicId  = $topicStr ? intval($topicStr) : null;
 
@@ -236,13 +237,14 @@ function pdq_ebms_getcurrentstatus_test() {
         $topicId = Ebms\getTopicIdByName($topicStr);
 
     // Get the current status
-    $curStat = Ebms\getCurrentState($articleId, $topicId, $boardId);
+    $curStat = Ebms\getCurrentState($articleId, $topicId);
 
     // Convert to HTML
     $html = Ebms\currentStatusToHtml($curStat);
 
     return $html;
 }
+
 function pdq_ebms_getstatushistory_test() {
 
     // Article identifier
@@ -784,6 +786,19 @@ function ebms_testapi_setstatus_form($form) {
         '#description' => 'Some states require topics, some don\'t'
     );
 
+    // Cycle ID required if this is a new topic
+    $cycles = Ebms\Util::cycles();
+    $form['cycleId'] = array(
+        '#type' => 'select',
+        '#title' => 'Cycle ID - Required if adding a new topic',
+        '#description' => 'Every article/topic combination requires a ' .
+            'cycle ID.  If you are adding a new topic, pick a cycle ID, '.
+            'else leave it blank',
+        '#options' => $cycles,
+        '#default' => null,
+        '#required' => false
+    );
+
     // Optional comment
     addCommentToForm($form, 'Optional free text comment with the new status');
 
@@ -841,16 +856,15 @@ function ebms_testapi_getcurrentstatus_form($form) {
     );
 
     addArticleIdsToForm($form);
-    addBoardIdToForm($form,
-            'Optionally restrict to particular board (or no board)');
 
     $form['topicId'] = array(
         '#type' => 'textfield',
         '#title' => 'Summary topic name or ID',
-        '#description' => 'Optionally restrict status to one summary topic',
+        '#description' =>
+          'Current status is now always set for one article/topic combination',
         '#size' => 50,
         '#maxlength' => 80,
-        '#required' => false
+        '#required' => true
     );
 
     $form['submit'] = array(
@@ -1287,11 +1301,11 @@ function addStateTypesToForm(&$form) {
     // Get the list of allowed status values as an array
     $stateNames = array();
     $result = db_query('
-        SELECT state_name
+        SELECT state_text_id
           FROM {ebms_article_state_type}
       ORDER BY sequence, state_id');
     foreach ($result as $row)
-        $stateNames[] = $row->state_name;
+        $stateNames[] = $row->state_text_id;
 
     // Add them as a selection list to the form
     $form['status'] = array(
@@ -1484,15 +1498,15 @@ function addSubmitButtonToForm(&$form) {
  */
 function getAllStates() {
 
-    $stateNames = array();
+    $stateTextIds = array();
     $result = db_query('
-        SELECT state_name
+        SELECT state_text_id
           FROM {ebms_article_state_type}
       ORDER BY sequence, state_id');
     foreach ($result as $row)
-        $stateNames[] = $row->state_name;
+        $stateTextIds[] = $row->state_text_id;
 
-    return $stateNames;
+    return $stateTextIds;
 }
 
 /**
