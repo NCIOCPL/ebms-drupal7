@@ -924,7 +924,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                     if ($mode == 'live') {
                         $rec->setArticleState('ReadyInitReview',
                             $topicId, $boardId, $comment, $userId,
-                            $pi->constantDt);
+                            $pi->constantDt, $cycleId);
                     }
 
                     $ib->addArticle('topicAdded', $pmid, $foundId, $msgs);
@@ -943,7 +943,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                     if ($mode == 'live') {
                         $rec->setArticleState('ReadyInitReview',
                                $topicId, $boardId, $comment, $userId,
-                               $pi->constantDt);
+                               $pi->constantDt, $cycleId);
                     }
                     $ib->addArticle('reviewReady', $pmid, $rec->getId(), null);
                 }
@@ -959,7 +959,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                     if ($mode == 'live') {
                         $rec->setArticleState('RejectJournalTitle',
                                $topicId, $boardId, $comment, $userId,
-                               $pi->constantDt);
+                               $pi->constantDt, $cycleId);
                     }
                     $ib->addArticle('notListed', $pmid, $rec->getId(), $msgs);
                 }
