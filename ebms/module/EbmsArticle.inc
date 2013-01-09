@@ -4,6 +4,8 @@
 
 namespace Ebms;
 
+require_once('logw.inc');
+
 // Maximum author elements, truncate if necessary
 define('Ebms\MAX_COLLECTNAME', 1023);
 define('Ebms\MAX_SURNAME', 255);
@@ -113,11 +115,11 @@ class EbmsArticleAuthor {
     /**
      * Constructor
      *
-     *  @param int    $aId          - Row ID in ebms_article_author or null.
-     *  @param string $collectName  - CollectiveName.
-     *  @param string $lastName     - Surname.
-     *  @param string $foreName     - First name(s), may be null.
-     *  @param string $inits        - First and optional more initials.
+     *  @param int    $aId          Row ID in ebms_article_author or null.
+     *  @param string $collectName  CollectiveName.
+     *  @param string $lastName     Surname.
+     *  @param string $foreName     First name(s), may be null.
+     *  @param string $inits        First and optional more initials.
      */
 
     function __construct($aId, $collectName, $lastName, $foreName, $inits) {
@@ -376,13 +378,13 @@ class EbmsArticle {
     /**
      * Retrieve authors.  Uses cache if available, else goes to the DB.
      *
-     *  @param int|null $maxAuthors      - Max number to fetch, null=all.
-     *                                     If negative, fetch from end.
+     *  @param int|null $maxAuthors      Max number to fetch, null=all.
+     *                                   If negative, fetch from end.
      *
-     *  @return array(EbmsArticleAuthor) - Retrieved authors as objects.
-     *                                     Null if there are no authors.
+     *  @return array(EbmsArticleAuthor) Retrieved authors as objects.
+     *                                   Null if there are no authors.
      *
-     *  @throws Exception                - On database or other error.
+     *  @throws Exception                On database or other error.
      */
     public function getAuthors($maxAuthors = null) {
 
@@ -506,41 +508,28 @@ class EbmsArticle {
     /**
      * EbmsArticle interface to setArticleState(), q.v.
      *
-     *
-     *  @param string $textId    - Name used in preference to ID.  The code is
-     *                              less efficient but caller's code is more
-     *                              self-documenting.
-     *  @param int $topicId      - Topic identifier.
-     *  @param int $boardId      - Board identifier.  See notes on free
-     *                              standing routine.
-     *  @param int $comment      - Optional user or program supplied comment.
-     *  @param int $userId       - User setting the state.  If null use current.
-     *  @param int $dateTime     - Date time of action.  If null, use now.
-     *
-     *  @return - int article_state_id.  This is the id of the new row
-     *            in the ebms_article_state table, not the type table.
-     *
-     *  @throws Exception if invalid parameters  or lower level error.
+     * See non-member function setArticleState() for parameter, return,
+     * and Exception information.
      */
-    public function setArticleState($textId, $topicId=null,
-        $boardId=null, $comment=null, $userId=null, $dateTime=null) {
+    public function setArticleState($textId, $topicId=null, $boardId=null,
+            $comment=null, $userId=null, $dateTime=null, $cycle_id=null) {
 
         return setArticleState($this->article_id, $textId, $topicId,
-            $boardId=null, $comment=null, $userId=null, $dateTime=null);
+            $boardId, $comment, $userId, $dateTime, $cycleId);
     }
 
     /**
      * Append an error message.
      *
-     *  @param string $msg   - Error message.  Should be unique in code.
+     *  @param string $msg     Error message.  Should be unique in code.
      *                         If it's an error, add each msg individually
-     *  @param const $level  - Drupal watchdog() severity level.
+     *  @param const $level    Drupal watchdog() severity level.
      *                          Null=Do not log anything via watchdog.
-     *  @param bool   $throw - True = also throw exception.
+     *  @param bool   $throw   True = also throw exception.
      */
     private function addError($msg, $level=null, $throw=false) {
 
-        // Messages are appeneded to the array for this article
+        // Messages are appended to the array for this article
         if (is_null($this->errorMsgs))
             $this->errorMsgs = array();
 
@@ -563,11 +552,11 @@ class EbmsArticle {
     /**
      * Load this object from a parsed XML tree.
      *
-     *  @param object $pma    - PubmedArticle node object for one article.
+     *  @param object $pma    PubmedArticle node object for one article.
      *
      *  @return void
      *
-     *  @throws Exception     - If wrong node or other error.
+     *  @throws Exception     If wrong node or other error.
      */
     public function loadPubmedXml($pma) {
 
@@ -619,11 +608,11 @@ class EbmsArticle {
     /**
      * Load object with contents of a Pubmed format XML string.
      *
-     *  @param string $xmlStr - Serial XML in UTF-8 for element "PubmedArticle".
+     *  @param string $xmlStr   Serial XML in UTF-8 for element "PubmedArticle".
      *
      *  @return void.
      *
-     *  @throws Exception     - If parser or xml error.
+     *  @throws Exception       If parser or xml error.
      */
     public function loadPubmedXmlStr($xmlStr) {
 
@@ -665,10 +654,10 @@ class EbmsArticle {
      * See: http://www.nlm.noh.gov/bsd/licensee/journal_source.html
      * MedlineTA, PubDate;Volume(Issue):Pagination, ELocationID
      *
-     *  @param object $article - PubmedArticle/MedlineCitation/Article
+     *  @param object $article   PubmedArticle/MedlineCitation/Article
      *                           for one article.
      *
-     *  @return void           - Updates fields directly.
+     *  @return void             Updates fields directly.
      *
      * TODO: Users probably want something different.  Check with Bob.
      */
@@ -717,9 +706,9 @@ class EbmsArticle {
     /**
      * Load the authors array from a Pubmed XML record.
      *
-     *  @param object $authorList - AuthorList Pubmed XML element node.
+     *  @param object $authorList   AuthorList Pubmed XML element node.
      *
-     *  @return array of Authors  - Array of author objects.
+     *  @return array of Authors    Array of author objects.
      */
     protected function loadAuthors($authorList) {
 
@@ -751,10 +740,10 @@ class EbmsArticle {
      *
      * Makes Label attributes explicit.
      *
-     *  @param object $abstract - PubmedArticle/MedlineCitation/Article
+     *  @param object $abstract   PubmedArticle/MedlineCitation/Article
      *                            for one article.
      *
-     *  @return string|null     - Abstract as a single string.
+     *  @return string|null       Abstract as a single string.
      *                            Null if no abstract present.
      */
     public function loadAbstract($abstract) {
@@ -871,14 +860,14 @@ class EbmsArticle {
      * Stores bibliographic data, source xml, authors.
      * Caller must separately make the association with a Summary Topic.
      *
-     *  @param string $storeDate - Date to assign to all dates,
+     *  @param string $storeDate   Date to assign to all dates,
      *                             'YYYY-MM-DD HH:MM:SS'.
      *                Else use now().  Specifying the same date
      *                for a batch avoids having a different datetime on
      *                each record in the batch, though that may be better
      *                than allowing random dates.
      *
-     *  @param int $importUserId - Person importing a new record.
+     *  @param int $importUserId   Person importing a new record.
      *                Maybe never used, but it supports EbmsImport
      *                functionality.
      *
@@ -1097,65 +1086,6 @@ class EbmsArticle {
 
         return getTopics($this->article_id);
     }
-
-
-    /**
-     * Simple routine to just get topic IDs
-     */
-
-    /**
-     * Associate an article with a summary topic.
-     *
-     *  @param int $topicId     - Unique ID of the topic
-     *  @param int $userId      - Person who did it
-     *  @param int $cycleId     - EBMS monthly processing cycle for association
-     *  @param datetime $addDt  - Datetime of association.
-     *                            When multiple articles processed in a batch
-     *                            we use the same datetime for all.
-     *  @param string $method   - 'P' = Program, 'H' = Human
-     *
-     *  @return bool            - True  = Success.
-     *                            False = Article already has topic, no add
-     *                              is allowed.
-     *
-     *  @throws Exception if key constraint or other DBMS error.
-     */
-    /* XXX NEEDS CHANGE, NOW DONE BY SETTING A STATE
-    public function addTopic($topicId, $userId, $cycleId,
-                             $addDt=null, $method='P') {
-
-        // Get a uniform date if needed
-        if (is_null($addDt))
-            $addDt = db_query('SELECT NOW()')->fetchField();
-
-        // Check if topic already present
-        // Must always return something, may be 0
-        $result = db_query(
-            "SELECT COUNT(*)
-               FROM {ebms_article_topic}
-              WHERE article_id = :artId
-                AND topic_id   = :topId",
-            array(':artId' => $this->article_id,
-                  ':topId' => $topicId));
-        $count = $result->fetchField();
-
-        if ($count > 0)
-            return False;
-
-        // Add the row
-        $query = db_insert('ebms_article_topic');
-        $query->fields(array(
-                'article_id'       => $this->article_id,
-                'topic_id'         => $topicId,
-                'cycle_id'         => $cycleId,
-                'user_id'          => $userId,
-                'article_topic_dt' => $addDt,
-                'method'           => $method));
-        $query->execute();
-
-        return True;
-    }
-    */
 }
 
 /**
@@ -1165,26 +1095,46 @@ class EbmsArticle {
  * EbmsArticle class member because it is likely to be needed when
  * no EbmsArticle object is otherwise required.
  *
- *  @param int $articleId    - Article whose state has changed.
- *  @param string $textId    - Name used in preference to ID.  The code is
- *                              less efficient but caller's code is more
- *                              self-documenting.
- *  @param int $topicId      - Topic identifier, now always required.
- *  @param int $boardId      - Board identifier, must match topic.
- *                              XXX - We can dispense with this now since
- *                                    board is now always set to the board
- *                                    associated with the topic.
- *  @param int $comment      - Optional user or program supplied comment.
- *  @param int $userId       - User setting the state.  If null use current.
- *  @param int $dateTime     - Date time of action.  If null, use now.
+ *  @param int $articleId    Article whose state has changed.
+ *  @param string $textId    Name used in preference to ID.  The code is
+ *                            less efficient but caller's code is more
+ *                            self-documenting.
+ *  @param int $topicId      Topic identifier, now always required.
+ *  @param int $boardId      Board identifier, must match topic.
+ *                            XXX - We can dispense with this now since
+ *                                  board is now always set to the board
+ *                                  associated with the topic.
+ *  @param int $comment      Optional user or program supplied comment.
+ *  @param int $userId       User setting the state.  If null use current.
+ *  @param int $dateTime     Date time of action.  If null, use now.
+ *  @param int $cycleId      Review cycle for this state change.
+ *                            If null, there is no new cycle to record
+ *                            but that will be verified and an exception
+ *                            thrown if that's not true.
  *
- *  @return - int article_state_id.  This is the id of the new row
- *            in the ebms_article_state table, not the type table.
+ *  @return int              article_state_id.  This is the id of the new
+ *                            row in the ebms_article_state table,
+ *                            not the type table.
  *
- *  @throws Exception if invalid parameters  or lower level error.
+ *  @throws Exception        If invalid parameters, lower level error,
+ *                            or a new topic is established with no
+ *                            cycleId given.
  */
-function setArticleState($articleId, $textId, $topicId,
-        $boardId=null, $comment=null, $userId=null, $dateTime=null) {
+function setArticleState($articleId, $textId, $topicId, $boardId=null,
+        $comment=null, $userId=null, $dateTime=null, $cycleId=null) {
+
+    // We have decided that no state more advanced than 'Published' is
+    //  allowed without also having a Published state.
+    static $pubTypeSequence = false;
+    static $pubStateTypeId  = false;
+    if (!$pubTypeSequence) {
+        $result = db_query(
+            "SELECT state_id, sequence
+               FROM {ebms_article_state_type}
+              WHERE state_text_id = 'Published'")->fetchAssoc();
+        $pubStateTypeId  = $result['state_id'];
+        $pubTypeSequence = $result['sequence'];
+    }
 
     // Get everything we know about this state
     $stateType = db_select('ebms_article_state_type', 't')
@@ -1196,12 +1146,12 @@ function setArticleState($articleId, $textId, $topicId,
     // Must be one
     if (!$stateType)
         throw new \Exception(
-                "setArticleState: Unknown state type text ID $textId");
+                "setArticleState: Unknown state type text ID '$textId'");
     if (!$topicId)
         throw new \Exception(
                 "setArticleState: Missing required topic ID");
 
-    // Get defaul user from global if not passed (or 0)
+    // Get default user from global if not passed (or 0)
     if (!$userId)
         $userId = Util::getUserId($userId);
 
@@ -1220,6 +1170,33 @@ function setArticleState($articleId, $textId, $topicId,
     if (is_null($dateTime))
         $dateTime = db_query('SELECT NOW()')->fetchField();
 
+    // Check stored article/topic/cycle combination
+    $storedCycleId = db_query(
+        'SELECT cycle_id
+           FROM {ebms_article_topic}
+          WHERE article_id = :artId
+            AND topic_id = :topId',
+         array(':artId' => $articleId, ':topId' => $topicId))->fetchField();
+
+    // If not found, this is a new article topic combo
+    // Caller must give us a cycle ID
+    if (!$cycleId && !$storedCycleId) {
+        throw new \Exception(
+            "setArticleState: Attempt to create new topic for article=".
+            "$articleId, topic=$topicId, without identifying a review cycle");
+    }
+    else if ($cycleId && $storedCycleId) {
+        // Two users may have both set a new topic with one having
+        //  an open screen while the other submitted his change.
+        //  First one in wins.  Discard the new one.
+        //  But log it just to see if it happens.
+        watchdog('EbmsArticle',
+                'New cycle set in setArticleState() when old exists ' .
+                'old=%old, new=%new',
+                array('%old'=> $storedCycleId, '%new' => $cycleId));
+        $cycleId = null;
+    }
+
     // Prepare to insert the new row
     $insFields = array(
         'article_id'   => $articleId,
@@ -1234,15 +1211,38 @@ function setArticleState($articleId, $textId, $topicId,
     $insQry = db_insert('ebms_article_state')
         ->fields($insFields);
 
-    // Prepare to inactivate any rows with >= sequence number
-    $checkInactivation = False;
-
     // Start a transaction
     $txn = db_transaction();
 
     // Create try block to catch any exceptions while in transaction
     $rowId = Null;
     try {
+        // If an article is advanced past the Published state without
+        //  explicitly having that state, create that state.
+        if ($stateType->sequence >= $pubTypeSequence
+                                 && $textId != 'Published') {
+            $foundPubStateId = db_query('
+                SELECT article_state_id
+                  FROM {ebms_article_state}
+                 WHERE article_id = :artId
+                   AND topic_id = :topId
+                   AND state_id = :stateId',
+               array(':artId' =>$articleId, ':topId' => $topicId,
+                     ':stateId' => $pubStateTypeId))->fetchField();
+
+            if (!$foundPubStateId) {
+                // No published state was found, create it
+                setArticleState($articleId, 'Published', $topicId, $boardId,
+                        "Published state added as a result of setting" .
+                        " the state for this article/topic to $textId",
+                        $userId, $dateTime, $cycleId);
+
+                // If we had to create article/topic/cycle, we just did
+                // Don't do it again
+                $cycleId = null;
+            }
+        }
+
         // Find equal or higher sequenced active states needing inactivation
         if ($stateType->sequence) {
             $seqQry = db_select('ebms_article_state', 'state');
@@ -1251,17 +1251,13 @@ function setArticleState($articleId, $textId, $topicId,
             $seqQry->fields('state', array('article_state_id'));
             $seqQry->condition('state.article_id', $articleId)
                    ->condition('stype.sequence', $stateType->sequence, '>=')
+                   ->condition('topic_id', $topicId)
+                   ->condition('board_id', $boardId)
                    ->condition('state.active_status', 'A');
-
-            // Add clauses for topic and board if needed
-            if ($topicId)
-                $seqQry->condition('topic_id', $topicId);
-            if ($boardId)
-                $seqQry->condition('board_id', $boardId);
 
             $result = $seqQry->execute();
 
-            // Get all article_state_id for all rows
+            // Get all higher article_state_id for all rows
             $stateRowIds = $result->fetchCol(0);
 
             // If there were any equal or higher sequenced states in the table
@@ -1271,12 +1267,6 @@ function setArticleState($articleId, $textId, $topicId,
                 $inactiveUpd = db_update('ebms_article_state')
                   ->fields(array('active_status' => 'I'))
                   ->condition('article_state_id', $stateRowIds, 'IN');
-
-                // Same clauses regarding topic and board
-                if ($topicId)
-                    $inactiveUpd->condition('topic_id', $topicId);
-                if ($boardId)
-                    $inactiveUpd->condition('board_id', $boardId);
 
                 $inactiveUpd->execute();
 
@@ -1291,25 +1281,43 @@ function setArticleState($articleId, $textId, $topicId,
 
         // Remove the "current" flag from all existing rows for this
         //  article, this topic.
-        // Note: This doesn't work if we allow states without topics,
-        //       but a decision was made to implement this quickly using
-        //       current assumptions.  We'll have to change it if and
-        //       when the assumptions no longer obtain.
-        $newVal = array();
-        $newVal['current'] = 'N';
+        // Note: This doesn't work if we allow states without topics.
         $curQry = db_update('ebms_article_state');
-        $curQry->fields($newVal);
+        $curQry->fields(array('current' => 'N'));
         $curQry->condition('article_id', $articleId);
         $curQry->condition('topic_id', $topicId);
         $curQry->condition('current', 'Y');
         $curQry->execute();
 
-        // Now insert row
-        $rowId = $insQry->execute();
+        // Now insert row getting back the articleStateId
+        $articleStateId = $insQry->execute();
 
         // If there was a comment, insert it too
         if (!is_null($comment))
-            addArticleStateComment($rowId, $comment, $userId, $dateTime);
+            addArticleStateComment($articleStateId, $comment, $userId,
+                                   $dateTime);
+
+        // If there is a new cycle, create a row for it
+logw("cycleId prior to test for insert of ebms_article_topic=$cycleId");
+        if ($cycleId) {
+            try {
+                $qry = db_insert('ebms_article_topic');
+                $qry->fields(array(
+                        'article_id' => $articleId,
+                        'topic_id'   => $topicId,
+                        'cycle_id'   => $cycleId,
+                        'article_state_id' => $articleStateId));
+                $qry->execute();
+            }
+            catch (\Exception $e) {
+                // It is conceivable that someone did the same thing
+                //  at the same time.  If it's a whole database problem
+                //  other things will fail, so don't worry about that.
+                watchdog('EbmsArticle',
+                         'DB Failure inserting ebms_article_topic: %err',
+                         array('%err', (string) $e));
+            }
+        }
 
     } catch (\Exception $e) {
         // Something didn't work, cancel all updates and re-throw
@@ -1318,7 +1326,7 @@ function setArticleState($articleId, $textId, $topicId,
     }
 
     // Success, transaction will commit when $txn goes out of scope
-    return $rowId;
+    return $articleStateId;
 }
 
 
@@ -1355,26 +1363,15 @@ function addArticleStateComment($articleStateId, $comment,
     return $commentRowId;
 }
 
-
 /**
- * Get the current state of an article where current is the one with
- * the highest active sequence number.
+ * Get the current state of an article assuming ALL article/topic
+ * combinations have a state with current == 'Y'.
  *
- * WARNING:
- *  If passed topic ID is null and article has identical highest
- *  states in two different topics, this function returns the most
- *  recent state assigned, irrespective of topic.  Ditto for two
- *  boards.  In other words, the choice among the two topics or two
- *  boards is determinate, but not necessarily useful.
- *
- *  Is that really what you want?  If not, suggest a better approach, or
- *  always pass a topic ID.
+ * Drastically simplified from old way that did not assume this and did
+ * not assume that every state row had a topic ID.
  *
  *  @param int $article_id  Of article for which to get the current state.
- *  @param int $topic_id    If not null, only consider this topic.
- *  @param int $board_id    If not null, only consider this board.
- *                           Board ID is ignored if topic ID passed.  It
- *                           is implied by the topic ID.
+ *  @param int $topic_id    With this topic.
  *
  *  @return array           Associative array of all info known about highest
  *                           sequenced state.
@@ -1382,65 +1379,14 @@ function addArticleStateComment($articleStateId, $comment,
  *                           table for this article.
  *
  *  @throws Exception       If bad parameters or database error.
- *
- * XXX - ISSUE
- *  What does the caller want when board and/or topic are null?
- *   1. Last state matching criteria?
- *   2. All last states matching criteria, e.g., 2 boards + 3 topics
- *
- * XXX - ISSUE
- *  Since this function was written we added a "current" column to the
- *  ebms_article_state table.  It greatly simplifies searching for the
- *  current article state.
- *
- *  However, due to issues regarding dirty data, we decided not to set
- *  the column value to 'Y' for any legacy data.  The function below
- *  should work for legacy data too (except where data is bad) and has
- *  therefore been retained.  A simpler, faster version could be written
- *  if we ignore legacy data and use the new column.
  */
-function getCurrentState($article_id, $topic_id=null, $board_id=null) {
+function getCurrentState($articleId, $topicId) {
 
     $qry = db_select('ebms_article_state', 'state');
-    $qry->join('ebms_article_state_type', 'type',
-               'state.state_id = type.state_id');
-    $qry->join('users', 'user', 'state.user_id = user.uid');
-    $qry->leftJoin('ebms_board', 'board', 'state.board_id = board.board_id');
-    $qry->leftJoin('ebms_topic', 'topic', 'state.topic_id = topic.topic_id');
-    $qry->fields('state', array('article_state_id', 'state_id', 'user_id',
-                                'board_id', 'topic_id', 'status_dt'));
-    $qry->fields('type', array('state_text_id', 'state_name'));
-    $qry->fields('user', array('name'));
-    $qry->fields('board', array('board_name'));
-    $qry->fields('topic', array('topic_name'));
-    $qry->condition('state.article_id', $article_id)
-        ->condition('state.active_status', 'A');
-
-    // Limit by board or topic
-    if ($topic_id)
-        $qry->condition('state.topic_id', $topic_id);
-    if ($board_id)
-        $qry->condition('state.board_id', $board_id);
-
-    // Get the highest sequence numbered state that qualifies
-    // XXX status_dt should not be needed, but data was dirty in old DB
-    $qry->orderBy('type.sequence', 'DESC');
-    $qry->orderBy('state.status_dt', 'DESC');
-    $qry->range(0, 1);
-
-    /* XXX Here is what I am trying to achieve - Remove after debugging
- SELECT state.article_state_id, state.state_id, type.state_name,
-        state.status_dt, state.user_id, type.completed
-   FROM ebms_article_state state
-   JOIN ebms_article_state_type type
-     ON state.state_id = type.state_id
-  WHERE state.article_id = ?
-    AND state.topic_id = ?
-    AND state.board_id = ?
-    AND state.active_status = 'A'
-  ORDER BY type.sequence DESC
-  LIMIT 1
-    */
+    $qry->fields('state');
+    $qry->condition('state.article_id', $articleId);
+    $qry->condition('state.topic_id', $topicId);
+    $qry->condition('state.current', 'Y');
 
     // Get it
     $result = $qry->execute()->fetchAssoc();
@@ -1449,10 +1395,9 @@ function getCurrentState($article_id, $topic_id=null, $board_id=null) {
     if ($result)
         return $result;
 
-    // No hits - happens if wrong article, board or topic IDs passed
+    // No hits - happens if article/topic combo is not found
     return null;
 }
-
 
 /**
  * Container for status or tag comments.  Same class for both.
@@ -1787,7 +1732,8 @@ function statusHistoryToHtml($history) {
 <h3>Status History</h3>
 <p class="activeStat">Active records shown in this color.<br />
 <span class="inactiveStat">Inactivated records are in this color.</span><br />
-<span class="currentStat">The "current" state is in this color.</span></p>
+<span class="currentStat">The "current" state for each topic is in this
+color.</span></p>
 <table class='debug' border='1'>
  <tr>
   <th>DateTime<br />ArtID/StateID</th>
