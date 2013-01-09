@@ -783,7 +783,6 @@ body.front #calendar td.today {
     z-index: -1;
 }
 
-.calendar-calendar tbody,
 .calendar-calendar thead tr,
 .calendar-calendar td,
 .calendar-calendar td.empty {
