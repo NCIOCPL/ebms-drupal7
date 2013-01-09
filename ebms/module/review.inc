@@ -523,7 +523,7 @@ class EbmsReview {
             $title .= " [Packet #{$p->packet_id}]";
             $query = db_select('users', 'u');
             $query->fields('u', array('name'));
-            $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+            $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
             $query->condition('r.packet_id', $p->packet_id);
             $query->orderBy('u.name');
             $results = $query->execute();
@@ -532,7 +532,7 @@ class EbmsReview {
                 $reviewers[] = '<div>' . htmlspecialchars($result->name) .
                 '</div>';
             $url = EbmsReview::$url . '/reviews/' . $p->packet_id;
-            $link = l($title, $url); #, $opts);
+            $link = l($title, $url);
             $data = array(
                 $link,
                 array(
@@ -760,11 +760,25 @@ class EbmsReview {
         $query->orderByHeader($headers);
         $articles = $query->execute();
 
+        // Get a list of all the reviewers assigned to the packet.
+        $packet_reviewers = array();
+        $query = db_select('users', 'u');
+        $query->fields('u', array('name'));
+        $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+        $query->condition('r.packet_id', $this->packet_id);
+        $query->orderBy('u.name');
+        $results = $query->execute();
+        foreach ($results as $result)
+            $packet_reviewers[] = $result->name;
+
         // Build up the sequence of table rows.
         $rows = array();
         $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
         $target = array('attributes' => array('target' => '_blank'));
         foreach ($articles as $article) {
+
+            // Index for walking through the $packet_reviewers list.
+            $i = 0;
 
             // Collect information about what each reviewer said about the
             // article.
@@ -782,7 +796,27 @@ class EbmsReview {
             $query->distinct();
             $results = $query->execute();
             $reviewers = array();
+
+            // Loop through the list of reviewers who have already reviewed
+            // this article.
             foreach ($results as $result) {
+
+                // Add any reviewers preceding this reviewer who haven't
+                // yet reviewed the article.
+                while ($i < count($packet_reviewers)) {
+                    $other_name = $packet_reviewers[$i];
+                    if ($other_name < $result->name) {
+                        $reviewers[] = '<div class="reviewer">' .
+                            '<span class="reviewer-name">' .
+                            htmlspecialchars($other_name) . '</span></div>';
+                    }
+                    if ($other_name <= $result->name)
+                        ++$i;
+                    else
+                        break;
+                }
+
+                // Now add the reviewer who actually posted this review.
                 $name = htmlspecialchars($result->name);
                 $dispositions = db_select('ebms_review_disposition', 'd')
                     ->fields('d', array('value_id'))
@@ -799,6 +833,14 @@ class EbmsReview {
                     '<span class="reviewer-name">' . $name . '</span> ' .
                     $img . '</div>';
             }
+
+            // Pick up any leftover board members who have not yet
+            // done their review of the article.
+            while ($i < count($packet_reviewers))
+                $reviewers[] = '<div class="reviewer">' .
+                    '<span class="reviewer-name">' .
+                    htmlspecialchars($packet_reviewers[$i++]) .
+                    '</span></div>';
 
             // Assemble the row.
             $article_opts = $opts;
