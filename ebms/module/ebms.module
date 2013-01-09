@@ -1290,3 +1290,15 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
 
     $query->condition($or_conditions);
 }
+
+ function ebms_calendar_event_validate($form, &$form_state) {
+    // retrieve date of each timestamp
+    $startDate = date('Ymd',
+        $form_state['values']['field_datespan']['und']['0']['value']);
+    $endDate = date('Ymd',
+        $form_state['values']['field_datespan']['und']['0']['value2']);
+
+    if ($startDate != $endDate)
+        form_set_error('field_datespan',
+            'Please ensure that the event is scheduled for a single day only.');
+}

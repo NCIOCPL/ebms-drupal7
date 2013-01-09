@@ -381,6 +381,8 @@ function calendar_node_form_alter(&$form, &$form_state) {
         $form['field_datespan']['und'][0]['#default_value']['value'] = $timestamp;
         $form['field_datespan']['und'][0]['#default_value']['value2'] = $timestamp;
     }
+    
+    $form['#validate'][] = 'ebms_calendar_event_validate';
 
     return $form;
 }
