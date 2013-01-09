@@ -588,7 +588,7 @@ class EbmsReview {
      * XXX to be rewritten when Alan's API for getting the citation
      * elements is complete.
      */
-    private function get_reviewed_citation($article_id, $add_link=true) {
+    private function get_reviewed_citation($article_id, $narrow=true) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
             ->condition('a.article_id', $article_id)
@@ -598,8 +598,7 @@ class EbmsReview {
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
         $title = htmlspecialchars($article->ArticleTitle);
-        if ($add_link)
-            $title = l($title, 'citations/full/' . $article_id);
+        $title = l($title, 'citations/full/' . $article_id);
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
@@ -619,7 +618,7 @@ class EbmsReview {
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
-        $pieces = array(implode(',', $authors), '<br /><em>', $title,
+        $pieces = array(implode(', ', $authors), '<br /><em>', $title,
                   '</em><br />', $ta, ' ', $vol);
         if ($issue)
             $pieces[] = "($issue)";
@@ -628,6 +627,17 @@ class EbmsReview {
         if ($year)
             $pieces[] = ", $year";
         $pieces[] = ".<br />PMID: $pmid";
+        $separator = $narrow ? '<br />' : ' &nbsp; ';
+        $pieces[] = "{$separator}EBMS ID: $article_id";
+
+        // See if the article was converted from the legacy system.
+        $legacy_id = db_select('ebms_legacy_article_id', 'i')
+            ->fields('i', array('legacy_id'))
+            ->condition('i.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+        if ($legacy_id)
+            $pieces[] = "{$separator}Legacy CMS ID: $legacy_id";
         return implode($pieces);
     }
 
@@ -783,7 +793,7 @@ class EbmsReview {
             // Collect information about what each reviewer said about the
             // article.
             $article_id = $article->article_id;
-            $citation = $this->get_reviewed_citation($article_id);
+            $citation = $this->get_reviewed_citation($article_id, false);
             $query = db_select('users', 'u');
             $query->fields('u', array('name'));
             $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
@@ -1025,7 +1035,7 @@ class EbmsReview {
                     '#type' => 'markup',
                     '#markup' => $this->get_reviewed_citation(
                         $this->article_id,
-                        false
+                        true
                     ),
                     '#prefix' => '<div id="citation">',
                     '#suffix' => '</div>',
