@@ -979,7 +979,7 @@ class EbmsReview {
 
             $markup[] = '<h3>Comments</h3>';
             if ($result->comments) {
-                $markup[] = '<p>' . htmlspecialchars($result->comments) .
+                $markup[] = '<p>' . filter_xss($result->comments, array('br', 'i')) .
                     '</p>';
             }
             $markup[] = '<h3>LOE Info</h3>';
