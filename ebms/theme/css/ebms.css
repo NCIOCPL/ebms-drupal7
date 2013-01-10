@@ -899,12 +899,23 @@ body.front #next-meeting span { font-weight: bold; }
 #reviewer-uploads td.c3 {
     width: 22%; border-left: 1px #696559 solid; padding-left: 20px;
 }
-#reviewer-post-button { text-align: right; padding-right: 25px; }
-#reviewer-post-button a {
+#main-right-panel #reviewer-post-button,
+#reviewer-post-button { 
+    float: right; 
+    margin-right: 25px; 
+    margin-bottom: 10px;
+    margin-top: 0px;
+}
+
+#main-right-panel #reviewer-post-button{
+    margin-right: 0px
+}
+
+/*#reviewer-post-button a {
     border: 1px solid #696559; border-radius: 7px; padding: 10px;
     text-transform: uppercase;
 }
-#reviewer-post-button a:hover { border: 1px solid #a90101; }
+#reviewer-post-button a:hover { border: 1px solid #a90101; }*/
 #post-document { margin-bottom: 15px; }
 #member-packet #post-document { padding-right: 33px; }
 
