@@ -16,13 +16,15 @@
 #report-form .form-text.fixed-width { width: 498px; }
 #report-form .form-type-select label,
 #report-form .form-type-textfield label{ text-transform: uppercase; }
-#left-nav .child { padding-left: 25px; }
+/*#left-nav .child { padding-left: 25px; } moved to ebms.css*/
 #report-form #report-buttons { width: 498px; text-align: right; clear: both; }
 #report-form #report-buttons input {
     margin: 15px 0 12px 12px; padding: 10px 12px;
 }
+/* moved to ebms.css
 #left-nav li.parent a { font-size: 15px; }
 #left-nav li.parent.open a { opacity: 1; color: #2d2c28; }
+*/
 .date-field-line { clear: both; margin-top: 0; }
 .box-on-right { float: right; margin-right: 2px; }
 .box-on-right .form-item { margin-top: 0; margin-bottom: 0; }

@@ -359,6 +359,9 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
     border-top: 1px solid #696559;
     margin-top: 10px;
 }
+#left-nav .child { padding-left: 25px; }
+#left-nav li.parent a { font-size: 15px; }
+#left-nav li.parent.open a { opacity: 1; color: #2d2c28; }
 /* BREADCRUMBS */
 #breadcrumb {
     text-transform: uppercase;
