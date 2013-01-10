@@ -353,13 +353,17 @@ class Menu {
     public static function literature($role) {
         switch ($role) {
             case 'admin':
-                return new Menu(
-                    'Literature', 'review/reviews', array(
-                        new Menu('Assigned Packets', 'review/packets'),
-                        new Menu('Create Packet', 'review/add'),
-                        new Menu('Record Responses', 'review/record'),
-                    )
+                // add non-permissioned menu items by default
+                $submenus = array(
+                    new Menu('Assigned Packets', 'review/packets'),
+                    new Menu('Create Packet', 'review/add'),
                 );
+
+                // include record responses if user has proper access
+                if (user_access('record print responses'))
+                    $submenus[] = new Menu('Record Responses', 'review/record');
+
+                return new Menu('Literature', 'review/reviews', $submenus);
             case 'member':
                 return new Menu(
                     'Literature', 'review', array(

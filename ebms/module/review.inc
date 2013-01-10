@@ -144,6 +144,11 @@ class EbmsReview {
      * @return array a Drupal render array containing the form and left nav.
      */
     private function record_responses() {
+        // check permissions
+        if (!user_access('record print responses')) {
+            return MENU_ACCESS_DENIED;
+        }
+
         return array(
             'left-nav' => $this->build_left_nav('Record Responses'),
             'right-panel' => array(
@@ -356,9 +361,13 @@ class EbmsReview {
     public static function build_left_nav($active=null) {
         $links = array(
             array('Reviewed Packets', 'review/reviews'),
-            array('View / Edit Packets', 'review/packets'),
-            array('Record Responses', 'review/record'),
+            array('View / Edit Packets', 'review/packets'),            
         );
+        
+        // add record responses if permitted
+        if(user_access('record print responses'))
+            $links[] = array('Record Responses', 'review/record');
+        
         $items = array();
         foreach ($links as $link_info) {
             list($label, $url) = $link_info;
@@ -1655,7 +1664,7 @@ class EbmsReview {
         if ($this->on_behalf) {
 
             // check their 'manage boards' access
-            if(!user_access('manage boards')) {
+            if(!user_access('record print responses')) {
                 return false;
             }
 

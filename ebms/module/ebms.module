@@ -73,6 +73,13 @@ function ebms_permission() {
                         'calendar. Note: This will also show all board events in ' .
                         "the user's filtered view. ")
             ),
+            'record print responses' => array(
+                    'title' => t('Record Print Responses'),
+                    'description' =>
+                    t('Determines if the user can input print responses on ' .
+                        'behalf of board members.')
+            ),
+
     );
 }
 
