@@ -1440,6 +1440,7 @@ class EbmsReview {
 
             // Plug the "Reviewer Uploads" heading and table into the page.
             $options['attributes']['class'] = array('button');
+            $options['attributes']['id'] = 'reviewer-post-button';
             $page['uploads'] = array(
                 '#prefix' => '<div id="reviewer-uploads">',
                 '#suffix' => '</div>',
@@ -1452,8 +1453,6 @@ class EbmsReview {
                     '#markup' => l('post document',
                                EbmsReview::$url . '/reviewer-upload',
                                $options),
-                    '#prefix' => '<p id="reviewer-post-button">',
-                    '#suffix' => '</p>',
                 ),
                 'table' => array(
                     '#theme' => 'table',

@@ -280,7 +280,7 @@ ebmsscript.init_reviewer_file_upload_form = function() {
         resizable: false,
         title: "POST DOCUMENT"
     });
-    jQuery("#reviewer-post-button a").attr(
+    jQuery("a#reviewer-post-button").attr(
         "href",
         "javascript:ebmsscript.show_reviewer_document_post_form()"
     );
