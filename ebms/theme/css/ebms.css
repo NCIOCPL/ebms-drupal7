@@ -779,6 +779,7 @@ body.front #calendar td.today {
 .calendar-calendar th.days {
     background-color: #696559;
     color: #FFFFFF;
+    border: none;
 }
 
 .calendar-calendar td.empty .inner {
@@ -791,17 +792,16 @@ body.front #calendar td.today {
 .calendar-calendar td.empty {
     border: 1px solid #696559;
     border-color: rgba(105, 101, 89, 0.75);
-    border-collapse: collapse;
-}
-
-.calendar-calendar th.days,
-.calendar-calendar td.empty {
-    border-style: inset;
 }
 
 .calendar-calendar td .inner div.day.empty a {
     color: #696559;
     opacity: 0.75;
+}
+
+.calendar-calendar td.mini,
+.calendar-calendar td.mini.empty {
+    border: none;
 }
 
 .calendar-calendar .month-view .full tr td.today,
