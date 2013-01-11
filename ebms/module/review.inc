@@ -361,13 +361,13 @@ class EbmsReview {
     public static function build_left_nav($active=null) {
         $links = array(
             array('Reviewed Packets', 'review/reviews'),
-            array('View / Edit Packets', 'review/packets'),            
+            array('View / Edit Packets', 'review/packets'),
         );
-        
+
         // add record responses if permitted
         if(user_access('record print responses'))
             $links[] = array('Record Responses', 'review/record');
-        
+
         $items = array();
         foreach ($links as $link_info) {
             list($label, $url) = $link_info;
@@ -534,6 +534,7 @@ class EbmsReview {
             $query->fields('u', array('name'));
             $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
             $query->condition('r.packet_id', $p->packet_id);
+            $query->distinct();
             $query->orderBy('u.name');
             $results = $query->execute();
             $reviewers = array();
