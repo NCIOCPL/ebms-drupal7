@@ -207,7 +207,7 @@ div.messages.error {
 #ebms-menu > li.active > a { color: #a90101; }
 #nav #ebms-menu a { padding-left: 35px; padding-right: 35px; }
 #nav.manager #ebms-menu a {
-    padding-left: 11.5px; padding-right: 12px; font-size: 17px;
+    padding-left: 11px; padding-right: 12px; font-size: 17px;
 }
 #nav.manager.admin #ebms-menu a {
     padding-left: 10px; padding-right: 12px; font-size: 15px;
