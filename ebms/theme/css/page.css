@@ -59,3 +59,10 @@
     color: #2d2c28;
     text-decoration: none;
 }
+
+.content .node {
+    float: left;
+    margin-bottom: 50px;
+    width: 730px;
+    margin-left: 20px;
+}
