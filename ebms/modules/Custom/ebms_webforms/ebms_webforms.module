@@ -20,6 +20,12 @@ function ebms_webforms_menu() {
  return $items;
 }
  
+function ebms_webforms_menu_alter(&$items) {
+    // We're going to override the page that generates the results.
+    // This is not the cleanest way of doing it, but it works.
+    $items['node/%webform_menu/webform-results/table']['page callback'] = '_ebms_webforms_results_table';
+    $items['node/%webform_menu/webform-results/table']['file'] = '';
+}
  
 /**
  * Implements hook_form_alter().
@@ -704,5 +710,104 @@ function _webform_csv_data_ebms_travel($component, $export_options, $value) {
     return !isset($value[0]) ? '' : webform_ebms_travel_display_format($value[0]);
 }
 
+/**
+ * See webform_results_table() in webform.report.inc
+ * 
+ * @param type $node
+ * @param type $pager_count
+ * @return type
+ */
+function _ebms_webforms_results_table($node, $pager_count = 0) {
+    // Determine if it's one of our special reports via URL
+    $isReimbursementRequest = url('node/' . $node->webform['nid']) == '/travel/reimbursement-request';
+    $isHotelRequest = url('node/' . $node->webform['nid']) == '/travel/hotel-request';
 
-?>
+    // If it's a non-special report, return the default function
+    if (!$isReimbursementRequest && !$isHotelRequest) {
+        module_load_include('inc', 'webform', 'includes/webform.report');
+        $default = webform_results_table($node, $pager_count);
+        return $default;
+    }
+
+
+
+    // From here down is somewhat copied and modified from the default webform_results_table
+    if (isset($_GET['results']) && is_numeric($_GET['results'])) {
+        $pager_count = $_GET['results'];
+    }
+
+    // Get all the submissions for the node.
+    $header = theme('webform_results_table_header', array('node' => $node));
+    unset($header[0]); // Submission Number
+    unset($header[3]); // IP Address
+    $submissions = webform_get_submissions($node->nid, $header, $pager_count);
+    $total_count = webform_get_submission_count($node->nid);
+    $component = $node->webform['components'];
+
+    foreach ($submissions as $sid => $submission) {
+
+        $cell[] = format_date($submission->submitted, 'custom', 'M/d/Y | h:i A T');
+        $cell[] = theme('username', array('account' => $submission));
+
+        $component_headers = array();
+
+        // Generate a cell for each component.
+        foreach ($node->webform['components'] as $component) {
+            if ($isReimbursementRequest && $component['form_key'] == 'certify')
+                continue; // Do not display "Certify" comment; should always be yes
+            $data = isset($submission->data[$component['cid']]) ? $submission->data[$component['cid']] : NULL;
+            $submission_output = webform_component_invoke($component['type'], 'table', $component, $data);
+            if ($submission_output !== NULL) {
+                $component_headers[] = check_plain($component['name']);
+
+                if (($isHotelRequest || $isReimbursementRequest ) && // Must be the correct webform; based off URLs as rest of code
+                        $component['form_key'] == 'meeting' // Correct Component
+                ) {
+                    $nodeComponent = node_load($submission_output);
+                    if ($nodeComponent)
+                        $cell[] = l($nodeComponent->title, url('node/' . $nodeComponent->nid));
+                    else
+                        $cell[] = 'N/A';
+                } else
+                    $cell[] = $submission_output;
+            }
+        }
+
+        $rows[] = $cell;
+        unset($cell);
+    }
+    if (!empty($component_headers)) {
+        $header = array_merge($header, $component_headers);
+    }
+
+    if (count($rows) == 0) {
+        $rows[] = array(array('data' => t('There are no submissions for this form. <a href="!url">View this form</a>.', array('!url' => url('node/' . $node->nid))), 'colspan' => 4));
+    }
+
+
+    $output = '';
+    $output .= theme('webform_results_per_page', array('total_count' => $total_count, 'pager_count' => $pager_count));
+    $output .= theme('table', array('header' => $header, 'rows' => $rows));
+
+    if ($pager_count) {
+        $output .= theme('pager');
+    }
+
+    return $output;
+}
+
+/* http://www.metachunk.com/blog/adding-module-path-drupal-7-theme-registry */
+
+function ebms_webforms_theme_registry_alter(&$theme_registry) {
+    $mod_path = drupal_get_path('module', 'ebms_webforms');
+    $mod_path .= '/templates';
+    $theme_registry_copy = $theme_registry;       // munge on a copy
+    _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'ebmstheme', $mod_path);
+    $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
+    $hooks = array('node', 'block',); // 'forums', 'forum_list', 'forum_topic_list', 'forum_icon', 'forum_submitted', 'forum_form');
+    foreach ($hooks as $h) {
+        
+        _ebms_forums_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
+    }
+    
+}
