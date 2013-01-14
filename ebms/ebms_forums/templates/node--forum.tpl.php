@@ -17,7 +17,7 @@
 global $user;
 
 // Determine if a user has access to edit this topic
-$administer = user_access('edit forum topic');
+$administer = user_access('edit any forum content');
     
     // Determine if this topic is archived
     $archived = FALSE;
@@ -44,7 +44,7 @@ $(this).children('a').children('img').attr('src', '/".drupal_get_path('theme', '
 }); }) (jQuery);", 'inline');
                 ?>
             <span id="edit-forum-icon">
-            <a href="<?php print url('/node/'.$nid.'/edit'); ?>">
+            <a href="<?php print url('node/'.$nid.'/edit'); ?>">
             <img src="/<?php print 
                 drupal_get_path('theme', 'ebmstheme');?>/images/EBMS_Edit_Icon_Inactive.png" alt="Edit This Forum Topic"/>
             </a> 
