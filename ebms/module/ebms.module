@@ -1299,11 +1299,19 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
 }
 
  function ebms_calendar_event_validate($form, &$form_state) {
-    // retrieve date of each timestamp
-    $startDate = date('Ymd',
-        $form_state['values']['field_datespan']['und']['0']['value']);
-    $endDate = date('Ymd',
-        $form_state['values']['field_datespan']['und']['0']['value2']);
+    // retrieve value of each timestamp
+    $startValue = $form_state['values']['field_datespan']['und']['0']['value'];
+    $endValue = $form_state['values']['field_datespan']['und']['0']['value2'];
+
+    $startSplit = explode(' ', $startValue);
+    $endSplit = explode(' ', $endValue);
+
+    if (sizeof($startSplit) > 1)
+        $startDate = $startSplit[0];
+    else $startDate = date('Ymd', $startValue);
+    if (sizeof($endSplit) > 1)
+        $endDate = $endSplit[0];
+    else $endDate = date('Ymd', $endValue);
 
     if ($startDate != $endDate)
         form_set_error('field_datespan',
