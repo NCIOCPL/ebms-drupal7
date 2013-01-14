@@ -1790,7 +1790,7 @@ SELECT DISTINCT t.topic_id, t.topic_name
        (SELECT packet_id
           FROM ebms_packet
          WHERE topic_id = s.topic_id
-           AND active_status = 'A'))";
+           /*AND active_status = 'A'*/))";
         $results = db_query($query);
         $topics = array();
         foreach ($results as $result)
@@ -1810,7 +1810,7 @@ SELECT DISTINCT t.topic_id, t.topic_name
             return array();
         $subquery = db_select('ebms_packet', 'p')
             ->fields('p', array('packet_id'))
-            ->condition('p.active_status', 'A')
+            //->condition('p.active_status', 'A')
             ->condition('p.topic_id', $topic_id);
         $subquery = db_select('ebms_packet_article', 'a')
             ->fields('a', array('article_id'))
