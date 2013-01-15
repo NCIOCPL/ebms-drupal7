@@ -539,9 +539,9 @@ logw("Processing not list");
         $jrnlTitle = $this->spec['journal'];
         if ($jrnlTitle) {
             if ($this->chkWildCards($jrnlTitle))
-                $this->qry->condition('art.journal_title', $jrnlTitle, 'LIKE');
+                $this->qry->condition('art.jrnl_title', $jrnlTitle, 'LIKE');
             else
-                $this->qry->condition('art.journal_title', $jrnlTitle);
+                $this->qry->condition('art.jrnl_title', $jrnlTitle);
         }
     }
 
