@@ -612,9 +612,17 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $pub_months = array(0 => ' ');
     for ($i = 1; $i <= 12; ++$i)
         $pub_months[$i] = date('F', mktime(0, 0, 0, $i));
+    $query = db_select('ebms_article', 'a');
+    $query->addExpression('MIN(a.published_date)', 'first_date');
+    $query->condition('a.published_date', '0000', '>');
+    $first_date = $query->execute()->fetchField();
+    $query = db_select('ebms_article', 'a');
+    $query->addExpression('MAX(a.published_date)', 'last_date');
+    $last_date = $query->execute()->fetchField();
+    $first_year = substr($first_date, 0, 4);
+    $last_year = substr($last_date, 0, 4);
     $pub_years = array(0 => ' ');
-    $last_year = 2013;
-    for ($i = 1964; $i <= $last_year; ++$i)
+    for ($i = $last_year; $i >= $first_year; --$i)
         $pub_years[$i] = $i;
 
     // Build the review cycle picklist.
