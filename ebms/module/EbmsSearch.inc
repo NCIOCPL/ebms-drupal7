@@ -917,7 +917,7 @@ logw("Processing not list");
             case 'PM ID#':
                 // This could go awry with non-Pubmed data, but it won't
                 //  do serious harm
-                $this->qry->orderBy('art.source_id', 'DESC');
+                $this->qry->orderBy('CAST(art.source_id AS UNSIGNED)', 'DESC');
                 break;
             case 'Title':
                 $this->qry->orderBy('art.article_title');

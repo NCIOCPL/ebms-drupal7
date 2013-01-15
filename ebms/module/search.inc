@@ -902,11 +902,11 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#title' => 'SORT BY',
                 '#options' => drupal_map_assoc(
                     array(
-                        'CMS ID#',
+                        'EBMS ID#',
                         'PM ID#',
                         'Title',
                         'Journal',
-                        'Publication Date',
+                        //'Publication Date',
                     )
                 ),
                 '#default_value' => $defaults->sort_by,
