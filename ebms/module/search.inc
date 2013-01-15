@@ -442,7 +442,7 @@ class EbmsSearchSpec {
             $this->use_input_date_range = $spec['use-input-date-range'];
             $this->use_modified_date_range = $spec['use-mod-date-range'];
             $this->sort_by = $spec['sort-by'];
-            $this->format = $spec['format'];
+            //$this->format = $spec['format'];
             $this->items_per_page = $spec['items-per-page'];
         }
     }
@@ -911,6 +911,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 ),
                 '#default_value' => $defaults->sort_by,
             ),
+            /* Don't show options we're not supporting (yet), per email
+               thread 2013-01-14 with Laura & Ashleigh.
             'format' => array(
                 '#type' => 'select',
                 '#title' => 'FORMAT',
@@ -924,6 +926,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 ),
                 '#default_value' => $defaults->format,
             ),
+            */
             'items-per-page' => array(
                 '#type' => 'select',
                 '#title' => 'PER PAGE',
