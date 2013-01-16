@@ -719,8 +719,15 @@ function _webform_csv_data_ebms_travel($component, $export_options, $value) {
  */
 function _ebms_webforms_results_table($node, $pager_count = 0) {
     // Determine if it's one of our special reports via URL
-    $isReimbursementRequest = url('node/' . $node->webform['nid']) == '/travel/reimbursement-request';
-    $isHotelRequest = url('node/' . $node->webform['nid']) == '/travel/hotel-request';
+    if (array_key_exists('nid', $node->webform)) {
+        $isReimbursementRequest = url('node/' . $node->webform['nid']) == '/travel/reimbursement-request';
+        $isHotelRequest = url('node/' . $node->webform['nid']) == '/travel/hotel-request';
+    } else {
+        // This is actually most likely NOT true, but 'nid' doesn't exist when
+        // there are no results, I think, so it SHOULDN'T matter.
+        $isReimbursementRequest = FALSE;
+        $isHotelRequest = FALSE;
+    }
 
     // If it's a non-special report, return the default function
     if (!$isReimbursementRequest && !$isHotelRequest) {
