@@ -1751,11 +1751,14 @@ article_state_id INTEGER NOT NULL,
  * page_id        automatically generated primary key
  * board_id       foreign key into ebms_board table
  * page_name      string identifying page content
+ * archived       if not NULL, date/time manager suppressed
+ *                display of this page
  */
 CREATE TABLE ebms_summary_page
     (page_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
     board_id INTEGER      NOT NULL,
    page_name VARCHAR(255) NOT NULL,
+    archived DATETIME         NULL,
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
