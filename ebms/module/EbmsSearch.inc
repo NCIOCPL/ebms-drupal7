@@ -36,6 +36,7 @@ function getSearchQuery($json) {
     $srch->srchTags();
     $srch->srchInputDate();
     $srch->srchModifiedDate();
+    $srch->srchDecision();
 
     // Sort them
     $srch->srchOrder();
@@ -762,6 +763,33 @@ logw("Processing not list");
                 // A tag entry is also considered a "modification"
                 $this->srchTags(true);
             }
+        }
+    }
+
+    /**
+     * Search for requested states.
+     *
+     * This front end to chkStates figures out what states are requested
+     * and passes the right parameters to chkStates to add them to the query.
+     */
+    function srchDecision() {
+
+        // Don't do anything unless the user specified a decision.
+        if ($this->spec['decision']) {
+
+            // Join with the state table.
+            $this->qry->join('ebms_article_state', 'decision_state',
+                'decision_state.article_id = art.article_id');
+
+            // Don't bother with states that are no longer relevant.
+            $this->qry->condition('decision_state.active_status', 'A');
+
+            // Narrow down to the decision the user specified.
+            $this->qry->join('ebms_article_board_decision', 'state_decision',
+                'state_decision.article_state_id = ' .
+                'decision_state.article_state_id');
+            $this->qry->condition('state_decision.decision_value_id',
+                $this->spec['decision']);
         }
     }
 
