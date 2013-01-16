@@ -1181,7 +1181,7 @@ function setArticleState($articleId, $textId, $topicId, $boardId=null,
     // If not found, this is a new article topic combo
     // Caller must give us a cycle ID
     if (!$cycleId && !$storedCycleId) {
-        $cycleId = Util::get_default_cycle();
+        $cycleId = Ebms\Util::get_default_cycle();
         //throw new \Exception(
         //  "setArticleState: Attempt to create new topic for article=".
         //  "$articleId, topic=$topicId, without identifying a review cycle");
