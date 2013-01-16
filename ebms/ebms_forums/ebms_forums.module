@@ -40,8 +40,8 @@ function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
                 // Get the forums a user can see
                 $applicableForums = _ebms_forums_for_global_user();
                 // Add the forums a user can see to a new options list
-                foreach ($applicableForums as $forumID => $forum) {
-                    $updatedOptions[$forumID] = $forum->name;
+                foreach ($applicableForums as $forum) {
+                    $updatedOptions[$forum->tid] = $forum->name;
                 }
                 // Overwrite the options list
                 $form['taxonomy_forums']['und']['#options'] = $updatedOptions;
