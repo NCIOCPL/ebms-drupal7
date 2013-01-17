@@ -49,7 +49,7 @@ function _calendar_get_upcoming_events() {
 
 function ebms_calendar_left_nav($span = null, $args = array()) {
     $output = array();
-    
+
     $date = null;
     if (isset($args[0]))
         $date = $args[0];
@@ -98,12 +98,12 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
 
         $output[] = '<div class="actions">';
         $output[] = '<ul><li>';
-        
+
         $suffix = '';
-        if($date){
+        if ($date) {
             $suffix = "/$date";
         }
-        
+
         if ($all) {
             $output[] = l('Show Own Events', "calendar$granularity$suffix");
         } else {
@@ -237,15 +237,15 @@ function _calendar_query_alter(&$view, &$query) {
         $boardsjoin->construct("field_data_field_boards", $view->base_table,
             $view->base_field, 'entity_id',
             array(
-                array('field' => 'entity_type', 'value' => $view->base_table),
-                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+            array('field' => 'entity_type', 'value' => $view->base_table),
+            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
         ));
         $query->table_queue[$view->base_table . '__field_data_field_boards'] = array(
-                'table' => 'field_data_field_boards',
-                'num' => 1,
-                'alias' => 'field_data_field_boards',
-                'join' => $boardsjoin,
-                'relationship' => 'node'
+            'table' => 'field_data_field_boards',
+            'num' => 1,
+            'alias' => 'field_data_field_boards',
+            'join' => $boardsjoin,
+            'relationship' => 'node'
         );
 
         //Add where condition
@@ -265,15 +265,15 @@ function _calendar_query_alter(&$view, &$query) {
         $subgroupsjoin->construct("field_data_field_subgroups",
             $view->base_table, $view->base_field, 'entity_id',
             array(
-                array('field' => 'entity_type', 'value' => $view->base_table),
-                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+            array('field' => 'entity_type', 'value' => $view->base_table),
+            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
         ));
         $query->table_queue[$view->base_table . '__field_data_field_subgroups'] = array(
-                'table' => 'field_data_field_subgroups',
-                'num' => 1,
-                'alias' => 'field_data_field_subgroups',
-                'join' => $subgroupsjoin,
-                'relationship' => 'node'
+            'table' => 'field_data_field_subgroups',
+            'num' => 1,
+            'alias' => 'field_data_field_subgroups',
+            'join' => $subgroupsjoin,
+            'relationship' => 'node'
         );
 
         //Add where condition
@@ -287,15 +287,15 @@ function _calendar_query_alter(&$view, &$query) {
         $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups",
             $view->base_table, $view->base_field, 'entity_id',
             array(
-                array('field' => 'entity_type', 'value' => $view->base_table),
-                array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+            array('field' => 'entity_type', 'value' => $view->base_table),
+            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
         ));
         $query->table_queue[$view->base_table . '__field_data_field_ad_hoc_groups'] = array(
-                'table' => 'field_data_field_ad_hoc_groups',
-                'num' => 1,
-                'alias' => 'field_data_field_ad_hoc_groups',
-                'join' => $adhocgroupsjoin,
-                'relationship' => 'node'
+            'table' => 'field_data_field_ad_hoc_groups',
+            'num' => 1,
+            'alias' => 'field_data_field_ad_hoc_groups',
+            'join' => $adhocgroupsjoin,
+            'relationship' => 'node'
         );
 
         //Add where condition
@@ -309,15 +309,15 @@ function _calendar_query_alter(&$view, &$query) {
     $userjoin->construct("field_data_field_individuals", $view->base_table,
         $view->base_field, 'entity_id',
         array(
-            array('field' => 'entity_type', 'value' => $view->base_table),
-            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+        array('field' => 'entity_type', 'value' => $view->base_table),
+        array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
     ));
     $query->table_queue[$view->base_table . '__field_data_field_individuals'] = array(
-            'table' => 'field_data_field_individuals',
-            'num' => 1,
-            'alias' => 'field_data_field_individuals',
-            'join' => $userjoin,
-            'relationship' => 'node'
+        'table' => 'field_data_field_individuals',
+        'num' => 1,
+        'alias' => 'field_data_field_individuals',
+        'join' => $userjoin,
+        'relationship' => 'node'
     );
 
     //Add where condition
@@ -363,8 +363,8 @@ function ebms_calendar_edit_event($nid) {
 function calendar_node_form_alter(&$form, &$form_state) {
     drupal_set_breadcrumb(
         array(
-                l('Calendar', 'calendar'),
-                'Create Event',
+            l('Calendar', 'calendar'),
+            'Create Event',
         )
     );
 
@@ -381,8 +381,9 @@ function calendar_node_form_alter(&$form, &$form_state) {
         $form['field_datespan']['und'][0]['#default_value']['value'] = $timestamp;
         $form['field_datespan']['und'][0]['#default_value']['value2'] = $timestamp;
     }
-    
+
     $form['#validate'][] = 'ebms_calendar_event_validate';
+    $form['actions']['submit']['#submit'][] = 'ebms_redirect_handler';
 
     return $form;
 }

@@ -1317,3 +1317,17 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
         form_set_error('field_datespan',
             'Please ensure that the event is scheduled for a single day only.');
 }
+
+function ebms_redirect_handler($form, &$form_state) {
+    // if the user won't be able to view the node after saving...
+    $node = $form_state['node'];
+    global $user;
+    if (!user_access('bypass content access control') &&
+        $node->status == 0 && $node->uid != $user->uid) {
+        if ($node->type == 'ebms_event') {
+            $form_state['redirect'] = 'calendar';
+        } else {
+            $form_state['redirect'] = '/';
+        }
+    }
+}
