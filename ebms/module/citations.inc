@@ -7,19 +7,19 @@ namespace Ebms {
     require_once('EbmsArticle.inc');
 
     $GLOBALS['citations_state_map'] = array(
-            \Ebms\EbmsArticleStates::ReadyInitReview => array(
-                    'reject' => \Ebms\EbmsArticleStates::RejectInitReview,
-                    'pass' => \Ebms\EbmsArticleStates::PassedInitReview,
-            ),
-            \Ebms\EbmsArticleStates::Published => array(
-                    'reject' => \Ebms\EbmsArticleStates::RejectBMReview,
-                    'pass' => \Ebms\EbmsArticleStates::PassedBMReview,
-            ),
-            \Ebms\EbmsArticleStates::PassedBMReview => array(
-                    'reject' => \Ebms\EbmsArticleStates::RejectFullReview,
-                    'pass' => \Ebms\EbmsArticleStates::PassedFullReview,
-                    'fyi' => \Ebms\EbmsArticleStates::FYI,
-            ),
+        \Ebms\EbmsArticleStates::ReadyInitReview => array(
+            'reject' => \Ebms\EbmsArticleStates::RejectInitReview,
+            'pass' => \Ebms\EbmsArticleStates::PassedInitReview,
+        ),
+        \Ebms\EbmsArticleStates::Published => array(
+            'reject' => \Ebms\EbmsArticleStates::RejectBMReview,
+            'pass' => \Ebms\EbmsArticleStates::PassedBMReview,
+        ),
+        \Ebms\EbmsArticleStates::PassedBMReview => array(
+            'reject' => \Ebms\EbmsArticleStates::RejectFullReview,
+            'pass' => \Ebms\EbmsArticleStates::PassedFullReview,
+            'fyi' => \Ebms\EbmsArticleStates::FYI,
+        ),
     );
 
     class EbmsTopicDecisions {
@@ -90,12 +90,12 @@ namespace Ebms {
                 new EbmsTopicDecisions($index++, 'Board Manager Action(s)',
                     '_format_topic_board_manager_actions',
                     array(
-                            EbmsArticleStates::NotForAgenda,
-                            EbmsArticleStates::AgendaNoPaprChg,
-                            EbmsArticleStates::AgendaFutureChg,
-                            EbmsArticleStates::AgendaBoardDiscuss,
-                            EbmsArticleStates::AgendaWrkGrpDiscuss,
-                            EbmsArticleStates::FullEnd,));
+                        EbmsArticleStates::NotForAgenda,
+                        EbmsArticleStates::AgendaNoPaprChg,
+                        EbmsArticleStates::AgendaFutureChg,
+                        EbmsArticleStates::AgendaBoardDiscuss,
+                        EbmsArticleStates::AgendaWrkGrpDiscuss,
+                        EbmsArticleStates::FullEnd,));
             self::$ONAGENDA =
                 new EbmsTopicDecisions($index++, 'On Agenda',
                     '_format_topic_on_agenda_decision',
@@ -170,7 +170,7 @@ namespace {
         Ebms\Menu::$active = 'Citation Management';
         drupal_set_title('Citation Management');
         $crumbs = array(
-                $action ? l('Citation Management', 'citations') : 'Citation Management'
+            $action ? l('Citation Management', 'citations') : 'Citation Management'
         );
         $result = null;
         switch ($action) {
@@ -236,51 +236,51 @@ namespace {
 
         $form['not-list']['description']['#markup'] = '<h2>Not List Maintenance</h2>';
         $form['not-list']['board_select'] = array(
-                '#type' => 'select',
-                '#title' => 'Editorial Board',
-                '#title_display' => 'after',
-                '#options' => $boards, //array(0 => t('All Boards')),
-                '#prefix' => '<div class="citation-input-div">',
-                '#suffix' => '</div>',
+            '#type' => 'select',
+            '#title' => 'Editorial Board',
+            '#title_display' => 'after',
+            '#options' => $boards, //array(0 => t('All Boards')),
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
             //'#default_value' => $board,
         );
         //$form['not-list']['board_select']['#options'] += $boards;
         $form['not-list']['brief_title_field'] = array(
-                '#type' => 'textfield',
-                '#title' => 'Brief Journal Title',
-                '#title_display' => 'after',
-                '#prefix' => '<div class="citation-input-div">',
-                '#suffix' => '</div>',
+            '#type' => 'textfield',
+            '#title' => 'Brief Journal Title',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
             //'#default_value' => $brief_title,
         );
         $form['not-list']['full_title_field'] = array(
-                '#type' => 'textfield',
-                '#title' => 'Full Journal Title',
-                '#title_display' => 'after',
-                '#prefix' => '<div class="citation-input-div">',
-                '#suffix' => '</div>',
+            '#type' => 'textfield',
+            '#title' => 'Full Journal Title',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
             //'#default_value' => $full_title,
         );
         $form['not-list']['journal_id_field'] = array(
-                '#type' => 'textfield',
-                '#title' => 'Journal ID',
-                '#title_display' => 'after',
-                '#prefix' => '<div class="citation-input-div">',
-                '#suffix' => '</div>',
+            '#type' => 'textfield',
+            '#title' => 'Journal ID',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
             //'#default_value' => $id,
         );
         $form['not-list']['all_journals_check'] = array(
-                '#type' => 'checkbox',
-                '#title' => 'All Journals',
-                '#title_display' => 'after',
-                '#prefix' => '<div class="citation-input-div">',
-                '#suffix' => '</div>',
+            '#type' => 'checkbox',
+            '#title' => 'All Journals',
+            '#title_display' => 'after',
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
             //'#default_value' => $all_journals,
         );
 
         $form['not-list']['search_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Search',
+            '#type' => 'submit',
+            '#value' => 'Search',
             /* '#ajax' => array(
               'callback' => 'pdq_ebms_ajax_search_submit',
               'wrapper' => 'citation-results-div',
@@ -289,8 +289,8 @@ namespace {
         );
 
         $form['not-list']['reset_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Reset',
+            '#type' => 'submit',
+            '#value' => 'Reset',
             /* '#ajax' => array(
               'callback' => 'pdq_ebms_ajax_clear_form',
               'wrapper' => 'citation-div',
@@ -299,7 +299,7 @@ namespace {
         );
 
         $form['not-list']['submit_source'] = array(
-                '#type' => 'hidden',
+            '#type' => 'hidden',
         );
 
 
@@ -427,11 +427,11 @@ namespace {
                         // insert this journal
                         $timestamp = date('Y-m-d G:i:s');
                         $record = array(
-                                'source' => $source,
-                                'source_jrnl_id' => $id,
-                                'board_id' => $board_id,
-                                'start_date' => $timestamp,
-                                'user_id' => $user->uid,
+                            'source' => $source,
+                            'source_jrnl_id' => $id,
+                            'board_id' => $board_id,
+                            'start_date' => $timestamp,
+                            'user_id' => $user->uid,
                         );
                         db_insert('ebms_not_list')
                             ->fields($record)->execute();
@@ -507,28 +507,28 @@ namespace {
         $result = $query->execute();
 
         $form += array(
-                '#prefix' => '<div id="citation-results-div">',
-                '#suffix' => '</div>',
+            '#prefix' => '<div id="citation-results-div">',
+            '#suffix' => '</div>',
         );
 
         $form['results-title']['#markup'] = "<h2>Not List Search Results <span class = 'results-count'>($num_rows)</span></h2>";
 
         $form['buttons'] = array(
-                '#prefix' => '<div id="citation-buttons-div">',
-                '#suffix' => '</div>',
+            '#prefix' => '<div id="citation-buttons-div">',
+            '#suffix' => '</div>',
         );
 
         $form['buttons']['save_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Save',
+            '#type' => 'submit',
+            '#value' => 'Save',
             /* '#ajax' => array(
               'callback' => 'pdq_ebms_ajax_save_list',
               ), */
         );
 
         $form['buttons']['cancel_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Cancel',
+            '#type' => 'submit',
+            '#value' => 'Cancel',
             /* '#ajax' => array(
               'callback' => 'pdq_ebms_ajax_clear_form',
               'wrapper' => 'citation-results-div',
@@ -537,27 +537,27 @@ namespace {
         );
 
         $form['buttons']['display_options'] = array(
-                '#type' => 'fieldset',
-                '#title' => '<span class="citation-subheader">Display Options</span>',
-                'options' => _build_citation_sort_options(false),
-                '#collapsible' => true,
-                '#collapsed' => true,
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Display Options</span>',
+            'options' => _build_citation_sort_options(false),
+            '#collapsible' => true,
+            '#collapsed' => true,
             //'#prefix' => "<div class='full-citation-element'>",
             //'#suffix' => "</div>",
         );
 
         $form['top-pager'] = array(
-                '#theme' => 'pager',
+            '#theme' => 'pager',
         );
 
         $form['table'] = array(
-                '#prefix' => '<div id="citation-table-div">',
-                '#suffix' => '</div>',
+            '#prefix' => '<div id="citation-table-div">',
+            '#suffix' => '</div>',
         );
 
         $form['table']['header'] = array(
-                '#prefix' => "<div class='citation-header'>",
-                '#suffix' => '</div>',
+            '#prefix' => "<div class='citation-header'>",
+            '#suffix' => '</div>',
         );
 
         $form['table']['header'][]['#markup'] =
@@ -574,8 +574,8 @@ namespace {
         $form['table']['rows'] = array();
         foreach ($result as $record) {
             $form['table']['rows'][$ix] = array(
-                    '#prefix' => "<div class='citation-row'>",
-                    '#suffix' => '</div>',
+                '#prefix' => "<div class='citation-row'>",
+                '#suffix' => '</div>',
             );
 
             $form['table']['rows'][$ix]['brief_title']['#markup'] =
@@ -593,11 +593,11 @@ namespace {
             }
 
             $form['table']['rows'][$ix]["not_list_state_$journal_hash"] = array(
-                    '#type' => 'checkbox',
-                    '#title' => "&nbsp;",
-                    '#default_value' => $default,
-                    '#prefix' => "<div class='citation-cell not-check borderless'>",
-                    '#suffix' => "</div>",
+                '#type' => 'checkbox',
+                '#title' => "&nbsp;",
+                '#default_value' => $default,
+                '#prefix' => "<div class='citation-cell not-check borderless'>",
+                '#suffix' => "</div>",
                 //'#return_value' => ,
                 //'#attributes' => array('name' => "search_row_${ix}_button"),
             );
@@ -606,21 +606,21 @@ namespace {
         }
 
         $form['trailing-buttons'] = array(
-                '#prefix' => '<div id="citation-buttons-div">',
-                '#suffix' => '</div>',
+            '#prefix' => '<div id="citation-buttons-div">',
+            '#suffix' => '</div>',
         );
 
         $form['trailing-buttons']['save_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Save',
+            '#type' => 'submit',
+            '#value' => 'Save',
             /* '#ajax' => array(
               'callback' => 'pdq_ebms_ajax_save_list',
               ), */
         );
 
         $form['trailing-buttons']['cancel_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Cancel',
+            '#type' => 'submit',
+            '#value' => 'Cancel',
             /* '#ajax' => array(
               'callback' => 'pdq_ebms_ajax_clear_form',
               'wrapper' => 'citation-results-div',
@@ -629,7 +629,7 @@ namespace {
         );
 
         $form['bottom-pager'] = array(
-                '#theme' => 'pager',
+            '#theme' => 'pager',
         );
 
         return $form;
@@ -706,28 +706,28 @@ namespace {
         $form['citation_queue']['description']['#markup'] = '<h2>Sort My Citation Queue</h2>';
 
         $form['citation_queue']['board_select'] = array(
-                '#type' => 'select',
-                '#title' => 'Editorial Board',
-                '#title_display' => 'after',
-                '#options' => array(0 => ''),
-                '#default_value' => $userBoardId,
-                '#prefix' => '<div class="citation-input-div">',
-                '#suffix' => '</div>',
-                '#ajax' => array(
-                        'callback' => '_ajax_citation_queue_board_select',
-                        'wrapper' => 'topic-select-div'
-                ),
+            '#type' => 'select',
+            '#title' => 'Editorial Board',
+            '#title_display' => 'after',
+            '#options' => array(0 => ''),
+            '#default_value' => $userBoardId,
+            '#prefix' => '<div class="citation-input-div">',
+            '#suffix' => '</div>',
+            '#ajax' => array(
+                'callback' => '_ajax_citation_queue_board_select',
+                'wrapper' => 'topic-select-div'
+            ),
         );
         $form['citation_queue']['board_select']['#options'] += $boards;
 
         if ($is_librarian) {
             $form['citation_queue']['topic_select'] = array(
-                    '#type' => 'select',
-                    '#title' => 'Summary Topic',
-                    '#title_display' => 'after',
-                    '#options' => array(0 => 'Please select a board.'),
-                    '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
-                    '#suffix' => '</div>',
+                '#type' => 'select',
+                '#title' => 'Summary Topic',
+                '#title_display' => 'after',
+                '#options' => array(0 => 'Please select a board.'),
+                '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
+                '#suffix' => '</div>',
             );
             if (isset($form_state['values']['board_select'])) {
                 $board_id = $form_state['values']['board_select'];
@@ -752,12 +752,12 @@ namespace {
             }
         } else {
             $form['citation_queue']['topic_select'] = array(
-                    '#type' => 'select',
-                    '#title' => 'Summary Topic',
-                    '#title_display' => 'after',
-                    '#options' => array(0 => 'Please select a board.'),
-                    '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
-                    '#suffix' => '</div>',
+                '#type' => 'select',
+                '#title' => 'Summary Topic',
+                '#title_display' => 'after',
+                '#options' => array(0 => 'Please select a board.'),
+                '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
+                '#suffix' => '</div>',
             );
 
             // use the default board id, or dig the value from the form state
@@ -812,11 +812,11 @@ namespace {
 
         if ($is_librarian) {
             $form['citation_queue']['journal_id_field'] = array(
-                    '#type' => 'textfield',
-                    '#title' => 'Journal ID',
-                    '#title_display' => 'after',
-                    '#prefix' => '<div class="citation-input-div">',
-                    '#suffix' => '</div>',
+                '#type' => 'textfield',
+                '#title' => 'Journal ID',
+                '#title_display' => 'after',
+                '#prefix' => '<div class="citation-input-div">',
+                '#suffix' => '</div>',
             );
         } else {
 
@@ -827,12 +827,12 @@ namespace {
               ->fetchAllKeyed(); */
 
             $form['citation_queue']['cycle_select'] = array(
-                    '#type' => 'select',
-                    '#title' => 'Review Cycle',
-                    '#title_display' => 'after',
-                    '#options' => array(0 => ''),
-                    '#prefix' => '<div class="citation-input-div">',
-                    '#suffix' => '</div>',
+                '#type' => 'select',
+                '#title' => 'Review Cycle',
+                '#title_display' => 'after',
+                '#options' => array(0 => ''),
+                '#prefix' => '<div class="citation-input-div">',
+                '#suffix' => '</div>',
             );
             $form['citation_queue']['cycle_select']['#options'] += $cycles;
 
@@ -843,37 +843,37 @@ namespace {
                 ->fetchAllKeyed();
 
             $form['citation_queue']['tag_select'] = array(
-                    '#type' => 'select',
-                    '#title' => 'Tag',
-                    '#title_display' => 'after',
-                    '#options' => array(0 => ''),
-                    '#prefix' => '<div class="citation-input-div">',
-                    '#suffix' => '</div>',
+                '#type' => 'select',
+                '#title' => 'Tag',
+                '#title_display' => 'after',
+                '#options' => array(0 => ''),
+                '#prefix' => '<div class="citation-input-div">',
+                '#suffix' => '</div>',
             );
             $form['citation_queue']['tag_select']['#options'] += $tags;
 
             $checks = array();
             $checks["abstract_review_check"] = array(
-                    '#type' => 'checkbox',
-                    '#title' => t('Abstract Review'),
-                    '#default_value' => true,
+                '#type' => 'checkbox',
+                '#title' => t('Abstract Review'),
+                '#default_value' => true,
             );
 
             $checks["fulltext_review_check"] = array(
-                    '#type' => 'checkbox',
-                    '#title' => t('Full Text Review'),
+                '#type' => 'checkbox',
+                '#title' => t('Full Text Review'),
             );
 
             $form['citation_queue']["review_select_checks"] = array(
-                    'checks' => $checks,
-                    '#prefix' => '<div class="citation-input-div full-citation-radio-check clearfix">',
-                    '#suffix' => '</div>',
+                'checks' => $checks,
+                '#prefix' => '<div class="citation-input-div full-citation-radio-check clearfix">',
+                '#suffix' => '</div>',
             );
         }
 
         $form['citation_queue']['reset_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Reset',
+            '#type' => 'submit',
+            '#value' => 'Reset',
             /* '#ajax' => array(
               'callback' => 'pdq_ebms_ajax_clear_form',
               'wrapper' => 'citation-div',
@@ -882,12 +882,12 @@ namespace {
         );
 
         $form['citation_queue']['filter_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Filter',
+            '#type' => 'submit',
+            '#value' => 'Filter',
         );
 
         $form['citation_queue']['submit_source'] = array(
-                '#type' => 'hidden',
+            '#type' => 'hidden',
         );
 
         /* if (isset($form_state['triggering_element']['#type']) &&
@@ -941,8 +941,8 @@ namespace {
 
         if (!isset($form['citation_queue_results'])) {
             $form['citation_queue_results'] = array(
-                    '#prefix' => '<div id="citation-results-div">',
-                    '#suffix' => '</div>',
+                '#prefix' => '<div id="citation-results-div">',
+                '#suffix' => '</div>',
             );
         }
 
@@ -1080,26 +1080,26 @@ namespace {
         }
 
         $results['buttons'] = array(
-                '#prefix' => '<div id="citation-buttons-div">',
-                '#suffix' => '</div>',
+            '#prefix' => '<div id="citation-buttons-div">',
+            '#suffix' => '</div>',
         );
 
         $results['buttons']['save_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Save',
+            '#type' => 'submit',
+            '#value' => 'Save',
         );
 
         $results['buttons']['refresh_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Refresh',
+            '#type' => 'submit',
+            '#value' => 'Refresh',
         );
 
         $results['buttons']['display-options'] = array(
-                '#type' => 'fieldset',
-                '#title' => '<span class="citation-subheader">Display Options</span>',
-                'options' => _build_citation_sort_options(),
-                '#collapsible' => true,
-                '#collapsed' => true,
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Display Options</span>',
+            'options' => _build_citation_sort_options(),
+            '#collapsible' => true,
+            '#collapsed' => true,
             //'#prefix' => "<div class='full-citation-element'>",
             //'#suffix' => "</div>",
         );
@@ -1108,17 +1108,17 @@ namespace {
             return;
 
         $results['top-pager'] = array(
-                '#theme' => 'pager',
+            '#theme' => 'pager',
         );
 
         $results['table'] = array(
-                '#prefix' => "<table id='citation-results-table'>",
-                '#suffix' => '</table>',
+            '#prefix' => "<table id='citation-results-table'>",
+            '#suffix' => '</table>',
         );
 
         $results['table']['header'] = array(
-                '#prefix' => "<tr>",
-                '#suffix' => '</tr>',
+            '#prefix' => "<tr>",
+            '#suffix' => '</tr>',
         );
 
         // width of the full citation and
@@ -1226,8 +1226,8 @@ namespace {
             $rows = array();
 
             $rows[$rowIx] = array(
-                    '#prefix' => "<tr>",
-                    '#suffix' => '</tr>',
+                '#prefix' => "<tr>",
+                '#suffix' => '</tr>',
             );
 
             $row = &$rows[$rowIx];
@@ -1256,8 +1256,8 @@ namespace {
                     "<td colspan='$colspan' class='left-column borderless'><a href='/citations/full/$record->article_id'>$cite</a></td>";
 
                 $rows["${rowIx}_header"] = array(
-                        '#prefix' => "<tr>",
-                        '#suffix' => '</tr>',
+                    '#prefix' => "<tr>",
+                    '#suffix' => '</tr>',
                 );
 
                 $row = &$rows["${rowIx}_header"];
@@ -1279,8 +1279,8 @@ namespace {
 
 
                 $rows["${rowIx}_boards"] = array(
-                        '#prefix' => "<tr>",
-                        '#suffix' => '</tr>',
+                    '#prefix' => "<tr>",
+                    '#suffix' => '</tr>',
                 );
 
                 $row = &$rows["${rowIx}_boards"];
@@ -1308,8 +1308,8 @@ namespace {
                     }
 
                     $boardTopicMap[] = array(
-                            'boardName' => 'Add New',
-                            'topics' => array(),
+                        'boardName' => 'Add New',
+                        'topics' => array(),
                     );
                     $topicCount++;
                 }
@@ -1404,8 +1404,8 @@ namespace {
                     if (empty($boardOptions)) {
                         // nothing to show, blank this row out
                         $row = array(
-                                '#prefix' => "<tr>",
-                                '#suffix' => '</tr>',
+                            '#prefix' => "<tr>",
+                            '#suffix' => '</tr>',
                         );
                         $boardIx++;
                         continue;
@@ -1416,19 +1416,19 @@ namespace {
                     $options += $boardOptions;
 
                     $row['board'][$selectId] = array(
-                            '#type' => 'select',
-                            '#title' => '',
-                            '#options' => $options,
-                            '#return_value' => $selectId,
-                            '#persist' => array(
-                                    'type' => 'update',
-                                    'group' => $groupId),
-                            '#ajax' => array(
-                                    'event' => 'change',
-                                    'callback' => '_ajax_expand_boards',
-                                    'wrapper' => 'citation-results-div',
-                            //'progress' => array('message' => '!'),
-                            ),
+                        '#type' => 'select',
+                        '#title' => '',
+                        '#options' => $options,
+                        '#return_value' => $selectId,
+                        '#persist' => array(
+                            'type' => 'update',
+                            'group' => $groupId),
+                        '#ajax' => array(
+                            'event' => 'change',
+                            'callback' => '_ajax_expand_boards',
+                            'wrapper' => 'citation-results-div',
+                        //'progress' => array('message' => '!'),
+                        ),
                     );
 
                     $row['board']['#prefix'] = "<td class='$boardClass'>";
@@ -1524,19 +1524,19 @@ namespace {
                                     $options += $availableTopics;
 
                                     $row['topic_select'][$topicSelectId] = array(
-                                            '#type' => 'select',
-                                            '#title' => '',
-                                            '#options' => $options,
-                                            '#return_value' => $topicSelectId,
-                                            '#persist' => array(
-                                                    'type' => 'update',
-                                                    'group' => $groupId),
-                                            '#ajax' => array(
-                                                    'event' => 'change',
-                                                    'callback' => '_ajax_expand_boards',
-                                                    'wrapper' => 'citation-results-div',
-                                            //'progress' => array('message' => '!'),
-                                            ),
+                                        '#type' => 'select',
+                                        '#title' => '',
+                                        '#options' => $options,
+                                        '#return_value' => $topicSelectId,
+                                        '#persist' => array(
+                                            'type' => 'update',
+                                            'group' => $groupId),
+                                        '#ajax' => array(
+                                            'event' => 'change',
+                                            'callback' => '_ajax_expand_boards',
+                                            'wrapper' => 'citation-results-div',
+                                        //'progress' => array('message' => '!'),
+                                        ),
                                     );
 
                                     $topicspan = $colspan - 1;
@@ -1581,8 +1581,8 @@ namespace {
                         $row['reject']['#suffix'] = "</td>";
 
                         $row['reject']["reject_$hash"] = array(
-                                '#type' => 'checkbox',
-                                '#title' => t('Reject'),
+                            '#type' => 'checkbox',
+                            '#title' => t('Reject'),
                         );
                         if (isset($actions[$hash]['reject']) &&
                             $actions[$hash]['reject'])
@@ -1593,8 +1593,8 @@ namespace {
                         $row['pass']['#suffix'] = "</td>";
 
                         $row['pass']["pass_$hash"] = array(
-                                '#type' => 'checkbox',
-                                '#title' => t('Pass'),
+                            '#type' => 'checkbox',
+                            '#title' => t('Pass'),
                         );
                         if (isset($actions[$hash]['pass']) &&
                             $actions[$hash]['pass'])
@@ -1606,8 +1606,8 @@ namespace {
                             $row['fyi']['#suffix'] = "</td>";
 
                             $row['fyi']["fyi_$hash"] = array(
-                                    '#type' => 'checkbox',
-                                    '#title' => t('FYI'),
+                                '#type' => 'checkbox',
+                                '#title' => t('FYI'),
                             );
                             if (isset($actions[$hash]['fyi']) &&
                                 $actions[$hash]['fyi'])
@@ -1620,8 +1620,8 @@ namespace {
                     $rowIx++;
 
                     $rows[$rowIx] = array(
-                            '#prefix' => "<tr>",
-                            '#suffix' => '</tr>',
+                        '#prefix' => "<tr>",
+                        '#suffix' => '</tr>',
                     );
 
                     $row = &$rows[$rowIx];
@@ -1640,76 +1640,76 @@ namespace {
         }
 
         $results['trailing-buttons'] = array(
-                '#prefix' => '<div id="citation-buttons-div">',
-                '#suffix' => '</div>',
+            '#prefix' => '<div id="citation-buttons-div">',
+            '#suffix' => '</div>',
         );
 
         $results['trailing-buttons']['save_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Save',
+            '#type' => 'submit',
+            '#value' => 'Save',
         );
 
         $results['trailing-buttons']['refresh_button'] = array(
-                '#type' => 'submit',
-                '#value' => 'Refresh',
+            '#type' => 'submit',
+            '#value' => 'Refresh',
         );
 
         $results['bottom-pager'] = array(
-                '#theme' => 'pager',
+            '#theme' => 'pager',
         );
     }
 
     function _build_citation_sort_options($showAbstract = true) {
         $form = array(
-                '#prefix' => '<div class="citation-input-div childfix">',
-                '#suffix' => '</div>',
+            '#prefix' => '<div class="citation-input-div childfix">',
+            '#suffix' => '</div>',
         );
 
         if ($showAbstract) {
             $sortOptions = array(
-                    null => '',
-                    'cms_id' => t("CMS ID#"),
-                    'pmid' => t("PMID #"),
-                    'author' => t("Author"),
-                    'title' => t("Title"),
-                    'journal' => t("Journal"),
-                    'publication_date' => t("Publication Date"),
+                null => '',
+                'cms_id' => t("CMS ID#"),
+                'pmid' => t("PMID #"),
+                'author' => t("Author"),
+                'title' => t("Title"),
+                'journal' => t("Journal"),
+                'publication_date' => t("Publication Date"),
             );
 
             $form['sort_by'] = array(
-                    '#type' => 'select',
-                    '#title' => t('Sort By'),
-                    '#options' => $sortOptions,
-                    '#title_display' => 'after',
+                '#type' => 'select',
+                '#title' => t('Sort By'),
+                '#options' => $sortOptions,
+                '#title_display' => 'after',
             );
 
             $formatOptions = array(
-                    'brief' => t('Brief'),
-                    'abstract' => t('Abstract'),
+                'brief' => t('Brief'),
+                'abstract' => t('Abstract'),
             );
 
             $form['format'] = array(
-                    '#type' => 'checkboxes',
-                    '#title' => t('Format'),
-                    '#title_display' => 'after',
-                    '#options' => $formatOptions,
-                    '#default_value' => array('brief'),
-                    '#attributes' => array('class' => array('full-citation-radio-check')),
+                '#type' => 'checkboxes',
+                '#title' => t('Format'),
+                '#title_display' => 'after',
+                '#options' => $formatOptions,
+                '#default_value' => array('brief'),
+                '#attributes' => array('class' => array('full-citation-radio-check')),
             );
         }
 
         $pagerOptions = array(
-                10 => 10,
-                25 => 25,
-                50 => 50,
-                'all' => t("View All"),
+            10 => 10,
+            25 => 25,
+            50 => 50,
+            'all' => t("View All"),
         );
 
         $form['per_page'] = array(
-                '#type' => 'select',
-                '#title' => t('Items Per Page'),
-                '#options' => $pagerOptions,
-                '#title_display' => 'after',
+            '#type' => 'select',
+            '#title' => t('Items Per Page'),
+            '#options' => $pagerOptions,
+            '#title_display' => 'after',
         );
 
         /* $form['core_only'] = array(
@@ -1891,9 +1891,9 @@ namespace {
         }
 
         $pieces = array(
-                "<div class='article-citation'>$tAuthors<div>",
-                implode(', ', $authors),
-                "</div>$tTitle<div>$title</div>$tJournal<div>$ta $vol",
+            "<div class='article-citation'>$tAuthors<div>",
+            implode(', ', $authors),
+            "</div>$tTitle<div>$title</div>$tJournal<div>$ta $vol",
         );
         if ($issue)
             $pieces[] = "($issue)";
@@ -2141,8 +2141,8 @@ namespace {
         $pm_link = $pubmed . $pm_id;
 
         $links = array(
-                array('Refine Search', $searchPath, array()),
-                array('View Abstract', $pm_link, $target),
+            array('Refine Search', $searchPath, array()),
+            array('View Abstract', $pm_link, $target),
         );
 
         if ($fileUrl)
@@ -2272,35 +2272,35 @@ namespace {
 
         $importData = Ebms\getArticleImportData($article->getId());
         $form['import_process'] = array(
-                '#type' => 'fieldset',
-                '#title' => '<span class="citation-subheader">Import Process</span>',
-                'section' => _format_import($article, $importData),
-                '#collapsible' => true,
-                '#collapsed' => true,
-                '#prefix' => "<div class='full-citation-element citation-subheader'>",
-                '#suffix' => "</div>",
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Import Process</span>',
+            'section' => _format_import($article, $importData),
+            '#collapsible' => true,
+            '#collapsed' => true,
+            '#prefix' => "<div class='full-citation-element citation-subheader'>",
+            '#suffix' => "</div>",
         );
 
         $form['initial_review'] = array(
-                '#type' => 'fieldset',
-                '#title' => '<span class="citation-subheader">Medical Librarian Initial Review</span>',
-                'section' => _format_boards($form_state, $article, $history,
-                    $tags, 'librarian'),
-                '#collapsible' => true,
-                '#collapsed' => true,
-                '#prefix' => "<div class='full-citation-element citation-subheader'>",
-                '#suffix' => "</div>",
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Medical Librarian Initial Review</span>',
+            'section' => _format_boards($form_state, $article, $history, $tags,
+                'librarian'),
+            '#collapsible' => true,
+            '#collapsed' => true,
+            '#prefix' => "<div class='full-citation-element citation-subheader'>",
+            '#suffix' => "</div>",
         );
 
         $form['publishing'] = array(
-                '#type' => 'fieldset',
-                '#title' => '<span class="citation-subheader">Publishing</span>',
-                'section' => _format_boards($form_state, $article, $history,
-                    $tags, 'publishing'),
-                '#collapsible' => true,
-                '#collapsed' => true,
-                '#prefix' => "<div class='full-citation-element citation-subheader'>",
-                '#suffix' => "</div>",
+            '#type' => 'fieldset',
+            '#title' => '<span class="citation-subheader">Publishing</span>',
+            'section' => _format_boards($form_state, $article, $history, $tags,
+                'publishing'),
+            '#collapsible' => true,
+            '#collapsed' => true,
+            '#prefix' => "<div class='full-citation-element citation-subheader'>",
+            '#suffix' => "</div>",
         );
 
         // need to ensure that the fieldsets leading to any triggered element
@@ -2366,7 +2366,7 @@ namespace {
 
             // create add tag button
             $form[$buttonId] = array(
-                    '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
             );
 
             // create add comment form 
@@ -2380,18 +2380,18 @@ namespace {
 
             // create add tag button
             $form[$buttonId] = array(
-                    '#type' => 'image_button',
-                    '#return_value' => $buttonId,
-                    '#src' => $iconPath,
-                    '#ajax' => array(
-                            'callback' => '_ajax_full_citation',
-                            'wrapper' => 'citation-form-div',
-                    ),
-                    '#attributes' => array(
-                            'class' => array('full-citation-button', 'image-button'),
-                            'title' => 'Add Comment',
-                            'alt' => 'Add Comment',
-                    ),
+                '#type' => 'image_button',
+                '#return_value' => $buttonId,
+                '#src' => $iconPath,
+                '#ajax' => array(
+                    'callback' => '_ajax_full_citation',
+                    'wrapper' => 'citation-form-div',
+                ),
+                '#attributes' => array(
+                    'class' => array('full-citation-button', 'image-button'),
+                    'title' => 'Add Comment',
+                    'alt' => 'Add Comment',
+                ),
             );
         }
 
@@ -2418,7 +2418,7 @@ namespace {
 
             // create add tag button
             $form[$buttonId] = array(
-                    '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
             );
 
             // create add comment form 
@@ -2432,18 +2432,18 @@ namespace {
 
             // create add tag button
             $form[$buttonId] = array(
-                    '#type' => 'image_button',
-                    '#return_value' => $buttonId,
-                    '#src' => $iconPath,
-                    '#ajax' => array(
-                            'callback' => '_ajax_full_citation',
-                            'wrapper' => 'citation-form-div',
-                    ),
-                    '#attributes' => array(
-                            'class' => array('full-citation-button', 'image-button'),
-                            'title' => 'Add Comment',
-                            'alt' => 'Add Comment',
-                    ),
+                '#type' => 'image_button',
+                '#return_value' => $buttonId,
+                '#src' => $iconPath,
+                '#ajax' => array(
+                    'callback' => '_ajax_full_citation',
+                    'wrapper' => 'citation-form-div',
+                ),
+                '#attributes' => array(
+                    'class' => array('full-citation-button', 'image-button'),
+                    'title' => 'Add Comment',
+                    'alt' => 'Add Comment',
+                ),
             );
         }
 
@@ -2542,14 +2542,14 @@ namespace {
         // add the remaining tags to a collapsible set
         if (!empty($article_tags)) {
             $form['past_article_tags'] = array(
-                    '#type' => 'fieldset',
-                    '#title' => t('Past Tag(s)'),
-                    '#collapsible' => TRUE,
-                    '#collapsed' => TRUE,
-                    'tags' => $article_tags,
-                    '#attributes' => array(
-                            'class' => array('full-citation-past-items'),
-                    ),
+                '#type' => 'fieldset',
+                '#title' => t('Past Tag(s)'),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'tags' => $article_tags,
+                '#attributes' => array(
+                    'class' => array('full-citation-past-items'),
+                ),
             );
         }
 
@@ -2602,7 +2602,7 @@ namespace {
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png';
             // create add tag button
             $form['button'][$buttonId] = array(
-                    '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
             );
 
             $formId = "add_tag_form_$hash";
@@ -2615,18 +2615,18 @@ namespace {
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png';
             // create add tag button
             $form['button'][$buttonId] = array(
-                    '#type' => 'image_button',
-                    '#return_value' => $buttonId,
-                    '#src' => $iconPath,
-                    '#ajax' => array(
-                            'callback' => '_ajax_full_citation',
-                            'wrapper' => 'citation-form-div',
-                    ),
-                    '#attributes' => array(
-                            'class' => array('full-citation-button', 'image-button'),
-                            'title' => 'Add Tag',
-                            'alt' => 'Add Tag',
-                    ),
+                '#type' => 'image_button',
+                '#return_value' => $buttonId,
+                '#src' => $iconPath,
+                '#ajax' => array(
+                    'callback' => '_ajax_full_citation',
+                    'wrapper' => 'citation-form-div',
+                ),
+                '#attributes' => array(
+                    'class' => array('full-citation-button', 'image-button'),
+                    'title' => 'Add Tag',
+                    'alt' => 'Add Tag',
+                ),
             );
             $form['form'] = array();
         }
@@ -2669,29 +2669,29 @@ namespace {
         $options = Ebms\getTagTypeNames($articleOnly);
 
         $form["tag_select_$hash"] = array(
-                '#type' => 'select',
-                '#title' => t('Add Tag'),
-                '#options' => $options,
-                '#required' => true,
+            '#type' => 'select',
+            '#title' => t('Add Tag'),
+            '#options' => $options,
+            '#required' => true,
         );
 
         $form["tag_comment_$hash"] = array(
-                '#type' => 'textfield',
-                '#title' => t('Comment'),
-                '#required' => true,
+            '#type' => 'textfield',
+            '#title' => t('Comment'),
+            '#required' => true,
         );
 
         $form["tag_save_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => t('Save'),
-                '#submit' => array('_add_tag_save'),
+            '#type' => 'submit',
+            '#value' => t('Save'),
+            '#submit' => array('_add_tag_save'),
         );
 
         $form["tag_cancel_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => 'Cancel',
-                '#limit_validation_errors' => array(),
-                '#submit' => array('_form_cancel'),
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+            '#limit_validation_errors' => array(),
+            '#submit' => array('_form_cancel'),
         );
 
         if ($js) {
@@ -2763,22 +2763,22 @@ namespace {
         $hash = "$articleTagId";
 
         $form["tag_comment_$hash"] = array(
-                '#type' => 'textfield',
-                '#title' => t('Add Comment'),
-                '#required' => true,
+            '#type' => 'textfield',
+            '#title' => t('Add Comment'),
+            '#required' => true,
         );
 
         $form["tag_save_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => t('Save'),
-                '#submit' => array('_add_tag_comment_save'),
+            '#type' => 'submit',
+            '#value' => t('Save'),
+            '#submit' => array('_add_tag_comment_save'),
         );
 
         $form["tag_cancel_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => t('Cancel'),
-                '#limit_validation_errors' => array(),
-                '#submit' => array('_form_cancel'),
+            '#type' => 'submit',
+            '#value' => t('Cancel'),
+            '#limit_validation_errors' => array(),
+            '#submit' => array('_form_cancel'),
         );
 
         return $form;
@@ -2790,22 +2790,22 @@ namespace {
         $hash = "$stateId";
 
         $form["state_comment_$hash"] = array(
-                '#type' => 'textfield',
-                '#title' => t('Add Comment'),
-                '#required' => true,
+            '#type' => 'textfield',
+            '#title' => t('Add Comment'),
+            '#required' => true,
         );
 
         $form["state_save_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => t('Save'),
-                '#submit' => array('_add_state_comment_save'),
+            '#type' => 'submit',
+            '#value' => t('Save'),
+            '#submit' => array('_add_state_comment_save'),
         );
 
         $form["state_cancel_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => t('Cancel'),
-                '#limit_validation_errors' => array(),
-                '#submit' => array('_form_cancel'),
+            '#type' => 'submit',
+            '#value' => t('Cancel'),
+            '#limit_validation_errors' => array(),
+            '#submit' => array('_form_cancel'),
         );
 
         return $form;
@@ -2899,7 +2899,7 @@ namespace {
             $iconPath = Ebms\EDIT_ACTIVE;
             // create add tag button
             $form['button'][$buttonId] = array(
-                    '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
             );
 
             $formId = "edit_decision_form_$hash";
@@ -2918,13 +2918,13 @@ namespace {
                     $decisions = array(Ebms\EbmsTopicDecisions:: $PUBLISHED);
                 } else {
                     $decisions = array(
-                            Ebms\EbmsTopicDecisions:: $NCIREVIEWER,
-                            Ebms\EbmsTopicDecisions:: $FULLTEXT,
-                            Ebms\EbmsTopicDecisions:: $SURVEILLANCE,
-                            Ebms\EbmsTopicDecisions:: $BOARDMEMBERRESPONSES,
-                            Ebms\EbmsTopicDecisions:: $BOARDMANAGERACTIONS,
-                            Ebms\EbmsTopicDecisions:: $ONAGENDA,
-                            Ebms\EbmsTopicDecisions:: $EDITORIALBOARD,
+                        Ebms\EbmsTopicDecisions:: $NCIREVIEWER,
+                        Ebms\EbmsTopicDecisions:: $FULLTEXT,
+                        Ebms\EbmsTopicDecisions:: $SURVEILLANCE,
+                        Ebms\EbmsTopicDecisions:: $BOARDMEMBERRESPONSES,
+                        Ebms\EbmsTopicDecisions:: $BOARDMANAGERACTIONS,
+                        Ebms\EbmsTopicDecisions:: $ONAGENDA,
+                        Ebms\EbmsTopicDecisions:: $EDITORIALBOARD,
                     );
                 }
 
@@ -2957,18 +2957,18 @@ namespace {
 
             // create edit decision button
             $form['button'][$buttonId] = array(
-                    '#type' => 'image_button',
-                    '#return_value' => $buttonId,
-                    '#src' => $iconPath,
-                    '#ajax' => array(
-                            'callback' => '_ajax_full_citation',
-                            'wrapper' => 'citation-form-div',
-                    ),
-                    '#attributes' => array(
-                            'class' => array('full-citation-button', 'image-button'),
-                            'title' => $boardId ? 'Add Topic' : 'Edit Topic',
-                            'alt' => $boardId ? 'Add Topic' : 'Edit Topic',
-                    ),
+                '#type' => 'image_button',
+                '#return_value' => $buttonId,
+                '#src' => $iconPath,
+                '#ajax' => array(
+                    'callback' => '_ajax_full_citation',
+                    'wrapper' => 'citation-form-div',
+                ),
+                '#attributes' => array(
+                    'class' => array('full-citation-button', 'image-button'),
+                    'title' => $boardId ? 'Add Topic' : 'Edit Topic',
+                    'alt' => $boardId ? 'Add Topic' : 'Edit Topic',
+                ),
             );
             $form['form'] = array();
         }
@@ -3049,23 +3049,23 @@ namespace {
         }
 
         $form["add_board_topic_${action}_$hash"] = array(
-                '#type' => 'select',
-                '#title' => $title,
-                '#options' => $options,
+            '#type' => 'select',
+            '#title' => $title,
+            '#options' => $options,
         );
 
         $form["add_board_topic_continue_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => t('Continue'),
-                '#submit' => array('_add_board_topic_continue'),
-                '#return_value' => $return_value,
+            '#type' => 'submit',
+            '#value' => t('Continue'),
+            '#submit' => array('_add_board_topic_continue'),
+            '#return_value' => $return_value,
         );
 
         $form["add_board_topic_cancel_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => 'Cancel',
-                '#limit_validation_errors' => array(),
-                '#submit' => array('_form_cancel'),
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+            '#limit_validation_errors' => array(),
+            '#submit' => array('_form_cancel'),
         );
 
         return $form;
@@ -3106,7 +3106,7 @@ namespace {
             $iconPath = Ebms\ADD_DECISION_ACTIVE;
             // create add tag button
             $form['button'][$buttonId] = array(
-                    '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
             );
 
             $formId = "edit_decision_form_$hash";
@@ -3120,18 +3120,18 @@ namespace {
 
             // create edit decision button
             $form['button'][$buttonId] = array(
-                    '#type' => 'image_button',
-                    '#return_value' => $buttonId,
-                    '#src' => $iconPath,
-                    '#ajax' => array(
-                            'callback' => '_ajax_full_citation',
-                            'wrapper' => 'citation-form-div',
-                    ),
-                    '#attributes' => array(
-                            'class' => array('full-citation-button', 'image-button'),
-                            'title' => $isAdd ? 'Add Decisions' : 'Edit Decision',
-                            'alt' => $isAdd ? 'Add Decisions' : 'Edit Decision',
-                    ),
+                '#type' => 'image_button',
+                '#return_value' => $buttonId,
+                '#src' => $iconPath,
+                '#ajax' => array(
+                    'callback' => '_ajax_full_citation',
+                    'wrapper' => 'citation-form-div',
+                ),
+                '#attributes' => array(
+                    'class' => array('full-citation-button', 'image-button'),
+                    'title' => $isAdd ? 'Add Decisions' : 'Edit Decision',
+                    'alt' => $isAdd ? 'Add Decisions' : 'Edit Decision',
+                ),
             );
             $form['form'] = array();
         }
@@ -3165,26 +3165,26 @@ namespace {
                 case Ebms\EbmsTopicDecisions::$INITIALREVIEW:
                     $checks = array();
                     $checks["initial_review_pass_$hash"] = array(
-                            '#type' => 'checkbox',
-                            '#title' => t('Approve'),
+                        '#type' => 'checkbox',
+                        '#title' => t('Approve'),
                     );
 
                     $checks["initial_review_reject_$hash"] = array(
-                            '#type' => 'checkbox',
-                            '#title' => t('Reject'),
+                        '#type' => 'checkbox',
+                        '#title' => t('Reject'),
                     );
 
                     $form["initial_review_checks_$hash"] = array(
-                            'checks' => $checks,
-                            '#prefix' => '<div class="full-citation-radio-check">',
-                            '#suffix' => '</div>',
+                        'checks' => $checks,
+                        '#prefix' => '<div class="full-citation-radio-check">',
+                        '#suffix' => '</div>',
                     );
 
                     $form["initial_review_comment_$hash"] = array(
-                            '#type' => 'textarea',
-                            '#title' => t('Comment'),
-                            '#prefix' => '<div class="full-citation-element">',
-                            '#suffix' => '</div>',
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -3193,26 +3193,26 @@ namespace {
 
                     $checks = array();
                     $checks["nci_reviewer_pass_$hash"] = array(
-                            '#type' => 'checkbox',
-                            '#title' => t('Approve'),
+                        '#type' => 'checkbox',
+                        '#title' => t('Approve'),
                     );
 
                     $checks["nci_reviewer_reject_$hash"] = array(
-                            '#type' => 'checkbox',
-                            '#title' => t('Reject'),
+                        '#type' => 'checkbox',
+                        '#title' => t('Reject'),
                     );
 
                     $form["nci_reviewer_checks_$hash"] = array(
-                            'checks' => $checks,
-                            '#prefix' => '<div class="full-citation-radio-check">',
-                            '#suffix' => '</div>',
+                        'checks' => $checks,
+                        '#prefix' => '<div class="full-citation-radio-check">',
+                        '#suffix' => '</div>',
                     );
 
                     $form["nci_reviewer_comment_$hash"] = array(
-                            '#type' => 'textarea',
-                            '#title' => t('Comment'),
-                            '#prefix' => '<div class="full-citation-element">',
-                            '#suffix' => '</div>',
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -3220,19 +3220,19 @@ namespace {
                     $form['fulltext_title'] = $full_title;
 
                     $form["fulltext_file_$hash"] = array(
-                            '#type' => 'file',
+                        '#type' => 'file',
                     );
 
                     $form["fulltext_check_$hash"] = array(
-                            '#type' => 'checkbox',
-                            '#title' => t('Unable to Upload'),
+                        '#type' => 'checkbox',
+                        '#title' => t('Unable to Upload'),
                     );
 
                     $form["fulltext_comment_$hash"] = array(
-                            '#type' => 'textarea',
-                            '#title' => t('Comment'),
-                            '#prefix' => '<div class="full-citation-element">',
-                            '#suffix' => '</div>',
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -3241,32 +3241,32 @@ namespace {
 
                     $checks = array();
                     $checks["surveillance_pass_$hash"] = array(
-                            '#type' => 'checkbox',
-                            '#title' => t('Approve'),
+                        '#type' => 'checkbox',
+                        '#title' => t('Approve'),
                     );
 
                     $checks["surveillance_reject_$hash"] = array(
-                            '#type' => 'checkbox',
-                            '#title' => t('Reject'),
+                        '#type' => 'checkbox',
+                        '#title' => t('Reject'),
                     );
 
                     $checks["surveillance_fyi_$hash"] = array(
-                            '#type' => 'checkbox',
-                            '#title' => t('Flag for FYI'),
+                        '#type' => 'checkbox',
+                        '#title' => t('Flag for FYI'),
                     );
 
                     $form["surveillance_checks_$hash"] = array(
-                            'checks' => $checks,
-                            '#prefix' => '<div class="full-citation-radio-check">',
-                            '#suffix' => '</div>',
+                        'checks' => $checks,
+                        '#prefix' => '<div class="full-citation-radio-check">',
+                        '#suffix' => '</div>',
                     );
 
 
                     $form["surveillance_comment_$hash"] = array(
-                            '#type' => 'textarea',
-                            '#title' => t('Comment'),
-                            '#prefix' => '<div class="full-citation-element">',
-                            '#suffix' => '</div>',
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -3285,11 +3285,11 @@ namespace {
                     $form['member_responses_title'] = $full_title;
 
                     $form["member_responses_select_$hash"] = array(
-                            '#type' => 'select',
-                            '#options' => $options,
-                            '#attributes' => array(
-                                    'class' => array('js-response-select'),
-                            ),
+                        '#type' => 'select',
+                        '#options' => $options,
+                        '#attributes' => array(
+                            'class' => array('js-response-select'),
+                        ),
                     );
 
                     $rejectValues = db_select('ebms_review_rejection_value', 'v')
@@ -3299,24 +3299,24 @@ namespace {
                         ->fetchAllKeyed();
 
                     $form["member_responses_reject_fieldset_$hash"] = array(
-                            '#type' => 'fieldset',
-                            '#title' => "<span class='citation-subheader'>
+                        '#type' => 'fieldset',
+                        '#title' => "<span class='citation-subheader'>
                             Reason For Rejection</span>",
-                            '#collapsible' => TRUE,
-                            '#collapsed' => FALSE,
-                            "member_responses_reject_$hash" => array(
-                                    '#type' => 'checkboxes',
-                                    '#options' => $rejectValues,
-                            ),
-                            '#prefix' => '<div class="full-citation-element js-response-reject">',
-                            '#suffix' => '</div>',
+                        '#collapsible' => TRUE,
+                        '#collapsed' => FALSE,
+                        "member_responses_reject_$hash" => array(
+                            '#type' => 'checkboxes',
+                            '#options' => $rejectValues,
+                        ),
+                        '#prefix' => '<div class="full-citation-element js-response-reject">',
+                        '#suffix' => '</div>',
                     );
 
                     $form["member_responses_comment_$hash"] = array(
-                            '#type' => 'textarea',
-                            '#title' => t('Comment'),
-                            '#prefix' => '<div class="full-citation-element">',
-                            '#suffix' => '</div>',
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -3335,15 +3335,15 @@ namespace {
                     $form['manager_actions_title'] = $full_title;
 
                     $form["manager_actions_select_$hash"] = array(
-                            '#type' => 'select',
-                            '#options' => $options,
+                        '#type' => 'select',
+                        '#options' => $options,
                     );
 
                     $form["manager_actions_comment_$hash"] = array(
-                            '#type' => 'textarea',
-                            '#title' => t('Comment'),
-                            '#prefix' => '<div class="full-citation-element">',
-                            '#suffix' => '</div>',
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -3390,22 +3390,22 @@ namespace {
                     }
 
                     $form["on_agenda_future_$hash"] = array(
-                            '#type' => 'select',
-                            '#title' => 'Future Meetings',
-                            '#options' => $futureEvents,
+                        '#type' => 'select',
+                        '#title' => 'Future Meetings',
+                        '#options' => $futureEvents,
                     );
 
                     $form["on_agenda_past_$hash"] = array(
-                            '#type' => 'select',
-                            '#title' => 'Past Meetings',
-                            '#options' => $pastEvents,
+                        '#type' => 'select',
+                        '#title' => 'Past Meetings',
+                        '#options' => $pastEvents,
                     );
 
                     $form["on_agenda_comment_$hash"] = array(
-                            '#type' => 'textarea',
-                            '#title' => t('Comment'),
-                            '#prefix' => '<div class="full-citation-element">',
-                            '#suffix' => '</div>',
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -3421,15 +3421,15 @@ namespace {
                     }
 
                     $form["board_decision_select_$hash"] = array(
-                            '#type' => 'select',
-                            '#options' => $options,
+                        '#type' => 'select',
+                        '#options' => $options,
                     );
 
                     $form["board_decision_discussed_$hash"] = array(
-                            '#type' => 'radios',
-                            '#options' => array('Y' => 'Yes', 'N' => 'No'),
-                            '#default_value' => 'Y',
-                            '#title' => 'Discussed',
+                        '#type' => 'radios',
+                        '#options' => array('Y' => 'Yes', 'N' => 'No'),
+                        '#default_value' => 'Y',
+                        '#title' => 'Discussed',
                     );
 
                     $boardId = Ebms\getTopicBoard($topic_id);
@@ -3447,21 +3447,21 @@ namespace {
                     }
 
                     $form["board_decision_members_fieldset_$hash"] = array(
-                            '#type' => 'fieldset',
-                            '#title' => 'Board Members',
-                            '#collapsible' => 'true',
-                            '#collapsed' => 'true',
-                            "board_decision_members_$hash" => array(
-                                    '#type' => 'checkboxes',
-                                    '#options' => $memberOpts,
-                            )
+                        '#type' => 'fieldset',
+                        '#title' => 'Board Members',
+                        '#collapsible' => 'true',
+                        '#collapsed' => 'true',
+                        "board_decision_members_$hash" => array(
+                            '#type' => 'checkboxes',
+                            '#options' => $memberOpts,
+                        )
                     );
 
                     $form["board_decision_comment_$hash"] = array(
-                            '#type' => 'textarea',
-                            '#title' => t('Comment'),
-                            '#prefix' => '<div class="full-citation-element">',
-                            '#suffix' => '</div>',
+                        '#type' => 'textarea',
+                        '#title' => t('Comment'),
+                        '#prefix' => '<div class="full-citation-element">',
+                        '#suffix' => '</div>',
                     );
 
                     break;
@@ -3471,17 +3471,17 @@ namespace {
         }
 
         $form["edit_decision_save_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => t('Save'),
-                '#validate' => array('_edit_decision_validate'),
-                '#submit' => array('_edit_decision_save'),
+            '#type' => 'submit',
+            '#value' => t('Save'),
+            '#validate' => array('_edit_decision_validate'),
+            '#submit' => array('_edit_decision_save'),
         );
 
         $form["edit_decision_cancel_$hash"] = array(
-                '#type' => 'submit',
-                '#value' => 'Cancel',
-                '#limit_validation_errors' => array(),
-                '#submit' => array('_form_cancel'),
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+            '#limit_validation_errors' => array(),
+            '#submit' => array('_form_cancel'),
         );
 
         return $form;
@@ -3502,14 +3502,14 @@ namespace {
 
         $values = _retrieve_hash_values($form_state,
             array(
-                'initial_review' => array('pass', 'reject', 'comment'),
-                'nci_reviewer' => array('pass', 'reject', 'comment'),
-                'fulltext' => array('file', 'check', 'comment'),
-                'surveillance' => array('pass', 'reject', 'fyi', 'comment'),
-                'member_responses' => array('select', 'reject', 'comment'),
-                'manager_actions' => array('select', 'comment'),
-                'on_agenda' => array('future', 'past', 'comment'),
-                'board_decision' => array('select', 'discussed', 'members', 'comment'),
+            'initial_review' => array('pass', 'reject', 'comment'),
+            'nci_reviewer' => array('pass', 'reject', 'comment'),
+            'fulltext' => array('file', 'check', 'comment'),
+            'surveillance' => array('pass', 'reject', 'fyi', 'comment'),
+            'member_responses' => array('select', 'reject', 'comment'),
+            'manager_actions' => array('select', 'comment'),
+            'on_agenda' => array('future', 'past', 'comment'),
+            'board_decision' => array('select', 'discussed', 'members', 'comment'),
             ));
 
         $hash = $values['hash'];
@@ -3552,14 +3552,14 @@ namespace {
 
         $values = _retrieve_hash_values($form_state,
             array(
-                'initial_review' => array('pass', 'reject', 'comment'),
-                'nci_reviewer' => array('pass', 'reject', 'comment'),
-                'fulltext' => array('file', 'check', 'comment'),
-                'surveillance' => array('pass', 'reject', 'fyi', 'comment'),
-                'member_responses' => array('select', 'reject', 'comment'),
-                'manager_actions' => array('select', 'comment'),
-                'on_agenda' => array('future', 'past', 'comment'),
-                'board_decision' => array('select', 'discussed', 'members', 'comment'),
+            'initial_review' => array('pass', 'reject', 'comment'),
+            'nci_reviewer' => array('pass', 'reject', 'comment'),
+            'fulltext' => array('file', 'check', 'comment'),
+            'surveillance' => array('pass', 'reject', 'fyi', 'comment'),
+            'member_responses' => array('select', 'reject', 'comment'),
+            'manager_actions' => array('select', 'comment'),
+            'on_agenda' => array('future', 'past', 'comment'),
+            'board_decision' => array('select', 'discussed', 'members', 'comment'),
             ));
 
         $hash = $values['hash'];
@@ -3659,10 +3659,10 @@ namespace {
                 db_insert('ebms_ft_unavailable')
                     ->fields(
                         array(
-                                'article_id' => $articleId,
-                                'flagged' => $now,
-                                'flagged_by' => $user->uid,
-                                'comment' => $comment,
+                            'article_id' => $articleId,
+                            'flagged' => $now,
+                            'flagged_by' => $user->uid,
+                            'comment' => $comment,
                         )
                     )
                     ->execute();
@@ -3759,14 +3759,14 @@ namespace {
         //   article_id and dates handled separately for new
         //   and replace records
         $key = array(
-                'packet_id' => $packetId,
-                'article_id' => $articleId,
-                'reviewer_id' => $user->uid,
+            'packet_id' => $packetId,
+            'article_id' => $articleId,
+            'reviewer_id' => $user->uid,
         );
         $fields = array(
-                'when_posted' => db_query('SELECT NOW()')->fetchField(),
-                'comments' => $comment,
-                'loe_info' => NULL,
+            'when_posted' => db_query('SELECT NOW()')->fetchField(),
+            'comments' => $comment,
+            'loe_info' => NULL,
         );
 
         // Wrap this in a transaction
@@ -3791,8 +3791,8 @@ namespace {
 
             // also insert into the review disposition table
             $reviewFields = array(
-                    'review_id' => $reviewId,
-                    'value_id' => $select,
+                'review_id' => $reviewId,
+                'value_id' => $select,
             );
 
             // Insert a new record
@@ -3811,8 +3811,8 @@ namespace {
                 foreach ($reject as $reason) {
                     if ($reason) {
                         $rejectFields = array(
-                                'review_id' => $reviewId,
-                                'value_id' => $reason,
+                            'review_id' => $reviewId,
+                            'value_id' => $reason,
                         );
 
                         // Insert a new record
@@ -3903,11 +3903,11 @@ namespace {
                 $comment);
 
             $key = array(
-                    'article_state_id' => $articleStateId,
-                    'decision_value_id' => $value_id,
+                'article_state_id' => $articleStateId,
+                'decision_value_id' => $value_id,
             );
             $fields = array(
-                    'discussed' => $discussed,
+                'discussed' => $discussed,
             );
 
             // insert should work, as the article state is freshly created
@@ -3921,8 +3921,8 @@ namespace {
                 foreach ($memberIds as $id) {
                     if ($id) {
                         $key = array(
-                                'article_state_id' => $articleStateId,
-                                'uid' => $id,
+                            'article_state_id' => $articleStateId,
+                            'uid' => $id,
                         );
 
                         // merge in article state / uid pair
@@ -3990,14 +3990,14 @@ namespace {
             if ($showButtons && $mode != 'publishing')
                 $form[$board_name]['button'] = $button_array['button'];
             $form[$board_name]['fieldset'] = array(
-                    '#type' => 'fieldset',
-                    '#title' => $board_name,
-                    '#collapsible' => TRUE,
-                    '#collapsed' => TRUE,
-                    'topics' => _format_topics($form_state, $article, $topics,
-                        $tags, $display_cycle, $mode),
-                    '#prefix' => '<div class="full-citation-indent">',
-                    '#suffix' => '</div>',
+                '#type' => 'fieldset',
+                '#title' => $board_name,
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'topics' => _format_topics($form_state, $article, $topics,
+                    $tags, $display_cycle, $mode),
+                '#prefix' => '<div class="full-citation-indent">',
+                '#suffix' => '</div>',
             );
             if (!$mode) {
                 $form[$board_name]['fieldset']['#attributes']['class'][] = 'full-citation-topic';
@@ -4040,14 +4040,14 @@ namespace {
 
             // wrap board-specific import data in fieldset
             $form[$boardName]['fieldset'] = array(
-                    '#type' => 'fieldset',
-                    '#title' => $boardName,
-                    '#collapsible' => TRUE,
-                    '#collapsed' => TRUE,
-                    'underscore' => array('#markup' => '<hr>'),
-                    'topics' => _format_import_topics($article, $topics),
-                    '#prefix' => '<div class="full-citation-element">',
-                    '#suffix' => '</div>',
+                '#type' => 'fieldset',
+                '#title' => $boardName,
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'underscore' => array('#markup' => '<hr>'),
+                'topics' => _format_import_topics($article, $topics),
+                '#prefix' => '<div class="full-citation-element">',
+                '#suffix' => '</div>',
             );
         }
 
@@ -4112,10 +4112,10 @@ namespace {
         $topicId = Ebms\getTopicIdByName($topicName);
 
         $form['header'] = array(
-                "#markup" => "<div class='citation-subheader'>Summary Topic</div>"
+            "#markup" => "<div class='citation-subheader'>Summary Topic</div>"
         );
         $form['topic'] = array(
-                "#markup" => "<div class='full-citation-element'>$topicName</div>");
+            "#markup" => "<div class='full-citation-element'>$topicName</div>");
 
         // find each of the dispositions, along with the related date
         if (isset($importData['A'])) {
@@ -4284,9 +4284,9 @@ namespace {
 
             if ($last_array != null && $last_key != null) {
                 $decisions[$last_key] = array(
-                        'decision' => $last_array,
-                        '#prefix' => '<div class="full-citation-latest-decision">',
-                        '#suffix' => '</div>',
+                    'decision' => $last_array,
+                    '#prefix' => '<div class="full-citation-latest-decision">',
+                    '#suffix' => '</div>',
                 );
             }
         }
@@ -4348,15 +4348,15 @@ namespace {
         $form['#suffix'] = '</div>';
 
         $form['header'] = array(
-                "#markup" => "<div class='citation-subheader full-citation-indent'>Summary Topic</div>",
-                '#weight' => 0,
+            "#markup" => "<div class='citation-subheader full-citation-indent'>Summary Topic</div>",
+            '#weight' => 0,
         );
 
         $form['button'] = $button;
 
         $form['topic'] = array(
-                "#markup" => "<div class='full-citation-indent'>$topic</div>",
-                '#weight' => 2);
+            "#markup" => "<div class='full-citation-indent'>$topic</div>",
+            '#weight' => 2);
 
         return $form;
     }
@@ -4514,15 +4514,15 @@ namespace {
 
             // add the remaining decisions to a collapsible set
             $form['past_decisions'] = array(
-                    '#type' => 'fieldset',
-                    '#title' => t('Past Decisions'),
-                    '#collapsible' => TRUE,
-                    '#collapsed' => TRUE,
-                    'past_decisions_list' => _format_topic_decision($decisionInfo,
-                        $topic_sequences),
-                    '#attributes' => array(
-                            'class' => array('full-citation-past-items'),
-                    ),
+                '#type' => 'fieldset',
+                '#title' => t('Past Decisions'),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'past_decisions_list' => _format_topic_decision($decisionInfo,
+                    $topic_sequences),
+                '#attributes' => array(
+                    'class' => array('full-citation-past-items'),
+                ),
             );
         }
 
@@ -4626,16 +4626,16 @@ namespace {
 
         if (!empty($pastIds)) {
             $form['past_blocks'] = array(
-                    '#type' => 'fieldset',
-                    '#title' => t('Past Decisions'),
-                    '#collapsible' => TRUE,
-                    '#collapsed' => TRUE,
-                    'tags' => _format_packet_ids($pastIds),
-                    '#attributes' => array(
-                            'class' => array('full-citation-past-items'),
-                    ),
-                    '#prefix' => '<div class="full-citation-indent">',
-                    '#suffix' => '</div>'
+                '#type' => 'fieldset',
+                '#title' => t('Past Decisions'),
+                '#collapsible' => TRUE,
+                '#collapsed' => TRUE,
+                'tags' => _format_packet_ids($pastIds),
+                '#attributes' => array(
+                    'class' => array('full-citation-past-items'),
+                ),
+                '#prefix' => '<div class="full-citation-indent">',
+                '#suffix' => '</div>'
             );
         }
 
@@ -4738,14 +4738,14 @@ namespace {
         }
 
         $form['past_blocks'] = array(
-                '#type' => 'fieldset',
-                '#title' => t('Past Decisions'),
-                '#collapsible' => TRUE,
-                '#collapsed' => TRUE,
-                'tags' => $pastBlocks,
-                '#attributes' => array(
-                        'class' => array('full-citation-past-items'),
-                ),
+            '#type' => 'fieldset',
+            '#title' => t('Past Decisions'),
+            '#collapsible' => TRUE,
+            '#collapsed' => TRUE,
+            'tags' => $pastBlocks,
+            '#attributes' => array(
+                'class' => array('full-citation-past-items'),
+            ),
         );
 
         return $form;
@@ -4825,14 +4825,14 @@ namespace {
 
         if ($showButtons)
             $form[$buttonId] = array(
-                    '#type' => 'submit',
-                    '#return_value' => $buttonId,
-                    '#name' => $buttonId,
-                    '#submit' => array('_topic_publish_save'),
-                    '#value' => t('Publish'),
-                    '#attributes' => array(
-                            'class' => array('small-button'),
-                    ),
+                '#type' => 'submit',
+                '#return_value' => $buttonId,
+                '#name' => $buttonId,
+                '#submit' => array('_topic_publish_save'),
+                '#value' => t('Publish'),
+                '#attributes' => array(
+                    'class' => array('small-button'),
+                ),
             );
 
         $form['#prefix'] = "<div class='full-citation-indent full-citation-element'>";
@@ -5103,16 +5103,17 @@ namespace {
             ->execute()
             ->fetchField();
 
-        $event = node_load($nid);
-
-        if ($event) {
-            $form[] = array("#markup" => "<div class='full-citation-indent'>MEETING: $event->title</div>");
-            /* $date = $decision->cycle_name;
-              if (!$date)
-              $date = '';
-              $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $date</div>"); */
+        if ($nid) {
+            $event = node_load($nid);
+            if ($event) {
+                $form[] = array("#markup" => "<div class='full-citation-indent'>MEETING: $event->title</div>");
+                /* $date = $decision->cycle_name;
+                  if (!$date)
+                  $date = '';
+                  $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $date</div>"); */
+            }
         }
-
+        
         $form['comments'] = _format_comments($status->comments);
 
         if (empty($form['comments']) && !empty($form['comments_add_button'])) {
@@ -5244,24 +5245,24 @@ namespace {
 
         // create edit decision button
         $form['button'][$buttonId] = array(
-                '#type' => 'image_button',
-                '#return_value' => $buttonId,
-                '#src' => $iconPath,
-                '#ajax' => array(
-                        'callback' => '_ajax_expand_boards',
-                        'wrapper' => 'citation-results-div',
-                        'progress' => array(
-                                'type' => 'throbber',
-                                'message' => t('')),
-                ),
-                '#attributes' => array(
-                        'class' => array('full-citation-button', 'image-button'),
-                        'title' => 'Add Topic',
-                        'alt' => 'Add Topic',
-                ),
-                '#persist' => array(
-                        'type' => 'toggle',
-                        'group' => $groupId),
+            '#type' => 'image_button',
+            '#return_value' => $buttonId,
+            '#src' => $iconPath,
+            '#ajax' => array(
+                'callback' => '_ajax_expand_boards',
+                'wrapper' => 'citation-results-div',
+                'progress' => array(
+                    'type' => 'throbber',
+                    'message' => t('')),
+            ),
+            '#attributes' => array(
+                'class' => array('full-citation-button', 'image-button'),
+                'title' => 'Add Topic',
+                'alt' => 'Add Topic',
+            ),
+            '#persist' => array(
+                'type' => 'toggle',
+                'group' => $groupId),
         );
 
         return $form;
