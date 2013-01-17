@@ -5,6 +5,7 @@ package = Webform
 
 dependencies[] = webform
 dependencies[] = ebms
+dependencies[] = ebms_forums
 
 files[] = ebms_webforms.module
 
