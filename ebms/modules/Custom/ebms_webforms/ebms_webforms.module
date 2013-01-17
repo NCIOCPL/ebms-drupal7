@@ -772,7 +772,7 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
                 ) {
                     $nodeComponent = node_load($submission_output);
                     if ($nodeComponent)
-                        $cell[] = l($nodeComponent->title, url('node/' . $nodeComponent->nid));
+                        $cell[] = l($nodeComponent->title, 'node/' . $nodeComponent->nid);
                     else
                         $cell[] = 'N/A';
                 } else
