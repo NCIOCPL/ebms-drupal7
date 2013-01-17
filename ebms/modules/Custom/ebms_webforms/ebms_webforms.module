@@ -806,23 +806,30 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
     if ($isHotelRequest) {
         $left_nav = EbmsReports::build_left_nav('Board Management', 'Hotel Requests');
         $output .= render($left_nav);
-        $output .= '<div id="webform-table-right">';
     }
     elseif ($isReimbursementRequest) {
         $left_nav = EbmsReports::build_left_nav('Board Management', 'Reimbursement Requests');
         $output .= render($left_nav);
-        $output .= '<div id="webform-table-long-right">';
     }
-    $output .= '<h2>'.$node->title.'</h2>';
-    $output .= theme('webform_results_per_page', array('total_count' => $total_count, 'pager_count' => $pager_count));
+    
+    // Add the title and add the -right class
+    $output .= '<div id="webform-table-right">';
+    $output .= '<h2>'.$node->title.' ('.$total_count.')</h2><br/>';
+    
+    // Special class for long tables
+    if ($isReimbursementRequest)
+        $output .= '</div><div id="webform-table-long-right">';
+    
+    // Add the results table
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
 
+    // Add the pager
     if ($pager_count) {
         $output .= theme('pager');
     }
 
-    if ($isHotelRequest || $isReimbursementRequest)
-        $output .= '</div>';
+    // Close the -right class
+    $output .= '</div>';
     return $output;
 }
 
