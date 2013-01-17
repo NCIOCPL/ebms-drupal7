@@ -11,3 +11,13 @@
     display:none;
 }
 
+#webform-table-right {
+        float:left;
+    margin-bottom: 50px;
+    width: 730px;
+}
+#webform-table-long-right {
+        float:left;
+    margin-bottom: 50px;
+    width: 730px;
+}

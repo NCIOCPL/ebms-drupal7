@@ -718,6 +718,10 @@ function _webform_csv_data_ebms_travel($component, $export_options, $value) {
  * @return type
  */
 function _ebms_webforms_results_table($node, $pager_count = 0) {
+    
+    // Add our custom CSS to this page
+    drupal_add_css(drupal_get_path('module', 'ebms_webforms').'/includes/ebms_webform.css');
+    
     // Determine if it's one of our special reports via URL
     if (array_key_exists('nid', $node->webform)) {
         $isReimbursementRequest = url('node/' . $node->webform['nid']) == '/travel/reimbursement-request';
@@ -735,6 +739,11 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
         $default = webform_results_table($node, $pager_count);
         return $default;
     }
+    
+    // Load the left nav for reports
+    module_load_include('inc', 'ebms', 'reports');
+    $left_nav = EbmsReports::build_left_nav();
+        
 
 
 
@@ -791,8 +800,20 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
         $rows[] = array(array('data' => t('There are no submissions for this form. <a href="!url">View this form</a>.', array('!url' => url('node/' . $node->nid))), 'colspan' => 4));
     }
 
-
     $output = '';
+    
+    // Build Left Nav, if appropriate
+    if ($isHotelRequest) {
+        $left_nav = EbmsReports::build_left_nav('Board Management', 'Hotel Requests');
+        $output .= render($left_nav);
+        $output .= '<div id="webform-table-right">';
+    }
+    elseif ($isReimbursementRequest) {
+        $left_nav = EbmsReports::build_left_nav('Board Management', 'Reimbursement Requests');
+        $output .= render($left_nav);
+        $output .= '<div id="webform-table-long-right">';
+    }
+    $output .= '<h2>'.$node->title.'</h2>';
     $output .= theme('webform_results_per_page', array('total_count' => $total_count, 'pager_count' => $pager_count));
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
 
@@ -800,6 +821,8 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
         $output .= theme('pager');
     }
 
+    if ($isHotelRequest || $isReimbursementRequest)
+        $output .= '</div>';
     return $output;
 }
 
