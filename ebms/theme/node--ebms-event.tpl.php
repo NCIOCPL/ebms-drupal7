@@ -59,7 +59,7 @@
 
         if ($agenda) :
             ?>
-            <div class='indent subheader'>Agenda</div>
+            <div class='indent'><span class='subheader'>Agenda</span><i><?php print $agenda_status; ?></i></div>
             <div class='indent trailing'> <?php print $agenda; ?> </div>
 
             <?php

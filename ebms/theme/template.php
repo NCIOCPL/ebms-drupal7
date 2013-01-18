@@ -282,6 +282,19 @@ function preprocess_ebms_event(&$variables) {
 
     //retrieve the node from the variables
     $node = $variables['node'];
+    
+    
+    // save if the current viewer is the editor of the event
+    $editor = user_access('edit any ebms_event content');
+    if ($editor) {
+        $themepath = drupal_get_path('theme', 'ebmstheme');
+        $variables['editIconPath'] =
+            url("$themepath/images/EBMS_Edit_Icon_Inactive.png");
+
+        $variables['editNodePath'] =
+            url("node/$node->nid/edit");
+    }
+    $variables['editor'] = $editor;
 
     // retrieve the needed values for the template
     $eventDate = field_get_items('node', $node, 'field_datespan');
@@ -409,24 +422,23 @@ function preprocess_ebms_event(&$variables) {
     $variables['agenda'] = null;
     if ($agenda)
         $variables['agenda'] = $agenda[0]['value'];
+    
+    // retrieve the agenda status
+    // if not set, either hide the agenda, or display it as draft to users
+    // capable of editing events
+    $field_agenda_status = field_get_items('node', $node, 'field_agenda_status');
+    $agenda_status = 0;
+    if($field_agenda_status)
+        $agenda_status = $field_agenda_status[0]['value'];
+    if (!$editor && !$agenda_status)
+        $variables['agenda'] = null;
+    
+    $variables['agenda_status'] = $agenda_status ? '' : ' - Draft';
 
     $submitter = user_load($node->uid);
     $variables['submitter'] = $submitter->name;
     $submitted = $node->created;
     $variables['submitted'] = date('m/d/y', $submitted);
-
-    // save if the current viewer is the editor of the event
-    global $user;
-    $editor = user_access('edit any ebms_event content');
-    if ($editor) {
-        $themepath = drupal_get_path('theme', 'ebmstheme');
-        $variables['editIconPath'] =
-            url("$themepath/images/EBMS_Edit_Icon_Inactive.png");
-
-        $variables['editNodePath'] =
-            url("node/$node->nid/edit");
-    }
-    $variables['editor'] = $editor;
 
     $inhouseStaff = field_get_items('node', $node, 'field_inhouse_staff');
     $boardMembers = field_get_items('node', $node, 'field_board_members');

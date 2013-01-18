@@ -17,7 +17,6 @@ switch ($node->type) {
 // run through the preprocessor to generate the displayed values
 $vars = array('node' => $node);
 preprocess_ebms_event($vars);
-
 ?>
 <div id='calendar-enclosure' class='preview'>
 
@@ -47,7 +46,7 @@ preprocess_ebms_event($vars);
 
     if ($vars['agenda']) :
         ?>
-        <div class='indent subheader'>Agenda</div>
+        <div class='indent'><span class='subheader'>Agenda</span><i><?php print $vars['agenda_status']; ?></i></div>
         <div class='indent trailing'> <?php print $vars['agenda']; ?> </div>
 
         <?php
