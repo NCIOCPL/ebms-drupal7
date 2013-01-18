@@ -213,6 +213,14 @@ function _calendar_query_alter(&$view, &$query) {
     if (user_access("view all events")
         && in_array($view->current_display,
             array('month_all', 'week_all', 'day_all'))) {
+        //EDIT: (Dan) - allow the user to see all of their authored events 
+        // (inc. unpublished) on the all views
+        $query->where[2]['conditions'][1] = array(
+            'field' => 'node.uid',
+            'value' => array($user->uid),
+            'operator' => 'in',
+        );
+
         return;
     }
 

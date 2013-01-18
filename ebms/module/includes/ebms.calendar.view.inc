@@ -64,13 +64,10 @@ $handler->display->display_options['fields']['title']['hide_alter_empty'] = FALS
 $handler->display->display_options['sorts']['field_datespan_value']['id'] = 'field_datespan_value';
 $handler->display->display_options['sorts']['field_datespan_value']['table'] = 'field_data_field_datespan';
 $handler->display->display_options['sorts']['field_datespan_value']['field'] = 'field_datespan_value';
-/* Filter criterion: Content: Published */
-$handler->display->display_options['filters']['status']['id'] = 'status';
-$handler->display->display_options['filters']['status']['table'] = 'node';
-$handler->display->display_options['filters']['status']['field'] = 'status';
-$handler->display->display_options['filters']['status']['value'] = 1;
-$handler->display->display_options['filters']['status']['group'] = 0;
-$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+$handler->display->display_options['filter_groups']['groups'] = array(
+  1 => 'AND',
+  2 => 'OR',
+);
 /* Filter criterion: Content: Type */
 $handler->display->display_options['filters']['type']['id'] = 'type';
 $handler->display->display_options['filters']['type']['table'] = 'node';
@@ -78,6 +75,20 @@ $handler->display->display_options['filters']['type']['field'] = 'type';
 $handler->display->display_options['filters']['type']['value'] = array(
   'ebms_event' => 'ebms_event',
 );
+$handler->display->display_options['filters']['type']['group'] = 1;
+/* Filter criterion: Content: Published */
+$handler->display->display_options['filters']['status']['id'] = 'status';
+$handler->display->display_options['filters']['status']['table'] = 'node';
+$handler->display->display_options['filters']['status']['field'] = 'status';
+$handler->display->display_options['filters']['status']['value'] = 1;
+$handler->display->display_options['filters']['status']['group'] = 2;
+$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+/* Filter criterion: Content: Author uid */
+$handler->display->display_options['filters']['uid']['id'] = 'uid';
+$handler->display->display_options['filters']['uid']['table'] = 'node';
+$handler->display->display_options['filters']['uid']['field'] = 'uid';
+$handler->display->display_options['filters']['uid']['value'] = '';
+$handler->display->display_options['filters']['uid']['group'] = 2;
 
 /* Display: Month All */
 $handler = $view->new_display('page', 'Month All', 'month_all');
