@@ -36,8 +36,11 @@ function ebms_webforms_menu_alter(&$items) {
  */
 function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
   if (substr($form_id, 0, 19) != 'webform_client_form') {
-    return;
-  } 
+        return;
+    }
+    
+    $event_block = _ebms_travel_get_meeting_block($form);
+
     //add js file for show/hide.  
     $css_path = drupal_get_path('module', 'ebms_webforms');
     $css_path .= "/includes/ebms_webform.css";
@@ -45,45 +48,43 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
     $js_path = drupal_get_path('module', 'ebms_webforms');
     $js_path .= "/includes/ebms_webform.js";
     drupal_add_js($js_path, array('type' => 'file'));
-    
-  
-  
+
     $form['preview'] = array(
-      '#type' => 'submit',
-       '#value' => 'Preview',
-       '#submit' => array('preview_submission'),
-       '#ajax'=> array(
-          'callback'=>'preview_submission',
-          'wrapper'=> 'preview-area',
-          'method'=> 'replace',
-          'effect'=> 'fade',
-       )
-  );
-    
-     $form['preview-container']=array(
-       '#prefix'=>'<div id="preview-area">',
-       '#suffix'=>'</div>',
-   );
+        '#type' => 'submit',
+        '#value' => 'Preview',
+        '#submit' => array('preview_submission'),
+        '#ajax' => array(
+            'callback' => 'preview_submission',
+            'wrapper' => 'preview-area',
+            'method' => 'replace',
+            'effect' => 'fade',
+        )
+    );
+
+    $form['preview-container'] = array(
+        '#prefix' => '<div id="preview-area">',
+        '#suffix' => '</div>',
+    );
     //check to see if this webform has a meeting select - if it does, populate it.
     ////"MUST BE NAMED MEETING".
     //@TODO: In the future - should really create a field type for meetings...
-    if(is_array($form['submitted']) && array_key_exists('meeting',$form['submitted'])){
+    if (is_array($form['submitted']) && array_key_exists('meeting',
+            $form['submitted'])) {
         //test
         $view = views_get_view('event_calendar');
-        if (!$view || !$view->access('block_past')) {
+        if (!$view || !$view->access($event_block)) {
             return;
         }
-        $view->preview('block_past', array());
-        
+        $view->preview($event_block, array());
+
         //Remove the placeholder option from the options list.
         array_pop($form['submitted']['meeting']['#options']);
-        
+
         //add the available meetings for the current user.
-        foreach($view->result as $meeting) {
+        foreach ($view->result as $meeting) {
             $form['submitted']['meeting']['#options'][$meeting->nid] = $meeting->node_title;
         }
     }
-  
 }
  
 /**
@@ -139,9 +140,10 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
      }
      
      //now we want to make up for the custom form-alter we did in the meeting field
-     $pair = _ebms_travel_get_meetings();
-     $select_fields['meeting'] = $pair;
      
+     $event_block = _ebms_travel_get_meeting_block($form);
+     $pair = _ebms_travel_get_meetings($event_block);
+     $select_fields['meeting'] = $pair;
      
      $output = array();
      //create the preview - shouldn't need to do anything special for regular fields.
@@ -200,12 +202,31 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
      return $form['preview-container'];
  }
  
- function _ebms_travel_get_meetings(){
+ function _ebms_travel_get_meeting_block($form){
+         // Determine if it's one of our special reports via URL
+    if (isset($form['#node']->nid)) {
+        $isReimbursementRequest = url('node/' . $form['#node']->nid) == '/travel/reimbursement-request';
+        $isHotelRequest = url('node/' . $form['#node']->nid) == '/travel/hotel-request';
+    } else {
+        // This is actually most likely NOT true, but 'nid' doesn't exist when
+        // there are no results, I think, so it SHOULDN'T matter.
+        $isReimbursementRequest = FALSE;
+        $isHotelRequest = FALSE;
+    }
+    
+    $event_block = 'block_past';
+    if($isHotelRequest)
+        $event_block = 'block_upcoming';
+    
+    return $event_block;
+ }
+ 
+ function _ebms_travel_get_meetings($event_block){
     $view = views_get_view('event_calendar');
-    if (!$view || !$view->access('block_past')) {
+    if (!$view || !$view->access($event_block)) {
         return;
     }
-    $view->preview('block_past', array());
+    $view->preview($event_block, array());
 
     //add the available meetings for the current user.
     $pair = array();
