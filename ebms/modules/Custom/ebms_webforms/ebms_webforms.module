@@ -70,10 +70,10 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
     if(is_array($form['submitted']) && array_key_exists('meeting',$form['submitted'])){
         //test
         $view = views_get_view('event_calendar');
-        if (!$view || !$view->access('block_upcoming')) {
+        if (!$view || !$view->access('block_past')) {
             return;
         }
-        $view->preview('block_upcoming', array());
+        $view->preview('block_past', array());
         
         //Remove the placeholder option from the options list.
         array_pop($form['submitted']['meeting']['#options']);
@@ -202,10 +202,10 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
  
  function _ebms_travel_get_meetings(){
     $view = views_get_view('event_calendar');
-    if (!$view || !$view->access('block_upcoming')) {
+    if (!$view || !$view->access('block_past')) {
         return;
     }
-    $view->preview('block_upcoming', array());
+    $view->preview('block_past', array());
 
     //add the available meetings for the current user.
     $pair = array();
