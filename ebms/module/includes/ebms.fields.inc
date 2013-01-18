@@ -19,9 +19,9 @@ $GLOBALS['ebms_node_fields'] = array(
             'weight' => 2,
             'type' => 'date_popup',
             'settings' => array(
-                'input_format' => 'Y-m-d H:i',
+                'input_format' => 'M j Y - g:i:sa',
                 'year_range' => '-100:+5',
-                'increment' => 1,
+                'increment' => 30,
             ),
         ),
         'cardinality' => 1,
@@ -35,6 +35,12 @@ $GLOBALS['ebms_node_fields'] = array(
                 'hour' => 'hour',
                 'minute' => 'minute',
             ),
+        ),
+        'settings' => array(
+            'default_value' => 'now',
+            'default_value_code' => '',
+            'default_value2' => 'strtotime',
+            'default_value_code2' => '+1 hour',
         ),
         'bundles' => array(
             'ebms_event',
@@ -189,6 +195,29 @@ $GLOBALS['ebms_node_fields'] = array(
             'ebms_event',
         ),
     ),
+    // agenda status - if the agenda is published
+    array(
+        'label' => t('Publish Agenda'),
+        'entity_type' => 'node',
+        'description' => t('Set if the agenda is published and visible to board members.'),
+        'field_name' => 'field_agenda_status',
+        'required' => TRUE,
+        'type' => 'list_text',
+        'cardinality' => 1,
+        'widget' => array(
+            'weight' => 11,
+            'type' => 'options_select',
+        ),
+        'settings' => array(
+            'allowed_values' => array(
+                '0' => 'Saved',
+                '1' => 'Published',
+            ),
+        ),
+        'bundles' => array(
+            'ebms_event'
+        ),
+    ),    
     array(
         'label' => 'Meeting Documents',
         'entity_type' => 'node',
@@ -206,7 +235,7 @@ $GLOBALS['ebms_node_fields'] = array(
             'settings' => array(
                 'description_field' => 1,
             ),
-            'weight' => 11,
+            'weight' => 12,
         ),
         'bundles' => array(
             'ebms_event',
@@ -222,7 +251,7 @@ $GLOBALS['ebms_node_fields'] = array(
         'type' => 'text_long',
         'cardinality' => 1,
         'widget' => array(
-            'weight' => 12,
+            'weight' => 13
         ),
         'settings' => array(
             'max_length' => '',
