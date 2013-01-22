@@ -375,7 +375,7 @@ function calendar_node_form_alter(&$form, &$form_state) {
             'Create Event',
         )
     );
-
+    
     $params = drupal_get_query_parameters();
 
     if (isset($params['date'])) {
@@ -392,6 +392,12 @@ function calendar_node_form_alter(&$form, &$form_state) {
 
     $form['#validate'][] = 'ebms_calendar_event_validate';
     $form['actions']['submit']['#submit'][] = 'ebms_redirect_handler';
+    
+    $form['revision_information']['#access'] = false;
+    $form['author']['#weight'] = 95;
+    $form['options']['#weight'] = 90;
+    $form['options']['promote']['#access'] = false;
+    $form['options']['sticky']['#access'] = false;
 
     return $form;
 }
