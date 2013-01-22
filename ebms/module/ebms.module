@@ -1331,3 +1331,7 @@ function ebms_redirect_handler($form, &$form_state) {
         }
     }
 }
+
+function ebms_date_combo_process_alter(&$element, &$form_state, $context){
+    $element['value']['#title'] = 'from:';
+}

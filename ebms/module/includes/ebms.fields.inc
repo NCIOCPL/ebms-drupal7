@@ -6,8 +6,7 @@
  */
 
 $GLOBALS['ebms_node_fields'] = array(
-// event date - 3 fields
-// time - from and to, am | pm
+    // event date
     array(
         'label' => t('Event Date'),
         'entity_type' => 'node',
@@ -46,7 +45,7 @@ $GLOBALS['ebms_node_fields'] = array(
             'ebms_event',
         ),
     ),
-// event type - in person | webex / phone conf.
+    // event type - in person | webex / phone conf.
     array(
         'label' => t('Event Type'),
         'entity_type' => 'node',
@@ -69,7 +68,7 @@ $GLOBALS['ebms_node_fields'] = array(
             'ebms_event'
         ),
     ),
-// editorial board
+    // editorial board
     array(
         'label' => t('Board'),
         'entity_type' => 'node',
@@ -89,7 +88,7 @@ $GLOBALS['ebms_node_fields'] = array(
             'ebms_event',
         ),
     ),
-// subgroup board - limited to those appropriate for editorial board if chosen
+    // subgroup board - limited to those appropriate for editorial board if chosen
     array(
         'label' => t('Subgroup'),
         'entity_type' => 'node',
@@ -109,7 +108,7 @@ $GLOBALS['ebms_node_fields'] = array(
             'ebms_event',
         ),
     ),
-// ad-hoc group
+    // ad-hoc group
     array(
         'label' => t('Ad-Hoc Group'),
         'entity_type' => 'node',
@@ -129,52 +128,6 @@ $GLOBALS['ebms_node_fields'] = array(
             'ebms_event',
         ),
     ),
-    // Individuals who can be selected
-    /* array(
-      'label' => t('Individual Recipients'),
-      'entity_type' => 'node',
-      'description' => t('Select from the list of individual recipients.'),
-      'field_name' => ''
-      ), */
-    
-    // in-house staff and board members merged into 'Individuals' field
-    
-// in-house staff (board managers, medical librarians, administrators)
-    /*array(
-        'label' => t('In-House Staff'),
-        'entity_type' => 'node',
-        'description' => t('Select from the available in-house staff.'),
-        'field_name' => 'field_inhouse_staff',
-        'required' => FALSE,
-        'type' => 'list_integer',
-        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
-        'widget' => array(
-            'weight' => 8,
-            'type' => 'options_select',
-        ),
-        'settings' => array(
-        ),
-        'bundles' => array(
-        ),
-    ),
-// board members - multiple select, populated/limited from editorial board?
-    array(
-        'label' => t('Board Members'),
-        'entity_type' => 'node',
-        'description' => t('Select from the available board members.'),
-        'field_name' => 'field_board_members',
-        'required' => FALSE,
-        'type' => 'list_integer',
-        'cardinality' => FIELD_CARDINALITY_UNLIMITED,
-        'widget' => array(
-            'weight' => 9,
-            'type' => 'options_select',
-        ),
-        'settings' => array(
-        ),
-        'bundles' => array(
-        ),
-    ),*/
     // agenda - rich text
     array(
         'label' => t('Agenda'),
@@ -203,6 +156,7 @@ $GLOBALS['ebms_node_fields'] = array(
         'field_name' => 'field_agenda_status',
         'required' => TRUE,
         'type' => 'list_text',
+        'default_value' => array(0 => array('value' => '0')),
         'cardinality' => 1,
         'widget' => array(
             'weight' => 11,
@@ -217,7 +171,7 @@ $GLOBALS['ebms_node_fields'] = array(
         'bundles' => array(
             'ebms_event'
         ),
-    ),    
+    ),
     array(
         'label' => 'Meeting Documents',
         'entity_type' => 'node',

@@ -246,6 +246,9 @@ function _ebms_instance_info($field = array(), $bundle = FALSE) {
     if (array_key_exists('default_value_function', $field))
         $instance_info['default_value_function'] = $field['default_value_function'];
 
+    if (array_key_exists('default_value', $field))
+        $instance_info['default_value'] = $field['default_value'];
+
     if (array_key_exists('settings', $field))
         $instance_info['settings'] = $field['settings'];
 
@@ -262,7 +265,7 @@ function ebms_enable_test() {
     drupal_set_message('Cycling ebms + ebms_forums modules.');
     module_disable(array('ebms'));
     $ret = module_enable(array('ebms_forums'));
-    if($ret)
+    if ($ret)
         $ret = module_enable(array('ebms_webforms'));
 
     //dsm(field_info_field_types(), 'fields types');
