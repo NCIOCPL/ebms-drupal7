@@ -474,6 +474,7 @@ function _ebms_forums_view_forum_access_callback($forum = NULL) {
          * A user may see an archived forum IF:
          *  1) They are User 1.
          *  2) They have the Administer EBMS Permission.
+         *  3) They have the Administer EBMS Forums Permisssion and have permission to view that forum when not archived.
          * 
          */
 
@@ -493,9 +494,14 @@ function _ebms_forums_view_forum_access_callback($forum = NULL) {
         $archivedField = field_get_items('taxonomy_term', $forum, 'field_archived');
         if ($archivedField)
             $archived = $archivedField[0]['value'];
+        /* No longer true as of 1/17...see below
         // Prevent access if it is
         if ($archived)
             return FALSE;
+         */
+        
+        // Archived - View
+        $administerForums = user_access('administer ebms forums');
 
 
         // (3) If the user is in the list of individuals that are on the fourm
@@ -506,23 +512,35 @@ function _ebms_forums_view_forum_access_callback($forum = NULL) {
             foreach ($tmp as $t)
                 $individuals[] = $t['value'];
             if (in_array($user->uid, $individuals))
-                return TRUE;
+                if (!$archived)
+                    return TRUE;
+                elseif ($archived && $administerForums)
+                    return TRUE;
         }
 
         // (4) If the user is part of a Board that is in the list of Boards on this forum
         $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_board_member', 'board_id', $forum->field_boards);
         if (count($matchedGroups) > 0)
-            return TRUE;
+            if (!$archived)
+                return TRUE;
+            elseif ($archived && $administerForums)
+                return TRUE;
 
         // (5) If the user is part of a Subgroup that is in the list of Subgroups on this forum
         $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_subgroup_member', 'sg_id', $forum->field_subgroups);
         if (count($matchedGroups) > 0)
-            return TRUE;
+            if (!$archived)
+                return TRUE;
+            elseif ($archived && $administerForums)
+                return TRUE;
 
         // (6) If the user is part of an Ad Hoc Group that is in the list of Ad Hoc Groups on this forum
         $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_ad_hoc_group_member', 'group_id', $forum->field_ad_hoc_groups);
         if (count($matchedGroups) > 0)
-            return TRUE;
+            if (!$archived)
+                return TRUE;
+            elseif ($archived && $administerForums)
+                return TRUE;
 
         return FALSE;
     }
