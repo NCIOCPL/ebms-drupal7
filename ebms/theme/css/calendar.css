@@ -122,15 +122,6 @@ li.calendar-date{
     padding-right: 0px;
 }
 
-/* alterations to forms on page */
-.node-ebms_event-form .form-type-date-popup label{
-    margin: auto;
-}
-
-.node-ebms_event-form fieldset.filter-wrapper{
-    border: 0;
-}
-
 .date-nav {
     padding-bottom: 0px !important;
 }

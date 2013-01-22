@@ -431,15 +431,23 @@ input:-webkit-autofill {
     background-color: white !important;
     color: #2d2c28;
 }
-.form-item > label, .form-textarea-wrapper { margin-left: 12px; }
-.form-item > label { margin-top: 35px; }
+.form-item > label, .form-textarea-wrapper, .form-wrapper > legend {
+    margin-left: 12px; 
+}
 .form-item .form-file { margin-left: 11px; }
-.form-item > label {
+.form-item > label,
+.form-wrapper > legend {
     margin-bottom: 2px; color: inherit; margin-top: 35px;
     text-transform: uppercase; padding-top: 0; padding-bottom: 0;
     font-size: 16px;
 }
-.form-item div.description {
+
+.form-wrapper > legend > .fieldset-legend {
+    font-weight: bold;
+}
+
+.form-item div.description,
+.fieldset-wrapper div.fieldset-description {
     margin-top: 0; padding-left: 11px; font-size: 12px; font-style: italic;
     text-transform: none; margin-bottom: 11px; padding-top: 0;
     line-height: 10px;
@@ -852,6 +860,58 @@ body.front #next-meeting span { font-weight: bold; }
 
 .form-type-managed-file div.description{
     line-height: 20px;
+}
+
+#ebms-event-node-form .form-wrapper {
+    margin-top: 30px;
+}
+
+#ebms-event-node-form .form-item > label,
+#ebms-event-node-form .form-wrapper > legend {
+    margin-top: 20px;
+}
+
+#ebms-event-node-form .form-textarea-wrapper {
+    margin-left: 0;
+}
+
+#ebms-event-node-form .filter-wrapper{
+    display: none;
+}
+
+#ebms-event-node-form fieldset.form-wrapper{
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+#ebms-event-node-form .date-padding {
+    padding: 0;
+    margin-top: 10px;
+}
+
+#ebms-event-node-form fieldset label {
+    font-weight: normal;
+}
+
+#ebms-event-node-form fieldset .date-padding label {
+    text-transform: none;
+}
+
+#ebms-event-node-form .form-type-date-popup label{
+    margin: auto;
+}
+
+#ebms-event-node-form fieldset.filter-wrapper{
+    border: 0;
+}
+
+#ebms-event-node-form .container-inline-date > .form-item{
+    margin: 0;
+}
+
+#ebms-event-node-form .date-no-float {
+    margin-top: 20px;
 }
 
 /* ALL MEMBER PACKETS */
