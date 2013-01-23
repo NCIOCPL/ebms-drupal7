@@ -487,7 +487,7 @@ function _ebms_forums_view_forum_access_callback($forum = NULL) {
         if ($administer)
             return TRUE;
 
-
+        
         // Archived Forum Interception
         // Find out if the Forum is Archived
         $archived = FALSE;
@@ -646,6 +646,11 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
 
     $administerEBMS = user_access('administer ebms');
     $administerForums = user_access('administer ebms forums');
+    $partOfForum = FALSE;
+    if ($activeForumID) {
+        $term = taxonomy_term_load($activeForumID);
+        $partOfForum = _ebms_forums_view_forum_access_callback($term);
+    }
 
     if ($activeForumID || $administerEBMS || $administerForums || $user->uid == 1) {
         
@@ -653,14 +658,14 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
         $output .= '<h3>Forum Actions</h3>';
         $output .= '<div class="actions"><ul>';
         
-        if ($activeForumID)
+        if ($activeForumID && $partOfForum)
             $output .= '<li><a href="' . url('node/add/forum') . '">Create New Topic</a></li>';
         if ($administerEBMS || $administerForums || $user->uid == 1) {
             if ($activeNodeID)
                 $output .= '<li><a href="' . url('node/' . $activeNodeID . '/edit') . '">Edit This Topic</a></li>';
 
             $output .= '<li><a href="' . url('forum/create') . '">Create New Forum</a></li>';
-            if ($activeForumID)
+            if ($activeForumID && $partOfForum)
                 $output .= '<li><a href="' . url('forum/' . $activeForumID . '/edit') . '">Edit This Forum</a></li>';
         }
         $output .= '</ul></div>'; //Closes ul and .actions
