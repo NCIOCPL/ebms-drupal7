@@ -821,6 +821,15 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
         $rows[] = array(array('data' => t('There are no submissions for this form. <a href="!url">View this form</a>.', array('!url' => url('node/' . $node->nid))), 'colspan' => 4));
     }
 
+    
+    // Since all webforms are likely to go in the reports section, let's
+    // make that breadcrumb universal
+    drupal_set_breadcrumb(array(
+        l('Reports', 'reports'),
+        drupal_get_title(),
+    ));
+
+    
     $output = '';
     
     // Build Left Nav, if appropriate
@@ -851,6 +860,7 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
 
     // Close the -right class
     $output .= '</div>';
+    
     return $output;
 }
 
@@ -868,4 +878,20 @@ function ebms_webforms_theme_registry_alter(&$theme_registry) {
         _ebms_forums_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
     }
     
+}
+
+/**
+ * Adding breadcrumbs to travel page
+ * 
+ * @param type $vars
+ */
+function ebms_webforms_preprocess_page(&$vars) {
+    $url = $_GET['q'];
+    $alias = url($url);
+    if (strstr($alias, 'travel')) {
+        drupal_set_breadcrumb(array(
+            l('Travel', 'travel'),
+            drupal_get_title(),
+        ));
+    }
 }
