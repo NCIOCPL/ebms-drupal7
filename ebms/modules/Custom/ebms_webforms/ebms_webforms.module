@@ -893,9 +893,21 @@ function ebms_webforms_preprocess_page(&$vars) {
     $url = $_GET['q'];
     $alias = url($url);
     if (strstr($alias, 'travel')) {
+        
+        // Set the breadcrumb
         drupal_set_breadcrumb(array(
             l('Travel', 'travel'),
             drupal_get_title(),
         ));
+        
+        // Set the top nav
+        // This is not the most elegant way... but it works
+        drupal_add_js("(function ($) { $(document).ready(function() {
+                $('#ebms-menu').children().each(function () {
+                    if ($(this).children('a:first').html() == 'Travel') {
+                        $(this).addClass('active');
+                    }
+                });
+            }); }) (jQuery);", 'inline');
     }
 }
