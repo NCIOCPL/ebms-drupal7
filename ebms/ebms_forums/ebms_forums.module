@@ -16,6 +16,7 @@
 function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
     
     if ($form_id == 'forum_node_form') {
+        
 
         // Set the breadcrumb
         if (array_key_exists('node', $form_state) && property_exists($form_state['node'], 'nid'))
@@ -216,6 +217,10 @@ function _ebms_forums_insert_after_first_element(&$a, $element) {
  * @return type Returns a Drupal form to edit or create Forum
  */
 function _ebms_forum_form_page($forumID = NULL) {
+
+    // Set the top nav to forums
+    module_load_include('inc', 'ebms', 'common');
+    Ebms\Menu::$active = 'Forums';
 
     // If there is an argument, then we are editing a forum. If not, we're creating.
     $forum = array();
@@ -816,19 +821,30 @@ function ebms_forums_preprocess_page(&$vars) {
     if (array_key_exists('node', $vars) && $vars['node']) {
         $node = $vars['node'];
         if ($node->type == 'forum') {
+
+            // Set the top nav
+            // This is not the most elegant way... but it works
+            drupal_add_js("(function ($) { $(document).ready(function() {
+                    $('#ebms-menu').children().each(function () {
+                        if ($(this).children('a:first').html() == 'Forums') {
+                            $(this).addClass('active');
+                        }
+                    });
+                }); }) (jQuery);", 'inline');
+
+            // Set the breadcrumb
             if ($node->forum_tid) {
-            $term = taxonomy_term_load($node->forum_tid);
-            drupal_set_breadcrumb(array(
-                l('Forums', 'forum'),
-                l($term->name, 'forum/'.$term->tid),
-                $node->title,
-            ));
-        }
-        else
-            drupal_set_breadcrumb(array(
-               l('Forums', 'forum'),
-                $node->title,
-            ));
+                $term = taxonomy_term_load($node->forum_tid);
+                drupal_set_breadcrumb(array(
+                    l('Forums', 'forum'),
+                    l($term->name, 'forum/' . $term->tid),
+                    $node->title,
+                ));
+            } else
+                drupal_set_breadcrumb(array(
+                    l('Forums', 'forum'),
+                    $node->title,
+                ));
         }
     }
 }

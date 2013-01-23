@@ -15,6 +15,10 @@
  * @ingroup themeable
  */
 
+// Set the top nav to Forums
+module_load_include('inc', 'ebms', 'common');
+Ebms\Menu::$active = 'Forums';
+
 if (!$tid):
     drupal_set_breadcrumb(array(
         'Forums'
