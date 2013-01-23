@@ -293,8 +293,8 @@ class Menu {
     public static function reports() {
         return new Menu(
             'Reports', 'reports', array(
-                new Menu('Citation Management System Reports', 'reports/cite'),
-                new Menu('Not List Reports', 'reports/not-list'),
+                new Menu('Board Management', 'reports/board'),
+                new Menu('Citation Management', 'reports/cite'),
             )
         );
     }
@@ -355,8 +355,9 @@ class Menu {
             case 'admin':
                 // add non-permissioned menu items by default
                 $submenus = array(
-                    new Menu('Assigned Packets', 'review/packets'),
-                    new Menu('Create Packet', 'review/add'),
+                    new Menu('Reviewed Packets', 'review/reviews'),
+                    //new Menu('Create Packet', 'review/add'),
+                    new Menu('View/Edit Packets', 'review/packets'),
                 );
 
                 // include record responses if user has proper access
