@@ -828,6 +828,10 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
         l('Reports', 'reports'),
         drupal_get_title(),
     ));
+    
+    // Set the top navigation to be Reports
+    module_load_include('inc', 'ebms', 'common');
+    Ebms\Menu::$active = 'Reports';
 
     
     $output = '';
