@@ -337,17 +337,10 @@ class Menu {
      */
     public static function calendar($role) {
         $menu = new Menu('Calendar', 'calendar');
-        if (user_access('view all events'))
-            $menu->children = array(
-                new Menu('Month', 'calendar/all'),
-                new Menu('Week', 'calendar/week/all'),
-                new Menu('Day', 'calendar/day/all'),
-        );
-        else
-            $menu->children = array(
-                new Menu('Month', 'calendar'),
-                new Menu('Week', 'calendar/week'),
-                new Menu('Day', 'calendar/day'),
+        $menu->children = array(
+            new Menu('Month', 'calendar'),
+            new Menu('Week', 'calendar/week'),
+            new Menu('Day', 'calendar/day'),
         );
         return $menu;
         // Dropped.
