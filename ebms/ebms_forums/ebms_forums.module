@@ -16,7 +16,20 @@
 function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
 
     if ($form_id == 'forum_node_form') {
+        
+        
+        // Hide vertical tabs if not user 1
+        global $user;
+        if ($user->uid != 1) {
+            
+            // Hide revision information TIR#2426
+            $form['revision_information']['#access'] = FALSE;
+            
+            // Hide publishing options TIR#2325
+            $form['options']['#access'] = FALSE;
+        }
 
+        
         // Turn off the ability to preview
         $form['actions']['preview'] = FALSE;
 
