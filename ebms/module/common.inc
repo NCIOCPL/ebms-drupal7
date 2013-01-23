@@ -430,6 +430,8 @@ class Menu {
      * Build the EBMS menu information for general information pages.
      */
     public static function about() {
+        return new Menu('About', 'about');
+        // Dropped.
         $reg = drupal_convert_to_utf8("\xAE", 'latin1');
         return new Menu(
             'About', 'about', array(
