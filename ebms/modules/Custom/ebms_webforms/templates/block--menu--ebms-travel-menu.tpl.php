@@ -66,9 +66,7 @@ $activeURL = $active['link_path'];
                     $branchActive = url($activeURL) == url($branch['#href']) ? TRUE : FALSE;
                     ?>
                     <li class="parent <?php print $branchActive ? 'active' : 'inactive'; ?>">
-                        <a href="/<?php print $branch['#href']; ?>">
-                            <?php print $branch['#title']; ?>
-                        </a>
+                        <?php print l($branch['#title'], $branch['#href']); ?>
                     </li>
                     <?php
                     // If there is a subnav
@@ -78,9 +76,7 @@ $activeURL = $active['link_path'];
                                 $subnavActive = url($activeURL) == url($subnav['#href']) ? TRUE : FALSE;
                                 ?>
                                 <li class="child <?php print $subnavActive ? 'active' : 'inactive'; ?>">
-                                    <a href="/<?php print $subnav['#href']; ?>">
-                                        <?php print $subnav['#title']; ?>
-                                    </a>
+                                    <?php print l($subnav['#title'], $subnav['#href']); ?>
                                 </li>
                                 <?php
                             endif;
