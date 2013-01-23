@@ -47,6 +47,9 @@
  * @see zen_process_block()
  * 
  */
+
+drupal_add_css(drupal_get_path('module', 'ebms_webforms').'/includes/ebms_webform.css');
+
 $tree = menu_tree('ebms-travel-menu');
 
 $activeTrail = menu_get_active_trail();
