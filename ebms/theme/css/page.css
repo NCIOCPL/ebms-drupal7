@@ -66,3 +66,9 @@
     width: 730px;
     margin-left: 20px;
 }
+
+/* This was added because the page.tpl removes the natural title. In the event
+that someone would like to hand set with <h2>, the title is too far down the page. */
+.node-title {
+    margin-top: -20px;
+}
