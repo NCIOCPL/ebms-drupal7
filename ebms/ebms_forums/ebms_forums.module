@@ -14,9 +14,20 @@
  * of the function that generated the form.
  */
 function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
-
+    
     if ($form_id == 'forum_node_form') {
-        
+
+        // Set the breadcrumb
+        if (array_key_exists('node', $form_state) && property_exists($form_state['node'], 'nid'))
+            drupal_set_breadcrumb(array(
+                l('Forums', 'forum'),
+                'Edit ' . $form_state['node']->title,
+            ));
+        else
+            drupal_set_breadcrumb(array(
+                l('Forums', 'forum'),
+                'Add Forum'
+            ));
         
         // Hide vertical tabs if not user 1
         global $user;
@@ -226,6 +237,18 @@ function _ebms_forum_form_page($forumID = NULL) {
  */
 function _ebms_forum_form($form, &$form_state, $edit = array()) {
 
+    // Set the breadcrumb
+    if ($edit)
+        drupal_set_breadcrumb ( array(
+            l('Forums', 'forum'),
+            'Edit '.$edit->name
+        ));
+    else
+        drupal_set_breadcrumb ( array(
+            l('Forums', 'forum'),
+            'Create Forum',
+        ));
+    
     // Determine if we are editing an existing Forum object or creating a new one
     if (!isset($form_state['term'])) {
         $term = is_object($edit) ? $edit : (object) $edit;
@@ -788,6 +811,25 @@ function ebms_forums_preprocess_page(&$vars) {
             && in_array('page__forum', $vars['theme_hook_suggestions'])) {
         if (array_key_exists('feed_icons', $vars))
             $vars['feed_icons'] = '';
+    }
+    
+    if (array_key_exists('node', $vars) && $vars['node']) {
+        $node = $vars['node'];
+        if ($node->type == 'forum') {
+            if ($node->forum_tid) {
+            $term = taxonomy_term_load($node->forum_tid);
+            drupal_set_breadcrumb(array(
+                l('Forums', 'forum'),
+                l($term->name, 'forum/'.$term->tid),
+                $node->title,
+            ));
+        }
+        else
+            drupal_set_breadcrumb(array(
+               l('Forums', 'forum'),
+                $node->title,
+            ));
+        }
     }
 }
 
