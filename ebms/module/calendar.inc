@@ -90,33 +90,56 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
     $output[] = '</div>';
     $output[] = '</div>';
 
+    // build any actions available to the user
+    $actions = array();
+
+    if (user_access('create ebms_event content')) {
+        // create event on shown day if possible
+        $query = array();
+        if ($granularity == '/day')
+            $query['query']['date'] = $date;
+
+        $actions[] = '<li>';
+        $actions[] = l('Create Event', "node/add/ebms-event", $query);
+        $actions[] = '</li>';
+    }
+
     if (user_access('view all events')) {
+        // preserve current 'all' state if possible
+        $title = 'Show All Events';
+        $suffix = '/all';
+
+        if ($all) {
+            $title = 'Show Own Events';
+            $suffix = '';
+        }
+
+        if ($date) {
+            $suffix .= "/$date";
+        }
+
+        $actions[] = '<li>';
+        $actions[] = l($title, "calendar$granularity$suffix");
+        $actions[] = '</li>';
+    }
+    
+    if ($actions) {
         // build an action box
         $output[] = '<div class="nav-block">';
 
         $output[] = '<h3>Calendar Actions</h3>';
 
         $output[] = '<div class="actions">';
-        $output[] = '<ul><li>';
+        $output[] = '<ul>';
 
-        $suffix = '';
-        if ($date) {
-            $suffix = "/$date";
-        }
+        $output = array_merge($output, $actions);
 
-        if ($all) {
-            $output[] = l('Show Own Events', "calendar$granularity$suffix");
-        } else {
-            $output[] = l('Show All Events', "calendar$granularity/all$suffix");
-        }
-        $output[] = '</li></ul>';
+        $output[] = '</ul>';
         $output[] = '</div>';
 
         $output[] = "<div class='footer'></div>";
         $output[] = '</div>';
     }
-
-    $imagesDir = Ebms\IMAGES_DIR;
 
     // retrieve upcoming events view
     $view = views_get_view('event_calendar');
@@ -126,70 +149,6 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
 
         $output[] = $display;
     }
-
-
-    /* $output[] = '<div id="upcoming-events" class="more-actions">';
-      $output[] = '<div class="item-list">';
-      $output[] = '<h3>Upcoming Events</h3>';
-      $output[] = '<ul class="ebms_left_nav_block">';
-
-      $groupedEvents = _calendar_get_upcoming_events();
-      $first = true;
-      foreach ($groupedEvents as $date => $events) {
-      if ($first)
-      $first = false;
-      else
-      $output[] = "<li class='last'><hr></li>";
-      $output[] = "<li class='calendar-date first'>$date</li>";
-      foreach ($events as $event) {
-      $path = "node/$event->nid";
-
-      $event_date = field_get_items('node', $event, 'field_datespan');
-      if ($event_date === false)
-      continue;
-
-      $start = $event_date[0]['value'];
-      $end = $event_date[0]['value2'];
-
-      // render out separate pieces of the dates
-      $startTime = ($start % 3600) ? date('g:i', $start) : date('g',
-      $start);
-      $endTime = ($end % 3600) ? date('g:i', $end) : date('g', $end);
-
-      $startMeridiem = date('A', $end);
-      $endMeridiem = date('A', $end);
-
-      $endTime .= $endMeridiem;
-      if ($startMeridiem != $endMeridiem) {
-      $startTime .= $startMeridiem;
-      }
-
-      $timeLink = "$startTime - $endTime E.T.";
-      $output[] = "<li class='last'>$timeLink</li>";
-
-      $titleLink = l($event->title, $path);
-      $output[] = "<li class='first last'>$titleLink</li>";
-
-      $event_type = field_get_items('node', $event, 'field_event_type');
-      if ($event_type === false)
-      continue;
-
-      $type = $event_type[0]['value'];
-      $typeLabel = 'In Person';
-      if ($type != 'in_person') {
-      $typeLabel = 'WebEx/Phone Conf.';
-      }
-
-      $output[] = "<li class='first last'>$typeLabel</li>";
-      }
-      }
-
-
-
-      $output[] = '</ul>';
-      $output[] = '</div>';
-      $output[] = "<img class='ebms-left-nav-block-bottom 'alt='' src='$imagesDir/left-nav-box-bottom.png'>";
-      $output[] = '</div>'; */
 
     return implode('', $output);
 }
@@ -375,7 +334,7 @@ function calendar_node_form_alter(&$form, &$form_state) {
             'Create Event',
         )
     );
-    
+
     $params = drupal_get_query_parameters();
 
     if (isset($params['date'])) {
@@ -392,7 +351,7 @@ function calendar_node_form_alter(&$form, &$form_state) {
 
     $form['#validate'][] = 'ebms_calendar_event_validate';
     $form['actions']['submit']['#submit'][] = 'ebms_redirect_handler';
-    
+
     $form['revision_information']['#access'] = false;
     $form['author']['#weight'] = 95;
     $form['options']['#weight'] = 90;
