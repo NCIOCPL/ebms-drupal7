@@ -874,8 +874,8 @@ body.front #next-meeting span { font-weight: bold; }
 #ebms-event-node-form .form-textarea-wrapper {
     margin-left: 0;
 }
-
-#ebms-event-node-form .filter-wrapper{
+/*Added a parent class to make this more specific, .filter-wrapper seems very general*/
+.text-format-wrapper .filter-wrapper{
     display: none;
 }
 
