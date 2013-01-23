@@ -16,6 +16,9 @@
  */
 
 if (!$tid):
+    drupal_set_breadcrumb(array(
+        'Forums'
+    ));
     $forums = _ebms_forums_for_global_user();
     if (count($forums) > 0):
         $forum = array_pop($forums);
@@ -28,12 +31,19 @@ if (!$tid):
     You do not belong to any forums.</div>
     <?php endif;
 else:
+    
     $forum = taxonomy_term_load($tid);
+    drupal_set_breadcrumb(array(
+        l('Forums', 'forum'),
+        $forum->name,
+    ));
     $administer = user_access('administer ebms forums');
     $archived = FALSE;
 $archivedField = field_get_items('taxonomy_term', $forum, 'field_archived');
     if ($archivedField)
         $archived = $archivedField[0]['value'];
+    
+
 ?>
 
 <?php print _ebms_forums_menu_html($tid); ?>
