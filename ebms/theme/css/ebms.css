@@ -61,6 +61,7 @@ h3.expanded a span, a.expanded span, span.expanded { color: #a90101; }
 .float-left { float: left; }
 .float-right { float: right; }
 .float-clear { clear: both; }
+.inline { display: inline; }
 /*
  * This next bit is a trick to avoid problems caused by the fact that
  * CSS collapses the height of a block which contains only floated

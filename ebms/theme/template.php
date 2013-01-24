@@ -271,8 +271,21 @@ function ebmstheme_form_element($variables) {
 /* } */
 
 function ebmstheme_preprocess_node(&$variables) {
-    if (isset($variables['node']) &&
-        $variables['node']->type == 'ebms_event') {
+    $node = $variables['node'];
+    
+    // save if the current viewer is the editor of the event
+    $editor = user_access("edit any $node->type content");
+    if ($editor) {
+        $themepath = drupal_get_path('theme', 'ebmstheme');
+        $variables['editIconPath'] =
+            url("$themepath/images/EBMS_Edit_Icon_Inactive.png");
+
+        $variables['editNodePath'] =
+            url("node/$node->nid/edit");
+    }
+    $variables['editor'] = $editor;
+    
+    if ($node->type == 'ebms_event') {
         preprocess_ebms_event($variables);
     }
 }
@@ -283,18 +296,8 @@ function preprocess_ebms_event(&$variables) {
     //retrieve the node from the variables
     $node = $variables['node'];
     
-    
     // save if the current viewer is the editor of the event
-    $editor = user_access('edit any ebms_event content');
-    if ($editor) {
-        $themepath = drupal_get_path('theme', 'ebmstheme');
-        $variables['editIconPath'] =
-            url("$themepath/images/EBMS_Edit_Icon_Inactive.png");
-
-        $variables['editNodePath'] =
-            url("node/$node->nid/edit");
-    }
-    $variables['editor'] = $editor;
+    $editor = $variables['editor'];
 
     // retrieve the needed values for the template
     $eventDate = field_get_items('node', $node, 'field_datespan');
@@ -405,7 +408,7 @@ function preprocess_ebms_event(&$variables) {
     $variables['boardName'] = null;
     if ($board) {
         $values = array();
-        foreach ($board as $key => $data) {
+        foreach ($board as $data) {
             $value = field_view_value('node', $node, 'field_boards', $data);
             $values[] = render($value);
         }
