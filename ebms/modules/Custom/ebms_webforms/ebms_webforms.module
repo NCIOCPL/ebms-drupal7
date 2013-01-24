@@ -774,6 +774,7 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
     }
 
     // Get all the submissions for the node.
+    $rows = array();
     $header = theme('webform_results_table_header', array('node' => $node));
     unset($header[0]); // Submission Number
     unset($header[3]); // IP Address
