@@ -34,8 +34,6 @@ $GLOBALS['ebms_node_fields'] = array(
                 'hour' => 'hour',
                 'minute' => 'minute',
             ),
-        ),
-        'settings' => array(
             'default_value' => 'now',
             'default_value_code' => '',
             'default_value2' => 'strtotime',
