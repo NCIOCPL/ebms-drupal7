@@ -876,7 +876,7 @@ body.front #next-meeting span { font-weight: bold; }
 
 #ebms-event-node-form .form-item > label,
 #ebms-event-node-form .form-wrapper > legend {
-    margin-top: 20px;
+    margin-top: 0;
 }
 
 #ebms-event-node-form .form-textarea-wrapper {
