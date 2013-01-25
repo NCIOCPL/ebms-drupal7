@@ -10,13 +10,26 @@ switch ($node->type) {
     case 'ebms_event':
         break;
     default:
-        print theme_node_preview($node);
+        $elements = node_view($node);
+
+        $preview = array(
+            '#type' => 'fieldset',
+            '#title' => 'Preview',
+            'elements' => $elements,
+            '#attributes' => array(
+                'class' => array(
+                    'form-item',
+                ),
+            ),
+        );
+
+        print drupal_render($preview);
         return;
 }
 
 // run through the preprocessor to generate the displayed values
 $vars = array('node' => $node);
-preprocess_ebms_event($vars);
+ebmstheme_preprocess_node($vars);
 ?>
 <div id='calendar-enclosure' class='preview'>
 

@@ -433,7 +433,7 @@ input:-webkit-autofill {
     color: #2d2c28;
 }
 .form-item > label, .form-textarea-wrapper, .form-wrapper > legend > .fieldset-legend {
-    margin-left: 12px; 
+    margin: 0 12px; 
 }
 .form-item .form-file { margin-left: 11px; }
 .form-item > label,
