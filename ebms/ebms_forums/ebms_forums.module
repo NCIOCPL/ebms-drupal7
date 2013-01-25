@@ -487,12 +487,11 @@ function _ebms_forums_administer_forums_callback($forumID = NULL) {
 
     // Edit Unarchived(3) They have the Administer EBMS Forums Permission and have permission to view that forum.
     $viewAccess = _ebms_forums_view_forum_access_callback($forum);
-    if ($viewAccess && $administerForums && !$archived)
+    if ($viewAccess && $administerForums)
         return TRUE;
-    elseif ($viewAccess && !$administerForums) // If you don't have the permission, even if you're in the form, you can't access this.
-        return FALSE;
-    elseif ($viewAccess && $administerForums && $archived) // If it's archived, only Administer EBMS people can edit it
-        return FALSE;
+    
+    // if no view access or Administer EBMS Forums permission, deny access.
+    return false;
 }
 
 function ebms_forums_menu_alter(&$items) {
