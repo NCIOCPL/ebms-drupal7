@@ -288,6 +288,8 @@ function ebmstheme_preprocess_node(&$variables) {
     }
     $variables['editor'] = $editor;
     
+    $variables['status'] = $node->status;
+    
     if ($node->type == 'ebms_event') {
         preprocess_ebms_event($variables);
     }

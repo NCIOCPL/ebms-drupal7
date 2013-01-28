@@ -36,6 +36,10 @@
         <?php
         print $title;
         ?>
+        <?php
+        if ($status == 0)
+            print "<i>(Unpublished)</i>";
+        ?>
     </h2>
     <div class="content"<?php print $content_attributes; ?>>
         <div class='indent trailing subheader'> <?php print $eventDate; ?> </div>

@@ -851,6 +851,16 @@ body.front #calendar td.today {
     color: #A90101;
 }
 
+.calendar-calendar .unpublished *{
+    font-style: italic;
+    color: #696559;
+    opacity: 75%;
+}
+
+.calendar-calendar .unpublished a:hover{
+    color: #A90101;
+}
+
 /* Special handling for Next Meeting block */
 body.front #next-meeting li { line-height: 24px; }
 body.front #next-meeting span { font-weight: bold; }
