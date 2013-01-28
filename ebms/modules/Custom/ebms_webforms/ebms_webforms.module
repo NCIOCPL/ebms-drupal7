@@ -896,10 +896,15 @@ function ebms_webforms_preprocess_page(&$vars) {
     if (strstr($alias, 'travel')) {
         
         // Set the breadcrumb
-        drupal_set_breadcrumb(array(
-            l('Travel', 'travel'),
-            drupal_get_title(),
-        ));
+        if ($alias == '/travel') {
+            // TIR#2333 - Travel landing page should not have breadcrumb
+            drupal_set_breadcrumb(l('Travel', 'travel'));
+        } else {
+            drupal_set_breadcrumb(array(
+                l('Travel', 'travel'),
+                drupal_get_title(),
+            ));
+        }
         
         // Set the top nav
         // This is not the most elegant way... but it works
