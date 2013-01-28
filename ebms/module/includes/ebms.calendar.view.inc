@@ -60,6 +60,14 @@ $handler->display->display_options['fields']['title']['alter']['word_boundary'] 
 $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
 $handler->display->display_options['fields']['title']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['title']['hide_alter_empty'] = FALSE;
+/* Field: Content: Published */
+$handler->display->display_options['fields']['status']['id'] = 'status';
+$handler->display->display_options['fields']['status']['table'] = 'node';
+$handler->display->display_options['fields']['status']['field'] = 'status';
+$handler->display->display_options['fields']['status']['label'] = '';
+$handler->display->display_options['fields']['status']['exclude'] = TRUE;
+$handler->display->display_options['fields']['status']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['status']['not'] = 0;
 /* Sort criterion: Content: Event Date -  start date (field_datespan) */
 $handler->display->display_options['sorts']['field_datespan_value']['id'] = 'field_datespan_value';
 $handler->display->display_options['sorts']['field_datespan_value']['table'] = 'field_data_field_datespan';
