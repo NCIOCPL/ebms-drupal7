@@ -362,9 +362,6 @@ function _ebms_forum_form($form, &$form_state, $edit = array()) {
     // Change the action of submit
     $form['#submit'] = array('_ebms_forum_form_submit');
 
-    // This kind of works... just leave it here.
-    $form_state['redirect'] = 'forum';
-
     return $form;
 }
 
