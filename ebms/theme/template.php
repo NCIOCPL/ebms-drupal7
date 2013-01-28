@@ -148,7 +148,10 @@ function ebmstheme_breadcrumb($variables) {
     if (!empty($breadcrumb)) {
         $output[] = '<h2 class="element-invisible">You are here</h2>';
         $output[] = '<div class="breadcrumb">';
-        $output[] = implode(' > ', $breadcrumb);
+        if(is_array($breadcrumb))
+            $output[] = implode(' > ', $breadcrumb);
+        else
+            $output[] = $breadcrumb;
         $output[] = '</div>';
     }
     return implode($output);
