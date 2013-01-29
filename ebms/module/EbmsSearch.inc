@@ -954,7 +954,17 @@ logw("Processing not list");
                 $this->qry->orderBy('art.jrnl_title');
                 break;
             case 'Author':
-                // XXX TO DO
+                // Use first author name or collective name
+                $this->qry->leftJoin('ebms_article_author_cite',
+                    'sort_auth_cite',
+                    'art.article_id = sort_auth_cite.article_id
+                                  AND sort_auth_cite.cite_order = 1');
+                $this->qry->leftJoin('ebms_article_author', 'sort_auth',
+                    'sort_auth.author_id = sort_auth_cite.author_id');
+                $this->qry->orderBy('sort_auth.last_name');
+                $this->qry->orderBy('sort_auth.initials');
+                $this->qry->orderBy('sort_auth.collective_name');
+                break;
             case 'Publication Date':
                 // XXX TO DO
             case 'CMS_ID':
