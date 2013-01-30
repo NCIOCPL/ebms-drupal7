@@ -425,12 +425,14 @@ class EbmsHomePage {
 
         // To find unseen reviews, we check:
         //    1. is the review for a packet this user created?
-        //    2. was the review posted since the last time the board
+        //    2. Was the review posted since the last time the board
         //       manager looked at the packet?
+        //    3. Is the packet still active?
         $query = db_select('ebms_article_review', 'r');
         $query->fields('r', array('review_id'));
         $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
         $query->condition('p.created_by', $this->user->uid);
+        $query->condition('p.active_status', 'A');
         $query->where('(p.last_seen IS NULL OR r.when_posted > p.last_seen)');
         $query->distinct();
         $query = $query->countQuery();
