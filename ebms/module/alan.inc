@@ -442,7 +442,7 @@ function pdq_ebms_printpkt_test() {
     else if (!is_null($memberId))
         $jobType = 'package';
     else if (!is_null($boardId))
-        $job_type = 'board';
+        $jobType = 'board';
     else if (is_null($oldJobId))
         return("Must specify board, board member, packet ID, or old job ID");
 
@@ -1149,7 +1149,7 @@ function ebms_testapi_printouts_form($form) {
         '#size' => 8,
         '#title' => 'Job ID',
         '#description' => 'Enter a job number to download the output for ' .
-            'job."
+            'the job."
         '#required' => false
     );
 
