@@ -81,6 +81,9 @@ function addHooks() {
             // this is set, uncheck the other checkbox
             sib_input.attr("checked", "");
         }
+
+        // prevent turning off of a checked button.
+        jQuery(this).attr('checked', 'checked');
     });
             
     // show/hide the response reject fieldset when the response select is
@@ -103,4 +106,43 @@ function addHooks() {
     if(jQuery('.js-response-select').val() == 1){
         jQuery('.js-response-reject').show('normal');
     }
+    
+    // bind reposition modal to resize
+    jQuery(window).resize(repositionModal);
+    jQuery(window).scroll(repositionModal);
+}
+
+/**
+ * Function to reposition the top of a CTools modal dialog.  Included only to
+ * duplicate the functionality of a few in-progress patches not yet applied
+ * to the CTools release 7.x-1.2.  An example issue thread can be found at
+ * http://drupal.org/node/1691816#comment-6381148
+ * 
+ * Can most likely be removed after the next release of CTools.  (7.x-1.3?)
+ */
+function repositionModal(){
+    // test for the existence of modal content
+    var modalContent = jQuery('#modalContent');
+    if(modalContent.length == 0)
+        return;
+    
+    // position code lifted from http://www.quirksmode.org/viewport/compatibility.html
+    if (self.pageYOffset) { // all except Explorer
+    var wt = self.pageYOffset;
+    } else if (document.documentElement && document.documentElement.scrollTop) { // Explorer 6 Strict
+      var wt = document.documentElement.scrollTop;
+    } else if (document.body) { // all other Explorers
+      var wt = document.body.scrollTop;
+    }
+
+    // Get our dimensions
+
+    // Get the docHeight and (ugly hack) add 50 pixels to make sure we dont have a *visible* border below our div
+    var docHeight = jQuery(document).height() + 50;
+    var winHeight = jQuery(window).height();
+    if( docHeight < winHeight ) docHeight = winHeight;
+
+    // Create our content div, get the dimensions, and hide it
+    var mdcTop = wt + ( winHeight / 2 ) - (  modalContent.outerHeight() / 2);
+    modalContent.css({top: mdcTop + 'px'});
 }

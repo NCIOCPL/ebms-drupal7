@@ -377,6 +377,14 @@ function ebms_menu() {
                     'access arguments' => array('administer'),
                     'type' => MENU_CALLBACK,
             ),
+            // PRINTING PACKETS
+            'print-packets' => array(
+                    'page callback' => 'pdq_ebms_print_packets',
+                    'page_arguments' => array(1),
+                    'file' => 'print.inc',
+                    'access arguments' => array('administer'),
+                    'type' => MENU_CALLBACK,
+            ),
             // AD-HOC GROUPS
             'groups' => array(
                     'page callback' => 'pdq_ebms_groups',
@@ -957,6 +965,11 @@ function ebms_init() {
         $user->ebms_ad_hoc_groups = array();
         foreach ($result as $record)
                 $user->ebms_ad_hoc_groups[] = $record->group_id;
+        
+        // populate with the same values as any loaded user
+        // (should ultimately only perform this to unify the fields
+        // between the global user and any other loaded user)
+        ebms_user_load(array($user->uid => $user));
     }
 }
 
@@ -976,6 +989,16 @@ function ebms_user_load($users) {
         $boards = array();
         foreach ($results as $result) $boards[] = $result->board_id;
         $users[$uid]->boards = $boards;
+        
+        $topics = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id'))
+            ->condition('t.nci_reviewer', $uid)
+            ->condition('t.active_status', 'A')
+            ->execute()
+            ->fetchCol();
+        //$topics = array();
+        //foreach ($tresults as $result) $topics[] = $result->board_id;
+        $users[$uid]->topics = $topics;
 
         $sgresults = db_select('ebms_subgroup_member', 'm')
             ->fields('m', array('sg_id'))

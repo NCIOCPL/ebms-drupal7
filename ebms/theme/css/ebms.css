@@ -5,7 +5,7 @@
     font-family: Arial, Verdana, sans-serif;
     color: #2d2c28;
     font-weight: normal;
-    font-size: 16px;
+    font-size: 13px;
 }
 body { margin: 0; }
 img { border: none; }
@@ -48,11 +48,6 @@ h3 {
     margin-top: 10px; margin-bottom: 10px;
 }
 h3 a, a.expanded { color: #2d2c28; }
-/*
-h3.expanded, h3.expanded a { color: #a90101; }
-h3.expanded a span { color: #2d2c28; }
-h3.expanded a:hover span { color: #a90101; }
-*/
 h3.expanded a span, a.expanded span, span.expanded { color: #a90101; }
 
 .pad-top-10 { padding-top: 10px; }
@@ -413,13 +408,6 @@ select { border-radius: 7px; background: white; }
     color: #2d2c28;
 }
 
-/* Let's simplify this, and suppress Chrome's extra border.
-input:focus, input:hover, select:focus, select:hover,
-.form-type-textarea textarea:focus, .form-type-textarea textarea:hover,
-.form-type-textfield input:focus, .form-type-textfield input:hover,
-.form-type-password input:focus, .form-type-password input:hover
-{ border-color: #a90101; }
-*/
 input:hover, textarea:hover,
 input:focus, textarea:focus { border: #a90101 1px solid; outline: none; }
 
@@ -440,7 +428,6 @@ input:-webkit-autofill {
 .form-wrapper > legend > .fieldset-legend {
     margin-bottom: 2px; color: inherit; margin-top: 35px;
     text-transform: uppercase; padding-top: 0; padding-bottom: 0;
-    font-size: 16px;
 }
 
 .form-wrapper > legend {
@@ -993,11 +980,6 @@ body.front #next-meeting span { font-weight: bold; }
     margin-right: 0px
 }
 
-/*#reviewer-post-button a {
-    border: 1px solid #696559; border-radius: 7px; padding: 10px;
-    text-transform: uppercase;
-}
-#reviewer-post-button a:hover { border: 1px solid #a90101; }*/
 #post-document { margin-bottom: 15px; }
 #member-packet #post-document { padding-right: 33px; }
 
@@ -1209,15 +1191,8 @@ h2.tight-below { margin-bottom: 0px; }
 #summaries h2 { font-size: 16px; }
 #summaries h2 a { font-weight: bold; }
 #summaries #subpage-menu-block h3 { margin-top: 5px; }
-/*
-#summaries #subpage-menu-block .float-right { padding-top: 10px; }
-*/
 #summaries #supporting-docs-block.expanded { margin-top: 30px; }
 #summaries #subpage-menu-block.expanded { margin-bottom: 30px; }
-/*
-#summaries ul { list-style-type: none; }
-#summaries li { margin-left: 12px; margin-bottom: 12px; }
-*/
 
 #new-summary-page-form { display: none; }
 #new-summary-page-form select,
@@ -1252,14 +1227,12 @@ h2.tight-below { margin-bottom: 0px; }
 }
 .doc-select-popup #edit-submit { margin: 10px 0; }
 
-/* .doc-select-popup .form-submit { margin: 12px 0; } */
 table.docs-table .col-1 { width: 285px; }
 table.docs-table .col-2 { width: 335px; }
 table.docs-table .col-3 { width: 150px; }
 table.docs-table .col-4 { width: 80px; }
 table.docs-table.admin .col-1 { width: 250px; }
 table.docs-table.admin .col-2 { width: 300px; }
-/* table.docs-table.admin td { text-align: left; } */
 table.docs-table.admin td.col-5 { text-align: center; }
 
 #new-cg-summary-form { display: none; }
@@ -1303,33 +1276,6 @@ table.docs-table.admin td.col-5 { text-align: center; }
 }
 #post-doc-form #edit-submit { margin-left: 0; }
 #post-doc-form #edit-desc { padding-left: 12px; }
-/*
-#pdq-ebms-edit-packet-form #edit-name { margin-left: 12px; }
-#pdq-ebms-edit-packet-form .form-item-all-reviewers input {
-    margin-left: 12px;
-}
-#pdq-ebms-edit-packet-form:not(#foo) .form-item-all-reviewers input {
-    display: none;
-}
-#pdq-ebms-edit-packet-form:not(#foo) .form-item-all-reviewers label {
-    background: none;
-    float: none;
-    padding: 0 0 0 12px;
-}
-#pdq-ebms-edit-packet-form .form-item-all-reviewers label:hover {
-    color: #a90101;
-}
-#pdq-ebms-edit-packet-form:not(#foo) .all-reviewers-visible { display: block; }
-#pdq-ebms-edit-packet-form:not(#foo) .all-reviewers-hidden { display: none; }
-
-form.confirmation a#edit-cancel {
-    border: 1px solid #696559; border-radius: 7px; text-transform: uppercase;
-    padding: 14px; margin-left: 30px;
-}
-form.confirmation a#edit-cancel:hover { border: 1px solid #a90101; }
-#confirm-packet-delete { display: none; }
-
-*/
 
 /* AD-HOC GROUPS */
 #groups-table { margin-top: 20px; }
@@ -1350,11 +1296,7 @@ form.confirmation a#edit-cancel:hover { border: 1px solid #a90101; }
 #groups-table ul {
     list-style-type: none; margin-top: 15px; margin-bottom: 25px;
 }
-#groups-table div.item-list ul li {
-    margin-left: 0; margin-bottom: 0; xheight: 16px;
-}
-/* #group-form #edit-members { height: 6em; } */
-/* #group-form #member-instructions { display: none; } */
+#groups-table div.item-list ul li { margin-left: 0; margin-bottom: 0; }
 #group-form #edit-name, #group-form #edit-members { width: 350px; }
 #group-form #member-instructions {
     font-size: 12px; font-style: italic; padding-left: 0;
@@ -1383,11 +1325,6 @@ div.ctools-modal-content a.close img {
     margin-left: 10px;
 }
 
-#modalBackdrop{
-    background-color: #696559 !important;
-    opacity: 0.8 !important;
-}
-
 div.ctools-modal-content .form-item label {
     float: none;
 }
@@ -1395,4 +1332,206 @@ div.ctools-modal-content .form-item label {
 /* VIEWS */
 .view-display-id-block_next .views-field-field-datespan-1 .date-display-single {
     font-weight: bold;
+}
+
+/* CITATION QUEUE */
+#citation-form-div .ajax-progress{
+    display: block;
+}
+
+#citation-buttons-div {
+    float: left;
+    margin-bottom: 10px;
+}
+
+#citation-buttons-div .citation-input-div{
+    width: 415px;
+}
+
+
+#citation-buttons-div .citation-input-div select{
+    width: 150px;
+}
+
+#citation-buttons-div input{
+    padding: 7px 10px;
+}
+
+#citation-buttons-div > input,
+#citation-buttons-div > fieldset,
+.page-citations form #citation-buttons-div .form-item.form-type-checkbox label,
+.page-citations form #citation-buttons-div fieldset legend{
+    margin: 0px 5px;
+}
+
+#citation-buttons-div .citation-input-div>.form-item,
+#citation-buttons-div .citation-input-div>fieldset {
+    margin: 15px 0 0 0;
+    height: 25px;
+}
+
+#citation-buttons-div .citation-input-div>.form-item>*,
+#citation-buttons-div .citation-input-div>fieldset>*{
+    width: 200px;
+    margin: 0 10px 0 0;
+    padding: 0;
+}
+
+.page-citations #citation-buttons-div .citation-input-div>.form-item>label,
+.page-citations #citation-buttons-div .citation-input-div>fieldset>legend{
+    clear: none;
+    width: 190px;
+    float:right;
+}
+
+.citation-input-div .option{
+    font-weight: bold;
+}
+
+.citation-input-div .form-type-checkboxes .option,
+.citation-input-div .form-type-radios .option{
+    font-weight: normal;
+}
+
+#citation-buttons-div > input,
+#citation-buttons-div > fieldset{
+    float: left;
+}
+
+#citation-buttons-div .form-checkboxes:not(#foo){
+    margin: 0;
+}
+
+#citation-buttons-div .form-checkboxes .form-type-checkbox,
+#citation-buttons-div .form-radios .form-type-radio{
+    display: inline-block;
+    margin: 0;
+    width: 90px;
+}
+
+#citation-buttons-div .form-checkboxes .form-type-checkbox.form-item-format-abstract {
+    width: 100px;
+}
+
+.citation-header {
+    text-transform: uppercase;
+}
+
+.citation-row,
+.citation-header {
+    display: table-row;
+}
+
+#citation-results-table th input.sortable,
+.citation-header input{
+    margin: 0;
+    border: none;
+    border-radius: 0px;
+    font-size: inherit;
+}
+
+#citation-results-table th input.sortable{
+    padding: 0;
+}
+
+.citation-header .sortable input:hover{
+    border: none;
+    color: #A90101;
+}
+
+.citation-cell {
+    display: table-cell;
+    padding: 0 10px 0 5px;
+}
+
+.citation-row > .citation-cell {
+    padding-top: 20px;
+}
+
+.borderless input.sortable,
+.borderless{
+    border: none;
+}
+
+
+.citation-cell.left-column{
+    padding-left: 0px;
+}
+
+.citation-cell.brief-citation{
+    width: 35%;
+}
+
+.citation-cell.brief-citation div{
+    margin-bottom: 10px;
+}
+
+.citation-cell.brief-title{
+    min-width: 175px;
+}
+
+.citation-cell.id{
+    min-width: 100px;
+}
+
+.citation-cell.not-check{
+    min-width: 75px;
+}
+
+.citation-cell.not-check > .form-item{
+    margin: auto;
+    top: 10px;
+    padding-left: 10px;
+}
+
+.article-citation div{
+    margin-bottom: 5px;
+}
+
+/* citation-review specific */
+#citation-results-table td .form-item{
+    margin: 0;
+}
+
+td.brief-citation{
+    min-width: 325px;
+}
+
+.citation-cell.brief-citation{
+    width: 325px;
+}
+
+.citation-cell.brief-citation div{
+    margin-bottom: 10px;
+}
+
+.citation-cell.summary-topic-check{
+    width: 70px;
+    text-align: center;
+}
+
+.citation-cell.summary-topic-name{
+    width: 320px;
+}
+
+.citation-cell input{
+    margin: 0 0 5px;
+    padding: 0px;
+}
+
+.citation-cell .topic-checks{
+    margin-top: 10px;
+    margin-left: 30px;
+}
+
+.citation-cell .topic-checks .form-type-checkbox{
+    margin-left: 20px;
+}
+
+.citation-cell{
+    border-left: 1px solid #696559;
+}
+
+.citation-cell.left-column{
+    border: none;
 }

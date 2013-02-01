@@ -1181,10 +1181,9 @@ function setArticleState($articleId, $textId, $topicId, $boardId=null,
     // If not found, this is a new article topic combo
     // Caller must give us a cycle ID
     if (!$cycleId && !$storedCycleId) {
-        $cycleId = Util::get_default_cycle();
-        //throw new \Exception(
-        //  "setArticleState: Attempt to create new topic for article=".
-        //  "$articleId, topic=$topicId, without identifying a review cycle");
+        throw new \Exception(
+          "setArticleState: Attempt to create new topic for article=".
+           "$articleId, topic=$topicId, without identifying a review cycle");
     }
     else if ($cycleId && $storedCycleId) {
         // Two users may have both set a new topic with one having
@@ -2662,31 +2661,22 @@ function getBoardDecisionMembers($article_state_id) {
  * @return mixed $result   An array of rows matching the given filters.
  */
 function getArticleReviewCycle($article_id, $topic_id = null){
-    // get appropriate 'ready for initial review' rows
-    $state_query = db_select('ebms_article_state_type', 't')
-        ->condition('t.state_text_id', EbmsArticleStates::ReadyInitReview)
-        ->fields('t', array('state_id'));
+    // get all rows matching article (and maybe topic) id
+    $cycle_query = db_select('ebms_article_topic', 't')
+        ->condition('t.article_id', $article_id);
+    
+    if($topic_id) {
+        $cycle_query->condition('t.topic_id', $topic_id);
+    }
 
-    $article_query = db_select('ebms_article_state', 'a')
-        ->condition('a.active_status', 'A')
-        ->condition('a.article_id', $article_id)
-        ->fields('a');
-
-    if ($topic_id != null)
-        $article_query->condition ('a.topic_id', $topic_id);
-
-    $ready_query = db_select($article_query, 's');
-    $ready_query->join($state_query, 't', 's.state_id = t.state_id');
-    $ready_query->fields('s');
-
-    $cycle_query = db_select($ready_query, 'r');
-    $cycle_query->join('ebms_cycle', 'c',
-        'c.start_date IN (SELECT MIN(c1.start_date) FROM ebms_cycle c1 WHERE c1.start_date > r.status_dt)');
-    $cycle_query->addExpression('DISTINCT c.cycle_name', 'cycle_name');
+    $cycle_query->join('ebms_cycle', 'c', 'c.cycle_id = t.cycle_id');
+    $cycle_query->fields('c', array('cycle_name'))
+        ->orderBy('c.start_date')
+        ->distinct();
 
     return $cycle_query
         ->execute()
-        ->fetchAll();
+        ->fetchCol();
 }
 
 /**

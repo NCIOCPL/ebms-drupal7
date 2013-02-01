@@ -94,6 +94,7 @@ class EbmsSearch {
      *      selected.
      */
     public function run() {
+        drupal_add_js(Ebms\JS_DIR . '/search.js', 'file');
         $search_id = null;
         if ($this->search_id) {
             if (substr($this->search_id, 0, 1) == 'R')
@@ -158,7 +159,7 @@ class EbmsSearch {
         }
         if (!$pager || $per_page == 'View All')
             $per_page = $count;
-        if ($count >= $per_page)
+        if ($count > $per_page)
             $query = $query->extend('PagerDefault')->limit($per_page);
 
         // Execute the query and build up the rows for the results set.
@@ -276,10 +277,6 @@ class EbmsSearch {
             foreach ($doc->MedlineCitation->Article->AuthorList->Author
                 as $author)
             {
-                if (sizeof($authors) == 8) {
-                    $authors[] = 'et al.';
-                    break;
-                }
                 $name = $author->CollectiveName;
                 if (!$name) {
                     $name = $author->LastName;
@@ -364,8 +361,6 @@ class EbmsSearchSpec {
     public
         $boards = array(),
         $topics = array(),
-        $advanced_options = array(),
-        $admin_options = array(),
         $topic_connector = 'OR',
         $pmid = '',
         $cms_id = '',
@@ -376,6 +371,15 @@ class EbmsSearchSpec {
         $publication_year = 0,
         $publication_month = 0,
         $review_cycle = 0,
+        $fyi = 0,
+        $nci_reviewer_decision = '',
+        $full_text_retrieved = '',
+        $committee_decision = '',
+        $core_journals = '',
+        $unpublished = 0,
+        $not_listed = 0,
+        $rejected = 0,
+        $summary_topics_added = 0,
         $reviewer = 0,
         $response = 0,
         $decision = 0,
@@ -409,12 +413,15 @@ class EbmsSearchSpec {
             foreach ($spec['topics'] as $id => $val)
                 if ($val)
                     $this->topics[] = $id;
-            foreach ($spec['advanced-options'] as $id => $val)
-                if ($val)
-                    $this->advanced_options[] = $id;
-            foreach ($spec['admin-options'] as $id => $val)
-                if ($val)
-                    $this->admin_options[] = $id;
+            $this->fyi = $spec['fyi-citation'];
+            $this->nci_reviewer_decision = $spec['nci-reviewer-decision'];
+            $this->full_text_retrieved = $spec['full-text-retrieved'];
+            $this->committee_decision = $spec['committee-decision'];
+            $this->core_journals = $spec['core-journals'];
+            $this->unpublished = $spec['unpublished'];
+            $this->not_listed = $spec['not-listed'];
+            $this->rejected = $spec['rejected'];
+            $this->summary_topics_added = $spec['summary-topics-added'];
             $this->topic_connector = $spec['topic-logic'];
             $this->pmid = $spec['pmid'];
             $this->cms_id = $spec['cms-id'];
@@ -456,12 +463,19 @@ class EbmsSearchSpec {
  */
 function pdq_ebms_search_db_form_validate($form, &$form_state) {
 
-    // Initial assumption.
-    $have_value = $have_board = false;
-
     // Use shorthand for checking values.
     $values = $form_state['values'];
-    pdq_ebms_debug('SEARCH FORM VALIDATE', $values);
+
+    // Don't do anything for AJAX calls.
+    if (!isset($values['op']))
+        return;
+
+    // If the user hits the Reset button, draw a fresh form.
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto(EbmsSearch::$url);
+
+    // Initial assumption.
+    $have_value = $have_board = false;
 
     // Any of the multi-select fields have a value selected?
     $multi_fields = array('boards', 'topics');
@@ -476,38 +490,22 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
         }
     }
 
-    // Check the fields that can have a single value.
+    // Check the fields that can have a single value.  We don't bother
+    // with the ones that widen the net rather than narrow it (for
+    // example, 'unpublished' or 'not-listed' or 'rejected').
     if (!$have_value) {
         $simple_fields = array('pmid', 'cms-id', 'author', 'title', 'journal',
                          'comments', 'publication-year', 'review-cycle',
-                         'reviewer', 'response', 'decision', 'tag');
+                         'reviewer', 'response', 'decision', 'tag',
+                         'fyi-citation', 'nci-reviewer-decision',
+                         'committee-decision', 'full-text-retrieved',
+                         // 'core-journals', XXX not implemeted yet
+                         'summary-topics-added',
+        );
         foreach ($simple_fields as $field) {
             if ($values[$field]) {
                 $have_value = true;
                 break;
-            }
-        }
-    }
-
-    // Flag options to check.
-    $flag_fields = array(
-        'admin' => array('summary-topics-added'),
-        'advanced' => array(
-            'fyi-citation',
-            'nci-reviewer-decision',
-            'full-text-retrieved',
-            'committee-decision',
-            'published-to-cite-ms',
-        ),
-    );
-    if (!$have_value) {
-        foreach ($flag_fields as $group => $names) {
-            $set = $values[$group . '-options'];
-            foreach ($names as $name) {
-                if ($set[$name]) {
-                    $have_value = true;
-                    break 2;
-                }
             }
         }
     }
@@ -571,6 +569,13 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             $topics[$result->topic_id] = $result->topic_name;
     }
 
+    // Create a custom legend for the summmary topics box.
+    $selected_topics_count = count($defaults->topics);
+    if ($selected_topics_count)
+        $topselcnt = " &nbsp; ($selected_topics_count)";
+    else
+        $topselcnt = '';
+
     // Build the tag picklist.
     $results = db_select('ebms_article_tag_type', 't')
         ->fields('t', array('tag_id', 'tag_name'))
@@ -609,7 +614,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
         $reviewers[$result->uid] = $result->name;
 
     // Build picklists for the publishing year and month.
-    $pub_months = array(0 => ' ');
+    $pub_months = array(0 => 'MONTH');
     for ($i = 1; $i <= 12; ++$i)
         $pub_months[$i] = date('F', mktime(0, 0, 0, $i));
     $query = db_select('ebms_article', 'a');
@@ -621,14 +626,14 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     $last_date = $query->execute()->fetchField();
     $first_year = substr($first_date, 0, 4);
     $last_year = substr($last_date, 0, 4);
-    $pub_years = array(0 => ' ');
+    $pub_years = array(0 => 'YEAR');
     for ($i = $last_year; $i >= $first_year; --$i)
         $pub_years[$i] = $i;
 
     // Build the review cycle picklist.
     $results = db_select('ebms_cycle', 'c')
         ->fields('c', array('cycle_id', 'cycle_name'))
-        ->orderBy('c.start_date', 'desc')
+        ->orderBy('c.start_date', 'DESC')
         ->execute();
     $review_cycles = array(0 => ' ');
     foreach ($results as $result)
@@ -641,144 +646,233 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             '#type' => 'markup',
             '#markup' => '<h2>Search Database</h2>',
         ),
+        'multi-select-instructions' => array(
+            '#type' => 'markup',
+            '#markup' => '<p class="field-desc">To select ' .
+            'more than one, hold down the CTRL ' .
+            'or COMMAND (for Mac users) key</p>',
+        ),
         'boards' => array(
             '#type' => 'select',
             '#multiple' => true,
             '#default_value' => $defaults->boards,
             '#title' => 'EDITORIAL BOARD',
-            '#description' => 'To select more than one, hold down the CTRL ' .
-                              'or COMMAND (for Mac users) key',
+            '#title_display' => 'after',
+            '#attributes' => array('class' => array('fixed-width')),
             '#options' => Ebms\Util::boards(),
             '#size' => 6,
             '#ajax' => array(
                 'callback' => 'pdq_ebms_db_search_board_ajax',
                 'wrapper' => 'topics-boxes',
             ),
+            '#prefix' => '<div class="clearfix">',
+            '#suffix' => '</div>',
         ),
 
         // This part collapses, and is populated dynamically.
         'topics box' => array(
             '#type' => 'fieldset',
-            '#title' => 'SUMMARY TOPIC',
+            '#title' => "SUMMARY TOPIC<span id='topselcnt'>$topselcnt</span>",
             '#collapsible' => true,
             '#collapsed' => count($defaults->topics) < 1,
+            '#attributes' => array('class' => array('clearfix')),
             'topic-logic' => array(
                 '#type' => 'radios',
-                '#title' => 'SEARCH CONNECTOR',
+                '#title' => '',
                 '#default_value' => $defaults->topic_connector,
-                '#description' => 'If you do not select "AND" or "OR," ' .
-                                  'the default search will be "OR"',
                 '#options' => drupal_map_assoc(array('AND', 'OR')),
+                '#prefix' => '<div class="clearfix left-radios right-boxes">',
+                '#suffix' => '<span class="field-desc">If you do not select ' .
+                '"AND" or "OR," the default search will be "OR"</span></div>',
             ),
             'topics' => array(
                 '#type' => 'checkboxes',
+                '#title' => '',
                 '#options' => $topics,
                 '#default_value' => $defaults->topics,
-                '#prefix' => '<div id="topics-boxes">',
+                '#attributes' => array(
+                    'onchange' => 'ebmsscript.count_search_topics();',
+                ),
+                '#prefix' => '<div id="topics-boxes" class="clearfix">',
                 '#suffix' => '</div>',
             ),
         ),
 
         // A few straightforward fields.
+        'common-fields' => array(
+            '#type' => 'container',
+            '#attributes' => array('class' => array('clearfix')),
         'pmid' => array(
             '#type' => 'textfield',
             '#default_value' => $defaults->pmid,
             '#title' => 'PMID',
+            '#title_display' => 'after',
+            '#attributes' => array('class' => array('fixed-width')),
         ),
         'cms-id' => array(
             '#type' => 'textfield',
-            '#title' => 'CMS ID',
+            '#title' => 'EBMS ID',
+            '#title_display' => 'after',
+            '#attributes' => array('class' => array('fixed-width')),
             '#default_value' => $defaults->cms_id,
         ),
         'author' => array(
             '#type' => 'textfield',
             '#title' => 'AUTHOR',
+            '#title_display' => 'after',
+            '#attributes' => array('class' => array('fixed-width')),
             '#default_value' => $defaults->author,
         ),
         'title' => array(
             '#type' => 'textfield',
             '#title' => 'TITLE',
+            '#title_display' => 'after',
+            '#attributes' => array('class' => array('fixed-width')),
             '#default_value' => $defaults->title,
-        ),
+        ),),
 
         // Another collapsible portion of the form.
         'advanced search' => array(
             '#type' => 'fieldset',
             '#title' => 'ADVANCED SEARCH',
+            '#attributes' => array('class' => array('clearfix')),
             '#collapsible' => true,
             '#collapsed' => true,
-            'advanced-options' => array(
-                '#type' => 'checkboxes',
-                '#title' => 'ADVANCED OPTIONS',
-                '#options' => array(
-                    'fyi-citation' => 'FYI CITATION',
-                    'nci-reviewer-decision' => 'NCI REVIEWER DECISION',
-                    'full-text-retrieved' => 'FULL TEXT RETRIEVED',
-                    'committee-decision' => 'COMMITTEE DECISION',
-                    'published-to-cite-ms' => 'PUBLISHED TO CITE MS',
-                    'core-journals' => 'CORE JOURNALS',
-                    'not-list' => 'INCLUDE NOT LIST JOURNALS',
-                ),
-                '#default_value' => $defaults->advanced_options,
-            ),
             'journal' => array(
                 '#type' => 'textfield',
                 '#title' => 'JOURNAL',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#default_value' => $defaults->journal,
             ),
-            'publication-year' => array(
-                '#type' => 'select',
-                '#title' => 'PUBLICATION YEAR/MONTH',
-                '#options' => $pub_years,
-                '#default_value' => $defaults->publication_year,
-            ),
-            'publication-month' => array(
-                '#type' => 'select',
-                '#options' => $pub_months,
-                '#default_value' => $defaults->publication_month,
+            'publication-date' => array(
+                '#type' => 'container',
+                '#attributes' => array(
+                    'class' => array('year-and-month'),
+                ),
+                'publication-year' => array(
+                    '#type' => 'select',
+                    '#title' => 'PUBLICATION YEAR',
+                    '#title_display' => 'none',
+                    '#options' => $pub_years,
+                    '#default_value' => $defaults->publication_year,
+                ),
+                'publication-month' => array(
+                    '#type' => 'select',
+                    '#title' => 'PUBLICATION MONTH',
+                    '#title_display' => 'MONTH',
+                    '#options' => $pub_months,
+                    '#default_value' => $defaults->publication_month,
+                ),
+                'publication-date-label' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<span>PUBLICATION DATE</span>',
+                ),
             ),
             'review-cycle' => array(
                 '#type' => 'select',
                 '#title' => 'REVIEW CYCLE',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#options' => $review_cycles,
                 '#default_value' => $defaults->review_cycle,
+            ),
+            'fyi-citation' => array(
+                '#type' => 'checkbox',
+                '#title' => 'FYI CITATION',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->fyi,
+            ),
+            'nci-reviewer-decision' => array(
+                '#type' => 'radios',
+                '#title' => 'NCI REVIEWER DECISION',
+                '#options' => array(
+                    'RejectBMReview' => 'NO',
+                    'PassedBMReview' => 'YES',
+                ),
+                '#title_display' => 'after',
+                '#prefix' => '<div class="yes-no-boxes clearfix">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->nci_reviewer_decision,
+            ),
+            'full-text-retrieved' => array(
+                '#type' => 'radios',
+                '#title' => 'FULL TEXT RETRIEVED',
+                '#options' => array(
+                    'no' => 'NO',
+                    'yes' => 'YES',
+                ),
+                '#title_display' => 'after',
+                '#prefix' => '<div class="yes-no-boxes clearfix">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->full_text_retrieved,
+            ),
+            'committee-decision' => array(
+                '#type' => 'radios',
+                '#title' => 'COMMITTEE DECISION',
+                '#options' => array(
+                    'RejectFullReview' => 'NO',
+                    'PassedFullReview' => 'YES',
+                ),
+                '#title_display' => 'after',
+                '#prefix' => '<div class="yes-no-boxes clearfix">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->committee_decision,
             ),
             'reviewer' => array(
                 '#type' => 'select',
                 '#title' => 'EDITORIAL BOARD REVIEWER',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#options' => $reviewers,
                 '#default_value' => $defaults->reviewer,
             ),
             'response' => array(
                 '#type' => 'select',
                 '#title' => 'EDITORIAL BOARD RESPONSE',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#options' => $responses,
                 '#default_value' => $defaults->response,
             ),
             'decision' => array(
                 '#type' => 'select',
                 '#title' => 'EDITORIAL BOARD DECISION',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#options' => $decisions,
                 '#default_value' => $defaults->decision,
             ),
             'comments' => array(
                 '#type' => 'textfield',
-                '#title' => 'COMMENTS',
+                '#title' => 'COMMENT',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#default_value' => $defaults->comments,
             ),
-            'comment-added-start' => array(
-                '#type' => 'date',
-                '#title' => 'DATE COMMENT ADDED',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $defaults->comment_added_start,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-            ),
-            'use-comment-date-range' => array(
-                '#type' => 'checkbox',
-                '#title' => 'RANGE',
-                '#prefix' => '<div class="use-range-checkbox">',
-                '#suffix' => '</div>',
-                '#default_value' => $defaults->use_comment_date_range,
+            'comment-added' => array(
+                '#type' => 'container',
+                '#attributes' => array(
+                    'class' => array('date-with-range'),
+                ),
+                'comment-added-start' => array(
+                    '#type' => 'date',
+                    '#element_validate' => array('pdq_ebms_date_validate'),
+                    '#default_value' => $defaults->comment_added_start,
+                    '#pre_render' => array('pdq_ebms_fix_date'),
+                ),
+                'use-comment-date-range' => array(
+                    '#type' => 'checkbox',
+                    '#title' => 'RANGE',
+                    '#prefix' => '<div class="use-range-checkbox">',
+                    '#suffix' => '</div>',
+                    '#default_value' => $defaults->use_comment_date_range,
+                ),
+                'comment-added-label' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<span>DATE COMMENT ADDED</span>',
+                ),
             ),
             'comment-added-end' => array(
                 '#type' => 'date',
@@ -796,22 +890,33 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             'tag' => array(
                 '#type' => 'select',
                 '#title' => 'TAG',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#options' => $tags,
                 '#default_value' => $defaults->tag,
             ),
-            'tag-added-start' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#title' => 'DATE TAG ADDED',
-                '#default_value' => $defaults->tag_added_start,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-            ),
-            'use-tag-date-range' => array(
-                '#type' => 'checkbox',
-                '#title' => 'RANGE',
-                '#prefix' => '<div class="use-range-checkbox">',
-                '#suffix' => '</div>',
-                '#default_value' => $defaults->use_tag_date_range,
+            'tag-added' => array(
+                '#type' => 'container',
+                '#attributes' => array(
+                    'class' => array('date-with-range'),
+                ),
+                'tag-added-start' => array(
+                    '#type' => 'date',
+                    '#element_validate' => array('pdq_ebms_date_validate'),
+                    '#default_value' => $defaults->tag_added_start,
+                    '#pre_render' => array('pdq_ebms_fix_date'),
+                ),
+                'use-tag-date-range' => array(
+                    '#type' => 'checkbox',
+                    '#title' => 'RANGE',
+                    '#prefix' => '<div class="use-range-checkbox">',
+                    '#suffix' => '</div>',
+                    '#default_value' => $defaults->use_tag_date_range,
+                ),
+                'tag-added-label' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<span>DATE TAG ADDED</span>',
+                ),
             ),
             'tag-added-end' => array(
                 '#type' => 'date',
@@ -826,6 +931,18 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                     ),
                 ),
             ),
+            'core-journals' => array(
+                '#type' => 'radios',
+                '#title' => 'CORE JOURNALS',
+                '#options' => array(
+                    'no' => 'NO',
+                    'yes' => 'YES',
+                ),
+                '#title_display' => 'after',
+                '#prefix' => '<div class="yes-no-boxes clearfix">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->core_journals,
+            ),
         ),
 
         // Yet another collapsible portion.
@@ -834,28 +951,29 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             '#title' => 'ADMINISTRATOR SEARCH',
             '#collapsible' => true,
             '#collapsed' => true,
-            'admin-options' => array(
-                '#type' => 'checkboxes',
-                '#title' => 'OPTIONS',
-                '#options' => array(
-                    'summary-topics-added' => 'SUMMARY TOPICS ADDED',
-                    'rejected' => 'INCLUDE REJECTED ARTICLES',
+            '#attributes' => array('class' => array('clearfix')),
+            'input' => array(
+                '#type' => 'container',
+                '#attributes' => array(
+                    'class' => array('date-with-range'),
                 ),
-                '#default_value' => $defaults->admin_options,
-            ),
-            'input-start' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#title' => 'INPUT DATE',
-                '#default_value' => $defaults->input_start,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-            ),
-            'use-input-date-range' => array(
-                '#type' => 'checkbox',
-                '#title' => 'RANGE',
-                '#prefix' => '<div class="use-range-checkbox">',
-                '#suffix' => '</div>',
-                '#default_value' => $defaults->use_input_date_range,
+                'input-start' => array(
+                    '#type' => 'date',
+                    '#element_validate' => array('pdq_ebms_date_validate'),
+                    '#default_value' => $defaults->input_start,
+                    '#pre_render' => array('pdq_ebms_fix_date'),
+                ),
+                'use-input-date-range' => array(
+                    '#type' => 'checkbox',
+                    '#title' => 'RANGE',
+                    '#prefix' => '<div class="use-range-checkbox">',
+                    '#suffix' => '</div>',
+                    '#default_value' => $defaults->use_input_date_range,
+                ),
+                'comment-added-label' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<span>INPUT DATE</span>',
+                ),
             ),
             'input-end' => array(
                 '#type' => 'date',
@@ -869,20 +987,29 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                         ),
                     ),
                 ),
-             ),
-            'modified-start' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#title' => 'MODIFIED DATE',
-                '#default_value' => $defaults->modified_start,
-                '#pre_render' => array('pdq_ebms_fix_date'),
             ),
-            'use-mod-date-range' => array(
-                '#type' => 'checkbox',
-                '#title' => 'RANGE',
-                '#prefix' => '<div class="use-range-checkbox">',
-                '#suffix' => '</div>',
-                '#default_value' => $defaults->use_modified_date_range,
+            'modified' => array(
+                '#type' => 'container',
+                '#attributes' => array(
+                    'class' => array('date-with-range'),
+                ),
+                'modified-start' => array(
+                    '#type' => 'date',
+                    '#element_validate' => array('pdq_ebms_date_validate'),
+                    '#default_value' => $defaults->modified_start,
+                    '#pre_render' => array('pdq_ebms_fix_date'),
+                ),
+                'use-mod-date-range' => array(
+                    '#type' => 'checkbox',
+                    '#title' => 'RANGE',
+                    '#prefix' => '<div class="use-range-checkbox">',
+                    '#suffix' => '</div>',
+                    '#default_value' => $defaults->use_modified_date_range,
+                ),
+                'comment-added-label' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<span>MODIFIED DATE</span>',
+                ),
             ),
             'modified-end' => array(
                 '#type' => 'date',
@@ -896,7 +1023,35 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                         ),
                     ),
                 ),
-             ),
+            ),
+            'unpublished' => array(
+                '#type' => 'checkbox',
+                '#title' => 'INCLUDE UNPUBLISHED',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->unpublished,
+            ),
+            'not-listed' => array(
+                '#type' => 'checkbox',
+                '#title' => 'INCLUDE NOT LISTED',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->not_listed,
+            ),
+            'rejected' => array(
+                '#type' => 'checkbox',
+                '#title' => 'INCLUDE REJECTED',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->rejected,
+            ),
+            'summary-topics-added' => array(
+                '#type' => 'checkbox',
+                '#title' => 'SUMMARY TOPICS ADDED',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->summary_topics_added,
+            ),
         ),
 
         // Final collapsible section.
@@ -905,14 +1060,18 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             '#title' => 'DISPLAY OPTIONS',
             '#collapsible' => true,
             '#collapsed' => true,
+            '#attributes' => array('class' => array('clearfix')),
             'sort-by' => array(
                 '#type' => 'select',
                 '#title' => 'SORT BY',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#options' => drupal_map_assoc(
                     array(
                         'EBMS ID#',
                         'PM ID#',
                         'Title',
+                        'Author',
                         'Journal',
                         //'Publication Date',
                     )
@@ -924,6 +1083,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             'format' => array(
                 '#type' => 'select',
                 '#title' => 'FORMAT',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#options' => drupal_map_assoc(
                     array(
                         'Brief',
@@ -938,6 +1099,8 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             'items-per-page' => array(
                 '#type' => 'select',
                 '#title' => 'PER PAGE',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
                 '#options' => drupal_map_assoc(
                     array('10', '25', '50', 'View All')
                 ),
@@ -946,8 +1109,14 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
         ),
         'submit' => array(
             '#type' => 'submit',
-            '#value' => 'SUBMIT',
-        )
+            '#value' => 'Submit',
+        ),
+
+        // Added at Ashleigh's request (TIR 2293).
+        'reset' => array(
+            '#type' => 'submit',
+            '#value' => 'Reset',
+        ),
     );
 }
 

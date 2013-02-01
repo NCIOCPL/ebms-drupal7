@@ -62,7 +62,41 @@ class EbmsSummaries {
      */
     public function run() {
         Ebms\Util::add_js();
+        drupal_add_css(Ebms\CSS_DIR . '/summaries.css');
         Ebms\Menu::$active = 'Summaries';
+
+        // Check to see if we've been asked to remove a subpage from the
+        // board's list.  Part of TIR 2173.
+        if (isset($this->parms['del-page'])) {
+            $now = strftime("%Y-%m-%d %H:%M:%S");
+            db_update('ebms_summary_page')
+                ->fields(array('archived' => $now))
+                ->condition('page_id', $this->parms['del-page'])
+                ->execute();
+            unset($_GET['del-page']);
+            unset($this->parms['del-page']);
+        }
+
+        // Handle a request to drop one of the cancer.gov summary links.
+        if (isset($this->parms['del-link'])) {
+            db_delete('ebms_summary_link')
+                ->condition('link_id', $this->parms['del-link'])
+                ->execute();
+            unset($_GET['del-link']);
+            unset($this->parms['del-link']);
+        }
+
+        // Handle a request to edit one of the existing subpages.
+        if (isset($this->parms['edit-page']))
+            return drupal_get_form('pdq_ebms_edit_summary_page_form', $this,
+                $this->parms['edit-page']);
+
+        // Handle a request to edit one of the existing cancer.gov links.
+        if (isset($this->parms['edit-link']))
+            return drupal_get_form('pdq_ebms_edit_cg_summary_form', $this,
+                $this->parms['edit-link']);
+
+        // Branch to the right request handler.
         switch ($this->request) {
             case 'board':
                 return $this->show_board();
@@ -242,15 +276,40 @@ class EbmsSummaries {
         );
 
         // Fold in the links to the summaries on cancer.gov.
+        $page_url = EbmsSummaries::$url . '/page/' . $this->board_id . '/' .
+            $this->subpage_id;
+        $del_opts = $edit_opts = array('query' => $this->parms);
+        $del_opts['html'] = true;
+        $edit_opts['html'] = true;
+        $edit_icon = Ebms\EDIT_INACTIVE;
+        $del_icon = Ebms\DELETE_ICON;
+        $del_func = 'javascript:ebmsscript.delete_summary_link';
         $items = array();
         $results = db_select('ebms_summary_link', 'l')
-            ->fields('l', array('link_url', 'link_label'))
+            ->fields('l', array('link_url', 'link_label', 'link_id'))
             ->condition('l.page_id', $this->subpage_id)
             ->orderBy('l.link_label')
             ->execute();
         $options = array('attributes' => array('target' => '_blank'));
-        foreach ($results as $link)
-            $items[] = l($link->link_label, $link->link_url, $options);
+        foreach ($results as $link) {
+            if ($this->role == 'admin') {
+                $del_opts['query']['del-link'] = $link->link_id;
+                $edit_opts['query']['edit-link'] = $link->link_id;
+                $del_url = url($page_url, $del_opts);
+                $del_url = "$del_func('$del_url')";
+                $del_link = '<a onclick="' . $del_url .
+                    '"><img title="Delete" src="' . $del_icon . '" /></a>';
+                $action_links = '<span class="sp-action-links">' .
+                    $del_link .
+                    l("<img title='Edit' src='$edit_icon' />", $page_url,
+                        $edit_opts) .
+                    '</span>';
+            }
+            else
+                $action_links = '';
+            $cg_link = l($link->link_label, $link->link_url, $options);
+            $items[] = $action_links . $cg_link;
+        }
         $block['wrapper']['left side']['links'] = array(
             '#theme' => 'item_list',
             '#items' => $items,
@@ -853,21 +912,61 @@ class EbmsSummaries {
         // If we get here, the Subpage menu section has been expanded.
         // Find all of the summary subpages created for this board and
         // create a list of links to those pages.
+        // 2013-01-13 (TIR 2173): add links for editing and archiving
+        // summary subpages.
         $results = db_select('ebms_summary_page', 'p')
             ->fields('p', array('page_id', 'page_name'))
             ->condition('p.board_id', $this->board_id)
+            ->isNull('p.archived')
             ->orderBy('p.page_name')
             ->execute();
         $pages = array();
-        $options = array('query' => $this->parms);
-        $url = EbmsSummaries::$url . '/page/' . $this->board_id . '/';
-        foreach ($results as $page)
-            $pages[] = l($page->page_name, $url . $page->page_id, $options);
-        $url = EbmsSummaries::$url . '/board/' . $this->board_id;
+        $board_url = EbmsSummaries::$url . '/board/' . $this->board_id;
+        $page_url = EbmsSummaries::$url . '/page/' . $this->board_id . '/';
+        $edit_opts = $del_opts = $options = array('query' => $this->parms);
+        $edit_opts['html'] = true;
+        $del_opts['html'] = true;
+        $edit_icon = Ebms\EDIT_INACTIVE;
+        $del_icon = Ebms\REJECT_ACTIVE;
+        $del_icon = Ebms\DELETE_ICON;
+        $del_func = 'javascript:ebmsscript.delete_subpage';
+        foreach ($results as $page) {
+            $topic_query = db_select('ebms_topic', 't');
+            $topic_query->fields('t', array('topic_name'));
+            $topic_query->join('ebms_summary_page_topic', 's',
+                's.topic_id = t.topic_id');
+            $topic_query->condition('s.page_id', $page->page_id);
+            $topic_query->orderBy('t.topic_name');
+            $topic_rows = $topic_query->execute();
+            $topics = array();
+            foreach ($topic_rows as $topic_row)
+                $topics[] = $topic_row->topic_name;
+            $topics = htmlspecialchars(implode('; ', $topics));
+            $options['attributes']['title'] = $topics;
+            $link = l($page->page_name, $page_url . $page->page_id, $options);
+            if ($this->role == 'admin') {
+                $del_opts['query']['del-page'] = $page->page_id;
+                $edit_opts['query']['edit-page'] = $page->page_id;
+                $del_url = url($board_url, $del_opts);
+                $del_url = "$del_func('$del_url')";
+                $del_link = '<a onclick="' . $del_url .
+                    '"><img title="Delete" src="' . $del_icon . '" /></a>';
+                $action_links = '<span class="sp-action-links">' .
+                    $del_link .
+                    //l("<img title='Delete' src='$del_icon' />", $board_url,
+                    //    $del_opts) .
+                    l("<img title='Edit' src='$edit_icon' />", $board_url,
+                        $edit_opts) .
+                    '</span>';
+            }
+            else
+                $action_links = '';
+            $pages[] = $action_links . $link;
+        }
         $query['be'] = str_replace('s', '', $expanded);
         $options = array('query' => $query, 'html' => true);
         $label = $this->expanded('Summaries');
-        $link = l($label, $url, $options);
+        $link = l($label, $board_url, $options);
 
         // Put together the Drupal render array for the list of links
         // to summary subpages.
@@ -1258,6 +1357,8 @@ function pdq_ebms_new_summary_page_form($form, &$form_state, $control) {
     $form = array(
         'title' => array(
             '#type' => 'textfield',
+            '#title' => 'Subpage Title',
+            '#title_display' => 'none',
         ),
         'topics' => array(
             '#type' => 'select',
@@ -1354,6 +1455,192 @@ function pdq_ebms_new_summary_page_form_submit($form, &$form_state) {
 }
 
 /**
+ * Drupal form API callback which generates the form for editing an
+ * existing summary subpage for a specific board.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  array   $ctrl         EbmsSummaries object carrying
+ *                                information about the current
+ *                                request
+ *  @param  integer $page         ID of the page being edited
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_edit_summary_page_form($form, &$form_state, $ctrl, $page) {
+
+    // Assemble a picklist of topics associated with the current board.
+    $results = db_select('ebms_topic', 't')
+        ->fields('t', array('topic_id', 'topic_name'))
+        ->condition('t.board_id', $ctrl->board_id)
+        ->condition('t.active_status', 'A')
+        ->orderBy('t.topic_name')
+        ->execute();
+    $topics = array();
+    foreach ($results as $topic)
+        $topics[$topic->topic_id] = htmlspecialchars($topic->topic_name);
+
+    // Find out which topics are currently selected.
+    $results = db_select('ebms_summary_page_topic', 't')
+        ->fields('t', array('topic_id'))
+        ->condition('t.page_id', $page)
+        ->execute();
+    $selected_topics = array();
+    foreach ($results as $topic)
+        $selected_topics[] = $topic->topic_id;
+
+    // Get the page's name.
+    $title = db_select('ebms_summary_page', 'p')
+        ->fields('p', array('page_name'))
+        ->condition('p.page_id', $page)
+        ->execute()
+        ->fetchField();
+
+    // Override Drupal's default breadcrumbs.
+    $board_name = Ebms\Util::get_board_name($ctrl->board_id);
+    $url = EbmsSummaries::$url;
+    $options = array('query' => $ctrl->parms);
+    unset($options['query']['edit-page']);
+    drupal_set_breadcrumb(
+        array(
+            l('Summaries', $url),
+            l($board_name, "$url/board/$ctrl->board_id", $options),
+            htmlspecialchars($title),
+        )
+    );
+
+    // Build the Drupal form array for the request.
+    $form = array(
+        'header' => array(
+            '#type' => 'markup',
+            '#markup' => '<h2>Edit Summary Page</h2>',
+        ),
+        'title' => array(
+            '#title' => 'Page Name',
+            '#type' => 'textfield',
+            '#default_value' => $title,
+        ),
+        'topics' => array(
+            '#type' => 'checkboxes',
+            '#multiple' => true,
+            '#options' => $topics,
+            '#title' => 'Summary Topics',
+            '#size' => min(count($topics), 15),
+            '#default_value' => $selected_topics,
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Save',
+        ),
+        'cancel' => array(
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+        ),
+        'page' => array(
+            '#type' => 'hidden',
+            '#value' => $page,
+        ),
+        'board' => array(
+            '#type' => 'hidden',
+            '#value' => $ctrl->board_id,
+        ),
+        'query-parms' => array(
+            '#type' => 'hidden',
+            '#value' => drupal_json_encode($ctrl->parms),
+        ),
+    );
+    return $form;
+}
+
+/**
+ * Ensures that the request to edit an exisiting summaries page specifies
+ * both a title for the subpage and at least one topic.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_edit_summary_page_form_validate($form, &$form_state) {
+
+    // Do nothing here for a cancel.
+    if ($form_state['values']['op'] == 'Cancel')
+        return;
+
+    $title = trim($form_state['values']['title']);
+    $topics = $form_state['values']['topics'];
+    $selected_topics = array();
+    foreach ($topics as $id => $val) {
+        if ($val)
+            $selected_topics[] = $id;
+    }
+    if (!$title || $title == 'Subpage Title')
+        form_set_error('title', 'Title is required for page.');
+    if (count($selected_topics) < 1)
+        form_set_error('topics', 'At least one topic must be selected.');
+    $form_state['selected topics'] = $selected_topics;
+}
+
+/**
+ * Modify the title for the edited summary subpage, and clear out the rows
+ * for the page's topics, replacing them with rows for the currently selected
+ * topics.  When we're done we construct a URL which we use to take the user
+ * back to the page from which the form was launched.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_edit_summary_page_form_submit($form, &$form_state) {
+
+    // Don't do anything but return to the calling page on cancel.
+    if ($form_state['values']['op'] == 'Save') {
+
+        $title = trim($form_state['values']['title']);
+        $page_id = $form_state['values']['page'];
+        $topics = $form_state['selected topics'];
+        db_update('ebms_summary_page')
+            ->fields(array('page_name' => $title))
+            ->condition('page_id', $page_id)
+            ->execute();
+        db_delete('ebms_summary_page_topic')
+            ->condition('page_id', $page_id)
+            ->execute();
+        //pdq_ebms_debug('EDITED SUMMARY PAGE', array($page_id, 
+        foreach ($topics as $topic) {
+            db_insert('ebms_summary_page_topic')
+                ->fields(
+                    array(
+                        'page_id' => $page_id,
+                        'topic_id' => $topic,
+                    )
+                )
+                ->execute();
+        }
+    }
+    $board = $form_state['values']['board'];
+    $parms = drupal_json_decode($form_state['values']['query-parms']);
+    unset($parms['edit-page']);
+    $options = array('query' => $parms);
+    drupal_goto(EbmsSummaries::$url . '/board/' . $board, $options);
+}
+
+/**
  * Drupal form API callback which generates the form for creating a
  * new link to a PDQ summary on an EBMS summary subpage.
  *
@@ -1375,9 +1662,13 @@ function pdq_ebms_new_cg_summary_form($form, &$form_state, $control) {
     return array(
         'url' => array(
             '#type' => 'textfield',
+            '#title' => 'Link Url',
+            '#title_display' => 'none',
         ),
         'title' => array(
             '#type' => 'textfield',
+            '#title' => 'Link Title',
+            '#title_display' => 'none',
         ),
         'board' => array(
             '#type' => 'hidden',
@@ -1417,7 +1708,7 @@ function pdq_ebms_new_cg_summary_form_validate($form, &$form_state) {
     if (!$url)
         form_set_error('url', 'URL field is required.');
     if (!$title)
-        form_set_error('url', 'Title field is required.');
+        form_set_error('title', 'Title field is required.');
 }
 
 /**
@@ -1449,6 +1740,168 @@ function pdq_ebms_new_cg_summary_form_submit($form, &$form_state) {
         )
         ->execute();
     $parms = drupal_json_decode($form_state['values']['query-parms']);
+    $options = array('query' => $parms);
+    $url = EbmsSummaries::$url;
+    $url = "$url/page/$board/$page";
+    drupal_goto($url, $options);
+}
+
+/**
+ * Drupal form API callback which generates the form for editing an
+ * existing link to a PDQ summary on an EBMS summary subpage.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  array   $ctrl         EbmsSummaries object carrying
+ *                                information about the current
+ *                                request
+ *  @param  integer $link_id      ID of the link being edited
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_edit_cg_summary_form($form, &$form_state, $ctrl, $link_id) {
+
+    // Pull the existing values from the database.
+    $values = db_select('ebms_summary_link', 'l')
+        ->fields('l', array('link_url', 'link_label'))
+        ->condition('l.link_id', $link_id)
+        ->execute()
+        ->fetchObject();
+
+    // Override Drupal's default breadcrumbs.
+    $board_name = Ebms\Util::get_board_name($ctrl->board_id);
+    $page_name = db_select('ebms_summary_page', 'p')
+        ->fields('p', array('page_name'))
+        ->condition('p.page_id', $ctrl->subpage_id)
+        ->execute()
+        ->fetchField();
+    $url = EbmsSummaries::$url;
+    $options = array('query' => $ctrl->parms);
+    unset($options['query']['edit-link']);
+    $summaries_link = l('Summaries', $url);
+    $board_url = "$url/board/$ctrl->board_id";
+    $board_link = l($board_name, $board_url, $options);
+    $page_url = "$url/page/$ctrl->board_id/$ctrl->subpage_id";
+    $page_link = l($page_name, $page_url, $options);
+    drupal_set_breadcrumb(
+        array(
+            $summaries_link,
+            $board_link,
+            $page_link,
+            htmlspecialchars($values->link_label),
+        )
+    );
+
+    // Give the caller the form definition.
+    return array(
+        'title' => array(
+            '#type' => 'textfield',
+            '#title' => 'Label',
+            '#default_value' => $values->link_label,
+        ),
+        'url' => array(
+            '#type' => 'textfield',
+            '#title' => 'URL',
+            '#default_value' => $values->link_url,
+        ),
+        'board' => array(
+            '#type' => 'hidden',
+            '#value' => $ctrl->board_id,
+        ),
+        'page' => array(
+            '#type' => 'hidden',
+            '#value' => $ctrl->subpage_id,
+        ),
+        'link' => array(
+            '#type' => 'hidden',
+            '#value' => $link_id,
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Save',
+        ),
+        'cancel' => array(
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+        ),
+        'query-parms' => array(
+            '#type' => 'hidden',
+            '#value' => drupal_json_encode($ctrl->parms),
+        ),
+    );
+}
+
+/**
+ * Ensures that the request to edit an existing cancer.gov summaries
+ * link specifies both a URL and a label.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_edit_cg_summary_form_validate($form, &$form_state) {
+
+    // Do nothing here for a cancel.
+    if ($form_state['values']['op'] == 'Cancel')
+        return;
+
+    $url = trim($form_state['values']['url']);
+    $title = trim($form_state['values']['title']);
+    if (!$url)
+        form_set_error('url', 'URL field is required.');
+    if (!$title)
+        form_set_error('title', 'Title field is required.');
+}
+
+/**
+ * Update the row in the table for links to PDQ summaries in cancer.gov.
+ * When we're done we construct a URL which we use to take the user
+ * back to the page from which the form was launched.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_edit_cg_summary_form_submit($form, &$form_state) {
+
+    // Don't do anything but return to the calling page on cancel.
+    if ($form_state['values']['op'] == 'Save') {
+
+        $url = trim($form_state['values']['url']);
+        $title = trim($form_state['values']['title']);
+        $link_id = $form_state['values']['link'];
+        db_update('ebms_summary_link')
+            ->fields(
+                array(
+                    'link_url' => $url,
+                    'link_label' => $title,
+                )
+            )
+            ->condition('link_id', $link_id)
+        ->execute();
+    }
+
+    // Come back to the page from which we were launched.
+    $page = $form_state['values']['page'];
+    $board = $form_state['values']['board'];
+    $parms = drupal_json_decode($form_state['values']['query-parms']);
+    unset($parms['edit-link']);
     $options = array('query' => $parms);
     $url = EbmsSummaries::$url;
     $url = "$url/page/$board/$page";
@@ -1495,6 +1948,8 @@ function pdq_ebms_nci_doc_form($form, &$form_state, $control, $docs) {
     $form = array(
         'doc' => array(
             '#type' => 'select',
+            '#title' => 'Document',
+            '#title_display' => 'none',
             '#options' => $options,
         ),
         'notes' => array(
@@ -1624,6 +2079,8 @@ function pdq_ebms_post_summary_sd_form($form, &$form_state, $control, $docs) {
     $form = array(
         'doc' => array(
             '#type' => 'select',
+            '#title' => 'Document',
+            '#title_display' => 'none',
             '#options' => $options,
         ),
         'notes' => array(

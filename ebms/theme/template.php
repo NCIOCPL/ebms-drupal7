@@ -149,7 +149,7 @@ function ebmstheme_breadcrumb($variables) {
         $output[] = '<h2 class="element-invisible">You are here</h2>';
         $output[] = '<div class="breadcrumb">';
         if(is_array($breadcrumb))
-            $output[] = implode(' > ', $breadcrumb);
+        $output[] = implode(' > ', $breadcrumb);
         else
             $output[] = $breadcrumb;
         $output[] = '</div>';
@@ -174,7 +174,14 @@ function ebmstheme_breadcrumb($variables) {
 function ebmstheme_form_element($variables) {
     // pdq_ebms_debug('THEME FORM ELEMENT', $variables);
     $element = &$variables['element'];
+    
+    // Since these get overridden in there own themed outputs, don't address it here
+    if (($element['#type'] == 'checkboxes') || ($element['#type'] == 'radios')) {
+        return $element['#children'];
+    }
 
+    $attributes = array();
+    $variables['#attributes'] = &$attributes;
     // Add element id for type 'item'.
     if (isset($element['#markup']) && !empty($element['#id']))
         $attributes['id'] = $element['#id'];
@@ -195,7 +202,8 @@ function ebmstheme_form_element($variables) {
     if (!empty($element['#attributes']['disabled'])) {
         $attributes['class'][] = 'form-disabled';
     }
-    $output = array('<div' . drupal_attributes($attributes) . '>' . "\n");
+    
+    $output =  array('<div' . drupal_attributes($attributes) . '>' . "\n");
 
     // If title is not set, we don't display any label or required marker.
     if (!isset($element['#title']))
@@ -232,6 +240,8 @@ function ebmstheme_form_element($variables) {
             break;
         case 'none':
         case 'attribute':
+            $attributes['class'][] = 'hidden-508';
+            $output[] = ' ' . theme('form_element_label', $variables);
             $output[] = ' ' . $prefix . $element['#children'] . $suffix . "\n";
             break;
     }
@@ -239,6 +249,160 @@ function ebmstheme_form_element($variables) {
     // Finish off and return the assembled field output.
     $output[] = "</div>\n";
     return implode($output);
+}
+
+function ebmstheme_form_element_label($variables) {
+    $element = &$variables['element'];
+    // This is also used in the installer, pre-database setup.
+    $t = get_t();
+    
+    // If title and required marker are both empty, output no label.
+    if ((!isset($element['#title']) || $element['#title'] === '') && empty($element['#required'])) {
+        return '';
+    }
+
+    // If the element is required, a required marker is appended to the label.
+    $required = !empty($element['#required']) ? theme('form_required_marker', array('element' => $element)) : '';
+
+    $title = filter_xss_admin($element['#title']);
+
+    $attributes = array();
+    if (array_key_exists('#attributes', $variables))
+            $attributes = $variables['#attributes'];
+    
+    // Style the label as class option to display inline with the element.
+    if ($element['#title_display'] == 'after') {
+        $attributes['class'][] = 'option';
+    }
+    // Show label only to screen readers to avoid disruption in visual flows.
+    elseif ($element['#title_display'] == 'invisible') {
+        $attributes['class'][] = 'element-invisible';
+    }
+    $attributes['class'][] = 'label-508';
+
+    if (!empty($element['#id'])) {
+        $attributes['for'] = $element['#id'];
+    }
+    
+    // If it's checkboxes or radios, that label is the legend
+    // of a fieldset, so output nothing.
+    if (($element['#type'] == 'checkboxes') || ($element['#type'] == 'radios')) {
+        return '';
+    }
+    
+    // string describing the label format
+    $format = '!title !required';
+    if (
+            $element['#type'] == 'date_popup' ||
+            $element['#type'] == 'date' || 
+            $element['#type'] == 'managed_file'
+    ) {
+
+
+        return ' <div' . drupal_attributes($attributes) . '>' .
+                $t($format, array('!title' => $title, '!required' => $required)) .
+                "</div>\n";
+    } elseif ($element['#type'] == 'file') {
+        $attributes['class'][] = 'label-508';
+        return '<span ' . drupal_attributes($attributes) . '>'
+                . $t($format, array('!title' => $title, '!required' => $required))
+                . "</span>\n";
+    }
+    else {
+        // The leading whitespace helps visually separate fields from inline labels.
+        return '<label' . drupal_attributes($attributes) . '>' .
+        $t($format, array('!title' => $title, '!required' => $required)) .
+        "</label>\n";
+    }
+}
+
+function ebmstheme_file($variables) {
+    // Added by Lauren for 508
+
+    $element = $variables['element'];
+    
+    $element['#attributes']['type'] = 'file';
+    element_set_attributes($element, array('id', 'name', 'size'));
+    _form_set_class($element, array('form-file'));
+
+    // Only needs 508 compliance help when the label is "invisible"
+    if ($element['#title_display'] == 'invisible')
+        return '<label class="hidden-508" for="' . $element['#id'] . '">' . $element['#title'] . '</label><input' . drupal_attributes($element['#attributes']) . ' />';
+    else
+        return '<input' . drupal_attributes($element['#attributes']) . ' />';
+}
+
+function ebmstheme_radios($variables) {
+    // Added by Lauren for 508 compliance
+    $required = !empty($variables['element']['#required']) ? theme('form_required_marker', array('element' => $variables['element'])) : '';
+    $element = $variables['element'];
+    $description = '';
+    if (!empty($element['#description']))
+        $description = '<div class="description">' . $element['#description'] .
+            "</div>\n";
+    $attributes = array();
+    if (isset($element['#id'])) {
+        $attributes['id'] = $element['#id'];
+    }
+    $attributes['class'][] = 'form-item';
+    $attributes['class'][] = 'form-type-radios';
+    $attributes['class'][] = 'radios-508';
+    if (!empty($element['#attributes']['class'])) {
+        $attributes['class'] .= ' ' . implode(' ', $element['#attributes']['class']);
+    }
+    if (isset($element['#attributes']['title'])) {
+        $attributes['title'] = $element['#attributes']['title'];
+    }
+    $description = array_key_exists('#description', $element) ? $element['#description'] : NULL;
+
+    return '<fieldset ' . drupal_attributes($attributes) . '>
+      <legend class="radios-508 label-508" for="' . $attributes['id'] . '">'
+            . $required .
+            ' ' . (array_key_exists('#title', $element) ? $element['#title'] : '') .
+            '</legend> '
+            . ($description ? '<div class="description" style="padding-bottom: 10px;">' . $description . '</div>' : '')
+            . (!empty($element['#children']) ?
+                    ('<div id="'.$attributes['id'].'" class="form-radios">'. $element['#children'].'</div>')
+                    : '')
+        . '</fieldset>';
+}
+
+function ebmstheme_checkboxes($variables) {
+    //Added by Lauren for 508 compliance
+    $required = !empty($variables['element']['#required']) ? theme('form_required_marker', array('element' => $variables['element'])) : '';
+    //$variables['element']['#field_prefix'] = '<fieldset class="checkboxes-508"><legend class="checkboxes-508">' . $required . ' ' . $variables['element']['#title'] . '</legend>';
+    //$variables['element']['#field_suffix'] = '</fieldset>';
+
+    $element = $variables['element'];
+    $description = '';
+    if (!empty($element['#description']))
+        $description = '<div class="description">' . $element['#description'] .
+            "</div>\n";
+    $attributes = array();
+    if (isset($element['#id'])) {
+        $attributes['id'] = $element['#id'];
+    }
+    $attributes['class'][] = 'form-item';
+    $attributes['class'][] = 'form-type-checkboxes';
+    $attributes['class'][] = 'checkboxes-508';
+    if (!empty($element['#attributes']['class'])) {
+        $attributes['class'] = array_merge($attributes['class'], $element['#attributes']['class']);
+    }
+    if (isset($element['#attributes']['title'])) {
+        $attributes['title'] = $element['#attributes']['title'];
+    }
+    $description = array_key_exists('#description', $element) ?
+        $element['#description'] : NULL;
+    return '<fieldset ' . drupal_attributes($attributes) . '>
+      <legend class="checkboxes-508 label-508" for="' . $attributes['id'] . '">'
+            . $required .
+            ' ' . (array_key_exists('#title', $element) ? $element['#title'] : '') .
+            '</legend> '
+                        . ($description ? '<div class="description" style="padding-bottom: 10px;">' . $description . '</div>' : '')
+            . (!empty($element['#children']) ?
+                    ('<div id="'.$attributes['id'].'" class="form-checkboxes">'. $element['#children'].'</div>')
+                    : '')
+        . '</fieldset>';
 }
 
 // function ebmstheme_date($variables) {
@@ -287,7 +451,7 @@ function ebmstheme_preprocess_node(&$variables) {
             url("node/$node->nid/edit");
     }
     $variables['editor'] = $editor;
-    
+
     $variables['status'] = $node->status;
     
     if ($node->type == 'ebms_event') {
@@ -481,4 +645,14 @@ function preprocess_ebms_event(&$variables) {
         }
 
     $variables['docLinks'] = $docLinks;
+}
+
+/**
+ * Overwrite the box that shows a user they have submitted a webform request before.
+ * 
+ * @param type $variables
+ * @return string HTML output
+ */
+function ebmstheme_webform_view_messages($variables) {
+    return '';
 }

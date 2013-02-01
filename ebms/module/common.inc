@@ -11,7 +11,8 @@
 
 namespace Ebms;
 
-define('Ebms\CONVERSION_DATE', '2012-11-12'); // XXX Fix when we go live!
+define('Ebms\CONVERSION_DATE', variable_get('ebms_conversion_date',
+        '2012-11-12'));
 define('Ebms\HOST', $_SERVER['HTTP_HOST']);
 define('Ebms\QA', strpos(HOST, 'ebms-qa') === 0);
 define('Ebms\CA', strpos(HOST, 'ebms-ca') === 0);
@@ -46,6 +47,7 @@ define('Ebms\PASS_INACTIVE', IMAGES_DIR . '/EBMS_Pass_Icon_Inactive.png');
 
 define('Ebms\REJECT_ACTIVE', IMAGES_DIR . '/EBMS_Reject_Icon_Active.png');
 define('Ebms\REJECT_INACTIVE', IMAGES_DIR . '/EBMS_Reject_Icon_Inactive.png');
+define('Ebms\DELETE_ICON', IMAGES_DIR . '/icon_deletelink.gif');
 
 define('Ebms\TAG_ACTIVE', IMAGES_DIR . '/EBMS_Tag_Icon_Active.png');
 define('Ebms\TAG_INACTIVE', IMAGES_DIR . '/EBMS_Tag_Icon_Inactive.png');
@@ -961,50 +963,6 @@ class Util {
     }
 
     /**
-     * XXX Replace with Alan's version.
-     */
-    public static function get_full_citation($article_id) {
-        $xml = db_select('ebms_article', 'a')
-            ->fields('a', array('source_data'))
-            ->condition('a.article_id', $article_id)
-            ->execute()
-            ->fetchField();
-        $doc = new \SimpleXMLElement($xml);
-        $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
-        $article = $doc->MedlineCitation->Article;
-        $title = htmlspecialchars($article->ArticleTitle);
-        $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
-        $year = $article->Journal->JournalIssue->PubDate->Year;
-        $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
-        $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
-        $authors = array();
-        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
-        {
-            if (sizeof($authors) == 3) {
-                $authors[] = 'et al.';
-                break;
-            }
-            $name = $author->LastName;
-            if ($author->Initials)
-                $name .= ' ' . $author->Initials;
-            $authors[] = htmlspecialchars($name);
-        }
-        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
-        $ta = htmlspecialchars($ta);
-        $pmid = $doc->MedlineCitation->PMID;
-        $pieces = array(implode(',', $authors), ': <em>', $title, '</em> ',
-                  $ta, ' ', $vol);
-        if ($issue)
-            $pieces[] = "($issue)";
-        if ($pgn)
-            $pieces[] = ": $pgn";
-        if ($year)
-            $pieces[] = ", $year";
-        $pieces[] = ". $pmid";
-        return implode($pieces);
-    }
-
-    /**
      * Prepare an address for a system email message.
      */
     public static function format_email_address($email, $name) {
@@ -1718,6 +1676,12 @@ class Util {
 }
 
 class EbmsPager extends \PagerDefault {
+    /**
+     * The total items found as a part of this query
+     *
+     * @var int
+     */
+    public $total_items = -1;
 
     /**
      * Override PagerDefault's execute method.
@@ -1745,8 +1709,8 @@ class EbmsPager extends \PagerDefault {
         // if no page query parameter or it is not equal to 'off'...
         if (!isset($parms['pager']) || $parms['pager'] != 'off') {
             // ...perform the normal alterations to the query.
-            $total_items = $this->getCountQuery()->execute()->fetchField();
-            $current_page = pager_default_initialize($total_items,
+            $this->total_items = $this->getCountQuery()->execute()->fetchField();
+            $current_page = pager_default_initialize($this->total_items,
                             $this->limit, $this->element);
             $this->range($current_page * $this->limit, $this->limit);
         }

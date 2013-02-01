@@ -37,20 +37,10 @@ div.ctools-modal-content #citation-form-div{
     /*clear: both;*/
 }
 
-.page-citations #citation-buttons-div .form-type-checkbox
-{
-    display: inline;
-}
-
 .page-citations #citation-form-div .citation-input-div input.form-text,
 .page-citations #citation-form-div .citation-input-div select{
     width: 525px;
 }
-/*
-.page-citations #citation-form-div input.form-submit,
-.page-citations #citation-form-div input.form-checkbox{
-    width: auto;
-}*/
 
 .page-citations #citation-form-div .citation-input-div>
 .form-type-checkbox>input.form-checkbox{
@@ -94,80 +84,6 @@ div.ctools-modal-content #citation-form-div{
     display: table-row;
 }
 
-#citation-buttons-div {
-    float: left;
-    margin-bottom: 20px;
-}
-
-#citation-buttons-div .citation-input-div{
-    width: 415px;
-}
-
-
-#citation-buttons-div .citation-input-div select{
-    width: 150px;
-}
-
-#citation-buttons-div input{
-    padding: 7px 10px;
-}
-
-#citation-buttons-div > input,
-#citation-buttons-div > fieldset,
-.page-citations form #citation-buttons-div .form-item.form-type-checkbox label{
-    margin: 0px 5px 5px;
-}
-
-#citation-buttons-div .form-type-checkboxes label{
-    margin-top: 5px;
-}
-
-#citation-buttons-div .citation-input-div .form-type-checkboxes .form-type-checkbox label:not(#foo){
-    background-position: right top;
-    padding-left: 0px;
-    padding-right: 35px;
-}
-
-
-.page-citations form #citation-buttons-div .citation-input-div>.form-type-checkbox>label{
-    padding: 0px 0px 0px 40px !important;
-
-}
-
-#citation-buttons-div .citation-input-div>.form-item{
-    clear: both;
-    overflow: auto;
-}
-
-#citation-buttons-div .citation-input-div>.form-item>*{
-    clear: both;
-    width: 200px;
-    margin-right: 10px;
-}
-
-.page-citations #citation-buttons-div .citation-input-div>.form-item>label{
-    clear: none;
-    width: 190px;
-    float:right;
-}
-
-.page-citations #citation-buttons-div .citation-input-div .form-type-checkbox > *{
-    /*margin-left: 0px;
-    margin-right: 0px;
-    padding-left: 0px;
-    padding-right: 0px;*/
-    float: left;
-}
-
-.page-citations #citation-buttons-div .form-checkboxes{
-    margin: 0px;
-}
-
-#citation-buttons-div > input,
-#citation-buttons-div > fieldset{
-    float: left;
-}
-
 #citation-results-div .item-list {
     width: 40%;
     float: right;
@@ -177,113 +93,8 @@ div.ctools-modal-content #citation-form-div{
     margin: 10px 0px;
 }
 
-.citation-header {
-    text-transform: uppercase;
-}
-
-.citation-row,
-.citation-header {
-    display: table-row;
-}
-
 .citation-column {
     display: table-column;
-}
-
-.citation-cell {
-    display: table-cell;
-    padding: 0px 10px;
-}
-
-.citation-row > .citation-cell {
-    padding-top: 20px;
-}
-
-.borderless{
-    border: none;
-}
-
-.citation-cell{
-    padding-left: 5px;
-}
-
-.citation-cell.left-column{
-    padding-left: 0px;
-}
-
-/*
-.citation-cell.brief-title{
-    width: 25%;
-}
-
-.citation-cell.full-title{
-    width: 45%;
-}*/
-
-.citation-cell.brief-citation{
-    width: 35%;
-}
-
-.citation-cell.brief-citation div{
-    margin-bottom: 10px;
-}
-
-.citation-cell.brief-title{
-    min-width: 150px;
-}
-
-.citation-cell.id{
-    min-width: 100px;
-}
-
-.citation-cell.not-check{
-    min-width: 75px;
-}
-
-.citation-cell.not-check > .form-item{
-    margin: auto;
-    top: 10px;
-    padding-left: 10px;
-}
-
-.article-citation div{
-    margin-bottom: 5px;
-}
-
-/* citation-review specific */
-td.brief-citation{
-    min-width: 325px;
-}
-
-.citation-cell.brief-citation{
-    width: 325px;
-}
-
-.citation-cell.brief-citation div{
-    margin-bottom: 10px;
-}
-
-.citation-cell.summary-topic-check{
-    width: 70px;
-    text-align: center;
-}
-
-.citation-cell.summary-topic-name{
-    width: 320px;
-}
-
-.citation-cell input{
-    margin: 0 0 5px;
-    padding: 0px;
-}
-
-.citation-cell .topic-checks{
-    margin-top: 10px;
-    margin-left: 30px;
-}
-
-.citation-cell .topic-checks .form-type-checkbox{
-    margin-left: 20px;
 }
 
 .summary-topic-name{
@@ -417,17 +228,17 @@ td.board-cell {
 }
 
 .left-nav-most-recent{
-    min-height: 40px;
+    min-height: 20px;
     margin: 0 0 0 5px;
     padding: 0 10px 0 0;
     border-left: 10px #0000BB solid;
-    float: left;
+    display: inline-block;
 }
 
 #view-abstract-div .citation-abstract-label,
 #view-abstract-div .citation-abstract-text,
 .action-cell > div{
-    margin: 10px;
+    margin: 0 10px 10px;
 }
 
 .board-cell select{

@@ -874,6 +874,20 @@ ebmsscript.delete_group = function(group_delete_url, group_delete_name) {
     jQuery("#confirm-group-delete").dialog("open");
 };
 
+ebmsscript.delete_subpage = function(url) {
+    if (confirm("Archive summary subpage?"))
+        window.location.href = url;
+    else
+        return false;
+}
+
+ebmsscript.delete_summary_link = function(url) {
+    if (confirm("Delete Cancer.gov summary link?"))
+        window.location.href = url;
+    else
+        return false;
+}
+
 ebmsscript.init_groups_page = function() {
     if (jQuery("body.page-groups").length != 1)
         return;

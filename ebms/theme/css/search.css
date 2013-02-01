@@ -1,9 +1,179 @@
 /* DATABASE SEARCH */
+
+/* Undo layout breakage caused by 508-compliance template changes. */
+#search-db-form fieldset.radios-508 { padding: 0; }
+
+/*
+ * We want to have the spacing between fields handled as high a level
+ * in the markup as possible, instead of scattered among the subelements.
+ */
+#search-db-form .form-radios:not(#foo) { margin-top: 0; margin-left: 0; }
+#search-db-form .form-item-topic-logic label { margin-top: 0; padding: 0; }
+#search-db-form .use-range-checkbox { margin-top: 0; padding-left: 0px; }
+#search-db-form .form-item,
+#search-db-form .right-boxes .form-item,
+#search-db-form .date-with-range .form-item,
+#search-db-form .form-item.form-type-radio:not(#foo) label,
+#search-db-form #topics-boxes .form-checkboxes:not(#foo),
+#search-db-form .form-item label { margin: 0; }
+#search-db-form .checkbox-line,
+#search-db-form .form-checkboxes .form-type-checkbox,
+#search-db-form .yes-no-boxes,
+#search-db-form .date-with-range,
+#search-db-form .year-and-month,
+#search-db-form .fieldset-wrapper > .form-type-date,
+#search-db-form .fieldset-wrapper > .form-type-select,
+#search-db-form div.form-item.form-type-textfield {
+    margin: 5px 0; float: none; overflow: hidden;
+}
+#search-db-form .form-type-radios .form-item,
+#search-db-form .checkbox-line input,
+form#search-db-form .form-item.form-type-checkbox:not(#foo) label {
+    margin-top: 0; margin-bottom: 0;
+}
+
+/* Both the request form and the results page have the same width. */
 #search-db-form, #search-results { float: left; width: 710px; }
-#search-db-form #edit-boards { width: 100%; padding: 5px 0 5px 10px; }
-#search-db-form .form-item-topic-logic label { margin-top: 0; }
-#search-db-form fieldset#edit-advanced-search { margin-top: 40px; }
-.use-range-checkbox { margin-top: -40px; padding-left: 235px; }
+
+/* Set the field widths. */
+#search-db-form div.form-radios,
+#search-db-form .form-select.fixed-width { width: 485px; }
+#search-db-form .form-type-radios,
+#search-db-form fieldset.radios-508{ width: 100%; }
+#search-db-form .form-text.fixed-width { width: 483px; }
+#search-db-form .checkbox-line { padding-left: 463px; }
+#search-db-form .left-radios .form-radios { width: auto; }
+#search-db-form .form-type-date select { width: 127px; margin-right: 5px; }
+#search-db-form .year-and-month .form-type-select select { width: 235px; }
+
+/* Correct spacing between year and month fields. */
+#search-db-form div.form-item-publication-month { padding-left: 15px; }
+
+/* Use floats to keep custom field pieces on the same line. */
+#search-db-form .form-radios,
+#search-db-form .fieldset-wrapper .form-type-radios,
+#search-db-form .fieldset-wrapper .form-radios .form-item-topic-logic,
+#search-db-form .form-type-date,
+#search-db-form .use-range-checkbox,
+#search-db-form .year-and-month .form-type-select {
+    float: left;
+}
+
+/* Align the field labels on the right using float. */
+#search-db-form .form-type-select label,
+#search-db-form .form-type-textfield label,
+#search-db-form .date-with-range span,
+#search-db-form .year-and-month span,
+#search-db-form .form-type-radios > label,
+#search-db-form .yes-no-boxes legend.radios-508 {
+    line-height: 22px; float: right; width: 205px;
+}
+
+/*
+ * Cleanup 508 breakage of one of the labels (we lost a level in the
+ * hierarchy).
+ */
+.yes-no-boxes fieldset.radios-508 legend { padding: 0; margin-left: 10px; }
+
+/* Clears for the request form. */
+#search-db-form > div > div,
+#search-db-form fieldset,
+#search-db-form .fieldset-wrapper > .form-type-select,
+#search-db-form .fieldset-wrapper .form-type-radios,
+#search-db-form .checkbbox-line,
+#search-db-form .date-with-range {
+    clear: both;
+}
+
+/* Align the left margin for the form. */
+#search-db-form > div > div { margin-left: 10px; }
+#search-db-form fieldset { margin: 0 0 0 10px; padding: 5px 0; }
+
+/* More custom styling for the collapsible sections. */
+#search-db-form fieldset { margin-top: 15px; overflow: hidden; }
+#search-db-form fieldset { border: none; }
+
+/* Line heights. */
+#search-db-form .form-item label { line-height: 22px; }
+#search-db-form .yes-no-boxes label { line-height: 22px; }
+#search-db-form .checkbox-line input,
+form#search-db-form .form-item.form-type-checkbox:not(#foo) label,
+#search-db-form .form-item.form-type-radio:not(#foo) label {
+    line-height: 24px;
+}
+
+/* Tinier text for the field explanations. */
+#search-db-form .field-desc { font-size: 12px; font-style: italic; }
+
+/*
+ * Trickyness to get the count of selected summary topics to display,
+ * but only some of the time.
+ */
+#search-db-form #edit-topics-box #topselcnt { display: none; color: #a90101; }
+#search-db-form #edit-topics-box.collapsed #topselcnt { display: inherit; }
+
+/*
+ * Custom styling for Ashleigh's radio buttons and checkboxes.  This
+ * took a lot of experimenting, and to be honest, I'm far from confident
+ * that everything here is really necessary.  I'm absolutely sure the
+ * rules could be cleaned up and rationalized.  At least they do the
+ * right thing (for now, anyway).
+ */
+
+/* Nudge the logic button description to the right position. */
+.left-radios { position: relative; }
+.left-radios .field-desc { position: relative; top: 2px; left: 15px; }
+
+/* Override positioning custom images for checkboxes/radio buttons. */
+form .form-type-radios .form-item.form-type-radio:not(#foo) label,
+form .use-range-checkbox .form-type-checkbox:not(#foo) label,
+form .right-boxes .form-item.form-type-radio:not(#foo) label,
+fieldset.radios-508 label {
+    background-position: right;
+}
+
+/* Float rules for checkboxes/radio buttons. */
+form .form-radios .form-type-radio,
+form .right-boxes .form-item.form-type-radio:not(#foo) label,
+.yes-no-boxes fieldset.radios-508 div.form-type-radio {
+    float: right;
+}
+
+/* Left padding for the checkboxes/radio buttons. */
+form .form-type-radios .form-item.form-type-radio:not(#foo) label,
+form .use-range-checkbox .form-item.form-type-checkbox:not(#foo) label {
+    padding-left: 5px;
+}
+form .form-type-radios .form-item.form-type-radio:not(#foo) label,
+form .yes-no-boxes .form-item.form-type-radio:not(#foo) label 
+/*fieldset.radios-508 label*/ {
+    padding-left: 12px;
+}
+form .checkbox-line .form-item.form-type-checkbox:not(#foo) label {
+    padding-left: 32px;
+}
+form .right-boxes .form-item.form-type-radio:not(#foo) label {
+    padding-left: 10px;
+}
+
+/* First of a set of inline radios is flush left. */
+form .left-radios .form-type-radios .form-radios .form-item.form-type-radio:not(#foo):first-child label,
+form .right-boxes .form-item.form-type-radio:first-child:not(#foo) label {
+    padding-left: 0;     
+}
+
+/* Right padding for the checkboxes/radio buttons. */
+form .use-range-checkbox .form-item.form-type-checkbox:not(#foo) label,
+form .form-type-radios .form-item.form-type-radio:not(#foo) label,
+form .yes-no-boxes .form-item.form-type-radio:not(#foo) label,
+form .left-radios .form-type-radios .form-radios .form-item.form-type-radio:not(#foo):first-child label,
+form .right-boxes .form-item.form-type-radio:not(#foo) label,
+form .use-range-checkbox .form-type-checkbox:not(#foo) label,
+fieldset.radios-508 label {
+    padding-right: 30px;
+}
+
+/* Styling for the search results page. */
 #search-results div.float-left a.button { margin-bottom: 20px; }
 #search-results div#articles-div { clear: both; }
 #search-results div#articles-div.extra-top-margin { margin-top: 60px; }
@@ -20,16 +190,4 @@
 #search-results span.article-citation * { font-size: 13px; }
 #search-results a.article-title { font-style: italic; }
 #search-results .article-citation a:hover { text-decoration: underline; }
-#search-db-form div.form-item-publication-month {
-    margin-top: -42px; padding-left: 100px;
-}
 #search-results div.float-left { margin-top: 10px; margin-left: 10px; }
-
-/* add later? */
-/*
-#search-db-form input.form-text { width: 620px; }
-#search-db-form #edit-advanced-search select,
-#search-db-form #edit-advanced-search input { width: 500px; }
-#search-db-form #edit-advanced-search #edit-publication-year,
-#search-db-form #edit-advanced-search #edit-publication-month { width: 100px; }
-*/

@@ -1,0 +1,12 @@
+.sp-action-links { margin-left: -38px; }
+.sp-action-links a { margin-right: 5px; }
+.sp-action-links a img { height: 15px; }
+.sp-action-links a:first-child img { height: 13px; }
+.cg-action-links { margin-left: -18px; }
+.cg-action-links a img { height: 13px; }
+.cg-action-links a { margin-right: 5px; }
+
+#pdq-ebms-edit-summary-page-form #edit-title,
+#pdq-ebms-edit-cg-summary-form .form-type-textfield input {
+    margin: 10px 0 0 12px;
+}

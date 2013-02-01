@@ -86,6 +86,12 @@ function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
         // The comment cannot have a subject
         $form['subject']['#access'] = FALSE;
         
+        // Hide the name of the user so we don't repeat it twice
+        if (array_key_exists('author', $form) && array_key_exists('_author', $form['author'])) {
+            $form['author']['_author']['#title'] = '';
+            $form['author']['_author']['#markup'] = '';
+        }
+        
         // Moved from comment-wrapper--node-forum & should be cleaned up
         // Updates to the comment form
         $commentForm = &$content['comment_form'];

@@ -262,6 +262,7 @@ class EbmsHomePage {
      *     have been implemented.
      */
     private function admin() {
+        global $user;
         switch ($this->role) {
             case 'librarian':
                 $items = array(
@@ -282,6 +283,11 @@ class EbmsHomePage {
                     // l('Send a Message', 'stub'),
                 );
                 break;
+        }
+        if (in_array('admin assistant', $user->roles)) {
+            $items[] = l('Print Packets', 'print-packets/run');
+            $items[] = l('View Packet Printing Jobs', 'print-packets/view');
+            $items[] = l('Manage Print Recipients', 'print-packets/mbrs');
         }
         $title = 'Administrative Tasks';
         $id = 'admin';

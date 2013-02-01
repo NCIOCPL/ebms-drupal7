@@ -493,17 +493,30 @@ class EbmsReports {
         $published = Ebms\Util::state_id_from_text_id('Published');
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->join('ebms_article_topic', 'a',
+            'a.article_id = s.article_id AND a.topic_id = s.topic_id');
+        $query->condition('a.cycle_id', $cycle);
+        $query->condition('s.state_id', $published);
         $query->fields('b', array('board_name'));
-        $query->fields('t', array('topic_name'));
+        $query->groupBy('b.board_name');
         if ($board)
             $query->condition('s.board_id', $board);
-        if (!Ebms\Util::add_cycle_to_query($query, $cycle, 's.status_dt')) {
-            drupal_set_message('Failure restricting query by cycle', 'error');
-            return array();
-        }
-        $query->condition('s.state_id', $published);
-        $query->groupBy('b.board_name');
+
+        // Branch off at this point for a separate version of the query
+        // to get the total number of articles for each board (which we
+        // can't get by summing the per-board/topic counts, because an
+        // article can be represented in those counts more than once).
+        $total_query = clone($query);
+        $total_query->addExpression('COUNT(DISTINCT a.article_id)', 'n');
+        $results = $total_query->execute();
+        $totals = array();
+        foreach ($results as $result)
+            $totals[$result->board_name] = $result->n;
+
+        // Resume with the rest of the original query, from which we
+        // need more granularity.
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->fields('t', array('topic_name'));
         $query->groupBy('t.topic_name');
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
@@ -523,12 +536,9 @@ class EbmsReports {
         // by topic.
         foreach ($stats as $board_name => &$topic_array) {
             $rows = array();
-            $total = 0;
-            foreach ($topic_array as $topic_name => $count) {
+            foreach ($topic_array as $topic_name => $count)
                 $rows[] = array($topic_name, $count);
-                $total += $count;
-            }
-            $rows[] = array('TOTAL', $total);
+            $rows[] = array('TOTAL', $totals[$board_name]);
             $report[$board_name] = array(
                 '#theme' => 'table',
                 '#caption' => $board_name,
@@ -582,17 +592,30 @@ class EbmsReports {
         $state_id = Ebms\Util::state_id_from_text_id('ReadyInitReview');
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->join('ebms_article_topic', 'a',
+            'a.article_id = s.article_id AND a.topic_id = s.topic_id');
+        $query->condition('a.cycle_id', $cycle);
+        $query->condition('s.state_id', $state_id);
         $query->fields('b', array('board_name'));
-        $query->fields('t', array('topic_name'));
+        $query->groupBy('b.board_name');
         if ($board)
             $query->condition('s.board_id', $board);
-        if (!Ebms\Util::add_cycle_to_query($query, $cycle, 's.status_dt')) {
-            drupal_set_message('Failure restricting query by cycle', 'error');
-            return array();
-        }
-        $query->condition('s.state_id', $state_id);
-        $query->groupBy('b.board_name');
+
+        // Branch off at this point for a separate version of the query
+        // to get the total number of articles for each board (which we
+        // can't get by summing the per-board/topic counts, because an
+        // article can be represented in those counts more than once).
+        $total_query = clone($query);
+        $total_query->addExpression('COUNT(DISTINCT a.article_id)', 'n');
+        $results = $total_query->execute();
+        $totals = array();
+        foreach ($results as $result)
+            $totals[$result->board_name] = $result->n;
+
+        // Resume with the rest of the original query, from which we
+        // need more granularity.
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->fields('t', array('topic_name'));
         $query->groupBy('t.topic_name');
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
@@ -612,12 +635,9 @@ class EbmsReports {
         // by topic.
         foreach ($stats as $board_name => &$topic_array) {
             $rows = array();
-            $total = 0;
-            foreach ($topic_array as $topic_name => $count) {
+            foreach ($topic_array as $topic_name => $count)
                 $rows[] = array($topic_name, $count);
-                $total += $count;
-            }
-            $rows[] = array('TOTAL', $total);
+            $rows[] = array('TOTAL', $totals[$board_name]);
             $report[$board_name] = array(
                 '#theme' => 'table',
                 '#caption' => $board_name,
@@ -676,20 +696,36 @@ class EbmsReports {
         $state_ids = array($rejected, $accepted);
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->join('ebms_article_topic', 'a',
+            'a.article_id = s.article_id AND a.topic_id = s.topic_id');
+        $query->condition('a.cycle_id', $cycle);
+        $query->condition('s.state_id', $state_ids, 'IN');
         $query->fields('b', array('board_name'));
-        $query->fields('t', array('topic_name'));
         $query->fields('s', array('state_id'));
+        $query->groupBy('b.board_name');
+        $query->groupBy('s.state_id');
         if ($board)
             $query->condition('s.board_id', $board);
-        if (!Ebms\Util::add_cycle_to_query($query, $cycle, 's.status_dt')) {
-            drupal_set_message('Failure restricting query by cycle', 'error');
-            return array();
+
+        // Branch off at this point for a separate version of the query
+        // to get the total number of articles for each board (which we
+        // can't get by summing the per-board/topic counts, because an
+        // article can be represented in those counts more than once).
+        $total_query = clone($query);
+        $total_query->addExpression('COUNT(DISTINCT a.article_id)', 'n');
+        $results = $total_query->execute();
+        $totals = array();
+        foreach ($results as $result) {
+            if (!array_key_exists($result->board_name, $totals))
+                $totals[$result->board_name] = array();
+            $totals[$result->board_name][$result->state_id] = $result->n;
         }
-        $query->condition('s.state_id', $state_ids, 'IN');
-        $query->groupBy('b.board_name');
+
+        // Resume with the rest of the original query, from which we
+        // need more granularity.
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->fields('t', array('topic_name'));
         $query->groupBy('t.topic_name');
-        $query->groupBy('s.state_id');
         $query->addExpression('COUNT(*)', 'n');
         $query->orderBy('b.board_name');
         $query->orderBy('t.topic_name');
@@ -716,11 +752,12 @@ class EbmsReports {
         foreach ($stats as $board_name => &$topic_array) {
             $rows = array();
             $total_rejected = $total_accepted = 0;
-            foreach ($topic_array as $topic_name => &$n) {
+            if (isset($totals[$board_name][$rejected]))
+                $total_rejected = $totals[$board_name][$rejected];
+            if (isset($totals[$board_name][$accepted]))
+                $total_accepted = $totals[$board_name][$accepted];
+            foreach ($topic_array as $topic_name => &$n)
                 $rows[] = array($topic_name, $n[$rejected], $n[$accepted]);
-                $total_rejected += $n[$rejected];
-                $total_accepted += $n[$accepted];
-            }
             $rows[] = array('TOTAL', $total_rejected, $total_accepted);
             $report[$board_name] = array(
                 '#theme' => 'table',
@@ -803,12 +840,9 @@ class EbmsReports {
         if ($board)
             $query->condition('s.board_id', $board);
         if ($cycle) {
-            if (!Ebms\Util::add_cycle_to_query($query, $cycle,
-                    's.status_dt')) {
-                drupal_set_message('Failure restricting query by cycle',
-                    'error');
-                return array();
-            }
+            $query->join('ebms_article_topic', 'c',
+                'c.article_id = s.article_id AND c.topic_id = s.topic_id');
+            $query->condition('c.cycle_id', $cycle);
         }
         else {
             if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
@@ -1025,14 +1059,8 @@ class EbmsReports {
             $query->condition('b.board_id', $board);
         if ($topic)
             $query->condition('t.topic_id', $topic);
-        if ($cycle) {
-            if (!Ebms\Util::add_cycle_to_query($query, $cycle,
-                    'j.import_date')) {
-                drupal_set_message('Failure restricting query by cycle',
-                    'error');
-                return array();
-            }
-        }
+        if ($cycle)
+            $query->condition('j.cycle', $cycle);
         elseif ($range) {
             if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
                     'j.import_date')) {
@@ -1333,28 +1361,38 @@ class EbmsReports {
                 'field' => 'a.last_name',
                 'class' => array('col-1'),
             ),
-            'Disposition',
-            'Comments',
-            'Review Cycle',
-            'Date Reviewed',
-            'Reviewer',
         );
+        if (!$params['disposition'])
+            $headers[] = 'Disposition';
+        $headers[] = 'Comments';
+        if (!$params['cycle'])
+            $headers[] = 'Review Cycle';
+        $headers[] = 'Date Reviewed';
+        $headers[] = 'Reviewer';
 
         // Construct the query for the report.
         $passed = Ebms\Util::state_id_from_text_id('PassedBMReview');
         $rejected = Ebms\Util::state_id_from_text_id('RejectBMReview');
         $query = db_select('ebms_article_state', 's');
+        $state_fields = array('article_id', 'article_state_id', 'status_dt');
         $query = $query->extend('TableSort');
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->join('ebms_article_topic', 't',
+                't.article_id = s.article_id AND t.topic_id = s.topic_id');
         $query->join('users', 'u', 'u.uid = s.user_id');
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'a',
             'a.author_id = c.author_id');
-        $query->condition('t.board_id', $params['board']);
+        $query->condition('s.board_id', $params['board']);
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
+        if ($params['cycle'])
+            $query->condition('t.cycle_id', $params['cycle']);
+        else {
+            $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+            $query->fields('c2', array('cycle_name'));
+        }
         switch ($params['disposition']) {
         case 'yes':
             $query->condition('s.state_id', $passed);
@@ -1364,13 +1402,10 @@ class EbmsReports {
             break;
         default:
             $query->condition('s.state_id', array($passed, $rejected), 'IN');
+            $state_fields[] = 'state_id';
             break;
         }
-        if ($params['cycle'])
-            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                                          's.status_dt');
-        $query->fields('s', array('article_id', 'topic_id', 'article_state_id',
-                                  'state_id', 'status_dt'));
+        $query->fields('s', $state_fields);
         $query->fields('u', array('name'));
         $query->orderByHeader($headers);
         $query->distinct();
@@ -1382,10 +1417,8 @@ class EbmsReports {
         foreach ($results as $result) {
             $article_id = $result->article_id;
             $article_state_id = $result->article_state_id;
-            $state_id = $result->state_id;
             $status_dt = strtotime($result->status_dt);
             $reviewer = htmlspecialchars($result->name);
-            $disposition = $state_id == $passed ? 'Yes' : 'No';
             $citation = EbmsReports::format_citation($article_id);
             $comment_rows = db_select('ebms_article_state_comment', 'c')
                 ->fields('c', array('comment'))
@@ -1405,12 +1438,14 @@ class EbmsReports {
                     'data' => $citation,
                     'class' => array('col-1'),
                 ),
-                $disposition,
-                $comments,
-                date('Y/m', $status_dt),
-                date('m/d/Y', $status_dt),
-                $reviewer,
             );
+            if (!$params['disposition'])
+                $row[] = $result->state_id == $passed ? 'Yes' : 'No';
+            $row[] = $comments;
+            if (!$params['cycle'])
+                $row[] = $result->cycle_name;
+            $row[] = date('m/d/Y', $status_dt);
+            $row[] = $reviewer;
             $rows[] = array(
                 'data' => $row,
                 'no_striping' => true,
@@ -1443,7 +1478,7 @@ class EbmsReports {
      * used for this status is the somewhat anachronistic "Literature
      * Surveillance Committee Decision"; even though the use of
      * committees for this review step has long been abandoned, the
-     * users insistent on retaining this language.
+     * users insisted on retaining this language.
      *
      * This report is one of eight different reports on articles by
      * status.  Called by the cites_by_status() method below.
@@ -1467,27 +1502,37 @@ class EbmsReports {
                 'field' => 'a.last_name',
                 'class' => array('col-1'),
             ),
-            'Disposition',
-            'Comments',
-            'Review Cycle',
-            'Date Reviewed',
         );
+        if (!$params['disposition'])
+            $headers[] = 'Disposition';
+        $headers[] = 'Comments';
+        if (!$params['cycle'])
+            $headers[] = 'Review Cycle';
+        $headers[] = 'Date Reviewed';
 
         // Construct the query for the report.
         $passed = Ebms\Util::state_id_from_text_id('PassedFullReview');
         $rejected = Ebms\Util::state_id_from_text_id('RejectFullReview');
         $fyi = Ebms\Util::state_id_from_text_id('FYI');
         $query = db_select('ebms_article_state', 's');
+        $state_fields = array('article_id', 'article_state_id', 'status_dt');
         $query = $query->extend('TableSort');
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->join('ebms_article_topic', 't',
+                't.article_id = s.article_id AND t.topic_id = s.topic_id');
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'a',
             'a.author_id = c.author_id');
-        $query->condition('t.board_id', $params['board']);
+        $query->condition('s.board_id', $params['board']);
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
+        if ($params['cycle'])
+            $query->condition('t.cycle_id', $params['cycle']);
+        else {
+            $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+            $query->fields('c2', array('cycle_name'));
+        }
         switch ($params['disposition']) {
         case 'yes':
             $query->condition('s.state_id', $passed);
@@ -1501,13 +1546,10 @@ class EbmsReports {
         default:
             $query->condition('s.state_id',
                 array($passed, $rejected, $fyi), 'IN');
+            $state_fields[] = 'state_id';
             break;
         }
-        if ($params['cycle'])
-            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                                          's.status_dt');
-        $query->fields('s', array('article_id', 'article_state_id',
-                                  'state_id', 'status_dt'));
+        $query->fields('s', $state_fields);
         $query->orderByHeader($headers);
         $query->distinct();
 
@@ -1518,19 +1560,7 @@ class EbmsReports {
         foreach ($results as $result) {
             $article_id = $result->article_id;
             $article_state_id = $result->article_state_id;
-            $state_id = $result->state_id;
             $status_dt = strtotime($result->status_dt);
-            switch ($state_id) {
-                case $passed:
-                    $disposition = 'Yes';
-                    break;
-                case $rejected:
-                    $disposition = 'No';
-                    break;
-                default:
-                    $disposition = 'FYI';
-                    break;
-            }
             $citation = EbmsReports::format_citation($article_id);
             $comment_rows = db_select('ebms_article_state_comment', 'c')
                 ->fields('c', array('comment'))
@@ -1550,11 +1580,25 @@ class EbmsReports {
                     'data' => $citation,
                     'class' => array('col-1'),
                 ),
-                $disposition,
-                $comments,
-                date('Y/m', $status_dt),
-                date('m/d/Y', $status_dt),
             );
+            if (!$params['disposition']) {
+                switch ($result->state_id) {
+                    case $passed:
+                        $disposition = 'Yes';
+                        break;
+                    case $rejected:
+                        $disposition = 'No';
+                        break;
+                    default:
+                        $disposition = 'FYI';
+                        break;
+                }
+                $row[] = $disposition;
+            }
+            $row[] = $comments;
+            if (!$params['cycle'])
+                $row[] = $result->cycle_name;
+            $row[] = date('m/d/Y', $status_dt);
             $rows[] = array(
                 'data' => $row,
                 'no_striping' => true,
@@ -1583,6 +1627,13 @@ class EbmsReports {
      * Create the Drupal render array for a report on articles whose
      * current status is that the full text for the articles has been
      * retrieved, or that the full text is needed but unobtainable.
+     * In a meeting with Robin, she indicated that for this report,
+     * if the user chooses "No" for the disposition, the report should
+     * show the articles for which the full text is not available at
+     * all; otherwise, the report should show articles for which
+     * full text has been retrieved and stored in the EBMS (even if
+     * the user did not make a selection from the Disposition drop-
+     * down box).
      *
      * This report is one of eight different reports on articles by
      * status.  Called by the cites_by_status() method below.
@@ -1614,29 +1665,35 @@ class EbmsReports {
         $query = $query->extend('TableSort');
         $query->condition('s.current', 'Y');
         $query->condition('s.state_id', $passed_bm_review);
+        $query->condition('s.board_id', $params['board']);
         $query->fields('s', array('article_id', 'status_dt'));
+        $query->join('ebms_article_topic', 't',
+            't.article_id = s.article_id AND t.topic_id = s.topic_id');
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
-        $query->condition('t.board_id', $params['board']);
         if ($params['disposition'] == 'no') {
             $query->join('ebms_ft_unavailable', 'u',
                 'u.article_id = s.article_id');
             $query->fields('u', array('comment'));
             $headers[] = 'Comments';
-            $headers[] = 'Review Cycle';
+            if (!$params['cycle'])
+                $headers[] = 'Review Cycle';
         }
         else {
             $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
             $query->join('file_managed', 'f', 'f.fid = a.full_text_id');
             $query->fields('f', array('filename', 'timestamp'));
             $headers[] = 'Filename';
-            $headers[] = 'Review Cycle';
+            if (!$params['cycle'])
+                $headers[] = 'Review Cycle';
             $headers[] = 'Date Uploaded';
         }
         if ($params['cycle'])
-            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                                          's.status_dt');
+            $query->condition('t.cycle_id', $params['cycle']);
+        else {
+            $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+            $query->fields('c2', array('cycle_name'));
+        }
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'aa',
@@ -1667,7 +1724,8 @@ class EbmsReports {
                 $row[] = htmlspecialchars($result->comment);
             else
                 $row[] = htmlspecialchars($result->filename);
-            $row[] = date('Y/m', $status_dt);
+            if (!$params['cycle'])
+                $row[] = $result->cycle_name;
             if ($params['disposition'] != 'no')
                 $row[] = date('m/d/Y', $result->timestamp);
             $rows[] = array(
@@ -1732,16 +1790,18 @@ class EbmsReports {
             Ebms\Util::state_id_from_text_id('PassedFullReview');
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
+        $query->join('ebms_article_topic', 't',
+            't.article_id = s.article_id AND t.topic_id = s.topic_id');
         $query->condition('s.current', 'Y');
         $query->condition('s.state_id', $passed_full_review);
+        $query->condition('s.board_id', $params['board']);
         $query->fields('s', array('article_id', 'status_dt'));
+        $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+        $query->fields('c2', array('cycle_name'));
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
-        $query->condition('t.board_id', $params['board']);
         if ($params['cycle'])
-            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                                          's.status_dt');
+            $query->condition('t.cycle_id', $params['cycle']);
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'aa',
@@ -1751,6 +1811,7 @@ class EbmsReports {
         $query->condition('a.drop_flag', 0);
         $query->join('ebms_packet', 'p',
             'p.packet_id = a.packet_id AND p.topic_id = s.topic_id');
+        $query->condition('p.active_status', 'A');
         $query->leftJoin('ebms_article_review', 'r',
             'r.packet_id = p.packet_id AND r.article_id = a.article_id');
         $query->isNull('r.article_id');
@@ -1768,7 +1829,7 @@ class EbmsReports {
             $article_id = $result->article_id;
             if (!array_key_exists($article_id, $articles))
                 $articles[$article_id] = array(
-                    'cycle' => date('Y/m', strtotime($result->status_dt)),
+                    'cycle' => $result->cycle_name,
                     'packets' => array(),
                 );
             $articles[$article_id]['packets'][] = array(
@@ -1897,11 +1958,13 @@ class EbmsReports {
         $query->fields('s', array('article_id', 'status_dt'));
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
-        $query->condition('t.board_id', $params['board']);
+        $query->join('ebms_article_topic', 't',
+            't.article_id = s.article_id AND t.topic_id = s.topic_id');
+        $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+        $query->fields('c2', array('cycle_name'));
+        $query->condition('s.board_id', $params['board']);
         if ($params['cycle'])
-            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                                          's.status_dt');
+            $query->condition('t.cycle_id', $params['cycle']);
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'aa',
@@ -1931,7 +1994,7 @@ class EbmsReports {
             $article_id = $result->article_id;
             if (!array_key_exists($article_id, $articles))
                 $articles[$article_id] = array(
-                    'cycle' => date('Y/m', strtotime($result->status_dt)),
+                    'cycle' => $result->cycle_name,
                     'reviews' => array(),
                 );
             $articles[$article_id]['reviews'][] = $result->review_id;
@@ -2062,18 +2125,21 @@ class EbmsReports {
         if (!$params['disposition'])
             $headers[] = 'Disposition';
         $headers[] = 'Comments';
-        // $headers[] = 'Review Cycle'; XXX wait for article/topic table.
+        $headers[] = 'Review Cycle';
         $headers[] = 'Date Assigned';
 
         // Construct the query for the report.
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->join('ebms_article_topic', 't',
+            't.article_id = s.article_id AND t.topic_id = s.topic_id');
+        $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+        $query->fields('c2', array('cycle_name'));
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'a',
             'a.author_id = c.author_id');
-        $query->condition('t.board_id', $params['board']);
+        $query->condition('s.board_id', $params['board']);
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
@@ -2083,8 +2149,7 @@ class EbmsReports {
             $query->condition('s.state_id',
                 array_keys($manager_actions), 'IN');
         if ($params['cycle'])
-            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                                          's.status_dt');
+            $query->condition('t.cycle_id', $params['cycle']);
         $query->fields('s', array('article_id', 'article_state_id',
                                   'state_id', 'status_dt'));
         $query->orderByHeader($headers);
@@ -2121,6 +2186,7 @@ class EbmsReports {
             foreach ($comment_rows as $comment_row)
                 $comments[] = htmlspecialchars($comment_row->comment);
             $row[] = implode('<br />', $comments);
+            $row[] = $result->cycle_name;
             $status_dt = strtotime($result->status_dt);
             $row[] = date('m/d/Y', $status_dt);
             $rows[] = array(
@@ -2180,7 +2246,7 @@ class EbmsReports {
             ),
             'Meeting Date (Type)',
             'Comments',
-            // 'Review Cycle', XXX wait for article/topic table
+            'Review Cycle',
         );
 
         // Start off with an empty report table.
@@ -2188,6 +2254,7 @@ class EbmsReports {
         $rows = array();
 
         // We construct the list of eligible meetings first.
+        // pdq_ebms_debug('ON AGENDA PARAMS', $params);
         $query = new EbmsEventQuery();
         $query->restrict_by_date($params['meeting-date']);
         $query->restrict_by_type($params['meeting-type']);
@@ -2202,6 +2269,10 @@ class EbmsReports {
             $state_id = Ebms\Util::state_id_from_text_id('OnAgenda');
             $query = db_select('ebms_article_state', 's');
             $query = $query->extend('TableSort');
+            $query->join('ebms_article_topic', 't',
+                't.article_id = s.article_id AND t.topic_id = s.topic_id');
+            $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+            $query->fields('c2', array('cycle_name'));
             $query->join('ebms_agenda_meeting', 'm',
                 'm.article_state_id = s.article_state_id');
             $query->condition('m.nid', $meeting_ids, 'IN');
@@ -2215,8 +2286,7 @@ class EbmsReports {
             $query->condition('s.current', 'Y');
             $query->condition('s.state_id', $state_id);
             if ($params['cycle'])
-                Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                    's.status_dt');
+                $query->condition('t.cycle_id', $params['cycle']);
             $query->fields('s',
                 array('article_id', 'article_state_id', 'status_dt'));
             $query->fields('m', array('nid'));
@@ -2255,7 +2325,7 @@ class EbmsReports {
                     $col2 = "$start_date ($meeting_type)";
                 }
                 $col3 = implode('<br />', $comments);
-                // $col4 = ...
+                $col4 = $result->cycle_name;
                 $row = array(
                     array(
                         'data' => ++$counter,
@@ -2267,7 +2337,7 @@ class EbmsReports {
                     ),
                     $col2,
                     $col3,
-                    // $col4,
+                    $col4,
                 );
                 $rows[] = array(
                     'data' => $row,
@@ -2322,22 +2392,24 @@ class EbmsReports {
             ),
             'Disposition',
             'Comments',
-            // 'Review Cycle', XXX wait for article/topic table
+            'Review Cycle',
             'Date Assigned',
-            // 'Discussed By', XXX find out where this comes from!
+            'Discussed By',
         );
 
         // Construct the query for the report.
+        // XXX What do we do with the meeting-type and meeting-date fields?
         $final_board_decision =
             Ebms\Util::state_id_from_text_id('FinalBoardDecision');
         $query = db_select('ebms_article_state', 's');
         $query = $query->extend('TableSort');
-        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->join('ebms_article_topic', 't',
+            't.article_id = s.article_id AND t.topic_id = s.topic_id');
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'a',
             'a.author_id = c.author_id');
-        $query->condition('t.board_id', $params['board']);
+        $query->condition('s.board_id', $params['board']);
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
@@ -2348,10 +2420,11 @@ class EbmsReports {
             $query->condition('d.decision_value_id', $params['disposition']);
         }
         if ($params['cycle'])
-            Ebms\Util::add_cycle_to_query($query, $params['cycle'],
-                                          's.status_dt');
+            $query->condition('t.cycle_id', $params['cycle']);
         $query->fields('s',
             array('article_id', 'article_state_id', 'status_dt'));
+        $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+        $query->fields('c2', array('cycle_name'));
         $query->orderByHeader($headers);
         $query->distinct();
 
@@ -2382,7 +2455,19 @@ class EbmsReports {
             foreach ($comment_rows as $comment_row)
                 $comments[] = htmlspecialchars($comment_row->comment);
             $col3 = implode('<br />', $comments);
-            $col4 = date('m/d/Y', strtotime($result->status_dt));
+            $col4 = $result->cycle_name;
+            $col5 = date('m/d/Y', strtotime($result->status_dt));
+            $query = db_select('users', 'u');
+            $query->fields('u', array('name'));
+            $query->join('ebms_article_board_decision_member', 'm',
+                'm.uid = u.uid');
+            $query->condition('m.article_state_id', $article_state_id);
+            $query->orderBy('u.name');
+            $member_rows = $query->execute();
+            $members = array();
+            foreach ($member_rows as $member_row)
+                $members[] = htmlspecialchars($member_row->name);
+            $col6 = implode('<br />', $members);
             $row = array(
                 array(
                     'data' => ++$counter,
@@ -2395,6 +2480,8 @@ class EbmsReports {
                 $col2,
                 $col3,
                 $col4,
+                $col5,
+                $col6,
             );
             $rows[] = array(
                 'data' => $row,
@@ -2516,6 +2603,11 @@ class EbmsReports {
         $query->join('users', 'u', 'u.uid = r.reviewer_id');
         $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->join('ebms_article_topic', 't2',
+            't2.article_id = r.article_id AND t2.topic_id = p.topic_id');
+        $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t2.cycle_id');
+        //$query->fields('c2', array('cycle_name'));
+        $query->fields('c2', array('start_date'));
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = r.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'a',
@@ -2527,7 +2619,7 @@ class EbmsReports {
         if ($topic)
             $query->condition('p.topic_id', $topic);
         if ($cycle)
-            Ebms\Util::add_cycle_to_query($query, $cycle, 'p.created_at');
+            $query->condition('t2.cycle_id', $cycle);
         if ($packet)
             $query->condition('p.packet_title', $packet);
         if ($reviewer)
@@ -2555,7 +2647,9 @@ class EbmsReports {
         foreach ($results as $result) {
             $article_id = $result->article_id;
             $review_id = $result->review_id;
-            $packet = date('Y/m', strtotime($result->created_at));
+            //$packet = date('Y/m', strtotime($result->created_at));
+            //$packet = $result->cycle_name;
+            $packet = date('Y/m', strtotime($result->start_date));
             $reviewer = $result->name;
             if (!array_key_exists($article_id, $articles))
                 $articles[$article_id] = array();
@@ -2828,7 +2922,7 @@ class EbmsReports {
     }
 
     /**
-     * Common routine to generate the HTML markup for the cyclename
+     * Common routine to generate the HTML markup for the cycle name
      * block for the meta-data at the top of one of the citation reports.
      */
     static function format_cycle_name($cycle) {
@@ -3581,6 +3675,8 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
             ),
             'member' => array(
                 '#type' => 'select',
+                '#title' => 'Board Members',
+                '#title_display' => 'none',
                 '#options' => $board_members,
                 '#default_value' => $member,
                 '#attributes' => array('class' => array('fixed-width')),
@@ -3844,7 +3940,7 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
 
     // Build picklist arrays (except topics, handled below).
     $boards = array(0 => ' ') + Ebms\Util::boards();
-    $cycles = array(0 => ' ') + Ebms\Util::cycles(true);
+    $cycles = array(0 => ' ') + Ebms\Util::cycles(false);
     $reviewers = array(0 => ' ');
     $board_member_role = db_select('role', 'r')
         ->fields('r', array('rid'))

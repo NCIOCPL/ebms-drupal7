@@ -240,26 +240,9 @@ class EbmsPublish {
         $query->condition('s.current', 'Y');
         $query->condition('s.state_id', $passed_initial_review);
         if ($this->filter_parms['cycle']) {
-            $cycle_query = db_select('ebms_cycle', 'c');
-            $cycle_query->fields('c', array('start_date'));
-            $cycle_query->addExpression(
-                'DATE_ADD(c.start_date, INTERVAL 1 MONTH)',
-                'end_date'
-            );
-            $cycle_query->condition(
-                'c.cycle_id',
-                $this->filter_parms['cycle']
-            );
-            $results = $cycle_query->execute();
-            foreach ($results as $result) {
-                $cycle_start_date = $result->start_date;
-                $cycle_end_date = $result->end_date;
-            }
-            $query->condition(
-                's.status_dt',
-                array($cycle_start_date, $cycle_end_date),
-                'BETWEEN'
-            );
+            $query->join('ebms_article_topic', 't',
+                's.article_id = t.article_id AND s.topic_id = t.topic_id');
+            $query->condition('t.cycle_id', $this->filter_parms['cycle']);
         }
         else
             $query->condition('s.status_dt', Ebms\CONVERSION_DATE, '>');
@@ -328,12 +311,11 @@ class EbmsPublish {
                 $query->condition('s.board_id', $this->filter_parms['board']);
             if ($this->filter_parms['topic'])
                 $query->condition('s.topic_id', $this->filter_parms['topic']);
-            if ($this->filter_parms['cycle'])
-                $query->condition(
-                    's.status_dt',
-                    array($cycle_start_date, $cycle_end_date),
-                    'BETWEEN'
-                );
+            if ($this->filter_parms['cycle']) {
+                $query->join('ebms_article_topic', 't',
+                    't.article_id = s.article_id AND t.topic_id = s.topic_id');
+                $query->condition('t.cycle_id', $this->filter_parms['cycle']);
+            }
             $topics = $query->execute();
             $total_topics = 0;
             $boards = array();
@@ -476,39 +458,49 @@ class EbmsPublish {
                 '#type' => 'markup',
                 '#markup' => "<h2>Unpublished Citations ($count)</h2>",
             ),
-            'top-buttons' => array(
+        );
+        if ($count > 0) {
+            $queue['top-buttons'] = array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'top-buttons'),
                 'buttons' => $buttons,
-            ),
-        );
-        if ($count > $per_page)
-            $queue['pager-top'] = array('#theme' => 'pager');
-        elseif (!empty($show_pages_link))
-            $queue['pager-top'] = array(
+            );
+            if ($count > $per_page)
+                $queue['pager-top'] = array('#theme' => 'pager');
+            elseif (!empty($show_pages_link))
+                $queue['pager-top'] = array(
+                    '#type' => 'markup',
+                    '#markup' =>
+                    "<div id='pager-view-pages'>$show_pages_link</div>",
+                );
+            $queue['table'] = array(
+                '#theme' => 'table',
+                '#attributes' => array('id' => 'pub-queue-table'),
+                '#rows' => $rows,
+                '#header' => $headers,
+            );
+            if ($count > $per_page)
+                $queue['pager-bottom'] = array('#theme' => 'pager');
+            elseif (!empty($show_pages_link))
+                $queue['pager-bottom'] = array(
+                    '#type' => 'markup',
+                    '#markup' =>
+                    "<div id='pager-view-pages'>$show_pages_link</div>",
+                );
+            $queue['bottom-buttons'] = array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'bottom-buttons'),
+                'buttons' => $buttons,
+            );
+        }
+        else {
+            $queue['nothing'] = array(
                 '#type' => 'markup',
                 '#markup' =>
-                "<div id='pager-view-pages'>$show_pages_link</div>",
+                '<p id="nothing">' .
+                'No unpublished articles found.</p>',
             );
-        $queue['table'] = array(
-            '#theme' => 'table',
-            '#attributes' => array('id' => 'pub-queue-table'),
-            '#rows' => $rows,
-            '#header' => $headers,
-        );
-        if ($count > $per_page)
-            $queue['pager-bottom'] = array('#theme' => 'pager');
-        elseif (!empty($show_pages_link))
-            $queue['pager-bottom'] = array(
-                '#type' => 'markup',
-                '#markup' =>
-                "<div id='pager-view-pages'>$show_pages_link</div>",
-            );
-        $queue['bottom-buttons'] = array(
-            '#type' => 'container',
-            '#attributes' => array('id' => 'bottom-buttons'),
-            'buttons' => $buttons,
-        );
+        }
         $finished = microtime(true);
         $elapsed = $finished - $this->start;
         $queue['elapsed'] = array(
@@ -713,23 +705,9 @@ function pdq_ebms_publish_checkbox_ajax() {
             $query->condition('s.current', 'Y');
             $query->condition('s.state_id', $passed_initial_review);
             if ($filter_parms['cycle']) {
-                $cycle_query = db_select('ebms_cycle', 'c');
-                $cycle_query->fields('c', array('start_date'));
-                $cycle_query->addExpression(
-                    'DATE_ADD(c.start_date, INTERVAL 1 MONTH)',
-                    'end_date'
-                );
-                $cycle_query->condition('c.cycle_id', $filter_parms['cycle']);
-                $results = $cycle_query->execute();
-                foreach ($results as $result) {
-                    $cycle_start_date = $result->start_date;
-                    $cycle_end_date = $result->end_date;
-                }
-                $query->condition(
-                    's.status_dt',
-                    array($cycle_start_date, $cycle_end_date),
-                    'BETWEEN'
-                );
+                $query->join('ebms_article_topic', 'c',
+                    'c.article_id = s.article_id AND c.topic_id = s.topic_id');
+                $query->condition('c.cycle_id', $filter_parms['cycle']);
             }
             if ($filter_parms['board'])
                 $query->condition('s.board_id', $filter_parms['board']);

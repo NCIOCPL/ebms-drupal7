@@ -4,7 +4,7 @@
  * Drop all tables in reverse order to any references.
  ********************************************************/
 DROP TABLE IF EXISTS ebms_article_topic;
-DROP TABLE IF EXISTS ebms_temp_report;
+DROP TABLE IF EXISTS ebms_import_request;
 DROP TABLE IF EXISTS ebms_publish_queue_flag;
 DROP TABLE IF EXISTS ebms_publish_queue;
 DROP TABLE IF EXISTS ebms_search;
@@ -1896,15 +1896,18 @@ article_state_id INTEGER NOT NULL,
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
- * Stores report request parameters, serialized using jsencode().
+ * Stores import request parameters, as well as the report from the
+ * import job, both serialized using jsencode().
  *
- * report_id       automatically generated primary key
- * report_data     request parameters
+ * request_id       automatically generated primary key
+ * request_params   parameter submitted for import job
+ * import_report    results of the import job, used for reporting
  */
-CREATE TABLE ebms_temp_report
-  (report_id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
- report_data text    NOT NULL)
-      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+  CREATE TABLE ebms_import_request
+   (request_id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+request_params TEXT    NOT NULL,
+   report_data TEXT    NOT NULL)
+        ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
  * Record of the topics associated with an article, along with the review

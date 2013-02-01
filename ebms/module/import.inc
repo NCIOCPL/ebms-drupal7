@@ -103,32 +103,63 @@ class EbmsImport {
 }
 
 /**
- * Callback to build the import request form.  The $job_id parameter will
+ * Callback to build the import request form.  The $request_id parameter will
  * be non-null if we just processed an import request, in which case we'll
  * display statistics from that request's job.
  */
-function pdq_ebms_import_form($form, &$form_state, $job_id) {
+function pdq_ebms_import_form($form, &$form_state, $request_id) {
+
+    // Start off with defaults appropriate for a new form.
+    $board = $topic = $cycle = 0;
+    $selected_tags = $selected_options = array();
+    $pmid = $comments = $placement = $ft_comments = '';
+
+    // If this is a followup form to a previous import request, use
+    // the values submitted for that request to seed the form (TIR 2194).
+    if ($request_id) {
+        $result = db_select('ebms_import_request', 'r')
+            ->fields('r', array('request_params', 'report_data'))
+            ->condition('r.request_id', $request_id)
+            ->execute()
+            ->fetchObject();
+        $report = $result->report_data;
+        $params = drupal_json_decode($result->request_params);
+        $board = $params['board'];
+        $topic = $params['topic'];
+        $cycle = $params['cycle'];
+        $selected_tags = $params['tags'];
+        $pmid = $params['pmid'];
+        $comments = $params['comments'];
+        foreach ($params['options'] as $key => $val) {
+            if ($val)
+                $selected_options[] = $key;
+        }
+        $placement = $params['placement'];
+        $ft_comments = $params['ft-comments'];
+    }
+
+    // An ajax call can override the board selection.
+    if (isset($form_state['values']))
+        $board = $form_state['values']['board'];
 
     // Build the picklist value sets.
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $topics = array(0 => ' ');
-    if (isset($form_state['values'])) {
-        if (isset($form_state['values']['board'])) {
-            if ($form_state['values']['board']) {
-                $results = db_select('ebms_topic', 't')
-                    ->fields('t', array('topic_id', 'topic_name'))
-                    ->condition('t.board_id', $form_state['values']['board'])
-                    ->condition('t.active_status', 'A')
-                    ->orderBy('t.topic_name')
-                    ->execute();
-                foreach ($results as $result)
-                    $topics[$result->topic_id] = $result->topic_name;
-            }
-        }
+    if ($board) {
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->condition('t.active_status', 'A')
+            ->orderBy('t.topic_name')
+            ->execute();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+        if (!array_key_exists($topic, $topics))
+            $topic = 0;
     }
     $results = db_select('ebms_cycle', 'c')
         ->fields('c', array('cycle_id', 'cycle_name'))
-        ->orderBy('c.start_date', 'desc')
+        ->orderBy('c.start_date', 'DESC')
         ->execute();
     $review_cycles = array(0 => ' ');
     foreach ($results as $result)
@@ -152,6 +183,7 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
             '#type' => 'select',
             '#title' => 'EDITORIAL BOARD *',
             '#options' => $boards,
+            '#default_value' => $board,
             '#ajax' => array(
                 'callback' => 'pdq_ebms_import_board_ajax',
                 'wrapper' => 'topic',
@@ -161,6 +193,7 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
             '#type' => 'select',
             '#title' => 'SUMMARY TOPIC *',
             '#options' => $topics,
+            '#default_value' => $topic,
             '#prefix' => '<div id="topic">',
             '#suffix' => '</div>',
         ),
@@ -168,15 +201,18 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
             '#type' => 'select',
             '#title' => 'REVIEW CYCLE *',
             '#options' => $review_cycles,
+            '#default_value' => $cycle,
         ),
         'tags' => array(
             '#type' => 'select',
             '#multiple' => 'true',
             '#title' => 'CITATION TAGS',
             '#options' => $tags,
+            '#default_value' => $selected_tags,
         ),
         'pmid' => array(
             '#type' => 'textfield',
+            '#default_value' => $pmid,
             '#title' => 'PUB MED IDS',
             '#description' => 'Enter space- or comma-delimited Pubmed IDs ' .
             'or choose a file containing a Pubmed Print format search ' .
@@ -184,6 +220,7 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
         ),
         'comments' => array(
             '#type' => 'textfield',
+            '#default_value' => $comments,
             '#title' => 'COMMENTS',
         ),
         'options' => array(
@@ -194,21 +231,23 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
                 'test-mode' => 'TEST MODE',
                 'fast-track' => 'FAST TRACK',
             ),
+            '#default_value' => $selected_options,
         ),
 
         // XXX I wasn't given a list of states to include here, so I picked
         //     the ones which seemed most appropriate.  Users may wish to
         //     have others added before we go into production.
         // 2012-12-26 (Bob): Robin has told us which state are to be used;
-        //                   see TIR #2206.
+        //                   see TIR 2206.
         'placement' => array(
             '#type' => 'select',
-            '#title' => 'PLACEMENT LEVEL',
+            '#title' => 'PLACEMENT LEVEL *',
             '#options' => array(
                 '' => ' ',
                 'PassedBMReview' => 'Passed abstract review',
                 'PassedFullReview' => 'Passed full text review',
             ),
+            '#default_value' => $placement,
             '#states' => array(
                 'visible' => array(
                     '#edit-options-fast-track' => array(
@@ -219,6 +258,7 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
         ),
         'ft-comments' => array(
             '#type' => 'textfield',
+            '#default_value' => $ft_comments,
             '#title' => 'FAST TRACK COMMENTS',
             '#states' => array(
                 'visible' => array(
@@ -229,6 +269,8 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
             ),
         ),
         'file' => array(
+            '#title' => 'File',
+            '#title_display' => 'invisible',
             '#type' => 'file',
         ),
         // Tried to use a hidden field to trigger visibility of cancel
@@ -261,17 +303,9 @@ function pdq_ebms_import_form($form, &$form_state, $job_id) {
     );
 
     // If we just handled an import request, show the statistics from that job.
-    if ($job_id) {
-        $batch = db_select('ebms_temp_report', 'r')
-            ->fields('r', array('report_data'))
-            ->condition('r.report_id', $job_id)
-            ->execute()
-            ->fetchField();
-        pdq_ebms_debug('ENCODED BATCH IN FORM', $batch);
-        $batch = drupal_json_decode($batch);
-        pdq_ebms_debug('DECODED BATCH IN FORM', $batch);
+    if ($request_id) {
+        $batch = drupal_json_decode($report);
         $batch = (object) $batch;
-        pdq_ebms_debug('BATCH AS OBJECT', $batch);
         $form['report'] = Ebms\Util::import_report($batch, 'Statistics');
     }
     return $form;
@@ -399,10 +433,16 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
 
         // Save the statistical report information.
         $report_data = drupal_json_encode($batch);
-        $report_id = db_insert('ebms_temp_report')
-            ->fields(array('report_data' => $report_data))
+        $request_params = drupal_json_encode($values);
+        $request_id = db_insert('ebms_import_request')
+            ->fields(
+                array(
+                    'request_params' => $request_params,
+                    'report_data' => $report_data,
+                )
+            )
             ->execute();
-        $url = EbmsImport::$url . '/' . $report_id;
+        $url = EbmsImport::$url . '/' . $request_id;
     }
 
     // Draw the form again.

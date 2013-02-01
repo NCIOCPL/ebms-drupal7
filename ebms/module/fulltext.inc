@@ -197,28 +197,9 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
     if ($board)
         $query->condition('s.board_id', $board);
     if ($cycle) {
-        $cycle_query = db_select('ebms_cycle', 'c');
-        $cycle_query->fields('c', array('start_date'));
-        $cycle_query->addExpression(
-            'DATE_ADD(c.start_date, INTERVAL 1 MONTH)',
-            'end_date'
-        );
-        $cycle_query->condition(
-            'c.cycle_id',
-            $cycle
-        );
-        $cycle_start_date = $cycle_end_date = null;
-        $results = $cycle_query->execute();
-        foreach ($results as $result) {
-            $cycle_start_date = $result->start_date;
-            $cycle_end_date = $result->end_date;
-        }
-        if ($cycle_start_date)
-            $query->condition(
-                's.status_dt',
-                array($cycle_start_date, $cycle_end_date),
-                'BETWEEN'
-            );
+        $query->join('ebms_article_topic', 't',
+            't.article_id = s.article_id AND t.topic_id = s.topic_id');
+        $query->condition('t.cycle_id', $cycle);
     }
     else
         $query->condition('s.status_dt', Ebms\CONVERSION_DATE, '>');

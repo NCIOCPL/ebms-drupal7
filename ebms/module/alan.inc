@@ -1149,7 +1149,7 @@ function ebms_testapi_printouts_form($form) {
         '#size' => 8,
         '#title' => 'Job ID',
         '#description' => 'Enter a job number to download the output for ' .
-            'the job."
+            'the job.'
         '#required' => false
     );
 
@@ -1487,8 +1487,6 @@ function addSubmitButtonToForm(&$form) {
         '#type' => 'submit',
         '#value' => 'Submit'
     );
-
-    return $form;
 }
 
 /**

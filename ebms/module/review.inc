@@ -257,6 +257,12 @@ class EbmsReview {
                 'field' => 'u.name',
             ),
             array(
+                'data' => 'Created',
+                'class' => array('col-5'),
+                'field' => 'p.created_at',
+                'sort' => 'desc',
+            ),
+            array(
                 'data' => 'Actions',
                 'class' => array('col-4'),
             ),
@@ -274,7 +280,7 @@ class EbmsReview {
                 'r.packet_id = p.packet_id');
             $query->distinct();
         }
-        $query->fields('p', array('packet_id', 'packet_title'));
+        $query->fields('p', array('packet_id', 'packet_title', 'created_at'));
         $query->fields('b', array('board_name'));
         $query->fields('u', array('name'));
         $query->condition('m.user_id', $this->user->uid);
@@ -299,6 +305,7 @@ class EbmsReview {
                 $title_link,
                 htmlspecialchars($p->board_name),
                 htmlspecialchars($p->name),
+                date('m/d/Y', strtotime($p->created_at)),
                 "$edit_link $divider $del_link",
             );
             $rows[] = array(
@@ -1335,7 +1342,7 @@ class EbmsReview {
                     $links .= " &nbsp; | &nbsp; $ft_link";
                 }
                 $links .= '</div>';
-                $citation = Ebms\Util::get_full_citation($article->article_id);
+                $citation = EbmsReview::show_citation($article->article_id, 3);
                 $options['query']['article'] = $article->article_id;
                 if ($article->when_posted) {
                     $when_posted = date('m/d/Y',
@@ -1637,7 +1644,7 @@ class EbmsReview {
         $query->fields('f', array('uri'));
         $query->fields('r', array('review_id', 'when_posted'));
         $query->condition('p.packet_id', $this->packet_id);
-        $query->orderBy('a.import_date', 'desc');
+        $query->orderBy('a.import_date', 'DESC');
         $result = $query->execute();
         $articles = array();
         foreach ($result as $article)
@@ -1757,14 +1764,57 @@ class EbmsReview {
     }
 
     /**
-     * XXX Replace with Alan's version when API is ready.
+     * Display very brief citation for an article, consisting only of the
+     * first author's surname, the journal's brief title, the year date,
+     * and the PubMed ID, separated by semicolons.  This form of the
+     * citation is stored in the brf_citation column of the ebms_article
+     * table, so there's very little work to do here.
+     *
+     * 2013-01-10: Robin has changed the requirements for this citation
+     * display (see TIR 2260).  She now wants the title of the article
+     * included, as well as a link to the full text of the article, if
+     * available.
      */
     private static function brief_citation($article_id) {
-        return db_select('ebms_article', 'a')
-            ->fields('a', array('brf_citation'))
-            ->condition('a.article_id', $article_id)
-            ->execute()
-            ->fetchField();
+
+        // Fetch the information we need from the database.
+        $query = db_select('ebms_article', 'a');
+        $query->leftJoin('file_managed', 'f', 'f.fid = a.full_text_id');
+        $query->fields('a', array('source_data'));
+        $query->fields('f', array('uri'));
+        $query->condition('a.article_id', $article_id);
+        $result = $query->execute()->fetch();
+        pdq_ebms_debug('BRIEF CITATION FETCHED', $result);
+        $doc = new \SimpleXMLElement($result->source_data);
+        $article = $doc->MedlineCitation->Article;
+        $uri = $result->uri;
+
+        // Assemble the pieces of the citation
+        $citation = array();
+        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
+            if ($a->LastName)
+                $citation = array(htmlspecialchars($a->LastName));
+            break;
+        }
+        $citation[] = htmlspecialchars($article->ArticleTitle);
+        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+        $citation[] = htmlspecialchars($ta);
+        $year = $article->Journal->JournalIssue->PubDate->Year;
+        if ($year)
+            $citation[] = $year;
+        $citation[] = $doc->MedlineCitation->PMID;
+        $citation = implode('; ', $citation);
+
+        // If we have the full text, provide a link to it.
+        if ($uri) {
+            $url = file_create_url($uri);
+            $attrs = array('attributes' => array('target' => '_blank'));
+            $link = l('DOWNLOAD FULL TEXT', $url, $attrs);
+            $citation .= " &nbsp; $link";
+        }
+
+        // All done.
+        return $citation;
     }
 
     /**
@@ -1822,6 +1872,7 @@ SELECT DISTINCT t.topic_id, t.topic_name
             ->condition('s.topic_id', $topic_id)
             ->condition('s.active_status', 'A')
             ->condition('s.state_id', $state_id)
+            ->condition('s.current', 'Y')
             ->condition('s.article_id', $subquery, 'NOT IN')
             ->distinct();
         if ($packet_id) {
@@ -1948,9 +1999,72 @@ SELECT DISTINCT t.topic_id, t.topic_name
         $query->condition('p.active_status', 'A');
         $query->isNull('r.article_id');
         $query->distinct();
-        $query->orderBy('p.created_at', 'desc');
+        $query->orderBy('p.created_at', 'DESC');
         $query->orderBy('t.topic_name');
         return $query->execute();
+    }
+
+    /**
+     * Format the article's citation the way the users want it for the
+     * board members' review pages.  It was a nice idea to have a single
+     * routine in common.inc to do this for the whole site, but each
+     * page has slightly different requirements for how the citations
+     * are to be formatted.
+     */
+    public static function show_citation($article_id, $max_authors=99999) {
+        $xml = db_select('ebms_article', 'a')
+            ->fields('a', array('source_data'))
+            ->condition('a.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+        $doc = new \SimpleXMLElement($xml);
+        $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
+        $article = $doc->MedlineCitation->Article;
+        $title = htmlspecialchars($article->ArticleTitle);
+        $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
+        $year = $article->Journal->JournalIssue->PubDate->Year;
+        $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
+        $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
+        $authors = array();
+        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
+        {
+            if (sizeof($authors) == $max_authors) {
+                $authors[] = 'et al.';
+                break;
+            }
+            $name = $author->CollectiveName;
+            if (!$name) {
+                $name = $author->LastName;
+                if ($name && $author->Initials)
+                    $name .= ' ' . $author->Initials;
+            }
+            if ($name)
+                $authors[] = htmlspecialchars($name);
+        }
+        $pieces = array();
+        $authors = implode(', ', $authors);
+        if ($authors)
+            $pieces = array("$authors<br />");
+        if ($title)
+            $pieces[] = "<em>$title</em><br />";
+        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+        $ta = htmlspecialchars($ta);
+        if ($ta) {
+            $pieces[] = $ta;
+            if ($vol) {
+                $pieces[] = " $vol";
+                if ($issue)
+                    $pieces[] = " ($issue)";
+            }
+            if ($pgn)
+                $pieces[] = ": $pgn";
+            if ($year)
+                $pieces[] = ", $year";
+            $pieces[] = '<br />';
+        }
+        $pmid = $doc->MedlineCitation->PMID;
+        $pieces[] = "PMID: $pmid";
+        return implode($pieces);
     }
 }
 
@@ -2064,7 +2178,7 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
     $attrs = array('attributes' => array('target' => '_blank'));
     $pm_url = EbmsReview::pubmed_url($article_id);
     $links = '<div class="links">' . l('VIEW ABSTRACT', $pm_url, $attrs);
-    $cite = Ebms\Util::get_full_citation($article_id);
+    $cite = EbmsReview::show_citation($article_id);
 
     // Add a link for viewing the article's full text (if we have it).
     $query = db_select('file_managed', 'f');

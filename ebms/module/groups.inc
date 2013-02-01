@@ -326,6 +326,8 @@ function pdq_ebms_group_form($form, &$form_state, $control, $group_id=0) {
         ),
         'name' => array(
             '#type' => 'textfield',
+            '#title' => 'Name',
+            '#title_display' => 'none',
             '#default_value' => $default_name,
         ),
         'members' => array(
@@ -334,6 +336,8 @@ function pdq_ebms_group_form($form, &$form_state, $control, $group_id=0) {
             '#multiple' => true,
             '#size' => 6,
             '#default_value' => $default_members,
+            '#title' => 'members',
+            '#title_display' => 'none',
         ),
         'instructions' => array(
             '#type' => 'markup',
