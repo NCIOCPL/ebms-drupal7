@@ -1,6 +1,6 @@
 ; $Id$
-name = PDQ&reg; Boards
-description = Custom theme for PDQ&reg; Board Member web site.
+name = PDQ® Boards
+description = Custom theme for PDQ®  Board Member web site.
 core = 7.x
 engine = phptemplate
 stylesheets[all][] = css/ebms.css
