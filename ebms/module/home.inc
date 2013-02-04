@@ -383,9 +383,13 @@ class EbmsHomePage {
 
         // Show unreviewed articles for board members, unseen reviews
         // for board managers.
-        $total += $count = $this->get_review_count();
-        $page = $this->role == 'member' ? 'assigned' : 'reviews';
-        $items[] = EbmsHomePage::alert("review/$page", 'Reviews', $count);
+        // TIR 2342 (from Ashleigh): don't show review count to Bonnie
+        global $user;
+        if (!in_array('admin assistant', $user->roles)) {
+            $total += $count = $this->get_review_count();
+            $page = $this->role == 'member' ? 'assigned' : 'reviews';
+            $items[] = EbmsHomePage::alert("review/$page", 'Reviews', $count);
+        }
         if (module_exists('ebms_forums'))
             $items[] = EbmsHomePage::alert("forum", "Forums", _ebms_forums_count_new_topics());
 
