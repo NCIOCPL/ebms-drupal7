@@ -803,6 +803,32 @@ namespace {
             }
         }
     }
+    
+    /**
+     * Simple wrapper to include often-needed ctools and modal settings scripts.
+     */
+    function _include_modal_scripts(){
+        // add ctools includes and style for popups
+        ctools_include('ajax');
+        ctools_include('modal');
+        ctools_modal_add_js();
+        
+        // create settings for the popup
+        $tag_style = array(
+            'tag-style' => array(
+                'modalSize' => array(
+                    'type' => 'fixed',
+                    'width' => 800,
+                    'height' => 600,
+                ),
+                'modalOptions' => array(
+                    'opacity' => .8,
+                    'background-color' => '#696559',
+                ),
+            ),
+        );
+        drupal_add_js($tag_style, 'setting');
+    }
 
     function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
         require_once('EbmsArticle.inc');
@@ -815,6 +841,8 @@ namespace {
             addHooks();                                      
         });',
             'inline');
+        
+        _include_modal_scripts();
 
         // maintain triggered element states
         _update_persistent_elements($form_state);
@@ -2239,10 +2267,6 @@ namespace {
             $pieces[] = '<div>';
             $abstractLink = null;
             if (!$showAbstract) {
-                ctools_include('ajax');
-                ctools_include('modal');
-                ctools_modal_add_js();
-
                 $link = ctools_modal_text_button('VIEW ABSTRACT',
                     "citations/nojs/view_abstract/$article_id", 'View Abstract',
                     'ctools-modal-tag-style');
@@ -2572,6 +2596,9 @@ namespace {
             addHooks();                                      
         });',
             'inline');
+        
+        // include modal script necessities
+        _include_modal_scripts();
 
         $article = new Ebms\EbmsArticle($articleId);
 
@@ -3311,27 +3338,6 @@ namespace {
     }
 
     function _build_add_tag_popup($articleId, $topicId = null) {
-        ctools_include('ajax');
-        ctools_include('modal');
-
-        // create settings for the popup
-        $tag_style = array(
-            'tag-style' => array(
-                'modalSize' => array(
-                    'type' => 'fixed',
-                    'width' => 800,
-                    'height' => 600,
-                ),
-                'modalOptions' => array(
-                    'opacity' => .8,
-                    'background-color' => '#696559',
-                ),
-            ),
-        );
-        drupal_add_js($tag_style, 'setting');
-
-        ctools_modal_add_js();
-
         $form = array();
 
         // grab icon for button
