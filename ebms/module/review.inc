@@ -239,7 +239,7 @@ class EbmsReview {
     private function manager_packets() {
         drupal_set_breadcrumb(
             array(
-                l('Literature', EbmsReview::$url),
+                l('Literature', EbmsReview::$url . '/reviews'),
                 'Literature Surveillance Packets',
             )
         );
@@ -408,7 +408,7 @@ class EbmsReview {
             return $this->show_reviewed_packet($opts);
         drupal_set_breadcrumb(
             array(
-                l('Literature', EbmsReview::$url),
+                l('Literature', EbmsReview::$url . '/reviews'),
                 'Reviewed Packets',
             )
         );
@@ -709,7 +709,7 @@ class EbmsReview {
         $url = EbmsReview::$url . '/reviews/' . $this->packet_id;
         drupal_set_breadcrumb(
             array(
-                l('Literature', EbmsReview::$url),
+                l('Literature', EbmsReview::$url . '/reviews'),
                 l('Reviewed Packets', EbmsReview::$url . '/reviews'),
                 $this->packet_title,
             )
@@ -938,7 +938,7 @@ class EbmsReview {
         // Manual breadcrumb construction to match design/requirements.
         drupal_set_breadcrumb(
             array(
-                l('Literature', EbmsReview::$url),
+                l('Literature', EbmsReview::$url . '/reviews'),
                 l('Reviewed Packets', EbmsReview::$url . '/reviews'),
                 l($this->packet_title, EbmsReview::$url . '/reviews/' .
                     $this->packet_id),
@@ -2630,7 +2630,7 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
     // Override the Drupal breadcrumb mechanism to match requirements.
     drupal_set_breadcrumb(
         array(
-            l('Literature', EbmsReview::$url),
+            l('Literature', EbmsReview::$url . '/reviews'),
             $packet_header,
         )
     );
