@@ -1048,9 +1048,9 @@ namespace {
         $fulltext_review = false;
         $cycle_id = 0;
         $tag_id = 0;
-        
+
         $sort_triggered = false;
-        if(isset($form_state['triggering_element']['#name']) && 
+        if (isset($form_state['triggering_element']['#name']) &&
             $form_state['triggering_element']['#name'] == 'sort_by')
             $sort_triggered = true;
 
@@ -1147,12 +1147,12 @@ namespace {
                 $stateQuery->condition('t.tag_id', $tag_id);
             }
 
-            // select all fields
-            $stateQuery->fields('eas', array('article_id'));            
+            // select only article_id
+            $stateQuery->fields('eas', array('article_id'));
 
             // join to article table
-            $articleQuery = db_select($stateQuery, 's');
-            $articleQuery->join('ebms_article', 'ea', 'ea.article_id = s.article_id');
+            $articleQuery = db_select('ebms_article', 'ea');
+            $articleQuery->join($stateQuery, 's', 's.article_id = ea.article_id');
 
             if ($fulltext_review)
                 $articleQuery->isNotNull('ea.full_text_id');
@@ -1168,11 +1168,16 @@ namespace {
                 $articleQuery->condition('eat.cycle_id', $cycle_id);
             }
 
-            $articleQuery->fields('ea');
-            $articleQuery->distinct();
-            
-            // get the number of rows in this query before the sort
-            $num_rows = $articleQuery->countQuery()->execute()->fetchField();
+            $articleQuery->fields('ea',
+                array(
+                'article_id',
+                'source_id',
+                'article_title',
+                'jrnl_title',
+                'brf_jrnl_title',
+                'published_date',
+                )
+            );
 
             // wrap the article query in a sort query
             $sortQuery = db_select($articleQuery, 'a');
@@ -1201,9 +1206,17 @@ namespace {
                     break;
             }
 
+            $sortQuery->distinct();
+
+            $num_rows = db_select($sortQuery, 'sq')
+                ->fields('sq')
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+
             if ($per_page != 'all')
                 $sortQuery = $sortQuery->extend('Ebms\EbmsPager')->limit($per_page);
-            
+
             $result = $sortQuery->execute();
         } catch (Exception $e) {
             $num_rows = -1;
