@@ -390,8 +390,9 @@ namespace {
     function _update_table_sort(&$form_state) {
         // check for any set sort options
         if (!isset($form_state['triggering_element']['#sort'])) {
-            // if a 'sort_by' value exists, populate with that instead
-            if (isset($form_state['values']['sort_by'])) {
+            // if a 'sort_by' element was triggered, populate with that instead
+            if (isset($form_state['triggering_element']['#name']) &&
+                $form_state['triggering_element']['#name'] == 'sort_by') {
                 $form_state['header_sort']['#field'] = $form_state['values']['sort_by'];
                 $form_state['header_sort']['#dir'] = 'ASC';
                 $form_state['header_sort']['#index'] = '';
@@ -803,16 +804,16 @@ namespace {
             }
         }
     }
-    
+
     /**
      * Simple wrapper to include often-needed ctools and modal settings scripts.
      */
-    function _include_modal_scripts(){
+    function _include_modal_scripts() {
         // add ctools includes and style for popups
         ctools_include('ajax');
         ctools_include('modal');
         ctools_modal_add_js();
-        
+
         // create settings for the popup
         $tag_style = array(
             'tag-style' => array(
@@ -841,7 +842,7 @@ namespace {
             addHooks();                                      
         });',
             'inline');
-        
+
         _include_modal_scripts();
 
         // maintain triggered element states
@@ -2596,7 +2597,7 @@ namespace {
             addHooks();                                      
         });',
             'inline');
-        
+
         // include modal script necessities
         _include_modal_scripts();
 
