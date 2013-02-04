@@ -497,13 +497,15 @@ form .form-type-checkbox:not(#foo) input.form-checkbox:checked + label {
 #file-upload-form-js div#choose-file input#filepath,
 #file-upload-form-js div#choose-file div { cursor: pointer; }
 #file-upload-form-js #choose-file div:hover { color: #a90101; }
-#file-upload-form-js #choose-file label:hover { cursor: pointer; }
+#file-upload-form-js #choose-file label:hover,
+#file-upload-form-js #choose-file span.label-508:hover { cursor: pointer; }
 #file-upload-form-js #choose-file input#filepath {
     cursor: pointer; font-size: .1px;
 }
 #choose-file, #add-notes { padding-top: 17px; }
 #file-upload-form-js { display: none; }
 #file-upload-form-js #choose-file { position: relative; }
+#file-upload-form-js #choose-file span.label-508,
 #file-upload-form-js #choose-file label {
     z-index: 1000; position: absolute; left: 8px; top: 0; margin-top: 20px;
 }
@@ -1253,15 +1255,18 @@ table.docs-table.admin td.col-5 { text-align: center; }
 #documents-table th.col-4 { width: 120px; }
 #documents-table span.action-divider { padding: 0 3px; }
 #post-doc-form #choose-file div:hover { color: #a90101; }
+#post-doc-form #choose-file span.label-508:hover,
 #post-doc-form #choose-file label:hover { cursor: pointer; }
 #post-doc-form #choose-file input#filepath {
     cursor: pointer; font-size: .1px;
 }
 #choose-file, #add-notes { padding-top: 17px; }
 #post-doc-form #choose-file { position: relative; }
+#post-doc-form #choose-file span.label-508,
 #post-doc-form #choose-file label {
     zz-index: 2; position: absolute; left: 0px; top: 0; margin-top: 20px;
 }
+#post-doc-form #choose-file span.label-508:hover,
 #post-doc-form #choose-file label:hover { color: #a90101; }
 #post-doc-form #filename { padding: 10px 0 0 14px; }
 #post-doc-form input#filepath {

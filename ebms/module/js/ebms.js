@@ -859,7 +859,7 @@ ebmsscript.init_docs_page = function() {
         jQuery("#choose-file #filepath").change(function() {
             ebmsscript.file_chosen();
         });
-        jQuery("#choose-file label").click(function() {
+        jQuery("#choose-file span.label-508").click(function() {
             if (!jQuery.browser.msie) {
                 jQuery("#choose-file #filepath").click();
                 return false;
