@@ -51,7 +51,7 @@ form#search-db-form .form-item.form-type-checkbox:not(#foo) label {
 
 /* Use floats to keep custom field pieces on the same line. */
 #search-db-form .form-radios,
-#search-db-form .fieldset-wrapper .form-type-radios,
+/* #search-db-form .fieldset-wrapper .form-type-radios, */
 #search-db-form .fieldset-wrapper .form-radios .form-item-topic-logic,
 #search-db-form .form-type-date,
 #search-db-form .use-range-checkbox,
@@ -74,6 +74,11 @@ form#search-db-form .form-item.form-type-checkbox:not(#foo) label {
  * hierarchy).
  */
 .yes-no-boxes fieldset.radios-508 legend { padding: 0; margin-left: 10px; }
+
+/* More 508 changes, causing additional problems. */
+#search-db-form fieldset.radios-508 legend { 
+    align: right; margin-top: 0; font-weight: normal;
+}
 
 /* Clears for the request form. */
 #search-db-form > div > div,
