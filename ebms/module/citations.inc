@@ -247,6 +247,9 @@ namespace {
         });',
             'inline');
 
+        // handle header sorting
+        _update_table_sort($form_state);
+
         // retrieve boards
         $boards = Ebms\Util::boards();
 
@@ -324,9 +327,6 @@ namespace {
         // always update the changed list
         _update_journal_select($form_state);
 
-        // handle a header sorting click
-        _update_table_sort($form_state);
-
         $clear_states = false;
 
         if (isset($form_state['values']['op'])) {
@@ -354,8 +354,10 @@ namespace {
             }
         }
 
-        if ($clear_states)
+        if ($clear_states) {
             $form_state['altered_states'] = array();
+            unset($form_state['header_sort']);
+        }
 
         // wipe out button values so that the default_states calculated from
         // altered states can take effect
@@ -388,41 +390,56 @@ namespace {
     }
 
     function _update_table_sort(&$form_state) {
-        // check for any set sort options
-        if (!isset($form_state['triggering_element']['#sort'])) {
-            // if a 'sort_by' element was triggered, populate with that instead
-            if (isset($form_state['triggering_element']['#name']) &&
-                $form_state['triggering_element']['#name'] == 'sort_by') {
-                $form_state['header_sort']['#field'] = $form_state['values']['sort_by'];
-                $form_state['header_sort']['#dir'] = 'ASC';
-                $form_state['header_sort']['#index'] = '';
-            }
-
-            return;
+        // refactor: get any current sort directives from a triggered header
+        // or sort_by value, then determine which one differs from the saved
+        // header_sort field.  Finally update header_sort and direction etc
+        // based on this information
+        // first, current data if available
+        if (isset($form_state['header_sort'])) {
+            $currField = $form_state['header_sort']['#field'];
+            $currDir = $form_state['header_sort']['#dir'];
+            $currIx = $form_state['header_sort']['#index'];
         }
 
-        // retrieve the sort options
-        $sort = $form_state['triggering_element']['#sort'];
+        // next, any triggered header_sort
+        if (isset($form_state['triggering_element']['#sort'])) {
+            $headerField = $form_state['triggering_element']['#sort']['#field'];
+            $headerIx = $form_state['triggering_element']['#sort']['#index'];
+        }
 
-        // update any existing 'sort_by' element
+        // last, find any existing sort_by value, which may have been updated
+        // as part of the current submit
         if (isset($form_state['values']['sort_by'])) {
-            $form_state['values']['sort_by'] = $sort['#field'];
-            $form_state['input']['sort_by'] = $sort['#field'];
+            $sortField = $form_state['values']['sort_by'];
         }
 
-        // if no sort options currently set (or set for a different field)
-        if (!isset($form_state['header_sort']) ||
-            $form_state['header_sort']['#field'] != $sort['#field']) {
-            $form_state['header_sort'] = $sort;
-            $form_state['header_sort']['#dir'] = 'ASC';
-            return;
+        // determine the new values to use
+        // prefer the triggered header above all
+        if (isset($headerField)) {
+            $newField = $headerField;
+            $newIx = $headerIx;
+
+            // if previously set to this header, reverse the sort direction
+            if (isset($currField) && $currField == $newField) {
+                $newDir = ($currDir == 'ASC' ? 'DESC' : 'ASC');
+            }
+        } else if (isset($sortField) &&
+            (!isset($currField) || ($sortField != $currField))) {
+            // use sort_by if able (and no current value or != from sort_by)
+            $newField = $sortField;
+            $newIx = '';
         }
 
-        // otherwise, flip direction
-        if ($form_state['header_sort']['#dir'] == 'ASC')
-            $form_state['header_sort']['#dir'] = 'DESC';
-        else
-            $form_state['header_sort']['#dir'] = 'ASC';
+        // default direction to ascending if not yet set
+        if (!isset($newDir))
+            $newDir = 'ASC';
+
+        // a new field has been determined, update header_sort
+        if (isset($newField)) {
+            $form_state['header_sort']['#field'] = $newField;
+            $form_state['header_sort']['#dir'] = $newDir;
+            $form_state['header_sort']['#index'] = $newIx;
+        }
     }
 
     function _clear_journal_select(&$target, $desc) {
@@ -559,6 +576,7 @@ namespace {
             $form_state['header_sort']['#dir'] = $dir;
             $form_state['header_sort']['#index'] = $index;
         }
+
         $query->orderBy($field, $dir);
 
         $result = $query->execute();
@@ -578,19 +596,11 @@ namespace {
         $form['buttons']['save_button'] = array(
             '#type' => 'submit',
             '#value' => 'Save',
-            /* '#ajax' => array(
-              'callback' => 'pdq_ebms_ajax_save_list',
-              ), */
         );
 
         $form['buttons']['cancel_button'] = array(
             '#type' => 'submit',
             '#value' => 'Cancel',
-            /* '#ajax' => array(
-              'callback' => 'pdq_ebms_ajax_clear_form',
-              'wrapper' => 'citation-results-div',
-              'method' => 'replace',
-              ), */
         );
 
         $form['buttons']['display_options'] = array(
@@ -634,6 +644,10 @@ namespace {
                 '#ajax' => array(
                     'callback' => '_not_list_results_ajax',
                     'wrapper' => 'citation-results-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')
+                    ),
                 ),
             ),
             '#attributes' => array(
@@ -660,6 +674,10 @@ namespace {
                 '#ajax' => array(
                     'callback' => '_not_list_results_ajax',
                     'wrapper' => 'citation-results-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')
+                    ),
                 ),
             ),
             '#attributes' => array(
@@ -685,6 +703,10 @@ namespace {
                 '#ajax' => array(
                     'callback' => '_not_list_results_ajax',
                     'wrapper' => 'citation-results-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')
+                    ),
                 ),
             ),
             '#attributes' => array(
@@ -751,19 +773,11 @@ namespace {
         $form['trailing-buttons']['save_button'] = array(
             '#type' => 'submit',
             '#value' => 'Save',
-            /* '#ajax' => array(
-              'callback' => 'pdq_ebms_ajax_save_list',
-              ), */
         );
 
         $form['trailing-buttons']['cancel_button'] = array(
             '#type' => 'submit',
             '#value' => 'Cancel',
-            /* '#ajax' => array(
-              'callback' => 'pdq_ebms_ajax_clear_form',
-              'wrapper' => 'citation-results-div',
-              'method' => 'replace',
-              ), */
         );
 
         $form['bottom-pager'] = array(
@@ -848,6 +862,9 @@ namespace {
         // maintain triggered element states
         _update_persistent_elements($form_state);
 
+        // handle header sorting
+        _update_table_sort($form_state);
+
         // retrieve boards
         $boards = Ebms\Util::boards();
 
@@ -881,6 +898,10 @@ namespace {
             '#ajax' => array(
                 'callback' => '_ajax_citation_queue_board_select',
                 'wrapper' => 'topic-select-div',
+                'progress' => array(
+                    'type' => 'throbber',
+                    'message' => t('')
+                ),
             ),
         );
         $form['citation_queue']['board_select']['#options'] += $boards;
@@ -1034,11 +1055,6 @@ namespace {
         $form['citation_queue']['reset_button'] = array(
             '#type' => 'submit',
             '#value' => 'Reset',
-            /* '#ajax' => array(
-              'callback' => 'pdq_ebms_ajax_clear_form',
-              'wrapper' => 'citation-div',
-              'method' => 'replace',
-              ), */
         );
 
         $form['citation_queue']['filter_button'] = array(
@@ -1078,18 +1094,12 @@ namespace {
         $cycle_id = 0;
         $tag_id = 0;
 
-        $sort_triggered = false;
-        if (isset($form_state['triggering_element']['#name']) &&
-            $form_state['triggering_element']['#name'] == 'sort_by')
-            $sort_triggered = true;
-
         // get values if they exist
         if (isset($form_state['values'])) {
             $board_id = $form_state['values']['board_select'];
             if (isset($form_state['values']['topic_select']))
                 $topic_id = $form_state['values']['topic_select'];
 
-            $sort_by = $form_state['values']['sort_by'];
             $format = $form_state['values']['format'];
             $per_page = $form_state['values']['per_page'];
             //$core_only = $form_state['values']['core_only'];
@@ -1106,14 +1116,10 @@ namespace {
         // set up header sorting
         $dir = 'ASC';
         $index = '';
-        if (isset($form_state['header_sort']) && !$sort_triggered) {
+        if (isset($form_state['header_sort'])) {
             $sort_by = $form_state['header_sort']['#field'];
             $dir = $form_state['header_sort']['#dir'];
             $index = $form_state['header_sort']['#index'];
-        } else {
-            $form_state['header_sort']['#field'] = $sort_by;
-            $form_state['header_sort']['#dir'] = $dir;
-            $form_state['header_sort']['#index'] = $index;
         }
 
         if (!isset($form['citation_queue_results'])) {
@@ -1347,6 +1353,13 @@ namespace {
             $results['table']['header']['brief_citation'] = array(
                 '#type' => 'submit',
                 '#value' => 'Citations',
+                '#ajax' => array(
+                    'callback' => '_citation_queue_results_ajax',
+                    'wrapper' => 'citation-results-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')),
+                ),
                 '#sort' => array(
                     '#field' => 'author',
                     '#index' => 'brief_citation',
@@ -1686,6 +1699,10 @@ namespace {
                             'event' => 'change',
                             'callback' => '_ajax_expand_boards',
                             'wrapper' => 'citation-results-div',
+                            'progress' => array(
+                                'type' => 'throbber',
+                                'message' => t('')
+                            ),
                         //'progress' => array('message' => '!'),
                         ),
                     );
@@ -1804,6 +1821,10 @@ namespace {
                                             'event' => 'change',
                                             'callback' => '_ajax_expand_boards',
                                             'wrapper' => 'citation-results-div',
+                                            'progress' => array(
+                                                'type' => 'throbber',
+                                                'message' => t('')
+                                            ),
                                         //'progress' => array('message' => '!'),
                                         ),
                                     );
@@ -1885,6 +1906,10 @@ namespace {
                                     'event' => 'change',
                                     'callback' => '_ajax_expand_boards',
                                     'wrapper' => 'citation-results-div',
+                                    'progress' => array(
+                                        'type' => 'throbber',
+                                        'message' => t('')
+                                    ),
                                 ),
                             );
 
@@ -2047,23 +2072,29 @@ namespace {
             '#options' => $pagerOptions,
         );
 
+        $form['apply'] = array(
+            '#type' => 'button',
+            '#value' => t('Apply'),
+        );
+
+        // return the proper form section based on abstract
         if (!$showAbstract) {
-            $form['per_page']['#ajax'] = array(
+            $form['apply']['#ajax'] = array(
                 'callback' => '_not_list_results_ajax',
                 'wrapper' => 'citation-results-div',
+                'progress' => array(
+                    'type' => 'throbber',
+                    'message' => t('')
+                ),
             );
         } else {
-            $form['sort_by']['#ajax'] = array(
+            $form['apply']['#ajax'] = array(
                 'callback' => '_citation_queue_results_ajax',
                 'wrapper' => 'citation-results-div',
-            );
-            $form['format']['#ajax'] = array(
-                'callback' => '_citation_queue_results_ajax',
-                'wrapper' => 'citation-results-div',
-            );
-            $form['per_page']['#ajax'] = array(
-                'callback' => '_citation_queue_results_ajax',
-                'wrapper' => 'citation-results-div',
+                'progress' => array(
+                    'type' => 'throbber',
+                    'message' => t('')
+                ),
             );
         }
 
@@ -2097,9 +2128,6 @@ namespace {
                 ? $form_state['values']['fulltext_review_check'] : false;
 
         _update_topic_actions($form_state);
-
-        // handle a header sorting click
-        _update_table_sort($form_state);
 
         $form_state['rebuild'] = true;
 
@@ -2143,6 +2171,7 @@ namespace {
         if ($clear_states) {
             $form_state['altered_topics'] = array();
             $form_state['triggered_elements'] = array();
+            unset($form_state['header_sort']);
         }
 
         // wipe out button values so that the default_values calculated from
@@ -2758,6 +2787,10 @@ namespace {
                 '#ajax' => array(
                     'callback' => '_ajax_full_citation',
                     'wrapper' => 'citation-form-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')
+                    ),
                 ),
                 '#attributes' => array(
                     'class' => array('full-citation-button', 'image-button'),
@@ -2810,6 +2843,10 @@ namespace {
                 '#ajax' => array(
                     'callback' => '_ajax_full_citation',
                     'wrapper' => 'citation-form-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')
+                    ),
                 ),
                 '#attributes' => array(
                     'class' => array('full-citation-button', 'image-button'),
@@ -2993,6 +3030,10 @@ namespace {
                 '#ajax' => array(
                     'callback' => '_ajax_full_citation',
                     'wrapper' => 'citation-form-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')
+                    ),
                 ),
                 '#attributes' => array(
                     'class' => array('full-citation-button', 'image-button'),
@@ -3325,6 +3366,10 @@ namespace {
                 '#ajax' => array(
                     'callback' => '_ajax_full_citation',
                     'wrapper' => 'citation-form-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')
+                    ),
                 ),
                 '#attributes' => array(
                     'class' => array('full-citation-button', 'image-button'),
@@ -3487,6 +3532,10 @@ namespace {
                 '#ajax' => array(
                     'callback' => '_ajax_full_citation',
                     'wrapper' => 'citation-form-div',
+                    'progress' => array(
+                        'type' => 'throbber',
+                        'message' => t('')
+                    ),
                 ),
                 '#attributes' => array(
                     'class' => array('full-citation-button', 'image-button'),
