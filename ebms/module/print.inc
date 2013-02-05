@@ -238,8 +238,22 @@ function pdq_ebms_prtpkts_run_form_submit($form, &$form_state) {
         $jobType = 'package';
     else if (!is_null($boardId))
         $jobType = 'board';
-    else
-        $jobType = null;
+    else {
+        // There's only one possibility left.  Should have been validated okay.
+        if (is_null($oldJobId)) {
+            throw new Exception (
+                "Fatal Error: Print validation should have checked for packet," .
+                " member, board, or old job ID.  But none of those found.");
+        }
+        // Find the job type
+        $jobType = db_query(
+          'SELECT print_job_type_id FROM {ebms_print_job} WHERE print_job_id=:jobId',
+          array(':jobId' => $oldJobId))->fetchField();
+        if (!$jobType) {
+            throw new Exception (
+                "Fatal Error: Print found no job type for old job ID=$oldJobId");
+        }
+    }
 
     // Create a new job, ready to run
     $qry = db_insert('ebms_print_job')
