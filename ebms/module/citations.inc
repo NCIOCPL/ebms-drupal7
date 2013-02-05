@@ -2231,7 +2231,7 @@ namespace {
         if (isset($doc->MedlineCitation->Article->AuthorList->Author)) {
             foreach ($doc->MedlineCitation->Article->AuthorList->Author
             as $author) {
-                if (sizeof($authors) == 8) {
+                if (!$long_form && sizeof($authors) == 10) {
                     $authors[] = 'et al.';
                     break;
                 }
@@ -2269,6 +2269,10 @@ namespace {
             $tCMSID = '<div class="citation-subheader">CMS ID</div>';
             $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLE</div>';
         }
+        else if (!$showAbstract)
+        {
+            $cmsId = "CMS ID: $article_id";
+        }
 
         $pieces = array(
             "<div class='article-citation'>$tAuthors<div>",
@@ -2283,11 +2287,11 @@ namespace {
             $pieces[] = ", $year";
 
         if ($showAbstract)
-            $abstractCmsId = "CMS ID: $cmsId";
-        else
-            $abstractCmsId = '';
-
-        $pieces[] = ".</div>$tPMID<div>$pmid&nbsp;&nbsp;&nbsp;&nbsp;$abstractCmsId</div>";
+            $pieces[] = ".</div>$tPMID<div>$pmid&nbsp;&nbsp;&nbsp;&nbsp;CMS ID: $cmsId</div>";
+        else {
+            $pieces[] = ".</div>$tPMID<div>$pmid</div>";
+            $pieces[] = "$tCMSID<div>$cmsId</div>";
+        }
 
         if (!$long_form) {
             if ($showAbstract) {
@@ -2324,8 +2328,6 @@ namespace {
 
             $pieces[] = "</div>";
         } else {
-            $pieces[] = "$tCMSID<div>$cmsId</div>";
-
             $cycles = Ebms\getArticleReviewCycle($article_id);
 
             if (sizeof($cycles) > 1)
