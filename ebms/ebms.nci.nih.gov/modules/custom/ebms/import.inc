@@ -63,6 +63,7 @@ class EbmsImport {
      */
     public function run() {
         Ebms\Util::add_js();
+        drupal_add_js(Ebms\JS_DIR . '/import.js', 'file');
         drupal_add_css(Ebms\CSS_DIR . '/import.css');
         drupal_set_breadcrumb(
             array(
@@ -110,8 +111,8 @@ class EbmsImport {
 function pdq_ebms_import_form($form, &$form_state, $request_id) {
 
     // Start off with defaults appropriate for a new form.
-    $board = $topic = $cycle = 0;
-    $selected_tags = $selected_options = array();
+    $board = $topic = $cycle = $not_list = $test_mode = $fast_track = 0;
+    $selected_tags = array();
     $pmid = $comments = $placement = $ft_comments = '';
 
     // If this is a followup form to a previous import request, use
@@ -130,10 +131,9 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $selected_tags = $params['tags'];
         $pmid = $params['pmid'];
         $comments = $params['comments'];
-        foreach ($params['options'] as $key => $val) {
-            if ($val)
-                $selected_options[] = $key;
-        }
+        $not_list = $params['not-list'];
+        $test_mode = $params['test-mode'];
+        $fast_track = $params['fast-track'];
         $placement = $params['placement'];
         $ft_comments = $params['ft-comments'];
     }
@@ -214,24 +214,32 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#type' => 'textfield',
             '#default_value' => $pmid,
             '#title' => 'PUB MED IDS',
-            '#description' => 'Enter space- or comma-delimited Pubmed IDs ' .
-            'or choose a file containing a Pubmed Print format search ' .
-            'results file below',
         ),
         'comments' => array(
             '#type' => 'textfield',
             '#default_value' => $comments,
             '#title' => 'COMMENTS',
         ),
-        'options' => array(
-            '#type' => 'checkboxes',
-            '#title' => 'OPTIONS',
-            '#options' => array(
-                'not-list' => 'NOT LIST',
-                'test-mode' => 'TEST MODE',
-                'fast-track' => 'FAST TRACK',
-            ),
-            '#default_value' => $selected_options,
+        'not-list' => array(
+            '#type' => 'checkbox',
+            '#title' => 'NOT LIST',
+            '#prefix' => '<div class="checkbox-line">',
+            '#suffix' => '</div>',
+            '#default_value' => $not_list,
+        ),
+        'test-mode' => array(
+            '#type' => 'checkbox',
+            '#title' => 'TEST MODE',
+            '#prefix' => '<div class="checkbox-line">',
+            '#suffix' => '</div>',
+            '#default_value' => $test_mode,
+        ),
+        'fast-track' => array(
+            '#type' => 'checkbox',
+            '#title' => 'FAST TRACK',
+            '#prefix' => '<div class="checkbox-line">',
+            '#suffix' => '</div>',
+            '#default_value' => $fast_track,
         ),
 
         // XXX I wasn't given a list of states to include here, so I picked
@@ -250,7 +258,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#default_value' => $placement,
             '#states' => array(
                 'visible' => array(
-                    '#edit-options-fast-track' => array(
+                    '#edit-fast-track' => array(
                         'checked' => true
                     ),
                 ),
@@ -262,7 +270,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#title' => 'FAST TRACK COMMENTS',
             '#states' => array(
                 'visible' => array(
-                    '#edit-options-fast-track' => array(
+                    '#edit-fast-track' => array(
                         'checked' => true
                     ),
                 ),
@@ -336,7 +344,7 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
         form_set_error('topic', 'You must select a topic for article import');
     if (!$form_state['values']['cycle'])
         form_set_error('cycle', 'You must select a cycle for article import');
-    if ($form_state['values']['options']['fast-track']) {
+    if ($form_state['values']['fast-track']) {
         if (!$form_state['values']['placement'])
             form_set_error('placement',
                 'A placement selection is required for fast-track imports');
@@ -387,11 +395,22 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $topic = $values['topic'];
     $cycle = $values['cycle'];
     $comments = $values['comments'];
-    $use_not_list = $values['options']['not-list'] ? false : true;
-    $fast_track = $values['options']['fast-track'] ? true : false;
-    $test = $values['options']['test-mode'] ? true : false;
+    $use_not_list = $values['not-list'] ? false : true;
+    $fast_track = $values['fast-track'] ? true : false;
+    $test = $values['test-mode'] ? true : false;
     $mode = $test ? 'test' : 'live';
     $import_type = $fast_track ? 'F' : 'R';
+    pdq_ebms_debug('IMPORT FORM SUBMIT', array(
+                       'pmids' => $pmids,
+                       'board' => $board,
+                       'topic' => $topic,
+                       'cycle' => $cycle,
+                       'comments' => $comments,
+                       'use_not_list' => $use_not_list,
+                       'fast_track' => $fast_track,
+                       'test' => $test,
+                       'mode' => $mode,
+                       'import_type' => $import_type));
 
     // Invoke the article import API.
     try {

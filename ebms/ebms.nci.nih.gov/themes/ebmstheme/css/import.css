@@ -3,6 +3,8 @@
 #import-form select { width: 100%; }
 #import-form #edit-file { margin-top: 30px; }
 #import-form table.pmids td { width: 20%; border: none; }
+#import-form legend.checkboxes-508 { margin-left: 2px; }
+#import-form .form-checkboxes:not(#foo) { margin: 5px 0 0 5px; }
 #left-nav .ebms_left_nav_block li { border: none; }
 div.more-actions {
     xborder: 1px solid black; margin: 30px 10px;
@@ -22,3 +24,24 @@ div.more-actions {
 .ebms-left-nav-block-bottom {
     margin: 0; padding: 0; border: none; display: block;
 }
+
+/* Late in the project, we now have time to implement the original layout. */
+#import-form .form-checkboxes .form-type-checkbox,
+#import-form div.form-type-select,
+#import-form div.form-type-textfield {
+    margin: 5px 0 5px 12px; float: none; overflow: hidden;
+}
+#import-form .form-select { width: 520px; }
+#import-form .form-text { width: 516px; }
+#import-form .form-type-select label,
+#import-form .form-type-textfield label {
+    line-height: 22px; float: right; width: 167px; font-weight: normal;
+    margin: 0;
+}
+#import-form .checkbox-line {
+    padding-left: 508px; float: none; margin: 5px 0; overflow: hidden;
+}
+#import-form div.form-type-checkbox { margin: 0; }
+#import-form div.form-type-file { width: 530px; margin: 5px 0; }
+#import-form #edit-file { float: right; margin: 0; border-radius: 7px; }
+#import-form .form-item.form-type-checkbox:not(#foo) label { margin: 0; }
