@@ -12,7 +12,7 @@
 #report-form, #reports-right, #report-stub {
     float: left; width: 730px; margin-bottom: 50px;
 }
-#report-form h2 { margin-top: 25px; }
+/*#report-form h2 { margin-top: 25px; }*/
 #report-form .form-select.fixed-width { width: 500px; }
 #report-form .form-text.fixed-width { width: 498px; }
 #report-form .form-type-select label,
