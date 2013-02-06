@@ -1153,7 +1153,9 @@ class EbmsReview {
         );
         $options = array('html' => true);
         $url = EbmsReview::$url;
+        $npackets = 0;
         foreach ($packets as $p) {
+            $npackets++;
             $options['query'] = array('packet' => $p->packet_id);
             pdq_ebms_preserve_on_behalf($options);
             $packet_link = l($p->packet_title, $url, $options);
@@ -1187,6 +1189,14 @@ class EbmsReview {
                 ),
             );
         }
+
+        // Added at Sridhar's request (TIR 2520).
+        if (!$npackets)
+            $body['empty-queue'] = array(
+                '#type' => 'markup',
+                '#markup' => '<p>There are no review packets in your queue.</p>',
+            );
+
         $page['body'] = $body;
 
         return $page;
