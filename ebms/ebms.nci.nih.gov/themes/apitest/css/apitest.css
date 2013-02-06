@@ -1,0 +1,7 @@
+<style type='text/css'>
+* { left-margin: 20px; }
+table.debug   { border-width: 5px; }
+td            { border-width: 2px; }
+.inactiveStat { color: grey; }
+.activeStat   { color: blue;; }
+</style>
