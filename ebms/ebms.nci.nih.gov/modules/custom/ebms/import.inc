@@ -400,17 +400,6 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $test = $values['test-mode'] ? true : false;
     $mode = $test ? 'test' : 'live';
     $import_type = $fast_track ? 'F' : 'R';
-    pdq_ebms_debug('IMPORT FORM SUBMIT', array(
-                       'pmids' => $pmids,
-                       'board' => $board,
-                       'topic' => $topic,
-                       'cycle' => $cycle,
-                       'comments' => $comments,
-                       'use_not_list' => $use_not_list,
-                       'fast_track' => $fast_track,
-                       'test' => $test,
-                       'mode' => $mode,
-                       'import_type' => $import_type));
 
     // Invoke the article import API.
     try {
