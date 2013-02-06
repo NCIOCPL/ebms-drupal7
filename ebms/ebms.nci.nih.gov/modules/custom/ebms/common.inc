@@ -324,9 +324,10 @@ class Menu {
         );
         if ($role == 'librarian')
             $children[] = new Menu('Publish Citations', 'citations/publish');
+        /* TIR 2520.  Commenting this out in case they change their minds.
         if (pdq_ebms_is_admin_assistant())
             $children[] = new Menu('Full Text Retrieval',
-                          'citations/fulltext');
+            'citations/fulltext');*/
         $landing_page = 'citations';
         global $user;
         if (in_array('admin assistant', $user->roles))
