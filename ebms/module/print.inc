@@ -144,7 +144,7 @@ function pdq_ebms_prtpkts_run_form_validate($form, &$form_state) {
 
     // Do we have enough to determine the job type?
     if (!$boardId && !$memberIdx && !$packetId && !$oldJobId) {
-        form_set_error(null,
+        form_set_error('',
             'Must specify board, board member, packet ID, or old job ID');
     }
 
@@ -381,13 +381,13 @@ function pdq_ebms_prtpkts_view_form_submit($form, $form_state) {
 function pdq_ebms_prtpkts_mbrs_form() {
 
     drupal_set_breadcrumb(
-        array(l('Home', 'home'), '<h2>Manage Print Recipients</h2>')
+        array(l('Home', 'home'), 'Manage Print Recipients')
     );
 
     $form = array();
     $form['title'] = array(
         '#type' => 'markup',
-        '#markup' => "Edit the Board Members Printing Table",
+        '#markup' => '<h2>Edit the Board Members Printing Table</h2>',
     );
 
     $form['explain'] = array(
@@ -420,7 +420,7 @@ function pdq_ebms_prtpkts_mbrs_form() {
         '#type' => 'markup',
         '#markup' => "<p>To add a board member to the list, select the board ".
             "member, enter start and end dates, and click Submit.<br />\n".
-            "To delect a board member, select the member's name, check ".
+            "To select a board member, select the member's name, check ".
             "the Delete checkbox, and click Submit.<br />\n".
             "To alter the dates, select the member, enter the new dates, ".
             "and click Submit.</p>\n".
@@ -612,12 +612,16 @@ function getAllBoardMembers() {
     $memberNames = array();
     $memberNames[] = '';
 
-    $result = db_query('
-        SELECT name
+    $result = db_query("
+        SELECT distinct u.name
           FROM {users} u
-          JOIN {ebms_board_member} m
-            ON u.uid = m.user_id
-      ORDER BY u.name');
+          JOIN {users_roles} ur
+            ON u.uid = ur.uid
+          JOIN {role} r
+            ON r.rid = ur.rid
+         WHERE r.name = 'board member'
+           AND u.status = 1
+      ORDER BY u.name");
     foreach ($result as $row)
         $memberNames[] = $row->name;
 
