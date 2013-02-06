@@ -670,12 +670,14 @@ class EbmsReview {
      */
     private function show_reviewed_packet($opts) {
 
+        // We'll have at least one use for the current date/time.
+        $now = strftime("%Y-%m-%d %H:%M:%S");
+
         // If the user asked to suppress on of the articles in the
         // packet, update the table to reflect this request.
         if (isset($opts['query']['archive'])) {
             $article_id = $opts['query']['archive'];
             if ($article_id) {
-                $now = strftime("%Y-%m-%d %H:%M:%S");
                 db_update('ebms_packet_article')
                     ->fields(array('archived' => $now))
                     ->condition('article_id', $article_id)
@@ -901,6 +903,14 @@ class EbmsReview {
                 'no_striping' => true,
             );
         }
+
+        // Remember when the board manager last looked at this packet (but
+        // only if it's one she created herself).
+        db_update('ebms_packet')
+            ->fields(array('last_seen' => $now))
+            ->condition('packet_id', $this->packet_id)
+            ->condition('created_by', $this->user->uid)
+            ->execute();
 
         // Put together and return the render array for the table.
         return array(
