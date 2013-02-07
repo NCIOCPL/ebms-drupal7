@@ -48,18 +48,9 @@ define ('RTM', chr(174));
  */
 function getServerPath($whichPath, $jobId=null) {
 
-    // Base paths for output files - system dependent
-    $host = gethostname();
-    if (strstr($host, 'verdi'))
-        $host = 'verdi';
-    if ($host == 'verdi')
-        $base = '/var/www/html/ebmsdev/sites/ebms.nci.nih.gov/';
-    else
-        $base = '/web/appdev/sites/ebms.nci.nih.gov/';
-
     switch ($whichPath) {
         case SERVER_FILES_PATH:
-            return $base . 'files';
+            return \Util::get_public_files_path();
 
         case SERVER_BASE_PATH:
             // Same on all systems (so far)
@@ -77,8 +68,8 @@ function getServerPath($whichPath, $jobId=null) {
 }
 
 /**
- * The following two functions should work for all tiers for ebms data.
- * XXX - However, there may be a safer way to do this - XXX
+ * Get the path to files matching a particular Drupal "uri scheme".
+ * Expand this if we ever need other schemes besides "public".
  */
 function getFilesPath($scheme) {
     // Path to our Drupal site's directory for public managed files.
