@@ -577,6 +577,8 @@ class EbmsReview {
                 '#markup' => "<div id='pager-view-pages'>$link</div>",
             );
         }
+        $button_class = array('class' => array('button'));
+        $attrs = array('attributes' => $button_class);
         $table = array(
             '#type' => 'container',
             '#attributes' => array('id' => 'main-right-panel'),
@@ -586,7 +588,7 @@ class EbmsReview {
             ),
             'report button' => array(
                 '#type' => 'markup',
-                '#markup' => '<a class="button" href="stub">Create Report</a>',
+                '#markup' => l('Create Report', 'reports/lit-review', $attrs),
             ),
             'top pager' => $pager,
             'table' => array(
@@ -913,6 +915,8 @@ class EbmsReview {
             ->execute();
 
         // Put together and return the render array for the table.
+        $button_class = array('class' => array('button'));
+        $attrs = array('attributes' => $button_class);
         return array(
             'title' => array(
                 '#type' => 'markup',
@@ -921,7 +925,7 @@ class EbmsReview {
             ),
             'report button' => array(
                 '#type' => 'markup',
-                '#markup' => '<a class="button" href="stub">Create Report</a>',
+                '#markup' => l('Create Report', 'reports/lit-review', $attrs),
                 '#prefix' => '<div id="report-button">',
                 '#suffix' => '</div>',
             ),
