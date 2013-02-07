@@ -267,13 +267,20 @@ class EbmsReview {
                 'class' => array('col-4'),
             ),
         );
+
+        // See if the user has identified one or more boards.
+        $opts = array('query' => drupal_get_query_parameters());
+        $boards = array();
+        if (isset($opts['query']['boards']))
+            $boards = explode(',', $opts['query']['boards']);
+
+        // Build the query.
         $query = db_select('ebms_packet', 'p');
         if ($this->pager != 'off')
             $query = $query->extend('PagerDefault')->limit(10);
         $query = $query->extend('TableSort');
         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
         $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
-        $query->join('ebms_board_member', 'm', 'm.board_id = b.board_id');
         $query->join('users', 'u', 'u.uid = p.created_by');
         if ($this->reviewed) {
             $query->join('ebms_article_review', 'r',
@@ -283,12 +290,15 @@ class EbmsReview {
         $query->fields('p', array('packet_id', 'packet_title', 'created_at'));
         $query->fields('b', array('board_name'));
         $query->fields('u', array('name'));
-        $query->condition('m.user_id', $this->user->uid);
+        if (count($boards) == 1)
+            $query->condition('b.board_id', reset($boards));
+        elseif (count($boards) > 1)
+            $query->condition('b.board_id', $boards, 'IN');
+        $query->condition('p.created_by', $this->user->uid);
         $query->condition('p.active_status', 'A');
         $query->orderByHeader($headers);
         $packets = $query->execute();
         $divider = '<span class="action-divider">|</span>';
-        $opts = array('query' => drupal_get_query_parameters());
         $main_url = EbmsReview::$url;
         $del_func = 'javascript:ebmsscript.delete_packet';
         $rows = array();
@@ -341,18 +351,29 @@ class EbmsReview {
                 ),
             ),
         );
+        $left_nav = $this->build_left_nav('View / Edit Packets');
+        $url = EbmsReview::$url . '/packets';
+        if (count($this->user->ebms_boards) > 1)
+            $left_nav['board filter box'] =
+                $this->board_filter_box($opts, $url);
         if ($this->pager != 'off')
             $table['pager'] = array('#theme' => 'pager');
         else {
             unset($opts['query']['pager']);
-            $url = url(EbmsReview::$url, $opts);
-            $link = l('VIEW PAGES', EbmsReview::$url . '/packets', $opts);
+            $link = l('VIEW PAGES', $url, $opts);
             $table['pager'] = array(
                 '#type' => 'markup',
                 '#markup' => "<div id='pager-view-pages'>$link</div>",
             );
         }
-        return $table;
+        return array(
+            'left-nav' => $left_nav,
+            'packets' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'main-right-panel'),
+                'report' => $table,
+            ),
+        );
     }
 
     /**
@@ -413,7 +434,10 @@ class EbmsReview {
             )
         );
         $left_nav = $this->build_left_nav('Reviewed Packets');
-        $left_nav['board filter box'] = $this->board_filter_box($opts);
+        $url = EbmsReview::$url . '/reviews';
+        if (count($this->user->ebms_boards) > 1)
+            $left_nav['board filter box'] =
+                $this->board_filter_box($opts, $url);
         return array(
             'left-nav' => $left_nav,
             'packets' => $this->reviewed_packet_list($opts),
@@ -425,15 +449,16 @@ class EbmsReview {
      * reviews should be displayed, rather than using the list of boards
      * of which the user is a member.
      */
-    private function board_filter_box($opts) {
+    private function board_filter_box($opts, $url) {
         $checked_boards = array();
         if (isset($opts['query']['boards']))
             $checked_boards = explode(',', $opts['query']['boards']);
         $items = array();
         $boards = Ebms\Util::boards();
-        $url = EbmsReview::$url . '/reviews/' . $this->packet_id;
         $type = 'type="checkbox"';
         foreach ($boards as $id => $name) {
+            if (!in_array($id, $this->user->ebms_boards))
+                continue;
             if (in_array($id, $checked_boards)) {
                 $checked = ' checked="checked"';
                 $new_boards = array_diff($checked_boards, (array)$id);
@@ -477,14 +502,8 @@ class EbmsReview {
             $boards = explode(',', $opts['query']['boards']);
 
         // If not, find the boards of which she's a member.
-        if (count($boards) < 1) {
-            $results = db_select('ebms_board_member', 'm')
-                ->fields('m', array('board_id'))
-                ->condition('m.user_id', $this->user->uid)
-                ->execute();
-            foreach ($results as $result)
-                $boards[] = $result->board_id;
-        }
+        if (count($boards) < 1)
+            $boards = $this->user->ebms_boards;
 
         // If we don't have any boards, then there's nothing more to do.
         if (count($boards) < 1) {
