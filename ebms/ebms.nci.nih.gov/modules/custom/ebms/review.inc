@@ -904,12 +904,12 @@ class EbmsReview {
             $links = '<div class="links">' .
                 l('View Abstract', $pm_link, $target);
             if ($article->uri) {
-                $url = file_create_url($article->uri);
-                $links .= ' | ' . l('Download Full Text', $url, $target);
+                $f_url = file_create_url($article->uri);
+                $links .= ' | ' . l('Download Full Text', $f_url, $target);
             }
-            $url = EbmsReview::$url . '/reviews/' . $this->packet_id . '/' .
+            $a_url = EbmsReview::$url . '/reviews/' . $this->packet_id . '/' .
                 $article_id;
-            $links .= ' | ' . l('Show Details', $url) . '</div>';
+            $links .= ' | ' . l('Show Details', $a_url) . '</div>';
             $data = array(
                 $citation . $links,
                 implode('<br />', $reviewers),
