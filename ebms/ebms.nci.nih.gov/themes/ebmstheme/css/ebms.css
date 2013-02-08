@@ -455,10 +455,12 @@ input:-webkit-autofill {
     border-radius: 7px; border: 1px solid #696559; padding: 5px;
 }
 .form-submit, #edit-submit {
+    display: inline-block;
     padding: 14px; background-color: white; border-radius: 7px;
     margin: 12px; text-transform: uppercase;
     border: 1px solid #696559; font-size: 16px; border-spacing: 0;
     margin-top: 30px;
+    line-height: 21px;
 }
 #edit-submit:hover, #edit-submit:focus {
     border: 1px solid #a90101; color: #a90101;
