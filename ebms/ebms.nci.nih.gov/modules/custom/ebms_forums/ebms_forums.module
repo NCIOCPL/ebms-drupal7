@@ -46,10 +46,17 @@ function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
         $form['actions']['preview'] = FALSE;
 
         // Cancel is not innate
+        $options = array(
+            'attributes' => array(
+                'class' => array(
+                    'form-submit',
+                    'button',
+                ),
+            ),
+        );
+
         $form['actions']['cancel'] = array(
-            '#prefix' => '<span class="button" id="cancel-button">',
-            '#suffix' => '</span>',
-            '#markup' => l(t('Cancel'), 'forum'),
+            '#markup' => l(t('Cancel'), 'forum', $options),
             '#weight' => 4,
         );
 
@@ -352,10 +359,18 @@ function _ebms_forum_form($form, &$form_state, $edit = array()) {
     // Actions
     $form['actions'] = array('#type' => 'actions');
     // Cancel is not innate, added
+    $options = array(
+        'attributes' => array(
+            'class' => array(
+                'form-submit',
+                'button',
+            ),
+        ),
+    );
+
+    $url = l('Cancel', "forum/$term->tid", $options);
     $form['actions']['cancel'] = array(
-        '#prefix' => '<span class="button" id="cancel-button">',
-        '#suffix' => '</span>',
-        '#markup' => l(t('Cancel'), 'forum'),
+        '#markup' => $url,
         '#weight' => 4,
     );
     // Submit

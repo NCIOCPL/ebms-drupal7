@@ -1110,22 +1110,24 @@ function ebms_form_node_form_alter(&$form, &$form_state, $form_id) {
     }
     
     // add 'cancel' button that redirects back to the originating node
-    $nid = $form['#node']->nid;
-    $options = array(
-        'attributes' => array(
-            'class' => array(
-                'form-submit',
-                'button',
+    if (isset($form['#node']->nid)) {
+        $nid = $form['#node']->nid;
+        $options = array(
+            'attributes' => array(
+                'class' => array(
+                    'form-submit',
+                    'button',
+                ),
             ),
-        ),
-    );
+        );
     
-    $url = l('Cancel', "node/$nid", $options);
-    $form['actions']['cancel'] = array(
-        '#markup' => $url,
-        '#weight' => 30,
-    );
+        $url = l('Cancel', "node/$nid", $options);
+        $form['actions']['cancel'] = array(
+            '#markup' => $url,
+            '#weight' => 30,
+        );
     
+    }
 }
 
 /**
