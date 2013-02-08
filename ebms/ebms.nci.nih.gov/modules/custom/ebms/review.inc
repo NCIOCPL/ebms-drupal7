@@ -1873,6 +1873,7 @@ SELECT DISTINCT t.topic_id, t.topic_name
            JOIN ebms_article_state s
              ON t.topic_id = s.topic_id
           WHERE s.active_status = 'A'
+            AND s.current = 'Y'
             AND s.state_id = $state_id
             AND t.board_id = $board_id
             AND s.article_id NOT IN
@@ -1882,8 +1883,7 @@ SELECT DISTINCT t.topic_id, t.topic_name
                 AND packet_id IN
        (SELECT packet_id
           FROM ebms_packet
-         WHERE topic_id = s.topic_id
-           /*AND active_status = 'A'*/))";
+         WHERE topic_id = s.topic_id))";
         $results = db_query($query);
         $topics = array();
         foreach ($results as $result)
@@ -1903,7 +1903,6 @@ SELECT DISTINCT t.topic_id, t.topic_name
             return array();
         $subquery = db_select('ebms_packet', 'p')
             ->fields('p', array('packet_id'))
-            //->condition('p.active_status', 'A')
             ->condition('p.topic_id', $topic_id);
         $subquery = db_select('ebms_packet_article', 'a')
             ->fields('a', array('article_id'))
