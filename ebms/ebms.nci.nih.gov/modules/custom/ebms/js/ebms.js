@@ -176,7 +176,7 @@ ebmsscript.file_chosen = function() {
         var a = p.split("\\");
         p = a[a.length-1];
         jQuery("#filename").text(p).show();
-        jQuery("#choose-file label").css("color", "#2d2c28");
+        //jQuery("#choose-file span.label-508").css("color", "#2d2c28");
     }
     if (jQuery("#add-notes").length == 1) {
         jQuery("#add-notes label").css("color", "#a90101");
@@ -219,9 +219,9 @@ ebmsscript.show_doc_post_form = function() {
     ebmsscript.clear_file_upload_form();
     jQuery("#file-upload-form-js").dialog("open");
     jQuery("#filepath").focus();
-    jQuery("#choose-file label").css("color", "#2d2c28");
+    //jQuery("#choose-file span.label-508").css("color", "#2d2c28");
     //jQuery("#upload-file").css("color", "#2d2c28");
-    jQuery("#add-notes label").css("color", "#2d2c28");
+    //jQuery("#add-notes label").css("color", "#2d2c28");
     ebmsscript.file_upload_textarea_open = false;
 };
 
@@ -457,7 +457,7 @@ ebmsscript.init_profile_page = function() {
 
         // Different browsers handle event bubbling differently.
         if (!jQuery.browser.msie) {
-            jQuery("#choose-file label").click(function() {
+            jQuery("#choose-file span.508-label").click(function() {
                 jQuery("#choose-file #filepath").click();
                 return false;
             });
@@ -551,9 +551,9 @@ ebmsscript.profile_picture_chosen = function() {
     jQuery("#submit-box").show();
     jQuery("#filepath").attr("readonly", true);
     jQuery("#choose-file").addClass("disabled");
-    jQuery("#choose-file label").css("color", "#bbb");
-    jQuery("#choose-file label").css("border-color", "#bbb");
-    jQuery("#choose-file label").unbind("click");
+    jQuery("#choose-file span.label-508").css("color", "#bbb");
+    jQuery("#choose-file span.label-508").css("border-color", "#bbb");
+    jQuery("#choose-file span.label-508").unbind("click");
     jQuery("#filepath").click(function() { return false; });
     return false;
 };
@@ -679,24 +679,29 @@ ebmsscript.register_file_upload_form_event_handlers = function() {
     jQuery("#choose-file #filepath").change(function() {
         ebmsscript.file_chosen();
     });
-    jQuery("#choose-file label").click(function() {
-        jQuery("#choose-file label").css("color", "#a90101");
+    jQuery("#choose-file span.label-508").hover(function() {
+        //jQuery("#choose-file span.label-508").css("color", "#a90101");
+        //jQuery("#upload-file").css("color", "#a90101");
+        //jQuery("#add-notes label").css("color", "#2d2c28");
+    });
+    jQuery("#choose-file span.label-508").click(function() {
+        //jQuery("#choose-file span.label-508").css("color", "#a90101");
         //jQuery("#upload-file").css("color", "#2d2c28");
-        jQuery("#add-notes label").css("color", "#2d2c28");
+        //jQuery("#add-notes label").css("color", "#2d2c28");
         if (!jQuery.browser.msie) {
             jQuery("#choose-file #filepath").click();
             return false;
         }
     });
     jQuery("#upload-file").focus(function() {
-        jQuery("#choose-file label").css("color", "#2d2c28");
+        //jQuery("#choose-file span.label-508").css("color", "#2d2c28");
         //jQuery("#upload-file").css("color", "#a90101");
-        jQuery("#add-notes label").css("color", "#2d2c28");
+        //jQuery("#add-notes label").css("color", "#2d2c28");
     });
     jQuery("#filenotes").focus(function() {
-        jQuery("#choose-file label").css("color", "#2d2c28");
+        //jQuery("#choose-file span.label-508").css("color", "#2d2c28");
         //jQuery("#upload-file").css("color", "#2d2c28");
-        jQuery("#add-notes label").css("color", "#a90101");
+       // jQuery("#add-notes label").css("color", "#a90101");
     });
     jQuery("#upload-file").click(function() {
         return ebmsscript.submit_file();
