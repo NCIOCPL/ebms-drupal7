@@ -121,7 +121,7 @@ class EbmsDocs {
         // Build and execute the database query to find the posted documents.
         $query = db_select('ebms_doc', 'd');
         if ($pager)
-            $query = $query->extend('PagerDefault')->limit(5);
+            $query = $query->extend('PagerDefault')->limit(10);
         $query = $query->extend('TableSort');
         $query->join('file_managed', 'f', 'f.fid = d.file_id');
         $query->join('users', 'u', 'u.uid = f.uid');
