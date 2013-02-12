@@ -1176,11 +1176,11 @@ class EbmsReports {
             pdq_ebms_debug('DOCS PARAMS', $params);
         }
 
-        // In the interest of keeping up with the development schedule,
-        // the paging mechanism implemented here is simpler than it
-        // might be; we're not providing a way for the user to toggle
-        // between paged output and unpaged output.
+        // Find out whether we're paging the results.
         $pager = true;
+        if (isset($this->parms['pager']))
+            if ($this->parms['pager'] == 'off')
+                $pager = false;
 
         // Create the table column headers, specifying the column which
         // can be used for sorting.
@@ -1216,7 +1216,7 @@ class EbmsReports {
         $query = db_select('ebms_doc', 'd');
         $query = $query->extend('TableSort');
         if ($pager)
-            $query = $query->extend('PagerDefault')->limit(5);
+            $query = $query->extend('PagerDefault')->limit(10);
         $query->join('file_managed', 'f', 'f.fid = d.file_id');
         $query->join('users', 'u', 'u.uid = f.uid');
         $query->fields('f', array('filename'));
