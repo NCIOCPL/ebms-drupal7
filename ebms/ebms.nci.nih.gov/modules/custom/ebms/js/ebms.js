@@ -457,7 +457,7 @@ ebmsscript.init_profile_page = function() {
 
         // Different browsers handle event bubbling differently.
         if (!jQuery.browser.msie) {
-            jQuery("#choose-file span.508-label").click(function() {
+            jQuery("#choose-file span.label-508").click(function() {
                 jQuery("#choose-file #filepath").click();
                 return false;
             });
