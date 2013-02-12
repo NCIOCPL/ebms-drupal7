@@ -2589,7 +2589,7 @@ namespace {
 
             $markup = '';
             if ($icon)
-                $markup .= "<img class='line-icon' src='$icon'>";
+                $markup .= "<img class='line-icon' alt='' src='$icon'>";
             else
                 $text = "<div class='left-nav-most-recent'></div>$text";
 
@@ -2771,7 +2771,7 @@ namespace {
 
             // create add tag button
             $form[$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' alt ='' src='$iconPath'>",
             );
 
             // create add comment form 
@@ -2827,7 +2827,7 @@ namespace {
 
             // create add tag button
             $form[$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' alt='' src='$iconPath'>",
             );
 
             // create add comment form 
@@ -3015,7 +3015,7 @@ namespace {
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png';
             // create add tag button
             $form['button'][$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' alt='Add Tag' src='$iconPath'>",
             );
 
             $formId = "add_tag_form_$hash";
@@ -3319,7 +3319,7 @@ namespace {
             $iconPath = Ebms\EDIT_ACTIVE;
             // create add tag button
             $form['button'][$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' alt='' src='$iconPath'>",
             );
 
             $formId = "edit_decision_form_$hash";
@@ -3510,6 +3510,7 @@ namespace {
 
 
         $buttonId = $isAdd ? "add_decision_$hash" : "edit_decision_$hash";
+        $altText = $isAdd ? "Add Decisions" : "Edit Decision";
 
         // check if related form is triggered
         $triggered = _is_triggered_by($form_state, $buttonId);
@@ -3519,7 +3520,7 @@ namespace {
             $iconPath = Ebms\ADD_DECISION_ACTIVE;
             // create add tag button
             $form['button'][$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' src='$iconPath'>",
+                '#markup' => "<img class='full-citation-button image-button' alt='$altText' src='$iconPath'>",
             );
 
             $formId = "edit_decision_form_$hash";
@@ -3546,8 +3547,8 @@ namespace {
                 ),
                 '#attributes' => array(
                     'class' => array('full-citation-button', 'image-button'),
-                    'title' => $isAdd ? 'Add Decisions' : 'Edit Decision',
-                    'alt' => $isAdd ? 'Add Decisions' : 'Edit Decision',
+                    'title' => $altText,
+                    'alt' => $altText,
                 ),
                 '#persist' => array(
                     'type' => 'toggle',
@@ -5607,22 +5608,26 @@ namespace {
     function _build_decision_icon_tag($type, $active = true) {
 
         $icon = null;
+        $alt = '';
 
         switch ($type) {
             case 'pass':
                 $icon = $active ? Ebms\PASS_ACTIVE : Ebms\PASS_INACTIVE;
+                $alt = 'pass';
                 break;
             case 'reject':
                 $icon = $active ? Ebms\REJECT_ACTIVE : Ebms\REJECT_INACTIVE;
+                $alt = 'reject';
                 break;
             case 'fyi':
                 $icon = $active ? Ebms\FYI_ACTIVE : Ebms\FYI_INACTIVE;
+                $alt = 'FYI';
                 break;
             default:
                 return '';
         }
 
-        return $prefix = "<img class='full-citation-decision-icon' src='$icon'>";
+        return $prefix = "<img class='full-citation-decision-icon' alt = '$alt' src='$icon'>";
     }
     /* function _format_topic_on_agenda($topic_sequences) {
       $form = array();
