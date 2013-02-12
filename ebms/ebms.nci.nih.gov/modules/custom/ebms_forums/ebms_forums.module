@@ -14,7 +14,16 @@
  * of the function that generated the form.
  */
 function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
-    
+
+    // Suppress Archived field if the form is being used for creating a
+    // new forum (TIR 2362).
+    if ($form_id == '_ebms_forum_form') {
+        if (isset($form_state['term'])) {
+                if (!$form_state['term']->tid)
+                    $form['field_archived']['#access'] = false;
+            }
+    }
+
     if ($form_id == 'forum_node_form') {
         
 
@@ -24,11 +33,16 @@ function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
                 l('Forums', 'forum'),
                 'Edit ' . $form_state['node']->title,
             ));
-        else
+        else {
             drupal_set_breadcrumb(array(
                 l('Forums', 'forum'),
                 'Add Forum'
             ));
+
+            // Suppress Archived field if the form is being used for creating a
+            // new forum topic (TIR 2362).
+            $form['field_archived']['#access'] = false;
+        }
         
         // Hide vertical tabs if not user 1
         global $user;
