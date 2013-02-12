@@ -1429,12 +1429,6 @@ class Util {
         }
         $start_date = sprintf('%04d-%02d-01', $y, $m);
         $cycle_id = Util::get_cycle_id_from_start_date($start_date);
-        pdq_ebms_debug('GET DEFAULT CYCLE', array(
-                           'now' => $now,
-                           'start_date' => $start_date,
-                           'cycle_id' => $cycle_id,
-            )
-        );
         $safety = 0;
         while (!$cycle_id) {
             $last_cycle = Util::get_last_cycle_date();
