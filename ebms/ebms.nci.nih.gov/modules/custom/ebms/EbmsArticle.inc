@@ -2488,6 +2488,7 @@ function getArticlePacketIds($article_id, $topic_id = NULL, $find_all = false,
     $packet_ids = $query
         ->condition('a.article_id', $article_id)
         ->fields('a', array('packet_id'))
+        ->orderBy('p.created_at', 'DESC')
         ->execute()
         ->fetchCol();
 

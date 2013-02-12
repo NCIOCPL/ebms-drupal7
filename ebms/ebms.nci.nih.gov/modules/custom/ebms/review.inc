@@ -2181,9 +2181,12 @@ class EbmsPacket {
      * this packet.
      */
     public static function fetch_reviewers($packet_id) {
-        $results = db_select('ebms_packet_reviewer', 'r')
+        $query = db_select('ebms_packet_reviewer', 'r');
+        $query->join('users', 'u', 'u.uid = r.reviewer_id');
+        $results = $query
             ->fields('r', array('reviewer_id'))
             ->condition('r.packet_id', $packet_id)
+            ->orderBy('u.name')
             ->execute();
         foreach ($results as $result)
             $reviewers[] = $result->reviewer_id;

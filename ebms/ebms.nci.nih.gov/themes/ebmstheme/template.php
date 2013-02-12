@@ -356,7 +356,7 @@ function ebmstheme_radios($variables) {
     $description = array_key_exists('#description', $element) ? $element['#description'] : NULL;
 
     return '<fieldset ' . drupal_attributes($attributes) . '>
-      <legend class="radios-508 label-508" for="' . $attributes['id'] . '">'
+      <legend class="radios-508" for="' . $attributes['id'] . '">'
             . $required .
             ' ' . (array_key_exists('#title', $element) ? $element['#title'] : '') .
             '</legend> '
@@ -394,7 +394,7 @@ function ebmstheme_checkboxes($variables) {
     $description = array_key_exists('#description', $element) ?
         $element['#description'] : NULL;
     return '<fieldset ' . drupal_attributes($attributes) . '>
-      <legend class="checkboxes-508 label-508" for="' . $attributes['id'] . '">'
+      <legend class="checkboxes-508" for="' . $attributes['id'] . '">'
             . $required .
             ' ' . (array_key_exists('#title', $element) ? $element['#title'] : '') .
             '</legend> '

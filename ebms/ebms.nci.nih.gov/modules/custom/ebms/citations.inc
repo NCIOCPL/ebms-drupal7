@@ -28,7 +28,8 @@ namespace Ebms {
         'nci_reviewer' => array('pass', 'reject', 'comment'),
         'fulltext' => array('file', 'check', 'comment'),
         'surveillance' => array('pass', 'reject', 'fyi', 'comment'),
-        'member_responses' => array('select', 'reject', 'comment'),
+        'member_responses' => array('packet', 'reviewer', 'select', 'reject',
+            'loe', 'comment'),
         'manager_actions' => array('select', 'comment'),
         'on_agenda' => array('future', 'past', 'comment'),
         'board_decision' => array('select', 'discussed', 'members', 'comment'),
@@ -1156,8 +1157,6 @@ namespace {
                 }
             }
 
-            timer_start('query');
-
             // query article state table first
             $stateQuery = db_select('ebms_article_state', 'eas');
 
@@ -1258,9 +1257,6 @@ namespace {
             $result = array();
             watchdog('EBMS - citations', (string) $e);
         }
-
-        $endTime = timer_stop('query');
-        //dsm($endTime['time'], "end time");
 
         if ($is_librarian) {
             $results['results-title']['#markup'] = "<h2>Citations Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
@@ -2268,9 +2264,7 @@ namespace {
             $tPMID = '<div class="citation-subheader">PMID</div>';
             $tCMSID = '<div class="citation-subheader">CMS ID</div>';
             $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLE</div>';
-        }
-        else if (!$showAbstract)
-        {
+        } else if (!$showAbstract) {
             $cmsId = "CMS ID: $article_id";
         }
 
@@ -2632,6 +2626,9 @@ namespace {
         // include modal script necessities
         _include_modal_scripts();
 
+        // maintain triggered element states
+        _update_persistent_elements($form_state);
+
         $article = new Ebms\EbmsArticle($articleId);
 
         $cite = _cite_article($article);
@@ -2712,11 +2709,16 @@ namespace {
             $parents = $form_state['triggering_element']['#array_parents'];
             $path = &$form;
             foreach ($parents as $parent) {
-                $path = &$path[$parent];
+                // do not create a path that does not already exist
+                if (isset($path[$parent])) {
+                    $path = &$path[$parent];
 
-                if (isset($path['#type']) && $path['#type'] == 'fieldset') {
-                    $path['#collapsed'] = false;
+                    if (isset($path['#type']) && $path['#type'] == 'fieldset') {
+                        $path['#collapsed'] = false;
+                    }
                 }
+                else
+                    break;
             }
         }
 
@@ -3133,6 +3135,9 @@ namespace {
 
     function _form_cancel($form, &$form_state) {
         $form_state['rebuild'] = TRUE;
+
+        // clear out the triggered elements
+        $form_state['triggered_elements'] = array();
     }
 
     function _add_tag_save_js($form, &$form_state) {
@@ -3333,8 +3338,8 @@ namespace {
                     $decisions = array(Ebms\EbmsTopicDecisions:: $PUBLISHED);
                 }
 
-                $form_array = _build_edit_decision_form(
-                    $articleId, $topicId, $decisions, true);
+                $form_array = _build_edit_decision_form($form_state, $articleId,
+                    $topicId, $decisions, true);
             } else {
                 if (!$boardId) {
                     // attempt to dig selected board id form form state
@@ -3518,8 +3523,8 @@ namespace {
             );
 
             $formId = "edit_decision_form_$hash";
-            $form['form'][$formId] = _build_edit_decision_form($articleId,
-                $topicId, $decisions, $isAdd);
+            $form['form'][$formId] = _build_edit_decision_form($form_state,
+                $articleId, $topicId, $decisions, $isAdd);
             $form['form'][$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
             $form['form'][$formId]['#suffix'] = '</div>';
         } else {
@@ -3544,6 +3549,9 @@ namespace {
                     'title' => $isAdd ? 'Add Decisions' : 'Edit Decision',
                     'alt' => $isAdd ? 'Add Decisions' : 'Edit Decision',
                 ),
+                '#persist' => array(
+                    'type' => 'toggle',
+                    'group' => $buttonId),
             );
             $form['form'] = array();
         }
@@ -3551,8 +3559,8 @@ namespace {
         return $form;
     }
 
-    function _build_edit_decision_form($article_id, $topic_id, $decisions,
-        $isAdd) {
+    function _build_edit_decision_form(&$form_state, $article_id, $topic_id,
+        $decisions, $isAdd) {
         $form = array();
 
         if (empty($decisions))
@@ -3565,13 +3573,16 @@ namespace {
 
         global $user;
 
-        $timetag = "<div>$date - <i>$user->name</i></div>";
+        $timetag = "$date - <i>$user->name</i>";
 
         foreach ($decisions as $decision) {
             $title = $decision->title();
             if (!$isAdd)
                 $title = 'Edit Decision';
-            $full_title = array('#markup' => "<div class='citation-subheader'>$title</div><div>$timetag</div>");
+            $full_title = array(
+                '#markup' => "<div class='citation-subheader'>$title</div>" .
+                "<div class='full-citation-element'>$timetag</div>"
+            );
 
             switch ($decision) {
                 case Ebms\EbmsTopicDecisions::$INITIALREVIEW:
@@ -3711,47 +3722,139 @@ namespace {
                     break;
                 case Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES:
 
+                    require_once('review.inc');
+
                     $packetIds = Ebms\getArticlePacketIds($article_id, $topic_id);
+
                     if (empty($packetIds))
                         break;
 
+                    // generate packet information
+                    $packetOptions = array(0 => t('Available Packets:'));
+                    foreach ($packetIds as $packetId) {
+                        $packetOptions[$packetId] = Ebms\getPacketInfo($packetId)->packet_title;
+                    }
+
+                    // retrieve the available board members, if any
+                    $reviewerOptions = array(0 => 'Please select a packet.');
+
+                    $packetId = 0;
+                    if (isset($form_state['values']
+                            ["member_responses_packet_$hash"])) {
+                        $packetId = $form_state['values']
+                            ["member_responses_packet_$hash"];
+
+                        if ($packetId) {
+                            $reviewerIds = \EbmsPacket::fetch_reviewers($packetId);
+
+                            $reviewers = user_load_multiple($reviewerIds);
+                            foreach ($reviewers as $reviewer) {
+                                $reviewerOptions[$reviewer->uid] = $reviewer->name;
+                            }
+
+                            if (sizeof($reviewerOptions) > 1) {
+                                $reviewerOptions[0] = 'Available Members:';
+                            } else {
+                                $reviewerOptions[0] = 'No members available.';
+                            }
+                        }
+                    }
+
+                    $reviewerId = 0;
+                    if (isset($form_state['values']
+                            ["member_responses_reviewer_$hash"])) {
+                        $reviewerId = $form_state['values']
+                            ["member_responses_reviewer_$hash"];
+                    }
+
                     $values = Ebms\getReviewDispositions();
 
-                    $options = array(0 => '');
                     foreach ($values as $value) {
                         $options[$value->value_id] = $value->value_name;
                     }
+
                     $form['member_responses_title'] = $full_title;
 
-                    $form["member_responses_select_$hash"] = array(
+                    $form["member_responses_packet_$hash"] = array(
                         '#type' => 'select',
-                        '#title' => 'Board Member Respones',
-                        '#title_display' => 'none',
+                        '#title' => 'Literature Surveillance Packet',
+                        '#title_display' => 'invisible',
+                        '#options' => $packetOptions,
+                        '#ajax' => array(
+                            'callback' => '_ajax_full_citation',
+                            'wrapper' => 'citation-form-div',
+                        ),
+                    );
+
+                    $form["member_responses_reviewer_$hash"] = array(
+                        '#type' => 'select',
+                        '#title' => 'Board Member',
+                        '#title_display' => 'invisible',
+                        '#options' => $reviewerOptions,
+                        '#disabled' => !$packetId,
+                        '#ajax' => array(
+                            'callback' => '_ajax_full_citation',
+                            'wrapper' => 'citation-form-div',
+                        ),
+                    );
+
+                    $form["member_responses_select_$hash"] = array(
+                        '#type' => 'checkboxes',
+                        '#title' => t('Board Member Responses'),
                         '#options' => $options,
-                        '#attributes' => array(
-                            'class' => array('js-response-select'),
+                        '#ajax' => array(
+                            'callback' => '_ajax_full_citation',
+                            'wrapper' => 'citation-form-div',
                         ),
+                        '#disabled' => !$reviewerId,
                     );
 
-                    $rejectValues = db_select('ebms_review_rejection_value', 'v')
-                        ->fields('v')
-                        ->orderBy('v.value_pos')
-                        ->execute()
-                        ->fetchAllKeyed();
+                    $showRejects = false;
+                    $showLOE = false;
+                    // parse the chosen reasons
+                    if (isset(
+                            $form_state['values']["member_responses_select_$hash"])) {
+                        foreach ($form_state['values']["member_responses_select_$hash"]
+                        as $key => $value) {
+                            if ($value) {
+                                if ($key === 1)
+                                    $showRejects = true;
+                                else {
+                                    $showLOE = true;
+                                }
+                            }
+                        }
+                    }
 
-                    $form["member_responses_reject_fieldset_$hash"] = array(
-                        '#type' => 'fieldset',
-                        '#title' => "<span class='citation-subheader'>
+                    if ($showRejects) {
+                        $rejectValues = db_select('ebms_review_rejection_value',
+                                'v')
+                            ->fields('v')
+                            ->orderBy('v.value_pos')
+                            ->execute()
+                            ->fetchAllKeyed();
+
+                        $form["member_responses_reject_fieldset_$hash"] = array(
+                            '#type' => 'fieldset',
+                            '#title' => "<span class='citation-subheader'>
                             Reason For Rejection</span>",
-                        '#collapsible' => TRUE,
-                        '#collapsed' => FALSE,
-                        "member_responses_reject_$hash" => array(
-                            '#type' => 'checkboxes',
-                            '#options' => $rejectValues,
-                        ),
-                        '#prefix' => '<div class="full-citation-element js-response-reject">',
-                        '#suffix' => '</div>',
-                    );
+                            '#collapsible' => TRUE,
+                            '#collapsed' => FALSE,
+                            "member_responses_reject_$hash" => array(
+                                '#type' => 'checkboxes',
+                                '#options' => $rejectValues,
+                            ),
+                        );
+                    }
+
+                    if ($showLOE) {
+                        $form["member_responses_loe_$hash"] = array(
+                            '#type' => 'textarea',
+                            '#title' => t('Level of Evidence'),
+                            '#prefix' => '<div class="full-citation-element">',
+                            '#suffix' => '</div>',
+                        );
+                    }
 
                     $form["member_responses_comment_$hash"] = array(
                         '#type' => 'textarea',
@@ -3949,9 +4052,8 @@ namespace {
         // split the hash into articleId and topicId
         list($articleId, $topicId) = explode('|', $hash);
 
-        // if member responses select is 1, make sure a reject reason is chosen
-        if (isset($values['member_responses']['select']) &&
-            $values['member_responses']['select'] == 1) {
+        // if reject reasons are present in the form, make sure one is chosen
+        if (isset($values['member_responses']['reject'])) {
             $reasonChosen = false;
             foreach ($values['member_responses']['reject'] as $value) {
                 if ($value) {
@@ -3963,6 +4065,15 @@ namespace {
             if (!$reasonChosen) {
                 form_set_error("member_responses_reject_$hash",
                     "At least one rejection reason must be chosen.");
+            }
+        }
+
+        // if the LOE field is present in the form, make sure it has content
+        if (isset($values['member_responses']['loe'])) {
+            $loe = $values['member_responses']['loe'];
+            if (empty($loe)) {
+                form_set_error("member_responses_loe_$hash",
+                    "The Level of Evidence must be provided.");
             }
         }
 
@@ -3981,6 +4092,9 @@ namespace {
         require_once('EbmsArticle.inc');
 
         $form_state['rebuild'] = TRUE;
+
+        // clear out the triggered elements
+        $form_state['triggered_elements'] = array();
 
         global $decision_value_map;
         $values = _retrieve_hash_values($form_state, $decision_value_map);
@@ -4191,22 +4305,44 @@ namespace {
         if (empty($values))
             return;
 
+        $packetId = $values['packet'];
+        $memberId = $values['reviewer'];
         $select = $values['select'];
-        $reject = $values['reject'];
 
-        if (!$select)
+        if (!$packetId || !$memberId || !$select)
             return;
+
+        $reject = array();
+        if (isset($values['reject']))
+            $reject = $values['reject'];
+
+        if (isset($values['loe']))
+            $loe = $values['loe'];
+        if (empty($loe))
+            $loe = null;
+
+        // retrieve current user and member names to populate comment annotation
+        global $user;
+        $account = user_load($memberId);
+
+        if ($account === FALSE) {
+            drupal_set_message(
+                "Could not load user $memberId - response not saved.", 'error');
+            return;
+        }
+
+        $userName = $user->name;
+        $memberName = $account->name;
+        $commentSuffix =
+            "<i>Recorded by $userName on behalf of $memberName.</i>";
 
         $comment = $values['comment'];
         if (!$comment)
-            $comment = null;
-        $packets = Ebms\getArticlePacketIds($articleId, $topicId);
+            $comment = $commentSuffix;
+        else
+            $comment .= "<br /><br />$commentSuffix";
 
-        if (sizeof($packets) != 1)
-            return;
-
-        $packetId = $packets[0];
-        global $user;
+        $now = strftime("%Y-%m-%d %H:%M:%S");
 
         // Here are the fields we'll store
         //   article_id and dates handled separately for new
@@ -4214,18 +4350,17 @@ namespace {
         $key = array(
             'packet_id' => $packetId,
             'article_id' => $articleId,
-            'reviewer_id' => $user->uid,
+            'reviewer_id' => $memberId,
         );
         $fields = array(
-            'when_posted' => db_query('SELECT NOW()')->fetchField(),
+            'when_posted' => $now,
             'comments' => $comment,
-            'loe_info' => NULL,
+            'loe_info' => $loe,
         );
 
         // Wrap this in a transaction
         $txn = db_transaction();
         try {
-
             // Insert a new record
             $query = db_merge('ebms_article_review');
             $query->key($key);
@@ -4237,30 +4372,39 @@ namespace {
             $reviewId = db_select('ebms_article_review', 'r')
                 ->condition('r.packet_id', $packetId)
                 ->condition('r.article_id', $articleId)
-                ->condition('r.reviewer_id', $user->uid)
+                ->condition('r.reviewer_id', $memberId)
                 ->fields('r', array('review_id'))
                 ->execute()
                 ->fetchField();
+            
+            // clear the review disposition table
+            db_delete('ebms_review_disposition')
+                ->condition('review_id', $reviewId)
+                ->execute();
 
-            // also insert into the review disposition table
-            $reviewFields = array(
-                'review_id' => $reviewId,
-                'value_id' => $select,
-            );
+            // insert choices into the review disposition table
+            foreach ($select as $choice => $value) {
+                if ($value) {
+                    $reviewFields = array(
+                        'review_id' => $reviewId,
+                        'value_id' => $choice,
+                    );
 
-            // Insert a new record
-            $query = db_merge('ebms_review_disposition');
-            $query->key($reviewFields);
+                    // Insert a new record
+                    $query = db_merge('ebms_review_disposition');
+                    $query->key($reviewFields);
 
-            $query->execute();
+                    $query->execute();
+                }
+            }
+            
+            // clear all current rejections for the review
+            db_delete('ebms_review_rejection_reason')
+                ->condition('review_id', $reviewId)
+                ->execute();
 
-            // also, save the rejection reasons if the value is 1
-            if ($select == 1) {
-                // clear all current values for the review
-                db_delete('ebms_review_rejection_reason')
-                    ->condition('review_id', $reviewId)
-                    ->execute();
-
+            // save the current rejection reasons if present
+            if (!empty($reject)) {
                 foreach ($reject as $reason) {
                     if ($reason) {
                         $rejectFields = array(

@@ -1343,8 +1343,14 @@ div.ctools-modal-content .form-item label {
 }
 
 /* CITATION QUEUE */
+/* The Ajax appearance is problematic in various areas, needs a more
+comprehensive adjustment than just this. */
 #citation-form-div .ajax-progress{
-    display: block;
+    /*display: block;*/
+}
+
+#citation-form-div select{
+    max-width: 650px;
 }
 
 #citation-buttons-div {
