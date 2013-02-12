@@ -99,10 +99,6 @@ class EbmsReview {
      */
     private function choose_manager_review_page() {
         switch ($this->action) {
-            case 'packets':
-                return $this->manager_packets();
-            case 'reviews':
-                return $this->manager_reviews();
             case 'add':
                 return drupal_get_form('pdq_ebms_edit_packet_form');
             case 'edit':
@@ -112,8 +108,11 @@ class EbmsReview {
                 return $this->delete_packet();
             case 'record':
                 return $this->record_responses();
+            case 'packets':
+                return $this->manager_packets();
+            case 'reviews':
             default:
-                return $this->manager_literature_landing_page();
+                return $this->manager_reviews();
         }
     }
 
