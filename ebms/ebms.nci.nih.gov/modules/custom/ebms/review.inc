@@ -1181,7 +1181,8 @@ class EbmsReview {
         drupal_set_breadcrumb(array('Literature'));
         $packets = $this->reviewer_packets();
         $body = array(
-            '#prefix' => "$body_prefix<div id='member-packets'><h2>Assigned Packets $header_suffix</h2>",
+            '#prefix' => "$body_prefix<div id='member-packets'>" .
+            "<h2>Assigned Packets $header_suffix</h2>",
             '#suffix' => "</div>$body_suffix",
         );
         $options = array('html' => true);
@@ -1234,6 +1235,7 @@ class EbmsReview {
 
         return $page;
     }
+
     /*
      * Display page for a single literature review packet.
      */
@@ -1334,7 +1336,7 @@ class EbmsReview {
      * reviewer to look at).
      *
      * 2013-01-05 (TIR 2176): Robin wants us to show articles which have
-     * already been reviewed (without the Review) button.
+     * already been reviewed (without the Review button).
      */
     private function show_packet_articles(&$page, $articles) {
 
@@ -1637,7 +1639,7 @@ class EbmsReview {
     /**
      * Determines if the chosen user is a reviewer for the current packet.
      *
-     * @return boolean TRUE if th euser is in the reviewer list, else FALSE.
+     * @return boolean TRUE if the user is in the reviewer list, else FALSE.
      */
     private function is_reviewer() {
         $count = db_select('ebms_packet_reviewer', 'r')
@@ -1827,7 +1829,6 @@ class EbmsReview {
         $query->fields('f', array('uri'));
         $query->condition('a.article_id', $article_id);
         $result = $query->execute()->fetch();
-        pdq_ebms_debug('BRIEF CITATION FETCHED', $result);
         $doc = new \SimpleXMLElement($result->source_data);
         $article = $doc->MedlineCitation->Article;
         $uri = $result->uri;
@@ -1982,9 +1983,16 @@ SELECT DISTINCT t.topic_id, t.topic_name
      * reviewers who are currently assigned to the packet, even
      * if they wouldn't be picked up by the rest of the query's
      * logic.
+     * 2013-02-12 (TIR 2373): Ashleigh decided she doesn't like
+     * the way the users set up handling of non-topic reviewers
+     * when the "Show All Board Members" option is turned off.
+     * She now wants us to preserve the selections of non-topic
+     * reviewers.  She also wants us to select all the topic
+     * reviewers for a newly created packet (another change from
+     * the prototype).
      */
     public static function reviewers_for_topic(
-        $topic_id, $board_id=0, $packet_id=0
+        $topic_id, $board_id=0, $selected=array()
     ) {
         if (!$topic_id && !$board_id)
             return array();
@@ -2002,18 +2010,22 @@ SELECT DISTINCT t.topic_id, t.topic_name
             $query->condition('r.topic_id', $topic_id);
         }
         $query->condition('u.status', 1);
-        if ($packet_id) {
-            $union = db_select('users', 'u2');
-            $union->fields('u2', array('uid', 'name'));
-            $union->join('ebms_packet_reviewer', 'pr',
-                'pr.reviewer_id = u2.uid');
-            $union->condition('pr.packet_id', $packet_id);
-            $query->union($union);
-        }
         $results = $query->execute();
         $reviewers = array();
         foreach ($results as $result)
             $reviewers[$result->uid] = $result->name;
+        if (!$board_id) {
+            foreach ($selected as $uid) {
+                if (!array_key_exists($uid, $reviewers)) {
+                    $name = db_select('users', 'u')
+                        ->fields('u', array('name'))
+                        ->condition('u.uid', $uid)
+                        ->execute()
+                        ->fetchField();
+                    $reviewers[$uid] = $name;
+                }
+            }
+        }
         natsort($reviewers);
         return $reviewers;
     }
@@ -2688,10 +2700,22 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         $all_reviewers_title = '<span>Show All Board Members</span> +';
 
     // Initialize default arrays (replaced below as appropriate).
-    $article_defaults = $summary_defaults = $reviewer_defaults = array();
+    $article_defaults = $summary_defaults = $reviewer_defaults =
+        $selected_reviewers = array();
 
     // Set up the fields which depend on having a topic selected.
     if ($topic_id) {
+
+        // Find out which reviewers are selected.
+        if (isset($form_state['values'])) {
+            foreach ($form_state['values']['reviewers'] as $id => $val) {
+                if ($val)
+                    $selected_reviewers[] = $id;
+            }
+        }
+        elseif ($packet_id)
+            $selected_reviewers = $packet->reviewers;
+
         $articles_title = 'Articles';
         $summaries_title = 'Summary Documents (Optional)';
         $reviewers_title = 'Reviewers';
@@ -2700,7 +2724,7 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
                     $packet_id);
         $summaries = EbmsReview::summaries_for_topic($topic_id, $packet_id);
         $reviewers = EbmsReview::reviewers_for_topic($topic_id,
-                     $all_reviewers ? $board_id : null, $packet_id);
+                     $all_reviewers ? $board_id : null, $selected_reviewers);
         $articles_desc =
             'Selected articles will be included in the packet.  ' .
             'You may unselect any articles that you do not want ' .
@@ -2725,8 +2749,11 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
                 'packet or unselect any reviewers that you want to remove ' .
                 'from this packet.';
         }
-        else
+
+        else {
             $article_defaults = array_keys($articles);
+            $reviewer_defaults = array_keys($reviewers);
+        }
     }
     else {
 
