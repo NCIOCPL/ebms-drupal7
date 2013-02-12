@@ -1268,6 +1268,7 @@ table.docs-table.admin td.col-5 { text-align: center; }
 #post-doc-form #choose-file label {
     zz-index: 2; position: absolute; left: 0px; top: 0; margin-top: 20px;
 }
+#file-upload-form-js #choose-file span.label-508:hover,
 #post-doc-form #choose-file span.label-508:hover,
 #post-doc-form #choose-file label:hover { color: #a90101; }
 #post-doc-form #filename { padding: 10px 0 0 14px; }
