@@ -149,6 +149,15 @@ class EbmsReview {
             return MENU_ACCESS_DENIED;
         }
 
+        // Override Drupal's default breadcrumbs.  TIR 2335 from Ashleigh
+        // (marked Critical, no less).
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url . '/reviews'),
+                'Record Responses',
+            )
+        );
+
         return array(
             'left-nav' => $this->build_left_nav('Record Responses'),
             'right-panel' => array(
