@@ -21,6 +21,7 @@ $authorPicture = EbmsProfile::get_picture($commentAuthor);
 if ($authorPicture) {
     $authorPicture['picture']['#width'] = 45;
     $authorPicture['picture']['#height'] = 45;
+    unset($authorPicture['frame']);
 }
 ?>
 <div class="forum-topic-comment-wrapper">
