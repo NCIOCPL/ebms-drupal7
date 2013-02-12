@@ -1178,8 +1178,9 @@ class EbmsReports {
 
         // Find out whether we're paging the results.
         $pager = true;
-        if (isset($this->parms['pager']))
-            if ($this->parms['pager'] == 'off')
+        $parms = drupal_get_query_parameters();
+        if (isset($parms['pager']))
+            if ($parms['pager'] == 'off')
                 $pager = false;
 
         // Create the table column headers, specifying the column which
