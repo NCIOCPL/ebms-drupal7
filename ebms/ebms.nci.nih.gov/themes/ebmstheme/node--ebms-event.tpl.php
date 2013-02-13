@@ -30,7 +30,7 @@
 
     <?php
     if ($editor)
-        print "<div class='edit-button-icon'><a href='$editNodePath'><img src='$editIconPath'></a></div>";
+        print "<div class='edit-button-icon'><a href='$editNodePath'><img alt='Edit Event' src='$editIconPath'></a></div>";
     ?> 
     <h2 class='indent trailing'> 
         <?php
