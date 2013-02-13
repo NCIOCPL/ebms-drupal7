@@ -2534,41 +2534,49 @@ function getPacketInfo($packet_id) {
  * @return mixed $reponses  an array of DB records containing pertinent info.
  */
 function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $active = true) {
-    $query = db_select('ebms_article_review', 'r');
-    $query->join('ebms_review_disposition', 'd', 'r.review_id = d.review_id');
-    $query->join('ebms_review_disposition_value', 'v', 'd.value_id = v.value_id');
-    $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+    // first, retrieve the packet ids for the article and topic
+    $packetIds = getArticlePacketIds($article_id, $topic_id, $fetch_all, $active);
+    
+    if(empty($packetIds))
+        return null;
+    
+    // next, get all entered reviews for the known packets
+    $reviews = db_select('ebms_article_review', 'r')
+        ->condition('r.packet_id', $packetIds)
+        ->condition('r.article_id', $article_id)
+        ->fields('r')
+        ->execute()
+        ->fetchAll();
+        
+    // populate the responses for each review
+    foreach($reviews as $reviewIndex => $review) {
+        $reviewId = $review->review_id;
+        
+        $responseQuery = db_select('ebms_review_disposition', 'd');
+        $responseQuery->join('ebms_review_disposition_value', 'v', 'd.value_id = v.value_id');
 
-    if (!$fetch_all) {
-        $flag = $active ? 'A' : 'I';
-        $query->condition('p.active_status', $flag);
-    }
+        $responses = $responseQuery->fields('d', array('value_id'))
+                ->fields('v', array('value_name', 'instructions'))
+                ->condition('d.review_id', $reviewId)
+                ->execute()
+                ->fetchAll();
+        
+        $review->dispositions = $responses;
 
-    $responses = $query->fields('r')
-            ->fields('p', array('packet_id', 'topic_id'))
-            ->fields('d', array('value_id'))
-            ->fields('v', array('value_name', 'instructions'))
-            ->condition('r.article_id', $article_id)
-            ->condition('p.topic_id', $topic_id)
-            ->execute()
-            ->fetchAll();
-
-    foreach ($responses as $index => $response) {
-        // get all rejection reasons for the response
-        $reviewId = $response->review_id;
-        $query = db_select('ebms_review_rejection_reason', 'r');
-        $query->join('ebms_review_rejection_value', 'v',
+        // get all rejection reasons for the review
+        $reasonQuery = db_select('ebms_review_rejection_reason', 'r');
+        $reasonQuery->join('ebms_review_rejection_value', 'v',
             'r.value_id = v.value_id');
 
-        $reasons = $query->condition('r.review_id', $reviewId)
+        $reasons = $reasonQuery->condition('r.review_id', $reviewId)
             ->fields('v')
             ->execute()
             ->fetchAll();
 
-        $responses[$index]->reasons = $reasons;
+        $review->reasons = $reasons;
     }
-
-    return $responses;
+    
+    return $reviews;
 }
 
 /**

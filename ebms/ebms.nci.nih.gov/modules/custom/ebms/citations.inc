@@ -3809,6 +3809,44 @@ namespace {
                         ),
                         '#disabled' => !$reviewerId,
                     );
+                    
+                    // need to clean up the select input and value arrays
+                    // to prevent selection of reject and other values at the
+                    // same time
+                    
+                    if(isset($form_state['triggering_element']['#name'])){
+                        $name = $form_state['triggering_element']['#name'];
+                        $element = "member_responses_select_$hash";
+                        
+                        // check if the name is of the select element with an
+                        // offset to indicate which checkbox was clicked
+                        $stem = preg_quote($element);
+                        $pattern = "#$stem\\[(?'option'[\\d])\\]#";
+                        $matches = array();
+                        
+                        $ret = preg_match($pattern, $name, $matches);
+                        
+                        // if an option is found
+                        if(isset($matches['option'])){
+                            $option = $matches['option'];
+                            
+                            // ...and it is on...
+                            if($form_state['values'][$element][$option]){
+                                // loop though values and inputs to turn off 
+                                // the unrelated options
+                                foreach($form_state['values'][$element] 
+                                        as $index => $value){
+                                    // if the chosen option is 1 and the
+                                    // current index is not (or vice versa)
+                                    if(($option == 1) != ($index == 1)) {
+                                        // clear the value and input
+                                        $form_state['values'][$element][$index] = 0;
+                                        unset($form_state['input'][$element][$index]);
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     $showRejects = false;
                     $showLOE = false;
@@ -5348,17 +5386,27 @@ namespace {
 
         // format contributor row
         $uid = $response->reviewer_id;
-        $action = $response->value_name;
         $dt = $response->when_posted;
         $date = _format_date($dt);
 
         $account = user_load($uid);
 
-        $img = _build_decision_icon_tag('pass');
-
+        // check the first disposition for a rejection
+        if(isset($response->dispositions[0]) && 
+                $response->dispositions[0]->value_id != 1) {
+            $img = _build_decision_icon_tag('pass');
+        }
+        else {
+            $img = _build_decision_icon_tag('reject');
+        }
+        
         $form['decision'] = array("#markup" => "<div class='full-citation-indent'>$img$date - $account->name</div>");
-        $form['filename'] = array("#markup" => "<div class='full-citation-indent'>ACTION: $action</div>");
-
+        $form['dispositions'] = array();
+        foreach($response->dispositions as $disposition) {
+            $action = $disposition->value_name;
+            $form['dispositions'][] = 
+                array("#markup" => "<div class='full-citation-indent'>ACTION: $action</div>");
+        }
         foreach ($response->reasons as $index => $reason) {
             $form['reason'][$index] = array("#markup" => "<div class='full-citation-indent'>REASON: $reason->value_name</div>");
         }
