@@ -34,6 +34,19 @@ namespace Ebms {
         'on_agenda' => array('future', 'past', 'comment'),
         'board_decision' => array('select', 'discussed', 'members', 'comment'),
     );
+    
+    $GLOBALS['citation_cached_value_keys'] = array(
+        'board_select',
+        'topic_select',
+        'cycle_select',
+        'tag_select',
+        'journal_id_field',
+        'abstract_review_check',
+        'fulltext_review_check',
+        'sort_by',
+        'format',
+        'per_page',
+    );
 
     class EbmsTopicDecisions {
         static $INITIALREVIEW = null;
@@ -607,7 +620,7 @@ namespace {
         $form['buttons']['display_options'] = array(
             '#type' => 'fieldset',
             '#title' => '<span class="citation-subheader">Display Options</span>',
-            'options' => _build_citation_sort_options(false),
+            'options' => _build_citation_sort_options($form_state, false),
             '#collapsible' => true,
             '#collapsed' => true,
             //'#prefix' => "<div class='full-citation-element'>",
@@ -857,6 +870,79 @@ namespace {
             addHooks();                                      
         });',
             'inline');
+        
+        // process and save any queued values
+        global $citation_cached_value_keys;
+        $cachedKeys = drupal_map_assoc($citation_cached_value_keys);
+        
+        $query = drupal_get_query_parameters();
+        if(isset($query['queue'])){
+            $queryId = $query['queue'];
+            require_once('search.inc');
+            $jsonString = EbmsSearch::fetch_search_spec($queryId, false);
+            
+            if($jsonString !== FALSE){
+                // populate the values
+                $jsonValues = drupal_json_decode($jsonString);
+                
+                if(isset($jsonValues['type']) &&
+                    isset($jsonValues['values']) &&
+                    $jsonValues['type'] == 'citation_queue'){
+                    // merge the values into the form state
+                    if (isset($form_state['values'])) {
+                        $form_state['values'] = array_merge(
+                            $jsonValues['values'], $form_state['values']);
+                    } else {
+                        $form_state['values'] = $jsonValues['values'];
+                    }
+
+                    // save the json string and row id into the form state as
+                    // well
+                    $form_state['cached_values']['json_string'] = $jsonString;
+                    $form_state['cached_values']['id'] = $queryId;
+                    $form_state['cached_values']['values'] = 
+                        $jsonValues['values'];
+                }                
+            }
+        }
+        
+        // capture certain inputs for caching
+        if (isset($form_state['values'])) {            
+            $cachedValues = 
+                array_intersect_key($form_state['values'], $cachedKeys);
+            
+            $jsonValues = array();
+            $jsonValues['type'] = 'citation_queue';
+            $jsonValues['values'] = $cachedValues;
+            
+            $jsonString = drupal_json_encode($jsonValues);
+            
+            // generate a new database row if the inputs have changed
+            if (!isset($form_state['cached_values']['json_string']) ||
+                $jsonString != $form_state['cached_values']['json_string']) {
+                $form_state['cached_values']['json_string'] = $jsonString;
+                $form_state['cached_values']['values'] = $cachedValues;
+                global $user;
+                $now = strftime("%Y-%m-%d %H:%M:%S");
+                $search_id = db_insert('ebms_search')
+                    ->fields(
+                        array(
+                            'when_searched' => $now,
+                            'searched_by' => $user->uid,
+                            'search_spec' => $jsonString,
+                        )
+                    )
+                    ->execute();
+
+                // save the database row in the form state
+                $form_state['cached_values']['id'] = $search_id;
+            }
+        }
+        
+        // set the queue query parameter, in case something builds a link to
+        // the current page
+        if(isset($form_state['cached_values']['id']))
+            $_GET['queue'] = $form_state['cached_values']['id'];
 
         _include_modal_scripts();
 
@@ -865,22 +951,28 @@ namespace {
 
         // handle header sorting
         _update_table_sort($form_state);
-
+        
+        // convert any cached values to available defaults
+        foreach($cachedKeys as $cachedKey) {
+            $keyname = "default_$cachedKey";
+            $$keyname = null;
+            
+            if(isset($form_state['cached_values']['values'][$cachedKey]))
+                $$keyname = $form_state['cached_values']['values'][$cachedKey];
+        }
+        
         // retrieve boards
         $boards = Ebms\Util::boards();
 
         // pull the default user board, if any
         global $user;
-        if (isset($user->ebms_boards)) {
-            $userBoardId = reset($user->ebms_boards);
-            if ($userBoardId === false) {
-                $userBoardId = 0;
+        if(!$default_board_select && isset($user->ebms_boards)) {
+            $default_board_select = reset($user->ebms_boards);
+            if ($default_board_select === false) {
+                $default_board_select = 0;
             }
         }
 
-        //db_select('ebms_not_list', 'nl')->join($table, $alias);
-        /* $form['#prefix'] = '<div id="citation-div">';
-          $form['#suffix'] = '</div>'; */
         $form['#prefix'] = '<div id="citation-complete-div">';
         $form['#suffix'] = '</div>';
 
@@ -893,7 +985,7 @@ namespace {
             '#type' => 'select',
             '#title' => 'Editorial Board',
             '#options' => array(0 => ''),
-            '#default_value' => $userBoardId,
+            '#default_value' => $default_board_select,
             '#prefix' => '<div class="citation-input-div">',
             '#suffix' => '</div>',
             '#ajax' => array(
@@ -914,6 +1006,7 @@ namespace {
                 '#options' => array(0 => 'Please select a board.'),
                 '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
                 '#suffix' => '</div>',
+                '#default_value' => $default_topic_select,
             );
             if (isset($form_state['values']['board_select'])) {
                 $board_id = $form_state['values']['board_select'];
@@ -943,10 +1036,11 @@ namespace {
                 '#options' => array(0 => 'Please select a board.'),
                 '#prefix' => '<div id = "topic-select-div" class="citation-input-div">',
                 '#suffix' => '</div>',
+                '#default_value' => $default_topic_select,
             );
 
             // use the default board id, or dig the value from the form state
-            $board_id = $userBoardId;
+            $board_id = $default_board_select;
             $abstractReview = 1;
             if (isset($form_state['values']['board_select']))
                 $board_id = $form_state['values']['board_select'];
@@ -1001,6 +1095,7 @@ namespace {
                 '#title' => 'Journal ID',
                 '#prefix' => '<div class="citation-input-div">',
                 '#suffix' => '</div>',
+                '#default_value' => $default_journal_id_field,
             );
         } else {
 
@@ -1016,6 +1111,7 @@ namespace {
                 '#options' => array(0 => ''),
                 '#prefix' => '<div class="citation-input-div">',
                 '#suffix' => '</div>',
+                '#default_value' => $default_cycle_select,
             );
             $form['citation_queue']['cycle_select']['#options'] += $cycles;
 
@@ -1031,19 +1127,23 @@ namespace {
                 '#options' => array(0 => ''),
                 '#prefix' => '<div class="citation-input-div">',
                 '#suffix' => '</div>',
+                '#default_value' => $default_tag_select,
             );
             $form['citation_queue']['tag_select']['#options'] += $tags;
 
             $checks = array();
+            
             $checks["abstract_review_check"] = array(
                 '#type' => 'checkbox',
                 '#title' => t('Abstract Review'),
-                '#default_value' => true,
+                '#default_value' => $default_abstract_review_check !== null ?
+                    $default_abstract_review_check : true,
             );
 
             $checks["fulltext_review_check"] = array(
                 '#type' => 'checkbox',
                 '#title' => t('Full Text Review'),
+                '#default_value' => $default_fulltext_review_check
             );
 
             $form['citation_queue']["review_select_checks"] = array(
@@ -1067,13 +1167,8 @@ namespace {
             '#type' => 'hidden',
         );
 
-        /* if (isset($form_state['triggering_element']['#type']) &&
-          $form_state['triggering_element']['#type'] == 'select') {
-          // skip results if updating via ajax
-          return $form;
-          } */
-
-        _citation_queue_results($form, $form_state, $is_librarian, $userBoardId);
+        _citation_queue_results($form, $form_state, $is_librarian, 
+            $default_board_select);
 
         return $form;
     }
@@ -1286,11 +1381,9 @@ namespace {
         $results['buttons']['display-options'] = array(
             '#type' => 'fieldset',
             '#title' => '<span class="citation-subheader">Display Options</span>',
-            'options' => _build_citation_sort_options(true, $sort_by),
+            'options' => _build_citation_sort_options($form_state, true, $sort_by),
             '#collapsible' => true,
             '#collapsed' => true,
-            //'#prefix' => "<div class='full-citation-element'>",
-            //'#suffix' => "</div>",
         );
 
         if (!$num_rows)
@@ -2011,8 +2104,19 @@ namespace {
         );
     }
 
-    function _build_citation_sort_options($showAbstract = true,
-        $currentSort = null) {
+    function _build_citation_sort_options(&$form_state, $showAbstract = true,
+            $currentSort = null) {
+        // retrieve default values
+        global $citation_cached_value_keys;
+        $cachedKeys = drupal_map_assoc($citation_cached_value_keys);
+        foreach($cachedKeys as $cachedKey) {
+            $keyname = "default_$cachedKey";
+            $$keyname = null;
+            
+            if(isset($form_state['cached_values']['values'][$cachedKey]))
+                $$keyname = $form_state['cached_values']['values'][$cachedKey];
+        }
+        
         $form = array(
             '#prefix' => '<div class="citation-input-div childfix">',
             '#suffix' => '</div>',
@@ -2036,6 +2140,7 @@ namespace {
                 '#attributes' => array(
                     'autocomplete' => 'off',
                 ),
+                '#default_value' => $default_sort_by,
             );
 
             if ($currentSort) {
@@ -2051,7 +2156,8 @@ namespace {
                 '#type' => 'radios',
                 '#title' => t('Format'),
                 '#options' => $formatOptions,
-                '#default_value' => 'brief',
+                '#default_value' => $default_format !== null ? 
+                    $default_format : 'brief',
             );
         }
 
@@ -2066,6 +2172,7 @@ namespace {
             '#type' => 'select',
             '#title' => t('Items Per Page'),
             '#options' => $pagerOptions,
+            '#default_value' => $default_per_page,
         );
 
         $form['apply'] = array(
@@ -2216,7 +2323,15 @@ namespace {
         $articleXML = $doc->MedlineCitation->Article;
         $rawTitle = (string) $articleXML->ArticleTitle;
         if (!$long_form) {
-            $titleLink = l($rawTitle, "citations/full/$article_id");
+            $query = drupal_get_query_parameters();
+            $options = array();
+            if(isset($query['page'])){
+                $options['query']['page'] = $query['page'];
+            }
+            if(isset($query['queue'])){
+                $options['query']['queue'] = $query['queue'];
+            }
+            $titleLink = l($rawTitle, "citations/full/$article_id", $options);
             $title = filter_xss("<em>$titleLink</em>");
         }
         $pgn = htmlspecialchars($articleXML->Pagination->MedlinePgn);
@@ -2510,15 +2625,28 @@ namespace {
         $form['title']['#markup'] = '<h3>' . t('Citation Actions') . '</h3>';
 
         $article = new Ebms\EbmsArticle($articleId);
+        
+        $links = array();
 
         // check for search query
         $query = drupal_get_query_parameters();
-        $searchId = null;
-        if (isset($query['search']))
+        if (isset($query['search'])){
             $searchId = $query['search'];
-
-        $searchPath = 'citations/search' . ($searchId ? "/R$searchId" : '');
-
+            $searchPath = "citations/search/R$searchId";
+            $links[] = array('Refine Search', $searchPath, array());
+        }
+        
+        if (isset($query['queue'])){
+            $options = array(
+                'query' => array(
+                    'queue' => $query['queue'],
+                )
+            );
+            if (isset($query['page']))
+                $options['query']['page'] = $query['page'];
+            $links[] = array('Return to Queue', 'citations', $options);
+        }
+        
         // build full citation text url
         $fileUrl = null;
         if ($article->getFullTextId()) {
@@ -2532,12 +2660,7 @@ namespace {
         $pm_id = $article->getSourceId();
         $pm_link = $pubmed . $pm_id;
 
-        $links = array(
-            array('Refine Search', $searchPath, array()),
-            array('View Abstract', $pm_link, $target),
-        );
-
-        $target = array('attributes' => array('target' => '_blank'));
+        $links[] = array('View Abstract', $pm_link, $target);
 
         if ($fileUrl)
             $links[] = array('Download Full Text', $fileUrl, $target);
@@ -2625,7 +2748,7 @@ namespace {
 
         // include modal script necessities
         _include_modal_scripts();
-
+        
         // maintain triggered element states
         _update_persistent_elements($form_state);
 
@@ -2721,7 +2844,7 @@ namespace {
                     break;
             }
         }
-
+        
         return $form;
     }
 
@@ -5243,15 +5366,13 @@ namespace {
         $form['#prefix'] = '<div class="full-citation-element">';
         $form['#suffix'] = '</div>';
 
+        // add the header
+        $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
+        $form['header']['#prefix'] = '<div class="full-citation-indent">';
+        $form['header']['#suffix'] = '</div>';
+            
         if (!empty($packetIds)) {
-            // add the header
-            $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
-            $form['header']['#prefix'] = '<div class="full-citation-indent">';
-            $form['header']['#suffix'] = '</div>';
-
             $form['current_decisions']['blocks'] = _format_packet_ids($packetIds);
-            $form['current_decisions']['blocks']['#prefix'] = '<div class="full-citation-indent">';
-            $form['current_decisions']['blocks']['#suffix'] = '</div>';
         }
 
         if (!empty($pastIds)) {
@@ -5264,8 +5385,6 @@ namespace {
                 '#attributes' => array(
                     'class' => array('full-citation-past-items'),
                 ),
-                '#prefix' => '<div class="full-citation-indent">',
-                '#suffix' => '</div>'
             );
         }
 
@@ -5292,6 +5411,9 @@ namespace {
         }
 
         $form = $packetBlocks;
+        
+        $form['#prefix'] = '<div class="full-citation-indent">';
+        $form['#suffix'] = '</div>';
 
         return $form;
     }

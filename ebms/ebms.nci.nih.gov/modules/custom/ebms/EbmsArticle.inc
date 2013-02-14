@@ -2538,7 +2538,7 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
     $packetIds = getArticlePacketIds($article_id, $topic_id, $fetch_all, $active);
     
     if(empty($packetIds))
-        return null;
+        return array();
     
     // next, get all entered reviews for the known packets
     $reviews = db_select('ebms_article_review', 'r')
