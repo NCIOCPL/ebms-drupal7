@@ -3798,6 +3798,8 @@ namespace {
                     $form['fulltext_title'] = $full_title;
 
                     $form["fulltext_file_$hash"] = array(
+                        '#title' => t('Full Text File'),
+                        '#title_display' => 'invisible',
                         '#type' => 'file',
                     );
 
@@ -4046,6 +4048,8 @@ namespace {
 
                     $form["manager_actions_select_$hash"] = array(
                         '#type' => 'select',
+                        '#title' => t('Action'),
+                        '#title_display' => 'invisible',
                         '#options' => $options,
                     );
 
@@ -4132,6 +4136,8 @@ namespace {
 
                     $form["board_decision_select_$hash"] = array(
                         '#type' => 'select',
+                        '#title' => 'Decision',
+                        '#title_display' => 'invisible',
                         '#options' => $options,
                     );
 
