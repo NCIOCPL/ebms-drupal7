@@ -2334,6 +2334,10 @@ namespace {
             $titleLink = l($rawTitle, "citations/full/$article_id", $options);
             $title = filter_xss("<em>$titleLink</em>");
         }
+        else
+        {
+            $title = $rawTitle;
+        }
         $pgn = htmlspecialchars($articleXML->Pagination->MedlinePgn);
         $year = $articleXML->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($articleXML->Journal->JournalIssue->Issue);
