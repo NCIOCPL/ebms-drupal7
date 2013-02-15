@@ -966,8 +966,23 @@ namespace {
 
         // pull the default user board, if any
         global $user;
-        if(!$default_board_select && isset($user->ebms_boards)) {
-            $default_board_select = reset($user->ebms_boards);
+        
+        // comb the user topics to find all related boards
+        if (!empty($user->topics)) {
+            $topicBoards = db_select('ebms_topic', 't')
+                ->condition('t.topic_id', $user->topics)
+                ->fields('t', array('board_id'))
+                ->distinct()
+                ->execute()
+                ->fetchCol();
+            $userBoards = array_unique(array_merge($user->boards,
+                    $topicBoards));
+        }
+        else
+            $userBoards = $user->boards;
+        
+        if(!$default_board_select) {
+            $default_board_select = reset($userBoards);
             if ($default_board_select === false) {
                 $default_board_select = 0;
             }
