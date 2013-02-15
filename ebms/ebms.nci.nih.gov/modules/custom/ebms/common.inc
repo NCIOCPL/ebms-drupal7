@@ -1012,7 +1012,7 @@ class Util {
      *
      * @return string   Absolute path to the directory.  No trailing '/'.
      */
-    function get_public_files_path() {
+    public static function get_public_files_path() {
 
         $site_base = DRUPAL_ROOT . '/' . conf_path();
         $files     = variable_get('file_public_path', conf_path() . '/files');
