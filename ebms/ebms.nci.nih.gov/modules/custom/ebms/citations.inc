@@ -4241,13 +4241,13 @@ namespace {
         }
 
         // if the LOE field is present in the form, make sure it has content
-        if (isset($values['member_responses']['loe'])) {
+        /*if (isset($values['member_responses']['loe'])) {
             $loe = $values['member_responses']['loe'];
             if (empty($loe)) {
                 form_set_error("member_responses_loe_$hash",
                     "The Level of Evidence must be provided.");
             }
-        }
+        }*/
 
         // reject if both a future and past meeting are chosen
         if (isset($values['on_agenda']['future']) &&
@@ -5543,10 +5543,13 @@ namespace {
             $form['reason'][$index] = array("#markup" => "<div class='full-citation-indent'>REASON: $reason->value_name</div>");
         }
 
-        if (isset($response->comments)) {
+        if (isset($response->comments)&&
+            !empty($response->comments)) {
             $form['comments'] = array("#markup" => "<div class='full-citation-indent'>COMMENTS: $response->comments</div>");
         }
-        if (isset($response->loe_info) && $response->loe_info != 'Not Selected') {
+        if (isset($response->loe_info) &&
+            !empty($response->loe_info) &&
+            $response->loe_info != 'Not Selected') {
             $form['loe_info'] = array("#markup" => "<div class='full-citation-indent'>LOE: $response->loe_info</div>");
         }
 
