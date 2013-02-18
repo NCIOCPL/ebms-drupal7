@@ -1177,6 +1177,7 @@ class EbmsReports {
         }
 
         // Find out whether we're paging the results.
+        $pager_limit = 10;
         $pager = true;
         $parms = drupal_get_query_parameters();
         if (isset($parms['pager']))
@@ -1217,7 +1218,7 @@ class EbmsReports {
         $query = db_select('ebms_doc', 'd');
         $query = $query->extend('TableSort');
         if ($pager)
-            $query = $query->extend('PagerDefault')->limit(10);
+            $query = $query->extend('PagerDefault')->limit($pager_limit);
         $query->join('file_managed', 'f', 'f.fid = d.file_id');
         $query->join('users', 'u', 'u.uid = f.uid');
         $query->fields('f', array('filename'));
@@ -1331,6 +1332,18 @@ class EbmsReports {
         );
         if ($pager)
             $table['pager'] = array('#theme' => 'pager');
+        elseif ($total > $pager_limit) {
+            unset($parms['pager']);
+            $opts = array('query' => $parms);
+            $url = EbmsReports::$url . '/documents';
+            if ($request_id)
+                $url .= '/' . $request_id;
+            $link = l('VIEW PAGES', $url, $opts);
+            $table['pager'] = array(
+                '#type' => 'markup',
+                '#markup' => "<div id='pager-view-pages'>$link</div>",
+            );
+        }
         return $table;
     }
 
