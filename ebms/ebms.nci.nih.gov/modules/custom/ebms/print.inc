@@ -274,12 +274,24 @@ function pdq_ebms_prtpkts_run_form_submit($form, &$form_state) {
     $jobId = $qry->execute();
 
     // Execute the print job
-    $status = Ebms\runPrintJob();
+    $result = Ebms\runPrintJob();
+    $status = $result['status'];
     if ($status == 'success') {
         // Send successful output to the workstation
         downloadPrintResults($jobId);
     }
-    // XXX else maybe I should get the messages here
+    else {
+        // Report failure to user
+        drupal_set_message("Job $jobId returned status = $status.");
+
+        // And display error messages
+        if (array_key_exists('msgs', $result)) {
+            $msgs = $result['msgs'];
+            foreach ($msgs as $msg) {
+                drupal_set_message($msg);
+            }
+        }
+    }
 }
 
 
