@@ -13,6 +13,13 @@ require_once('EbmsArticle.inc');
 require_once('EbmsPrint.inc');
 
 function pdq_ebms_print_packets($action=null) {
+
+    // Second permissions check
+    global $user;
+    if (!in_array('admin assistant', $user->roles) && !($user->uid == 1)) {
+        return MENU_ACCESS_DENIED;
+    }
+
     drupal_set_title('Print Packets');
     switch($action) {
         case 'run':
