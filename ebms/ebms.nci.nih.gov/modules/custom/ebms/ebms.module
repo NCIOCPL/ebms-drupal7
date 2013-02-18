@@ -382,7 +382,7 @@ function ebms_menu() {
                     'page callback' => 'pdq_ebms_print_packets',
                     'page_arguments' => array(1),
                     'file' => 'print.inc',
-                    'access callback' => 'pdq_ebms_is_admin_assistant',
+                    'access arguments' => array('administer'),
                     'type' => MENU_CALLBACK,
             ),
             // AD-HOC GROUPS
