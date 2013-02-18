@@ -399,6 +399,12 @@ function delPrintMember($memberId) {
 }
 
 /**
+ * Used when it's necessary to abort processing as a result of routine
+ * sorts of errors, not bugs, database errors etc.
+ */
+class PrintJobAbort extends \Exception {}
+
+/**
  * Records everything we know of interest about a file that is to be
  * printed.  This object is a stand-in for the file in various lists.
  */
@@ -446,7 +452,7 @@ class EbmsPrintFile {
  * Parameters controlling the operation of a print job.
  */
 class EbmsPrintJob {
-    private
+    public
         $errMsgs;           // Array of error messages
 
     public
@@ -1593,7 +1599,7 @@ EOS;
     /**
      * Error routine.
      *
-     * We might change this later to a more Drupalized approach.
+     * Gathers errors
      *
      *  @param string $msg      Error to report.
      *  @param Exception $e     Exception object, if any.
@@ -1628,8 +1634,14 @@ EOS;
 
             pdq_ebms_debug("Fatal error: jobId={$this->print_job_id}", $msgs);
 
+            /* Old way
             exit("<p>Packet printing for job {$this->print_job_id} " .
                  "failed.  See errors below:</p>\n<p>$msgs</p>");
+            */
+
+            // New way breaks out of processing and returns to the top
+            $inError = false;
+            throw new PrintJobAbort();
         }
         $inError = false;
     }
@@ -1906,9 +1918,13 @@ EOS;
  *
  * It finds the job to run in the ebms_print_job table with a
  * status = 'queued' and runs it.
+ *
+ *  @return array       'status' => status of job.
+ *                      'msgs'   => error messages, if any.
  *************************************************************/
 function runPrintJob() {
 
+ try {
     // Create a print job from a recently created row in the table
     $pj = createPrintJob();
 
@@ -2014,6 +2030,17 @@ function runPrintJob() {
 
     // That's it!
     $pj->cleanup('success');
+  }
+  catch (PrintJobAbort $e) {
+    // We got here because reportError() broke us out of regular processing
+    // Return normally.  Caller will handle the errors.
+  }
 
-    return $pj->status;
+  // Return status and error messages, if any
+  $retValues = array();
+  $retValues['status'] = $pj->status;
+  if (count($pj->errMsgs) > 0)
+      $retValues['msgs'] = $pj->errMsgs;
+
+  return $retValues;
 }
