@@ -50,7 +50,7 @@ function getServerPath($whichPath, $jobId=null) {
 
     switch ($whichPath) {
         case SERVER_FILES_PATH:
-            return \Util::get_public_files_path();
+            return Util::get_public_files_path();
 
         case SERVER_BASE_PATH:
             // Same on all systems (so far)
@@ -216,7 +216,7 @@ function createPrintJob() {
     // Look for a job waiting to run
     // Fatal error if none found
     $jobId = $pj->findJobToRun();
-    $pj->load($jobId);
+    $pj->loadFromDB($jobId);
 
     // If this is a re-run of an old job, get the old job parms
     // $pj->old_job_id = $pj->chkParm($parms, 'old_job_id', false);
@@ -224,7 +224,7 @@ function createPrintJob() {
 
         // Get the old job values, fatal error if not found
         $oldJob = new EbmsPrintJob();
-        $oldJob->load($pj->old_job_id);
+        $oldJob->loadFromDB($pj->old_job_id);
 
         // Load relevant parts into new job object
         // A reprint has some new values and some old ones
@@ -601,7 +601,7 @@ class EbmsPrintJob {
      *
      *  @param int $dbJobId     Database primary key.
      */
-    public function load($dbJobId) {
+    public function loadFromDB($dbJobId) {
         try {
             $row = db_query('
                 SELECT *
@@ -612,7 +612,7 @@ class EbmsPrintJob {
             // Has to be there
             if (!$row)
                 $this->reportError(
-                        "EbmsPrintJob.load(): Job $dbJobId not found");
+                        "EbmsPrintJob.loadFromDB(): Job $dbJobId not found");
 
             // Load 'er up
             $this->print_job_id    = $row['print_job_id'];
@@ -630,8 +630,56 @@ class EbmsPrintJob {
             $this->comment         = $row['comment'];
         }
         catch (\Exception $e) {
-            $this->reportError("EbmsPrint.load()", $e, true);
+            $this->reportError("EbmsPrint.loadFromDB()", $e, true);
         }
+    }
+
+    /**
+     * Load an EbmsPrintJob from a passed array of parameters.
+     *
+     *  @param array $parms
+     */
+    public function loadFromArray($parms) {
+
+        $this->print_job_id    = parmOrNull($parms, 'print_job_id');
+        $this->old_job_id      = parmOrNull($parms, 'old_job_id');
+        $this->user_id         = parmOrNull($parms, 'user_id');
+        $this->print_job_type  = parmOrNull($parms, 'print_job_type_id');
+        $this->packet_start_dt = parmOrNull($parms, 'packet_start_dt');
+        $this->packet_end_dt   = parmOrNull($parms, 'packet_end_dt');
+        $this->print_dt        = parmOrNull($parms, 'print_dt');
+        $this->board_id        = parmOrNull($parms, 'board_id');
+        $this->board_member_id = parmOrNull($parms, 'board_member_id');
+        $this->packet_id       = parmOrNull($parms, 'packet_id');
+        $this->mode            = parmOrNull($parms, 'mode');
+        $this->status          = parmOrNull($parms, 'status');
+        $this->comment         = parmOrNull($parms, 'comment');
+    }
+
+    /**
+     * Return the value for an array key or null if the key doesn't exist.
+     * Parms that should be integers are returned as integers, however they
+     * were passed.
+     *
+     * Helper function for loadFromArray().
+     *
+     *  @param array $parm      Array of parameters.
+     *  @param string $key      Key to search for in $parm.
+     *
+     * @return string           Value found or null
+     */
+    private function parmOrNull($parm, $key) {
+        static $intFields = array('print_job_id', 'old_job_id', 'user_id',
+                                  'board_id', 'board_member_id', 'packet_id');
+
+        if (array_key_exists($key, $parm)) {
+            if (array_key_exists($key, $intFields))
+                $val = intval($parm[$key]);
+            else
+                $val = $parm[$key];
+            return $val;
+        }
+        return null;
     }
 
     /**
