@@ -227,8 +227,10 @@ class EbmsGroups {
 
             // Type of display depends on whether the group is being edited,
             // and on whether the user has expanded it.
-            if ($this->request == 'edit' && $this->group_id == $g->group_id)
+            if ($this->request == 'edit' && $this->group_id == $g->group_id) {
                 $rows[] = $this->group_form($g->group_id);
+                continue;
+            }
             elseif (in_array($g->group_id, $this->expanded))
                 $group = $this->expanded_group($g->group_id, $group_name);
             else
@@ -295,11 +297,12 @@ function pdq_ebms_group_form($form, &$form_state, $control, $group_id=0) {
         }
     }
 
-    // Build the picklist for eligible members (anyone but the superuser).
+    // Build the picklist for eligible members (any active but the superuser).
     $options = array('query' => $control->parms);
     $results = db_select('users', 'u')
         ->fields('u', array('uid', 'name'))
         ->condition('u.uid', 1, '>')
+        ->condition('u.status', 1)
         ->orderBy('u.name')
         ->execute();
     // $users = array(0 => 'Members');
