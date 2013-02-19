@@ -87,8 +87,9 @@ $(this).children('a').children('img').attr('src', '/".drupal_get_path('theme', '
         <div id="forum-description">
             <?php print $forum->description; ?>
         </div>
-
-
+        <p id="forum-members">
+            <?php print _ebms_forums_get_forum_members($forum); ?>
+        </p>
         <?php print $topics; ?>
         <?php endif; ?>
         

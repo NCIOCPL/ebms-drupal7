@@ -185,3 +185,5 @@ form.comment-form label {
     margin: 0px;
     display: none;
 }
+
+#forum-members { margin-left: 0; padding-left: 0; margin-top: 5px; }

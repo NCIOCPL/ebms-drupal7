@@ -893,3 +893,107 @@ function _ebms_forums_count_new_topics () {
         $count += _forum_topics_unread($forum->tid, $user->uid);
     return $count;
 }
+
+/**
+ * Construct an array containing the names of all of the boards connected
+ * with a specified forum, followed by all of the individuals who are also
+ * members of the forum but are not members of any of the boards listed.
+ * Return the contents of the array, formatted as a comma-delimited string.
+ *
+ *  @param  object  $forum   Forum whose membership we are to determine
+ *  Return  string           Formatted list of forum members
+ */
+function _ebms_forums_get_forum_members($forum) {
+
+    // Collect a list of the forum's boards, and note the boards' members.
+    $boards = array();
+    $board_members = array();
+    $items = field_get_items('taxonomy_term', $forum, 'field_boards');
+    if ($items) {
+        foreach ($items as $item) {
+            $board_id = $item['value'];
+            $board_name = Ebms\Util::get_board_name($board_id) . ' Board';
+            $names = array();
+            $query = db_select('ebms_board_member', 'm');
+            $query->join('users', 'u', 'u.uid = m.user_id');
+            $query->fields('u', array('uid', 'name'));
+            $query->condition('m.board_id', $board_id);
+            $query->condition('u.status', 1);
+            $query->orderBy('u.name');
+            $query->distinct();
+            $results = $query->execute();
+            foreach ($results as $result) {
+                $name = htmlspecialchars($result->name);
+                $board_members[$result->uid] = $result->uid;
+                $names[] = $name;
+            }
+            $title = implode(', ', $names);
+            $span = "<span title='$title'>$board_name</span>";
+            $boards[] = $span;
+        }
+    }
+
+    // Collect all other members of the forum here.
+    $other_members = array();
+
+    // First find members associated by way of a subgroup.
+    $subgroup_ids = array();
+    $items = field_get_items('taxonomy_term', $forum, 'field_subgroups');
+    if ($items)
+        foreach ($items as $item)
+            $subgroup_ids[] = $item['value'];
+    if (!empty($subgroup_ids)) {
+        $query = db_select('ebms_subgroup_member', 'm');
+        $query->join('users', 'u', 'u.uid = m.user_id');
+        $query->fields('u', array('uid', 'name'));
+        $query->condition('m.sg_id', $subgroup_ids, 'IN');
+        $query->condition('u.status', 1);
+        $query->distinct();
+        $results = $query->execute();
+        foreach ($results as $result)
+            if (!array_key_exists($result->uid, $board_members))
+                $other_members[$result->uid] = htmlspecialchars($result->name);
+    }
+
+    // Next look for members who belong to the forum's ad-hoc groups.
+    $group_ids = array();
+    $items = field_get_items('taxonomy_term', $forum, 'field_ad_hoc_groups');
+    if ($items)
+        foreach ($items as $item)
+            $group_ids[] = $item['value'];
+    if (!empty($group_ids)) {
+        $query = db_select('ebms_ad_hoc_group_member', 'm');
+        $query->join('users', 'u', 'u.uid = m.user_id');
+        $query->fields('u', array('uid', 'name'));
+        $query->condition('m.group_id', $group_ids, 'IN');
+        $query->condition('u.status', 1);
+        $query->distinct();
+        $results = $query->execute();
+        foreach ($results as $result)
+            if (!array_key_exists($result->uid, $board_members))
+                $other_members[$result->uid] = htmlspecialchars($result->name);
+    }
+
+    // Finally, get the individuals tied to the forum directly.
+    $user_ids = array();
+    $items = field_get_items('taxonomy_term', $forum, 'field_individuals');
+    if ($items)
+        foreach ($items as $item)
+            $user_ids[] = $item['value'];
+    if (!empty($user_ids)) {
+        $results = db_select('users', 'u')
+            ->fields('u', array('uid', 'name'))
+            ->condition('u.uid', $user_ids, 'IN')
+            ->condition('u.status', 1)
+            ->execute();
+        foreach ($results as $result)
+            if (!array_key_exists($result->uid, $board_members))
+                $other_members[$result->uid] = htmlspecialchars($result->name);
+    }
+
+    // Put everything in order and return the results.
+    sort($boards);
+    sort($other_members);
+    $members = array_merge($boards, $other_members);
+    return '<strong>Forum Members</strong>: ' . implode(', ', $members);
+}
