@@ -75,6 +75,9 @@ class EbmsReports {
             case 'citation-followup':
             case 'boards-and-topics':
                 return $this->not_yet_implemented();
+            case 'membership':
+                return drupal_get_form('pdq_ebms_membership_report_form',
+                                       $this->request_id);
             case 'cites-status':
                 return drupal_get_form('pdq_ebms_cites_by_status_form',
                                        $this->request_id);
@@ -368,6 +371,7 @@ class EbmsReports {
                         array('Hotel Requests', $hotel_report_url),
                         array('Reimbursement Requests',
                             $reimbursement_report_url),
+                        array('Board Membership', 'reports/membership'),
                     ),
                 ),
                 array(
@@ -2825,6 +2829,78 @@ class EbmsReports {
     }
 
     /**
+     * Report on board (and optionally subgroup) membership.
+     *
+     *  @param  int $request_id  Primary key of row in database table
+     *                           holding the paramaters specified for this
+     *                           report request.
+     *
+     *  @return array            Drupal render array for the report
+     *                           table and its title.
+     */
+    static function membership($request_id) {
+        $params = EbmsReports::fetch_report_request($request_id);
+        //pdq_ebms_debug('MEMBERSHIP', $params);
+        $board_id = $params['board'];
+        $query = db_select('users', 'u');
+        $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+        $query->join('users_roles', 'ur', 'ur.uid = u.uid');
+        $query->join('role', 'r', 'r.rid = ur.rid');
+        $query->condition('r.name', 'board member');
+        $query->condition('m.board_id', $board_id);
+        $query->fields('u', array('name', 'status'));
+        //if (!$params['include-inactive'])
+        $query->condition('u.status', 1);
+        $query->orderBy('u.name');
+        $results = $query->execute();
+        $items = array();
+        foreach ($results as $result) {
+            $name = htmlspecialchars($result->name);
+            if (!$result->status)
+                $name .= ' (inactive)';
+            $items[] = $name;
+        }
+        $report = array(
+            'board-members' => array(
+                '#theme' => 'item_list',
+                '#title' => Ebms\Util::get_board_name($board_id),
+                '#items' => $items,
+            ),
+        );
+        if ($params['show-subgroups']) {
+            $subgroups = db_select('ebms_subgroup', 's')
+                ->fields('s', array('sg_id', 'sg_name'))
+                ->condition('s.board_id', $board_id)
+                ->orderBy('s.sg_name')
+                ->execute();
+            foreach($subgroups as $subgroup) {
+                $query = db_select('users', 'u');
+                $query->join('ebms_subgroup_member', 'm', 'm.user_id = u.uid');
+                $query->condition('m.sg_id', $subgroup->sg_id);
+                $query->condition('u.status', 1);
+                $query->orderBy('u.name');
+                $query->fields('u', array('name', 'status'));
+                $items = array();
+                $results = $query->execute();
+                foreach ($results as $result) {
+                    $name = $result->name;
+                    if (!$result->status)
+                        $name .= ' (*)';
+                    $items[] = htmlspecialchars($name);
+                }
+                if (empty($items))
+                    $items[] = '(No active members of subgroup)';
+                $report['sg-' . $subgroup->sg_id] = array(
+                    '#theme' => 'item_list',
+                    '#title' => htmlspecialchars($subgroup->sg_name),
+                    '#items' => $items,
+                );
+            }
+        }
+        return $report;
+    }
+
+    /**
      * The processing model has the submit callback handler for
      * the report request form save the user's filtering criteria
      * for a report in the database and then invoke the report
@@ -3774,10 +3850,150 @@ function pdq_ebms_documents_report_form_submit($form, &$form_state) {
     if ($form_state['values']['op'] == 'Reset')
         drupal_goto('reports/documents');
     $values = $form_state['values'];
-    global $user;
-    $now = strftime('%Y-%m-%d %H:%M:%S');
     $request_id = EbmsReports::save_report_request($values, 'Documents');
     drupal_goto('reports/documents/' . $request_id);
+}
+
+/**
+ * Drupal form API callback which generates the form for the
+ * report on board/subgroup membership.  We store the report
+ * request parameters in a database table and then launch the
+ * form with a modified URL which incorporates the ID of the
+ * database row where the request parameters was saved.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_membership_report_form($form, &$form_state, $request_id) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Board Managment Reports', 'reports/board'),
+            'Board Membership',
+        )
+    );
+
+    // Initialize defaults for the form field's values.
+    $board = 0;
+    //$include_inactive = false;
+    $show_subgroups = false;
+
+    // Check for overrides of the defaults by request parameters
+    // stored in the database.
+    if ($request_id) {
+        $params = EbmsReports::fetch_report_request($request_id);
+        $board = $params['board'];
+        //$include_inactive = $params['include-inactive'];
+        $show_subgroups = $params['show-subgroups'];
+    }
+
+    // Build picklist array for boards.
+    $boards = array(0 => ' ') + Ebms\Util::boards();
+
+    // Begin the form structure, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Board Management',
+                                            'Board Membership');
+    $form['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'membership-top'),
+        'left-nav' => $left_nav,
+        'report-form' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'report-form'),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>Board Membership</h2>',
+            ),
+            'board' => array(
+                '#type' => 'select',
+                '#title' => 'Editorial Board',
+                '#title_display' => 'after',
+                '#options' => $boards,
+                '#default_value' => $board,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            /*
+            'include-inactive' => array(
+                '#type' => 'checkbox',
+                '#title' => 'INCLUDE INACTIVE USERS',
+                '#default_value' => $include_inactive,
+            ),*/
+            'show-subgroups' => array(
+                '#type' => 'checkbox',
+                '#title' => 'SHOW SUBGROUPS',
+                '#default_value' => $show_subgroups,
+            ),
+            'buttons' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'report-buttons'),
+                'filter' => array(
+                    '#type' => 'submit',
+                    '#value' => 'Report',
+                ),
+            ),
+        ),
+    );
+
+    // Append the report if we have a request.
+    if ($request_id)
+        $form['report'] = EbmsReports::membership($request_id);
+    return $form;
+}
+
+/**
+ * Make sure the user has selected a board, which is the only
+ * field required for the membership report.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_membership_report_form_validate($form, &$form_state) {
+
+    // Collect the values we need for validation.
+    $values = $form_state['values'];
+
+    // Make sure a board has been selected;
+    if (!$values['board'])
+        form_set_error('board', 'You must select a board for this report.');
+}
+
+/**
+ * Store the report request parameters in the database and send the
+ * user to the URL which knows where those parameters were stored.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_membership_report_form_submit($form, &$form_state) {
+    $values = $form_state['values'];
+    $request_id = EbmsReports::save_report_request($values, 'Membership');
+    drupal_goto('reports/membership/' . $request_id);
 }
 
 /**

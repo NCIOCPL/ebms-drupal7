@@ -101,6 +101,18 @@ div.import-reports h2 { margin-bottom: 15px; }
 div.import-reports ul li a { text-transform: uppercase; }
 #import-report td, #import-report th { border-left: none; }
 #documents-top div.form-item-archived { clear: both; margin-left: 476px; }
+#membership-top div.form-type-checkbox {
+    clear: both; margin: 5px 0 5px 476px;
+}
+#membership-top { overflow: hidden; }
+#membership-top div.form-item-board { margin-bottom: 10px; }
+#pdq-ebms-membership-report-form div.item-list { margin: 20px 20px; }
+#pdq-ebms-membership-report-form div.item-list h3 {
+    clear: both; color: #696559; font-size: 18px;
+    border-bottom: 1px solid #696559;
+}
+#pdq-ebms-membership-report-form div.item-list ul { margin-left: 20px; }
+
 #doc-report { margin-top: 35px; }
 
 /*
