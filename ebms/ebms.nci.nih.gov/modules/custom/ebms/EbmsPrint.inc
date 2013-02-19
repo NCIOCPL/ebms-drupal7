@@ -29,6 +29,13 @@ define ('RIGHT_MARGIN', 540);
 
 // Registered trademark symbol in Unicode, hex x00AE
 define ('RTM', chr(174));
+
+// Global array of error messages
+// This is global rather than inside the EbmsPrintJob class because it is
+//  possible to encounter errors while creating an object - which could
+//  cause the object never to be created and the errors lost.
+$print_job_errmsgs = array();
+
 /**
  * This function was built when I was working outside of Drupal, using
  * the PDO database API.  I could replace this with calls to drupal_realpath(),
@@ -453,9 +460,6 @@ class EbmsPrintFile {
  */
 class EbmsPrintJob {
     public
-        $errMsgs;           // Array of error messages
-
-    public
         // Board members, packages, docs in job
         $boardMemberList,   // List of board members wanting print for this job
                             //  Not all of them will have anything ready
@@ -505,7 +509,6 @@ class EbmsPrintJob {
         $this->packageList     = array();
         $this->docList         = array();
         $this->uniqPathList    = array();
-        $this->errMsgs         = array();
     }
 
     /**
@@ -1607,6 +1610,8 @@ EOS;
      */
     function reportError($msg, $e=null, $fatal=true) {
 
+        global $print_job_errmsgs;
+
         // Prevent recursion on errors
         static $inError = false;
 
@@ -1615,8 +1620,8 @@ EOS;
             $msg = $msg . ': Exception: ' . $e->getMessage();
 
         // Add the message to our list of messages
-        $this->errMsgs[] = $msg;
-        $msgs = implode(' / ', $this->errMsgs);
+        $print_job_errmsgs[] = $msg;
+        $msgs = implode(' / ', $print_job_errmsgs);
 
         // Check for recursion
         if ($inError) {
@@ -1865,8 +1870,9 @@ EOS;
         $this->status = $status;
 
         // Preserve any error messages as part of the comment text
-        if (count($this->errMsgs) > 0) {
-            $errStr = "Msgs: " . implode('; ', $this->errMsgs);
+        global $print_job_errmsgs;
+        if (count($print_job_errmsgs) > 0) {
+            $errStr = "Msgs: " . implode('; ', $print_job_errmsgs);
             $this->comment .= "  [$errStr]";
         }
 
@@ -1923,6 +1929,9 @@ EOS;
  *                      'msgs'   => error messages, if any.
  *************************************************************/
 function runPrintJob() {
+
+    // Status will change only if the job completes successfully
+    $status = 'failure';
 
  try {
     // Create a print job from a recently created row in the table
@@ -2030,17 +2039,21 @@ function runPrintJob() {
 
     // That's it!
     $pj->cleanup('success');
+    $status = 'success';
   }
   catch (PrintJobAbort $e) {
     // We got here because reportError() broke us out of regular processing
     // Return normally.  Caller will handle the errors.
   }
 
-  // Return status and error messages, if any
+  // Return status
   $retValues = array();
-  $retValues['status'] = $pj->status;
-  if (count($pj->errMsgs) > 0)
-      $retValues['msgs'] = $pj->errMsgs;
+  $retValues['status'] = $status;
+
+  // And error messages, if any
+  global $print_job_errmsgs;
+  if (count($print_job_errmsgs) > 0)
+      $retValues['msgs'] = $print_job_errmsgs;
 
   return $retValues;
 }
