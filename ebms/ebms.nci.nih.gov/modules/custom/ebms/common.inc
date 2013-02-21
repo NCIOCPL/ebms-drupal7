@@ -1702,6 +1702,18 @@ class Util {
         $regex = '/\.(' . $extensions . ')$/i';
         return preg_match($regex, $name) ? true : false;
     }
+
+    /**
+     * Examines a file to determine its MIME type.
+     *
+     *  @param  string  $path         Location of file to be checked
+     *
+     *  @return string                MIME type (e.g., "application/pdf")
+     */
+    public static function get_mime_type($path) {
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);//, '/usr/share/file/magic');
+        return $finfo->file($path);
+    }
 }
 
 class EbmsPager extends \PagerDefault {
