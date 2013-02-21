@@ -3,8 +3,6 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
-dsm(get_defined_vars(), 'vars');
 ?>
 
 <?php if(!$in_preview): ?>

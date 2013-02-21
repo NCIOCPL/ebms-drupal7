@@ -26,7 +26,6 @@
  * work to set the 'hour' column to 10% and split the remaining columns 
  * evenly over the remaining 90% of the table.
  */
-//dsm('Display: '. $display_type .': '. $min_date_formatted .' to '. $max_date_formatted);
 ?>
 <?php if (user_access('create ebms_event content')) : ?>
     <div class='button'>
