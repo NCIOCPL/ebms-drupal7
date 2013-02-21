@@ -6,6 +6,30 @@
  */
 
 $GLOBALS['ebms_node_fields'] = array(
+    // event status - on calendar or cancelled
+    array(
+        'label' => t('Event Status'),
+        'entity_type' => 'node',
+        'description' => t('Select to set this event as scheduled or cancelled.'),
+        'field_name' => 'field_event_status',
+        'required' => TRUE,
+        'type' => 'list_text',
+        'cardinality' => 1,
+        'widget' => array(
+            'weight' => 1,
+            'type' => 'options_buttons',
+        ),
+        'settings' => array(
+            'allowed_values' => array(
+                'scheduled' => 'On Calendar',
+                'cancelled' => 'Cancelled',
+            ),
+        ),
+        'default_value' => array(0 => array('value' => 'scheduled')),
+        'bundles' => array(
+            'ebms_event'
+        ),
+    ),
     // event date
     array(
         'label' => t('Event Date'),
@@ -235,7 +259,7 @@ $GLOBALS['ebms_node_fields'] = array(
     ),
 );
 
-// this global array will be filled with midifications of the array above
+// this global array will be filled with modifications of the array above
 $GLOBALS['ebms_entity_fields'] = array(
     array(
         'label' => t('Title'),

@@ -3,8 +3,11 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
+
+dsm(get_defined_vars(), 'vars');
 ?>
 
+<?php if(!$in_preview): ?>
 <div id='left-nav'>
     <?php
     module_load_include('inc', 'ebms', 'calendar');
@@ -29,16 +32,19 @@
     </div>
 
     <?php
-    if ($editor)
+    if ($editor) {
         print "<div class='edit-button-icon'><a href='$editNodePath'><img alt='Edit Event' src='$editIconPath'></a></div>";
+    }
     ?> 
+    <?php else: ?>
+    <div class='preview-enclosure'>
+    <?php endif; ?>
     <h2 class='indent trailing'> 
         <?php
+        if ($cancelled)
+            print "Cancelled: ";
+
         print $title;
-        ?>
-        <?php
-        if ($status == 0)
-            print "<i>(Unpublished)</i>";
         ?>
     </h2>
     <div class="content"<?php print $content_attributes; ?>>
@@ -94,4 +100,4 @@
             ?>
         </div>
     </div>
-</div
+</div>

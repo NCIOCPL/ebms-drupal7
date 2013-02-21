@@ -356,11 +356,11 @@ function ebmstheme_radios($variables) {
     $description = array_key_exists('#description', $element) ? $element['#description'] : NULL;
 
     return '<fieldset ' . drupal_attributes($attributes) . '>
-      <legend class="radios-508" for="' . $attributes['id'] . '">'
-            . $required .
-            ' ' . (array_key_exists('#title', $element) ? $element['#title'] : '') .
-            '</legend> '
-            . ($description ? '<div class="description" style="padding-bottom: 10px;">' . $description . '</div>' : '')
+            <legend class="radios-508" for="' . $attributes['id'] . '">'
+                . (array_key_exists('#title', $element) ? $element['#title'] : '') 
+                . ' ' . $required .
+            '</legend>'
+        . ($description ? '<div class="description">' . $description . '</div>' : '')
             . (!empty($element['#children']) ?
                     ('<div id="'.$attributes['id'].'" class="form-radios">'. $element['#children'].'</div>')
                     : '')
@@ -394,11 +394,10 @@ function ebmstheme_checkboxes($variables) {
     $description = array_key_exists('#description', $element) ?
         $element['#description'] : NULL;
     return '<fieldset ' . drupal_attributes($attributes) . '>
-      <legend class="checkboxes-508" for="' . $attributes['id'] . '">'
-            . $required .
-            ' ' . (array_key_exists('#title', $element) ? $element['#title'] : '') .
-            '</legend> '
-                        . ($description ? '<div class="description" style="padding-bottom: 10px;">' . $description . '</div>' : '')
+            <legend class="checkboxes-508" for="' . $attributes['id'] . '">'
+                . (array_key_exists('#title', $element) ? $element['#title'] : '') 
+                . ' ' . $required . '</legend>'
+        . ($description ? '<div class="description">' . $description . '</div>' : '')
             . (!empty($element['#children']) ?
                     ('<div id="'.$attributes['id'].'" class="form-checkboxes">'. $element['#children'].'</div>')
                     : '')
@@ -453,6 +452,8 @@ function ebmstheme_preprocess_node(&$variables) {
     $variables['editor'] = $editor;
 
     $variables['status'] = $node->status;
+    
+    $variables['in_preview'] = (isset($node->in_preview) && $node->in_preview);
     
     if ($node->type == 'ebms_event') {
         preprocess_ebms_event($variables);
@@ -567,6 +568,9 @@ function preprocess_ebms_event(&$variables) {
         $variables['prevNode'] = $prevNode;
         $variables['nextNode'] = $nextNode;
     }
+    
+    $eventStatus = field_get_items('node', $node, 'field_event_status');
+    $variables['cancelled'] = ($eventStatus[0]['value'] == 'cancelled');
 
     $eventType = field_get_items('node', $node, 'field_event_type');
     $variables['eventType'] = 'In Person';

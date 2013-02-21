@@ -49,8 +49,16 @@ div.ctools-modal-content #citation-form-div{
 
 .page-citations #citation-form-div .citation-input-div>
 .form-type-checkbox>input.form-checkbox:not(#foo){
-    margin-left: 490px;
-    margin-top: 0px;
+    margin: 0 0 0 502px;
+    left: auto;
+    bottom: auto;
+}
+
+#pdq-ebms-citation-not-list .page-citations #citation-form-div .citation-input-div>
+.form-type-checkbox>input.form-checkbox:not(#foo){
+    margin: 0 0 0 505px;
+    left: auto;
+    bottom: auto;
 }
 
 #citation-results-div {

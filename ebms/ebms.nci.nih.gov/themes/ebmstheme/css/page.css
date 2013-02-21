@@ -77,11 +77,6 @@ that someone would like to hand set with <h2>, the title is too far down the pag
     display: block;
     font-weight: bold;
     text-transform: uppercase;
-    font-family: Arial,Verdana,sans-serif;
-    font-size: 13px;
-    margin-left: 12px;
-    margin-top: 35px;
-    margin-bottom: 2px;
 }
 .hidden-508 {
         /*display: none;
@@ -91,22 +86,4 @@ that someone would like to hand set with <h2>, the title is too far down the pag
         left: -100000px;
     width: 0px;
     height: 0px;
-}
-fieldset.checkboxes-508, 
-fieldset.radios-508 {
-    border: 0px solid white;
-    display: block;
-}
-legend.checkboxes-508 {
-    color: black;
-    font-size: 13px;
-    text-transform: uppercase;
-    font-weight: bold;
-    margin-left: -10px;
-}
-legend.radios-508 {
-    color: black;
-    font-size: 13px;
-    font-weight: bold;
-    margin-left: -10px;
 }

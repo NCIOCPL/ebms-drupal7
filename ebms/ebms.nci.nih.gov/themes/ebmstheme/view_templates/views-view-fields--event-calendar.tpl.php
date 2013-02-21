@@ -24,7 +24,12 @@
  */
 ?>
 
-<?php if (isset($row->node_status) && $row->node_status == 0): ?>
+<?php
+$cancelled = (isset($row->field_field_event_status[0]['raw']['value']) &&
+    $row->field_field_event_status[0]['raw']['value'] == 'cancelled');
+
+if ($cancelled):
+    ?>
     <div class='unpublished'>
     <?php endif; ?>
 
@@ -41,6 +46,6 @@
         <?php print $field->wrapper_suffix; ?>
     <?php endforeach; ?>
 
-    <?php if (isset($row->node_status) && $row->node_status === 0): ?>
+    <?php if ($cancelled): ?>
     </div>
 <?php endif; ?>
