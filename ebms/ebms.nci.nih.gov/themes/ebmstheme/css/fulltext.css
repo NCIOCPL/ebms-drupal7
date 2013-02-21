@@ -16,3 +16,9 @@
 }
 #fulltext-articles a { text-transform: uppercase; }
 #edit-submit-2 { clear: both; display: block; }
+div.ebms-error {
+    width: auto; border-radius: 7px; color: #2d2c28;
+    border: solid 3px #d2817d; background-color: rgb(250,210,210);
+    padding: 10px 12px; margin: 6px 0 6px 11px;
+}
+div.ebms-error ul { margin: 0 0 0 1em; padding: 0; }
