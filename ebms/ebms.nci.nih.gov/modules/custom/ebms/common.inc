@@ -908,7 +908,7 @@ class Util {
      * searching for titles or authors of articles.
      */
     public static function utf8ToAscii($utf8) {
-        $ucs2 = iconv("utf-8", "UCS-2", $utf8);
+        $ucs2 = iconv("utf-8", "UCS-2LE", $utf8);
         $ascii = array();
         $i = 0;
         $len = strlen($ucs2);
