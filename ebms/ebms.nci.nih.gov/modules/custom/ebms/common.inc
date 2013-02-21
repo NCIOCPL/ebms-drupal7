@@ -1683,6 +1683,25 @@ class Util {
             return $s;
         return $s . '.';
     }
+
+    /**
+     * Check whether a filename ends in one of the allowed extensions.
+     * Use this when we don't want Drupal's default behavior for invalid
+     * fields to kick in (see, for example, the article full text retrieval
+     * queue).
+     *
+     *  @param  string  $name         File name to be checked
+     *  @param  string  $extensions   Space-delimited extensions
+     *
+     *  @return boolean               True if the file name ends in
+     *                                one of the specified extensions;
+     *                                otherwise False
+     */
+    public static function has_valid_extension($name, $extensions) {
+        $extensions = preg_replace('/ +/', '|', preg_quote($extensions));
+        $regex = '/\.(' . $extensions . ')$/i';
+        return preg_match($regex, $name) ? true : false;
+    }
 }
 
 class EbmsPager extends \PagerDefault {
