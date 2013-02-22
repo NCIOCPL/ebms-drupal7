@@ -23,8 +23,14 @@ function ebms_webforms_menu() {
 function ebms_webforms_menu_alter(&$items) {
     // We're going to override the page that generates the results.
     // This is not the cleanest way of doing it, but it works.
-    $items['node/%webform_menu/webform-results/table']['page callback'] = '_ebms_webforms_results_table';
-    $items['node/%webform_menu/webform-results/table']['file'] = '';
+    $report_menu = 'node/%webform_menu/webform-results/table';
+    $permission = 'access all webform results';
+    $items[$report_menu]['page callback'] = '_ebms_webforms_results_table';
+    $items[$report_menu]['file'] = '';
+
+    // Prevent board members from seeing this on their left-nav menu
+    // (TIR 2392).
+    $items[$report_menu]['access arguments'] = array($permission);
 }
  
 /**
