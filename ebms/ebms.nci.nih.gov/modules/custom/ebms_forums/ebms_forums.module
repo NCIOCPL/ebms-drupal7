@@ -591,30 +591,46 @@ function _ebms_forums_view_forum_access_callback($forum = NULL) {
         }
 
         // (4) If the user is part of a Board that is in the list of Boards on this forum
-        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_board_member', 'board_id', $forum->field_boards);
-        if (count($matchedGroups) > 0)
+        
+        // count the unfiltered fields, in case all tested fields have no specified
+        // filters
+        $unfiltered = 0;
+        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'boards', $forum, 'field_boards');
+        if($matchedGroups === FALSE) {
+            $unfiltered++;
+        }        
+        else if (count($matchedGroups) > 0)
             if (!$archived)
                 return TRUE;
             elseif ($archived && $administerForums)
                 return TRUE;
 
         // (5) If the user is part of a Subgroup that is in the list of Subgroups on this forum
-        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_subgroup_member', 'sg_id', $forum->field_subgroups);
-        if (count($matchedGroups) > 0)
+        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'subgroups', $forum, 'field_subgroups');
+        if($matchedGroups === FALSE) {
+            $unfiltered++;
+        }        
+        else if (count($matchedGroups) > 0)
             if (!$archived)
                 return TRUE;
             elseif ($archived && $administerForums)
                 return TRUE;
 
         // (6) If the user is part of an Ad Hoc Group that is in the list of Ad Hoc Groups on this forum
-        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'ebms_ad_hoc_group_member', 'group_id', $forum->field_ad_hoc_groups);
-        if (count($matchedGroups) > 0)
+        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'adhocgroups', $forum, 'field_ad_hoc_groups');
+        if($matchedGroups === FALSE) {
+            $unfiltered++;
+        }        
+        else if (count($matchedGroups) > 0)
             if (!$archived)
                 return TRUE;
             elseif ($archived && $administerForums)
                 return TRUE;
 
-        return FALSE;
+        // if not specifically passed by a filter, and any of the filters are
+        // valid, then fail the access
+        if($unfiltered < 3)
+            return FALSE;
     }
     return TRUE;
 }
@@ -752,43 +768,38 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
 }
 
 /**
- * Determine if a user is a member of a certain set. The name of the table and
- * an identifying column ID must be used.
+ * Finds the subset of values for a certain field shared between a user and
+ * the given forum.
  * 
- * @param type $uid User's ID
- * @param type $tableName Name of EBMS table. Should be a member table, e.g. ebms_board_member
- * @param type $tableID Name of column in table that is the ID, e.g. board_id
- * @param type $groups Set that we are seeing if a user can belong to.
- * @return type The subset of $groups that a user is in. Empty will result in FALSE access.
+ * @param int $uid          The user's id.
+ * @param string $uidField  A string representation of the user's field to 
+ *                          compare.
+ * @param type $forum       The forum object.
+ * @param type $forumField  The related field in the forum
+ * @return mixed            Either returns an intersecting set of the user's and
+ *                          forum's field values, or FALSE if the forum has no 
+ *                          comperable values.
  */
-function _ebms_forums_determine_membership($uid, $tableName, $tableID, $groups) {
-    $matchedGroups = array();
+function _ebms_forums_determine_membership($uid, $uidField, $forum, $forumField) {
+    // load the account to populate the user's fields
+    $account = user_load($uid);
+    
+    // this will potentially return an empty set if the account has no values,
+    // but allow the forum to be tested for matching values first.
+    $userValues = $account->$uidField;
+    
+    // retrieve the given forum field values
+    $forumWrapper = entity_metadata_wrapper('taxonomy_term', $forum);
+    $forumValues = $forumWrapper->$forumField->value();
 
-    // If there are no elligible groups to even check, then return an empty array.
-    // An empty array well be read as FALSE access
-    if ($groups) {
-
-        // Groups is a field so we must first break that down into an array of values
-        $tmp = $groups['und'];
-        $groups = array();
-        foreach ($tmp as $group)
-            $groups[] = $group['value'];
-
-        // Query the database
-        $result = db_select($tableName, 'm')
-                ->fields('m', array($tableID))
-                ->condition('m.user_id', $uid)
-                ->condition('m.' . $tableID, $groups, 'IN')
-                ->execute();
-
-        // Format the results
-        foreach ($result as $record)
-            $matchedGroups[] = $record->$tableID;
+    // Perform the comparison if the forum has any values and return the
+    // intersect set
+    if ($forumValues) {
+        return array_intersect($userValues, $forumValues);
     }
 
-    // Return the results
-    // Empty results indicate FALSE access. Any results indicate TRUE access
-    return $matchedGroups;
+    // else, return FALSE to indicate that the forum does not filter this value
+    return FALSE;
 }
 
 /**

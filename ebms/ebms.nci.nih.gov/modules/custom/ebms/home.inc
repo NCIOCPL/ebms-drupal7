@@ -336,7 +336,7 @@ class EbmsHomePage {
                 $board_ids[] = $board_row->board_id;
             $wanted = true;
             if (count($board_ids) > 0) {
-                $both = array_intersect($board_ids, $this->user->ebms_boards);
+                $both = array_intersect($board_ids, $this->user->boards);
                 if (count($both) < 1)
                     $wanted = false;
             }

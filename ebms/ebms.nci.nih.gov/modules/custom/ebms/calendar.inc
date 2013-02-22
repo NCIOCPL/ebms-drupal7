@@ -190,8 +190,8 @@ function _calendar_query_alter(&$view, &$query) {
     $or_conditions = db_or();
 
     //Boards:
-    if (!$filter_boards || $user->ebms_boards) {
-        //Add table to query    
+    if (!$filter_boards || $user->boards) {
+        // Add table to query
         $boardsjoin = new views_join();
         $boardsjoin->construct("field_data_field_boards", $view->base_table,
             $view->base_field, 'entity_id',
@@ -213,12 +213,12 @@ function _calendar_query_alter(&$view, &$query) {
                 '', 'IS NOT NULL');
         } else {
             $or_conditions->condition('field_data_field_boards.field_boards_value',
-                $user->ebms_boards, 'IN');
+                $user->boards, 'IN');
         }
     }
 
     //Subgroups:
-    if ($user->ebms_subgroups) {
+    if ($user->subgroups) {
         //Add table to query
         $subgroupsjoin = new views_join();
         $subgroupsjoin->construct("field_data_field_subgroups",
@@ -237,7 +237,7 @@ function _calendar_query_alter(&$view, &$query) {
 
         //Add where condition
         $or_conditions->condition('field_data_field_subgroups.field_subgroups_value',
-            $user->ebms_subgroups, 'IN');
+            $user->subgroups, 'IN');
     }
     //Ad hoc groups:
     if ($user->ebms_ad_hoc_groups) {

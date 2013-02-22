@@ -148,9 +148,9 @@ class Forum {
         if (!user_is_logged_in())
             return false;
         if (isset($this->board))
-            return in_array($this->board['id'], $user->ebms_boards);
+            return in_array($this->board['id'], $user->boards);
         if (isset($this->subgroup))
-            return in_array($this->subgroup['id'], $user->ebms_subgroups);
+            return in_array($this->subgroup['id'], $user->subgroups);
         return true;
     }
 }

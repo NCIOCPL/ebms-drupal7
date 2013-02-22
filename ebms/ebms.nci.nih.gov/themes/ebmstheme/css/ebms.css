@@ -1356,6 +1356,7 @@ comprehensive adjustment than just this. */
 .citation-input-div .form-item {
     margin-top: 15px;
     margin-bottom: 15px;
+    margin-left: 0px;
 }
 
 .citation-input-div .form-item.form-type-radio:not(#foo) label,

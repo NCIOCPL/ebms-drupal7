@@ -361,7 +361,7 @@ class EbmsReview {
         );
         $left_nav = $this->build_left_nav('View / Edit Packets');
         $url = EbmsReview::$url . '/packets';
-        if (count($this->user->ebms_boards) > 1)
+        if (count($this->user->boards) > 1)
             $left_nav['board filter box'] =
                 $this->board_filter_box($opts, $url);
         if ($this->pager != 'off')
@@ -443,7 +443,7 @@ class EbmsReview {
         );
         $left_nav = $this->build_left_nav('Reviewed Packets');
         $url = EbmsReview::$url . '/reviews';
-        if (count($this->user->ebms_boards) > 1)
+        if (count($this->user->boards) > 1)
             $left_nav['board filter box'] =
                 $this->board_filter_box($opts, $url);
         return array(
@@ -465,7 +465,7 @@ class EbmsReview {
         $boards = Ebms\Util::boards();
         $type = 'type="checkbox"';
         foreach ($boards as $id => $name) {
-            if (!in_array($id, $this->user->ebms_boards))
+            if (!in_array($id, $this->user->boards))
                 continue;
             if (in_array($id, $checked_boards)) {
                 $checked = ' checked="checked"';
@@ -511,7 +511,7 @@ class EbmsReview {
 
         // If not, find the boards of which she's a member.
         if (count($boards) < 1)
-            $boards = $this->user->ebms_boards;
+            $boards = $this->user->boards;
 
         // If we don't have any boards, then there's nothing more to do.
         if (count($boards) < 1) {

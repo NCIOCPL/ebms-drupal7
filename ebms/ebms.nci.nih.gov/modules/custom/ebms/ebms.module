@@ -999,14 +999,29 @@ function ebms_user_load($users) {
         //$topics = array();
         //foreach ($tresults as $result) $topics[] = $result->board_id;
         $users[$uid]->topics = $topics;
-
-        $sgresults = db_select('ebms_subgroup_member', 'm')
+        
+        // select all subgroups to which the member explicitly belongs
+        $sgMemberQuery = db_select('ebms_subgroup_member', 'm')
             ->fields('m', array('sg_id'))
-            ->condition('m.user_id', $uid)
-            ->execute();
-        $subgroups = array();
-        foreach ($sgresults as $sgresult) $subgroups[] = $sgresult->sg_id;
-        $users[$uid]->subgroups = $subgroups;
+            ->condition('m.user_id', $uid);
+        
+        // also select all subgroups based on the user's boards -
+        // this will allow the user to see all nodes that specify
+        // a subgroup belonging to one of the user's boards without regard
+        // to if the user actually belongs to those subgroups.
+        // (this is a specific requirement)
+        if(!empty($boards))
+        {
+            $sgBoardQuery = db_select('ebms_subgroup', 's')
+                ->condition('s.board_id', $boards)
+                ->fields('s', array('sg_id'));
+
+            // union the queries and eliminate duplicates
+            $sgMemberQuery->union($sgBoardQuery)
+                ->distinct();
+        }
+
+        $users[$uid]->subgroups = $sgMemberQuery->execute()->fetchCol();
 
         $ahgresults = db_select('ebms_ad_hoc_group_member', 'm')
             ->fields('m', array('group_id'))
