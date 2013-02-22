@@ -4431,9 +4431,16 @@ namespace {
             return;
         }
 
-        $validators = array('file_validate_extensions' => array());
+        $validators = array('file_validate_extensions' => array('pdf'));
         foreach ($_FILES['files']['name'] as $key => $value) {
             if ($value) {
+                $path = $_FILES['files']['tmp_name'][$key];
+                $mime_type = Ebms\Util::get_mime_type($path);
+                if ($mime_type != 'application/pdf') {
+                    drupal_set_message(htmlspecialchars($value) .
+                        ' is not a PDF file.', 'error');
+                    continue;
+                }
                 $file = file_save_upload($key, $validators);
                 if ($file) {
                     $file = file_move($file, 'public://');

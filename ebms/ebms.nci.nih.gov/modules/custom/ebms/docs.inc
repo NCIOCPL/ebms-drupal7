@@ -397,7 +397,6 @@ function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
             '#prefix' => '<div id="choose-file">',
             '#suffix' => '</div>',
             '#title_display' => 'after',
-            '#element_validate' => array('pdq_ebms_doc_file_required'),
         );
         $form['filename'] = array(
             '#type' => 'markup',
@@ -503,6 +502,85 @@ function pdq_ebms_doc_tag_ajax($form, $form_state) {
     //pdq_ebms_debug('DOC TAG AJAX', array($form, $form_state));
     $subform = $form['board-specific-fields']['tag-specific-fields'];
     return $subform;
+}
+
+/**
+ * Make sure a file of an acceptable type is being saved.
+ */
+function pdq_ebms_post_doc_form_validate($form, &$form_state) {
+
+    // Find out what kind of file we're dealing with.
+    $word_xml = 'vnd.openxmlformats-officedocument.wordprocessingml.document';
+    $wb_xml = 'vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    if ($form_state['values']['doc']) {
+        $field_name = 'tags';
+        $doc_id = $form_state['values']['doc'];
+        $query = db_select('file_managed', 'f');
+        $query->join('ebms_doc', 'd', 'd.file_id = f.fid');
+        $query->condition('d.doc_id', $doc_id);
+        $query->fields('f', array('filename', 'filemime'));
+        $results = $query->execute();
+        $filename = $results->filename;
+        $mime_type = $results->filemime;
+        if ($mime_type == "application/$word_xml")
+            $mime_type = 'application/msword';
+        elseif ($mime_type == "application/$wb_xml")
+            $mime_type = 'application/vnd.ms-excel';
+    }
+    else {
+        $field_name = 'filepath';
+        $files = $_FILES['files'];
+        $filename = $files['name'][$field_name];
+        $path = $files['tmp_name'][$field_name];
+        if (!$filename) {
+            form_set_error($field_name, 'You must select a file to upload.');
+            return;
+        }
+        $mime_type = Ebms\Util::get_mime_type($path);
+        pdq_ebms_debug('NEW FILE', array($mime_type, $path, $filename));
+    }
+
+    // The set of acceptable types hinges on whether the 'summary'
+    // tag has been selected.
+    $acceptable = array(
+        'pdf' => 'application/pdf',
+        'rtf' => 'text/rtf',
+        'doc' => 'application/msword',
+        'docx' => 'application/msword'
+    );
+    $summary_tag = db_select('ebms_tag', 't')
+        ->fields('t', array('tag_id'))
+        ->condition('t.tag_name', 'summary')
+        ->execute()
+        ->fetchField();
+    $tags = $form_state['values']['tags'];
+    $is_summary = in_array($summary_tag, $tags);
+    if (!$is_summary) {
+        $acceptable['xls'] = 'application/vnd.ms-excel';
+        $acceptable['xlsx'] = 'application/vnd.ms-excel';
+    }
+    $extensions = array_keys($acceptable);
+    $extensions = implode(', ', $extensions);
+
+    // Check what we have against what we expect.
+    $what = $is_summary ? 'Summary document' : 'Document';
+    $period = strpos($filename, '.');
+    if ($period === false || $period < 1) {
+        form_set_error($field_name, "$what must be one of $extensions.");
+        return;
+    }
+    $pieces = explode('.', $filename);
+    $extension = strtolower(array_pop($pieces));
+    if (!array_key_exists($extension, $acceptable)) {
+        form_set_error($field_name, "$what must be one of $extensions.");
+        return;
+    }
+    $expected = $acceptable[$extension];
+    if ($mime_type != $expected) {
+        $filename = htmlspecialchars($filename);
+        form_set_error($field_name, "$filename is not of type $expected.");
+        return;
+    }
 }
 
 /**
