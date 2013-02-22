@@ -7,9 +7,9 @@
  *
  * Implementation of EBMS page for uploading full-text PDFs.
  */
-function pdq_ebms_fulltext() {
+function pdq_ebms_fulltext($request_id=null) {
     $control = new EbmsFullText();
-    return $control->run();
+    return $control->run($request_id);
 }
 
 /*
@@ -24,13 +24,13 @@ class EbmsFullText {
     /*
      * Show the articles which need full text uploaded.
      */
-    public function run() {
+    public function run($request_id) {
 
         Ebms\Util::add_js();
         drupal_set_breadcrumb(array('Citation Management'));
         drupal_add_css(Ebms\CSS_DIR . '/fulltext.css');
         Ebms\Menu::$active = 'Citation Management';
-        return drupal_get_form('pdq_ebms_fulltext_form');
+        return drupal_get_form('pdq_ebms_fulltext_form', $request_id);
     }
 
     /*
@@ -106,7 +106,8 @@ class EbmsFullText {
 /**
  * Drupal form API callback which generates the form used to filter the
  * queue of articles awaiting upload of full text.  The queue itself
- * is also included below the form fields.
+ * is also included below the form fields.  See the description of
+ * the submit callback below for more details.
  *
  *  @param  array   $form         Structured array containing the
  *                                elements and properties of the form
@@ -119,14 +120,28 @@ class EbmsFullText {
  *                                of the fields to appear on the
  *                                form, as well as other markup
  */
-function pdq_ebms_fulltext_form($form, &$form_state) {
+function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
 
     // Build the picklists for PDQ boards and review cycles.
     $board = $cycle = 0;
+    $errors = array();
     if (isset($form_state['values'])) {
-        $board = $form_state['values']['board'];
-        $cycle = $form_state['values']['cycle'];
+        $values = $form_state['values'];
+        $board = $values['board'];
+        $cycle = $values['cycle'];
     }
+    if ($request_id) {
+        $json = db_select('ebms_search', 's')
+            ->fields('s', array('search_spec'))
+            ->condition('s.search_id', $request_id)
+            ->execute()
+            ->fetchField();
+        $request = drupal_json_decode($json);
+        $board = $request['board'];
+        $cycle = $request['cycle'];
+        $errors = $request['errors'];
+    }
+
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $cycles = array(0 => ' ');
     $results = db_select('ebms_cycle', 'c')
@@ -187,13 +202,10 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
     $query = db_select('ebms_article', 'a');
     $query->fields('a', array('article_id'));
     $query->join('ebms_article_state', 's', 'a.article_id = s.article_id');
-    $query->leftJoin('ebms_ft_unavailable', 'u',
-        'u.article_id = a.article_id');
     $query->condition('s.current', 'Y');
-    $query->isNull('a.full_text_id');
-    $query->isNull('u.article_id');
-    $query->distinct();
     $query->condition('s.state_id', $passed_bm_review);
+    $query->isNull('a.full_text_id');
+    $query->distinct();
     if ($board)
         $query->condition('s.board_id', $board);
     if ($cycle) {
@@ -203,6 +215,9 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
     }
     else
         $query->condition('s.status_dt', Ebms\CONVERSION_DATE, '>');
+    $query->leftJoin('ebms_ft_unavailable', 'u',
+        'u.article_id = a.article_id');
+    $query->isNull('u.article_id');
     $query->range(0, 100);
     $query->orderBy('s.status_dt');
 
@@ -257,6 +272,10 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
                     $article_boards[] = $boards[$result->board_id];
             }
             sort($article_boards);
+            $pdf_key = "pdf-$article_id";
+            $file_class = array('form-file');
+            if (in_array($pdf_key, $errors))
+                $file_class[] = 'error';
             $form['bottom']['articles'][] = array(
                 'article' => array(
                     '#type' => 'markup',
@@ -275,6 +294,7 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
                     'pdf-' . $article_id => array(
                         '#type' => 'file',
                         '#id' => 'pdf-' . $article_id,
+                        '#attributes' => array('class' => $file_class),
                     ),
                     'unavailable-' . $article_id => array(
                         '#type' => 'checkbox',
@@ -304,6 +324,26 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
  * to obtain the full text.  When we're done we rebuild the form, and
  * the queue is redrawn, leaving off the ones we just took care of.
  *
+ * 2013-02-20: Extensively rewritten to handle TIR 2389.  We now
+ * need to ensure that only PDF files are uploaded for the articles'
+ * full text documents; otherwise the printing routines fail in an
+ * unacceptable way.  We can't use Drupal's built-in file type checking,
+ * partly because it's only checking the file name's extension, and
+ * mainly because when one of the files fails this test, the entire
+ * form submission is put by Drupal in a state which prevents our
+ * code from refreshing the queue, eliminating the articles for which
+ * the file upload succeeded.  In order to ensure that we are always
+ * able to construct the queue afresh, and at the same time preserve
+ * the user's filtering values, we store the current request in the
+ * search table.  We include, along with those filtering values,
+ * the field IDs for failed file uploads, so we can mark them with
+ * the styling which identifies them as requiring attention.  Instead
+ * of calling form_set_error(), we use drupal_set_message().  At the
+ * bottom of the submit() callback we navigate directly to the full
+ * text upload queue page with the ID of the row we just put in the
+ * search table.  The only time we don't use the search table is when
+ * the user clicks the Reset button.
+ *
  *  @param  array   $form         Structured array containing the
  *                                elements and properties of the form
  *  @param  array   &$form_state  Modifiable structured array
@@ -314,50 +354,98 @@ function pdq_ebms_fulltext_form($form, &$form_state) {
  *  @return     none
  */
 function pdq_ebms_fulltext_form_submit($form, &$form_state) {
-    if ($form_state['values']['op'] != 'Reset')
-        $form_state['rebuild'] = true;
-    if ($form_state['values']['op'] != 'Submit')
-        return;
-    $validators = array('file_validate_extensions' => array());
-    foreach ($_FILES['files']['name'] as $key => $value) {
-        list($prefix, $article_id) = explode('-', $key);
-        if ($value) {
-            $file = file_save_upload($key, $validators);
-            if ($file) {
-                $file = file_move($file, 'public://');
-                $file->status |= FILE_STATUS_PERMANENT;
-                $file = file_save($file);
-                db_update('ebms_article')
-                    ->fields(array('full_text_id' => $file->fid))
-                    ->condition('article_id', $article_id)
-                    ->execute();
-                drupal_set_message('Posted document ' . $file->filename .
-                                   ' for article ' . $article_id . '.');
+
+    // Find out which button was pushed.
+    $values = $form_state['values'];
+    $op = $values['op'];
+    if ($op == 'Reset')
+        drupal_goto(EbmsFullText::$url);
+
+    // Collect the values we'll remember when we re-build the queue.
+    global $user;
+    $now = strftime("%Y-%m-%d %H:%M:%S");
+    $board = $values['board'];
+    $cycle = $values['cycle'];
+    $request = array(
+        'type' => 'fulltext queue',
+        'board' => $board,
+        'cycle' => $cycle,
+        'errors' => array(),
+    );
+
+    // Only process the fields for the Submit button (not the Filter button).
+    if ($op == 'Submit') {
+        $files = $_FILES['files'];
+
+        // Suppress the default checking; we'll do our own.
+        $validators = array('file_validate_extensions' => array());
+        foreach ($files['name'] as $key => $value) {
+            list($prefix, $article_id) = explode('-', $key);
+
+            // Do we have a file for this article?
+            if ($value) {
+
+                // Is it the right type?
+                $extension_ok = Ebms\Util::has_valid_extension($value, 'pdf');
+                $mtype = Ebms\Util::get_mime_type($files['tmp_name'][$key]);
+                if (!$extension_ok || $mtype !== 'application/pdf') {
+                    drupal_set_message('<i>' . htmlspecialchars($value) .
+                        '</i> not uploaded (not a PDF file).', 'error');
+                    $request['errors'][] = $key;
+                    continue;
+                }
+
+                // Yes: hook it up with the article table.
+                $file = file_save_upload($key, $validators);
+                if ($file) {
+                    $file = file_move($file, 'public://');
+                    $file->status |= FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                    db_update('ebms_article')
+                        ->fields(array('full_text_id' => $file->fid))
+                        ->condition('article_id', $article_id)
+                        ->execute();
+                    drupal_set_message('Posted document ' . $file->filename .
+                        ' for article ' . $article_id . '.');
+                }
+                else
+                    drupal_set_message('Unable to upload ' . $value, 'error');
             }
-            else
-                drupal_set_message('Unable to upload ' . $value, 'error');
-        }
-        elseif ($form_state['values']['unavailable-' . $article_id]) {
-            global $user;
-            $now = strftime("%Y-%m-%d %H:%M:%S");
-            try {
-                db_insert('ebms_ft_unavailable')
-                    ->fields(
-                        array(
-                            'article_id' => $article_id,
-                            'flagged' => $now,
-                            'flagged_by' => $user->uid,
+
+            // No file; how about the "unavailable" flag?
+            elseif ($form_state['values']['unavailable-' . $article_id]) {
+                try {
+                    db_insert('ebms_ft_unavailable')
+                        ->fields(
+                            array(
+                                'article_id' => $article_id,
+                                'flagged' => $now,
+                                'flagged_by' => $user->uid,
+                            )
                         )
-                    )
-                    ->execute();
-                drupal_set_message('Marked article ' . $article_id .
-                    ' as unavailable');
-            }
-            catch (Exception $e) {
-                // Shouldn't happen if this code is written correctly.
-                drupal_set_message('Unavailable flag already set for article '
-                    . $article_id, 'error');
+                        ->execute();
+                    drupal_set_message('Marked article ' . $article_id .
+                        ' as unavailable.');
+                }
+                catch (Exception $e) {
+                    // Shouldn't happen if this code is written correctly.
+                    drupal_set_message('Unavailable flag already set for ' .
+                        'article ' . $article_id . '.', 'error');
+                }
             }
         }
     }
+
+    // This is the only way we can communicate with our form-building
+    // callback in a way that meets all the requirements.
+    $request_id = db_insert('ebms_search')
+        ->fields(
+            array(
+                'when_searched' => $now,
+                'searched_by' => $user->uid,
+                'search_spec' => drupal_json_encode($request),
+            )
+        )
+        ->execute();
+    drupal_goto(EbmsFullText::$url . '/' . $request_id);
 }
