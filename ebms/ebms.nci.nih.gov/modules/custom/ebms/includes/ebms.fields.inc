@@ -67,6 +67,29 @@ $GLOBALS['ebms_node_fields'] = array(
             'ebms_event',
         ),
     ),
+    // event category - states if the event is board or subgroup-specific
+    array(
+        'label' => t('Event Category'),
+        'entity_type' => 'node',
+        'description' => t('Select to set this event as board or subgroup-specific.'),
+        'field_name' => 'field_event_category',
+        'required' => FALSE,
+        'type' => 'list_text',
+        'cardinality' => 1,
+        'widget' => array(
+            'weight' => 3,
+            'type' => 'options_select',
+        ),
+        'settings' => array(
+            'allowed_values' => array(
+                'board' => 'Board',
+                'subgroup' => 'Subgroup',
+            ),
+        ),
+        'bundles' => array(
+            'ebms_event'
+        ),
+    ),
     // event type - in person | webex / phone conf.
     array(
         'label' => t('Event Type'),
@@ -78,7 +101,7 @@ $GLOBALS['ebms_node_fields'] = array(
         'cardinality' => 1,
         'widget' => array(
             'weight' => 4,
-            'type' => 'options_select',
+            'type' => 'options_buttons',
         ),
         'settings' => array(
             'allowed_values' => array(
