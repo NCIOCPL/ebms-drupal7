@@ -13,6 +13,13 @@ define('Ebms\MAX_FORENAME', 128);
 define('Ebms\MAX_INITIALS', 128);
 define('Ebms\MAX_ART_TITLE', 512);
 define('Ebms\MAX_JRNL_TITLE', 512);
+define('Ebms\MAX_BRF_CITE', 255);
+define('Ebms\MAX_BRF_JRNL_TITLE', 127);
+
+// Not using these.  Return an error if they fail.
+define('Ebms\MAX_SOURCE_ID', 32);
+define('Ebms\MAX_SOURCE_JRNL_ID', 32);
+define('Ebms\MAX_SOURCE_STATUS', 32);
 
 /**
  * A simple interface to enumerate the article state text IDs.
@@ -593,7 +600,9 @@ class EbmsArticle {
                                     true, true, MAX_ART_TITLE);
         $this->jrnl_title     = Util::indexify((string) $journal->Title,
                                     true, true, MAX_JRNL_TITLE);
-        $this->brf_jrnl_title = (string) $mc->MedlineJournalInfo->MedlineTA;
+        $this->brf_jrnl_title = Util::indexify((string)
+                                    $mc->MedlineJournalInfo->MedlineTA,
+                                    true, true, MAX_BRF_JRNL_TITLE);
         $this->abstract       = (string) $this->loadAbstract(
                                             $article->Abstract[0]);
         $this->authors        = $this->loadAuthors($article->AuthorList[0]);
@@ -698,9 +707,9 @@ class EbmsArticle {
         // Put it all together.  Some fields may be null
         $cite = $titleAbbrev . ', ' . $date . ';' . $volume . $issue . $pages;
 
-        // Save what we've got
+        // Save what we've got, transformed if necessary
         $this->published_date = $date;
-        $this->brf_citation   = $cite;
+        $this->brf_citation   = Util::indexify($cite,true,true,MAX_BRF_CITE);
     }
 
     /**
@@ -943,11 +952,16 @@ class EbmsArticle {
             // Store the authors in the record and associate them with article
             $this->storeAuthors();
         } catch (\Exception $e) {
+            $this->addError(
+                    "There was a database error loading this article.<br />" .
+                    "The article has not been loaded.<br />" .
+                    "Exception msg from the DBMS follows:<br /><br />" .
+                    $e->getMessage(),
+                    WATCHDOG_NOTICE, false);
             $txn->rollback();
-            throw $e;
         }
 
-        // $txn goes out of scope here and transaction commits
+        // $txn goes out of scope here and commits unless already rolled back
     }
 
 
@@ -1382,7 +1396,7 @@ function addArticleStateComment($articleStateId, $comment,
 function getCurrentState($articleId, $topicId) {
 
     $qry = db_select('ebms_article_state', 'state');
-    $qry->join('ebms_article_state_type', 'type', 
+    $qry->join('ebms_article_state_type', 'type',
         'state.state_id = type.state_id');
     $qry->fields('state');
     $qry->fields('type', array('state_text_id', 'state_name', 'description',
@@ -2536,10 +2550,10 @@ function getPacketInfo($packet_id) {
 function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $active = true) {
     // first, retrieve the packet ids for the article and topic
     $packetIds = getArticlePacketIds($article_id, $topic_id, $fetch_all, $active);
-    
+
     if(empty($packetIds))
         return array();
-    
+
     // next, get all entered reviews for the known packets
     $reviews = db_select('ebms_article_review', 'r')
         ->condition('r.packet_id', $packetIds)
@@ -2547,11 +2561,11 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
         ->fields('r')
         ->execute()
         ->fetchAll();
-        
+
     // populate the responses for each review
     foreach($reviews as $reviewIndex => $review) {
         $reviewId = $review->review_id;
-        
+
         $responseQuery = db_select('ebms_review_disposition', 'd');
         $responseQuery->join('ebms_review_disposition_value', 'v', 'd.value_id = v.value_id');
 
@@ -2560,7 +2574,7 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
                 ->condition('d.review_id', $reviewId)
                 ->execute()
                 ->fetchAll();
-        
+
         $review->dispositions = $responses;
 
         // get all rejection reasons for the review
@@ -2575,7 +2589,7 @@ function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $ac
 
         $review->reasons = $reasons;
     }
-    
+
     return $reviews;
 }
 
@@ -2673,7 +2687,7 @@ function getArticleReviewCycle($article_id, $topic_id = null){
     // get all rows matching article (and maybe topic) id
     $cycle_query = db_select('ebms_article_topic', 't')
         ->condition('t.article_id', $article_id);
-    
+
     if($topic_id) {
         $cycle_query->condition('t.topic_id', $topic_id);
     }
