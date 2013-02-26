@@ -1,9 +1,5 @@
 <?php
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 $view = new view();
 $view->name = 'event_calendar';
 $view->description = '';
@@ -51,6 +47,18 @@ $handler->display->display_options['fields']['field_datespan']['settings'] = arr
 );
 $handler->display->display_options['fields']['field_datespan']['group_rows'] = FALSE;
 $handler->display->display_options['fields']['field_datespan']['delta_offset'] = '0';
+/* Field: Content: Event Status */
+$handler->display->display_options['fields']['field_event_status']['id'] = 'field_event_status';
+$handler->display->display_options['fields']['field_event_status']['table'] = 'field_data_field_event_status';
+$handler->display->display_options['fields']['field_event_status']['field'] = 'field_event_status';
+$handler->display->display_options['fields']['field_event_status']['label'] = '';
+$handler->display->display_options['fields']['field_event_status']['exclude'] = TRUE;
+$handler->display->display_options['fields']['field_event_status']['alter']['text'] = '<?php
+if(\'[field_event_status-value]\' == \'cancelled\') {
+    print(\'(Cancelled)\');
+else { print(\'On Calendar\'); }
+?>';
+$handler->display->display_options['fields']['field_event_status']['element_label_colon'] = FALSE;
 /* Field: Content: Title */
 $handler->display->display_options['fields']['title']['id'] = 'title';
 $handler->display->display_options['fields']['title']['table'] = 'node';
@@ -72,10 +80,6 @@ $handler->display->display_options['fields']['status']['not'] = 0;
 $handler->display->display_options['sorts']['field_datespan_value']['id'] = 'field_datespan_value';
 $handler->display->display_options['sorts']['field_datespan_value']['table'] = 'field_data_field_datespan';
 $handler->display->display_options['sorts']['field_datespan_value']['field'] = 'field_datespan_value';
-$handler->display->display_options['filter_groups']['groups'] = array(
-  1 => 'AND',
-  2 => 'OR',
-);
 /* Filter criterion: Content: Type */
 $handler->display->display_options['filters']['type']['id'] = 'type';
 $handler->display->display_options['filters']['type']['table'] = 'node';
@@ -88,15 +92,9 @@ $handler->display->display_options['filters']['type']['group'] = 1;
 $handler->display->display_options['filters']['status']['id'] = 'status';
 $handler->display->display_options['filters']['status']['table'] = 'node';
 $handler->display->display_options['filters']['status']['field'] = 'status';
-$handler->display->display_options['filters']['status']['value'] = 1;
-$handler->display->display_options['filters']['status']['group'] = 2;
+$handler->display->display_options['filters']['status']['value'] = '1';
+$handler->display->display_options['filters']['status']['group'] = 1;
 $handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
-/* Filter criterion: Content: Author uid */
-$handler->display->display_options['filters']['uid']['id'] = 'uid';
-$handler->display->display_options['filters']['uid']['table'] = 'node';
-$handler->display->display_options['filters']['uid']['field'] = 'uid';
-$handler->display->display_options['filters']['uid']['value'] = '';
-$handler->display->display_options['filters']['uid']['group'] = 2;
 
 /* Display: Month All */
 $handler = $view->new_display('page', 'Month All', 'month_all');
@@ -352,6 +350,30 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Content: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'node';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'ebms_event' => 'ebms_event',
+);
+$handler->display->display_options['filters']['type']['group'] = 1;
+/* Filter criterion: Content: Published */
+$handler->display->display_options['filters']['status']['id'] = 'status';
+$handler->display->display_options['filters']['status']['table'] = 'node';
+$handler->display->display_options['filters']['status']['field'] = 'status';
+$handler->display->display_options['filters']['status']['value'] = '1';
+$handler->display->display_options['filters']['status']['group'] = 1;
+$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+/* Filter criterion: Content: Event Status (field_event_status) */
+$handler->display->display_options['filters']['field_event_status_value']['id'] = 'field_event_status_value';
+$handler->display->display_options['filters']['field_event_status_value']['table'] = 'field_data_field_event_status';
+$handler->display->display_options['filters']['field_event_status_value']['field'] = 'field_event_status_value';
+$handler->display->display_options['filters']['field_event_status_value']['value'] = array(
+  'scheduled' => 'scheduled',
+);
 
 /* Display: Upcoming Events */
 $handler = $view->new_display('block', 'Upcoming Events', 'block_upcoming');
@@ -476,6 +498,13 @@ $handler->display->display_options['filters']['field_datespan_value']['table'] =
 $handler->display->display_options['filters']['field_datespan_value']['field'] = 'field_datespan_value';
 $handler->display->display_options['filters']['field_datespan_value']['operator'] = '>=';
 $handler->display->display_options['filters']['field_datespan_value']['default_date'] = 'now';
+/* Filter criterion: Content: Event Status (field_event_status) */
+$handler->display->display_options['filters']['field_event_status_value']['id'] = 'field_event_status_value';
+$handler->display->display_options['filters']['field_event_status_value']['table'] = 'field_data_field_event_status';
+$handler->display->display_options['filters']['field_event_status_value']['field'] = 'field_event_status_value';
+$handler->display->display_options['filters']['field_event_status_value']['value'] = array(
+  'scheduled' => 'scheduled',
+);
 $handler->display->display_options['block_description'] = 'Upcoming Events';
 
 /* Display: Next Event */
@@ -579,6 +608,13 @@ $handler->display->display_options['filters']['field_datespan_value']['table'] =
 $handler->display->display_options['filters']['field_datespan_value']['field'] = 'field_datespan_value';
 $handler->display->display_options['filters']['field_datespan_value']['operator'] = '>=';
 $handler->display->display_options['filters']['field_datespan_value']['default_date'] = 'now';
+/* Filter criterion: Content: Event Status (field_event_status) */
+$handler->display->display_options['filters']['field_event_status_value']['id'] = 'field_event_status_value';
+$handler->display->display_options['filters']['field_event_status_value']['table'] = 'field_data_field_event_status';
+$handler->display->display_options['filters']['field_event_status_value']['field'] = 'field_event_status_value';
+$handler->display->display_options['filters']['field_event_status_value']['value'] = array(
+  'scheduled' => 'scheduled',
+);
 
 /* Display: Month */
 $handler = $view->new_display('page', 'Month', 'month');
@@ -835,6 +871,14 @@ $handler->display->display_options['filters']['field_datespan_value2']['ui_name'
 $handler->display->display_options['filters']['field_datespan_value2']['operator'] = '<';
 $handler->display->display_options['filters']['field_datespan_value2']['granularity'] = 'second';
 $handler->display->display_options['filters']['field_datespan_value2']['default_date'] = 'now';
+/* Filter criterion: Content: Event Status (field_event_status) */
+$handler->display->display_options['filters']['field_event_status_value']['id'] = 'field_event_status_value';
+$handler->display->display_options['filters']['field_event_status_value']['table'] = 'field_data_field_event_status';
+$handler->display->display_options['filters']['field_event_status_value']['field'] = 'field_event_status_value';
+$handler->display->display_options['filters']['field_event_status_value']['value'] = array(
+  'scheduled' => 'scheduled',
+);
 $handler->display->display_options['block_description'] = 'Past Events';
+
 
 ?>
