@@ -18,6 +18,9 @@ define('Ebms\ERR_PAT', '/<!-- Error>(.*)<\/Error -->/smuU');
 // Max output for one line of Pubmed, should be waaay high
 define('Ebms\MAX_LINE', 100000);
 
+// Max error message we can store in an import action
+define('Ebms\MAX_ACTION_MSG', 400);
+
 // Get a Pubmed ID out of an error message, 7-8 digits
 define('Ebms\PMID_PAT', '/[^\d](\d{7,8})[^\d]/');
 
@@ -538,12 +541,17 @@ class ImportBatch {
 
         // Store each item as a row
         foreach ($itemList as $item) {
+            // Don't crash the database with a long message
+            $msg = $item[2];
+            if (strlen($msg) > MAX_ACTION_MSG) {
+                $msg = substr($msg, 0, (MAX_ACTION_MSG - 4)) . '...';
+            }
             $fields = array(
                 'source_id'       => $item[0],
                 'article_id'      => $item[1],
                 'import_batch_id' => $batchId,
                 'disposition_id'  => $dispId,
-                'message'         => $item[2]);
+                'message'         => $msg);
 
             // Insert the row
             $qry = db_insert('ebms_import_action')
