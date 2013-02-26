@@ -432,14 +432,15 @@ input:-webkit-autofill {
 }
 
 .form-item {
-    margin-top: 30px;
-    margin-bottom: 30px;
+    margin-top: 20px;
+    margin-bottom: 20px;
     margin-left: 12px;
 }
 
 fieldset .form-item,
 .form-item .form-item {
     margin-bottom: 0;
+    margin-left: 0;
 }
 
 .form-item label.form-item,
@@ -457,7 +458,7 @@ fieldset .form-item,
 }
 
 .form-wrapper > legend > .fieldset-legend {
-    margin-top: 0px;
+    margin-top: 0;
     font-weight: bold;
     display: block;
 }
@@ -1364,6 +1365,21 @@ comprehensive adjustment than just this. */
     padding-left: 33px;
 }
 
+.form-full-citation-link{
+    background: transparent;
+    border: 0 none transparent;
+    margin: 0 0 5px;
+    padding: 0;
+    font-style: italic;
+    text-align: left;
+    white-space: normal;
+}
+
+.form-full-citation-link:hover, .form-full-citation-link:focus{
+    border: 0 none transparent;
+    color: #A90101;
+    text-decoration: underline;
+}
 #pdq-ebms-citation-not-list .citation-input-div .form-item.form-type-radio:not(#foo) label,
 #pdq-ebms-citation-not-list .citation-input-div .form-item.form-type-checkbox:not(#foo) label {
     padding-left: 30px;

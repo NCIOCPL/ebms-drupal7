@@ -858,20 +858,9 @@ namespace {
         );
         drupal_add_js($tag_style, 'setting');
     }
-
-    function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
-        require_once('EbmsArticle.inc');
-
-        //include js to redirect pager links
-        $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
-
-        // hook into ajax completions to apply jQuery to form components
-        drupal_add_js('jQuery(document).ajaxComplete(function(){       
-            addHooks();                                      
-        });',
-            'inline');
-        
-        // process and save any queued values
+    
+    function _citation_queue_handle_cached_values(&$form_state, 
+            $saveActions = false){
         global $citation_cached_value_keys;
         $cachedKeys = drupal_map_assoc($citation_cached_value_keys);
         
@@ -885,35 +874,74 @@ namespace {
                 // populate the values
                 $jsonValues = drupal_json_decode($jsonString);
                 
-                if(isset($jsonValues['type']) &&
-                    isset($jsonValues['values']) &&
-                    $jsonValues['type'] == 'citation_queue'){
-                    // merge the values into the form state
-                    if (isset($form_state['values'])) {
-                        $form_state['values'] = array_merge(
-                            $jsonValues['values'], $form_state['values']);
-                    } else {
-                        $form_state['values'] = $jsonValues['values'];
-                    }
+                // if this is at least a valid cache type
+                if (isset($jsonValues['type']) &&
+                        $jsonValues['type'] == 'citation_queue') {
+                    
+                    // make use of the values
+                    if (isset($jsonValues['values'])) {
+                        // merge the values into the form state
+                        if (isset($form_state['values'])) {
+                            $form_state['values'] = array_merge(
+                                $jsonValues['values'], $form_state['values']);
+                        } else {
+                            $form_state['values'] = $jsonValues['values'];
+                        }
 
-                    // save the json string and row id into the form state as
-                    // well
-                    $form_state['cached_values']['json_string'] = $jsonString;
-                    $form_state['cached_values']['id'] = $queryId;
-                    $form_state['cached_values']['values'] = 
-                        $jsonValues['values'];
-                }                
+                        // save the json string and row id into the form state as
+                        // well
+                        $form_state['cached_values']['json_string'] = $jsonString;
+                        $form_state['cached_values']['id'] = $queryId;
+                        $form_state['cached_values']['values'] =
+                            $jsonValues['values'];
+                    }
+                    
+                    if(!isset($form_state['altered_topics']) &&
+                        isset($jsonValues['altered_topics']) &&
+                        isset($jsonValues['source_state'])) {
+                        // while the form_state is uninitialized,
+                        // import from the cache any article/topic
+                        // combo still in the given source state
+                        $cachedSourceState = $jsonValues['source_state'];
+                        $cachedSourceSequence = Ebms\getStateTypeSequence($cachedSourceState);
+                        
+                        foreach($jsonValues['altered_topics'] as $key => $actions) {
+                            list($articleId, $topicId) = explode('|', $key);
+                            $currState = Ebms\getCurrentState($articleId, $topicId);
+                            
+                            if($currState['sequence'] == $cachedSourceSequence) {
+                                $form_state['altered_topics'][$key] = $actions;
+                            }
+                        }
+                    }
+                }
             }
         }
         
         // capture certain inputs for caching
+        $jsonValues = array();
+        
+        // save any matching values
         if (isset($form_state['values'])) {            
             $cachedValues = 
                 array_intersect_key($form_state['values'], $cachedKeys);
             
-            $jsonValues = array();
-            $jsonValues['type'] = 'citation_queue';
             $jsonValues['values'] = $cachedValues;
+        }
+        
+        // dig out any altered topics as well
+        if($saveActions && 
+                isset($form_state['altered_topics']) && 
+                !empty($form_state['altered_topics'])) {
+            $sourceState = _citation_queue_get_source_state($form_state);
+
+            $jsonValues['altered_topics'] = $form_state['altered_topics'];
+            $jsonValues['source_state'] = $sourceState;
+        }
+            
+        // if any data has been retrieved for caching
+        if(!empty($jsonValues)) {
+            $jsonValues['type'] = 'citation_queue';
             
             $jsonString = drupal_json_encode($jsonValues);
             
@@ -943,7 +971,23 @@ namespace {
         // the current page
         if(isset($form_state['cached_values']['id']))
             $_GET['queue'] = $form_state['cached_values']['id'];
+    }
 
+    function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
+        require_once('EbmsArticle.inc');
+
+        //include js to redirect pager links
+        $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
+
+        // hook into ajax completions to apply jQuery to form components
+        drupal_add_js('jQuery(document).ajaxComplete(function(){       
+            addHooks();                                      
+        });',
+            'inline');
+        
+        // process and save any queued values
+        _citation_queue_handle_cached_values($form_state);
+        
         _include_modal_scripts();
 
         // maintain triggered element states
@@ -953,6 +997,8 @@ namespace {
         _update_table_sort($form_state);
         
         // convert any cached values to available defaults
+        global $citation_cached_value_keys;
+        $cachedKeys = drupal_map_assoc($citation_cached_value_keys);
         foreach($cachedKeys as $cachedKey) {
             $keyname = "default_$cachedKey";
             $$keyname = null;
@@ -1644,8 +1690,11 @@ namespace {
 
                 // set the abstract to the remaining width of the table, finish
                 // the row, and begin another with a header for the boards and topics
-                $row['abstract']['#markup'] =
-                    "<td colspan='$colspan' class='left-column borderless'>$cite</td>";
+                $row['abstract'] = array(
+                    '#prefix' => "<td colspan='$colspan' class='left-column borderless'>",
+                    'citation' => $cite,
+                    '#suffix' => "</td>",
+                );
 
                 $rows["${rowIx}_header"] = array(
                     '#prefix' => "<tr>",
@@ -1690,8 +1739,11 @@ namespace {
                 $row['actions']['tag'] = _build_add_tag_popup($article->getId());
                 _wrap_in_classes($row['actions']['tag'], array('clearfix'));
 
-                $row['brief_citation']['#markup'] =
-                    "<td rowspan='$topicCount' class='brief-citation left-column borderless'>$cite</td>";
+                $row['brief_citation'] = array(
+                    '#prefix' => "<td rowspan='$topicCount' class='brief-citation left-column borderless'>",
+                    'citation' => $cite,
+                    '#suffix' => "</td>",
+                );
             }
 
             while (isset($boardTopicMap[$boardIx])) {
@@ -2238,12 +2290,32 @@ namespace {
         // fall-back sorting in case no author exists
         $query->orderBy('a.brf_jrnl_title', $dir);
     }
-
-    function pdq_ebms_citation_queue_submit($form, &$form_state) {
+    
+    /**
+     * Retrieves the article state from which all articles on the page should
+     * originate, as defined in Ebms\EbmsArticleStates.
+     * 
+     * @param array $form_state The current form state
+     * @return string A string matching an article state's text id
+     */
+    function _citation_queue_get_source_state(&$form_state){
         $is_librarian = $form_state['build_info']['args'][0];
 
         $fulltext_review = isset($form_state['values']['fulltext_review_check'])
                 ? $form_state['values']['fulltext_review_check'] : false;
+        
+        if (!$is_librarian) {
+            if ($fulltext_review)
+                return Ebms\EbmsArticleStates::PassedBMReview;
+            else
+                return \Ebms\EbmsArticleStates::Published;
+        }
+        
+        return \Ebms\EbmsArticleStates::ReadyInitReview;
+    };
+
+    function pdq_ebms_citation_queue_submit($form, &$form_state) {
+        $source_state = _citation_queue_get_source_state($form_state);
 
         _update_topic_actions($form_state);
 
@@ -2265,13 +2337,6 @@ namespace {
                 case 'Save':
                     // write out the changes to the not list, in terms of
                     // inserts and deletes to the DB
-                    $source_state = \Ebms\EbmsArticleStates::ReadyInitReview;
-                    if (!$is_librarian) {
-                        if ($fulltext_review)
-                            $source_state = Ebms\EbmsArticleStates::PassedBMReview;
-                        else
-                            $source_state = \Ebms\EbmsArticleStates::Published;
-                    }
                     _write_topic_states($form_state['altered_topics'],
                         $source_state);
 
@@ -2331,27 +2396,28 @@ namespace {
 
     function _cite_article(Ebms\EbmsArticle $article, $long_form = true,
         $showAbstract = false, $showFullText = true) {
+        $form = array();
+        
         $article_id = $article->getId();
         $xml = $article->getSourceData();
         $doc = new \SimpleXMLElement($xml);
-        $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
+        $ta = $vol = $issue = $pgn = $year = $pmid = '';
+        $title = array();
         $articleXML = $doc->MedlineCitation->Article;
         $rawTitle = (string) $articleXML->ArticleTitle;
         if (!$long_form) {
-            $query = drupal_get_query_parameters();
-            $options = array();
-            if(isset($query['page'])){
-                $options['query']['page'] = $query['page'];
-            }
-            if(isset($query['queue'])){
-                $options['query']['queue'] = $query['queue'];
-            }
-            $titleLink = l($rawTitle, "citations/full/$article_id", $options);
-            $title = filter_xss("<em>$titleLink</em>");
+            // create link-like submit element
+            $title = array (
+                '#type' => 'submit',
+                '#value' => filter_xss($rawTitle),
+                '#article_id' => $article_id,
+                '#button_type' => 'full-citation-link',
+                '#submit' => array('_full_citation_redirect'),
+            );
         }
         else
         {
-            $title = $rawTitle;
+            $title['#markup'] = "<div>$rawTitle</div>";
         }
         $pgn = htmlspecialchars($articleXML->Pagination->MedlinePgn);
         $year = $articleXML->Journal->JournalIssue->PubDate->Year;
@@ -2401,11 +2467,20 @@ namespace {
         } else if (!$showAbstract) {
             $cmsId = "CMS ID: $article_id";
         }
+        
+        $form['authors']['#markup'] =
+            implode('',
+            array(
+                "<div class='article-citation'>$tAuthors<div>",
+                implode(', ', $authors),
+                "</div>$tTitle"
+            )
+        );
+        
+        $form['title'] = $title;
 
         $pieces = array(
-            "<div class='article-citation'>$tAuthors<div>",
-            implode(', ', $authors),
-            "</div>$tTitle<div>$title</div>$tJournal<div>$ta $vol",
+            "$tJournal<div>$ta $vol",
         );
         if ($issue)
             $pieces[] = "($issue)";
@@ -2467,10 +2542,38 @@ namespace {
                 $pieces[] = "$tReviewCycle<div>$reviewCycle</div>";
         }
         $pieces[] = '</div>';
-        return implode($pieces);
+        
+        $form['citation']['#markup'] = implode('', $pieces);
+        
+        return $form;
         #$results = db_select('ebms_article', 'a')
         #    ->fields('a', array('article_title', 'source_id',
         #return "Article $position (CMS ID $article_id)";
+    }
+    
+    function _full_citation_redirect($form, &$form_state){        
+        // check for the article id
+        if(isset($form_state['triggering_element']['#article_id'])) {
+            // update the form state's topic actions
+            _update_topic_actions($form_state);
+            
+            // update any changed values, including pass/reject/fyi
+            _citation_queue_handle_cached_values($form_state, true);
+            
+            // also check for saved query parameters
+            $query = drupal_get_query_parameters();
+            $options = array();
+            if(isset($query['page'])){
+                $options['query']['page'] = $query['page'];
+            }
+            if(isset($form_state['cached_values']['id'])){
+                $options['query']['queue'] = 
+                    $form_state['cached_values']['id'];
+            }
+            
+            $articleId = $form_state['triggering_element']['#article_id'];
+            drupal_goto("citations/full/$articleId", $options);
+        }
     }
 
     function _get_topic_actions(&$form_state, $hash = null) {
@@ -2780,7 +2883,11 @@ namespace {
 
         $form['title'] = array('#markup' => "<h2>Full Citation</h2>");
 
-        $form['citation'] = array('#markup' => "<div class='full-citation-element'>$cite</div>");
+        $form['citation'] = array(
+            '#prefix' => "<div class='full-citation-element'>",
+            'body' => $cite,
+            '#suffix' => "</div>",
+        );
 
         // build the citation tags    
         $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');

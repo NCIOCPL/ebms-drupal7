@@ -36,7 +36,7 @@ form .box-on-right .form-item.form-type-checkbox:not(#foo) label {
     background-position: right; background-repeat: no-repeat;
     padding-right: 30px;
 }
-.form-type-date {
+.form-item.form-type-date {
     float: left; clear: both; margin-top: 0; margin-bottom: 10px;
 }
 .date-label {
