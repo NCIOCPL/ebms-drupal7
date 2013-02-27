@@ -296,7 +296,7 @@ $GLOBALS['ebms_entity_fields'] = array(
             'weight' => '-1',
         ),
         'settings' => array(
-            'max_length' => '60',
+            'max_length' => '255',
         ),
         'bundles' => array(
             'activity_new_event',
