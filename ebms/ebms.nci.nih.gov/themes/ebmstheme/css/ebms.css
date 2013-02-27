@@ -606,6 +606,8 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
     margin-left: 0;
 }
 #pdq-ebms-login-form #edit-submit { margin-left: 0; }
+#user-login #edit-name, #user-login #edit-pass { margin-left: 12px; }
+#user-login #edit-name, #user-login #edit-pass,
 #pdq-ebms-login-form #edit-name, #pdq-ebms-login-form #edit-pass {
     width: 400px; 
 }
