@@ -62,6 +62,8 @@ define('Ebms\COMMENT_INACTIVE',
 define('Ebms\FYI_ACTIVE', IMAGES_DIR . '/EBMS_FlagFYI_Icon_Active.png');
 define('Ebms\FYI_INACTIVE', IMAGES_DIR . '/EBMS_FlagFYI_Icon_Inactive.png');
 
+define('Ebms\DOC_TYPES', 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg');
+
 /**
  * Initial implementation of discussion forums has one general forum
  * visible to all users, and one forum for each of the PDQ boards.
@@ -1711,7 +1713,7 @@ class Util {
      *  @return string                MIME type (e.g., "application/pdf")
      */
     public static function get_mime_type($path) {
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);//, '/usr/share/file/magic');
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
         return $finfo->file($path);
     }
 }

@@ -4076,6 +4076,70 @@ function pdq_ebms_doc_edit_form($form, &$form_state, $doc_id, $report_id) {
 }
 
 /**
+ * Make sure a file of an acceptable type is being saved.
+ */
+function pdq_ebms_doc_edit_form_validate($form, &$form_state) {
+
+    // Find out whether the doc has been tagged as a summary.
+    $doc_id = $form_state['values']['doc_id'];
+    $query = db_select('ebms_doc', 'd');
+    $query->join('ebms_doc_tag', 'dt', 'dt.doc_id = d.doc_id');
+    $query->join('ebms_tag', 't', 't.tag_id = dt.tag_id');
+    $query->condition('t.tag_name', 'summary');
+    $query->condition('d.doc_id', $doc_id);
+    $count = $query->countQuery()->execute()->fetchField();
+    $is_summary = $count > 0;
+
+    // Get some information about the file just uploaded.
+    $field_name = 'file';
+    $files = $_FILES['files'];
+    $filename = $files['name'][$field_name];
+    $path = $files['tmp_name'][$field_name];
+    if (!$filename) {
+        form_set_error($field_name, 'You must select a file to upload.');
+        return;
+    }
+    $period = strpos($filename, '.');
+    if ($period === false || $period < 1) {
+        form_set_error($field_name,
+            'Unable to determine filename extension for ' .
+            htmlspecialchars($filename));
+        return;
+    }
+    $pieces = explode('.', $filename);
+    $extension = strtolower(array_pop($pieces));
+
+    // More stringent checking for summary documents.
+    if ($is_summary) {
+        $acceptable = array(
+            'pdf' => 'application/pdf',
+            'rtf' => 'text/rtf',
+            'doc' => 'application/msword',
+            'docx' => 'application/msword'
+        );
+        if (!array_key_exists($extension, $acceptable)) {
+            $message = 'Summary document must be one of pdf, rtf, doc, docx.';
+            form_set_error($field_name, $message);
+            return;
+        }
+        $mime_type = Ebms\Util::get_mime_type($path);
+        $expected = $acceptable[$extension];
+        if ($mime_type != $expected) {
+            $filename = htmlspecialchars($filename);
+            form_set_error($field_name, "$filename is not of type $expected.");
+        }
+        return;
+    }
+
+    // Just check file extension for everything else.
+    $ok = explode(' ', Ebms\DOC_TYPES);
+    if (!in_array($extension, $ok)) {
+        $extensions = implode(', ', $ok);
+        form_set_error($field_name, "Document must be one of $extensions.");
+    }
+}
+
+/**
  * Swap in the replacement file for the document being edited.
  * Post a message indicating success or failure, as appropriate.
  * Send the user back to the report from which she launched this form.
