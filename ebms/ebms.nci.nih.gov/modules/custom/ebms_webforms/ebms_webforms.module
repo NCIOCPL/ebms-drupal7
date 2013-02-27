@@ -30,6 +30,7 @@ function ebms_webforms_menu_alter(&$items) {
 
     // Prevent board members from seeing this on their left-nav menu
     // (TIR 2392).
+    $items[$report_menu]['access callback'] = 'user_access';
     $items[$report_menu]['access arguments'] = array($permission);
 }
  
@@ -899,13 +900,8 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
                 // We've already got the headers we need for the
                 // reimbursement request report.
-                if (!$isReimbursementRequest) {
-                    if ($component['form_key'] == 'meeting')
-                        $component_headers[] =
-                            array('data' => 'Meeting', 'field' => 'meeting');
-                    else
-                        $component_headers[] = check_plain($component['name']);
-                }
+                if (!$isReimbursementRequest)
+                    $component_headers[] = check_plain($component['name']);
 
                 if ($component['form_key'] == 'meeting') {
                     $nodeComponent = node_load($submission_output);
