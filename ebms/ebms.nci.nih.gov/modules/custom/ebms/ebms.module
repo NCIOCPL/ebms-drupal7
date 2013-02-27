@@ -1293,30 +1293,19 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
     if (user_access("administer ebms"))
         return;
 
-    //Determine if we should show all board meetings or not
-    $filter_boards = true;
-
-    if (user_access("view all events")) {
-        $filter_boards = false;
-    }
-
     //Initialize an OR conditional for selects
     $or_conditions = db_or();
 
     //Boards:
-    if (!$filter_boards || $account->boards) {
+    if ($account->boards) {
         //Add table to query
         $query->leftJoin('field_data_field_boards', 'b',
             'node.nid = b.entity_id AND b.bundle = :event AND b.deleted = 0',
             array(':event' => "ebms_event"));
 
         //Add where condition
-        if (!$filter_boards) {
-            $or_conditions->condition('b.field_boards_value', '', 'IS NOT NULL');
-        } else {
-            $or_conditions->condition('b.field_boards_value', $account->boards,
-                'IN');
-        }
+        $or_conditions->condition('b.field_boards_value', $account->boards,
+            'IN');
     }
 
     //Subgroups:

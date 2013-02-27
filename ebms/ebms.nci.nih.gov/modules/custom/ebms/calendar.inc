@@ -175,22 +175,11 @@ function _calendar_query_alter(&$view, &$query) {
         return;
     }
 
-    //Determine if we should show all board meetings or not
-    $filter_boards = true;
-
-    //If the user is an icrdb or board manager they are a power user
-    //if we are looking at the month, week, or day calendar, then we
-    //should not filter boards.
-    if (user_access("view all events")
-        && in_array($view->current_display, array('month', 'week', 'day'))) {
-        $filter_boards = false;
-    }
-
     //Initialize an OR conditional for selects
     $or_conditions = db_or();
 
     //Boards:
-    if (!$filter_boards || $user->boards) {
+    if ($user->boards) {
         // Add table to query
         $boardsjoin = new views_join();
         $boardsjoin->construct("field_data_field_boards", $view->base_table,
@@ -208,13 +197,8 @@ function _calendar_query_alter(&$view, &$query) {
         );
 
         //Add where condition
-        if (!$filter_boards) {
-            $or_conditions->condition('field_data_field_boards.field_boards_value',
-                '', 'IS NOT NULL');
-        } else {
-            $or_conditions->condition('field_data_field_boards.field_boards_value',
-                $user->boards, 'IN');
-        }
+        $or_conditions->condition('field_data_field_boards.field_boards_value',
+            $user->boards, 'IN');
     }
 
     //Subgroups:

@@ -68,14 +68,6 @@ $handler->display->display_options['fields']['title']['alter']['word_boundary'] 
 $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
 $handler->display->display_options['fields']['title']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['title']['hide_alter_empty'] = FALSE;
-/* Field: Content: Published */
-$handler->display->display_options['fields']['status']['id'] = 'status';
-$handler->display->display_options['fields']['status']['table'] = 'node';
-$handler->display->display_options['fields']['status']['field'] = 'status';
-$handler->display->display_options['fields']['status']['label'] = '';
-$handler->display->display_options['fields']['status']['exclude'] = TRUE;
-$handler->display->display_options['fields']['status']['element_label_colon'] = FALSE;
-$handler->display->display_options['fields']['status']['not'] = 0;
 /* Sort criterion: Content: Event Date -  start date (field_datespan) */
 $handler->display->display_options['sorts']['field_datespan_value']['id'] = 'field_datespan_value';
 $handler->display->display_options['sorts']['field_datespan_value']['table'] = 'field_data_field_datespan';
@@ -131,6 +123,30 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Content: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'node';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'ebms_event' => 'ebms_event',
+);
+$handler->display->display_options['filters']['type']['group'] = 1;
+/* Filter criterion: Content: Published */
+$handler->display->display_options['filters']['status']['id'] = 'status';
+$handler->display->display_options['filters']['status']['table'] = 'node';
+$handler->display->display_options['filters']['status']['field'] = 'status';
+$handler->display->display_options['filters']['status']['value'] = '1';
+$handler->display->display_options['filters']['status']['group'] = 1;
+$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+/* Filter criterion: Content: Event Category (field_event_category) */
+$handler->display->display_options['filters']['field_event_category_value']['id'] = 'field_event_category_value';
+$handler->display->display_options['filters']['field_event_category_value']['table'] = 'field_data_field_event_category';
+$handler->display->display_options['filters']['field_event_category_value']['field'] = 'field_event_category_value';
+$handler->display->display_options['filters']['field_event_category_value']['value'] = array(
+  'board' => 'board',
+);
 $handler->display->display_options['path'] = 'calendar/all';
 $handler->display->display_options['menu']['title'] = 'Month';
 $handler->display->display_options['menu']['weight'] = '0';
@@ -175,6 +191,30 @@ $handler->display->display_options['arguments']['date_argument']['add_delta'] = 
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
 );
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Content: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'node';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'ebms_event' => 'ebms_event',
+);
+$handler->display->display_options['filters']['type']['group'] = 1;
+/* Filter criterion: Content: Published */
+$handler->display->display_options['filters']['status']['id'] = 'status';
+$handler->display->display_options['filters']['status']['table'] = 'node';
+$handler->display->display_options['filters']['status']['field'] = 'status';
+$handler->display->display_options['filters']['status']['value'] = '1';
+$handler->display->display_options['filters']['status']['group'] = 1;
+$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+/* Filter criterion: Content: Event Category (field_event_category) */
+$handler->display->display_options['filters']['field_event_category_value']['id'] = 'field_event_category_value';
+$handler->display->display_options['filters']['field_event_category_value']['table'] = 'field_data_field_event_category';
+$handler->display->display_options['filters']['field_event_category_value']['field'] = 'field_event_category_value';
+$handler->display->display_options['filters']['field_event_category_value']['value'] = array(
+  'board' => 'board',
+);
 $handler->display->display_options['path'] = 'calendar/week/all';
 $handler->display->display_options['menu']['title'] = 'Week';
 $handler->display->display_options['menu']['weight'] = '2';
@@ -215,6 +255,30 @@ $handler->display->display_options['arguments']['date_argument']['summary']['for
 $handler->display->display_options['arguments']['date_argument']['granularity'] = 'day';
 $handler->display->display_options['arguments']['date_argument']['date_fields'] = array(
   'field_data_field_datespan.field_datespan_value' => 'field_data_field_datespan.field_datespan_value',
+);
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Content: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'node';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'ebms_event' => 'ebms_event',
+);
+$handler->display->display_options['filters']['type']['group'] = 1;
+/* Filter criterion: Content: Published */
+$handler->display->display_options['filters']['status']['id'] = 'status';
+$handler->display->display_options['filters']['status']['table'] = 'node';
+$handler->display->display_options['filters']['status']['field'] = 'status';
+$handler->display->display_options['filters']['status']['value'] = '1';
+$handler->display->display_options['filters']['status']['group'] = 1;
+$handler->display->display_options['filters']['status']['expose']['operator'] = FALSE;
+/* Filter criterion: Content: Event Category (field_event_category) */
+$handler->display->display_options['filters']['field_event_category_value']['id'] = 'field_event_category_value';
+$handler->display->display_options['filters']['field_event_category_value']['table'] = 'field_data_field_event_category';
+$handler->display->display_options['filters']['field_event_category_value']['field'] = 'field_event_category_value';
+$handler->display->display_options['filters']['field_event_category_value']['value'] = array(
+  'board' => 'board',
 );
 $handler->display->display_options['path'] = 'calendar/day/all';
 $handler->display->display_options['menu']['title'] = 'Day';
@@ -879,6 +943,5 @@ $handler->display->display_options['filters']['field_event_status_value']['value
   'scheduled' => 'scheduled',
 );
 $handler->display->display_options['block_description'] = 'Past Events';
-
 
 ?>
