@@ -749,25 +749,28 @@ function _webform_csv_data_ebms_travel($component, $export_options, $value) {
 
 /**
  * See webform_results_table() in webform.report.inc
- * 
+ *
  * @param type $node
  * @param type $pager_count
  * @return type
  */
-function _ebms_webforms_results_table($node, $pager_count = 0) {
-    
+function _ebms_webforms_results_table($node, $pager_count=0) {
+
     // Add our custom CSS to this page
-    drupal_add_css(drupal_get_path('module', 'ebms_webforms').'/includes/ebms_webform.css');
-    
+    drupal_add_css(drupal_get_path('module', 'ebms_webforms') .
+        '/includes/ebms_webform.css');
+
     // Determine if it's one of our special reports via URL
+    $isReimbursementRequest = $isHotelRequest = false;
     if (array_key_exists('nid', $node->webform)) {
-        $isReimbursementRequest = url('node/' . $node->webform['nid']) == '/travel/reimbursement-request';
-        $isHotelRequest = url('node/' . $node->webform['nid']) == '/travel/hotel-request';
-    } else {
-        // This is actually most likely NOT true, but 'nid' doesn't exist when
-        // there are no results, I think, so it SHOULDN'T matter.
-        $isReimbursementRequest = FALSE;
-        $isHotelRequest = FALSE;
+        $url = url('node/' . $node->nid);
+        switch ($url) {
+            case '/travel/reimbursement-request':
+                $isReimbursementRequest = true;
+                break;
+            case '/travel/hotel-request':
+                $isHotelRequest = true;
+        }
     }
 
     // If it's a non-special report, return the default function
@@ -776,31 +779,103 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
         $default = webform_results_table($node, $pager_count);
         return $default;
     }
-    
+
     // Load the left nav for reports
     module_load_include('inc', 'ebms', 'reports');
     $left_nav = EbmsReports::build_left_nav();
-        
 
-
-
-    // From here down is somewhat copied and modified from the default webform_results_table
+    // From here down is somewhat copied and modified from the default
+    // webform_results_table.
     if (isset($_GET['results']) && is_numeric($_GET['results'])) {
         $pager_count = $_GET['results'];
     }
 
-    // Get all the submissions for the node.
-    $rows = array();
+    // We shouldn't need this for the reimbursement request form, but
+    // without this call, PHP complains that the webform_get_submissions
+    // function doesn't exist!
     $header = theme('webform_results_table_header', array('node' => $node));
-    unset($header[0]); // Submission Number
-    unset($header[3]); // IP Address
-    $submissions = webform_get_submissions($node->nid, $header, $pager_count);
-    $total_count = webform_get_submission_count($node->nid);
-    $component = $node->webform['components'];
 
+    // TIR 2366: Robin has asked that we modify the reimbursement
+    // request report to support sorting by the Meeting column.  The
+    // webform module doesn't expose its filtering query to alteration,
+    // so instead we collect the submission records ourselves for that
+    // report, handling paging and sorting ourselves.
+    if ($isReimbursementRequest) {
+        $query = db_select('webform_submissions', 's');
+        $query->join('webform_component', 'c', 'c.nid = s.nid');
+        $query->join('webform_submitted_data', 'd',
+            'd.nid = s.nid AND d.sid = s.sid AND d.cid = c.cid');
+        $query->join('node', 'n', 'n.nid = d.data');
+        $query->join('field_data_field_datespan', 'f', 'f.entity_id = n.nid');
+        $query->join('users', 'u', 'u.uid = s.uid');
+        $query->condition('c.form_key', 'meeting');
+        $query->condition('s.nid', $node->nid);
+
+        // Side trip to get the total number of reimbursement requests.
+        $total_count = $query->countQuery()->execute()->fetchField();
+
+        // Override the $header variable set above.
+        $header = array(
+            array('data' => 'Submitted', 'field' => 's.submitted'),
+            array('data' => 'User', 'field' => 'u.name'),
+            array('data' => 'Meeting', 'field' => 'meeting_with_date'),
+            'Transportation', 'Parking and Tolls', 'Hotel', 'Amount',
+            'Receipts', 'Meals and Incidentals', 'Honorarium',
+            'Reimbursement', 'Comments',
+        );
+
+        // Robin said she needs to Meeting sort to do sub-sorting by
+        // meeting date within meetings which have the same title.
+        // Drupal's table extender mechanism prevents us from doing
+        // this the standard SQL way, using two column expressions
+        // separated by a comma, because Drupal strips out commas from
+        // the order by expression.
+        // http://api.drupal.org/api/drupal/includes!tablesort.inc/function/TableSort%3A%3AorderByHeader/7
+        $query->addExpression('CONCAT(n.title, CHAR(9), ' .
+            "FROM_UNIXTIME(f.field_datespan_value, '%Y-%m-%d %h:%i:%s'))",
+            'meeting_with_date');
+        $query = $query->extend('TableSort');
+        $query->orderByHeader($header);
+        $query->fields('s', array('sid'));
+        if ($pager_count) {
+            $query = $query->extend('PagerDefault');
+            $query->limit($pager_count);
+        }
+
+        // Collect the submission IDs we want in the right order.
+        $results = $query->execute();
+        $sids = array();
+        foreach ($results as $result)
+            $sids[] = $result->sid;
+        //$sids_param = array('sid' => $sids);
+
+        // Use the webform module to get the data.
+        $temp_submissions = webform_get_submissions(array('sid' => $sids));
+
+        // Put the rows back in the order we want.
+        $submissions = array();
+        foreach ($sids as $sid) {
+            if (array_key_exists($sid, $temp_submissions))
+                $submissions[$sid] = $temp_submissions[$sid];
+        }
+    }
+    else {
+
+        // The hotel request report can be handled by the default
+        // webform module behavior.
+        unset($header[0]); // Submission Number
+        unset($header[3]); // IP Address
+        $submissions = webform_get_submissions($node->nid, $header,
+                       $pager_count);
+        $total_count = webform_get_submission_count($node->nid);
+    }
+
+    // Assemble the table's rows for display.
+    $format = 'M/d/Y | h:i A T';
+    $rows = array();
     foreach ($submissions as $sid => $submission) {
 
-        $cell[] = format_date($submission->submitted, 'custom', 'M/d/Y | h:i A T');
+        $cell[] = format_date($submission->submitted, 'custom', $format);
         $cell[] = theme('username', array('account' => $submission));
 
         $component_headers = array();
@@ -808,21 +883,40 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
         // Generate a cell for each component.
         foreach ($node->webform['components'] as $component) {
             if ($isReimbursementRequest && $component['form_key'] == 'certify')
-                continue; // Do not display "Certify" comment; should always be yes
-            $data = isset($submission->data[$component['cid']]) ? $submission->data[$component['cid']] : NULL;
-            $submission_output = webform_component_invoke($component['type'], 'table', $component, $data);
-            if ($submission_output !== NULL) {
-                $component_headers[] = check_plain($component['name']);
+                // Do not display "Certify" comment; should always be yes
+                continue;
+            $data = isset($submission->data[$component['cid']])
+                ? $submission->data[$component['cid']] : NULL;
+            $submission_output = webform_component_invoke($component['type'],
+                                 'table', $component, $data);
 
-                if (($isHotelRequest || $isReimbursementRequest ) && // Must be the correct webform; based off URLs as rest of code
-                        $component['form_key'] == 'meeting' // Correct Component
-                ) {
+            // Yes, the column header for each column will be stored in the
+            // $component_headers array over and over again (once per column
+            // for each row), but the array_merge() call below will squeeze
+            // out the extras.  A confusing way to do it, but it works, so
+            // I'm not going to tamper with it.
+            if ($submission_output !== NULL) {
+
+                // We've already got the headers we need for the
+                // reimbursement request report.
+                if (!$isReimbursementRequest) {
+                    if ($component['form_key'] == 'meeting')
+                        $component_headers[] =
+                            array('data' => 'Meeting', 'field' => 'meeting');
+                    else
+                        $component_headers[] = check_plain($component['name']);
+                }
+
+                if ($component['form_key'] == 'meeting') {
                     $nodeComponent = node_load($submission_output);
-                    if ($nodeComponent)
-                        $cell[] = l($nodeComponent->title, 'node/' . $nodeComponent->nid);
+                    if ($nodeComponent) {
+                        $url = 'node/' . $nodeComponent->nid;
+                        $cell[] = l($nodeComponent->title, $url);
+                    }
                     else
                         $cell[] = 'N/A';
-                } else
+                }
+                else
                     $cell[] = $submission_output;
             }
         }
@@ -830,47 +924,43 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
         $rows[] = $cell;
         unset($cell);
     }
-    if (!empty($component_headers)) {
+    if (!$isReimbursementRequest && !empty($component_headers)) {
         $header = array_merge($header, $component_headers);
     }
 
     if (count($rows) == 0) {
-        $rows[] = array(array('data' => t('There are no submissions for this form. <a href="!url">View this form</a>.', array('!url' => url('node/' . $node->nid))), 'colspan' => 4));
+        $placeholder = array('!url' => url('node/' . $node->nid));
+        $data = t('There are no submissions for this form. ' .
+                '<a href="!url">View this form</a>.', $placeholder);
+        $rows[] = array(array('data' => $data, 'colspan' => 4));
     }
 
-    
     // Since all webforms are likely to go in the reports section, let's
     // make that breadcrumb universal
     drupal_set_breadcrumb(array(
         l('Reports', 'reports'),
         drupal_get_title(),
     ));
-    
+
     // Set the top navigation to be Reports
     module_load_include('inc', 'ebms', 'common');
     Ebms\Menu::$active = 'Reports';
 
-    
     $output = '';
-    
+
     // Build Left Nav, if appropriate
-    if ($isHotelRequest) {
-        $left_nav = EbmsReports::build_left_nav('Board Management', 'Hotel Requests');
-        $output .= render($left_nav);
-    }
-    elseif ($isReimbursementRequest) {
-        $left_nav = EbmsReports::build_left_nav('Board Management', 'Reimbursement Requests');
-        $output .= render($left_nav);
-    }
-    
+    $current = $isHotelRequest ? 'Hotel Requests' : 'Reimbursement Requests';
+    $left_nav = EbmsReports::build_left_nav('Board Management', $current);
+    $output .= render($left_nav);
+
     // Add the title and add the -right class
     $output .= '<div id="webform-table-right">';
     $output .= '<h2>'.$node->title.' ('.$total_count.')</h2><br/>';
-    
+
     // Special class for long tables
     if ($isReimbursementRequest)
         $output .= '</div><div id="webform-table-long-right">';
-    
+
     // Add the results table
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
 
@@ -881,7 +971,7 @@ function _ebms_webforms_results_table($node, $pager_count = 0) {
 
     // Close the -right class
     $output .= '</div>';
-    
+
     return $output;
 }
 
