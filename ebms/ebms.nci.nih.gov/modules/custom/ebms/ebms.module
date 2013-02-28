@@ -924,7 +924,7 @@ function ebms_page_build(&$page) {
  */
 function ebms_init() {
     global $user;
-    $allowed = array('login', 'password', 'account-email-status');
+    $allowed = array('login', 'password', 'account-email-status', 'ssologin');
     if (!user_is_logged_in() && !in_array($_GET['q'], $allowed)) {
         if (!function_exists('drush_main'))
             drupal_goto('login');
