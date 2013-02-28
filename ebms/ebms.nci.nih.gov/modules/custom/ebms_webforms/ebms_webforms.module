@@ -109,11 +109,15 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
         //add the available meetings for the current user.
         foreach ($view->result as $meeting) {
             $node = node_load($meeting->nid);
-            $dates = field_get_items('node', $node, 'field_datespan');
-            $start = $dates[0]['value'];
-            $date = date('m/d/Y', $start);
-            $title = "$meeting->node_title - $date";
-            $form['submitted']['meeting']['#options'][$meeting->nid] = $title;
+            $meeting_types = field_get_items('node', $node, 'field_event_type');
+            $meeting_type = $meeting_types[0]['value'];
+            if ($meeting_type == 'in_person') {
+                $dates = field_get_items('node', $node, 'field_datespan');
+                $start = $dates[0]['value'];
+                $date = date('m/d/Y', $start);
+                $title = "$meeting->node_title - $date";
+                $form['submitted']['meeting']['#options'][$meeting->nid] = $title;
+            }
         }
         
         if(empty($form['submitted']['meeting']['#options'])){
