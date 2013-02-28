@@ -23,3 +23,8 @@
 .travel-left-nav {
     margin-top:20px;
 }
+
+/* Fix for specific problem on page */
+#edit-submitted-receipts-upload-button {
+    margin-bottom: 0px;
+}
