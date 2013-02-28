@@ -36,7 +36,7 @@ function ebms_forums_form_alter(&$form, &$form_state, $form_id) {
         else {
             drupal_set_breadcrumb(array(
                 l('Forums', 'forum'),
-                'Add Forum'
+                'Create Topic'
             ));
 
             // Suppress Archived field if the form is being used for creating a
