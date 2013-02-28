@@ -268,11 +268,12 @@ class EbmsHomePage {
                 $items = array(
                     // l('Send a Message', 'stub'),
                     l('Search Database', 'citations/search'),
-                    l('Find/Edit a Record', 'stub'),
-                    l('Manage Journals', 'stub'),
+                    //l('Find/Edit a Record', 'stub'),
+                    //l('Manage Journals', 'stub'),
                     l('Import Citations', 'citations/import'),
                     l('Review Citations', 'citations'),
                     l('Publish Citations', 'citations/publish'),
+                    l('Not List Maintenance', 'citations/not-list'),
                 );
                 break;
             default:
@@ -364,8 +365,6 @@ class EbmsHomePage {
      * unread forum postings, and (for board members) articles
      * awaiting review or (for board managers) reviews which
      * have not yet been read.
-     * XXX Replace stub data when the relevant portions of the
-     *     system have been implemented.
      */
     private function alerts() {
 
@@ -454,22 +453,9 @@ class EbmsHomePage {
     /**
      * Create the home page box highlighting the next meeting
      * scheduled for the current user.
-     * XXX Replace stub information when the calendar portion
-     *     of the system has been implemented.
      */
     private function next_meeting() {
-        /*
-        $now = date_create();
-        $then = date_modify($now, '+ 14 days');
-        $date = date_format($then, 'F j, Y');
-        $time = '10:00 - 11:00 AM ET.';
-        $desc = 'Stub Meeting (no events yet)';
-        $link = l("<span>$date</span><br />$time<br />$desc", 'calendar',
-                array('html' => true));
-        $items = array($link);
-        return $this->list_block('Next Meeting', 'next-meeting', $items);
-         *
-         */
+
         $view = views_get_view('event_calendar');
 
         $display = "";
@@ -490,57 +476,8 @@ class EbmsHomePage {
      * highlighting days on which events visible to the current
      * user occur, with links to those events.  Allows the user
      * to navigate to different months.
-     * XXX The current implementation does not use the third-party
-     *     Calendar module, which has not yet been integrated
-     *     into the system.  Stub event links are used.
      */
     private function calendar() {
-        /*$cal_date = strtotime($this->cal);
-        $cal_year = date('Y', $cal_date);
-        $cal_month = date('n', $cal_date);
-        $title = date('F Y', $cal_date);
-        $today = date('Y-m-d');
-        $weeks = $this->get_weeks();
-        $rows = array(array('S', 'M', 'T', 'W', 'T', 'F', 'S'));
-        foreach ($weeks as $week) {
-            $row = array();
-            foreach ($week as $date) {
-                $day = date('j', $date);
-                $month = date('n', $date);
-                $dow = date('w', $date);
-                $is_weekday = $dow > 0 && $dow < 6;
-                if ($month != $cal_month)
-                    $row[] = array(
-                        'data' => $day,
-                        'class' => array('not-this-month'),
-                    );
-                elseif ($today == date('Y-m-d', $date))
-                    $row[] = array(
-                        'data' => $day,
-                        'class' => array('today'),
-                    );
-                elseif (rand(1, 5) == 1 && $is_weekday)
-                    $row[] = array(
-                        'data' => l($day, 'calendar'),#"<a href='stub'>$day</a>",
-                        'class' => array('day-has-events'),
-                    );
-                else
-                    $row[] = $day;
-            }
-            $rows[] = array('data' => $row, 'no_striping' => true);
-        }
-        $id = 'cal-prev-month';
-        $date = mktime(0, 0, 0, $cal_month - 1, 1, $cal_year);
-        $cal = date('Y', $date) . '-' . date('m', $date);
-        $url = "{$this->url}?focus={$this->focus}&cal=$cal";
-        $prev = "<div id='$id'><a href='$url'>&lt;</a></div>";
-        $id = 'cal-next-month';
-        $date = mktime(0, 0, 0, $cal_month + 1, 1, $cal_year);
-        $cal = date('Y', $date) . '-' . date('m', $date);
-        $url = "{$this->url}?focus={$this->focus}&cal=$cal";
-        $next = "<div id='$id'><a href='$url'>&gt;</a></div>";
-        $prefix = $prev . $next;
-        return $this->table_block($title, 'calendar', $rows, $prefix);*/
 
         drupal_add_css(Ebms\CSS_DIR . '/calendar.css');
 
@@ -557,37 +494,6 @@ class EbmsHomePage {
     }
 
     /**
-     * Helper function to collect a nested array of dates for
-     * the selected month's calendar, filling out complete
-     * weeks with days at the end of the preceding month and
-     * at the beginning of the following month as needed.
-     */
-    private function get_weeks() {
-        $first = strtotime($this->cal . '-01');
-        $dow = date('w', $first);
-        $month = date('n', $first);
-        $year = date('Y', $first);
-        $date = mktime(0, 0, 0, $month, 1 - $dow, $year);
-        $rows = array();
-        while (date('Y-m', $date) <= $this->cal) {
-            $row = array();
-            while (count($row) < 7) {
-                $row[] = $date;
-                $m = date('n', $date);
-                $d = date('j', $date) + 1;
-                $y = date('Y', $date);
-                $date = mktime(0, 0, 0, $m, $d, $y);
-            }
-            $rows[] = $row;
-            if (count($rows) > 7) {
-                drupal_set_message('bug in get_weeks', 'error');
-                break;
-            }
-        }
-        return $rows;
-    }
-
-    /**
      * Data controlling which links are displayed in the featured
      * task area of the main panel on the home page, depending
      * the current user's role(s) and on which portion of the
@@ -599,23 +505,23 @@ class EbmsHomePage {
                 '1' => array(
                     'title' => l('Citation Management', 'citations'),
                     'links' => array(
-                        l('Import Citation', 'citations/import'),
-                        l('Find/Edit a Record', 'stub'),
-                        l('Review Citations', 'stub'),
+                        l('Import Citations', 'citations/import'),
+                        l('Publish Citations', 'citations/publish'),
+                        l('Review Citations', 'citations'),
                     ),
                 ),
                 '2' => array(
                     'title' => l('Reports', 'reports'),
                     'links' => array(
-                        l('Citation Management System Reports', 'stub'),
-                        l('Not List Reports', 'stub'),
+                        l('Citation Management Reports', 'reports/cite'),
+                        l('Board Management Reports', 'reports/board'),
                     ),
                 ),
                 '3' => array(
-                    'title' => l('Administrator Tool', 'stub'),
+                    'title' => 'Administrator Tool',
                     'links' => array(
-                        l('Add New Review Cycle', 'stub'),
-                        l('Manage Summary Topics', 'stub'),
+                        l('Not List Maintenance', 'citations/not-list'),
+                        l('Refresh Journal List', 'admin/refresh-journals'),
                     ),
                 ),
             ),
