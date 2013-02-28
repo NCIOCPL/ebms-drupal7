@@ -1249,38 +1249,6 @@ table.docs-table.admin td.col-5 { text-align: center; }
 #documents-table span.action-divider { padding: 0 3px; }
 #choose-file, #add-notes { padding-top: 17px; }
 #post-doc-form #filename { border-radius: 7px; }
-/*
-#post-doc-form #choose-file span.label-508 {
-    border: 1px solid #696559; border-radius: 7px; padding: 10px;
-}
-#post-doc-form #choose-file div:hover { color: #a90101; }
-#post-doc-form #choose-file span.label-508:hover,
-#post-doc-form #choose-file label:hover {
-    cursor: pointer; border: 1px solid #a90101;
-}
-#post-doc-form #choose-file input#filepath {
-    cursor: pointer; font-size: .1px;
-}
-#post-doc-form #choose-file { position: relative; }
-#post-doc-form #choose-file span.label-508,
-#post-doc-form #choose-file label {
-    zz-index: 2; position: absolute; left: 0px; top: 0; margin-top: 20px;
-}
-#file-upload-form-js #choose-file span.label-508:hover,
-#post-doc-form #choose-file span.label-508:hover,
-#post-doc-form #choose-file label:hover { color: #a90101; }
-#post-doc-form #filename { padding: 35px 0 0 14px; }
-#post-doc-form input#filepath {
-    cursor: pointer; font-size: .1px;
-    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
-    filter: alpha(opacity=0); opacity: 0;
-    position: absolute; left: 0; top: 0;
-    width: 300px; height: 20px;
-    margin-top: 20px;
-    zz-index: 1;
-    zoom: 1;
-}
-*/
 #post-doc-form #edit-submit { margin-left: 0; }
 #post-doc-form #edit-desc { padding-left: 12px; margin-top: 5px; }
 #post-doc-form legend.checkboxes-508 { margin-left: 10px; }
