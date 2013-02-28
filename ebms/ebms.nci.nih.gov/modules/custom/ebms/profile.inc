@@ -220,7 +220,7 @@ class EbmsProfile {
         $rows = array(
             $this->user_name_row(),
             $this->email_row(),
-            $this->password_row(),
+            //$this->password_row(),
             $this->boards_row(),
             $this->picture_row(),
         );
