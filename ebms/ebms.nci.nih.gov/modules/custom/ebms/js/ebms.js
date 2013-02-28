@@ -280,10 +280,11 @@ ebmsscript.init_reviewer_file_upload_form = function() {
         resizable: false,
         title: "POST DOCUMENT"
     });
-    jQuery("a#reviewer-post-button").attr(
-        "href",
-        "javascript:ebmsscript.show_reviewer_document_post_form()"
-    );
+    // Suppressed as part of work for TIR #2399.
+    //jQuery("a#reviewer-post-button").attr(
+    //    "href",
+    //    "javascript:ebmsscript.show_reviewer_document_post_form()"
+    //);
     ebmsscript.clear_file_upload_form();
     ebmsscript.register_file_upload_form_event_handlers();
     /* REPLACED BY COMMON CODE IN FUNCTION INVOKED ABOVE ...^
@@ -443,25 +444,12 @@ ebmsscript.init_profile_page = function() {
         edit_new2.keyup(function() { ebmsscript.password_check(); });
     }
 
-    // Initialize the form for uploaded a new profile picture.
+    // Initialize the form for uploading a new profile picture.
     if (jQuery("td.edit-picture-cell").length > 0) {
 
-        // Let the server side know we've got scripting on the client side.
+        // Let the server side know we've got scripting on the client side,
+        // so the user will be able to use the photo cropping tool.
         jQuery("#js").val(1);
-        jQuery("#picture-fields").addClass("with-js");
-
-        // Register the handler to show the rest of the form.
-        jQuery("#choose-file #filepath").change(function() {
-            ebmsscript.profile_picture_chosen();
-        });
-
-        // Different browsers handle event bubbling differently.
-        if (!jQuery.browser.msie) {
-            jQuery("#choose-file span.label-508").click(function() {
-                jQuery("#choose-file #filepath").click();
-                return false;
-            });
-        }
     }
 }
 
@@ -662,10 +650,11 @@ ebmsscript.init_summaries_page = function() {
             resizable: false,
             title: "POST DOCUMENT"
         });
-        jQuery("#member-docs-block a.button").attr(
-            "href",
-            "javascript:ebmsscript.show_member_summary_doc_post_form()"
-        );
+        // Suppressed as part of work for TIR #2399.
+        //jQuery("#member-docs-block a.button").attr(
+        //    "href",
+        //    "javascript:ebmsscript.show_member_summary_doc_post_form()"
+        //);
         ebmsscript.clear_file_upload_form();
         ebmsscript.register_file_upload_form_event_handlers();
     }        
@@ -857,17 +846,6 @@ ebmsscript.init_docs_page = function() {
                 "Cancel": function() {
                     jQuery(this).dialog("close");
                 }
-            }
-        });
-    }
-    if (jQuery("#choose-file").length == 1) {
-        jQuery("#choose-file #filepath").change(function() {
-            ebmsscript.file_chosen();
-        });
-        jQuery("#choose-file span.label-508").click(function() {
-            if (!jQuery.browser.msie) {
-                jQuery("#choose-file #filepath").click();
-                return false;
             }
         });
     }

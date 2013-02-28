@@ -1247,6 +1247,9 @@ table.docs-table.admin td.col-5 { text-align: center; }
 #documents-title > a:hover { border: solid 1px #a90101; }
 #documents-table th.col-4 { width: 120px; }
 #documents-table span.action-divider { padding: 0 3px; }
+#choose-file, #add-notes { padding-top: 17px; }
+#post-doc-form #filename { border-radius: 7px; }
+/*
 #post-doc-form #choose-file span.label-508 {
     border: 1px solid #696559; border-radius: 7px; padding: 10px;
 }
@@ -1258,7 +1261,6 @@ table.docs-table.admin td.col-5 { text-align: center; }
 #post-doc-form #choose-file input#filepath {
     cursor: pointer; font-size: .1px;
 }
-#choose-file, #add-notes { padding-top: 17px; }
 #post-doc-form #choose-file { position: relative; }
 #post-doc-form #choose-file span.label-508,
 #post-doc-form #choose-file label {
@@ -1278,6 +1280,7 @@ table.docs-table.admin td.col-5 { text-align: center; }
     zz-index: 1;
     zoom: 1;
 }
+*/
 #post-doc-form #edit-submit { margin-left: 0; }
 #post-doc-form #edit-desc { padding-left: 12px; margin-top: 5px; }
 #post-doc-form legend.checkboxes-508 { margin-left: 10px; }

@@ -396,7 +396,6 @@ function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
             '#title' => 'CHOOSE FILE',
             '#prefix' => '<div id="choose-file">',
             '#suffix' => '</div>',
-            '#title_display' => 'after',
         );
         $form['filename'] = array(
             '#type' => 'markup',
