@@ -33,7 +33,26 @@ function ebms_webforms_menu_alter(&$items) {
     $items[$report_menu]['access callback'] = 'user_access';
     $items[$report_menu]['access arguments'] = array($permission);
 }
- 
+
+/**
+ * Implements hook_webform_submission_render_alter for critical TIR
+ * 2408, in which Robin asks that the email notification for a web
+ * form submission show the name and date for the event instead of
+ * the event's ID.
+ */
+function ebms_webforms_webform_submission_render_alter(&$renderable) {
+    if (!empty($renderable['meeting'])) {
+        $meeting_id = $renderable['meeting']['#value'][0];
+        $meetings = entity_load('node', array($meeting_id));
+        foreach ($meetings as $meeting) {
+            $event_date = field_get_items('node', $meeting, 'field_datespan');
+            $start_date = date('Y-m-d', $event_date[0]['value']);
+            $title = htmlspecialchars($meeting->title);
+            $renderable['meeting']['#value'][0] = "$title - $start_date";
+        }
+    }
+}
+
 /**
  * Implements hook_form_alter().
  *
