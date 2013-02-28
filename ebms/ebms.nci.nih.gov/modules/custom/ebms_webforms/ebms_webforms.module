@@ -925,8 +925,13 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
                 if ($component['form_key'] == 'meeting') {
                     $nodeComponent = node_load($submission_output);
                     if ($nodeComponent) {
+                        $dates = field_get_items('node', $nodeComponent,
+                                 'field_datespan');
+                        $start = $dates[0]['value'];
+                        $date = date('m/d/Y', $start);
+                        $title = "$nodeComponent->title - $date";
                         $url = 'node/' . $nodeComponent->nid;
-                        $cell[] = l($nodeComponent->title, $url);
+                        $cell[] = l($title, $url);
                     }
                     else
                         $cell[] = 'N/A';
