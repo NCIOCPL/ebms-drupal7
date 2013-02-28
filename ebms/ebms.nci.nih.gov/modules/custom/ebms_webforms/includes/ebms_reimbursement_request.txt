@@ -194,6 +194,7 @@ i_paid|I paid for my Hotel',
       'value' => '',
       'extra' => 
       array (
+        'description' => 'Please only upload zip or pdf type files (2MB max).',
         'scheme' => 'public',
         'directory' => 'reimbursement-receipts',
         'title_display' => 'before',
