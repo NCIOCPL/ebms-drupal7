@@ -367,6 +367,8 @@ li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
 }
 #left-nav .child { margin-left: 25px; }
 #left-nav li.child a { font-size: 14px; }
+#left-nav .subchild { margin-left: 40px; }
+#left-nav li.subchild a { font-size: 12px; }
 #left-nav li.parent a { font-size: 16px; }
 #left-nav li.parent.open a { opacity: 1; color: #2d2c28; }
 #left-nav li.parent.open a:hover { color: #a90101; }

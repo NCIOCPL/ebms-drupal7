@@ -187,3 +187,35 @@ form.comment-form label {
 }
 
 #forum-members { margin-left: 0; padding-left: 0; margin-top: 5px; }
+
+.forum-left-nav fieldset,
+.forum-left-nav fieldset legend .fieldset-legend{
+    font-size: 16px;
+    font-style: italic;
+    color: #696559;
+    opacity: .75;
+    font-weight: normal;
+    text-decoration: none;
+}
+
+.forum-left-nav fieldset legend a:hover,
+.forum-left-nav fieldset legend a:focus {
+    color: #696559;
+    font-weight: normal;
+    text-decoration: none;
+}
+
+.forum-left-nav legend,
+.forum-left-nav fieldset.collapsible legend .fieldset-legend {
+    padding: 0;
+    background-image: none;
+}
+
+.forum-left-nav fieldset legend {
+    border-bottom: 1px #696559 solid;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    width: 190px;
+}
+
+

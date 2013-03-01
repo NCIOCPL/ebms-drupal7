@@ -48,6 +48,10 @@
                 $archivedField = field_get_items('node', $topicLoaded, 'field_archived');
                 if ($archivedField)
                     $archived = $archivedField[0]['value'];
+                
+                // if archived, save output for later
+                if($archived) 
+                    $archivedTopics[] = $topicLoaded;
                 ?>
             <div class="forum-topic-on-forum" id="forum-topic-<?php print $topic_id; ?>">
                 <div class="forum-title"><?php print $topic->title; if ($archived) print ' <i>(Archived)</i>';?></div>

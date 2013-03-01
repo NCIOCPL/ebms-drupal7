@@ -196,7 +196,8 @@ function ebms_forums_enable() {
     else
         field_create_instance($instance);
 
-
+    // configure the number of topics per page
+    variable_set('forum_per_page', 10);
 
     drupal_set_message('EBMS Forums was enabled. Node Access and the Menu were rebuilt as well.', 'status');
 }
@@ -691,27 +692,43 @@ function _ebms_forums_for_global_user () {
     return $forums;
     
 }
-function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
+function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL, 
+    $display = 'topics') {
     global $user;
 
     $links = array();
+    $archivedForums = array();
     
     $forums = _ebms_forums_for_global_user();
     foreach ($forums as $forum) {
-            $archived = FALSE;
-            $archivedField = field_get_items('taxonomy_term', $forum, 'field_archived');
-            if ($archivedField)
-                $archived = $archivedField[0]['value'];
+        $archived = FALSE;
+        $archivedField = field_get_items('taxonomy_term', $forum,
+            'field_archived');
+        if ($archivedField)
+            $archived = $archivedField[0]['value'];
 
-            $links[] = array(
-                url('forum/' . $forum->tid),
-                $forum->name,
-                $forum->tid == $activeForumID ? 'active' : 'inactive',
-                $archived,
-            );
+        $link = array(
+            'url' => l($forum->name, "forum/$forum->tid/topics"),            
+            'class' => $forum->tid == $activeForumID && 
+                $display == 'topics' ?
+                'active' : 'inactive',
+        );
         
-    }
+        if ($forum->tid == $activeForumID) {
+            $link['archived_url'] =
+                l('Archived Topics', "forum/$forum->tid/archived");
 
+            $link['archived_class'] = $forum->tid == $activeForumID &&
+                $display == 'archived' ?
+                'active' : 'inactive';
+        }
+
+        if (!$archived) {
+            $links[] = $link;
+        } else {
+            $archivedForums[] = $link;
+        }
+    }
 
     $output = '<div id="left-nav">';
     
@@ -719,17 +736,62 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL) {
     $output .= '<div class="item-list"><ul>';
 
     foreach ($links as $link) {
-        $output .= '<li class="parent ' . $link[2] . ' first">';
-        if ($link[3] == TRUE)
-            //$output .= '<img src="' . drupal_get_path ('theme', 'ebmstheme'). '/images/checkbox-checked.png"/> ';
-            $output .= '<i>';
-        $output .= '<a href="' . $link[0] . '">' . $link[1] . '</a>';
-        if ($link[3] == TRUE)
-            $output .= '</i>';
+        $output .= '<li class="parent ' . $link['class'] . ' first">';
+        $output .= $link['url'];
         $output .= '</li>';
+        
+        if (isset($link['archived_url'])) {
+            $output .= '<li class="child ' . $link['archived_class'] . ' first">';
+            $archivedUrl = $link['archived_url'];
+            $output .= "<i>$archivedUrl</i>";
+            $output .= '</li>';
+        }
+    }
+    $output .= '</ul></div>'; //Closes .item-list
+    
+    if(!empty($archivedForums)) {        
+        drupal_add_library('system', 'drupal.collapse');
+
+        $fieldset = array(
+            '#theme' => 'fieldset',
+            '#title' => t('Archived'),
+            '#attributes' => array(
+                'class' => array(
+                    'collapsible',
+                    'collapsed',
+                    'inactive',
+                ),
+            ),
+        );
+        
+        $fieldContent = '<div class="item-list"><ul>';
+        foreach ($archivedForums as $forum) {
+            if($forum['class'] == 'active') {
+                $fieldset['#attributes'] = array('class' => array('collapsible'));
+            }
+            
+            $fieldContent .= 
+                '<li class="child ' . $forum['class'] . ' first">' .
+                '<i>' . $forum['url'] . '</i>' .
+                '</li>';
+
+            if (isset($forum['archived_url'])) {
+                $fieldContent .=
+                    '<li class="subchild ' . $forum['archived_class'] . ' first">' .
+                    '<i>' . $forum['archived_url'] . '</i>' .
+                    '</li>';
+                
+                if($forum['archived_class'] == 'active') {
+                    $fieldset['#attributes'] = array('class' => array('collapsible'));
+            }
+            }
+        }
+        
+        $fieldContent .= '</ul></div>'; //Closes .item-list
+        $fieldset['#children'] = $fieldContent;
+        $output .= drupal_render($fieldset);
     }
     
-    $output .= '</ul></div>'; //Closes .item-list
     $output .= '</div>'; // Closes .forum-left-nav
 
     $administerEBMS = user_access('administer ebms');
@@ -1007,4 +1069,12 @@ function _ebms_forums_get_forum_members($forum) {
     sort($other_members);
     $members = array_merge($boards, $other_members);
     return '<strong>Forum Members</strong>: ' . implode(', ', $members);
+}
+
+
+/**
+ * Implements hook_views_api().
+ */
+function ebms_forums_views_api() {
+    return array('api' => 2.0);
 }
