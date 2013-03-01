@@ -944,7 +944,7 @@ class EbmsReview {
         // Put together and return the render array for the table.
         $button_class = array('class' => array('button'));
         $attrs = array('attributes' => $button_class);
-        return array(
+        $page = array(
             'title' => array(
                 '#type' => 'markup',
                 '#markup' => '<h2>' . htmlspecialchars($this->packet_title) .
@@ -964,6 +964,53 @@ class EbmsReview {
                 '#header' => $headers,
             ),
             'bottom pager' => $pager,
+        );
+        //pdq_ebms_debug('MILESTONE 1', $page);
+        $reviewer_files = $this->get_reviewer_files();
+        if ($reviewer_files)
+            $page['reviewer files'] = $reviewer_files;
+        return $page;
+    }
+
+    /**
+     * Create the render array for a table showing the files board
+     * members have posted for a packet.  Used for the board manager's
+     * page for looking at a reviewed packet (there's another similar
+     * method used for showing the list of these files to the board
+     * members who are reviewing the packet; see fetch_reviewer_uploads()).
+     */
+    private function get_reviewer_files() {
+        $query = db_select('file_managed', 'f');
+        $query->join('ebms_reviewer_doc', 'd', 'd.file_id = f.fid');
+        $query->join('users', 'u', 'u.uid = d.reviewer_id');
+        $query->fields('f', array('uri', 'filename'));
+        $query->fields('u', array('name'));
+        $query->fields('d', array('when_posted', 'description'));
+        $query->condition('d.packet_id', $this->packet_id);
+        $query->condition('d.drop_flag', 0);
+        $query->orderBy('d.when_posted', 'DESC');
+        $result = $query->execute();
+        $rows = array();
+        foreach ($result as $record) {
+            $url = file_create_url($record->uri);
+            $uploaded = date("m/d/Y", strtotime($record->when_posted));
+            $row = array(
+                l($record->filename, $url),
+                htmlspecialchars($record->description),
+                htmlspecialchars($record->name),
+                $uploaded,
+            );
+            $rows[] = array('data' => $row, 'no_striping' => true);
+        }
+        if (empty($rows))
+            return null;
+        $headers = array('Filename', 'Notes', 'Uploaded By', 'Date');
+        return array(
+            '#attributes' => array('id' => 'packet-reviewer-files'),
+            '#theme' => 'table',
+            '#prefix' => '<h3 class="pkt-rvwr-files">Reviewer Files</h3>',
+            '#rows' => $rows,
+            '#header' => $headers,
         );
     }
 
