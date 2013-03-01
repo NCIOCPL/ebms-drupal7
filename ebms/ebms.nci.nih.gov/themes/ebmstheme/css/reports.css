@@ -55,10 +55,12 @@ form .box-on-right .form-item.form-type-checkbox:not(#foo) label {
 
 .date-with-range { width: 500px; float: left; }
 
-div.right-aligned-date { float: left; margin-left: 126px; }
+div.right-aligned-date { float: left; margin-left: 140px; }
 div.right-aligned-date > div { margin: 0 0 5px 5px; }
+.form-item div.right-aligned-date + div.option.label-508.form-item,
 div.right-aligned-date + label.option {
-    float: left; margin-top: 2px; text-transform: uppercase; margin-left: 10px;
+    float: left; margin-top: 2px; text-transform: uppercase; margin-left: 5px;
+    clear: none; font-weight: normal;
 }
 
 #report { clear: both; }
