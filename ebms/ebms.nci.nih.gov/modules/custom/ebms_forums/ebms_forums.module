@@ -575,7 +575,10 @@ function _ebms_forums_view_forum_access_callback($forum = NULL) {
         
         // Archived - View
         $administerForums = user_access('administer ebms forums');
-
+        
+        // fail immediately if archived and no administer rights exist
+        if ($archived && !$administerForums)
+            return FALSE;
 
         // (3) If the user is in the list of individuals that are on the fourm
         if (count($forum->field_individuals) > 0) {
@@ -714,7 +717,8 @@ function _ebms_forums_menu_html($activeForumID = NULL, $activeNodeID = NULL,
                 'active' : 'inactive',
         );
         
-        if ($forum->tid == $activeForumID) {
+        if ($forum->tid == $activeForumID && 
+            user_access('administer ebms forums')) {
             $link['archived_url'] =
                 l('Archived Topics', "forum/$forum->tid/archived");
 
