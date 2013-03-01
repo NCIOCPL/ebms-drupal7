@@ -978,6 +978,7 @@ class EbmsReview {
      * page for looking at a reviewed packet (there's another similar
      * method used for showing the list of these files to the board
      * members who are reviewing the packet; see fetch_reviewer_uploads()).
+     * Added for TIR 2274.
      */
     private function get_reviewer_files() {
         $query = db_select('file_managed', 'f');
