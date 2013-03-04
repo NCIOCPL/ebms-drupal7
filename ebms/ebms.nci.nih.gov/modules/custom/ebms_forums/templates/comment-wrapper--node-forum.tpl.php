@@ -17,11 +17,14 @@
  */
 
 global $user;
+$loaded_user = user_load($user->uid);
 module_load_include('inc', 'ebms', 'profile');
-$authorPicture = EbmsProfile::get_picture($user);
+$authorPicture = EbmsProfile::get_picture($loaded_user);
 if ($authorPicture) {
     $authorPicture['picture']['#width'] = 45;
     $authorPicture['picture']['#height'] = 45;
+    if (isset($authorPicture['frame']))
+        unset($authorPicture['frame']);
 }
 
 ?>
