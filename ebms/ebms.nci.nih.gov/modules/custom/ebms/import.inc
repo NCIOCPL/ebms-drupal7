@@ -422,19 +422,27 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
             foreach ($batch->action['reviewReady'] as $info)
                 $article_ids[] = $info[1];
 
+            // Apply each tag selected to each article.
+            $fast_track_tag_added = false;
+            foreach ($values['tags'] as $tag_id => $tag_val) {
+                if ($tag_val) {
+                    if ($tag_id == 'i_fasttrack')
+                        $fast_track_tag_added = true;
+                    foreach ($article_ids as $article_id)
+                        Ebms\addArticleTag($tag_id, $article_id, $topic);
+                }
+            }
+
             // If the user checked the "Fast Track" option, add the new state.
             if ($fast_track) {
                 $cmt = $values['ft-comments'];
                 $state = $values['placement'];
-                foreach ($article_ids as $id)
+                foreach ($article_ids as $id) {
                     Ebms\setArticleState($id, $state, $topic, $board, $cmt);
-            }
 
-            // Apply each tag selected to each article.
-            foreach ($values['tags'] as $tag_id => $tag_val) {
-                if ($tag_val) {
-                    foreach ($article_ids as $article_id)
-                        Ebms\addArticleTag($tag_id, $article_id, $topic);
+                    // Add fast track tag if not manually selected (TIR 2421).
+                    if (!$fast_track_tag_added)
+                        Ebms\addArticleTag('i_fasttrack', $id, $topic);
                 }
             }
         }
