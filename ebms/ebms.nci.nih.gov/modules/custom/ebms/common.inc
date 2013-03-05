@@ -1716,6 +1716,32 @@ class Util {
         $finfo = new \finfo(FILEINFO_MIME_TYPE);
         return $finfo->file($path);
     }
+
+    /**
+     * Verify that a parameter is an integer.  The error message
+     * emitted if the check fails is minimal, as we expect the
+     * failures to be limited to hacking attacks, and we have no
+     * incentive to provide an attacker with additional information.
+     * If the caller wishes to handle an invalid parameter
+     * itself, the second parameter should be omitted.
+     *
+     *  @param  string  $param        String value for parameter
+     *  @param  string  $url          Where to go if check fails
+     *
+     *  @return int                   Paramater converted to integer
+     */
+    public static function validate_int($param, $url=null) {
+        $int = (int)$param;
+        if (strcmp($int, $param)) {
+            if ($url) {
+                drupal_set_message('Invalid parameter detected.', 'error');
+                drupal_goto($url);
+            }
+            return null;
+        }
+        else
+            return $int;
+    }
 }
 
 class EbmsPager extends \PagerDefault {
