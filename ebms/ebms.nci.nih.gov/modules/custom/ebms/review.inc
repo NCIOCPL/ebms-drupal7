@@ -2646,13 +2646,13 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
         $page_ids = array();
         foreach ($results as $result)
             $page_ids[] = $result->page_id;
+        
+        $path_parts = pathinfo($file->filename);
+        $filename = $path_parts['filename'];
 
         // If there are any such subpages, also link this document with
         // each of them (TIR 2177).
         if (count($page_ids)) {
-
-            $path_parts = pathinfo($file->filename);
-            $filename = $path_parts['filename'];
             $doc_id = db_insert('ebms_doc')
                 ->fields(
                     array(
@@ -2673,6 +2673,13 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
                 )
                 ->execute();
         }
+        
+        module_load_include('inc', 'ebms', 'EbmsArticle');
+        $packetInfo = \Ebms\getPacketInfo($packet_id);
+        \Ebms\Util::activityNewSummary(array(
+            'account' => $account,
+            'title' => $filename, 
+            'topics' => array($packetInfo->topic_id)));
 
         // Tell the user that we succeeded.
         drupal_set_message('Posted document ' . $file->filename . '.');
@@ -3110,6 +3117,9 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
             )
             ->execute();
     }
+    
+    // (create a recent activity notification for all of these users)
+    \Ebms\Util::activityPacketCreated($name, $reviewers);
 
     // ... and the summaries:
     foreach ($summaries as $doc_id) {

@@ -1142,8 +1142,9 @@ class Util {
             $wrapper->save();
     }
 
-    public static function activityEventPublished($node) {
-        if ($node->type != 'ebms_event' || !$node->status)
+    public static function activityEventPublished(\EntityDrupalWrapper &$nodeWrapper) {
+        if ($nodeWrapper->type->value() != 'ebms_event' ||
+            !$nodeWrapper->status->value())
             return;
 
         $message = message_create('activity_new_event');
@@ -1151,13 +1152,14 @@ class Util {
 
         $wrapper = entity_metadata_wrapper('message', $message);
 
-        \Ebms\Util::wrapEventMetadata($node, $wrapper);
+        \Ebms\Util::wrapEventMetadata($nodeWrapper, $wrapper);
 
         $wrapper->save();
     }
 
-    public static function activityEventCancelled($node) {
-        if ($node->type != 'ebms_event' || $node->status)
+    public static function activityEventCancelled(\EntityDrupalWrapper &$nodeWrapper) {
+        if ($nodeWrapper->type->value() != 'ebms_event' ||
+            !$nodeWrapper->status->value())
             return;
 
         $message = message_create('activity_cancelled_event');
@@ -1165,14 +1167,15 @@ class Util {
 
         $wrapper = entity_metadata_wrapper('message', $message);
 
-        \Ebms\Util::wrapEventMetadata($node, $wrapper);
+        \Ebms\Util::wrapEventMetadata($nodeWrapper, $wrapper);
 
         $wrapper->save();
     }
 
 
-    public static function activityEventChanged($node) {
-        if ($node->type != 'ebms_event' || !$node->status)
+    public static function activityEventChanged(\EntityDrupalWrapper &$nodeWrapper) {
+        if ($nodeWrapper->type->value() != 'ebms_event' ||
+            !$nodeWrapper->status->value())
             return;
 
         $message = message_create('activity_changed_event');
@@ -1180,38 +1183,132 @@ class Util {
 
         $wrapper = entity_metadata_wrapper('message', $message);
 
-        \Ebms\Util::wrapEventMetadata($node, $wrapper);
+        \Ebms\Util::wrapEventMetadata($nodeWrapper, $wrapper);
 
         $wrapper->save();
     }
 
-    public static function wrapEventMetadata($node, $wrapper)
+    public static function activityAgendaPublished(\EntityDrupalWrapper &$nodeWrapper) {
+        if ($nodeWrapper->type->value() != 'ebms_event' ||
+            !$nodeWrapper->status->value())
+            return;
+
+        $message = message_create('activity_agenda_published');
+        $message->save();
+
+        $wrapper = entity_metadata_wrapper('message', $message);
+
+        \Ebms\Util::wrapEventMetadata($nodeWrapper, $wrapper);
+
+        $wrapper->save();
+    }
+
+    public static function activityEventType(\EntityDrupalWrapper &$nodeWrapper) {
+        if ($nodeWrapper->type->value() != 'ebms_event' ||
+            !$nodeWrapper->status->value())
+            return;
+
+        $message = message_create('activity_event_type');
+        $message->save();
+
+        $wrapper = entity_metadata_wrapper('message', $message);
+
+        \Ebms\Util::wrapEventMetadata($nodeWrapper, $wrapper);
+        
+        // additionally add the event type
+        $node_event_type = $nodeWrapper->field_event_type->value();
+        if ($node_event_type) {
+            $wrapper->field_event_type->set($node_event_type);
+        }
+
+        $wrapper->save();
+    }
+    
+    public static function activityPacketCreated($name, $reviewers){
+            $message = message_create('activity_new_packet');
+            $message->save();
+
+            $wrapper = entity_metadata_wrapper('message', $message);
+            $wrapper->field_title->set($name);
+            $wrapper->field_individuals->set($reviewers);
+            $wrapper->save();
+    }
+
+    public static function activityNewSummary(array $args = array()) {
+        if(empty($args) || !is_array($args)) return;
+        
+        // provide placeholder arguments
+        $args += array(
+            'title' => null,
+            'account' => null,
+            'board' => null,
+            'topics' => array(),
+        );
+        
+        $title = $args['title'];
+        $account = $args['account'];
+        $board = $args['board'];
+        $topics = $args['topics'];
+        
+        // check input arguments        
+        // reject if no title, or no board and no valid topics
+        if(empty($title) || (empty($board) && empty($topics))) return;
+        
+        // search board and/or topics to find intended recipients of message
+        $boards = array();
+        if($board)
+            $boards[$board] = $board;
+        
+        // dig through any topics for board as well
+        foreach($topics as $topic){
+            $topicBoard = \Ebms\getTopicBoard($topic);
+            
+            $boards[$topicBoard] = $topicBoard;
+        }
+        
+        $individuals = array_keys(
+            Util::get_active_users(array('board manager'), $boards));
+        
+        // abort if no users available to see notification
+        if(empty($individuals)) return;
+
+        $message = message_create('activity_new_summary', array(), $account);
+        $message->save();
+
+        $wrapper = entity_metadata_wrapper('message', $message);
+        $wrapper->field_title->set($title);
+        $wrapper->field_individuals->set($individuals);
+        $wrapper->save();
+    }
+    
+    public static function wrapEventMetadata(\EntityDrupalWrapper $nodeWrapper,
+        \EntityDrupalWrapper $msgWrapper)
     {
         // retrieve title
-        $wrapper->field_title->set($node->title);
+        $msgWrapper->field_title->set($nodeWrapper->title->value());
 
         // retrieve boards
-        $node_boards = field_get_items('node', $node, 'field_boards');
+        $node_boards = $nodeWrapper->field_boards->value();
         if ($node_boards) {
-            $wrapper->field_boards->set($node_boards);
+            $msgWrapper->field_boards->set($node_boards);
         }
 
         // retrieve subgroups
-        $node_subgroups = field_get_items('node', $node, 'field_subgroups');
+        $node_subgroups = $nodeWrapper->field_subgroups->value();
         if ($node_subgroups) {
-            $wrapper->field_subgroups->set($node_subgroups);
+            $msgWrapper->field_subgroups->set($node_subgroups);
         }
 
         // retrieve ad-hoc groups
-        $node_adhoc_groups = field_get_items('node', $node, 'field_ad_hoc_groups');
+        $node_adhoc_groups = $nodeWrapper->field_ad_hoc_groups->value();
         if ($node_adhoc_groups) {
-            $wrapper->field_ad_hoc_groups->set($node_adhoc_groups);
+            $msgWrapper->field_ad_hoc_groups->set($node_adhoc_groups);
         }
 
         // collect inhouse staff, board members, and individuals data
-        $node_individuals = field_get_items('node', $node, 'field_individuals');
+        $node_individuals = $nodeWrapper->field_individuals->value();
         if($node_individuals)
-            $wrapper->field_individuals->set($node_individuals);
+            $msgWrapper->field_individuals->set($node_individuals);
     }
 
     /**

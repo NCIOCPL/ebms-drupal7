@@ -2033,6 +2033,12 @@ function pdq_ebms_nci_doc_form_submit($form, &$form_state) {
             )
         )
         ->execute();
+    
+    // notify of new summary
+    $description = $form['doc']['#options'][$doc_id];
+    \Ebms\Util::activityNewSummary(array(
+        'title' => $description, 'board' => $board));
+        
     $parms = drupal_json_decode($form_state['values']['query-parms']);
     $options = array('query' => $parms);
     $url = EbmsSummaries::$url;
@@ -2255,7 +2261,6 @@ function pdq_ebms_member_doc_form($form, &$form_state, $control) {
  *  @return     none
  */
 function pdq_ebms_member_doc_form_submit($form, &$form_state) {
-
     // Collect state information.
     $page = $form_state['values']['page'];
     $board = $form_state['values']['board'];
@@ -2291,6 +2296,9 @@ function pdq_ebms_member_doc_form_submit($form, &$form_state) {
                 )
             )
             ->execute();
+        
+        // notify of new summary
+        \Ebms\Util::activityNewSummary(array('title' => $filename, 'board' => $board));
     }
     else
         drupal_set_message('File not found', 'error');

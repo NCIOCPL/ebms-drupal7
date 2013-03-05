@@ -287,7 +287,7 @@ $GLOBALS['ebms_entity_fields'] = array(
     array(
         'label' => t('Title'),
         'entity_type' => 'message',
-        'description' => t('A replicated node title.'),
+        'description' => t('A replicated node, packet, or summary title.'),
         'field_name' => 'field_title',
         'required' => TRUE,
         'type' => 'text',
@@ -302,6 +302,10 @@ $GLOBALS['ebms_entity_fields'] = array(
             'activity_new_event',
             'activity_cancelled_event',
             'activity_changed_event',
+            'activity_agenda_published',
+            'activity_event_type',
+            'activity_new_packet',
+            'activity_new_summary',
         ),
     ),
 );
@@ -319,6 +323,20 @@ foreach ($GLOBALS['ebms_node_fields'] as $field) {
                 'activity_new_event',
                 'activity_cancelled_event',
                 'activity_changed_event',
+                'activity_agenda_published',
+                'activity_event_type',
+                'activity_new_packet',
+                'activity_new_summary',
+            );
+
+            $GLOBALS['ebms_entity_fields'][] = $messageField;
+
+            break;
+        case 'field_event_type':
+            $messageField = $field;
+            $messageField['entity_type'] = 'message';
+            $messageField['bundles'] = array(
+                'activity_event_type',
             );
 
             $GLOBALS['ebms_entity_fields'][] = $messageField;

@@ -1232,22 +1232,47 @@ function ebms_individuals_allowed_values_callback($field) {
  * @param node $node the node about to be saved
  */
 function ebms_node_presave($node) {
-    if ($node->type == 'ebms_event') {
+    // if a published ebms_event (don't generate any activity from unpublished
+    // nodes)
+    if ($node->type == 'ebms_event' && $node->status) {
+        
+        $nodeWrapper = entity_metadata_wrapper('node', $node);
+        $originalWrapper = FALSE;
+        
+        // retrieve the event status
+        $event_status = $nodeWrapper->field_event_status->value();
+        
+        $original_status = null;
+        $original_agenda_status = null;
+        $original_event_type = null;
+        if(isset($node->original)){
+            $originalWrapper = entity_metadata_wrapper('node', $node->original);
+            
+            $original_status = $originalWrapper->field_event_status->value();
+            $original_agenda_status = $originalWrapper->field_agenda_status->value();
+            $original_event_type = $originalWrapper->field_event_type->value();
+        }
+        
         // if the node is published and either is new or was previously
         // unpublished
-        if ($node->status && ($node->is_new || !$node->original->status)) {
+        if ($event_status == 'scheduled' && 
+            ($node->is_new ||
+                $original_status == 'cancelled')) {
             // note the publish activity
-            \Ebms\Util::activityEventPublished($node);
+            \Ebms\Util::activityEventPublished($nodeWrapper);
         }
 
         // vice versa, if the node is not new and was previously published
-        else if (!$node->status && !$node->is_new && $node->original->status) {
+        else if ($event_status == 'cancelled' &&
+            !$node->is_new && 
+            $original_status == 'scheduled') {
             // note the unpublish activity
-            \Ebms\Util::activityEventCancelled($node);
+            \Ebms\Util::activityEventCancelled($nodeWrapper);
         }
 
         // if the node is not new and the time has changed
-        if (!$node->is_new && $node->status && $node->original->status) {
+        if (!$node->is_new && $event_status == 'scheduled' &&
+            $original_status == 'scheduled') {
             // compare the two dates
             $origDate = field_get_items('node', $node->original,
                 'field_datespan');
@@ -1256,8 +1281,28 @@ function ebms_node_presave($node) {
             $diff = array_diff($origDate[0], $currentDate[0]);
 
             if (!empty($diff))
-                \Ebms\Util::activityEventChanged($node);
+                \Ebms\Util::activityEventChanged($nodeWrapper);
         }
+        
+        // if the agenda is published and the event is 
+        // new or the agenda was not previously published
+        $curr_agenda_status = $nodeWrapper->field_agenda_status->value();
+
+        if($curr_agenda_status == 1 && 
+            ($node->is_new || $original_agenda_status == 0)) {
+            // note the agenda publish activity
+            \Ebms\Util::activityAgendaPublished($nodeWrapper);
+        }
+        
+        // if the current and past event types don't match
+        $curr_event_type = $nodeWrapper->field_event_type->value();
+        if($curr_event_type != $original_event_type) {
+            // note the type changed activity
+            \Ebms\Util::activityEventType($nodeWrapper);
+            
+        }
+        
+        
     }
 }
 
