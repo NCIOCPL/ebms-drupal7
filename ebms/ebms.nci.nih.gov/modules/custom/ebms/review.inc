@@ -2464,7 +2464,7 @@ function pdq_ebms_store_review($form, &$form_state) {
         // append the name of the intended user and add the manager's left
         // nav
 
-        $comment_suffix = "<br /><br /><i>Recorded by $user->name on behalf of $account->name.</i>";
+        $comment_suffix = " (Recorded by $user->name on behalf of $account->name.)";
     }
     else
     {
