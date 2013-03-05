@@ -51,7 +51,7 @@ class EbmsReports {
      */
     public function __construct($report, $request_id) {
         $this->report = $report;
-        $this->request_id = $request_id;
+        $this->request_id = Ebms\Util::validate_int($request_id, 'reports');
     }
 
     /*
@@ -91,7 +91,8 @@ class EbmsReports {
                     $this->request_id);
             case 'documents':
                 if (isset($parms['archive'])) {
-                    $doc_id = $parms['archive'];
+                    $doc_id = Ebms\Util::validate_int($parms['archive'],
+                              EbmsReports::$url . '/documents');
                     db_update('ebms_doc')
                         ->fields(array('drop_flag' => 1))
                         ->condition('doc_id', $doc_id)
@@ -99,7 +100,8 @@ class EbmsReports {
                     unset($_GET['archive']);
                 }
                 if (isset($parms['edit'])) {
-                    $doc_id = $parms['edit'];
+                    $doc_id = Ebms\Util::validate_int($parms['edit'],
+                              EbmsReports::$url . '/documents');
                     unset($_GET['edit']);
                     return drupal_get_form('pdq_ebms_doc_edit_form', $doc_id,
                                            $this->request_id);
@@ -1064,7 +1066,7 @@ class EbmsReports {
         if ($topic)
             $query->condition('t.topic_id', $topic);
         if ($cycle)
-            $query->condition('j.cycle', $cycle);
+            $query->condition('j.cycle_id', $cycle);
         elseif ($range) {
             if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
                     'j.import_date')) {
@@ -1177,7 +1179,7 @@ class EbmsReports {
             $range = $params['use-upload-date-range'];
             if ($range)
                 $end = $params['upload-end'];
-            pdq_ebms_debug('DOCS PARAMS', $params);
+            //pdq_ebms_debug('DOCS PARAMS', $params);
         }
 
         // Find out whether we're paging the results.
@@ -1257,6 +1259,7 @@ class EbmsReports {
         if ($request_id)
             $main_url .= "/$request_id";
         $edit_parms = drupal_get_query_parameters();
+        $archive_parms = drupal_get_query_parameters();
 
         // Build the array of table rows.
         $docs = $query->execute();
@@ -1265,7 +1268,9 @@ class EbmsReports {
             $edit_parms['edit'] = $d->doc_id;
             $links = l('EDIT', $main_url, array('query' => $edit_parms));
             if (!$d->drop_flag) {
-                $archive_link = l('ARCHIVE', "$main_url/a{$d->doc_id}");
+                $archive_parms['archive'] = $d->doc_id;
+                $archive_link = l('ARCHIVE', $main_url,
+                                array('query' => $archive_parms));
                 $links .= " $divider $archive_link";
             }
             $bquery = db_select('ebms_board', 'b');
@@ -2283,7 +2288,7 @@ class EbmsReports {
 
             // Construct the query for the report.
             $meeting_ids = array_keys($results['node']);
-            pdq_ebms_debug('MEETING IDS', $meeting_ids);
+            //pdq_ebms_debug('MEETING IDS', $meeting_ids);
             $state_id = Ebms\Util::state_id_from_text_id('OnAgenda');
             $query = db_select('ebms_article_state', 's');
             $query = $query->extend('TableSort');
@@ -2602,7 +2607,7 @@ class EbmsReports {
 
         // Retrieve the filtering values from the database.
         $params = EbmsReports::fetch_report_request($request_id);
-        pdq_ebms_debug('REVIEWS TABLE PARAMS', $params);
+        //pdq_ebms_debug('REVIEWS TABLE PARAMS', $params);
         $board = $params['board'];
         $topic = $params['topic'];
         $cycle = $params['cycle'];
@@ -4023,6 +4028,9 @@ function pdq_ebms_doc_edit_form($form, &$form_state, $doc_id, $report_id) {
     $query = db_select('ebms_doc', 'd');
     $query->join('file_managed', 'f', 'f.fid = d.file_id');
     $query->fields('f', array('filename'));
+    $query->condition('d.doc_id', $doc_id);
+    //pdq_ebms_debug('DOC EDIT FORM QUERY', array('q: ' . $query,
+    //        $query->arguments()));
     $file_name = htmlspecialchars($query->execute()->fetchField());
 
     // Set up the custom breadcrumbs, including a link back to the
