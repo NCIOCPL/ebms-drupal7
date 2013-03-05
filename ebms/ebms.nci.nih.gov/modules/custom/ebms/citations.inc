@@ -3344,7 +3344,6 @@ namespace {
         $form["tag_comment_$hash"] = array(
             '#type' => 'textfield',
             '#title' => t('Comment'),
-            '#required' => true,
         );
 
         $form["tag_save_$hash"] = array(
