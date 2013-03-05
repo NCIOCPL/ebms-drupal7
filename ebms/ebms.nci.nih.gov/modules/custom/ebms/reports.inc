@@ -3710,7 +3710,7 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
     $board_member_ids = array();
     foreach ($results as $result)
         $board_member_ids[$result->uid] = $result->uid;
-    $inhouse_users = array(0 => 'IN-HOUSE STAFF');
+    $inhouse_users = array(0 => 'STAFF');
     $board_members = array(0 => 'BOARD MEMBERS');
     $results = db_select('users', 'u')
         ->fields('u', array('uid', 'name'))
