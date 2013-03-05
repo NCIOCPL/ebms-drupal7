@@ -530,6 +530,8 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
                 form_set_error($start_name, $message);
             elseif (!$end_date['day'])
                 form_set_error($start_name, $message);
+            else
+                pdq_ebms_check_date_range($start_name, $start_date, $end_date);
         }
     }
 
@@ -537,6 +539,19 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
     if (!$have_value)
         form_set_error('pmid',
             'At least one (non-board) search criterion is required.');
+}
+
+/**
+ * Make sure the ending date for a date range is later than the
+ * starting date.
+ */
+function pdq_ebms_check_date_range($field_name, $start, $end) {
+    $s = sprintf('%04d-%02d-%02d', $start['year'], $start['month'],
+         $start['day']);
+    $e = sprintf('%04d-%02d-%02d', $end['year'], $end['month'], $end['day']);
+    if (strcmp($s, $e) >= 0)
+        form_set_error($field_name,
+            'Date range end must be later than start date.');
 }
 
 /**
