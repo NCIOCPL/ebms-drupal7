@@ -556,8 +556,9 @@ class EbmsHomePage {
                 '4' => array(
                     'title' => l('Reports', 'reports'),
                     'links' => array(
-                        l('Literature Surveillance Review Report', 'stub'),
-                        l('Travel Reports', 'stub'),
+                        l('Literature Surveillance Review Report',
+                            'reports/lit-review'),
+                        l('Travel Reports', 'reports/board'),
                     ),
                 ),
             ),
