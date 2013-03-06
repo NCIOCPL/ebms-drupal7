@@ -1561,13 +1561,14 @@ class EbmsPrintJob {
             switch ($ftype) {
                 case 'pdf':
                 case 'application/pdf':
-                    fwrite($fp, "call pdfprint -duplex 2 -printer %1 $fname\n");
+                    fwrite($fp,
+                           "call pdfprint -duplex 2 -printer %1 \"$fname\"\n");
                     break;
                 case 'word':
-                    fwrite($fp, "call abiword -p %1 $fname\n");
+                    fwrite($fp, "call abiword -p %1 \"$fname\"\n");
                     break;
                 case 'text':
-                    fwrite($fp, "copy $fname %1\n");
+                    fwrite($fp, "copy \"$fname\" %1\n");
                     break;
                 default:
                     $this->reportError("EbmsPrint.createPrintScript: " .
@@ -1594,7 +1595,7 @@ EOS;
         fwrite($fp, "echo This script contains $docCount files\n");
 
         fwrite($fp, ":done\n");
-        fwrite($fp, "Processing completed");
+        fwrite($fp, "echo Processing completed");
 
         return $scriptEpf;
     }
