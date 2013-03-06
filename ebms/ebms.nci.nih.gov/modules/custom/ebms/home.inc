@@ -392,6 +392,11 @@ class EbmsHomePage {
 
         // Assemble and return the box.
         $title = "Alerts <span class='alert-count'>$total</span>";
+
+        // They've changed their minds and don't want to see the
+        // totals (TIR 2432).  Leaving the code above in place in case
+        // they change their minds again.
+        $title = 'Alerts';
         return $this->list_block($title, 'alerts', $items);
     }
 
