@@ -3715,6 +3715,7 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
     $results = db_select('users', 'u')
         ->fields('u', array('uid', 'name'))
         ->condition('u.uid', 0, '>')
+        ->condition('u.status', 1)
         ->orderBy('u.name')
         ->execute();
     foreach ($results as $result)
