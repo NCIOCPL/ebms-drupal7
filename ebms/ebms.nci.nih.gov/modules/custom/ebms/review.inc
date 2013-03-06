@@ -1543,6 +1543,7 @@ class EbmsReview {
                             'data' => l($doc->filename, $url, $doc_opts),
                             'class' => array('c1'),
                         ),
+                        array('data' => htmlspecialchars($doc->description)),
                         array(
                             'data' => htmlspecialchars($doc->name),
                             'class' => array('c2'),
@@ -1637,7 +1638,7 @@ class EbmsReview {
         $query->join('users', 'u', 'u.uid = d.reviewer_id');
         $query->fields('f', array('uri', 'filename'));
         $query->fields('u', array('name'));
-        $query->fields('d', array('when_posted'));
+        $query->fields('d', array('when_posted', 'description'));
         $query->condition('d.packet_id', $this->packet_id);
         $query->condition('d.drop_flag', 0);
         $query->orderBy($sort_col, $sort_dir);
@@ -1685,6 +1686,8 @@ class EbmsReview {
                 'data' => l($label, EbmsReview::$url, $options),
                 'class' => array('c' . $i++),
             );
+            if ($key == 'f')
+                $headers[] = 'NOTES';
         }
         return array(
             'data' => $headers,
