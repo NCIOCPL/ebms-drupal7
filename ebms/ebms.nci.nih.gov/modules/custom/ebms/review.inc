@@ -1925,6 +1925,8 @@ class EbmsReview {
      * articles which could be assigned to a review packet.  Can't
      * use Drupal's DB API, because it isn't sophisticated enough
      * to handle nested correlated queries.
+     * TIR 2266: only include topics with eligible articles have
+     * full text in the system.
      */
     public static function topics_for_board($board_id, $state_id) {
         $query = "
@@ -1932,10 +1934,13 @@ SELECT DISTINCT t.topic_id, t.topic_name
            FROM ebms_topic t
            JOIN ebms_article_state s
              ON t.topic_id = s.topic_id
+           JOIN ebms_article a
+             ON a.article_id = s.article_id
           WHERE s.active_status = 'A'
             AND s.current = 'Y'
             AND s.state_id = $state_id
             AND t.board_id = $board_id
+            AND a.full_text_id IS NOT NULL
             AND s.article_id NOT IN
    (SELECT DISTINCT article_id
                FROM ebms_packet_article
@@ -1955,6 +1960,12 @@ SELECT DISTINCT t.topic_id, t.topic_name
      * Find the articles which have passed full text review for the
      * selected topic and which have not already been assigned to
      * a packet.
+     *
+     * 2013-02-06 (TIR 2266): apparently it's not enough for the
+     * article to have reached the state of "passed full text
+     * review"; now we must check to verify that the full text
+     * is actually present (and that the user wasn't fibbing
+     * when she said the article had passed full text review).
      */
     public static function articles_for_topic(
         $topic_id, $state_id, $packet_id=0
@@ -1969,14 +1980,16 @@ SELECT DISTINCT t.topic_id, t.topic_name
             ->condition('a.packet_id', $subquery, 'IN')
             ->condition('a.drop_flag', 0)
             ->distinct();
-        $query = db_select('ebms_article_state', 's')
-            ->fields('s', array('article_id'))
-            ->condition('s.topic_id', $topic_id)
-            ->condition('s.active_status', 'A')
-            ->condition('s.state_id', $state_id)
-            ->condition('s.current', 'Y')
-            ->condition('s.article_id', $subquery, 'NOT IN')
-            ->distinct();
+        $query = db_select('ebms_article_state', 's');
+        $query->fields('s', array('article_id'));
+        $query->condition('s.topic_id', $topic_id);
+        $query->condition('s.active_status', 'A');
+        $query->condition('s.state_id', $state_id);
+        $query->condition('s.current', 'Y');
+        $query->condition('s.article_id', $subquery, 'NOT IN');
+        $query->join('ebms_article', 'ea', 'ea.article_id = s.article_id');
+        $query->isNotNull('ea.full_text_id');
+        $query->distinct();
         if ($packet_id) {
             $union = db_select('ebms_packet_article', 'pa')
                 ->fields('pa', array('article_id'))
