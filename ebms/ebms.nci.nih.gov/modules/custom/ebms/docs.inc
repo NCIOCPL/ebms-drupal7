@@ -40,7 +40,7 @@ class EbmsDocs {
         global $user;
         $this->user   = user_load($user->uid);
         $this->request = $request;
-        $this->doc_id = $doc_id;
+        $this->doc_id = Ebms\Util::validate_int($doc_id, EbmsDocs::$url);
         $this->parms  = drupal_get_query_parameters();
     }
 
@@ -511,12 +511,32 @@ function pdq_ebms_doc_tag_ajax($form, $form_state) {
  */
 function pdq_ebms_post_doc_form_validate($form, &$form_state) {
 
-    // Find out what kind of file we're dealing with.
+    // Validate the multiply-occurring values.  Failure to pass
+    // this validation step indicates hacking activity, so we're
+    // not just setting form errors, we're bailing with as vague
+    // an error message as possible.
     $values = $form_state['values'];
+    $tags = $values['tags'];
+    $boards = $values['boards'];
+    $topics = isset($values['topics']) ? $values['topics'] : array();
+    foreach ($tags as $id => $val) {
+        if ($val)
+            $val = Ebms\Util::validate_int($val, EbmsDocs::$url);
+    }
+    foreach ($boards as $id => $val) {
+        if ($val)
+            $val = Ebms\Util::validate_int($val, EbmsDocs::$url);
+    }
+    foreach ($topics as $id => $val) {
+        if ($val)
+            $val = Ebms\Util::validate_int($val, EbmsDocs::$url);
+    }
+
+    // Find out what kind of file we're dealing with.
     $word_xml = 'vnd.openxmlformats-officedocument.wordprocessingml.document';
     if ($values['doc']) {
         $field_name = 'tags';
-        $doc_id = $values['doc'];
+        $doc_id = Ebms\Util::validate_int($values['doc'], EbmsDocs::$url);
         $query = db_select('file_managed', 'f');
         $query->join('ebms_doc', 'd', 'd.file_id = f.fid');
         $query->condition('d.doc_id', $doc_id);
