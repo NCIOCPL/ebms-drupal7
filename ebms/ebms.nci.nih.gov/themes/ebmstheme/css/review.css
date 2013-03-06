@@ -83,3 +83,4 @@ div.review-board input { margin-left: 10px; margin-right: 10px; }
 }
 #member-review div.links { margin-left: 12px; }
 h3.pkt-rvwr-files { margin-top: 40px; border-bottom: solid 1px #696559; }
+#member-packet #reviewer-uploads td { padding-left: 5px; width: auto; }
