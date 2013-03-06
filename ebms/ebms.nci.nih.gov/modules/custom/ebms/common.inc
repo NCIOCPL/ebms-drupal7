@@ -319,21 +319,21 @@ class Menu {
      * Build the EBMS menu information for Citation management.
      */
     public static function citations($role) {
+        $landing_page = 'citations';
+        $first_child_title = 'Review Citations';
+        global $user;
+        if (in_array('admin assistant', $user->roles)) {
+            $landing_page = 'citations/fulltext';
+            $first_child_title = 'Full Text Retrieval';
+        }
         $children = array(
+            new Menu($first_child_title, $landing_page),
             new Menu('Search Database', 'citations/search'),
             new Menu('Import Citations', 'citations/import'),
             new Menu('Not List Maintenance', 'citations/not-list'),
         );
         if ($role == 'librarian')
             $children[] = new Menu('Publish Citations', 'citations/publish');
-        /* TIR 2520.  Commenting this out in case they change their minds.
-        if (pdq_ebms_is_admin_assistant())
-            $children[] = new Menu('Full Text Retrieval',
-            'citations/fulltext');*/
-        $landing_page = 'citations';
-        global $user;
-        if (in_array('admin assistant', $user->roles))
-            $landing_page = 'citations/fulltext';
         return new Menu('Citation Management', $landing_page, $children);
     }
 
@@ -364,7 +364,7 @@ class Menu {
                 // add non-permissioned menu items by default
                 $submenus = array(
                     new Menu('Reviewed Packets', 'review/reviews'),
-                    //new Menu('Create Packet', 'review/add'),
+                    new Menu('Create Packet', 'review/add'),
                     new Menu('View/Edit Packets', 'review/packets'),
                 );
 
