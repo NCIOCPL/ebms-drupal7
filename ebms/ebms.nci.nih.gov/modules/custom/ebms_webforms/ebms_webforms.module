@@ -125,6 +125,26 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
             $form['submitted']['meeting']['#empty_option'] = t('No available meetings');
         }
     }
+    
+    // toggle the mileage visibility appropriately
+    if(isset($form_state['values']['submitted']['transportation'])) {
+        foreach($form_state['values']['submitted']['transportation'] as
+            $element => $value) {
+            if(isset($value[0]['mileage'])) {
+                foreach($value as $index => $value_set) {
+                    $type_value = $value_set['type'];
+                    
+                    $mileage_access = $type_value == 'private';
+                    
+                    $form['submitted']['transportation'][$element]
+                        [$index]['mileage']['#access'] = $mileage_access;
+                    $form['submitted']['transportation'][$element]
+                        [$index]['expense']['#access'] = !$mileage_access;
+                }
+            }
+        }
+        
+    }
 }
  
 /**
@@ -219,7 +239,16 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
              $field_name = 'ebms-travel-'.$cid.'-fieldset';
              foreach($sub_item[$field_name] as $ebms_travel_field){
                  //the ebms_travel field has 3 fields: Date, Select, Text
-                 $output[] = $select_fields[$key][$ebms_travel_field['type']] .' - '. implode('/',$ebms_travel_field['date']) . ' - $' . $ebms_travel_field['expense'];
+                 
+                 // branch on type
+                 $claim = '';
+                 if($ebms_travel_field['type'] == 'private') {
+                     $claim = $ebms_travel_field['mileage'] . ' mi.';
+                 }
+                 else {
+                     $claim = '$' . $ebms_travel_field['expense'];
+                 }
+                 $output[] = $select_fields[$key][$ebms_travel_field['type']] .' - '. implode('/',$ebms_travel_field['date']) . " - $claim";
              }
          }
          //Date fields are arrays...
@@ -490,7 +519,6 @@ function ebms_webforms_webform_submission_presave($node, &$submission) {
 * Render a Webform component to be part of a form.
 */
 function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) {
-    
     //If this is an edit for, unserialize the value.
     $count = 0;
     $val_array = array();
@@ -540,7 +568,7 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
     );
     $form[$fieldset][$i]['type'] = array(
         '#type' => 'select',
-        '#title' => 'Ground Transportation',
+        '#title' => 'Expense Type',
         '#default_value' => $val ? $val['type'] : $component['value'],
         '#required' => $component['mandatory'],
         '#weight' => $component['weight']-1 ,
@@ -563,8 +591,33 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
         '#theme_wrappers' => array('webform_element'),
         '#webform_component' => $component,
         '#multiple' => false,   
-        '#field_prefix'=> $component['extra']['text_prefix'] ?$component['extra']['text_prefix'] : '' ,
+        //'#field_prefix'=> $component['extra']['text_prefix'] ?$component['extra']['text_prefix'] : '' ,
+        '#access' => TRUE,
     );
+    if($component['form_key'] == 'transportation'){
+        $form[$fieldset][$i]['type']['#ajax'] = array(
+            'callback' => 'ebms_webforms_travel_type_select',
+            'wrapper' => $id . '-fieldset-wrapper',
+            'instance' => $component['cid'],
+            'callback_val' => $id . '-fieldset',
+        );
+
+        $form[$fieldset][$i]['mileage'] = array(
+           '#type' => 'textfield',
+            '#title' => 'Mileage',
+            '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
+            '#default_value' => $val ? $val['mileage'] : $component['value'],
+            '#required' => $component['mandatory'],
+            '#weight' => $component['weight']+2,
+            '#description' => 'Please enter the mileage driven.',//$filter ? _webform_filter_descriptions($component['extra']['text_description']) : $component['extra']['text_description'],
+            '#attributes' => $component['extra']['attributes'],
+            '#theme_wrappers' => array('webform_element'),
+            '#webform_component' => $component,
+            '#multiple' => false,
+            //'#field_prefix'=> $component['extra']['text_prefix'] ?$component['extra']['text_prefix'] : '' ,
+            '#access' => FALSE,
+        );
+    }
   }
   $form['trans_add_rem'][$fieldset]['add_trans'] = array(
     '#type' => 'submit',
@@ -608,7 +661,6 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
     if ($component['extra']['maxlength'] > 0) {
     //$element['#maxlength'] = $component['extra']['maxlength'];
     }
-   
     
     //$element = drupal_get_form('ajax_example_add_more');
     return $element;
@@ -624,6 +676,19 @@ function ebms_webforms_add_more_callback($form, $form_state) {
   $component = $form_state['clicked_button']['#ajax']['callback_val'];
   $element = $form_state['clicked_button']['#parents'][1];
   return $form['submitted'][$element][$component];
+}
+
+
+/**
+ * Callback for both ajax-enabled buttons.
+ *
+ * Selects and returns the fieldset with the names in it.
+ */
+function ebms_webforms_travel_type_select($form, $form_state) {
+    $component = $form_state['triggering_element']['#ajax']['callback_val'];
+    $element = $form_state['triggering_element']['#parents'][1];
+
+    return $form['submitted'][$element][$component];
 }
 
 /**
@@ -721,8 +786,16 @@ function theme_webform_display_ebms_travel($variables) {
     //Item 2 - Date
     //Item 3 - Text
      $items = array();
-    foreach($element['#value'] as $value_pair){
-        $items[] = $options[$value_pair['type']] .' - '. implode('/',$value_pair['date']) . ' - $' . $value_pair['expense'];
+    foreach ($element['#value'] as $value_pair) {
+        // branch on type
+        $claim = '';
+        if ($value_pair['type'] == 'private') {
+            $claim = $value_pair['mileage'] . ' mi.';
+        } else {
+            $claim = '$' . $value_pair['expense'];
+        }
+        
+        $items[] = $options[$value_pair['type']] .' - '. implode('/',$value_pair['date']) . " - $claim";
     }
     
     
@@ -747,7 +820,15 @@ function _webform_table_ebms_travel($component, $value) {
     $value = unserialize($value[0]);
      $items = array();
     foreach($value as $value_pair){
-        $items[] = $options[$value_pair['type']] .' - '. implode('/',$value_pair['date']) . ' - $' . $value_pair['expense'];
+        // branch on type
+        $claim = '';
+        if ($value_pair['type'] == 'private') {
+            $claim = $value_pair['mileage'] . ' mi.';
+        } else {
+            $claim = '$' . $value_pair['expense'];
+        }
+
+        $items[] = $options[$value_pair['type']] .' - '. implode('/',$value_pair['date']) . " - $claim";
     }
     
     
