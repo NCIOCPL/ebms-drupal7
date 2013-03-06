@@ -32,7 +32,6 @@ class EbmsHomePage {
     private
         $user,
         $focus,
-        $cal,
         $role,
         $url;
 
@@ -42,12 +41,11 @@ class EbmsHomePage {
      */
     public Function __construct() {
         global $user;
-        $current_month = date('Y') . '-' . date('m');
-        $this->user = $user;
-        $this->focus = Ebms\Util::get_request_value('focus', '1');
-        $this->cal = Ebms\Util::get_request_value('cal', $current_month);
-        $this->role = user_access('administer') ? 'admin' : 'member';
         $this->url = 'home';
+        $this->user = $user;
+        $focus = Ebms\Util::get_request_value('focus', '1');
+        $this->focus = Ebms\Util::validate_int($focus, $this->url);
+        $this->role = user_access('administer') ? 'admin' : 'member';
         if (in_array('medical librarian', $user->roles))
             $this->role = 'librarian';
     }
@@ -202,7 +200,7 @@ class EbmsHomePage {
                 break;
         }
         $shape = 'shape="rect"';
-        $base = "{$this->url}?cal={$this->cal}&focus=";
+        $base = "{$this->url}?focus=";
         for ($i = 0; $i < count($alts); ++$i) {
             $f = $i + 1;
             if ($f != $this->focus) {
@@ -282,13 +280,11 @@ class EbmsHomePage {
                     l('Manage Documents', 'docs'),
                     l('Manage Groups', 'groups'),
                     // l('Send a Message', 'stub'),
+                    l('Print Packets', 'print-packets/run'),
+                    l('View Packet Printing Jobs', 'print-packets/view'),
+                    l('Manage Print Recipients', 'print-packets/mbrs'),
                 );
                 break;
-        }
-        if (in_array('admin assistant', $user->roles)) {
-            $items[] = l('Print Packets', 'print-packets/run');
-            $items[] = l('View Packet Printing Jobs', 'print-packets/view');
-            $items[] = l('Manage Print Recipients', 'print-packets/mbrs');
         }
         $title = 'Administrative Tasks';
         $id = 'admin';
