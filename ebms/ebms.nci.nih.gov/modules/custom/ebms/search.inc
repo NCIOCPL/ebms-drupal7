@@ -290,11 +290,12 @@ class EbmsSearch {
             $authors = array('[No authors listed]');
 
         // Find out which topics were assigned at import (TIR 2209).
+        // No, make that all topics (TIR 2433).
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
         $query->condition('s.article_id', $article_id);
         $query->condition('s.active_status', 'A');
-        $query->condition('s.state_id', $ready_for_initial_review);
+        //$query->condition('s.state_id', $ready_for_initial_review);
         $query->fields('t', array('topic_name'));
         $query->orderBy('t.topic_name');
         $results = $query->execute();
