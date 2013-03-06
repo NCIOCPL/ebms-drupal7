@@ -972,6 +972,36 @@ function _ebms_forums_count_new_topics () {
 }
 
 /**
+ * Retrieves the node id of the most recently changed topic.
+ * 
+ * @global type $user the current user
+ * @return int The node id if found, FALSE otherwise.
+ */
+function _ebms_forums_get_next_new_topic() {
+    global $user;
+    $forums = _ebms_forums_for_global_user();
+    $tids = array();
+    foreach ($forums as $forum)
+        $tids[] = $forum->tid;
+    
+    $query = db_select('node', 'n');
+    $query->join('forum', 'f', 'n.vid = f.vid');
+    $query->leftJoin('history', 'h', 'n.nid = h.nid AND h.uid = :uid',
+        array(':uid' => $user->uid));
+    $query->fields('n', array('nid'));
+    return $query
+        ->condition('f.tid', $tids)
+        ->condition('status', 1)
+        ->condition('n.created', NODE_NEW_LIMIT, '>')
+        ->isNull('h.nid')
+        ->addTag('node_access')
+        ->orderBy('n.changed', 'DESC')
+        ->range(null, 1)
+        ->execute()
+        ->fetchField();
+}
+
+/**
  * Construct an array containing the names of all of the boards connected
  * with a specified forum, followed by all of the individuals who are also
  * members of the forum but are not members of any of the boards listed.

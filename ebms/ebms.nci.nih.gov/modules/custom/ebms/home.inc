@@ -387,7 +387,14 @@ class EbmsHomePage {
         }
         if (module_exists('ebms_forums')) {
             $total += $count = _ebms_forums_count_new_topics();
-            $items[] = EbmsHomePage::alert("forum", "Forums", $count);
+            
+            // retrieve most recent topic nid
+            $nid = _ebms_forums_get_next_new_topic();            
+            $url = 'forum';
+            if($nid !== FALSE)
+                $url = "node/$nid";
+
+            $items[] = EbmsHomePage::alert($url, "Forums", $count);
         }
 
         // Assemble and return the box.
