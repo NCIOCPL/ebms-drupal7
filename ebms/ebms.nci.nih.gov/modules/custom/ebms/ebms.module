@@ -1294,9 +1294,10 @@ function ebms_node_presave($node) {
             \Ebms\Util::activityAgendaPublished($nodeWrapper);
         }
         
-        // if the current and past event types don't match
+        // if the previous type exists and the current and past event types 
+        // don't match
         $curr_event_type = $nodeWrapper->field_event_type->value();
-        if($curr_event_type != $original_event_type) {
+        if($original_event_type && $curr_event_type != $original_event_type) {
             // note the type changed activity
             \Ebms\Util::activityEventType($nodeWrapper);
             

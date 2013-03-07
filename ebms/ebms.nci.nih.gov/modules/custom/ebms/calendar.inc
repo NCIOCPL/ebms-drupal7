@@ -177,6 +177,7 @@ function _calendar_query_alter(&$view, &$query) {
 
     //Initialize an OR conditional for selects
     $or_conditions = db_or();
+    $nullConditions = db_and();
 
     //Boards:
     if ($user->boards) {
@@ -199,6 +200,7 @@ function _calendar_query_alter(&$view, &$query) {
         //Add where condition
         $or_conditions->condition('field_data_field_boards.field_boards_value',
             $user->boards, 'IN');
+        $nullConditions->isNull('field_data_field_boards.field_boards_value');
     }
 
     //Subgroups:
@@ -222,6 +224,7 @@ function _calendar_query_alter(&$view, &$query) {
         //Add where condition
         $or_conditions->condition('field_data_field_subgroups.field_subgroups_value',
             $user->subgroups, 'IN');
+        $nullConditions->isNull('field_data_field_subgroups.field_subgroups_value');
     }
     //Ad hoc groups:
     if ($user->ebms_ad_hoc_groups) {
@@ -244,6 +247,7 @@ function _calendar_query_alter(&$view, &$query) {
         //Add where condition
         $or_conditions->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
             $user->ebms_ad_hoc_groups, 'IN');
+        $nullConditions->isNull('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value');
     }
 
     //Individual Users:
@@ -266,7 +270,10 @@ function _calendar_query_alter(&$view, &$query) {
     //Add where condition
     $or_conditions->condition('field_data_field_individuals.field_individuals_value',
         array($user->uid), 'IN'); //Note the use of array here.  IN must have an array
+    $nullConditions->isNull('field_data_field_individuals.field_individuals_value');
 
+    // finally, need to cover the case where no filters at all are specified
+    $or_conditions->condition($nullConditions);
 
     $query->add_where(
         'membership', $or_conditions
