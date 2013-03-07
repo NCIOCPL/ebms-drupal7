@@ -3059,6 +3059,9 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
             ->execute();
     }
     else {
+        require_once('EbmsArticle.inc');
+        $packetInfo = \Ebms\getPacketInfo($packet_id);
+        $name = $packetInfo->packet_title;
 
         // Which articles are in the packet already?
         $rows = db_select('ebms_packet_article', 'a')

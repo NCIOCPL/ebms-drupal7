@@ -28,6 +28,7 @@ dependencies[]=text
 dependencies[]=update
 dependencies[]=user
 
+dependencies[]=ckeditor_link
 dependencies[]=ctools
 dependencies[]=calendar
 dependencies[]=date
