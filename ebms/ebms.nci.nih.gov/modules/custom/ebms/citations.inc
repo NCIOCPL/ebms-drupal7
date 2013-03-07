@@ -245,7 +245,7 @@ namespace {
         if ($result)
             return $result;
 
-        return "<i>Stub for 'Citations' page, action = $action</i>";
+        return MENU_NOT_FOUND;
     }
 
     function pdq_ebms_citation_not_list($form, &$form_state) {
