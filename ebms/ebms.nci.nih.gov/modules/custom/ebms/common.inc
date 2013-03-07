@@ -1373,6 +1373,8 @@ class Util {
         if (in_array('admin assistant', $user->roles))
             array_unshift($links, array('Full Text Retrieval',
                     'citations/fulltext'));
+        else
+            array_unshift($links, array('Review Citations', 'citations'));
         $items = array();
         foreach ($links as $link_info) {
             list($label, $url) = $link_info;
