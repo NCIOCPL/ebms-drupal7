@@ -331,7 +331,7 @@ $handler->display->display_options['fields']['title']['alter']['word_boundary'] 
 $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
 $handler->display->display_options['fields']['title']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['title']['hide_alter_empty'] = FALSE;
-/* Field: Content: Event Type */
+/* Field: Field: Event Type */
 $handler->display->display_options['fields']['field_event_type']['id'] = 'field_event_type';
 $handler->display->display_options['fields']['field_event_type']['table'] = 'field_data_field_event_type';
 $handler->display->display_options['fields']['field_event_type']['field'] = 'field_event_type';
@@ -343,7 +343,7 @@ $handler->display->display_options['fields']['uid']['id'] = 'uid';
 $handler->display->display_options['fields']['uid']['table'] = 'node';
 $handler->display->display_options['fields']['uid']['field'] = 'uid';
 $handler->display->display_options['fields']['uid']['label'] = 'Submitter';
-/* Field: Content: Event Type */
+/* Field: Field: Event Type */
 $handler->display->display_options['fields']['field_event_type_1']['id'] = 'field_event_type_1';
 $handler->display->display_options['fields']['field_event_type_1']['table'] = 'field_data_field_event_type';
 $handler->display->display_options['fields']['field_event_type_1']['field'] = 'field_event_type';
@@ -382,8 +382,6 @@ $handler->display->display_options['displays'] = array(
 
 /* Display: Mini-Calendar */
 $handler = $view->new_display('block', 'Mini-Calendar', 'month_block');
-$handler->display->display_options['defaults']['use_ajax'] = FALSE;
-$handler->display->display_options['use_ajax'] = TRUE;
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['access'] = FALSE;
 $handler->display->display_options['access']['type'] = 'perm';
@@ -518,7 +516,7 @@ $handler->display->display_options['fields']['title']['alter']['word_boundary'] 
 $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
 $handler->display->display_options['fields']['title']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['title']['hide_alter_empty'] = FALSE;
-/* Field: Content: Event Type */
+/* Field: Field: Event Type */
 $handler->display->display_options['fields']['field_event_type']['id'] = 'field_event_type';
 $handler->display->display_options['fields']['field_event_type']['table'] = 'field_data_field_event_type';
 $handler->display->display_options['fields']['field_event_type']['field'] = 'field_event_type';
@@ -643,7 +641,7 @@ $handler->display->display_options['fields']['title']['alter']['word_boundary'] 
 $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
 $handler->display->display_options['fields']['title']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['title']['hide_alter_empty'] = FALSE;
-/* Field: Content: Event Type */
+/* Field: Field: Event Type */
 $handler->display->display_options['fields']['field_event_type']['id'] = 'field_event_type';
 $handler->display->display_options['fields']['field_event_type']['table'] = 'field_data_field_event_type';
 $handler->display->display_options['fields']['field_event_type']['field'] = 'field_event_type';
@@ -883,7 +881,7 @@ $handler->display->display_options['fields']['title']['alter']['word_boundary'] 
 $handler->display->display_options['fields']['title']['alter']['ellipsis'] = FALSE;
 $handler->display->display_options['fields']['title']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['title']['hide_alter_empty'] = FALSE;
-/* Field: Content: Event Type */
+/* Field: Field: Event Type */
 $handler->display->display_options['fields']['field_event_type']['id'] = 'field_event_type';
 $handler->display->display_options['fields']['field_event_type']['table'] = 'field_data_field_event_type';
 $handler->display->display_options['fields']['field_event_type']['field'] = 'field_event_type';
