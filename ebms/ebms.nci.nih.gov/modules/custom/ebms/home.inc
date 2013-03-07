@@ -48,6 +48,13 @@ class EbmsHomePage {
         $this->role = user_access('administer') ? 'admin' : 'member';
         if (in_array('medical librarian', $user->roles))
             $this->role = 'librarian';
+        $this->mini = Ebms\Util::get_request_value('mini');
+        if ($this->mini) {
+            if (!preg_match('/^\d\d\d\d-\d\d$/', $this->mini)) {
+                drupal_set_message('Invalid parameter', 'error');
+                drupal_goto($this->url);
+            }
+        }
     }
 
     /**
@@ -201,6 +208,8 @@ class EbmsHomePage {
         }
         $shape = 'shape="rect"';
         $base = "{$this->url}?focus=";
+        if ($this->mini)
+            $base = "{$this->url}?mini={$this->mini}&focus=";
         for ($i = 0; $i < count($alts); ++$i) {
             $f = $i + 1;
             if ($f != $this->focus) {
