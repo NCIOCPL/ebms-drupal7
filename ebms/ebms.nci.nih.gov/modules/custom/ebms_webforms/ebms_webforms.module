@@ -127,10 +127,10 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
     }
     
     // toggle the mileage visibility appropriately
-    if(isset($form_state['values']['submitted']['transportation'])) {
-        foreach($form_state['values']['submitted']['transportation'] as
+    if(isset($form_state['input']['submitted']['transportation'])) {
+        foreach($form_state['input']['submitted']['transportation'] as
             $element => $value) {
-            if(isset($value[0]['mileage'])) {
+            if(isset($value[0]['type'])) {
                 foreach($value as $index => $value_set) {
                     $type_value = $value_set['type'];
                     
