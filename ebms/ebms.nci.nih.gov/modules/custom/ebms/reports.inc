@@ -1267,6 +1267,10 @@ class EbmsReports {
         foreach ($docs as $d) {
             $edit_parms['edit'] = $d->doc_id;
             $links = l('EDIT', $main_url, array('query' => $edit_parms));
+
+            // Robin decided she didn't like the original requirement
+            // for this link.  See TIR 2450.
+            $links = l('EDIT', 'docs/edit/' . $d->doc_id);
             if (!$d->drop_flag) {
                 $archive_parms['archive'] = $d->doc_id;
                 $archive_link = l('ARCHIVE', $main_url,
