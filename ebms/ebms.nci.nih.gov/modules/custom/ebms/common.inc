@@ -1370,6 +1370,9 @@ class Util {
         );
         if (in_array('medical librarian', $user->roles))
             $links[] = array('Publish Citations', 'citations/publish');
+        if (in_array('admin assistant', $user->roles))
+            array_unshift($links, array('Full Text Retrieval',
+                    'citations/fulltext'));
         $items = array();
         foreach ($links as $link_info) {
             list($label, $url) = $link_info;

@@ -155,7 +155,7 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'fulltext-top'),
-        'left-nav' => Ebms\Util::build_left_nav(),
+        'left-nav' => Ebms\Util::build_left_nav('Full Text Retrieval'),
         'filter-fields' => array(
             '#type' => 'container',
             '#attributes' => array('id' => 'fulltext-filter'),
