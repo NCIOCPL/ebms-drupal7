@@ -397,6 +397,7 @@ class EbmsReview {
     public static function build_left_nav($active=null) {
         $links = array(
             array('Reviewed Packets', 'review/reviews'),
+            array('Create Packet', 'review/add'),
             array('View / Edit Packets', 'review/packets'),
         );
 
