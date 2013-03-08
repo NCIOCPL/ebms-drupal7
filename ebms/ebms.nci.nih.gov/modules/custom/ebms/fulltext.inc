@@ -47,7 +47,9 @@ class EbmsFullText {
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = htmlspecialchars($article->ArticleTitle);
+        //$title = htmlspecialchars($article->ArticleTitle);
+        // Changed by TIR 2458.
+        $title = l($article->ArticleTitle, 'citations/full/' . $article_id);
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
@@ -98,7 +100,7 @@ class EbmsFullText {
         // Link to NLM's abstract for the article.
         $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $pmid;
         $target = array('attributes' => array('target' => '_blank'));
-        $pieces[] = '<br /><br />' . l('View Abstract', $url, $target);
+        $pieces[] = '<br /><br />' . l('VIEW ABSTRACT', $url, $target);
         return implode($pieces);
     }
 }

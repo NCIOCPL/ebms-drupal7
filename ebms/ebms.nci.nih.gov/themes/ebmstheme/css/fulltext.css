@@ -15,6 +15,7 @@
     text-align: right; padding-right: 15px;
 }
 #fulltext-articles a { text-transform: uppercase; }
+#fulltext-articles .article-citation a { text-transform: none; }
 #edit-submit-2 { clear: both; display: block; }
 div.ebms-error {
     width: auto; border-radius: 7px; color: #2d2c28;
