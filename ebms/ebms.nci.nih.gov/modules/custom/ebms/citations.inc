@@ -922,7 +922,7 @@ namespace {
         $jsonValues = array();
         
         // save any matching values
-        if (isset($form_state['values'])) {            
+        if (isset($form_state['values'])) {
             $cachedValues = 
                 array_intersect_key($form_state['values'], $cachedKeys);
             
@@ -984,6 +984,14 @@ namespace {
             addHooks();                                      
         });',
             'inline');
+
+        // if triggered by the board select, clear any current value for 
+        // topic select
+        if (isset($form_state['triggering_element']['#name']) &&
+            $form_state['triggering_element']['#name'] == 'board_select') {
+            unset($form_state['values']['topic_select']);
+            unset($form_state['input']['topic_select']);
+        }
         
         // process and save any queued values
         _citation_queue_handle_cached_values($form_state);
@@ -1072,22 +1080,23 @@ namespace {
             if (isset($form_state['values']['board_select'])) {
                 $board_id = $form_state['values']['board_select'];
                 if ($board_id != 0) {
-                    $form['citation_queue']['topic_select']['#options'] = array(0 => 'Please select a topic.');
+                    $form['citation_queue']['topic_select']['#options'] =
+                        array(0 => 'Please select a topic.');
 
-                    $result = array();
+                    $topicOptions = array();
                     try {
-                        $result = db_select('ebms_topic', 't')
+                        $topicOptions = db_select('ebms_topic', 't')
                             ->condition('board_id', $board_id)
-                            ->fields('t')
+                            ->fields('t', array('topic_id', 'topic_name'))
                             ->orderBy('t.topic_name')
-                            ->execute();
+                            ->execute()
+                            ->fetchAllKeyed();
                     } catch (Exception $e) {
                         
                     }
-                    foreach ($result as $record) {
-                        $form['citation_queue']['topic_select']['#options'][$record->topic_id]
-                            = $record->topic_name;
-                    }
+
+                    $form['citation_queue']['topic_select']['#options'] =
+                        $topicOptions;
                 }
             }
         } else {
@@ -1108,13 +1117,21 @@ namespace {
 
             if ($board_id != 0) {
                 // build an option list based on all topics related to the given board
-                $topicRows = db_select('ebms_topic', 't')
+                $topicQuery = db_select('ebms_topic', 't')
                     ->condition('t.board_id', $board_id)
                     ->fields('t')
-                    ->orderBy('t.topic_name')
+                    ->orderBy('t.topic_name');
+                
+                // if the user has particular topics assigned for this board,
+                // then limit their topics those that match
+                if (in_array($board_id, $userBoards) && !empty($user->topics)) {
+                    $topicQuery->condition('t.topic_id', $user->topics);
+                }
+                
+                $topicRows = $topicQuery
                     ->execute()
                     ->fetchAll();
-
+                
                 if (isset($form_state['values']['abstract_review_check']))
                     $abstractReview = $form_state['values']['abstract_review_check'];
                 $targetState = $abstractReview ? Ebms\EbmsArticleStates::Published
@@ -1229,7 +1246,8 @@ namespace {
         );
 
         _citation_queue_results($form, $form_state, $is_librarian, 
-            $default_board_select);
+            $default_board_select, 
+            $default_topic_select ? $default_board_select : $user->topics);
 
         return $form;
     }
@@ -1239,9 +1257,9 @@ namespace {
     }
 
     function _citation_queue_results(&$form, &$form_state, $is_librarian,
-        $default_board) {
+        $default_board, $default_topics) {
         $board_id = $default_board;
-        $topic_id = 0;
+        $topic_id = $default_topics;
         $journal_id = '';
         $sort_by = 'cms_id';
         $format = array();
