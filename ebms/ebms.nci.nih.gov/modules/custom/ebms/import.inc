@@ -111,8 +111,10 @@ class EbmsImport {
 function pdq_ebms_import_form($form, &$form_state, $request_id) {
 
     // Start off with defaults appropriate for a new form.
-    $board = $topic = $cycle = $not_list = $test_mode = $fast_track = 0;
-    $selected_tags = array();
+    // Replace tags with single "special search" checkbox (TIR 2422).
+    $board = $topic = $cycle = $not_list = $test_mode = $fast_track =
+        $special_search = 0;
+    //$selected_tags = array();
     $pmid = $comments = $placement = $ft_comments = '';
 
     // If this is a followup form to a previous import request, use
@@ -128,7 +130,8 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $board = $params['board'];
         $topic = $params['topic'];
         $cycle = $params['cycle'];
-        $selected_tags = $params['tags'];
+        //$selected_tags = $params['tags'];
+        $special_search = $params['special-search'];
         $pmid = $params['pmid'];
         $comments = $params['comments'];
         $not_list = $params['not-list'];
@@ -168,9 +171,9 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         ->fields('t', array('text_id', 'tag_name'))
         ->orderBy('t.tag_name')
         ->execute();
-    $tags = array();
-    foreach ($results as $result)
-        $tags[$result->text_id] = $result->tag_name;
+    //$tags = array();
+    //foreach ($results as $result)
+    //    $tags[$result->text_id] = $result->tag_name;
 
     // Assemble the form's render array.
     $form = array(
@@ -203,13 +206,14 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#options' => $review_cycles,
             '#default_value' => $cycle,
         ),
+        /*
         'tags' => array(
             '#type' => 'select',
             '#multiple' => 'true',
             '#title' => 'CITATION TAGS',
             '#options' => $tags,
             '#default_value' => $selected_tags,
-        ),
+        ),*/
         'pmid' => array(
             '#type' => 'textfield',
             '#default_value' => $pmid,
@@ -240,6 +244,13 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#prefix' => '<div class="checkbox-line">',
             '#suffix' => '</div>',
             '#default_value' => $fast_track,
+        ),
+        'special-search' => array(
+            '#type' => 'checkbox',
+            '#title' => 'SPECIAL SEARCH',
+            '#prefix' => '<div class="checkbox-line">',
+            '#suffix' => '</div>',
+            '#default_value' => $special_search,
         ),
 
         // XXX I wasn't given a list of states to include here, so I picked
@@ -397,6 +408,7 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $comments = $values['comments'];
     $use_not_list = $values['not-list'] ? false : true;
     $fast_track = $values['fast-track'] ? true : false;
+    $special_search = $values['special-search'] ? true : false;
     $test = $values['test-mode'] ? true : false;
     $mode = $test ? 'test' : 'live';
     $import_type = $fast_track ? 'F' : 'R';
@@ -418,31 +430,26 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
         if (!$test) {
 
             // Get a list of articles affected by the import.
-            $article_ids = array();
+            $imported = array();
+            foreach ($batch->action['imported'] as $info)
+                $imported[] = $info[1];
+            $review_ready = array();
             foreach ($batch->action['reviewReady'] as $info)
-                $article_ids[] = $info[1];
+                $review_ready[] = $info[1];
 
-            // Apply each tag selected to each article.
-            $fast_track_tag_added = false;
-            foreach ($values['tags'] as $tag_id => $tag_val) {
-                if ($tag_val) {
-                    if ($tag_id == 'i_fasttrack')
-                        $fast_track_tag_added = true;
-                    foreach ($article_ids as $article_id)
-                        Ebms\addArticleTag($tag_id, $article_id, $topic);
-                }
+            // Apply special search tag to each article if appropriate.
+            if ($special_search) {
+                foreach ($imported as $article_id)
+                    Ebms\addArticleTag('i_specialsearch', $article_id, $topic);
             }
 
             // If the user checked the "Fast Track" option, add the new state.
             if ($fast_track) {
                 $cmt = $values['ft-comments'];
                 $state = $values['placement'];
-                foreach ($article_ids as $id) {
+                foreach ($review_ready as $id) {
                     Ebms\setArticleState($id, $state, $topic, $board, $cmt);
-
-                    // Add fast track tag if not manually selected (TIR 2421).
-                    if (!$fast_track_tag_added)
-                        Ebms\addArticleTag('i_fasttrack', $id, $topic);
+                    Ebms\addArticleTag('i_fasttrack', $id, $topic);
                 }
             }
         }
