@@ -4221,7 +4221,14 @@ namespace {
                     if (isset($result['node'])) {
                         foreach ($result['node'] as $node) {
                             $fullNode = node_load($node->nid);
-                            $futureEvents[$node->nid] = $fullNode->title;
+                            $nodeWrapper = entity_metadata_wrapper('node', $fullNode);
+                            $datespan = $nodeWrapper->field_datespan->value();
+                            $suffix = '';
+                            if($datespan) {
+                                $date = format_date($datespan['value'], 'custom', 'm/d/Y');
+                                $suffix = " - $date";
+                            }                            
+                            $futureEvents[$node->nid] = $fullNode->title . $suffix;
                         }
                     }
 
@@ -4239,8 +4246,14 @@ namespace {
                     $pastEvents = array(0 => '');
                     if (isset($result['node'])) {
                         foreach ($result['node'] as $node) {
-                            $fullNode = node_load($node->nid);
-                            $pastEvents[$node->nid] = $fullNode->title;
+                            $fullNode = node_load($node->nid);$nodeWrapper = entity_metadata_wrapper('node', $fullNode);
+                            $datespan = $nodeWrapper->field_datespan->value();
+                            $suffix = '';
+                            if($datespan) {
+                                $date = format_date($datespan['value'], 'custom', 'm/d/Y');
+                                $suffix = " - $date";
+                            }                            
+                            $pastEvents[$node->nid] = $fullNode->title . $suffix;
                         }
                     }
 
