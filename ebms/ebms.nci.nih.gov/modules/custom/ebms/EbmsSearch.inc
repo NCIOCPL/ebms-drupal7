@@ -492,7 +492,7 @@ class EbmsSearch {
      * be obtained.
      */
     function srchFullTextRtrvd() {
-        switch ($this->spec) {
+        switch ($this->spec['full-text-retrieved']) {
             case 'yes':
                 $this->qry->isNotNull('art.full_text_id');
                 break;
