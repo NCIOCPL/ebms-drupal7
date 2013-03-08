@@ -864,11 +864,16 @@ class EbmsSearch {
         }
     }
 
+
     /**
      * Find articles with any modification within a date range.
      *
-     * XXX - Since users said ANY modification we're not excluding
-     *       inactive states.  Ask to be sure if that's right.
+     * Note: This finds ANY modifications, including inactive states and tags.
+     *       This seems to me to be the right thing to do since the users
+     *       asked for any mods, and a modification to a state or tag that
+     *       is now inactive had to be active when the mod was made.
+     *
+     *       But, we can change it if needed.
      */
     function srchModifiedDate() {
 
@@ -879,74 +884,68 @@ class EbmsSearch {
                     $this->spec['use-mod-date-range']);
 
             if ($dateLimits) {
-                // Check for modifications in:
-                //   states, state comments, tags, tag comments
-                $this->qry->join('ebms_article_state', 'modstate',
-                   'modstate.article_id = art.article_id');
-                $this->qry->join('ebms_article_state_comment', 'modstatecmt',
-                   'modstatecmt.article_state_id = modstate.article_state_id');
-                $this->qry->join('ebms_article_tag', 'modtag',
-                   'modtag.article_id = art.article_id');
-                $this->qry->join('ebms_article_tag_comment', 'modtagcmt',
-                   'modtagcmt.article_tag_id = modtag.article_tag_id');
+                // Build a subquery to find articles that have rows
+                //   for states, state comments, tags, tag comments
 
-                // Create conditions for each of these tables in date range
+                // 1. State changes
+                $stateQry = db_select('ebms_article_state', 'mstat');
+                $stateQry->addField('mstat', 'article_id');
+                $stateQry->condition('mstat.status_dt', $dateLimits[0], '>=');
+                $stateQry->condition('mstat.status_dt', $dateLimits[1], '<');
 
-                // 1. State change
-                $dbModState = db_and();
-                $dbModState->condition('modstate.status_dt',
-                                       $dateLimits[0], '>=');
-                $dbModState->condition('modstate.status_dt',
-                                       $dateLimits[1], '<');
+                // Have to qualify by topic or board if needed
+                if (!empty($this->topics))
+                  $stateQry->condition('mstat.topic_id', $this->topics, 'IN');
+                else if (!empty($this->boards))
+                  $stateQry->condition("mstat.board_id", $this->boards, 'IN');
 
-                // 2. State comment change
-                $dbModStateComment = db_and();
-                $dbModStateComment->condition('modstatecmt.comment_dt',
-                                              $dateLimits[0], '>=');
-                $dbModStateComment->condition('modstatecmt.comment_dt',
-                                              $dateLimits[1], '<');
+                // 2. State comment changes
+                $scmtQry = db_select('ebms_article_state_comment', 'mcmt');
+                $scmtQry->join('ebms_article_state', 'mst',
+                               'mcmt.article_state_id = mst.article_state_id');
+                $scmtQry->addField('mst', 'article_id');
+                $scmtQry->condition('mcmt.comment_dt', $dateLimits[0], '>=');
+                $scmtQry->condition('mcmt.comment_dt', $dateLimits[1], '<');
+                if (!empty($this->topics))
+                  $scmtQry->condition('mst.topic_id', $this->topics, 'IN');
+                else if (!empty($this->boards))
+                  $scmtQry->condition("mst.board_id", $this->boards, 'IN');
 
-                // 3. Tag change
-                $dbModTag = db_and();
-                $dbModTag->condition('modtag.tag_dt',
-                                     $dateLimits[0], '>=');
-                $dbModTag->condition('modtag.tag_dt',
-                                     $dateLimits[1], '<');
+                // 3. Tag additions
+                $tagQry = db_select('ebms_article_tag', 'mtag');
+                $tagQry->addField('mtag', 'article_id');
+                $tagQry->condition('mtag.tag_dt', $dateLimits[0], '>=');
+                $tagQry->condition('mtag.tag_dt', $dateLimits[1], '<');
+                if (!empty($this->topics))
+                  $tagQry->condition('mtag.topic_id', $this->topics, 'IN');
+                else if (!empty($this->boards))
+                  $tagQry->condition("mtag.board_id", $this->boards, 'IN');
 
-                // 4. Tag comment change
-                $dbModTagComment = db_and();
-                $dbModTagComment->condition('modtagcmt.comment_dt',
-                                              $dateLimits[0], '>=');
-                $dbModTagComment->condition('modtagcmt.comment_dt',
-                                              $dateLimits[1], '<');
+                // 4. Tag comment additions
+                $tcmtQry = db_select('ebms_article_tag_comment', 'tcmt');
+                $tcmtQry->join('ebms_article_tag', 'tst',
+                               'tcmt.article_tag_id = tst.article_tag_id');
+                $tcmtQry->addField('tst', 'article_id');
+                $tcmtQry->condition('tcmt.comment_dt', $dateLimits[0], '>=');
+                $tcmtQry->condition('tcmt.comment_dt', $dateLimits[1], '<');
+                if (!empty($this->topics))
+                  $tcmtQry->condition('tst.topic_id', $this->topics, 'IN');
+                else if (!empty($this->boards))
+                  $tcmtQry->condition("tst.board_id", $this->boards, 'IN');
 
-                // OR all four together
-                $dbOr = db_or()
-                    ->condition($dbModState)
-                    ->condition($dbModStateComment)
-                    ->condition($dbModTag)
-                    ->condition($dbModTagComment);
+                // We want the union of these queries,
+                //  i.e. any article_id produced by any one of the queries
+                $stateQry->union($scmtQry, 'UNION DISTINCT');
+                $tagQry->union($tcmtQry, 'UNION DISTINCT');
+                $stateQry->union($tagQry, 'UNION DISTINCT');
 
-                // And stick that whole thing in as a condition
-                $this->qry->condition($dbOr);
-
-                // Limit states and tags by topic or board if necessary
-                // Comments are limited automatically by these limits
-                if (!empty($this->topics)) {
-                    $this->qry->condition("modstate.topic_id",
-                                           $this->topics, 'IN');
-                    $this->qry->condition("modtag.topic_id",
-                                           $this->topics, 'IN');
-                }
-                else if (!empty($this->boards)) {
-                    $this->qry->condition("modstate.board_id",
-                                           $this->boards, 'IN');
-                    $this->qry->condition("modtag.board_id",
-                                           $this->boards, 'IN');
-                }
+                // Only pick article_ids from the rest of the search that
+                //  are found by these queries.
+                $this->qry->condition('art.article_id', $stateQry, 'IN');
             }
         }
     }
+
 
     /**
      * Search for articles which have a specific decision made by the
