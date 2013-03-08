@@ -297,6 +297,7 @@ class EbmsSearch {
         $query->condition('s.active_status', 'A');
         //$query->condition('s.state_id', $ready_for_initial_review);
         $query->fields('t', array('topic_name'));
+        $query->distinct();
         $query->orderBy('t.topic_name');
         $results = $query->execute();
         $topics = array();
