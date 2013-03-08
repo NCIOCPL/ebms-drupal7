@@ -512,27 +512,21 @@ class EbmsSearch {
      *
      * However a user can search for a comment date without regard to
      * whether the text matches anything.
-     *
-     * The search specs may specify a comment-added-start or a modified-start.
-     * It makes no sense to specify both because a search for any modification
-     * automatically includes any comment-added.  So we give priority
-     * to the modified-start.
      */
     function srchComments() {
 
         $comment = $this->spec['comments'];
 
-        // See if user wants to search for comment-added
+        // See if user wants to search for comment-added date
         $startYear = $this->spec['comment-added-start']['year'];
-        $anyMods   = false;
 
-        // But might override it
-        if ($this->spec['modified-start']['year']) {
-            $startYear = $this->spec['modified-start']['year'];
-            $anyMods   = true;
-        }
+        // But if we're searching any mod date, don't need to repeat here
+        if ($this->spec['modified-start']['year'])
+            $startYear = null;
 
         // If we have either of them, we need to join states and comments
+        // This could be optimized if modified-start also, but it's not
+        //  worth the trouble.  It should be a rare search.
         if ($comment || $startYear) {
             $this->qry->join('ebms_article_state', 'comstate',
                      'comstate.article_id = art.article_id');
@@ -549,22 +543,10 @@ class EbmsSearch {
 
             // Search comment dates
             if ($startYear) {
-
-                // Search for comments within the modified range
-                if ($anyMods) {
-                    $dateLimits = $this->chkDates(
-                            $this->spec['modified-start'],
-                            $this->spec['modified-end'],
-                            $this->spec['use-mod-date-range']);
-                }
-
-                // Or search for comments within the comment-added range
-                else {
-                    $dateLimits = $this->chkDates(
-                            $this->spec['comment-added-start'],
-                            $this->spec['comment-added-end'],
-                            $this->spec['use-comment-date-range']);
-                }
+                $dateLimits = $this->chkDates(
+                        $this->spec['comment-added-start'],
+                        $this->spec['comment-added-end'],
+                        $this->spec['use-comment-date-range']);
 
                 // If we found a valid range
                 if ($dateLimits) {
@@ -585,21 +567,11 @@ class EbmsSearch {
 
     /**
      * Search for tagged articles.
-     *
-     * This can be called to search for tags in response to a tag
-     * entry, or can be called by srchModifiedDates() to look for
-     * articles that acquired a tag within the modified date range.
-     *
-     *  @param bool $anyMods    If true, use modified-start/end date
-     *                          specs.  Else use 'tag-added...' dates.
      */
-    function srchTags($anyMods=false) {
+    function srchTags() {
 
-        $tagId = $this->spec['tag'];
-        if ($anyMods)
-            $startYear = $this->spec['modified-start']['year'];
-        else
-            $startYear = $this->spec['tag-added-start']['year'];
+        $tagId     = $this->spec['tag'];
+        $startYear = $this->spec['tag-added-start']['year'];
 
         // If we have either of them, we need to join tags
         if ($tagId || $startYear) {
@@ -618,18 +590,10 @@ class EbmsSearch {
             if ($startYear) {
 
                 // Search for tags within the modified range
-                if ($anyMods)
-                    $dateLimits = $this->chkDates(
-                            $this->spec['modified-start'],
-                            $this->spec['modified-end'],
-                            $this->spec['use-mod-date-range']);
-
-                // Or search for tags within the tag-added range
-                else
-                    $dateLimits = $this->chkDates(
-                            $this->spec['tag-added-start'],
-                            $this->spec['tag-added-end'],
-                            $this->spec['use-tag-date-range']);
+                $dateLimits = $this->chkDates(
+                        $this->spec['tag-added-start'],
+                        $this->spec['tag-added-end'],
+                        $this->spec['use-tag-date-range']);
 
                 // If we found a valid range
                 if ($dateLimits) {
@@ -915,28 +879,71 @@ class EbmsSearch {
                     $this->spec['use-mod-date-range']);
 
             if ($dateLimits) {
+                // Check for modifications in:
+                //   states, state comments, tags, tag comments
                 $this->qry->join('ebms_article_state', 'modstate',
-                                 'modstate.article_id = art.article_id');
+                   'modstate.article_id = art.article_id');
+                $this->qry->join('ebms_article_state_comment', 'modstatecmt',
+                   'modstatecmt.article_state_id = modstate.article_state_id');
+                $this->qry->join('ebms_article_tag', 'modtag',
+                   'modtag.article_id = art.article_id');
+                $this->qry->join('ebms_article_tag_comment', 'modtagcmt',
+                   'modtagcmt.article_tag_id = modtag.article_tag_id');
 
-                // Any mod will do within the date range, don't care what
-                $this->qry->condition('modstate.status_dt',
+                // Create conditions for each of these tables in date range
+
+                // 1. State change
+                $dbModState = db_and();
+                $dbModState->condition('modstate.status_dt',
                                        $dateLimits[0], '>=');
-                $this->qry->condition('modstate.status_dt',
+                $dbModState->condition('modstate.status_dt',
                                        $dateLimits[1], '<');
 
-                if (!empty($this->topics))
+                // 2. State comment change
+                $dbModStateComment = db_and();
+                $dbModStateComment->condition('modstatecmt.comment_dt',
+                                              $dateLimits[0], '>=');
+                $dbModStateComment->condition('modstatecmt.comment_dt',
+                                              $dateLimits[1], '<');
+
+                // 3. Tag change
+                $dbModTag = db_and();
+                $dbModTag->condition('modtag.tag_dt',
+                                     $dateLimits[0], '>=');
+                $dbModTag->condition('modtag.tag_dt',
+                                     $dateLimits[1], '<');
+
+                // 4. Tag comment change
+                $dbModTagComment = db_and();
+                $dbModTagComment->condition('modtagcmt.comment_dt',
+                                              $dateLimits[0], '>=');
+                $dbModTagComment->condition('modtagcmt.comment_dt',
+                                              $dateLimits[1], '<');
+
+                // OR all four together
+                $dbOr = db_or()
+                    ->condition($dbModState)
+                    ->condition($dbModStateComment)
+                    ->condition($dbModTag)
+                    ->condition($dbModTagComment);
+
+                // And stick that whole thing in as a condition
+                $this->qry->condition($dbOr);
+
+                // Limit states and tags by topic or board if necessary
+                // Comments are limited automatically by these limits
+                if (!empty($this->topics)) {
                     $this->qry->condition("modstate.topic_id",
                                            $this->topics, 'IN');
-                else if (!empty($this->boards))
+                    $this->qry->condition("modtag.topic_id",
+                                           $this->topics, 'IN');
+                }
+                else if (!empty($this->boards)) {
                     $this->qry->condition("modstate.board_id",
                                            $this->boards, 'IN');
-
-                // A state comment may be entered independently of a state
-                // It's a modification.  It will be picked up automatically
-                //  by the srchComments() function.
-
-                // A tag entry is also considered a "modification"
-                $this->srchTags(true);
+                    $this->qry->condition("modtag.board_id",
+                                           $this->boards, 'IN');
+                }
             }
         }
     }
