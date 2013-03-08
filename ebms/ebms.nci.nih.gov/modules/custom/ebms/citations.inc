@@ -1588,20 +1588,21 @@ namespace {
             $curr_topics = db_select('ebms_article_state', 's')
                 ->condition('s.article_id', $articleId)
                 ->condition('s.current', 'Y')
-                ->condition('s.state_id', $state->state_id)
-                ->fields('s', array('topic_id'))
+                //->condition('s.state_id', $state->state_id)
+                ->fields('s', array('topic_id', 'state_id'))
                 ->execute()
-                ->fetchCol();
+                ->fetchAllKeyed();
 
             //$curr_topics = explode(',', $record->topics);
             // grab all topics and board from the topic objects
             $boards = array();
             $topics = array();
             foreach ($article->getTopics() as $topic) {
-                if (in_array($topic->topic_id, $curr_topics)) {
+                if (isset($curr_topics[$topic->topic_id])) {
                     $boardName = $topic->board_name;
                     if (!in_array($boardName, $boards))
                         $boards[] = $boardName;
+                    $topic->curr_state = $curr_topics[$topic->topic_id];
                     $topics[] = $topic;
                 }
             }
@@ -2026,7 +2027,7 @@ namespace {
                         $tags = Ebms\getTagHistory($articleId, $currTopic);
                         $tagNames = array();
                         foreach ($tags as $tag) {
-                            $tagNames[] = $tag->type_name;
+                            $tagNames[$tag->type_name] = $tag->type_name;
                         }
 
                         if (!empty($tagNames)) {
@@ -2092,10 +2093,11 @@ namespace {
                             $row['cycle_select']['#suffix'] = "</td>";
                         }
                         // else, proceed with showing or hiding 
-                        else if (user_access('administer ebms') ||
+                        else if ($topic->curr_state == $state->state_id && (
+                            user_access('administer ebms') ||
                             $is_librarian ||
                             in_array($currBoard, $user->boards) ||
-                            in_array($currTopic, $user->topics)) {
+                            in_array($currTopic, $user->topics))) {
                             $hash = "$record->article_id|$topic->topic_id";
                             $actions = _get_topic_actions($form_state, $hash);
 

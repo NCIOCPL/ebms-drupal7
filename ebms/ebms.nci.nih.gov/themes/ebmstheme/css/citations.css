@@ -110,12 +110,16 @@ div.ctools-modal-content #citation-form-div{
 }
 
 .summary-topic-check{
+    width: 70px;
     border: none;
 }
 
-
 .summary-topic-check .form-item{
-    margin: 0px;
+    margin: 0;
+}
+
+form .summary-topic-check .form-item.form-type-checkbox:not(#foo) label{
+    padding-right: 0;
 }
 
 td.board-cell {

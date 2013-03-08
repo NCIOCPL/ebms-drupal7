@@ -1432,7 +1432,8 @@ comprehensive adjustment than just this. */
 #citation-buttons-div .form-radios .form-type-radio{
     display: inline-block;
     margin: 0;
-    width: 90px;
+    /*width: 90px;*/
+    padding-right: 0;
 }
 
 #citation-buttons-div .form-checkboxes .form-type-checkbox.form-item-format-abstract {
