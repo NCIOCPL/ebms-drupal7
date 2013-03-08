@@ -2479,8 +2479,8 @@ function pdq_ebms_store_review($form, &$form_state) {
     $comment_suffix = '';
     if ($account) {
         // append the name of the intended user and add the manager's left
-        // nav
-
+        // nav.  TIR 2409: don't use HTML markup to do this, since we're
+        // appending to raw user input.
         $comment_suffix = " (Recorded by $user->name on behalf of $account->name.)";
     }
     else
