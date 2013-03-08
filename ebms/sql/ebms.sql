@@ -1021,6 +1021,11 @@ CREATE TABLE ebms_article_tag_type (
         VALUES ('conversion_note', 'Legacy conversion note',
         'Information about the article recorded during conversion '
         'from the legacy CiteMS', 'N');
+    INSERT ebms_article_tag_type
+        (text_id, tag_name, description, topic_required)
+        VALUES ('manager_added', 'Added by Board Manager',
+        'Used when board managers assign a new board and topic to an '
+        'article', 'Y');
 
 /*
  * Descriptive tags that have been attached to an article.
