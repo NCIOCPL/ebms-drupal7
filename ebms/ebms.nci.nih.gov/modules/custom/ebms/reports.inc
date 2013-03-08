@@ -1165,7 +1165,7 @@ class EbmsReports {
 
         // Collect the report parameters.
         $board = $tag = $keyword = $inhouse = $member = $archived =
-            $range = null;
+            $range = $uploader_board = null;
         $start = $end = Ebms\Util::empty_date();
         if ($request_id) {
             $params = EbmsReports::fetch_report_request($request_id);
@@ -1174,6 +1174,7 @@ class EbmsReports {
             $keyword = $params['keyword'];
             $inhouse = $params['inhouse'];
             $member = $params['member'];
+            $uploader_board = $params['uploader-board'];
             $archived = $params['archived'];
             $start = $params['upload-start'];
             $range = $params['use-upload-date-range'];
@@ -1236,6 +1237,19 @@ class EbmsReports {
             $query->join('ebms_doc_board', 'b', 'b.doc_id = d.doc_id');
             $query->condition('b.board_id', $board);
         }
+
+        // Added for TIR 2441.
+        if ($uploader_board) {
+            $role = db_select('role', 'r')
+                ->fields('r', array('rid'))
+                ->condition('r.name', 'board member')
+                ->execute()
+                ->fetchField();
+            $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+            $query->condition('m.board_id', $uploader_board);
+            $query->join('users_roles', 'r', 'r.uid = u.uid');
+            $query->condition('r.rid', $role);
+        }
         if ($tag) {
             $query->join('ebms_doc_tag', 't', 't.doc_id = d.doc_id');
             $query->condition('t.tag_id', $tag);
@@ -1262,6 +1276,7 @@ class EbmsReports {
         $archive_parms = drupal_get_query_parameters();
 
         // Build the array of table rows.
+        //pdq_ebms_debug('DOC REPORT QUERY', 'query: ' . $query);
         $docs = $query->execute();
         $rows = array();
         $target = array('attributes' => array('target' => '_blank'));
@@ -3674,7 +3689,7 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = $tag = $inhouse = $member = 0;
+    $board = $tag = $inhouse = $member = $uploader_board = 0;
     $keyword = '';
     $range = $archived = false;
     $start = $end = array('year' => 0, 'month' => 0, 'day' => 0);
@@ -3688,6 +3703,7 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
         $keyword = $params['keyword'];
         $inhouse = $params['inhouse'];
         $member = $params['member'];
+        $uploader_board = $params['uploader-board'];
         $archived = $params['archived'];
         $start = $params['upload-start'];
         $range = $params['use-upload-date-range'];
@@ -3695,8 +3711,11 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
             $end = $params['upload-end'];
     }
 
-    // Build picklist arrays for boards, tags, roles, etc..
-    $boards = array(0 => ' ') + Ebms\Util::boards();
+    // Build picklist arrays for boards, tags, roles, etc.
+    $boards = Ebms\Util::boards();
+    $uploader_boards = array(0 => 'BOARD MEMBERS (BY BOARD)') +
+        $boards;
+    $boards = array(0 => ' ') + $boards;
     $tags = array(0 => ' ');
     $results = db_select('ebms_tag', 't')
         ->fields('t', array('tag_id', 'tag_name'))
@@ -3781,6 +3800,14 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
                 '#title_display' => 'none',
                 '#options' => $board_members,
                 '#default_value' => $member,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'uploader-board' => array(
+                '#type' => 'select',
+                '#title' => 'Uploader Board',
+                '#title_display' => 'none',
+                '#options' => $uploader_boards,
+                '#default_value' => $uploader_board,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
             'upload-date-line' => array(
