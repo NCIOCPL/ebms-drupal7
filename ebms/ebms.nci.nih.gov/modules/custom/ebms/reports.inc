@@ -1227,7 +1227,7 @@ class EbmsReports {
             $query = $query->extend('PagerDefault')->limit($pager_limit);
         $query->join('file_managed', 'f', 'f.fid = d.file_id');
         $query->join('users', 'u', 'u.uid = f.uid');
-        $query->fields('f', array('filename'));
+        $query->fields('f', array('filename', 'uri'));
         $query->fields('d', array('when_posted', 'doc_id', 'drop_flag'));
         $query->fields('u', array('name'));
         if (!$archived)
@@ -1264,6 +1264,7 @@ class EbmsReports {
         // Build the array of table rows.
         $docs = $query->execute();
         $rows = array();
+        $target = array('attributes' => array('target' => '_blank'));
         foreach ($docs as $d) {
             $edit_parms['edit'] = $d->doc_id;
             $links = l('EDIT', $main_url, array('query' => $edit_parms));
@@ -1297,9 +1298,10 @@ class EbmsReports {
             foreach ($results as $result)
                 $tags[] = $result->tag_name;
             $tags = implode('; ', $tags);
+            $file_url = file_create_url($d->uri);
             $data = array(
                 array(
-                    'data' => htmlspecialchars($d->filename),
+                    'data' => l($d->filename, $file_url, $target),
                     'class' => array('col-1'),
                 ),
                 array(
