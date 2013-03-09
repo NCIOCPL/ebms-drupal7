@@ -55,6 +55,7 @@ $tree = menu_tree('ebms-travel-menu');
 $activeTrail = menu_get_active_trail();
 $active = array_pop($activeTrail);
 $activeURL = $active['link_path'];
+$report_access = user_access('access all webform results');
 ?>
 <div id="left-nav" class="travel-left-nav">
     <div class="item-list">
@@ -73,10 +74,17 @@ $activeURL = $active['link_path'];
                     if (count($branch['#below']) > 0):
                         foreach ($branch['#below'] as $idSubnav => $subnav):
                             if ($idSubnav[0] != '#'):
-                                $subnavActive = url($activeURL) == url($subnav['#href']) ? TRUE : FALSE;
+                                $href = $subnav['#href'];
+                                $pos = strpos($href, 'webform-results');
+                                $is_report = $pos !== false;
+                                if ($is_report && !$report_access)
+                                    continue;
+                                $subnavActive = url($activeURL) == url($href);
+                                $class = $subnavActive ? 'active' : 'inactive';
+                                $link = l($subnav['#title'], $subnav['#href']);
                                 ?>
-                                <li class="child <?php print $subnavActive ? 'active' : 'inactive'; ?>">
-                                    <?php print l($subnav['#title'], $subnav['#href']); ?>
+                                <li class="child <?php print $class; ?>">
+                                  <?php print $link; ?>
                                 </li>
                                 <?php
                             endif;
