@@ -84,3 +84,10 @@ div.review-board input { margin-left: 10px; margin-right: 10px; }
 #member-review div.links { margin-left: 12px; }
 h3.pkt-rvwr-files { margin-top: 40px; border-bottom: solid 1px #696559; }
 #member-packet #reviewer-uploads td { padding-left: 5px; width: auto; }
+#pdq-ebms-edit-packet-form #edit-articles label { width: 650px; }
+#pdq-ebms-edit-packet-form #edit-articles a {
+    float: left; border: solid 1px #696559; border-radius: 7px; padding: 7px;
+}
+#pdq-ebms-edit-packet-form #edit-articles a:hover {
+    border-color: #a90101; color: #a90101; text-decoration: none;
+}

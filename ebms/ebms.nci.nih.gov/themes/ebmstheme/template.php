@@ -310,9 +310,38 @@ function ebmstheme_form_element_label($variables) {
     }
     else {
         // The leading whitespace helps visually separate fields from inline labels.
+
+        // 2013-03-08 (TIR 2260): hoist link outside of checkbox label,
+        // because IE9 propogates the click event for the link up to the
+        // label, with the result that in addition to launching a separate
+        // window or tab for display of the full text by the link, the
+        // state of the checkbox is altered.  This has to be some of the
+        // ugliest code I've ever written, but I don't have any really
+        // good options.  Unfortunately, Drupal's checkboxes form field
+        // doesn't provide a way to attach much of anything to the individual
+        // options in the checkboxes set.  I'm happy to listen to suggestions
+        // for alternate approaches.  The module code appends the link
+        // to the label.  This code finds it with a regular expression,
+        // and pulls it outside of the label.  The ugliest part of this,
+        // of course, is the fragile dependency on the exact string we're
+        // moving.  It works, though, which is more than I can say about
+        // all the other techniques I tried.  I could have used separate
+        // checkbox fields instead of a single checkboxes field, pretending
+        // the individual article options had nothing to do with each
+        // other, but that seemed even more unattractive than this.
+        $suffix = '';
+        if ($element['#type'] == 'checkbox') {
+            $pattern = '@ &nbsp; <a .*>DOWNLOAD FULL TEXT</a>@';
+            $rc = preg_match($pattern, $title, $matches);
+            if ($rc) {
+                $suffix = $matches[0];
+                $title = str_replace($suffix, '', $title);
+                $suffix = $suffix;
+            }
+        }
         return '<label' . drupal_attributes($attributes) . '>' .
         $t($format, array('!title' => $title, '!required' => $required)) .
-        "</label>\n";
+        "</label> $suffix\n";
     }
 }
 
