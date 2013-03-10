@@ -894,10 +894,8 @@ class EbmsSearch {
                 $stateQry->condition('mstat.status_dt', $dateLimits[1], '<');
 
                 // Have to qualify by topic or board if needed
-                if (!empty($this->topics))
-                  $stateQry->condition('mstat.topic_id', $this->topics, 'IN');
-                else if (!empty($this->boards))
-                  $stateQry->condition("mstat.board_id", $this->boards, 'IN');
+                $this->modDateQuals($stateQry, 'mstat.topic_id',
+                                    'mstat.board_id');
 
                 // 2. State comment changes
                 $scmtQry = db_select('ebms_article_state_comment', 'mcmt');
@@ -906,32 +904,23 @@ class EbmsSearch {
                 $scmtQry->addField('mst', 'article_id');
                 $scmtQry->condition('mcmt.comment_dt', $dateLimits[0], '>=');
                 $scmtQry->condition('mcmt.comment_dt', $dateLimits[1], '<');
-                if (!empty($this->topics))
-                  $scmtQry->condition('mst.topic_id', $this->topics, 'IN');
-                else if (!empty($this->boards))
-                  $scmtQry->condition("mst.board_id", $this->boards, 'IN');
+                $this->modDateQuals($scmtQry, 'mst.topic_id', 'mst.board_id');
 
                 // 3. Tag additions
                 $tagQry = db_select('ebms_article_tag', 'mtag');
                 $tagQry->addField('mtag', 'article_id');
                 $tagQry->condition('mtag.tag_dt', $dateLimits[0], '>=');
                 $tagQry->condition('mtag.tag_dt', $dateLimits[1], '<');
-                if (!empty($this->topics))
-                  $tagQry->condition('mtag.topic_id', $this->topics, 'IN');
-                else if (!empty($this->boards))
-                  $tagQry->condition("mtag.board_id", $this->boards, 'IN');
+                $this->modDateQuals($tagQry, 'mtag.topic_id');
 
                 // 4. Tag comment additions
                 $tcmtQry = db_select('ebms_article_tag_comment', 'tcmt');
-                $tcmtQry->join('ebms_article_tag', 'tst',
-                               'tcmt.article_tag_id = tst.article_tag_id');
-                $tcmtQry->addField('tst', 'article_id');
+                $tcmtQry->join('ebms_article_tag', 'ctag',
+                               'tcmt.article_tag_id = ctag.article_tag_id');
+                $tcmtQry->addField('ctag', 'article_id');
                 $tcmtQry->condition('tcmt.comment_dt', $dateLimits[0], '>=');
                 $tcmtQry->condition('tcmt.comment_dt', $dateLimits[1], '<');
-                if (!empty($this->topics))
-                  $tcmtQry->condition('tst.topic_id', $this->topics, 'IN');
-                else if (!empty($this->boards))
-                  $tcmtQry->condition("tst.board_id", $this->boards, 'IN');
+                $this->modDateQuals($tcmtQry, 'ctag.topic_id');
 
                 // We want the union of these queries,
                 //  i.e. any article_id produced by any one of the queries
@@ -946,6 +935,38 @@ class EbmsSearch {
         }
     }
 
+    /**
+     * Restrict modified date queries by topic and board.  If there are
+     * multiple topics or boards, we always OR them, never AND.  User asked
+     * for ANY modifications, which implies OR.
+     *
+     * Subroutine of srchModifiedDates().
+     *
+     *  @param object ref $qry          Reference to query object to update.
+     *  @param string $topicDateField   Query alias for finding topic dates.
+     *  @param string $boardDateField   Same for board, null if none.
+     *                                  (Tag records are not board qualified.)
+     */
+    function modDateQuals(&$qry, $topicDateField, $boardDateField=null) {
+
+        $topicCount = count($this->topics);
+        if ($topicCount > 0) {
+            // Apply optimization for one topic vs. multiple
+            if ($topicCount > 1)
+                $qry->condition($topicDateField, $this->topics, 'IN');
+            else
+                $qry->condition($topicDateField, $this->topics[0], '=');
+        }
+        else if (!is_null($boardDateField)) {
+            $boardCount = count($this->boards);
+            if ($topicCount > 0) {
+                if ($boardCount > 1)
+                    $qry->condition($boardDateField, $this->boards, 'IN');
+                else
+                    $qry->condition($boardDateField, $this->boards[0], '=');
+            }
+        }
+    }
 
     /**
      * Search for articles which have a specific decision made by the
