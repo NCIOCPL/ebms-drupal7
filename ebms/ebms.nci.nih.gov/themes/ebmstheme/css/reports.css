@@ -139,3 +139,7 @@ div.import-reports ul li a { text-transform: uppercase; }
 #cites-by-status-report .col-1 { border-left: none; }
 /* #disposition-field.hidden { display: none; } */
 
+/* Unfortunately, earlier versions of IE have to be beaten into submission. */
+#cites-by-status-report-top #edit-meeting-date-year,
+#cites-by-status-report-top #edit-meeting-date-year { width: 125px; }
+
