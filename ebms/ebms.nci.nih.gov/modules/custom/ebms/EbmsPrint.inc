@@ -1054,6 +1054,13 @@ class EbmsPrintJob {
                          $e);
         }
 
+        // Get the packet title to appear on response sheets
+        $packetTitle = db_query('
+            SELECT packet_title
+              FROM {ebms_packet}
+             WHERE packet_id = :packetId',
+          array(':packetId' => $packetId))->fetchField();
+
         // First article in the packet is 1 of total num rows
         $packetPos = 1;
         $packetMax = count($rows);
@@ -1091,7 +1098,7 @@ class EbmsPrintJob {
             //   response sheet is not created if it's just a report
             if ($epf->boardMemberId) {
                 $respEpf = $this->createResponseSheet($epf, $packetPos,
-                                          $packetMax, array($topicId));
+                                          $packetMax, $packetTitle);
                 $epfList[] = $respEpf;
             }
 
@@ -1140,16 +1147,15 @@ class EbmsPrintJob {
      * Create a printable PDF format response sheet for an article.
      * Store it where we're storing temp files for this print job.
      *
-     *  @param object ref $epf  EbmsPrintFile object for the article.
-     *  @param int $packetPos   Ordinal pos of article in packet, origin 1.
-     *  @param int $packetMax   Count of articles in packet.
-     *  @param array $topicIds  Topic(s) for use in header.  Can be more than
-     *                           one.  First topic becomes the title.
+     *  @param object ref $epf      EbmsPrintFile object for the article.
+     *  @param int $packetPos       Ordinal pos of article in packet, origin 1.
+     *  @param int $packetMax       Count of articles in packet.
+     *  @param string $packetTitle  Title of the packet and response sheet.
      *
      *  @return                 New EbmsPrintFile object for the constructed
      *                           file.
      */
-    function createResponseSheet($epf, $packetPos, $packetMax, $topicIds) {
+    function createResponseSheet($epf, $packetPos, $packetMax, $packetTitle) {
 
         // Reviewer name tells who this response is from
         $reviewerName = getNameByUid($epf->boardMemberId);
@@ -1170,7 +1176,7 @@ class EbmsPrintJob {
         $idStr = '';
         if ($artObj == 'Pubmed')
             $idStr = "PMID: " . $artObj->getSourceId();
-        $idStr .= "  CMS ID: $articleId";
+        $idStr .= "  EBMS ID: $articleId";
 
         // Title info
         $articleTitle = $artObj->getArticleTitle();
@@ -1224,9 +1230,7 @@ class EbmsPrintJob {
         // There is no setBottomMargin call
 
         // Header for the sheet
-        // XXX Is current date (MONTH YEAR) right?
-        $curDate    = date("(F Y)");
-        $sheetTitle = strtoupper("$firstTopic $curDate");
+        $sheetTitle = strtoupper($packetTitle);
         $pdf->setFontSize(TITLE_FONT_HEIGHT);
         $pdf->Write(TITLE_FONT_HEIGHT, $sheetTitle);
         $pdf->setFontSize(BIG_FONT_HEIGHT);
@@ -1274,10 +1278,13 @@ class EbmsPrintJob {
         $pdf->setLeftMargin(LEFT_MARGIN);
 
         // Show all the topics here
+        /**
+         * Changed her mind.
         $pdf->setFont(DFT_FONT_FAMILY, 'B');
         $pdf->Write(DFT_FONT_HEIGHT, "Summary Topics(s): ");
         $pdf->setFont(DFT_FONT_FAMILY, '');
         $pdf->Write(DFT_FONT_HEIGHT, $topicString);
+        */
 
         // Add in the response fixed text found in all response sheets
         $pdf->Ln(NARROW_HEIGHT * 2);
@@ -1442,7 +1449,7 @@ class EbmsPrintJob {
             'Inappropriate study design',
             'Missing/incomplete outcome data; major protocol deviations',
             'Randomized trial with flawed or insufficiently described randomization process',
-            'Unvalidated outcome measure(s) used (e.g., unvalidated surrogate endpoint[s])',
+            'Unvalidated outcome measure[s] used (e.g., unvalidated surrogate endpoint[s])',
             'Other (specify reason[s] below)'
         );
 
@@ -1582,7 +1589,8 @@ class EbmsPrintJob {
                            "call pdfprint -duplex 2 -printer %1 \"$fname\"\n");
                     break;
                 case 'word':
-                    fwrite($fp, "call abiword -p %1 \"$fname\"\n");
+                    // fwrite($fp, "call abiword -p \"%1\" \"$fname\"\n");
+                    fwrite($fp, "call lowriter -pt \"%1\" \"$fname\"\n");
                     break;
                 case 'text':
                     fwrite($fp, "copy \"$fname\" %1\n");
