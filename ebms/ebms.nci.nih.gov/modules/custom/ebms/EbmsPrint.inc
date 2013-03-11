@@ -93,8 +93,7 @@ function getFilesPath($scheme) {
  *  @param string $filename     Name to parse.
  *
  *  @return string              File type, one of 'word', 'pdf', 'text', etc.
- *
- *  @throws \Exception          If we can't figure it out.
+ *                              Return null if we can't figure it out.
  */
 function chkFileExtent($filename) {
 
@@ -1016,6 +1015,16 @@ class EbmsPrintJob {
             // Figure out the file type
             $epf->filetype = $this->getFileType($epf->path, $row->filemime);
 
+            if (is_null($epf->filetype) || (!in_array($epf->filetype,
+                            array('word', 'pdf')))) {
+                $this->reportError(
+                    "Summary file named \"{$row->filename}\" in packet " .
+                    "$packetId has an unknown or unsupported file type.  " .
+                    "One of .doc, .docx, .rtf, or .pdf is required.  " .
+                    "Please replace this file before printing.");
+            }
+
+            // If it's a bad filetype, do not print, report error
             // Response sheets are always two pages, else use heuristics
             if ($epf->purpose == 'response')
                 $epf->numPages = 2;
@@ -1064,6 +1073,14 @@ class EbmsPrintJob {
                                                     $epf->filesize);
             $epf->filetype      = $this->getFileType($epf->path,
                                                      $row->filemime);
+
+            if (is_null($epf->filetype) || $epf->filetype != 'pdf') {
+                $this->reportError(
+                    "Full text file named \"{$row->filename}\" for article " .
+                    "with EBMS ID={$row->article_id} in packet $packetId " .
+                    "has an unknown or unsupported file type.  PDF type file " .
+                    "is required.  Please replace this file before printing.");
+            }
 
             // Use the article title as the description
             $epf->description   = $row->article_title;
@@ -1581,12 +1598,12 @@ class EbmsPrintJob {
         // Usage
         $usageMsg = <<<EOS
 :usage
-echo usage: PrintPackets path-to-printer [first [last]]
+echo usage: PrintPackets path-to-printer [first [after-last]]
 echo    or: PrintPackets howmany
 echo     (to show how many files the script has without printing anything)
 echo  e.g.: PrintPackets \\CIPSFS1\HP8100
-echo    or: PrintPackets \\CIPSFS1\HP8100 201 400
-echo     (to print the second 200 files)
+echo    or: PrintPackets \\CIPSFS1\HP8100 201 401
+echo     (to print the second 200 files, 201-400)
 EOS;
         fwrite($fp, $usageMsg);
 
@@ -1823,12 +1840,7 @@ EOS;
                 $filetype = chkFileExtent($filename);
         }
 
-        // Validate.  The use of reportError() mandates putting this
-        //  in the class
-        if (!in_array($filetype, $okTypes))
-            $this->reportError(
-             "EbmsPrint.getFileType(): Unknown filetype for file '$filename'");
-
+        // Return what we have or null
         return $filetype;
     }
 
