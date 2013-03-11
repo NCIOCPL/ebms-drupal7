@@ -735,7 +735,7 @@ function downloadPrintResults($jobId) {
 
     if (file_exists($rptName)) {
         $filepath = $rptName;
-        drupal_add_http_header('Content-type', 'text.html');
+        drupal_add_http_header('Content-type', 'text/html');
     }
     else if (file_exists($tarName)) {
         $filepath = $tarName;
