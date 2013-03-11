@@ -1,3 +1,4 @@
+
 <?php
 
 // $Id$
@@ -2357,15 +2358,21 @@ class EbmsReports {
                     $event_date = field_get_items('node', $meeting,
                                   'field_datespan');
                     $start_date = date('m/d/Y', $event_date[0]['value']);
+
+                    // Change request (TIR 2446): pick up the meeting
+                    // type from the new event category field, not from
+                    // whether boards or subgroups have been linked to
+                    // the event.
                     $meeting_type = 'no type';
-                    $boards = field_get_items('node', $meeting,
-                              'field_boards');
-                    $subgroups = field_get_items('node', $meeting,
-                              'field_subgroups');
-                    if (count($boards))
-                        $meeting_type = 'Board';
-                    elseif (count($subgroups))
-                        $meeting_type = 'Subgroup';
+                    $event_types = field_get_items('node', $meeting,
+                              'field_event_category');
+                    if (is_array($event_types)) {
+                        $event_type = $event_types[0]['value'];
+                        $info = field_info_field('field_event_category');
+                        $allowed = $info['settings']['allowed_values'];
+                        if (array_key_exists($event_type, $allowed))
+                            $meeting_type = $allowed[$event_type];
+                    }
                     $col2 = "$start_date ($meeting_type)";
                 }
                 $col3 = implode('<br />', $comments);
@@ -2441,8 +2448,32 @@ class EbmsReports {
             'Discussed By',
         );
 
+        // Tricky code needed to narrow by meeting date or type.  This is
+        // because there are no meetings directly connected to the "editorial
+        // board decision" state rows.  Instead, we have to find the latest
+        // "on agenda" row for the same article/topic and check the meeting
+        // linked to *that* row!  TIR 2446.
+        $restrict_by_meeting = false;
+        if ($params['meeting-type'] || $params['meeting-date']['year']) {
+            $on_agenda_decision = Ebms\Util::state_id_from_text_id('OnAgenda');
+            $restrict_by_meeting = true;
+            $query = new EbmsEventQuery();
+            $query->restrict_by_date($params['meeting-date']);
+            $query->restrict_by_type($params['meeting-type']);
+            $meeting_results = $query->execute();
+            $meeting_ids = array();
+            if (isset($meeting_results['node']))
+                $meeting_ids = array_keys($meeting_results['node']);
+            $subquery = db_select('ebms_article_state', 's');
+            $subquery->addExpression('MAX(article_state_id)', 'art_state_id');
+            $subquery->fields('s', array('article_id', 'topic_id'));
+            $subquery->condition('active_status', 'A');
+            $subquery->condition('state_id', $on_agenda_decision);
+            $subquery->groupBy('s.article_id');
+            $subquery->groupBy('s.topic_id');
+        }
+
         // Construct the query for the report.
-        // XXX What do we do with the meeting-type and meeting-date fields?
         $final_board_decision =
             Ebms\Util::state_id_from_text_id('FinalBoardDecision');
         $query = db_select('ebms_article_state', 's');
@@ -2469,6 +2500,15 @@ class EbmsReports {
             array('article_id', 'article_state_id', 'status_dt'));
         $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
         $query->fields('c2', array('cycle_name'));
+        if ($restrict_by_meeting) {
+            if (empty($meeting_ids))
+                $meeting_ids[] = -1; // WHERE ... IN needs at least 1 value.
+            $query->join($subquery, 'oa',
+                'oa.article_id = s.article_id AND oa.topic_id = s.topic_id');
+            $query->join('ebms_agenda_meeting', 'm',
+                'm.article_state_id = oa.art_state_id');
+            $query->condition('m.nid', $meeting_ids, 'IN');
+        }
         $query->orderByHeader($headers);
         $query->distinct();
 
@@ -3151,18 +3191,21 @@ class EbmsEventQuery extends EntityFieldQuery {
      * but it's used for something else (designating whether a meeting
      * is face-to-face, or teleconferenced).
      *
+     * 2013-03-11 (TIR 2446): use the new event_category field,
+     * instead of checking for boards or subgroups linked to the
+     * event.  Note that this may result in contradictory results
+     * (if the user selects an event category value which conflicts
+     * with the type of group (board or subgroup) linked to the
+     * event.
+     *
      *  @param  string  $type    If a type has been specified, it will
      *                           be "board" or "subgroup."
      *
      *  @return                 None
      */
     public function restrict_by_type($type) {
-        if (!$type)
-            return;
-        if ($type == 'board')
-            $this->fieldCondition('field_boards', 'value', 0, '>');
-        elseif ($type == 'subgroup')
-            $this->fieldCondition('field_subgroups', 'value', 0, '>');
+        if ($type)
+            $this->fieldCondition('field_event_category', 'value', $type, '=');
     }
 }
 
@@ -4590,14 +4633,11 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     }
 
     // Create the picklists for cycles, boards, meeting types,
-    // and article states (these are the easy, static picklists).
+    // and article states.
     $cycles = array(0 => ' ') + Ebms\Util::cycles();
     $boards = array(0 => ' ') + Ebms\Util::boards();
-    $meeting_types = array(
-        0 => '',
-        'subgroup' => 'Subgroup',
-        'board' => 'Board',
-    );
+    $info = field_info_field('field_event_category');
+    $meeting_types = array(0 => ' ') + $info['settings']['allowed_values'];
     $statuses = array(
         0 => '',
         'reviewer decision' => 'Reviewer Decision',
