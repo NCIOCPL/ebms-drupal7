@@ -34,6 +34,14 @@ function addHooks() {
         return false;
     });
     
+    // point the filter to just the /citations url with no query
+    jQuery('input.filter-button-submit').click(function () {
+        var form = jQuery(this).closest('form');
+        if(form.length == 0) return false;
+        form.attr('action', '/citations');
+        return true;
+    });
+    
     // test to disable each topic check box
     //jQuery('.citation-cell .topic-checks input.form-checkbox').attr("disabled", "disabled");
     //jQuery('.citation-cell .topic-checks .form-type-checkbox label').fadeTo('fast', 0.5);

@@ -969,8 +969,10 @@ namespace {
         
         // set the queue query parameter, in case something builds a link to
         // the current page
-        if(isset($form_state['cached_values']['id']))
+        if(isset($form_state['cached_values']['id'])){
+            global $_GET;
             $_GET['queue'] = $form_state['cached_values']['id'];
+        }
     }
 
     function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
@@ -987,14 +989,26 @@ namespace {
 
         // if triggered by the board select, clear any current value for 
         // topic select
-        if (isset($form_state['triggering_element']['#name']) &&
-            $form_state['triggering_element']['#name'] == 'board_select') {
-            unset($form_state['values']['topic_select']);
-            unset($form_state['input']['topic_select']);
+        if (isset($form_state['triggering_element']['#name'])) {
+            if ($form_state['triggering_element']['#name'] == 'board_select') {
+                unset($form_state['values']['topic_select']);
+                unset($form_state['input']['topic_select']);
+            }
         }
-        
+
         // process and save any queued values
         _citation_queue_handle_cached_values($form_state);
+        
+        // preserve existing page query, if any
+        if(current_path() == 'system/ajax' &&
+            isset($form_state['complete form']['#action'])) {
+            $url = drupal_parse_url($form_state['complete form']['#action']);
+            
+            if(isset($url['query'])) {
+                global $_GET;
+                $_GET += $url['query'];
+            }
+        }
         
         _include_modal_scripts();
 
@@ -1239,6 +1253,9 @@ namespace {
         $form['citation_queue']['filter_button'] = array(
             '#type' => 'submit',
             '#value' => 'Filter',
+            '#attributes' => array(
+                'class' => array('filter-button-submit'),
+            ),
         );
 
         $form['citation_queue']['submit_source'] = array(
@@ -2093,7 +2110,8 @@ namespace {
                             $row['cycle_select']['#suffix'] = "</td>";
                         }
                         // else, proceed with showing or hiding 
-                        else if ($topic->curr_state == $state->state_id && (
+                        else if ((!isset($topic->curr_state) || 
+                            $topic->curr_state == $state->state_id) && (
                             user_access('administer ebms') ||
                             $is_librarian ||
                             in_array($currBoard, $user->boards) ||
