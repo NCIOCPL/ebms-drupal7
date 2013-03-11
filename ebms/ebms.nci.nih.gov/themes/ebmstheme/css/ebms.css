@@ -580,21 +580,21 @@ div div.ui-dialog-titlebar.ui-corner-all {
 a.ui-dialog-titlebar-close.ui-corner-all { color: white; }
 a.ui-dialog-titlebar-close:hover { color: #a90101; }
 .ui-widget-header { background-color: #696559; }
-.ui-widget-header .ui-icon {
+/*.ui-widget-header .ui-icon {
     background-image: url("../images/dialog-close-white.gif");
     background-color: #2d2c28;
     background-position: 0px 0px;
     border: none;
-}
+}*/
 .ui-state-hover, .ui-widget-content .ui-state-hover,
 .ui-widget-header .ui-state-hover, .ui-state-focus,
 .ui-widget-content .ui-state-focus,
 .ui-widget-header .ui-state-focus { background: #696559; }
 .ui-dialog-titlebar-close.ui-state-hover { border: none; }
-.ui-widget-header .ui-state-hover .ui-icon {
+/*.ui-widget-header .ui-state-hover .ui-icon {
     background-image: url("../images/dialog-close-red.gif");
     border: 0px #2d2c28 none;
-}
+}*/
 .ui-widget-overlay { background: #2d2c28; opacity: .55; }
 .ui-dialog .ui-dialog-buttonpane { border: none; }
 
