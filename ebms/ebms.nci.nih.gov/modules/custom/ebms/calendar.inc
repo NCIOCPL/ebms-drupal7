@@ -2,17 +2,6 @@
 
 // $Id$
 
-/**
- * @file
- *
- * Implementation of EBMS Calendar page.
- */
-function pdq_ebms_calendar() {
-    Ebms\Menu::$active = 'Calendar';
-    drupal_set_title('EBMS Events');
-    return '<i>Stub for calendar page</i>';
-}
-
 function _calendar_get_upcoming_events() {
     $query = new EntityFieldQuery();
     $query
@@ -161,7 +150,7 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
  */
 function _calendar_query_alter(&$view, &$query) {
     global $user;
-
+    
     //If the user is UID 1 or an EBMS administrator, there is no filtering of
     //events
     if (user_access("administer ebms"))
@@ -171,7 +160,7 @@ function _calendar_query_alter(&$view, &$query) {
     //if viewing all then just return.
     if (user_access("view all events")
         && in_array($view->current_display,
-            array('month_all', 'week_all', 'day_all'))) {
+            array('month_all', 'week_all', 'day_all', 'ical_event_feed'))) {
         return;
     }
 
