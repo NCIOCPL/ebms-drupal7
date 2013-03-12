@@ -2693,13 +2693,13 @@ function getArticleReviewCycle($article_id, $topic_id = null){
     }
 
     $cycle_query->join('ebms_cycle', 'c', 'c.cycle_id = t.cycle_id');
-    $cycle_query->fields('c', array('cycle_name'))
+    $cycle_query->fields('c', array('cycle_id', 'cycle_name'))
         ->orderBy('c.start_date')
         ->distinct();
 
     return $cycle_query
         ->execute()
-        ->fetchCol();
+        ->fetchAllKeyed();
 }
 
 /**

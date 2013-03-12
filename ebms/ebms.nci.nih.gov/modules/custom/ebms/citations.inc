@@ -4849,6 +4849,10 @@ namespace {
             $articleStateId = Ebms\setArticleState($articleId,
                 Ebms\EbmsArticleStates::FinalBoardDecision, $topicId, null,
                 $comment);
+            
+            // fetch review cycle, should only be one for an article/topic
+            // combo
+            $cycles = Ebms\getArticleReviewCycle($articleId, $topicId);
 
             $key = array(
                 'article_state_id' => $articleStateId,
@@ -4857,6 +4861,11 @@ namespace {
             $fields = array(
                 'discussed' => $discussed,
             );
+            
+            if(!empty($cycles)){
+                $cycle_ids = array_keys($cycles);
+                $fields['meeting_date'] = reset($cycle_ids);
+            }
 
             // insert should work, as the article state is freshly created
             $ret = db_merge('ebms_article_board_decision')
@@ -6018,10 +6027,12 @@ namespace {
 
         foreach ($decisions as $decision) {
             $form[] = array("#markup" => "<div class='full-citation-indent'>DISPOSITION: $decision->value_name</div>");
-            $date = $decision->cycle_name;
-            if (!$date)
-                $date = '';
-            $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $date</div>");
+            $date = '';
+            if ($decision->cycle_name)
+                $date = "( $decision->cycle_name )";
+            $discussed = 'NO';
+            if($decision->discussed == 'Y') $discussed = 'YES';
+            $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $discussed $date</div>");
         }
 
         $memberIds = Ebms\getBoardDecisionMembers($status->article_state_id);
