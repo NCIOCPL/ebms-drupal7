@@ -309,7 +309,7 @@ if ($logged_in) {
             
             --></script>
             
-        <script type="text/javascript" src="<?php print $js; ?>/s_code.js"></script>
+        <script type="text/javascript" src="/<?php print $js; ?>/s_code.js"></script>
             
         <script type="text/javascript"><!--
             

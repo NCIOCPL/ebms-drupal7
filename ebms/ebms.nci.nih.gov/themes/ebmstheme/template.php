@@ -645,23 +645,15 @@ function preprocess_ebms_event(&$variables) {
     $submitted = $node->created;
     $variables['submitted'] = date('m/d/y', $submitted);
 
-    $inhouseStaff = field_get_items('node', $node, 'field_inhouse_staff');
-    $boardMembers = field_get_items('node', $node, 'field_board_members');
+    $individuals = field_get_items('node', $node, 'field_individuals');
 
-    $individuals = array();
-    if ($inhouseStaff) {
-        foreach ($inhouseStaff as $staff) {
-            $individuals[] = $staff['value'];
+    if ($individuals) {
+        foreach ($individuals as $individual) {
+            $individualValues[] = $individual['value'];
         }
     }
 
-    if ($boardMembers) {
-        foreach ($boardMembers as $member) {
-            $individuals[] = $member['value'];
-        }
-    }
-
-    $users = user_load_multiple($individuals);
+    $users = user_load_multiple($individualValues);
     $individualNames = array();
     foreach ($users as $individual) {
         $individualNames[] = $individual->name;
