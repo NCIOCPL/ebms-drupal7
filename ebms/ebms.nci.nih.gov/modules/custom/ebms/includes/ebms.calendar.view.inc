@@ -286,7 +286,7 @@ $handler->display->display_options['menu']['weight'] = '3';
 $handler->display->display_options['menu']['context'] = 0;
 
 /* Display: iCal */
-$handler = $view->new_display('feed', 'iCal', 'feed_1');
+$handler = $view->new_display('feed', 'iCal', 'ical_event_feed');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['access'] = FALSE;
 $handler->display->display_options['access']['type'] = 'perm';
@@ -358,6 +358,11 @@ $handler->display->display_options['fields']['name']['table'] = 'users';
 $handler->display->display_options['fields']['name']['field'] = 'name';
 $handler->display->display_options['fields']['name']['relationship'] = 'uid';
 $handler->display->display_options['fields']['name']['label'] = 'Submitter';
+/* Field: Content: Event Status */
+$handler->display->display_options['fields']['field_event_status']['id'] = 'field_event_status';
+$handler->display->display_options['fields']['field_event_status']['table'] = 'field_data_field_event_status';
+$handler->display->display_options['fields']['field_event_status']['field'] = 'field_event_status';
+$handler->display->display_options['defaults']['sorts'] = FALSE;
 $handler->display->display_options['defaults']['arguments'] = FALSE;
 /* Contextual filter: Content: Nid */
 $handler->display->display_options['arguments']['nid']['id'] = 'nid';

@@ -646,7 +646,8 @@ function preprocess_ebms_event(&$variables) {
     $variables['submitted'] = date('m/d/y', $submitted);
 
     $individuals = field_get_items('node', $node, 'field_individuals');
-
+    $individualValues = array();
+    
     if ($individuals) {
         foreach ($individuals as $individual) {
             $individualValues[] = $individual['value'];
