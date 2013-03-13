@@ -974,6 +974,82 @@ namespace {
             $_GET['queue'] = $form_state['cached_values']['id'];
         }
     }
+    
+    /**
+     * Build an array suitable for use in a select element defining the user's
+     * available topics, with article counts for each.
+     * 
+     * @param int $boardId         The chosen board's id
+     * @param bool $abstractReview Flag set if generating topics for the 
+     *                             NCI reviewer step, or false if for a full
+     *                             text review
+     * @return array               A keyed array of topic id/topic name pairs, 
+     *                             with article counts for each topic
+     */
+    function _build_board_topic_options($boardId, $abstractReview) {
+        $topicOptions = array();
+
+        // build an option list based on all topics related to the given board
+        $topicQuery = db_select('ebms_topic', 't')
+            ->condition('t.board_id', $boardId)
+            ->fields('t')
+            ->orderBy('t.topic_name');
+
+        $topicRows = $topicQuery
+            ->execute()
+            ->fetchAll();
+
+        $targetState = $abstractReview ? Ebms\EbmsArticleStates::Published : 
+            Ebms\EbmsArticleStates::PassedBMReview;
+        $stateId = Ebms\getStateTypebyTextId($targetState)->state_id;
+
+        foreach ($topicRows as $topicRow) {
+            // need to query for each topic to find the number of
+            // related articles
+            //depends on abstract/full text review switch
+            $query = db_select('ebms_article_state', 's');
+            $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
+
+            if (!$abstractReview)
+                $query->isNotNull('a.full_text_id');
+
+            $count = $query->condition('s.topic_id', $topicRow->topic_id)
+                ->condition('s.state_id', $stateId)
+                ->condition('s.active_status', 'A')
+                ->condition('s.current', 'Y')
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+
+            $topicOptions[$topicRow->topic_id] = "$topicRow->topic_name ($count)";
+        }
+        
+        // can return this value if th user is unknown or the user has no 
+        // specific topics
+        global $user;
+        $account = user_load($user->uid);
+        if(!$account || empty($account->topics)){
+            return $topicOptions;
+        }
+        
+        // otherwise, need to examine user topics to see if any are assigned
+        $assignedTopics = array();
+        $otherTopics = array();
+        foreach($topicOptions as $tid => $topicLabel) {
+            if(in_array($tid, $account->topics))
+                $assignedTopics[$tid] = $topicLabel;
+            else
+                $otherTopics[$tid] = $topicLabel;
+        }
+        
+        if (empty($assignedTopics))
+            return $topicOptions;
+
+        return array(
+            'My Topics' => $assignedTopics,
+            'Other Topics' => $otherTopics,
+        );
+    }
 
     function pdq_ebms_citation_queue($form, &$form_state, $is_librarian) {
         require_once('EbmsArticle.inc');
@@ -1081,6 +1157,9 @@ namespace {
             ),
         );
         $form['citation_queue']['board_select']['#options'] += $boards;
+        
+        $defaultBoardTopics = array();
+        $selectionDesc = empty($default_topic_select) ? '' : 'Selected Topics';
 
         if ($is_librarian) {
             $form['citation_queue']['topic_select'] = array(
@@ -1130,54 +1209,26 @@ namespace {
                 $board_id = $form_state['values']['board_select'];
 
             if ($board_id != 0) {
-                // build an option list based on all topics related to the given board
-                $topicQuery = db_select('ebms_topic', 't')
-                    ->condition('t.board_id', $board_id)
-                    ->fields('t')
-                    ->orderBy('t.topic_name');
-                
-                // if the user has particular topics assigned for this board,
-                // then limit their topics those that match
-                if (in_array($board_id, $userBoards) && !empty($user->topics)) {
-                    $topicQuery->condition('t.topic_id', $user->topics);
-                }
-                
-                $topicRows = $topicQuery
-                    ->execute()
-                    ->fetchAll();
-                
                 if (isset($form_state['values']['abstract_review_check']))
                     $abstractReview = $form_state['values']['abstract_review_check'];
-                $targetState = $abstractReview ? Ebms\EbmsArticleStates::Published
-                        : Ebms\EbmsArticleStates::PassedBMReview;
-                $stateId = Ebms\getStateTypebyTextId($targetState)->state_id;
 
-                $topicOptions = array();
-                foreach ($topicRows as $topicRow) {
-                    // need to query for each topic to find the number of
-                    // related articles
-                    //depends on abstract/full text review switch
-                    $query = db_select('ebms_article_state', 's');
-                    $query->join('ebms_article', 'a',
-                        'a.article_id = s.article_id');
-
-                    if (!$abstractReview)
-                        $query->isNotNull('a.full_text_id');
-
-                    $count = $query->condition('s.topic_id', $topicRow->topic_id)
-                        ->condition('s.state_id', $stateId)
-                        ->condition('s.active_status', 'A')
-                        ->condition('s.current', 'Y')
-                        ->countQuery()
-                        ->execute()
-                        ->fetchField();
-
-                    $topicOptions[$topicRow->topic_id] = "$topicRow->topic_name ($count)";
-                }
+                $topicOptions = _build_board_topic_options($board_id,
+                    $abstractReview);
 
                 $form['citation_queue']['topic_select']['#options'] = $topicOptions;
                 $form['citation_queue']['topic_select']['#multiple'] = true;
                 $form['citation_queue']['topic_select']['#size'] = 10;
+
+                // if no other source of default topic selection exists, then
+                // choose topics under 'My Topics' if available
+                if (
+                    empty(
+                        $form['citation_queue']['topic_select']['#default_value']) &&
+                    isset($topicOptions['My Topics'])) {
+                    $defaultBoardTopics =
+                        array_keys($topicOptions['My Topics']);
+                    $selectionDesc = 'My Topics';
+                }
             }
         }
 
@@ -1264,7 +1315,8 @@ namespace {
 
         _citation_queue_results($form, $form_state, $is_librarian, 
             $default_board_select, 
-            $default_topic_select ? $default_board_select : $user->topics);
+            $default_topic_select ? $default_topic_select : $defaultBoardTopics,
+            $selectionDesc);
 
         return $form;
     }
@@ -1274,7 +1326,7 @@ namespace {
     }
 
     function _citation_queue_results(&$form, &$form_state, $is_librarian,
-        $default_board, $default_topics) {
+        $default_board, $default_topics, $selectionDesc = '') {
         $board_id = $default_board;
         $topic_id = $default_topics;
         $journal_id = '';
@@ -1290,7 +1342,10 @@ namespace {
         if (isset($form_state['values'])) {
             $board_id = $form_state['values']['board_select'];
             if (isset($form_state['values']['topic_select']))
-                $topic_id = $form_state['values']['topic_select'];
+                $topic_values = $form_state['values']['topic_select'];
+            
+            if(!empty($topic_values))
+                $topic_id = $topic_values;
 
             $format = $form_state['values']['format'];
             $per_page = $form_state['values']['per_page'];
@@ -1452,10 +1507,11 @@ namespace {
         if ($is_librarian) {
             $results['results-title']['#markup'] = "<h2>Citations Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
         } else {
+            $suffix = empty($selectionDesc) ? '' : "- $selectionDesc ";
             if ($fulltext_review) {
-                $results['results-title']['#markup'] = "<h2>Full Text Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
+                $results['results-title']['#markup'] = "<h2>Full Text Requiring Review $suffix<span class = 'results-count'>($num_rows)</span></h2>";
             } else {
-                $results['results-title']['#markup'] = "<h2>Abstracts Requiring Review <span class = 'results-count'>($num_rows)</span></h2>";
+                $results['results-title']['#markup'] = "<h2>Abstracts Requiring Review $suffix<span class = 'results-count'>($num_rows)</span></h2>";
             }
         }
 
