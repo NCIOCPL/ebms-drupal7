@@ -475,10 +475,20 @@ function pdq_ebms_login() {
 
     // Then fold in the hidden form for the password reset dialog.
     drupal_add_library('system', 'ui.dialog');
-    $dialog = drupal_get_form('pdq_ebms_password_form');
-    $dialog['#prefix'] = '<div id="forgot-password-form-js">';
-    $dialog['#suffix'] = '</div>';
-    $page = array('form' => $form, 'hidden-form' => $dialog);
+    //$dialog = drupal_get_form('pdq_ebms_password_form');
+    //$dialog['#prefix'] = '<div id="forgot-password-form-js">';
+    //$dialog['#suffix'] = '</div>';
+    //$page = array('form' => $form, 'hidden-form' => $dialog);
+    $page = array(
+        'form' => $form,
+        'nih-login-link' => array(
+            '#type' => 'markup',
+            '#markup' => '<p>(If you have an NIH account, use this page ' .
+            'instead => <strong>' .
+            l('Login page for users with NIH accounts', 'ssologin') .
+            '</strong>)</p>',
+        ),
+    );
     return $page;
 }
 
@@ -493,8 +503,8 @@ function ebms_form_alter(&$form, &$form_state, $form_id) {
             unset($form['pass']['#description']);
             $form['actions']['submit']['#value'] = 'Login';
             $form['actions']['submit']['#prefix'] = '<div id="login-wrpr">';
-            $form['actions']['submit']['#suffix'] =
-                "<a href='$url' id='$id'>Can't access your account?</a></div>";
+            $form['actions']['submit']['#suffix'] = '</div>';
+                //"<a href='$url' id='$id'>Can't access your account?</a></div>";
             break;
     }
 }
