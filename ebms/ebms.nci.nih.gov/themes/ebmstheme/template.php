@@ -560,8 +560,23 @@ function preprocess_ebms_event(&$variables) {
             ->addTag('event_filter');
 
         $currResult = $currQuery->execute();
-        if (isset($currResult['node']))
-            $sortedNodes += $currResult['node'];
+        $nodeAdded = false;
+        if (isset($currResult['node'])) {
+            // make sure node ends up in list, even if not returned by query
+
+            foreach ($currResult['node'] as $nid => $obj) {
+                if ($nid > $node->nid && !$nodeAdded) {
+                    $nodeAdded = true;
+                    $sortedNodes[$node->nid] = $node;
+                }
+
+                $sortedNodes[$nid] = $obj;
+            }
+        }
+
+        if (!$nodeAdded) {
+            $sortedNodes[$node->nid] = $node;
+        }
 
         // get the first following event
         $nextQuery = new EntityFieldQuery();

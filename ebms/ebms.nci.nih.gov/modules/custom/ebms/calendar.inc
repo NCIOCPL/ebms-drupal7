@@ -164,80 +164,95 @@ function _calendar_query_alter(&$view, &$query) {
         return;
     }
 
-    //Initialize an OR conditional for selects
-    $or_conditions = db_or();
-    $nullConditions = db_and();
+    //Initialize an AND conditional for selects
+    $andConditions = db_and();
+    
+    // METHODOLOGY
+    // create an 'and'ed set of conditions.  Each condition represents if the 
+    // field is empty (which does not restrict the results) OR if it matches
+    // the related field on the user, if the user has the field set as well.
+    // If the user doesn't have the field set in some fashion, then the only
+    // member of each OR condition will be the null test on the field, so
+    // a user without a field set will be rejected if that related field in the
+    // query is not also empty.
 
     //Boards:
-    if ($user->boards) {
-        // Add table to query
-        $boardsjoin = new views_join();
-        $boardsjoin->construct("field_data_field_boards", $view->base_table,
-            $view->base_field, 'entity_id',
-            array(
-            array('field' => 'entity_type', 'value' => $view->base_table),
-            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
-        ));
-        $query->table_queue[$view->base_table . '__field_data_field_boards'] = array(
-            'table' => 'field_data_field_boards',
-            'num' => 1,
-            'alias' => 'field_data_field_boards',
-            'join' => $boardsjoin,
-            'relationship' => 'node'
-        );
+    
+    // Add table to query
+    $boardsjoin = new views_join();
+    $boardsjoin->construct("field_data_field_boards", $view->base_table,
+        $view->base_field, 'entity_id',
+        array(
+        array('field' => 'entity_type', 'value' => $view->base_table),
+        array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+    ));
+    $query->table_queue[$view->base_table . '__field_data_field_boards'] = array(
+        'table' => 'field_data_field_boards',
+        'num' => 1,
+        'alias' => 'field_data_field_boards',
+        'join' => $boardsjoin,
+        'relationship' => 'node'
+    );
 
-        //Add where condition
-        $or_conditions->condition('field_data_field_boards.field_boards_value',
+    //Add where conditions
+    $boardOr = db_or()->isNull('field_data_field_boards.field_boards_value');
+    if ($user->boards) {
+        $boardOr->condition('field_data_field_boards.field_boards_value',
             $user->boards, 'IN');
-        $nullConditions->isNull('field_data_field_boards.field_boards_value');
     }
+    $andConditions->condition($boardOr);
 
     //Subgroups:
+    
+    //Add table to query
+    $subgroupsjoin = new views_join();
+    $subgroupsjoin->construct("field_data_field_subgroups",
+        $view->base_table, $view->base_field, 'entity_id',
+        array(
+        array('field' => 'entity_type', 'value' => $view->base_table),
+        array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+    ));
+    $query->table_queue[$view->base_table . '__field_data_field_subgroups'] = array(
+        'table' => 'field_data_field_subgroups',
+        'num' => 1,
+        'alias' => 'field_data_field_subgroups',
+        'join' => $subgroupsjoin,
+        'relationship' => 'node'
+    );
+
+    //Add where conditions
+    $sgOr = db_or()->isNull('field_data_field_subgroups.field_subgroups_value');
     if ($user->subgroups) {
-        //Add table to query
-        $subgroupsjoin = new views_join();
-        $subgroupsjoin->construct("field_data_field_subgroups",
-            $view->base_table, $view->base_field, 'entity_id',
-            array(
-            array('field' => 'entity_type', 'value' => $view->base_table),
-            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
-        ));
-        $query->table_queue[$view->base_table . '__field_data_field_subgroups'] = array(
-            'table' => 'field_data_field_subgroups',
-            'num' => 1,
-            'alias' => 'field_data_field_subgroups',
-            'join' => $subgroupsjoin,
-            'relationship' => 'node'
-        );
-
-        //Add where condition
-        $or_conditions->condition('field_data_field_subgroups.field_subgroups_value',
+        $sgOr->condition('field_data_field_subgroups.field_subgroups_value',
             $user->subgroups, 'IN');
-        $nullConditions->isNull('field_data_field_subgroups.field_subgroups_value');
     }
-    //Ad hoc groups:
-    if ($user->ebms_ad_hoc_groups) {
-        //Add table to query
-        $adhocgroupsjoin = new views_join();
-        $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups",
-            $view->base_table, $view->base_field, 'entity_id',
-            array(
-            array('field' => 'entity_type', 'value' => $view->base_table),
-            array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
-        ));
-        $query->table_queue[$view->base_table . '__field_data_field_ad_hoc_groups'] = array(
-            'table' => 'field_data_field_ad_hoc_groups',
-            'num' => 1,
-            'alias' => 'field_data_field_ad_hoc_groups',
-            'join' => $adhocgroupsjoin,
-            'relationship' => 'node'
-        );
+    $andConditions->condition($sgOr);
 
-        //Add where condition
-        $or_conditions->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
+    //Ad hoc groups:
+    
+    //Add table to query
+    $adhocgroupsjoin = new views_join();
+    $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups",
+        $view->base_table, $view->base_field, 'entity_id',
+        array(
+        array('field' => 'entity_type', 'value' => $view->base_table),
+        array('field' => 'deleted', 'value' => 0, 'numeric' => TRUE),
+    ));
+    $query->table_queue[$view->base_table . '__field_data_field_ad_hoc_groups'] = array(
+        'table' => 'field_data_field_ad_hoc_groups',
+        'num' => 1,
+        'alias' => 'field_data_field_ad_hoc_groups',
+        'join' => $adhocgroupsjoin,
+        'relationship' => 'node'
+    );
+
+    //Add where condition
+    $adhocOr = db_or()->isNull('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value');
+    if ($user->ebms_ad_hoc_groups) {
+        $adhocOr->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
             $user->ebms_ad_hoc_groups, 'IN');
-        $nullConditions->isNull('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value');
     }
+    $andConditions->condition($adhocOr);
 
     //Individual Users:
     //Add table to query
@@ -257,15 +272,14 @@ function _calendar_query_alter(&$view, &$query) {
     );
 
     //Add where condition
-    $or_conditions->condition('field_data_field_individuals.field_individuals_value',
+    $individualOr = db_or()
+        ->isNull('field_data_field_individuals.field_individuals_value')
+        ->condition('field_data_field_individuals.field_individuals_value',
         array($user->uid), 'IN'); //Note the use of array here.  IN must have an array
-    $nullConditions->isNull('field_data_field_individuals.field_individuals_value');
-
-    // finally, need to cover the case where no filters at all are specified
-    $or_conditions->condition($nullConditions);
+    $andConditions->condition($individualOr);
 
     $query->add_where(
-        'membership', $or_conditions
+        'membership', $andConditions
     );
 }
 
