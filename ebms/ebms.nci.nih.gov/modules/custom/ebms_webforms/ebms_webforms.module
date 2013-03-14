@@ -43,12 +43,9 @@ function ebms_webforms_menu_alter(&$items) {
 function ebms_webforms_webform_submission_render_alter(&$renderable) {
     if (!empty($renderable['meeting'])) {
         $meeting_id = $renderable['meeting']['#value'][0];
-        $meetings = entity_load('node', array($meeting_id));
-        foreach ($meetings as $meeting) {
-            $event_date = field_get_items('node', $meeting, 'field_datespan');
-            $start_date = date('Y-m-d', $event_date[0]['value']);
-            $title = htmlspecialchars($meeting->title);
-            $renderable['meeting']['#value'][0] = "$title - $start_date";
+        if ($meeting_id) {
+            $display = _ebms_webform_meeting_display($meeting_id);
+            $renderable['meeting']['#value'][0] = $display;
         }
     }
 }
@@ -198,13 +195,7 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
          //}
         
      }
-     
-     //now we want to make up for the custom form-alter we did in the meeting field
-     
-     $event_block = _ebms_travel_get_meeting_block($form);
-     $pair = _ebms_travel_get_meetings($event_block);
-     $select_fields['meeting'] = $pair;
-     
+
      $output = array();
      //create the preview - shouldn't need to do anything special for regular fields.
      foreach($form_state['values']['submitted'] as $key => $sub_item){
@@ -213,8 +204,13 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
          
          if(!is_array($sub_item) && !empty($sub_item)){
               $output[]='<strong>'.strtoupper($key).'</strong>';
-             //take care of select types.
-             if(!empty($select_fields[$key])){
+
+              // Display meeting as event title - start date (TIR 2367).
+              if ($key == 'meeting')
+                  $output[] = _ebms_webform_meeting_display($sub_item);
+
+              //take care of select types.
+              elseif(!empty($select_fields[$key])){
                  
                  $output[] = $select_fields[$key][$sub_item];
              }
@@ -261,7 +257,7 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
          }
      }
      
-     $value = implode('<br/>', $output);
+     $value = implode('<br />', $output);
      $form['preview-container']=array(
        '#prefix'=>'<div id="preview-area">',
          '#markup' => filter_xss_admin($value),
@@ -799,7 +795,7 @@ function theme_webform_display_ebms_travel($variables) {
     }
     
     
-    $value = implode('<br>', $items);
+    $value = implode('<br />', $items);
     return $value !== '' ? $value : ' ';
 }
 /**
@@ -832,7 +828,7 @@ function _webform_table_ebms_travel($component, $value) {
     }
     
     
-    $value = implode('<br>', $items);
+    $value = implode('<br />', $items);
     return $value !== '' ? $value : ' ';
 }
 /**
@@ -1060,7 +1056,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
     // Add the title and add the -right class
     $output .= '<div id="webform-table-right">';
-    $output .= '<h2>'.$node->title.' ('.$total_count.')</h2><br/>';
+    $output .= '<h2>'.$node->title.' ('.$total_count.')</h2><br />';
 
     // Special class for long tables
     if ($isReimbursementRequest)
@@ -1127,4 +1123,24 @@ function ebms_webforms_preprocess_page(&$vars) {
                 });
             }); }) (jQuery);", 'inline');
     }
+}
+
+/**
+ * Format display for a meeting as event title - YYYY-MM-DD.
+ *
+ *  @param  int     $event_id     Primary key of meeting event node
+ *
+ *  @return string                Formatted display for meeting event
+ */
+function _ebms_webform_meeting_display($event_id) {
+    if ($event_id) {
+        $events = entity_load('node', array($event_id));
+        foreach ($events as $event) {
+            $event_date = field_get_items('node', $event, 'field_datespan');
+            $start_date = date('Y-m-d', $event_date[0]['value']);
+            $title = htmlspecialchars($event->title);
+            return "$title - $start_date";
+        }
+    }
+    throw new \Exception("Internal error formatting meeting display");
 }
