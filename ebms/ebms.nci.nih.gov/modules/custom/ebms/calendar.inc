@@ -164,20 +164,12 @@ function _calendar_query_alter(&$view, &$query) {
         return;
     }
 
-    //Initialize an AND conditional for selects
-    $andConditions = db_and();
-    
-    // METHODOLOGY
-    // create an 'and'ed set of conditions.  Each condition represents if the 
-    // field is empty (which does not restrict the results) OR if it matches
-    // the related field on the user, if the user has the field set as well.
-    // If the user doesn't have the field set in some fashion, then the only
-    // member of each OR condition will be the null test on the field, so
-    // a user without a field set will be rejected if that related field in the
-    // query is not also empty.
+    //Initialize an OR conditional for selects
+    $or_conditions = db_or();
+    $nullConditions = db_and();
 
     //Boards:
-    
+
     // Add table to query
     $boardsjoin = new views_join();
     $boardsjoin->construct("field_data_field_boards", $view->base_table,
@@ -194,13 +186,11 @@ function _calendar_query_alter(&$view, &$query) {
         'relationship' => 'node'
     );
 
-    //Add where conditions
-    $boardOr = db_or()->isNull('field_data_field_boards.field_boards_value');
-    if ($user->boards) {
-        $boardOr->condition('field_data_field_boards.field_boards_value',
+    //Add where condition
+    if($user->boards)
+        $or_conditions->condition('field_data_field_boards.field_boards_value',
             $user->boards, 'IN');
-    }
-    $andConditions->condition($boardOr);
+    $nullConditions->isNull('field_data_field_boards.field_boards_value');
 
     //Subgroups:
     
@@ -220,13 +210,11 @@ function _calendar_query_alter(&$view, &$query) {
         'relationship' => 'node'
     );
 
-    //Add where conditions
-    $sgOr = db_or()->isNull('field_data_field_subgroups.field_subgroups_value');
-    if ($user->subgroups) {
-        $sgOr->condition('field_data_field_subgroups.field_subgroups_value',
+    //Add where condition
+    if($user->subgroups)
+        $or_conditions->condition('field_data_field_subgroups.field_subgroups_value',
             $user->subgroups, 'IN');
-    }
-    $andConditions->condition($sgOr);
+    $nullConditions->isNull('field_data_field_subgroups.field_subgroups_value');
 
     //Ad hoc groups:
     
@@ -247,12 +235,10 @@ function _calendar_query_alter(&$view, &$query) {
     );
 
     //Add where condition
-    $adhocOr = db_or()->isNull('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value');
-    if ($user->ebms_ad_hoc_groups) {
-        $adhocOr->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
+    if($user->ebms_ad_hoc_groups)
+        $or_conditions->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
             $user->ebms_ad_hoc_groups, 'IN');
-    }
-    $andConditions->condition($adhocOr);
+    $nullConditions->isNull('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value');
 
     //Individual Users:
     //Add table to query
@@ -272,15 +258,14 @@ function _calendar_query_alter(&$view, &$query) {
     );
 
     //Add where condition
-    $individualOr = db_or()
-        ->isNull('field_data_field_individuals.field_individuals_value')
-        ->condition('field_data_field_individuals.field_individuals_value',
+    $or_conditions->condition('field_data_field_individuals.field_individuals_value',
         array($user->uid), 'IN'); //Note the use of array here.  IN must have an array
-    $andConditions->condition($individualOr);
+    $nullConditions->isNull('field_data_field_individuals.field_individuals_value');
 
-    $query->add_where(
-        'membership', $andConditions
-    );
+    // or together both conditions (at least one filter match or all filters empty)
+    $or_conditions->condition($nullConditions);
+    
+    $query->add_where('membership', $or_conditions);
 }
 
 /**
