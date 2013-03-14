@@ -6131,9 +6131,17 @@ namespace {
         if ($nid) {
             $event = node_load($nid);
             if ($event) {
+                $nodeWrapper = entity_metadata_wrapper('node', $event);
+                $datespan = $nodeWrapper->field_datespan->value();
+                $suffix = '';
+                if($datespan) {
+                    $date = format_date($datespan['value'], 'custom', 'm/d/Y');
+                    $suffix = " - $date";
+                }                            
+                
                 $form[] = array(
                     "#markup" =>
-                    "<div class='full-citation-indent'>MEETING: $event->title</div>"
+                    "<div class='full-citation-indent'>MEETING: $event->title$suffix</div>"
                 );
             }
         }
