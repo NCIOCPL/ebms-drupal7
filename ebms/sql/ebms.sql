@@ -80,6 +80,8 @@ SET sql_mode='NO_AUTO_VALUE_ON_ZERO';
  ********************************************************/
 DELETE FROM users_roles WHERE uid > 1;
 
+DELETE FROM authmap;
+
 DELETE FROM users WHERE uid > 1;
 
 DELETE FROM role WHERE name NOT IN ('anonymous user',
@@ -1865,6 +1867,7 @@ CREATE TABLE ebms_summary_returned_doc
 when_searched DATETIME          NOT NULL,
   searched_by INTEGER  UNSIGNED NOT NULL,
   search_spec LONGTEXT          NOT NULL,
+  search_type ENUM('db', 'cite-queue', 'ft-queue') NOT NULL DEFAULT 'db',
   FOREIGN KEY (searched_by)   REFERENCES users (uid))
        ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
