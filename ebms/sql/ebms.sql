@@ -60,7 +60,6 @@ DROP TABLE IF EXISTS ebms_ft_unavailable;
 DROP TABLE IF EXISTS ebms_article;
 DROP TABLE IF EXISTS ebms_topic_reviewer;
 DROP TABLE IF EXISTS ebms_doc_topic;
-DROP VIEW  IF EXISTS ebms_active_topic;
 DROP TABLE IF EXISTS ebms_topic;
 DROP TABLE IF EXISTS ebms_ad_hoc_group_member;
 DROP TABLE IF EXISTS ebms_ad_hoc_group;
@@ -294,11 +293,6 @@ CREATE TABLE ebms_topic
  FOREIGN KEY (board_id) REFERENCES ebms_board (board_id),
  FOREIGN KEY (nci_reviewer) REFERENCES users (uid))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-   CREATE VIEW ebms_active_topic AS
-          SELECT topic_id, topic_name, board_id
-            FROM ebms_topic
-           WHERE active_status = 'A';
 
 /*
  * Assignment of topics to posted documents.
