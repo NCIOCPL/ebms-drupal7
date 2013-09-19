@@ -966,7 +966,6 @@ class EbmsReview {
             ),
             'bottom pager' => $pager,
         );
-        //pdq_ebms_debug('MILESTONE 1', $page);
         $reviewer_files = $this->get_reviewer_files();
         if ($reviewer_files)
             $page['reviewer files'] = $reviewer_files;
@@ -2042,65 +2041,43 @@ SELECT DISTINCT t.topic_id, t.topic_name
     }
 
     /**
-     * Build the hash of board members who can be assigned to the
-     * packet being created or modified.  The user can toggle between
-     * displaying all members of the packet's board, or only those
-     * board members who are associated with the packet's specific
-     * topic.  Note that some topics have no default reviewers, so
-     * when creating a packet for such topics the board manager
-     * will always have to ask for the complete board.  We don't
-     * display all the board members by default even in such as
-     * case, because we don't want to give the impression that all
-     * the board members have an association with the selected
-     * topic.  If we're editing an existing packet, we include
-     * reviewers who are currently assigned to the packet, even
-     * if they wouldn't be picked up by the rest of the query's
-     * logic.
-     * 2013-02-12 (TIR 2373): Ashleigh decided she doesn't like
-     * the way the users set up handling of non-topic reviewers
-     * when the "Show All Board Members" option is turned off.
-     * She now wants us to preserve the selections of non-topic
-     * reviewers.  She also wants us to select all the topic
-     * reviewers for a newly created packet (another change from
-     * the prototype).
+     * Build the list of board members who specialize in reviewing
+     * articles for the specified topic.
      */
-    public static function reviewers_for_topic(
-        $topic_id, $board_id=0, $selected=array()
-    ) {
-        if (!$topic_id && !$board_id)
+    public static function default_reviewers_for_topic($topic_id) {
+        if (!$topic_id)
             return array();
         $query = db_select('users', 'u');
         $query->fields('u', array('uid', 'name'));
-        if ($board_id) {
-            $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
-            $query->join('users_roles', 'ur', 'ur.uid = u.uid');
-            $query->join('role', 'r', 'r.rid = ur.rid');
-            $query->condition('m.board_id', $board_id);
-            $query->condition('r.name', 'board member');
-        }
-        else {
-            $query->join('ebms_topic_reviewer', 'r', 'r.user_id = u.uid');
-            $query->condition('r.topic_id', $topic_id);
-        }
+        $query->join('ebms_topic_reviewer', 'r', 'r.user_id = u.uid');
+        $query->condition('r.topic_id', $topic_id);
         $query->condition('u.status', 1);
-        $results = $query->execute();
         $reviewers = array();
+        $results = $query->execute();
         foreach ($results as $result)
             $reviewers[$result->uid] = $result->name;
-        if (!$board_id) {
-            foreach ($selected as $uid) {
-                if (!array_key_exists($uid, $reviewers)) {
-                    $name = db_select('users', 'u')
-                        ->fields('u', array('name'))
-                        ->condition('u.uid', $uid)
-                        ->execute()
-                        ->fetchField();
-                    $reviewers[$uid] = $name;
-                }
-            }
-        }
-        natsort($reviewers);
         return $reviewers;
+    }
+
+    /**
+     * Collect the list of active members of the specified board.
+     */
+    public static function board_members($board_id) {
+        if (!$board_id)
+            return array();
+        $query = db_select('users', 'u');
+        $query->fields('u', array('uid', 'name'));
+        $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+        $query->join('users_roles', 'ur', 'ur.uid = u.uid');
+        $query->join('role', 'r', 'r.rid = ur.rid');
+        $query->condition('m.board_id', $board_id);
+        $query->condition('r.name', 'board member');
+        $query->condition('u.status', 1);
+        $members = array();
+        $results = $query->execute();
+        foreach ($results as $result)
+            $members[$result->uid] = $result->name;
+        return $members;
     }
 
     /**
@@ -2733,17 +2710,19 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
     if ($packet_id) {
         $packet = new EbmsPacket($packet_id);
         $board_id = $packet->board_id;
-        $topic_id = $packet->topic_id;
+        $topic_id = $current_topic = $packet->topic_id;
         $packet_header = 'Edit Packet - ' . htmlspecialchars($packet->title);
     }
     else {
 
         // See if the board and topic have already been selected.
-        $board_id = $topic_id = 0;
+        $board_id = $topic_id = $current_topic = 0;
         if (!empty($form_state['values']['board']))
             $board_id = $form_state['values']['board'];
         if (!empty($form_state['values']['topic']))
             $topic_id = $form_state['values']['topic'];
+        if (!empty($form_state['values']['current-topic']))
+            $current_topic = $form_state['values']['current-topic'];
         $packet_header = 'Add New Literature Surveillance Packet';
 
         // Make sure we don't have a stale topic ID (i.e., board changed).
@@ -2789,16 +2768,50 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
     // Set up the fields which depend on having a topic selected.
     if ($topic_id) {
 
-        // Find out which reviewers are selected.
+        // Find out which reviewers are already selected.
         if (isset($form_state['values'])) {
-            foreach ($form_state['values']['reviewers'] as $id => $val) {
-                if ($val)
-                    $selected_reviewers[] = $id;
+
+            // If the topic just got changed, ignore previous selections.
+            if ($topic_id == $current_topic) {
+                foreach ($form_state['values']['reviewers'] as $id => $val) {
+                    if ($val)
+                        $selected_reviewers[] = $id;
+                }
             }
         }
+
+        // Fresh form for an existing packet; selections are from the DB table.
         elseif ($packet_id)
             $selected_reviewers = $packet->reviewers;
 
+        // Which reviewers should we show for selection?
+        $board_members = EbmsReview::board_members($board_id);
+        $topic_reviewers = EbmsReview::default_reviewers_for_topic($topic_id);
+        $reviewers = $all_reviewers ? $board_members : $topic_reviewers;
+
+        // Which ones should be checked?
+        if ($topic_id == $current_topic)
+            $reviewer_defaults = $selected_reviewers;
+        else
+            $reviewer_defaults = array_keys($topic_reviewers);
+
+        // Make sure the reviewers shown include anyone who is currently
+        // selected.
+        foreach ($reviewer_defaults as $uid) {
+            if (!array_key_exists($uid, $reviewers)) {
+                $name = db_select('users', 'u')
+                    ->fields('u', array('name'))
+                    ->condition('u.uid', $uid)
+                    ->execute()
+                    ->fetchField();
+                $reviewers[$uid] = $name;
+            }
+        }
+
+        // Make sure the checkboxes are in the right order.
+        natsort($reviewers);
+
+        // Take care of the rest of the fields.
         $articles_title = 'Articles';
         $summaries_title = 'Summary Documents (Optional)';
         $reviewers_title = 'Reviewers';
@@ -2806,8 +2819,6 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         $articles = EbmsReview::articles_for_topic($topic_id, $state_id,
                     $packet_id);
         $summaries = EbmsReview::summaries_for_topic($topic_id, $packet_id);
-        $reviewers = EbmsReview::reviewers_for_topic($topic_id,
-                     $all_reviewers ? $board_id : null, $selected_reviewers);
         $articles_desc =
             'Selected articles will be included in the packet.  ' .
             'You may unselect any articles that you do not want ' .
@@ -2821,7 +2832,6 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         // Are we editing an existing packet?
         if ($packet_id) {
             $article_defaults = $packet->articles;
-            $reviewer_defaults = $packet->reviewers;
             $summary_defaults = $packet->summaries;
             $articles_desc =
                 'You may select any articles that you want to add to this ' .
@@ -2833,10 +2843,8 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
                 'from this packet.';
         }
 
-        else {
+        else
             $article_defaults = array_keys($articles);
-            $reviewer_defaults = array_keys($reviewers);
-        }
     }
     else {
 
@@ -2850,6 +2858,8 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
             $summary_defaults = $reviewer_defaults = array();
         $all_reviewers = false;
     }
+    $form_state['ebms-checked-articles'] = $article_defaults;
+    $form_state['ebms-checked-reviewers'] = $reviewer_defaults;
 
     // Assemble the common portions of the form (both editing and creation).
     $form_id = 'pdq-ebms-edit-packet-form';
@@ -2963,6 +2973,10 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         $form[$bsf][$tsf] = array(
             '#prefix' => "<div id='$tsf'>",
             '#suffix' => '</div>',
+            'current-topic' => array(
+                '#type' => 'hidden',
+                '#value' => $topic_id,
+            ),
         );
         if ($topic_id) {
             $name = '';
@@ -3169,12 +3183,23 @@ function pdq_ebms_packet_board_ajax($form, $form_state) {
  * order to work around a Drupal bug which prevents this from
  * happening automatically based on our default values above (see
  * http://drupal.org/node/1100170).
+ * 2013-04-12: Same bug is affecting the reviewers field; same
+ * workaround.
  */
 function pdq_ebms_packet_topic_ajax($form, $form_state) {
+    $checked_reviewers = $form_state['ebms-checked-reviewers'];
+    $checked_articles = $form_state['ebms-checked-articles'];
     $subform = $form['board-specific-fields']['topic-specific-fields'];
     foreach ($subform['articles'] as $k => $v) {
         if (isset($v['#type']) and $v['#type'] == 'checkbox') {
-            $subform['articles'][$k]['#checked'] = 'checked';
+            $checked = in_array($k, $checked_articles) ? 1 : 0;
+            $subform['articles'][$k]['#checked'] = $checked;
+        }
+    }
+    foreach ($subform['reviewers-div']['reviewers'] as $k => $v) {
+        if (isset($v['#type']) and $v['#type'] == 'checkbox') {
+            $checked = in_array($k, $checked_reviewers) ? 1 : 0;
+            $subform['reviewers-div']['reviewers'][$k]['#checked'] = $checked;
         }
     }
     return $subform;

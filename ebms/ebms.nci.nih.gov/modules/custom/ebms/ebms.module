@@ -1031,10 +1031,15 @@ function ebms_user_load($users) {
         // a subgroup belonging to one of the user's boards without regard
         // to if the user actually belongs to those subgroups.
         // (this is a specific requirement)
-        if(!empty($boards))
+        // 2013-04-10 (RMK): That was a misunderstanding of the
+        // requirement (TIR 2385).  Board members should not see
+        // subgroup content for subgroups of which they are not
+        // members.
+        $is_board_member = in_array('board member', $user->roles);
+        if (!$is_board_member && !empty($boards))
         {
             $sgBoardQuery = db_select('ebms_subgroup', 's')
-                ->condition('s.board_id', $boards)
+                ->condition('s.board_id', $boards, 'IN')
                 ->fields('s', array('sg_id'));
 
             // union the queries and eliminate duplicates

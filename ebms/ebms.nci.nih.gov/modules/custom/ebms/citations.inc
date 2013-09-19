@@ -4069,7 +4069,8 @@ namespace {
 
                     require_once('review.inc');
 
-                    $packetIds = Ebms\getArticlePacketIds($article_id, $topic_id);
+                    $packetIds = Ebms\getArticlePacketIds($article_id,
+                                 $topic_id, true);
 
                     if (empty($packetIds))
                         break;

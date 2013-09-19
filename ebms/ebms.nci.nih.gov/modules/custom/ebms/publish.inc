@@ -709,6 +709,8 @@ function pdq_ebms_publish_checkbox_ajax() {
                     'c.article_id = s.article_id AND c.topic_id = s.topic_id');
                 $query->condition('c.cycle_id', $filter_parms['cycle']);
             }
+            else
+                $query->condition('s.status_dt', Ebms\CONVERSION_DATE, '>');
             if ($filter_parms['board'])
                 $query->condition('s.board_id', $filter_parms['board']);
             if ($filter_parms['topic'])
