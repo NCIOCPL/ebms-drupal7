@@ -992,6 +992,7 @@ namespace {
         // build an option list based on all topics related to the given board
         $topicQuery = db_select('ebms_topic', 't')
             ->condition('t.board_id', $boardId)
+            ->condition('t.active_status', 'A')
             ->fields('t')
             ->orderBy('t.topic_name');
 
@@ -1023,6 +1024,12 @@ namespace {
 
             $topicOptions[$topicRow->topic_id] = "$topicRow->topic_name ($count)";
         }
+
+        // The business of determining who the "NCI Reviewer" only has
+        // applicability for the abstract review, not the review from full
+        // text.
+        if (!$abstractReview)
+            return $topicOptions;
         
         // can return this value if th user is unknown or the user has no 
         // specific topics
@@ -1180,6 +1187,7 @@ namespace {
                     try {
                         $topicOptions = db_select('ebms_topic', 't')
                             ->condition('board_id', $board_id)
+                            ->condition('t.active_status', 'A')
                             ->fields('t', array('topic_id', 'topic_name'))
                             ->orderBy('t.topic_name')
                             ->execute()
@@ -1330,7 +1338,7 @@ namespace {
         $board_id = $default_board;
         $topic_id = $default_topics;
         $journal_id = '';
-        $sort_by = 'cms_id';
+        $sort_by = 'ebms_id';
         $format = array();
         $per_page = 10;
         $core_only = false;
@@ -1406,6 +1414,10 @@ namespace {
             // query article state table first
             $stateQuery = db_select('ebms_article_state', 'eas');
 
+            // Omit states for topics which are no longer active.
+            $stateQuery->join('ebms_topic', 'topic', 'topic.topic_id = eas.topic_id');
+            $stateQuery->condition('topic.active_status', 'A');
+
             // limit by proper state and current flag
             $stateQuery->condition('eas.state_id', $state->state_id);
             $stateQuery->condition('eas.current', 'Y');
@@ -1468,7 +1480,7 @@ namespace {
                 case 'pmid':
                     $sortQuery->orderBy('a.source_id');
                     break;
-                case 'cms_id':
+                case 'ebms_id':
                     $sortQuery->orderBy('a.article_id');
                     break;
                 case 'title':
@@ -1522,12 +1534,7 @@ namespace {
 
         $results['buttons']['save_button'] = array(
             '#type' => 'submit',
-            '#value' => 'Save',
-        );
-
-        $results['buttons']['refresh_button'] = array(
-            '#type' => 'submit',
-            '#value' => 'Refresh',
+            '#value' => 'Submit',
         );
 
         $results['buttons']['display-options'] = array(
@@ -1658,7 +1665,9 @@ namespace {
             $article = new Ebms\EbmsArticle($articleId);
 
             // retrieve the topics and related boards
-            $curr_topics = db_select('ebms_article_state', 's')
+            $curr_topics_query = db_select('ebms_article_state', 's');
+            $curr_topics_query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+            $curr_topics = $curr_topics_query->condition('t.active_status', 'A')
                 ->condition('s.article_id', $articleId)
                 ->condition('s.current', 'Y')
                 //->condition('s.state_id', $state->state_id)
@@ -2255,11 +2264,6 @@ namespace {
             '#value' => 'Save',
         );
 
-        $results['trailing-buttons']['refresh_button'] = array(
-            '#type' => 'submit',
-            '#value' => 'Refresh',
-        );
-
         $results['bottom-pager'] = array(
             '#theme' => 'pager',
         );
@@ -2286,7 +2290,7 @@ namespace {
         if ($showAbstract) {
             $sortOptions = array(
                 null => '',
-                'cms_id' => t("CMS ID#"),
+                'ebms_id' => t("EBMS ID#"),
                 'pmid' => t("PMID #"),
                 'author' => t("Author"),
                 'title' => t("Title"),
@@ -2429,6 +2433,7 @@ namespace {
                     $form_state['redirect'] = 'citations';
                     return;
                 case 'Save':
+                case 'Submit':
                     // write out the changes to the not list, in terms of
                     // inserts and deletes to the DB
                     _write_topic_states($form_state['altered_topics'],
@@ -2493,6 +2498,14 @@ namespace {
         $form = array();
         
         $article_id = $article->getId();
+
+        // Fetch the legacy CMS ID if available.
+        $legacy_id = db_select('ebms_legacy_article_id', 'i')
+            ->fields('i', array('legacy_id'))
+            ->condition('i.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+
         $xml = $article->getSourceData();
         $doc = new \SimpleXMLElement($xml);
         $ta = $vol = $issue = $pgn = $year = $pmid = '';
@@ -2540,15 +2553,22 @@ namespace {
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
-        if (!$long_form)
-            $pmid = "PMID: $pmid";
-        $cmsId = $article_id;
+        if (!$long_form) {
+
+            // Add link to PubMed ID (TIR 2492).
+            $target = array('attributes' => array('target' => '_blank'));
+            $url = "http://www.ncbi.nlm.nih.gov/pubmed/$pmid";
+            $link = l($pmid, $url, $target);
+            $pmid = "PMID: $link";
+        }
+        $ebmsId = $article_id;
 
         $tAuthors = '';
         $tTitle = '';
         $tJournal = '';
         $tPMID = '';
-        $tCMSID = '';
+        $tEBMSID = '';
+        $tLEGACYID = '';
         $tReviewCycle = '';
 
         if ($long_form) {
@@ -2556,10 +2576,13 @@ namespace {
             $tTitle = '<div class="citation-subheader">TITLE</div>';
             $tJournal = '<div class="citation-subheader">JOURNAL</div>';
             $tPMID = '<div class="citation-subheader">PMID</div>';
-            $tCMSID = '<div class="citation-subheader">CMS ID</div>';
+            $tEBMSID = '<div class="citation-subheader">EBMS ID</div>';
+            $tLEGACYID = '<div class="citation-subheader">LEGACY CMS ID</div>';
             $tReviewCycle = '<div class="citation-subheader">REVIEW CYCLE</div>';
         } else if (!$showAbstract) {
-            $cmsId = "CMS ID: $article_id";
+            $ebmsId = "EBMS ID: $article_id";
+            if ($legacy_id)
+                $legacy_id = "LEGACY CMS ID: $legacy_id";
         }
         
         $form['authors']['#markup'] =
@@ -2583,11 +2606,17 @@ namespace {
         if ($year)
             $pieces[] = ", $year";
 
-        if ($showAbstract)
-            $pieces[] = ".</div>$tPMID<div>$pmid&nbsp;&nbsp;&nbsp;&nbsp;CMS ID: $cmsId</div>";
+        if ($showAbstract) {
+            $pieces[] = ".</div>$tPMID<div>$pmid&nbsp;&nbsp;&nbsp;&nbsp;EBMS ID: $ebmsId";
+            if ($legacy_id)
+                $pieces[] = "&nbsp;&nbsp;&nbsp;&nbsp;Legacy CMS ID: $legacy_id";
+            $pieces[] = '</div>';
+        }
         else {
             $pieces[] = ".</div>$tPMID<div>$pmid</div>";
-            $pieces[] = "$tCMSID<div>$cmsId</div>";
+            $pieces[] = "$tEBMSID<div>$ebmsId</div>";
+            if ($legacy_id)
+                $pieces[] = "$tLEGACYID<div>$legacy_id</div>";
         }
 
         if (!$long_form) {
@@ -3490,8 +3519,8 @@ namespace {
         ctools_include('modal');
         $commands = array();
         $commands[] = ctools_modal_command_dismiss();
-        $commands[] = ajax_command_invoke('#pdq-ebms-citation-queue #edit-refresh-button',
-            'click');
+        //$commands[] = ajax_command_invoke('#pdq-ebms-citation-queue #edit-refresh-button',
+        //    'click');
 
         print ajax_render($commands);
         exit;
@@ -3786,8 +3815,12 @@ namespace {
         else {
             // build a list of topic options
             $topicOptions = array();
-            $rows = db_select('ebms_topic', 't')->condition('t.board_id',
-                    $boardId)->fields('t')->execute()->fetchAll();
+            $rows = db_select('ebms_topic', 't')
+                ->condition('t.board_id', $boardId)->fields('t')
+                ->condition('t.active_status', 'A')
+                ->orderBy('t.topic_name')
+                ->execute()
+                ->fetchAll();
             foreach ($rows as $row) {
                 if (isset($topics[$row->topic_id]))
                     continue;
@@ -4373,7 +4406,6 @@ namespace {
                     $form["board_decision_discussed_$hash"] = array(
                         '#type' => 'radios',
                         '#options' => array('Y' => 'Yes', 'N' => 'No'),
-                        '#default_value' => 'Y',
                         '#title' => 'Discussed',
                     );
 
@@ -6087,9 +6119,10 @@ namespace {
             $date = '';
             if ($decision->cycle_name)
                 $date = "( $decision->cycle_name )";
-            $discussed = 'NO';
+            $discussed = 'UNKNOWN';
             if($decision->discussed == 'Y') $discussed = 'YES';
-            $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $discussed $date</div>");
+            if($decision->discussed == 'N') $discussed = 'NO';
+            $form['discussed'] = array("#markup" => "<div class='full-citation-indent'>ARTICLE DISCUSSED - $discussed</div>");
         }
 
         $memberIds = Ebms\getBoardDecisionMembers($status->article_state_id);

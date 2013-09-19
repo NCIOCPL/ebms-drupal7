@@ -164,6 +164,13 @@ function _calendar_query_alter(&$view, &$query) {
         return;
     }
 
+    // Don't show board members article publication messages (TIR 2515).
+    if ($view->base_table == 'message') {
+        if (in_array('board member', $user->roles)) {
+            $query->add_where(0, 'message.type', 'activity_new_articles', '<>');
+        }
+    }
+
     //Initialize an OR conditional for selects
     $or_conditions = db_or();
     $nullConditions = db_and();

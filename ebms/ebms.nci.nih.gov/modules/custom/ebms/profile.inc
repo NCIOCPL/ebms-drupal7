@@ -107,9 +107,9 @@ class EbmsProfile {
 
         // Pull the information from the database tables.
         $query = db_select('users', 'u');
-        $query->leftJoin('ebms_user', 'e', 'e.user_id = u.uid');
+        //$query->leftJoin('ebms_user', 'e', 'e.user_id = u.uid');
         $query->fields('u', array('uid', 'name', 'mail', 'picture'));
-        $query->fields('e', array('password_changed'));
+        //$query->fields('e', array('password_changed'));
         $query->condition('u.uid', 1, '>');
         if ($this->action == 'active')
             $query->condition('u.status', 1);
@@ -119,7 +119,8 @@ class EbmsProfile {
         // Set the first row as column headers.
         $rows = array(
             array(
-                'data' => array('Name', 'Email', 'PW Mod', 'Boards', 'Pic'),
+                'data' => array('Name', // 'Email', 'PW Mod',
+                        'Boards', 'Pic'),
                 'class' => array('user-accounts-header'),
                 'no_striping' => 1,
             ),
@@ -150,10 +151,10 @@ class EbmsProfile {
             }
             else
                 $photo = '';
-            $email = htmlspecialchars($u->mail);
+            //$email = htmlspecialchars($u->mail);
 
             // XXX Temporary code; remove for production.
-            if (strpos($email, 'bkline+ebmsdev') !== false) {
+            if (false && strpos($email, 'bkline+ebmsdev') !== false) {
                 $email = '<span title="For right now we\'re using ' .
                     htmlspecialchars($u->mail) . ' to prevent ' .
                     htmlspecialchars($u->name) .
@@ -161,10 +162,10 @@ class EbmsProfile {
                     'developing.">Bogus address</span>';
             }
             $link = l($u->name, EbmsProfile::$url . '/view/' . $u->uid);
-            if ($u->password_changed)
-                $pw_changed = date('m/d/y', strtotime($u->password_changed));
-            else
-                $pw_changed = '&mdash;';
+            //if ($u->password_changed)
+            //    $pw_changed = date('m/d/y', strtotime($u->password_changed));
+            //else
+            //    $pw_changed = '&mdash;';
             $boards = EbmsProfile::get_boards($u->uid, '<br />');
             $boards_url = EbmsProfile::$url . '/memberships/' . $u->uid;
             $boards_link = l($boards, $boards_url, array('html' => true));
@@ -174,15 +175,15 @@ class EbmsProfile {
                         'data' => $link,
                         'class' => array('c1'),
                     ),
-                    array(
-                        'data' => $email,
-                        'class' => array('c1'),
-                    ),
-                    array(
-                        'data' => htmlspecialchars($u->mail),
-                        'data' => $pw_changed,
-                        'class' => array('c3'),
-                    ),
+                    //array(
+                    //    'data' => $email,
+                    //    'class' => array('c1'),
+                    //),
+                    //array(
+                    //    'data' => htmlspecialchars($u->mail),
+                    //    'data' => $pw_changed,
+                    //    'class' => array('c3'),
+                    //),
                     array(
                         'data' => $boards_link,
                         'class' => array('c4'),
@@ -219,7 +220,7 @@ class EbmsProfile {
         );
         $rows = array(
             $this->user_name_row(),
-            $this->email_row(),
+            //$this->email_row(),
             //$this->password_row(),
             $this->boards_row(),
             $this->picture_row(),
@@ -272,7 +273,7 @@ class EbmsProfile {
 
     /**
      * Assemble the row for displaying or editing the user's email
-     * address.
+     * address.  XXX Not currently used.
      */
     private function email_row() {
         if ($this->action == 'edit-email') {
@@ -308,6 +309,7 @@ class EbmsProfile {
     /**
      * Assemble the row for displaying the date the user's password
      * was last changed or for setting a new password for the user.
+     * XXX Not currently used.
      */
     private function password_row() {
         if ($this->action == 'edit-password') {
@@ -511,7 +513,7 @@ class EbmsProfile {
 
 /**
  * Builds the renderable array for the form used to edit the
- * user's email address.
+ * user's email address.  XXX Not currently used.
  */
 function pdq_ebms_profile_email_form($form, &$form_state, $user) {
     return array(
@@ -812,7 +814,9 @@ function pdq_ebms_profile_picture_form_submit($form, &$form_state) {
             EbmsProfile::scale_and_crop($image);
     }
     if ($ready) {
-        user_save($account, array('picture' => $file));
+        $result = user_save($account, array('picture' => $file));
+        if ($result)
+            pdq_ebms_debug("USER-SAVE PICTURE FAILURE", array($account, $file));
         drupal_goto(EbmsProfile::$url . '/view/' . $account->uid);
     }
 }
@@ -863,8 +867,8 @@ function pdq_ebms_profile_picture_crop_form($form, &$form_state, $user, $fid) {
 function pdq_ebms_profile_picture_crop_form_submit($form, &$form_state) {
     $x = $form_state['values']['x'];
     $y = $form_state['values']['y'];
-    $w = $form_state['values']['w'];
-    $h = $form_state['values']['h'];
+    $w = round($form_state['values']['w']);
+    $h = round($form_state['values']['h']);
     $original_w = $form_state['values']['width'];
     $original_h = $form_state['values']['height'];
     $user_id = $form_state['values']['user-id'];

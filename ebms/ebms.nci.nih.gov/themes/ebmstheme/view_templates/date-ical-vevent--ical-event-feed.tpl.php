@@ -42,17 +42,17 @@ $current_date = !empty($event['current_date']) ? $event['current_date'] : $date-
 print "BEGIN:VEVENT\r\n";
 print "UID:" . $event['uid'] . "\r\n";
 print "SUMMARY:" . $event['summary'] . "\r\n";
-print "DTSTAMP;TZID=America/New_York:" . $current_date . "\r\n";
+print "DTSTAMP:" . getUTC($current_date) . "\r\n";
 if ($event['all_day']):
-  print "DTSTART;VALUE=DATE:" . $event['start'] . "\r\n";
+  print "DTSTART;VALUE=DATE:" . getUTC($event['start']) . "\r\n";
 else:
-  print "DTSTART;TZID=America/New_York:" . $event['start'] . "\r\n";
+  print "DTSTART:" . getUTC($event['start']) . "\r\n";
 endif;
 if (!empty($event['end'])):
   if (!empty($event['all_day'])):
-    print "DTEND;VALUE=DATE:" . $event['end'] . "\r\n";
+    print "DTEND;VALUE=DATE:" . getUTC($event['end']) . "\r\n";
   else:
-    print "DTEND;TZID=America/New_York:" . $event['end'] . "\r\n";
+    print "DTEND:" . getUTC($event['end']) . "\r\n";
   endif;
 endif;
 if (!empty($event['rrule'])):

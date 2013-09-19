@@ -267,11 +267,11 @@ if ($logged_in) {
             <?php print l('EBMS Home', 'home') ?> |
             <a href="http://www.cancer.gov/global/web/policies"
                target="_blank">Policies</a> |
-            <a href="http://www.cancer.gov/global/web/policies/page3"
+            <a href="http://www.cancer.gov/global/web/policies/accessibility"
                target="_blank">Accessibility</a> |
             <a href="http://www.cancer.gov/global/viewing-files"
                target="_blank">Viewing Files</a> |
-            <a href="http://www.cancer.gov/global/web/policies/page6"
+            <a href="http://www.cancer.gov/global/web/policies/foia"
                target="_blank">FOIA</a> |
             <?php print l('Site Help', 'help') ?> <br />
             <a href="http://www.hhs.gov" target="_blank"

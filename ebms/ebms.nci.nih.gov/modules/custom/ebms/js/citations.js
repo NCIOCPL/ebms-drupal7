@@ -118,6 +118,11 @@ function addHooks() {
     // bind reposition modal to resize
     jQuery(window).resize(repositionModal);
     jQuery(window).scroll(repositionModal);
+
+    // Fix for IE :hover bug (TIR #2485).
+    jQuery("div.article-citation input.form-full-citation-link")
+        .mouseover(function() { jQuery(this).addClass("hover"); })
+        .mouseleave(function() { jQuery(this).removeClass("hover"); });
 }
 
 /**

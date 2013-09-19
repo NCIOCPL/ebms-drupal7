@@ -395,14 +395,9 @@ class EbmsHomePage {
             $items[] = EbmsHomePage::alert("review/$page", 'Reviews', $count);
         }
         if (module_exists('ebms_forums')) {
-            $total += $count = _ebms_forums_count_new_topics();
-            
-            // retrieve most recent topic nid
-            $nid = _ebms_forums_get_next_new_topic();            
-            $url = 'forum';
-            if($nid !== FALSE)
-                $url = "node/$nid";
-
+            $topic_ids = _ebms_forums_get_new_topics();
+            $count = count($topic_ids);
+            $url = $count ? "node/$topic_ids[0]" : 'forum';
             $items[] = EbmsHomePage::alert($url, "Forums", $count);
         }
 

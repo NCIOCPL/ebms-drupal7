@@ -281,6 +281,8 @@ class EbmsReview {
         $boards = array();
         if (isset($opts['query']['boards']))
             $boards = explode(',', $opts['query']['boards']);
+        else
+            $boards = $this->user->boards;
 
         // Build the query.
         $query = db_select('ebms_packet', 'p');
@@ -302,7 +304,7 @@ class EbmsReview {
             $query->condition('b.board_id', reset($boards));
         elseif (count($boards) > 1)
             $query->condition('b.board_id', $boards, 'IN');
-        $query->condition('p.created_by', $this->user->uid);
+        //$query->condition('p.created_by', $this->user->uid);
         $query->condition('p.active_status', 'A');
         $query->orderByHeader($headers);
         $packets = $query->execute();
@@ -2712,6 +2714,7 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         $board_id = $packet->board_id;
         $topic_id = $current_topic = $packet->topic_id;
         $packet_header = 'Edit Packet - ' . htmlspecialchars($packet->title);
+        $packet_name = $packet->title;
     }
     else {
 
@@ -2912,7 +2915,9 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
     );
 
     // Put up the form for an existing packet.
-    if ($packet_id)
+    if ($packet_id) {
+        if (isset($form_state['values']))
+            $packet_name = $form_state['values']['name'];
         return array(
             '#id' => $form_id,
             'heading' => $heading_field,
@@ -2930,10 +2935,16 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
                     'articles' => $articles_field,
                     'summaries' => $summaries_field,
                     'reviewers-div' => $reviewers_div,
+                    'name' => array(
+                        '#type' => 'textfield',
+                        '#title' => 'Packet Name',
+                        '#default_value' => $packet_name,
+                    ),
                 ),
             ),
             'submit' => $submit_field,
         );
+    }
 
     // Build the render array for the form for a new packet.  Note that
     // there is a Drupal bug which causes our default checking of the
@@ -3004,14 +3015,14 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
  */
 function pdq_ebms_edit_packet_form_validate($form, &$form_state) {
     $packet_id = $form_state['values']['packet'];
+    $name = trim($form_state['values']['name']);
+    if (!$name)
+        form_set_error('name', 'Packet must have a name.');
     if (!$packet_id) {
-        $name = trim($form_state['values']['name']);
         if (!$form_state['values']['board'])
             form_set_error('board', 'Board selection is required.');
         if (!$form_state['values']['topic'])
             form_set_error('topic', 'Topic selection is required.');
-        if (!$name)
-            form_set_error('name', 'Packet must be given a name.');
     }
     $article_count = $reviewer_count = 0;
     $articles = $form_state['values']['articles'];
@@ -3044,6 +3055,7 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
     $articles = array();
     $reviewers = array();
     $summaries = array();
+    $name = trim($form_state['values']['name']);
     foreach ($form_state['values']['articles'] as $id => $value)
         if ($value)
             $articles[$value] = $value;
@@ -3059,7 +3071,6 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
         global $user;
         $articles_to_add = $articles;
         $topic_id = $form_state['values']['topic'];
-        $name = $form_state['values']['name'];
         $now = date('Y-m-d H:i:s');
         $packet_id = db_insert('ebms_packet')
             ->fields(
@@ -3074,8 +3085,6 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
     }
     else {
         require_once('EbmsArticle.inc');
-        $packetInfo = \Ebms\getPacketInfo($packet_id);
-        $name = $packetInfo->packet_title;
 
         // Which articles are in the packet already?
         $rows = db_select('ebms_packet_article', 'a')
@@ -3085,6 +3094,12 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
         $in_packet = array();
         foreach ($rows as $row)
             $in_packet[$row->article_id] = $row->drop_flag ? true : false;
+
+        // Update the packet title (TIR 2495).
+        db_update('ebms_packet')
+            ->fields(array('packet_title' => $name))
+            ->condition('packet_id', $packet_id)
+            ->execute();
 
         // Add the articles the manager wants in the packet now.
         $articles_to_add = array();

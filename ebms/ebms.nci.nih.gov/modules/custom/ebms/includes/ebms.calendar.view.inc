@@ -593,7 +593,7 @@ $handler->display->display_options['row_options']['inline'] = array(
   'title' => 'title',
   'field_event_type' => 'field_event_type',
 );
-$handler->display->display_options['row_options']['separator'] = ',';
+$handler->display->display_options['row_options']['separator'] = '-';
 $handler->display->display_options['defaults']['row_options'] = FALSE;
 $handler->display->display_options['defaults']['empty'] = FALSE;
 /* No results behavior: Global: Text area */

@@ -132,7 +132,7 @@ function ebms_forums_enable() {
     menu_rebuild();
 
     // Add or update instances to the Forums Taxonomy that are the same fields that exist on the EBMS Event node type
-    drupal_set_message('The EBMS Forums module assumes there is an instance of certain fields on the EBMS Event type upon enable.', 'warning');
+    drupal_set_message('The EBMS Forums module assumes there is an instance of certain fields on the EBMS Event type upon enable.', 'status');
     $vocab = taxonomy_vocabulary_machine_name_load('forums');
     if (!$vocab) {
         drupal_set_message('Enable FAILED: Forums vocabualry does not exist. It should be created when the core Forums module is enabled', 'error');
@@ -532,111 +532,119 @@ function ebms_forums_menu_alter(&$items) {
     chain_menu_access_chain($items, 'forum/%forum_forum', '_ebms_forums_view_forum_access_callback', array(1), FALSE);
 }
 
-function _ebms_forums_view_forum_access_callback($forum = NULL) {
+/*
+ * Determine whether the current user can see the specified forum.
+ *
+ * A user may see an unarchived forum if any of the following applies:
+ *
+ *   1. the user has the Administrator role (CBIIT; e.g., Rob Chen)
+ *   2. the user has the Site Manager role (e.g., Bob, Alan, Bryan)
+ *   3. the user has the ICRDB Manager role (Margaret et al.)
+ *   4. the user is listed explicitly as a member of the forum
+ *   5. the user is linked to a board directly assigned to the forum
+ *   6. the user is linked to a subgroup directly assigned to the forum
+ *   7. the user is part of an ad-hoc group assigned to the forum
+ *   8. the user has the Board Manager role and is linked to a board one
+ *      or more of whose subgroups is directly assigned to the forum
+ *   9. the forum has no filtering at all (general-purpose forum)
+ *
+ * A user may see an archived forum if any of the following applies:
+ *
+ *   * the user has the Administrator role
+ *   * the user has the Site Manager role
+ *   * the user has the ICRDB Manager role
+ *   * the user has the Board Manager role and would be able to see the
+ *      forum if it were not archived
+ */
+function _ebms_forums_view_forum_access_callback($forum=null) {
+
+    // Let the user see the forum landing page.
+    if (!$forum)
+        return true;
+
+    // Get the metadata for the forum.
+    $forum_wrapper = entity_metadata_wrapper('taxonomy_term', $forum);
+
+    // Who's the current user?
     global $user;
-    if ($forum) {
-        /*
-         * A user may see an unarchived forum IF:
-         *  1) They are User 1.
-         *  2) They have the Administer EBMS Permission.
-         *  3) They are in the list of individuals that are on that forum.
-         *  4) They are part of a Board that is in the list of Boards on that forum.
-         *  5) They are part of a Subgroup that is in the list of Subgroups on that forum.
-         *  6) They are part of an Ad Hoc Group that is in the list of Ad Hoc Groups on that forum.
-         * 
-         * A user may see an archived forum IF:
-         *  1) They are User 1.
-         *  2) They have the Administer EBMS Permission.
-         *  3) They have the Administer EBMS Forums Permisssion and have permission to view that forum when not archived.
-         * 
-         */
+    $account = user_load($user->uid);
 
-        // (1) They are User 1
-        if ($user->uid == 1)
-            return TRUE;
+    // 1-3: These roles can see all forums.
+    $roles = array('administrator', 'site manager', 'icrdb manager');
+    $common = array_intersect($roles, $user->roles);
+    if (!empty($common))
+        return true;
 
-        // (2) They have the Administer EBMS Permission
-        $administer = user_access('administer ebms');
-        if ($administer)
-            return TRUE;
+    // Find out if the forum is archived.
+    $archived = false;
+    $archField = field_get_items('taxonomy_term', $forum, 'field_archived');
+    if ($archField)
+        $archived = $archField[0]['value'];
 
-        
-        // Archived Forum Interception
-        // Find out if the Forum is Archived
-        $archived = FALSE;
-        $archivedField = field_get_items('taxonomy_term', $forum, 'field_archived');
-        if ($archivedField)
-            $archived = $archivedField[0]['value'];
-        /* No longer true as of 1/17...see below
-        // Prevent access if it is
-        if ($archived)
-            return FALSE;
-         */
-        
-        // Archived - View
-        $administerForums = user_access('administer ebms forums');
-        
-        // fail immediately if archived and no administer rights exist
-        if ($archived && !$administerForums)
-            return FALSE;
+    // Find out if the current user is a board manager.
+    $board_manager = in_array('board manager', $user->roles);
 
-        // (3) If the user is in the list of individuals that are on the fourm
-        if (count($forum->field_individuals) > 0) {
-            $individuals = array();
-            $tmp = $forum->field_individuals;
-            $tmp = $tmp['und'];
-            foreach ($tmp as $t)
-                $individuals[] = $t['value'];
-            if (in_array($user->uid, $individuals))
-                if (!$archived)
-                    return TRUE;
-                elseif ($archived && $administerForums)
-                    return TRUE;
+    // Don't show archived forums to board members.
+    if ($archived && !$board_manager)
+        return false;
+
+    // Remember if any filtering is used for the forum.
+    $filtered = false;
+
+    // 4. Explicitly listed as forum member?
+    if (!empty($forum->field_individuals)) {
+        foreach ($forum->field_individuals['und'] as $individual) {
+            if ($user->uid == $individual['value'])
+                return true;
         }
-
-        // (4) If the user is part of a Board that is in the list of Boards on this forum
-        
-        // count the unfiltered fields, in case all tested fields have no specified
-        // filters
-        $unfiltered = 0;
-        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'boards', $forum, 'field_boards');
-        if($matchedGroups === FALSE) {
-            $unfiltered++;
-        }        
-        else if (count($matchedGroups) > 0)
-            if (!$archived)
-                return TRUE;
-            elseif ($archived && $administerForums)
-                return TRUE;
-
-        // (5) If the user is part of a Subgroup that is in the list of Subgroups on this forum
-        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'subgroups', $forum, 'field_subgroups');
-        if($matchedGroups === FALSE) {
-            $unfiltered++;
-        }        
-        else if (count($matchedGroups) > 0)
-            if (!$archived)
-                return TRUE;
-            elseif ($archived && $administerForums)
-                return TRUE;
-
-        // (6) If the user is part of an Ad Hoc Group that is in the list of Ad Hoc Groups on this forum
-        $matchedGroups = _ebms_forums_determine_membership($user->uid, 'adhocgroups', $forum, 'field_ad_hoc_groups');
-        if($matchedGroups === FALSE) {
-            $unfiltered++;
-        }        
-        else if (count($matchedGroups) > 0)
-            if (!$archived)
-                return TRUE;
-            elseif ($archived && $administerForums)
-                return TRUE;
-
-        // if not specifically passed by a filter, and any of the filters are
-        // valid, then fail the access
-        if($unfiltered < 3)
-            return FALSE;
+        $filtered = true;
     }
-    return TRUE;
+
+    // 5. Linked to board explicitly assigned to forum?
+    $user_boards = $account->boards;
+    $forum_boards = $forum_wrapper->field_boards->value();
+    if (!empty($forum_boards)) {
+        $common = array_intersect($user_boards, $forum_boards);
+        if (!empty($common))
+            return true;
+        $filtered = true;
+    }
+
+    // 6. Linked to subgroup explicitly assigned to forum?
+    $user_subgroups = $account->subgroups;
+    $forum_subgroups = $forum_wrapper->field_subgroups->value();
+    if (!empty($forum_subgroups)) {
+        $common = array_intersect($user_subgroups, $forum_subgroups);
+        if (!empty($common))
+            return true;
+        $filtered = true;
+    }
+
+    // 7. Member of ad-hoc group assigned to forum?
+    $user_adhocgroups = $account->adhocgroups;
+    $forum_adhocgroups = $forum_wrapper->field_ad_hoc_groups->value();
+    if (!empty($forum_adhocgroups)) {
+        $common = array_intersect($user_adhocgroups, $forum_adhocgroups);
+        if (!empty($common))
+            return true;
+        $filtered = true;
+    }
+
+    // 8. Board managers see subgroup forums for their boards.
+    if ($board_manager && !empty($forum_subgroups)) {
+        $sg_boards = db_select('ebms_subgroup', 's')
+            ->fields('s', array('board_id'))
+            ->condition('s.sg_id', $forum_subgroups, 'IN')
+            ->distinct()
+            ->execute()
+            ->fetchCol();
+        $common = array_intersect($user_boards, $sg_boards);
+        if (!empty($common))
+            return true;
+    }
+
+    // 9. Forum is visible only if unfiltered if we get this far.
+    return !$filtered;
 }
 
 function ebms_forums_node_access($node, $op, $account) {
@@ -958,47 +966,40 @@ function ebms_forums_preprocess_page(&$vars) {
 }
 
 /**
- * Determines the number of unread Forum Topics for Forums that you can see.
- * @global type $user
- * @return type A count of unread forum topics.
+ * Fetches the node IDs of the latest current unread topics
+ * visible for the current user.  Can't use _forum_topics_unread()
+ * because that doesn't take into account archived topics.
+ * @global object $user
+ * @return array  List of topic node IDs, newest first
  */
-function _ebms_forums_count_new_topics () {
-    global $user;
-    $count = 0;
-    $forums = _ebms_forums_for_global_user();
-    foreach ($forums as $forum)
-        $count += _forum_topics_unread($forum->tid, $user->uid);
-    return $count;
-}
-
-/**
- * Retrieves the node id of the most recently changed topic.
- * 
- * @global type $user the current user
- * @return int The node id if found, FALSE otherwise.
- */
-function _ebms_forums_get_next_new_topic() {
+function _ebms_forums_get_new_topics() {
     global $user;
     $forums = _ebms_forums_for_global_user();
-    $tids = array();
+    if (!$forums)
+        return array();
+    $forum_ids = array();
     foreach ($forums as $forum)
-        $tids[] = $forum->tid;
-    
+        $forum_ids[] = $forum->tid;
     $query = db_select('node', 'n');
     $query->join('forum', 'f', 'n.vid = f.vid');
     $query->leftJoin('history', 'h', 'n.nid = h.nid AND h.uid = :uid',
         array(':uid' => $user->uid));
     $query->fields('n', array('nid'));
-    return $query
-        ->condition('f.tid', $tids)
-        ->condition('status', 1)
-        ->condition('n.created', NODE_NEW_LIMIT, '>')
-        ->isNull('h.nid')
-        ->addTag('node_access')
-        ->orderBy('n.changed', 'DESC')
-        ->range(null, 1)
-        ->execute()
-        ->fetchField();
+    $query->condition('f.tid', $forum_ids);
+    $query->condition('status', 1);
+    $query->condition('n.created', NODE_NEW_LIMIT, '>');
+    $query->isNull('h.nid');
+    $query->addTag('node_access');
+    $query->orderBy('n.changed', 'DESC');
+    $rows = $query->execute();
+    $topic_ids = array();
+    foreach ($rows as $row) {
+        $node = node_load($row->nid);
+        $archivedField = field_get_items('node', $node, 'field_archived');
+        if (!$archivedField || !$archivedField[0]['value'])
+            $topic_ids[] = $row->nid;
+    }
+    return $topic_ids;
 }
 
 /**

@@ -94,8 +94,7 @@ class EbmsFullText {
         if ($year)
             $pieces[] = ", $year";
         $pieces[] = '.<br />PMID: ' . $pmid;
-        $pieces[] = ' &nbsp; EBMS ID: ' . l($article_id,
-                    'citations/full/' . $article_id);
+        $pieces[] = ' &nbsp; EBMS ID: ' . $article_id;
 
         // Link to NLM's abstract for the article.
         $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $pmid;

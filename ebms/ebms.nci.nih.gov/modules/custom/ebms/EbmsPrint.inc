@@ -1098,7 +1098,7 @@ class EbmsPrintJob {
             //   response sheet is not created if it's just a report
             if ($epf->boardMemberId) {
                 $respEpf = $this->createResponseSheet($epf, $packetPos,
-                                          $packetMax, $packetTitle);
+                                          $packetMax, $packetTitle, $packetId);
                 $epfList[] = $respEpf;
             }
 
@@ -1151,11 +1151,15 @@ class EbmsPrintJob {
      *  @param int $packetPos       Ordinal pos of article in packet, origin 1.
      *  @param int $packetMax       Count of articles in packet.
      *  @param string $packetTitle  Title of the packet and response sheet.
+     *  @param int $packetId        Id of the packet, used to disambiguate two
+     *                               response sheets for one article sent to
+     *                               one board member for two different packets.
      *
      *  @return                 New EbmsPrintFile object for the constructed
      *                           file.
      */
-    function createResponseSheet($epf, $packetPos, $packetMax, $packetTitle) {
+    function createResponseSheet($epf, $packetPos, $packetMax,
+                                 $packetTitle, $packetId) {
 
         // Reviewer name tells who this response is from
         $reviewerName = getNameByUid($epf->boardMemberId);
@@ -1202,9 +1206,6 @@ class EbmsPrintJob {
 
         // Get the name(s) of the topic(s)
         $topicList = $artObj->getTopics();
-
-        // Remember the first topic, it goes into the title
-        $firstTopic  = $topicList[0]->topic_name;
 
         // Format the names into a comma delimited string
         $topicStringArray = array();
@@ -1291,9 +1292,9 @@ class EbmsPrintJob {
         $this->createResponseFixedText($pdf);
 
         // Save the pdf to temp storage
-        $fname = sprintf("%s/ResponseSheetArticle%d_Mbr%d.pdf",
+        $fname = sprintf("%s/ResponseSheetArticle%d_Mbr%d_Packet%d.pdf",
                           $this->serverSavePath,
-                          $epf->ebmsArticleId, $epf->boardMemberId);
+                          $epf->ebmsArticleId, $epf->boardMemberId, $packetId);
         if ($this->mode != 'report') {
             $pdf->Output($fname, 'F');
         }

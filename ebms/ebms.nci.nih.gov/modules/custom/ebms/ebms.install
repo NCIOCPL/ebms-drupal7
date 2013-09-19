@@ -28,9 +28,9 @@ $GLOBALS['recent_activity_types'] = array(
             "arguments" : null,
             "message_text" : { "und" : [
                 {
-                  "value" : "New [message:board] articles posted.  [message:timestamp:custom:m\/d\/Y]",
+                  "value" : "New [message:field_boards] articles posted.  [message:timestamp:custom:m\/d\/Y]",
                   "format" : "plain_text",
-                  "safe_value" : "\u003Cp\u003ENew [message:board] articles posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+                  "safe_value" : "\u003Cp\u003ENew [message:field_boards] articles posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
                 }
               ]
             }

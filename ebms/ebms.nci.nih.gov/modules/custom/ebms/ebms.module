@@ -380,6 +380,22 @@ function ebms_menu() {
             'access arguments' => array('administer'),
         ),
 
+        // MANAGE EBMS TOPICS
+        'admin/topics' => array(
+            'title' => 'EBMS Topics',
+            'page callback' => 'pdq_ebms_topics',
+            'access arguments' => array('administer'),
+            'file' => 'topics.inc',
+        ),
+
+        // MANAGE EBMS SUBGROUPS
+        'admin/subgroups' => array(
+            'title' => 'EBMS Subgroups',
+            'page callback' => 'pdq_ebms_subgroups',
+            'access arguments' => array('administer'),
+            'file' => 'subgroups.inc',
+        ),
+
         // TESTING FOR ALAN
         'alantest' => array(
             'title' => 'Article API Testing',
@@ -487,7 +503,7 @@ function pdq_ebms_login() {
             ),
         ),
     );
-    $link = l('NIH Login', 'ssologin', $options);
+    $link = l('NCI Login', 'ssologin', $options);
     $page = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'login-wrapper'),
@@ -495,9 +511,23 @@ function pdq_ebms_login() {
         'nih-login-link' => array(
             '#type' => 'markup',
             '#markup' => '<div id="ssopanel">' .
-            '<p>If you have an NIH account use this page instead.</p>' .
+            '<p>If you have an NCI account use this page instead.</p>' .
             $link .
-            '</div>',
+            '</div>
+<div id="nci-login-instructions">
+ <p><u>NON-NCI USERS:</u></p>
+ <p>Your <strong>EBMS username</strong> is your first and last name
+    separated by a space (e.g., <strong>John Smith</strong>).</p>
+ <p>Your password can be changed using the <a
+    href="https://password.nci.nih.gov/aims/ps/external.aspx">NCI
+    password reset tool</a>.  You will need your NCI username to
+    change your password.  <strong>Your NCI username is not the same
+    as your EBMS username</strong>.  Contact your Board manager if
+    you do not know your NCI username.</p>
+ <p>For assistance, call the NIH help desk at 301-496-4357 and
+    explain that you are calling with a problem related to an NCI
+    system call the PDQ Editorial Board Management System (EBMS).</p>
+</div>',
         ),
     );
     return $page;
@@ -1530,4 +1560,45 @@ function ebms_ckeditor_link_types_alter(&$types) {
         'type' => 'ebms_file',
         'module' => 'ebms',
     ));
+}
+
+/**
+ * Convert a string time to UTC/GMT in iCalendar format in order to
+ * workaround what appears to be failure of Microsoft Outlook to accept
+ * a standard iCal datetime that already incorporates daylight savings.
+ *
+ *  @param string $strTime     Datetime string, e.g., "20130515T133000"
+ *                              for 1:30 pm, May 15, 2013.
+ *                              Any datetime string recognized by PHP's
+ *                              strtotime() is acceptable.
+ *                              If "now", use the current datetime.
+ *  @param string $timezone    Timezone string, e.g., "America/Chicago",
+ *                              default = timezone where NCI offices in
+ *                              Maryland.
+ *
+ *  @return                    Same string, set to Greenwich Mean Time, in
+ *                              iCal format e.g., "20130515T173000Z" for
+ *                              above example datetime.
+ *
+ *  @throws Exception          If the input $strTime is not a recognized
+ *                              datetime format.
+ */
+function getUTC($strTime="now", $timeZone="America/New_York") {
+
+    // Set timezone for conversion UNIX time.
+    date_default_timezone_set($timeZone);
+    $unixTime = strtotime($strTime);
+
+    // Check - this should never fail.  If it does we have a bug
+    if (!$unixTime) {
+        throw new \Exception(
+              "Cannot recognize \"$strTime\" as a standard datetime format." .
+              "  Please inform programming support staff.");
+    }
+
+    // Back to iCal, but using Greenwich Mean Time (UTC)
+    date_default_timezone_set("UTC");
+    $utc = date("Ymd\THis\Z", $unixTime);
+
+    return $utc;
 }
