@@ -1750,6 +1750,8 @@ class EbmsReview {
         $query->fields('f', array('uri'));
         $query->fields('r', array('review_id', 'when_posted'));
         $query->condition('p.packet_id', $this->packet_id);
+        $query->condition('p.drop_flag', 0);
+        $query->isNull('p.archived');
         $query->orderBy('a.import_date', 'DESC');
         $result = $query->execute();
         $articles = array();
