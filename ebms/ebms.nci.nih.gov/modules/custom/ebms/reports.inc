@@ -2172,6 +2172,7 @@ class EbmsReports {
         $headers[] = 'Comments';
         $headers[] = 'Review Cycle';
         $headers[] = 'Date Assigned';
+        $headers[] = 'Summary Topic';
 
         // Construct the query for the report.
         $query = db_select('ebms_article_state', 's');
@@ -2197,6 +2198,8 @@ class EbmsReports {
             $query->condition('t.cycle_id', $params['cycle']);
         $query->fields('s', array('article_id', 'article_state_id',
                                   'state_id', 'status_dt'));
+        $query->join('ebms_topic', 'tn', 'tn.topic_id = t.topic_id');
+        $query->fields('tn', array('topic_name'));
         $query->orderByHeader($headers);
         $query->distinct();
 
@@ -2234,6 +2237,7 @@ class EbmsReports {
             $row[] = $result->cycle_name;
             $status_dt = strtotime($result->status_dt);
             $row[] = date('m/d/Y', $status_dt);
+            $row[] = htmlspecialchars($result->topic_name);
             $rows[] = array(
                 'data' => $row,
                 'no_striping' => true,
@@ -2292,6 +2296,7 @@ class EbmsReports {
             'Meeting Date (Type)',
             'Comments',
             'Review Cycle',
+            'Summary Topic',
         );
 
         // Start off with an empty report table.
@@ -2335,6 +2340,8 @@ class EbmsReports {
             $query->fields('s',
                 array('article_id', 'article_state_id', 'status_dt'));
             $query->fields('m', array('nid'));
+            $query->join('ebms_topic', 'tn', 'tn.topic_id = t.topic_id');
+            $query->fields('tn', array('topic_name'));
             $query->orderByHeader($headers);
             $query->distinct();
 
@@ -2377,6 +2384,7 @@ class EbmsReports {
                 }
                 $col3 = implode('<br />', $comments);
                 $col4 = $result->cycle_name;
+                $col5 = htmlspecialchars($result->topic_name);
                 $row = array(
                     array(
                         'data' => ++$counter,
@@ -2389,6 +2397,7 @@ class EbmsReports {
                     $col2,
                     $col3,
                     $col4,
+                    $col5,
                 );
                 $rows[] = array(
                     'data' => $row,
