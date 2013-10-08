@@ -2029,6 +2029,7 @@ SELECT DISTINCT t.topic_id, t.topic_name
         $query->join('ebms_tag', 'tg', 'tg.tag_id = dt.tag_id');
         $query->condition('tg.tag_name', 'summary');
         $query->condition('t.topic_id', $topic_id);
+        $query->condition('d.drop_flag', 0);
         if ($packet_id) {
             $union = db_select('ebms_doc', 'd2');
             $union->fields('d2', array('doc_id', 'description'));
