@@ -1563,6 +1563,33 @@ function ebms_ckeditor_link_types_alter(&$types) {
 }
 
 /**
+ * Modify available WYSIWYG buttons.
+ *
+ * TIR #2416 / JIRA::OCEEBMS-11
+ *
+ * @see hook_wysiwyg_editor_settings_alter
+ */
+function ebms_wysiwyg_editor_settings_alter(&$settings, $context) {
+    if ($context['profile']->editor == 'ckeditor') {
+        $settings['toolbar'] = array(
+            array('Bold', 'Italic', 'Underline'),
+            array('JustifyLeft', 'JustifyCenter', 'JustifyRight'),
+            array('BulletedList', 'NumberedList'),
+            array('Outdent', 'Indent'),
+            array('Undo', 'Redo'),
+            array('Link', 'Unlink'),
+            array('Image'),
+            array('Blockquote'),
+            array('Cut', 'Copy', 'Paste', 'PasteText', 'PasteFromWord'),
+            array('ShowBlocks', 'RemoveFormat'),
+            array('SelectAll'),
+            array('SpellChecker', 'Scayt'),
+            array('linkit'),
+        );
+    }
+}
+
+/**
  * Convert a string time to UTC/GMT in iCalendar format in order to
  * workaround what appears to be failure of Microsoft Outlook to accept
  * a standard iCal datetime that already incorporates daylight savings.
