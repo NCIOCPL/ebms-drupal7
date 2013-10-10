@@ -36,6 +36,7 @@ function ebmstheme_pager($variables) {
     if (isset($query['pager']) && $query['pager'] == 'off') {
         // unset the pager from the existing query parameters to show the pager
         unset($query['pager']);
+        unset($query['items_per_page']);
         // Add a link for turning paging on.
         $url = url($_GET['q'], array('query' => $query));
         $items[] = "<a href='$url'>VIEW PAGES</a>";
@@ -88,6 +89,7 @@ function ebmstheme_pager($variables) {
     // Add a link for turning paging off.
     $query = pager_get_query_parameters();
     $query['pager'] = 'off';
+    $query['items_per_page'] = 'All';
     $url = url($_GET['q'], array('query' => $query));
     $items[] = "<a href='$url'>VIEW ALL</a>";
     $items[] = '|';
@@ -174,7 +176,7 @@ function ebmstheme_breadcrumb($variables) {
 function ebmstheme_form_element($variables) {
     // pdq_ebms_debug('THEME FORM ELEMENT', $variables);
     $element = &$variables['element'];
-    
+
     // Since these get overridden in there own themed outputs, don't address it here
     if (($element['#type'] == 'checkboxes') || ($element['#type'] == 'radios')) {
         return $element['#children'];
@@ -202,7 +204,7 @@ function ebmstheme_form_element($variables) {
     if (!empty($element['#attributes']['disabled'])) {
         $attributes['class'][] = 'form-disabled';
     }
-    
+
     $output =  array('<div' . drupal_attributes($attributes) . '>' . "\n");
 
     // If title is not set, we don't display any label or required marker.
@@ -255,7 +257,7 @@ function ebmstheme_form_element_label($variables) {
     $element = &$variables['element'];
     // This is also used in the installer, pre-database setup.
     $t = get_t();
-    
+
     // If title and required marker are both empty, output no label.
     if ((!isset($element['#title']) || $element['#title'] === '') && empty($element['#required'])) {
         return '';
@@ -269,7 +271,7 @@ function ebmstheme_form_element_label($variables) {
     $attributes = array();
     if (array_key_exists('#attributes', $variables))
             $attributes = $variables['#attributes'];
-    
+
     // Style the label as class option to display inline with the element.
     if ($element['#title_display'] == 'after') {
         $attributes['class'][] = 'option';
@@ -283,18 +285,18 @@ function ebmstheme_form_element_label($variables) {
     if (!empty($element['#id'])) {
         $attributes['for'] = $element['#id'];
     }
-    
+
     // If it's checkboxes or radios, that label is the legend
     // of a fieldset, so output nothing.
     if (($element['#type'] == 'checkboxes') || ($element['#type'] == 'radios')) {
         return '';
     }
-    
+
     // string describing the label format
     $format = '!title !required';
     if (
             $element['#type'] == 'date_popup' ||
-            $element['#type'] == 'date' || 
+            $element['#type'] == 'date' ||
             $element['#type'] == 'managed_file'
     ) {
 
@@ -349,7 +351,7 @@ function ebmstheme_file($variables) {
     // Added by Lauren for 508
 
     $element = $variables['element'];
-    
+
     $element['#attributes']['type'] = 'file';
     element_set_attributes($element, array('id', 'name', 'size'));
     _form_set_class($element, array('form-file'));
@@ -386,7 +388,7 @@ function ebmstheme_radios($variables) {
 
     return '<fieldset ' . drupal_attributes($attributes) . '>
             <legend class="radios-508" for="' . $attributes['id'] . '">'
-                . (array_key_exists('#title', $element) ? $element['#title'] : '') 
+                . (array_key_exists('#title', $element) ? $element['#title'] : '')
                 . ' ' . $required .
             '</legend>'
         . ($description ? '<div class="description">' . $description . '</div>' : '')
@@ -424,7 +426,7 @@ function ebmstheme_checkboxes($variables) {
         $element['#description'] : NULL;
     return '<fieldset ' . drupal_attributes($attributes) . '>
             <legend class="checkboxes-508" for="' . $attributes['id'] . '">'
-                . (array_key_exists('#title', $element) ? $element['#title'] : '') 
+                . (array_key_exists('#title', $element) ? $element['#title'] : '')
                 . ' ' . $required . '</legend>'
         . ($description ? '<div class="description">' . $description . '</div>' : '')
             . (!empty($element['#children']) ?
@@ -467,7 +469,7 @@ function ebmstheme_checkboxes($variables) {
 
 function ebmstheme_preprocess_node(&$variables) {
     $node = $variables['node'];
-    
+
     // save if the current viewer is the editor of the event
     $editor = user_access("edit any $node->type content");
     if ($editor) {
@@ -481,9 +483,9 @@ function ebmstheme_preprocess_node(&$variables) {
     $variables['editor'] = $editor;
 
     $variables['status'] = $node->status;
-    
+
     $variables['in_preview'] = (isset($node->in_preview) && $node->in_preview);
-    
+
     if ($node->type == 'ebms_event') {
         preprocess_ebms_event($variables);
     }
@@ -494,7 +496,7 @@ function preprocess_ebms_event(&$variables) {
 
     //retrieve the node from the variables
     $node = $variables['node'];
-    
+
     // save if the current viewer is the editor of the event
     $editor = $variables['editor'];
 
@@ -612,7 +614,7 @@ function preprocess_ebms_event(&$variables) {
         $variables['prevNode'] = $prevNode;
         $variables['nextNode'] = $nextNode;
     }
-    
+
     $eventStatus = field_get_items('node', $node, 'field_event_status');
     $variables['cancelled'] = ($eventStatus[0]['value'] == 'cancelled');
 
@@ -642,7 +644,7 @@ function preprocess_ebms_event(&$variables) {
     $variables['agenda'] = null;
     if ($agenda)
         $variables['agenda'] = $agenda[0]['value'];
-    
+
     // retrieve the agenda status
     // if not set, either hide the agenda, or display it as draft to users
     // capable of editing events
@@ -652,7 +654,7 @@ function preprocess_ebms_event(&$variables) {
         $agenda_status = $field_agenda_status[0]['value'];
     if (!$editor && !$agenda_status)
         $variables['agenda'] = null;
-    
+
     $variables['agenda_status'] = $agenda_status ? '' : ' - Draft';
 
     $submitter = user_load($node->uid);
@@ -662,7 +664,7 @@ function preprocess_ebms_event(&$variables) {
 
     $individuals = field_get_items('node', $node, 'field_individuals');
     $individualValues = array();
-    
+
     if ($individuals) {
         foreach ($individuals as $individual) {
             $individualValues[] = $individual['value'];
@@ -690,7 +692,7 @@ function preprocess_ebms_event(&$variables) {
 
 /**
  * Overwrite the box that shows a user they have submitted a webform request before.
- * 
+ *
  * @param type $variables
  * @return string HTML output
  */
