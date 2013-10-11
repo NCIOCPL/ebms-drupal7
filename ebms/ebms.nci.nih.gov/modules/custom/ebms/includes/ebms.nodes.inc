@@ -15,4 +15,3 @@ $GLOBALS['ebms_event_nodes'] = array(
         'title_label' => 'Event Name'
     ),
 );
-?>

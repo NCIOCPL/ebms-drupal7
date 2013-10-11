@@ -344,4 +344,3 @@ foreach ($GLOBALS['ebms_node_fields'] as $field) {
             break;
     }
 }
-?>
