@@ -13,13 +13,13 @@ module_load_include('inc', 'webform', 'components/select');
 function ebms_webforms_menu() {
  $items['add/%ctools_js/review'] = array(
    'page callback'    => 'ebms_webforms_ctools_modal_review',
-   'page arguments'   => array(1), 
+   'page arguments'   => array(1),
      'access callback' => TRUE,
       'type' => MENU_NORMAL_ITEM,
  );
  return $items;
 }
- 
+
 function ebms_webforms_menu_alter(&$items) {
     // We're going to override the page that generates the results.
     // This is not the cleanest way of doing it, but it works.
@@ -53,7 +53,7 @@ function ebms_webforms_webform_submission_render_alter(&$renderable) {
 /**
  * Implements hook_form_alter().
  *
- * 
+ *
  * @TODO: In the future - should really create a field type for meetings...
  * Find form_key from cid and add JS.
  */
@@ -61,10 +61,10 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
   if (substr($form_id, 0, 19) != 'webform_client_form') {
         return;
     }
-    
+
     $event_block = _ebms_travel_get_meeting_block($form);
 
-    //add js file for show/hide.  
+    //add js file for show/hide.
     $css_path = drupal_get_path('module', 'ebms_webforms');
     $css_path .= "/includes/ebms_webform.css";
     drupal_add_css($css_path, array('type' => 'file'));
@@ -116,13 +116,13 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
                 $form['submitted']['meeting']['#options'][$meeting->nid] = $title;
             }
         }
-        
+
         if(empty($form['submitted']['meeting']['#options'])){
             $form['submitted']['meeting']['#empty_value'] = 0;
             $form['submitted']['meeting']['#empty_option'] = t('No available meetings');
         }
     }
-    
+
     // toggle the mileage visibility appropriately
     if(isset($form_state['input']['submitted']['transportation'])) {
         foreach($form_state['input']['submitted']['transportation'] as
@@ -130,9 +130,9 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
             if(isset($value[0]['type'])) {
                 foreach($value as $index => $value_set) {
                     $type_value = $value_set['type'];
-                    
+
                     $mileage_access = $type_value == 'private';
-                    
+
                     $form['submitted']['transportation'][$element]
                         [$index]['mileage']['#access'] = $mileage_access;
                     $form['submitted']['transportation'][$element]
@@ -140,23 +140,23 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
                 }
             }
         }
-        
+
     }
 }
- 
+
 /**
  *Ajax callback for the preview button on webforms.
- * 
+ *
  * @TODO: make sure this works for other field types.
  * @TODO: Make this into a component and hook for field views.
  * @param type $form
  * @param type $form_state
- * @return type 
+ * @return type
  */
  function preview_submission($form, $form_state){
      //load up select option values from the field definitions:
-    
-     
+
+
      //go through the webform components and get out our custom fields.
      $custom_fields = array();
      $select_fields = array();
@@ -191,17 +191,17 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
          }
          //else if ($component['type'] == 'date'){
          //    $test = $component;
-         //    $date_fields[$component['form_key']] = 
+         //    $date_fields[$component['form_key']] =
          //}
-        
+
      }
 
      $output = array();
      //create the preview - shouldn't need to do anything special for regular fields.
      foreach($form_state['values']['submitted'] as $key => $sub_item){
-         
-        
-         
+
+
+
          if(!is_array($sub_item) && !empty($sub_item)){
               $output[]='<strong>'.strtoupper($key).'</strong>';
 
@@ -211,7 +211,7 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
 
               //take care of select types.
               elseif(!empty($select_fields[$key])){
-                 
+
                  $output[] = $select_fields[$key][$sub_item];
              }
              //take care of file fields
@@ -224,9 +224,9 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
                  $subitem = $key == 'amount' ? '$' : '';
                  $subitem .= $sub_item;
                  $output[] = $subitem;
-             
+
              }
-             
+
          }
          //this is one of our custom fields.
          else if(array_key_exists ($key, $custom_fields) ) {
@@ -235,7 +235,7 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
              $field_name = 'ebms-travel-'.$cid.'-fieldset';
              foreach($sub_item[$field_name] as $ebms_travel_field){
                  //the ebms_travel field has 3 fields: Date, Select, Text
-                 
+
                  // branch on type
                  $claim = '';
                  if($ebms_travel_field['type'] == 'private') {
@@ -248,25 +248,25 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
              }
          }
          //Date fields are arrays...
-         else if(is_array($sub_item) && array_key_exists('month', $sub_item) && 
-                 !empty($sub_item['month']) && 
+         else if(is_array($sub_item) && array_key_exists('month', $sub_item) &&
+                 !empty($sub_item['month']) &&
                  !empty($sub_item['day']) &&
                  !empty($sub_item['year'])){
              $output[]='<strong>'.strtoupper($key).'</strong>';
              $output[] = $sub_item['month'].'/'.$sub_item['day'].'/'.$sub_item['year'];
          }
      }
-     
+
      $value = implode('<br />', $output);
      $form['preview-container']=array(
        '#prefix'=>'<div id="preview-area">',
          '#markup' => filter_xss_admin($value),
        '#suffix'=>'</div>',
    );
-     
+
      return $form['preview-container'];
  }
- 
+
  function _ebms_travel_get_meeting_block($form){
          // Determine if it's one of our special reports via URL
     if (isset($form['#node']->nid)) {
@@ -278,14 +278,14 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
         $isReimbursementRequest = FALSE;
         $isHotelRequest = FALSE;
     }
-    
+
     $event_block = 'block_past';
     if($isHotelRequest)
-        $event_block = 'block_upcoming';
-    
+        $event_block = 'block_inperson_upcoming';
+
     return $event_block;
  }
- 
+
  function _ebms_travel_get_meetings($event_block){
     $view = views_get_view('event_calendar');
     if (!$view || !$view->access($event_block)) {
@@ -300,14 +300,14 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
     }
     return $pair;
  }
- 
+
 /**
 * Page callback for modal review creation.
 */
 function ebms_webforms_ctools_modal_review($js = FALSE) {
 
   $output = '<h1>' . t('Hello World') . '</h1>';
-  
+
   if ($js) {
     ctools_include('ajax');
     ctools_include('modal');
@@ -373,7 +373,7 @@ function _webform_defaults_ebms_travel() {
         'num_trans' => '1',
         //add this to make the default webform select validator happy.
         'options_source' => '',
-        
+
         ),
     );
 }
@@ -382,7 +382,7 @@ function _webform_defaults_ebms_travel() {
 */
 function _webform_edit_ebms_travel($component) {
     $form = array();
-    
+
     $form['display']['size'] = array(
     '#type' => 'textfield',
     '#title' => t('Width'),
@@ -476,24 +476,24 @@ function _webform_edit_ebms_travel($component) {
 
 
 /**
- * Implements _webform_submission_presave() 
- * 
- * Because we 1) added dynamic form elements and 2) have a compound field and all of the 
+ * Implements _webform_submission_presave()
+ *
+ * Because we 1) added dynamic form elements and 2) have a compound field and all of the
  * data is going to be stored in a single key value pair in the database - we need to
  * serialize the data so that it can stored and accessed easily.
- * 
- * TODO: 
+ *
+ * TODO:
  * 1) Serialize the data
  * 2) Ensure it is saved correctly
- * 
+ *
  * Nice to Haves (should be implemented in the future)
  * 1) Make this field type generic.
  * @param type $node
- * @param type $submission 
+ * @param type $submission
  */
 function ebms_webforms_webform_submission_presave($node, &$submission) {
   $data = $submission;
-  
+
   //Incase we have several of these types of fields we should take care of
   //all of them here.
   foreach($submission->data as $index => $value){
@@ -504,11 +504,11 @@ function ebms_webforms_webform_submission_presave($node, &$submission) {
           $submission->data[$index] = array($serial);
       }
   }
-  
-  
-  
-  
-  
+
+
+
+
+
 }
 
 /**
@@ -522,7 +522,7 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
         $val_array = unserialize($value[0]);
         $count = count($val_array);
     }
-    
+
     $options = _webform_select_options($component, false, $filter);
     $id = 'ebms-travel-'.$component['cid'];
     $fieldset = $id.'-fieldset';
@@ -560,7 +560,7 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
         '#attributes' => $component['extra']['attributes'],
         '#theme_wrappers' => array('webform_element'),
         '#webform_component' => $component,
-        '#multiple' => false,   
+        '#multiple' => false,
     );
     $form[$fieldset][$i]['type'] = array(
         '#type' => 'select',
@@ -586,7 +586,7 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
         '#attributes' => $component['extra']['attributes'],
         '#theme_wrappers' => array('webform_element'),
         '#webform_component' => $component,
-        '#multiple' => false,   
+        '#multiple' => false,
         //'#field_prefix'=> $component['extra']['text_prefix'] ?$component['extra']['text_prefix'] : '' ,
         '#access' => TRUE,
     );
@@ -643,9 +643,9 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
       ),
     );
   }
-  
+
     $element = $form;
-  
+
     // Enforce uniqueness.
    // if ($component['extra']['unique']) {
     //$element['#element_validate'][] = 'webform_imei_validate_imei_unique';
@@ -657,10 +657,10 @@ function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) 
     if ($component['extra']['maxlength'] > 0) {
     //$element['#maxlength'] = $component['extra']['maxlength'];
     }
-    
+
     //$element = drupal_get_form('ajax_example_add_more');
     return $element;
- 
+
 }
 
 /**
@@ -706,7 +706,7 @@ function ebms_webforms_add_one($form, &$form_state) {
 function ebms_webforms_remove_one($form, &$form_state) {
   if ($form_state['build_info']['args'][0]->webform['components'][7]['extra']['num_trans'] > 1) {
    $form_state['build_info']['args'][0]->webform['components'][7]['extra']['num_trans']--;
-  
+
   }
   $form_state['rebuild'] = TRUE;
 }
@@ -762,8 +762,8 @@ function webform_ebms_travel_display_format($value) {
 
 /**
 * Format the output of data for this component.
- * 
- * @TODO: 
+ *
+ * @TODO:
  * 1) Make the delimiter and output order of this widget configurable.
 */
 function theme_webform_display_ebms_travel($variables) {
@@ -776,9 +776,9 @@ function theme_webform_display_ebms_travel($variables) {
         $tmp = explode('|', $keypair);
         $options[$tmp[0]] = $tmp[1];
     }
-    
+
     //set the format for out complex field.
-    //Item 1 - Select list 
+    //Item 1 - Select list
     //Item 2 - Date
     //Item 3 - Text
      $items = array();
@@ -790,11 +790,11 @@ function theme_webform_display_ebms_travel($variables) {
         } else {
             $claim = '$' . $value_pair['expense'];
         }
-        
+
         $items[] = $options[$value_pair['type']] .' - '. implode('/',$value_pair['date']) . " - $claim";
     }
-    
-    
+
+
     $value = implode('<br />', $items);
     return $value !== '' ? $value : ' ';
 }
@@ -808,9 +808,9 @@ function _webform_table_ebms_travel($component, $value) {
         $tmp = explode('|', $keypair);
         $options[$tmp[0]] = $tmp[1];
     }
-    
+
     //set the format for out complex field.
-    //Item 1 - Select list 
+    //Item 1 - Select list
     //Item 2 - Date
     //Item 3 - Text
     $value = unserialize($value[0]);
@@ -826,8 +826,8 @@ function _webform_table_ebms_travel($component, $value) {
 
         $items[] = $options[$value_pair['type']] .' - '. implode('/',$value_pair['date']) . " - $claim";
     }
-    
-    
+
+
     $value = implode('<br />', $items);
     return $value !== '' ? $value : ' ';
 }
@@ -1086,22 +1086,22 @@ function ebms_webforms_theme_registry_alter(&$theme_registry) {
     $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
     $hooks = array('node', 'block',); // 'forums', 'forum_list', 'forum_topic_list', 'forum_icon', 'forum_submitted', 'forum_form');
     foreach ($hooks as $h) {
-        
+
         _ebms_forums_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
     }
-    
+
 }
 
 /**
  * Adding breadcrumbs to travel page
- * 
+ *
  * @param type $vars
  */
 function ebms_webforms_preprocess_page(&$vars) {
     $url = $_GET['q'];
     $alias = url($url);
     if (strstr($alias, 'travel')) {
-        
+
         // Set the breadcrumb
         if ($alias == '/travel') {
             // TIR#2333 - Travel landing page should not have breadcrumb
@@ -1112,7 +1112,7 @@ function ebms_webforms_preprocess_page(&$vars) {
                 drupal_get_title(),
             ));
         }
-        
+
         // Set the top nav
         // This is not the most elegant way... but it works
         drupal_add_js("(function ($) { $(document).ready(function() {
