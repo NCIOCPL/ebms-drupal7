@@ -1154,7 +1154,7 @@ function ebms_node_info() {
  * Implements hook_views_api().
  */
 function ebms_views_api() {
-    return array('api' => 2.0);
+    return array('api' => '3.0');
 }
 
 /**
