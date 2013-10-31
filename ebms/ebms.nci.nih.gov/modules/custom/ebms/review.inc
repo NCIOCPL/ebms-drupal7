@@ -317,7 +317,7 @@ class EbmsReview {
             $edit_link = l('EDIT', $edit_url, $opts);
             $del_parm = url("$main_url/delete/{$p->packet_id}", $opts);
             $del_url = "$del_func('$del_parm');";
-            $del_link = '<a href="' . $del_url . '">DELETE</a>';
+            $del_link = '<a href="' . $del_url . '">ARCHIVE</a>';
             $title = str_replace(' [Legacy]', '', $p->packet_title);
             $title .= " [Packet #{$p->packet_id}]";
             $title_link = l(htmlspecialchars($title), $edit_url, $opts);
@@ -352,12 +352,13 @@ class EbmsReview {
                 '#type' => 'container',
                 '#attributes' => array(
                     'id' => 'confirm-packet-delete',
-                    'title' => 'Delete Packet?',
+                    'title' => 'Archive Packet?',
                 ),
                 'confirm-message' => array(
                     '#type' => 'markup',
                     '#markup' =>
-                    '<p>Are you sure you want to delete this packet?</p>',
+                    '<p>Archiving this packet will remove it from the queues'
+                     . ' of any reviewers who have not responded.</p>'
                 ),
             ),
         );
