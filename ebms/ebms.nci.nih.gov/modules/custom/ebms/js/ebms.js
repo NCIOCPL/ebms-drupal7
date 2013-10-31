@@ -374,7 +374,7 @@ ebmsscript.delete_packet = function(packet_delete_url) {
  * Convert the #confirm-packet-delete div into a hidden block waiting
  * in the wings to appear as a confirmation dialog box when the user
  * asks to delete a review packet.  Set it up so that if the user
- * clicks the "Delete" button in the confirmation dialog box we
+ * clicks the "Archive" button in the confirmation dialog box we
  * transfer control to the server function which handles the packet
  * deletion (which is actually accomplished by marking the packet
  * as inactive, so we don't lose any reviewer feedback which has
@@ -389,7 +389,7 @@ ebmsscript.init_manager_packets_page = function() {
         autoOpen: false,
         modal: true,
         buttons: {
-            "Delete": function() {
+            "Archive": function() {
                 jQuery(this).dialog("close");
                 window.location.href = ebmsscript.packet_delete_url;
             },
