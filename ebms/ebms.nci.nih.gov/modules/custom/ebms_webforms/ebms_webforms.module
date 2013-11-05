@@ -849,6 +849,45 @@ function _webform_csv_data_ebms_travel($component, $export_options, $value) {
 }
 
 /**
+ * Loads the user's filtering parameters for the report on hotel requests.
+ * If no filtering has been requested, a default set of values is returned.
+ * We extract the report request's ID from the URL.  We also extract from
+ * the URL the node ID for the webform node used for the hotel request form.
+ *
+ *  @return  array   filtering parameters, plus the hotel request form ID
+ */
+function _ebms_webforms_hotel_report_params() {
+    $path_components = explode('/', request_path());
+    $node_id = $path_components[1];
+    if (count($path_components) == 5)
+        $params = EbmsReports::fetch_report_request($path_components[4]);
+    else
+        $params = array(
+            'board' => 0,
+            'meeting' => 0,
+            'start-date' => '',
+            'end-date' => '',
+            'node' => $node_id,
+        );
+    return $params;
+}
+
+/**
+ * Ask the database for the timestamp equivalent of a standard ISO
+ * date/time string.  We first make sure the string hasn't been
+ * tampered with by a malicious intruder.
+ *
+ *  @return  integer    UNIX timestamp (number of seconds since start of 1970)
+ */
+function _ebms_webforms_unix_timestamp($string) {
+
+    // Guard against unsafe data from form.
+    if (!preg_match('/\d{4}-\d{2}-\d{2}( \d{2}:\d{2}(:\d{2})?)?/', $string))
+        return 0;
+    return db_query("SELECT UNIX_TIMESTAMP('$string')")->fetchField();
+}
+
+/**
  * See webform_results_table() in webform.report.inc
  *
  * @param type $node
@@ -856,6 +895,9 @@ function _webform_csv_data_ebms_travel($component, $export_options, $value) {
  * @return type
  */
 function _ebms_webforms_results_table($node, $pager_count=0) {
+
+    // We need report functionality from the EBMS module.
+    module_load_include('inc', 'ebms', 'reports');
 
     // Add our custom CSS to this page
     drupal_add_css(drupal_get_path('module', 'ebms_webforms') .
@@ -871,18 +913,18 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
                 break;
             case '/travel/hotel-request':
                 $isHotelRequest = true;
+                $params = _ebms_webforms_hotel_report_params();
         }
     }
 
     // If it's a non-special report, return the default function
     if (!$isReimbursementRequest && !$isHotelRequest) {
-        module_load_include('inc', 'webform', 'includes/webform.report');
+        //module_load_include('inc', 'webform', 'includes/webform.report');
         $default = webform_results_table($node, $pager_count);
         return $default;
     }
 
     // Load the left nav for reports
-    module_load_include('inc', 'ebms', 'reports');
     $left_nav = EbmsReports::build_left_nav();
 
     // From here down is somewhat copied and modified from the default
@@ -891,9 +933,10 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
         $pager_count = $_GET['results'];
     }
 
-    // We shouldn't need this for the reimbursement request form, but
-    // without this call, PHP complains that the webform_get_submissions
-    // function doesn't exist!
+    // We shouldn't need this, since we're going to construct the headers
+    // array by hand, but the theme call is required (presumably for some
+    // undocumented side effect), because without it, PHP complains that
+    // the webform_get_submissions function doesn't exist!
     $header = theme('webform_results_table_header', array('node' => $node));
 
     // TIR 2366: Robin has asked that we modify the reimbursement
@@ -901,21 +944,47 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
     // webform module doesn't expose its filtering query to alteration,
     // so instead we collect the submission records ourselves for that
     // report, handling paging and sorting ourselves.
-    if ($isReimbursementRequest) {
-        $query = db_select('webform_submissions', 's');
-        $query->join('webform_component', 'c', 'c.nid = s.nid');
-        $query->join('webform_submitted_data', 'd',
-            'd.nid = s.nid AND d.sid = s.sid AND d.cid = c.cid');
-        $query->join('node', 'n', 'n.nid = d.data');
-        $query->join('field_data_field_datespan', 'f', 'f.entity_id = n.nid');
-        $query->join('users', 'u', 'u.uid = s.uid');
-        $query->condition('c.form_key', 'meeting');
-        $query->condition('s.nid', $node->nid);
+    // 2013-10-14: TIR#2218 (JIRA::OCEEBMS-47) now requires that we
+    // build the results table for the hotel request report as well,
+    // in order to support filtering.
+    $query = db_select('webform_submissions', 's');
+    $query->join('webform_component', 'c', 'c.nid = s.nid');
+    $query->join('webform_submitted_data', 'd',
+                 'd.nid = s.nid AND d.sid = s.sid AND d.cid = c.cid');
+    $query->join('node', 'n', 'n.nid = d.data');
+    $query->join('field_data_field_datespan', 'f', 'f.entity_id = n.nid');
+    $query->join('users', 'u', 'u.uid = s.uid');
+    $query->condition('c.form_key', 'meeting');
+    $query->condition('s.nid', $node->nid);
 
-        // Side trip to get the total number of reimbursement requests.
-        $total_count = $query->countQuery()->execute()->fetchField();
+    // Filtering for the hotel request form.
+    if ($isHotelRequest) {
+        if ($params['meeting'])
+            $query->condition('d.data', $params['meeting']);
+        elseif ($params['board']) {
+            $query->join('field_data_field_boards', 'b',
+                         'b.entity_id = d.data');
+            $query->condition('b.deleted', 0);
+            $query->condition('b.field_boards_value', $params['board']);
+            $query->condition('b.bundle', 'ebms_event');
+            $query->condition('b.entity_type', 'node');
+        }
+        if ($params['start-date']) {
+            $start_date = _ebms_webforms_unix_timestamp($params['start-date']);
+            $query->condition('s.submitted', $start_date, '>=');
+        }
+        if ($params['end-date']) {
+            $end_date = $params['end-date'] . ' 23:59:59';
+            $end_date = _ebms_webforms_unix_timestamp($end_date);
+            $query->condition('s.submitted', $end_date, '<=');
+        }
+    }
 
-        // Override the $header variable set above.
+    // Side trip to get the total number of reimbursement requests.
+    $total_count = $query->countQuery()->execute()->fetchField();
+
+    // Override the $header variable set above.
+    if ($isReimbursementRequest)
         $header = array(
             array('data' => 'Submitted', 'field' => 's.submitted'),
             array('data' => 'User', 'field' => 'u.name'),
@@ -924,62 +993,57 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
             'Receipts', 'Meals and Incidentals', 'Honorarium',
             'Reimbursement', 'Comments',
         );
+    else
+        $header = array(
+            array('data' => 'Submitted', 'field' => 's.submitted'),
+            array('data' => 'User', 'field' => 'u.name'),
+            array('data' => 'Meeting', 'field' => 'meeting_with_date'),
+            'Check-In', 'Check-Out', 'Preferred Hotel', 'Comments',
+        );
 
-        // Robin said she needs to Meeting sort to do sub-sorting by
-        // meeting date within meetings which have the same title.
-        // Drupal's table extender mechanism prevents us from doing
-        // this the standard SQL way, using two column expressions
-        // separated by a comma, because Drupal strips out commas from
-        // the order by expression.
-        // http://api.drupal.org/api/drupal/includes!tablesort.inc/function/TableSort%3A%3AorderByHeader/7
-        $query->addExpression('CONCAT(n.title, CHAR(9), ' .
+    // Robin said she needs the Meeting sort to do sub-sorting by
+    // meeting date within meetings which have the same title.
+    // Drupal's table extender mechanism prevents us from doing
+    // this the standard SQL way, using two column expressions
+    // separated by a comma, because Drupal strips out commas from
+    // the order by expression.
+    // http://api.drupal.org/api/drupal/includes!tablesort.inc/function/TableSort%3A%3AorderByHeader/7
+    $query->addExpression('CONCAT(n.title, CHAR(9), ' .
             "FROM_UNIXTIME(f.field_datespan_value, '%Y-%m-%d %h:%i:%s'))",
             'meeting_with_date');
-        $query = $query->extend('TableSort');
-        $query->orderByHeader($header);
-        $query->fields('s', array('sid'));
-        if ($pager_count) {
-            $query = $query->extend('PagerDefault');
-            $query->limit($pager_count);
-        }
+    $query = $query->extend('TableSort');
+    $query->orderByHeader($header);
+    $query->fields('s', array('sid'));
+    if ($pager_count) {
+        $query = $query->extend('PagerDefault');
+        $query->limit($pager_count);
+    }
 
-        // Collect the submission IDs we want in the right order.
-        $results = $query->execute();
-        $sids = array();
-        foreach ($results as $result)
-            $sids[] = $result->sid;
-        //$sids_param = array('sid' => $sids);
+    // Collect the submission IDs we want in the right order.
+    $results = $query->execute();
+    $sids = array();
+    foreach ($results as $result)
+        $sids[] = $result->sid;
 
-        // Use the webform module to get the data.
+    // Use the webform module to get the data.
+    $submissions = array();
+    if (count($sids)) {
         $temp_submissions = webform_get_submissions(array('sid' => $sids));
 
         // Put the rows back in the order we want.
-        $submissions = array();
         foreach ($sids as $sid) {
             if (array_key_exists($sid, $temp_submissions))
                 $submissions[$sid] = $temp_submissions[$sid];
         }
     }
-    else {
-
-        // The hotel request report can be handled by the default
-        // webform module behavior.
-        unset($header[0]); // Submission Number
-        unset($header[3]); // IP Address
-        $submissions = webform_get_submissions($node->nid, $header,
-                       $pager_count);
-        $total_count = webform_get_submission_count($node->nid);
-    }
 
     // Assemble the table's rows for display.
-    $format = 'M/d/Y | h:i A T';
+    $format = 'Y-m-d H:i';
     $rows = array();
     foreach ($submissions as $sid => $submission) {
 
         $cell[] = format_date($submission->submitted, 'custom', $format);
         $cell[] = theme('username', array('account' => $submission));
-
-        $component_headers = array();
 
         // Generate a cell for each component.
         foreach ($node->webform['components'] as $component) {
@@ -991,17 +1055,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
             $submission_output = webform_component_invoke($component['type'],
                                  'table', $component, $data);
 
-            // Yes, the column header for each column will be stored in the
-            // $component_headers array over and over again (once per column
-            // for each row), but the array_merge() call below will squeeze
-            // out the extras.  A confusing way to do it, but it works, so
-            // I'm not going to tamper with it.
             if ($submission_output !== NULL) {
-
-                // We've already got the headers we need for the
-                // reimbursement request report.
-                if (!$isReimbursementRequest)
-                    $component_headers[] = check_plain($component['name']);
 
                 if ($component['form_key'] == 'meeting') {
                     $nodeComponent = node_load($submission_output);
@@ -1009,7 +1063,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
                         $dates = field_get_items('node', $nodeComponent,
                                  'field_datespan');
                         $start = $dates[0]['value'];
-                        $date = date('m/d/Y', $start);
+                        $date = date('Y-m-d', $start);
                         $title = "$nodeComponent->title - $date";
                         $url = 'node/' . $nodeComponent->nid;
                         $cell[] = l($title, $url);
@@ -1024,9 +1078,6 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
         $rows[] = $cell;
         unset($cell);
-    }
-    if (!$isReimbursementRequest && !empty($component_headers)) {
-        $header = array_merge($header, $component_headers);
     }
 
     if (count($rows) == 0) {
@@ -1056,11 +1107,18 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
     // Add the title and add the -right class
     $output .= '<div id="webform-table-right">';
-    $output .= '<h2>'.$node->title.' ('.$total_count.')</h2><br />';
+    $output .= '<h2>'.$node->title.' ('.$total_count.')</h2>';
 
-    // Special class for long tables
-    if ($isReimbursementRequest)
-        $output .= '</div><div id="webform-table-long-right">';
+    // Hotel report now needs filtering (OCEEBMS-47).  Build the form which
+    // lets the user specify which requests should appear in the report.
+    if ($isHotelRequest) {
+        $form = drupal_get_form('ebms_webforms_hotel_report_form', $params);
+        $output .= drupal_render($form);
+    }
+
+    // Both reports have enough columns now that they need more width.
+    $output .= '<br></div><div id="webform-table-long-right">';
+
 
     // Add the results table
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
@@ -1074,6 +1132,185 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
     $output .= '</div>';
 
     return $output;
+}
+
+/**
+ * Get the meetings for the picklist on the hotel request report
+ * filtering form.  Only in-person meetings are included, and if
+ * the request form has specific a particular PDQ board, only
+ * include the meetings associated with that board.  Prepend the
+ * array with an option for having no board specified.
+ *
+ *  @param  integer     if not zero, represents the ID of a PDQ board
+ *
+ *  @return array       display labels and integers for the meetings
+ *                      picklist
+ */
+function _ebms_webforms_hotel_report_meetings($board_id) {
+    $query = db_select('node', 'n')
+        ->condition('n.type', 'ebms_event')
+        ->fields('n', array('nid', 'title'));
+    $query->join('field_data_field_event_type', 't', 't.entity_id = n.nid');
+    $query->condition('t.field_event_type_value', 'in_person');
+    $query->condition('t.entity_type', 'node');
+    $query->join('field_data_field_datespan', 'f', 'f.entity_id = n.nid');
+    $query->condition('f.entity_type', 'node');
+    $query->orderBy('f.field_datespan_value');
+    $query->orderBy('n.title');
+    $expression = 'FROM_UNIXTIME(f.field_datespan_value, \'%Y-%m-%d\')';
+    $query->addExpression($expression, 'meeting_date');
+    if ($board_id) {
+        $query->join('field_data_field_boards', 'b',
+                     'b.entity_id = n.nid and b.entity_type = \'node\'');
+        $query->condition('b.field_boards_value', $board_id);
+    }
+    $results = $query->execute();
+    $meetings = array();
+    foreach ($results as $result) {
+        $label = $result->title . ' - ' . $result->meeting_date;
+        $meetings[$result->nid] = $label;
+    }
+    pdq_ebms_debug('HOTEL REPORT MEETINGS!', array($board_id, $meetings));
+    return array(0 => '') + $meetings;
+}
+
+/**
+ * Drupal form API callback which generates the form used to control which
+ * requests are to be displayed on the report of hotel reservation requests.
+ * Uses AJAX to dynamically populate the meetings picklist based on which
+ * PDQ board has been selected (if any).  If no board has been selected,
+ * shows all the in-person meetings.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function ebms_webforms_hotel_report_form($form, &$form_state, $params) {
+    $boards = array(0 => '') + Ebms\Util::boards();
+    $board_id = $params['board'];
+    $meeting_id = $params['meeting'];
+    if (isset($form_state['values'])) {
+        $board_id = $form_state['values']['board'];
+    }
+    $meetings = _ebms_webforms_hotel_report_meetings($board_id);
+    if ($meeting_id && !array_key_exists($meeting_id, $meetings))
+        $meeting_id = $form_state['values']['meeting'] = 0;
+    return array(
+        'node' => array(
+            '#type' => 'hidden',
+            '#value' => $params['node'],
+        ),
+        'board' => array(
+            '#type' => 'select',
+            '#title' => 'Editorial Board',
+            '#title_display' => 'after',
+            '#options' => $boards,
+            '#default_value' => $board_id,
+            '#attributes' => array('class' => array('fixed-width')),
+            '#ajax' => array(
+                'callback' => 'ebms_webforms_hotel_report_ajax',
+                'wrapper' => 'board-dependent',
+            ),
+        ),
+        'meeting-wrapper' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'board-dependent'),
+            'meeting' => array(
+                '#type' => 'select',
+                '#title' => 'Meeting',
+                '#title_display' => 'after',
+                '#options' => $meetings,
+                '#default_value' => $meeting_id,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+        ),
+        'date-requested-line' => array(
+            '#type' => 'container',
+            '#attributes' => array('class' => array('date-with-range')),
+            'date-pair' => array(
+                '#type' => 'container',
+                '#attributes' => array('class' => array('date-pair')),
+                'start-date' => array(
+                    '#type' => 'date_popup',
+                    //'#title' => 'Date Requested (start)',
+                    //'#title_display' => 'after',
+                    '#date_year_range' => '-2:+1',
+                    '#date_format' => 'Y-m-d',
+                    '#default_value' => $params['start-date'],
+                    '#date_label_position' => 'within',
+                    '#attributes' =>
+                    array('title' =>
+                          'Start date (defaults to no starting date)'),
+                ),
+                'separator' => array(
+                    '#markup' => '<span class="date-range-sep">&mdash;</span>',
+                ),
+                'end-date' => array(
+                    '#type' => 'date_popup',
+                    //'#title' => 'Date Requested (end)',
+                    '#date_year_range' => '-2:+1',
+                    '#date_format' => 'Y-m-d',
+                    '#default_value' => $params['end-date'],
+                    '#date_label_position' => 'within',
+                    '#attributes' =>
+                    array('title' => 'End date (defaults to no ending date)'),
+                ),
+            ),
+            'date-requested-label' => array(
+                '#type' => 'markup',
+                '#markup' => '<div class="date-label">Date Requested</div>',
+            ),
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+    );
+}
+
+/**
+ * Serialize the values specified in the hotel request report form,
+ * store them in the database, and navigate to the URL representing
+ * the request.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function ebms_webforms_hotel_report_form_submit($form, &$form_state) {
+    $values = $form_state['values'];
+    $request_id = EbmsReports::save_report_request($values, 'Hotel Requests');
+    $node_id = $values['node'];
+    $url = "node/$node_id/webform-results/table/$request_id";
+    drupal_goto($url);
+}
+
+/**
+ * Return the portion of the hotel request report form dynamically
+ * controlled by the selection of a particular PDQ board.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Structured array containing the
+ *                                current values of the form, as well
+ *                                as other form state information
+ *
+ *  @return array                 render array for the meeting list
+ */
+function ebms_webforms_hotel_report_ajax($form, $form_state) {
+    return $form['meeting-wrapper'];
 }
 
 /* http://www.metachunk.com/blog/adding-module-path-drupal-7-theme-registry */
