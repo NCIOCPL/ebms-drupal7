@@ -3411,7 +3411,7 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
 
 /**
  * The librarians' five citation reports have different requirements,
- * depending on which report was selected.  Flag any violiations of
+ * depending on which report was selected.  Flag any violations of
  * these requirements.
  *
  *  @param  array   $form         Structured array containing the
