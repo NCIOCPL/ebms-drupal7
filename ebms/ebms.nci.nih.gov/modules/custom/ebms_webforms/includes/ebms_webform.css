@@ -30,3 +30,19 @@
 }
 
 #preview-area { margin-left: 12px; }
+
+#webform-table-right div.container-inline-date div.description { display: none }
+#webform-table-right .fixed-width { width: 500px; }
+#webform-table-right div.date-with-range { margin: 20px 0 10px 12px; }
+#webform-table-right div.date-pair {
+    width: 504px; display: inline-block;
+}
+#webform-table-right label.form-item,
+#webform-table-right div.date-label {
+    text-transform: uppercase; display: inline-block;
+}
+#webform-table-right div.container-inline-date { display: inline-block; }
+#webform-table-right label { margin-top: 0; }
+#webform-table-right .container-inline-date .date-padding { padding: 0; }
+#webform-table-right .date-range-sep { margin-right: 12.5px; }
+#webform-table-right .form-submit { margin-top: 5px; padding: 10px; }
