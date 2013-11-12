@@ -4,7 +4,7 @@
 
 namespace Ebms;
 
-require_once('logw.inc'); // XXX DEBUG
+// require_once('logw.inc'); // XXX DEBUG
 
 /**
  * Call this function to create and return a Drupal db_select
@@ -47,7 +47,7 @@ function getSearchQuery($json) {
 // DEBUG
 // $jspec = print_r($srch->spec, true);
 // logw("Full decoded json spec:\n$jspec\n");
-logw("SQL for query:\n{$srch->qry}\n");
+// logw("SQL for query:\n{$srch->qry}\n");
 
 
     return $srch->qry;
