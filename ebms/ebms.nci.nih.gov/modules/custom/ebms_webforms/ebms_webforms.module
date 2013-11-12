@@ -1139,23 +1139,32 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
  * filtering form.  Only in-person meetings are included, and if
  * the request form has specific a particular PDQ board, only
  * include the meetings associated with that board.  Prepend the
- * array with an option for having no board specified.
+ * array with an option for having no board specified.  New
+ * requirement from Robin (2013-11-05): only include meetings
+ * which have at least one hotel request, and remove the constraint
+ * to show only in-person meetings (in other words, if a meeting
+ * used to be an in-person meeting, during which time at least one
+ * board member submitted a request for a hotel reservation for
+ * that meeting, include the meeting on the dropdown list even
+ * if the meeting was later switched to webex).
  *
  *  @param  integer     if not zero, represents the ID of a PDQ board
  *
  *  @return array       display labels and integers for the meetings
  *                      picklist
  */
-function _ebms_webforms_hotel_report_meetings($board_id) {
+function _ebms_webforms_hotel_report_meetings($board_id, $webform_id) {
     $query = db_select('node', 'n')
         ->condition('n.type', 'ebms_event')
         ->fields('n', array('nid', 'title'));
-    $query->join('field_data_field_event_type', 't', 't.entity_id = n.nid');
-    $query->condition('t.field_event_type_value', 'in_person');
-    $query->condition('t.entity_type', 'node');
+    $query->join('webform_submitted_data', 'd', 'd.data = n.nid');
+    $query->condition('d.nid', $webform_id);
+    $query->join('webform_component', 'c', 'c.cid = d.cid AND c.nid = d.nid');
+    $query->condition('c.nid', $webform_id);
+    $query->condition('c.form_key', 'meeting');
     $query->join('field_data_field_datespan', 'f', 'f.entity_id = n.nid');
     $query->condition('f.entity_type', 'node');
-    $query->orderBy('f.field_datespan_value');
+    $query->orderBy('f.field_datespan_value', 'DESC');
     $query->orderBy('n.title');
     $expression = 'FROM_UNIXTIME(f.field_datespan_value, \'%Y-%m-%d\')';
     $query->addExpression($expression, 'meeting_date');
@@ -1164,13 +1173,13 @@ function _ebms_webforms_hotel_report_meetings($board_id) {
                      'b.entity_id = n.nid and b.entity_type = \'node\'');
         $query->condition('b.field_boards_value', $board_id);
     }
+    $query->distinct();
     $results = $query->execute();
     $meetings = array();
     foreach ($results as $result) {
         $label = $result->title . ' - ' . $result->meeting_date;
         $meetings[$result->nid] = $label;
     }
-    pdq_ebms_debug('HOTEL REPORT MEETINGS!', array($board_id, $meetings));
     return array(0 => '') + $meetings;
 }
 
@@ -1179,7 +1188,8 @@ function _ebms_webforms_hotel_report_meetings($board_id) {
  * requests are to be displayed on the report of hotel reservation requests.
  * Uses AJAX to dynamically populate the meetings picklist based on which
  * PDQ board has been selected (if any).  If no board has been selected,
- * shows all the in-person meetings.
+ * shows all the in-person meetings.  Modified 2013-11-05: now shows only
+ * meetings for which at least one hotel request has been submitted.
  *
  *  @param  array   $form         Structured array containing the
  *                                elements and properties of the form
@@ -1199,7 +1209,8 @@ function ebms_webforms_hotel_report_form($form, &$form_state, $params) {
     if (isset($form_state['values'])) {
         $board_id = $form_state['values']['board'];
     }
-    $meetings = _ebms_webforms_hotel_report_meetings($board_id);
+    $meetings = _ebms_webforms_hotel_report_meetings($board_id,
+                                                     $params['node']);
     if ($meeting_id && !array_key_exists($meeting_id, $meetings))
         $meeting_id = $form_state['values']['meeting'] = 0;
     return array(
@@ -1239,8 +1250,6 @@ function ebms_webforms_hotel_report_form($form, &$form_state, $params) {
                 '#attributes' => array('class' => array('date-pair')),
                 'start-date' => array(
                     '#type' => 'date_popup',
-                    //'#title' => 'Date Requested (start)',
-                    //'#title_display' => 'after',
                     '#date_year_range' => '-2:+1',
                     '#date_format' => 'Y-m-d',
                     '#default_value' => $params['start-date'],
@@ -1254,7 +1263,6 @@ function ebms_webforms_hotel_report_form($form, &$form_state, $params) {
                 ),
                 'end-date' => array(
                     '#type' => 'date_popup',
-                    //'#title' => 'Date Requested (end)',
                     '#date_year_range' => '-2:+1',
                     '#date_format' => 'Y-m-d',
                     '#default_value' => $params['end-date'],
