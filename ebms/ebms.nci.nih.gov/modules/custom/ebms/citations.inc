@@ -306,14 +306,14 @@ namespace {
             '#suffix' => '</div>',
         );
 
-        $form['not-list']['search_button'] = array(
-            '#type' => 'submit',
-            '#value' => 'Search',
-        );
-
         $form['not-list']['reset_button'] = array(
             '#type' => 'submit',
             '#value' => 'Reset',
+        );
+
+        $form['not-list']['search_button'] = array(
+            '#type' => 'submit',
+            '#value' => 'Search',
         );
 
         $form['not-list']['submit_source'] = array(

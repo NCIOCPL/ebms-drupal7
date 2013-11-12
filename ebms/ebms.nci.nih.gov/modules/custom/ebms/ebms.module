@@ -534,7 +534,7 @@ function pdq_ebms_login() {
 }
 
 function ebms_form_alter(&$form, &$form_state, $form_id) {
-    //pdq_ebms_debug('FORM ALTER', array($form, $form_id));
+    pdq_ebms_debug('FORM ALTER', array($form['actions'], $form_id));
     switch ($form_id) {
         case 'user_login':
             $url = 'https://iforgotmypassword.nih.gov/';
@@ -546,6 +546,10 @@ function ebms_form_alter(&$form, &$form_state, $form_id) {
             $form['actions']['submit']['#prefix'] = '<div id="login-wrpr">';
             $form['actions']['submit']['#suffix'] = '</div>';
                 //"<a href='$url' id='$id'>Can't access your account?</a></div>";
+            break;
+        case 'ebms_event_node_form':
+            $form['actions']['submit']['#weight'] = 10;
+            $form['actions']['preview']['#weight'] = 5;
             break;
     }
 }

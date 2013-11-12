@@ -1124,15 +1124,16 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#default_value' => $defaults->items_per_page,
             ),
         ),
-        'submit' => array(
-            '#type' => 'submit',
-            '#value' => 'Submit',
-        ),
 
         // Added at Ashleigh's request (TIR 2293).
         'reset' => array(
             '#type' => 'submit',
             '#value' => 'Reset',
+        ),
+
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
         ),
     );
 }

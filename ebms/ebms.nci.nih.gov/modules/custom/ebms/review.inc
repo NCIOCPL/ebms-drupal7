@@ -3316,16 +3316,16 @@ function pdq_ebms_record_responses_form($form, &$form_state) {
         '#suffix' => "</div>",
     );
 
-    $form['search_button'] = array(
-        '#type' => 'submit',
-        '#value' => 'Search',
-    );
-
     $form['cancel_button'] = array(
         '#type' => 'submit',
         '#value' => 'Cancel',
         '#limit_validation_errors' => array(),
         '#submit' => array('pdq_ebms_record_responses_form_cancel'),
+    );
+
+    $form['search_button'] = array(
+        '#type' => 'submit',
+        '#value' => 'Search',
     );
 
     return $form;
