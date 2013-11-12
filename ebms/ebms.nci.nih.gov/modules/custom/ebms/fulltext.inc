@@ -124,14 +124,17 @@ class EbmsFullText {
 function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
 
     // Build the picklists for PDQ boards and review cycles.
-    $board = $cycle = 0;
+    pdq_ebms_debug('FULLTEXT FORM STATE', $form_state);
+    $board = $cycle = $topic = 0;
     $errors = array();
     if (isset($form_state['values'])) {
         $values = $form_state['values'];
         $board = $values['board'];
         $cycle = $values['cycle'];
+        $topic = $values['topic'];
+        pdq_ebms_debug('fulltext form', array($values, $topic));
     }
-    if ($request_id) {
+    elseif ($request_id) {
         $json = db_select('ebms_search', 's')
             ->fields('s', array('search_spec'))
             ->condition('s.search_id', $request_id)
@@ -140,11 +143,28 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
         $request = drupal_json_decode($json);
         $board = $request['board'];
         $cycle = $request['cycle'];
+        $topic = $request['topic'];
         $errors = $request['errors'];
     }
 
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $cycles = array(0 => ' ');
+    $topics = array(0 => ' ');
+    if ($board) {
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->orderBy('t.topic_name')
+            ->execute();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+
+        // Make sure we unselect any leftover topic selection which
+        // isn't valid with a change in the composition of the Summary
+        // Topic picklist.
+        if ($topic && !array_key_exists($topic, $topics))
+            $topic = $form_state['values']['topic'] = 0;
+    }
     $results = db_select('ebms_cycle', 'c')
         ->fields('c', array('cycle_id', 'cycle_name'))
         ->orderBy('c.start_date', 'DESC')
@@ -170,6 +190,19 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
                 '#title_display' => 'after',
                 '#options' => $boards,
                 '#default_value' => $board,
+                '#ajax' => array(
+                    'callback' => '_fulltext_form_board_select_ajax',
+                    'wrapper' => 'topic-select-div',
+                ),
+            ),
+            'topic' => array(
+                '#type' => 'select',
+                '#title' => 'Summary Topic',
+                '#title_display' => 'after',
+                '#options' => $topics,
+                '#default_value' => $topic,
+                '#prefix' => '<div id="topic-select-div">',
+                '#suffix' => '</div>',
             ),
             'cycle' => array(
                 '#type' => 'select',
@@ -209,6 +242,8 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     $query->distinct();
     if ($board)
         $query->condition('s.board_id', $board);
+    if ($topic)
+        $query->condition('s.topic_id', $topic);
     if ($cycle) {
         $query->join('ebms_article_topic', 't',
             't.article_id = s.article_id AND t.topic_id = s.topic_id');
@@ -320,6 +355,13 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
 }
 
 /**
+ * Dynamically update the topic picklist when the selected board changes.
+ */
+function _fulltext_form_board_select_ajax($form, $form_state) {
+    return $form['top']['filter-fields']['topic'];
+}
+
+/**
  * Store the uploaded files for full text using Drupal's managed files
  * mechanism, and mark the ones for which the user says she was unable
  * to obtain the full text.  When we're done we rebuild the form, and
@@ -367,10 +409,12 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
     $now = strftime("%Y-%m-%d %H:%M:%S");
     $board = $values['board'];
     $cycle = $values['cycle'];
+    $topic = $values['topic'];
     $request = array(
         'type' => 'fulltext queue',
         'board' => $board,
         'cycle' => $cycle,
+        'topic' => $topic,
         'errors' => array(),
     );
 
