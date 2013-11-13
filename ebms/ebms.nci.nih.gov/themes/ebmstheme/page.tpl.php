@@ -71,12 +71,12 @@ $js = Ebms\JS_DIR;
 $user_name = $user_photo = '';
 $menu_class = 'anon';
 if ($logged_in) {
-    if (in_array('medical librarian', $user->roles))
+    if ($user->uid == 1)
+        $menu_class = 'manager admin';
+    elseif (in_array('medical librarian', $user->roles))
         $menu_class = 'librarian';
     elseif (in_array('board member', $user->roles))
         $menu_class = 'member';
-    elseif ($user->uid == 1)
-        $menu_class = 'manager admin';
     else
         $menu_class = 'manager';
     $user_name = htmlspecialchars($user->name);
@@ -286,9 +286,9 @@ if ($logged_in) {
               ><img src="<?php print $images; ?>/usa.png" alt="USA GOV" /></a>
           </div>
         </div> <!-- /#footer -->
-            
+
         <!-- **** NCI Web Analytics  - DO NOT ALTER **** -->
-            
+
         <script type="text/javascript"><!--
             var wa_production_report_suite = 'nciebms-editorialboardmgtsystem';
             var wa_dev_report_suite = 'ncidev';
@@ -297,37 +297,37 @@ if ($logged_in) {
             var wa_production_url_match = 'ebms.nci.nih.gov';
             var wa_production_linkInternalFilters = 'javascript:,ebms.nci.nih.gov';
             var wa_dev_linkInternalFilters = 'javascript:,ebms-qa.nci.nih.gov';
-            
+
             if (document.URL.indexOf(wa_production_url_match) != -1)
-            // production 
+            // production
                 var s_account=wa_production_report_suite;
-            else 
+            else
             // non-production
                 var s_account=wa_dev_report_suite;
-            
+
             var pageNameOverride = location.hostname.toLowerCase() + location.pathname.toLowerCase();
-            
+
             --></script>
-            
+
         <script type="text/javascript" src="/<?php print $js; ?>/s_code.js"></script>
-            
+
         <script type="text/javascript"><!--
-            
+
             if (document.URL.indexOf(wa_production_url_match) != -1)
-            // production 
+            // production
                 s.linkInternalFilters = wa_production_linkInternalFilters;
-            else 
+            else
             // non-production
                 s.linkInternalFilters = wa_dev_linkInternalFilters;
-            
+
             s.channel=wa_channel;
             s.events='event1';
             var s_code=s.t();if(s_code)document.write(s_code);
-            
+
             var NCIAnalytics = {
                 SiteSearch : function(sender) {
-                    var s=s_gi(s_account); 
-                    s.linkTrackVars='channel,prop14,eVar14,events'; 
+                    var s=s_gi(s_account);
+                    s.linkTrackVars='channel,prop14,eVar14,events';
                     s.linkTrackEvents='event2';
                     s.prop14=document.search.searchtext.value;
                     s.eVar14=document.search.searchtext.value;
@@ -336,11 +336,10 @@ if ($logged_in) {
                     s.tl(this,'o',wa_search_function_name);
                 }
             };
-            
+
             --></script>
-            
+
         <!-- **** End NCI Web Analytics **** -->
-            
+
       </div> <!-- /#page -->
     </div> <!-- /#page-wrapper -->
-        
