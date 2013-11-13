@@ -534,7 +534,7 @@ function pdq_ebms_login() {
 }
 
 function ebms_form_alter(&$form, &$form_state, $form_id) {
-    pdq_ebms_debug('FORM ALTER', array($form['actions'], $form_id));
+    //pdq_ebms_debug('FORM ALTER', array($form['actions'], $form_id));
     switch ($form_id) {
         case 'user_login':
             $url = 'https://iforgotmypassword.nih.gov/';
