@@ -1,4 +1,3 @@
-
 <?php
 
 // $Id$
@@ -2172,7 +2171,10 @@ class EbmsReports {
         $headers[] = 'Comments';
         $headers[] = 'Review Cycle';
         $headers[] = 'Date Assigned';
-        $headers[] = 'Summary Topic';
+        $headers[] = array(
+            'data' => 'Summary Topic',
+            'field' => 'tn.topic_name',
+        );
 
         // Construct the query for the report.
         $query = db_select('ebms_article_state', 's');
@@ -2296,7 +2298,10 @@ class EbmsReports {
             'Meeting Date (Type)',
             'Comments',
             'Review Cycle',
-            'Summary Topic',
+            array(
+                'data' => 'Summary Topic',
+                'field' => 'tn.topic_name',
+            ),
         );
 
         // Start off with an empty report table.
