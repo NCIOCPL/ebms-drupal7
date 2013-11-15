@@ -440,6 +440,7 @@ class EbmsHomePage {
             );
             $query->condition('m.reviewer_id', $this->user->uid);
             $query->condition('p.active_status', 'A');
+            $query->condition('a.drop_flag', 0);
             $query->isNull('r.article_id');
             $query->distinct();
             $query = $query->countQuery();
