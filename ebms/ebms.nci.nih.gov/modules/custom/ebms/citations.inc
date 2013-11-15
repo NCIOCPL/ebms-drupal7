@@ -34,7 +34,7 @@ namespace Ebms {
         'on_agenda' => array('future', 'past', 'comment'),
         'board_decision' => array('select', 'discussed', 'members', 'comment'),
     );
-    
+
     $GLOBALS['citation_cached_value_keys'] = array(
         'board_select',
         'topic_select',
@@ -48,6 +48,34 @@ namespace Ebms {
         'per_page',
     );
 
+    /**
+     * Global variable declaring the section of the full citation screen that
+     * is currently being processed.  This is global in order to make the data
+     * available six levels deep in the call stack from where the data
+     * originates without having to modify all of the intervening layers.
+     *
+     * See _showActionButtons().
+     *
+     * Values:
+     *   'librarian;  - The Medical Librarian Initial Review section of the display.
+     *   'publishing' - The the Publishing section of the display.
+     *   null         - Everywhere else.
+     */
+    $citations_inc_display_phase = null;
+
+    /**
+     * Class encapsulating information and methods used in decisions (i.e.,
+     * state assignments) that can be made about an article.
+     *
+     * This is general information pertaining to any article, allowing the
+     * program to locate information about any state encountered in the state
+     * history of an article.  The information includes information about the
+     * states themselves, and also some information specific to how we format
+     * the state data for display (e.g., $this->title, $this->formatter).
+     *
+     * The class is initialized and instances created once during a run, and
+     * not updated after initialization.
+     */
     class EbmsTopicDecisions {
         static $INITIALREVIEW = null;
         static $READYINITIAL = null;
@@ -187,6 +215,14 @@ namespace {
      * @file
      *
      * Implementation of EBMS page for general site information.
+     *
+     * Entry point for all functions in this file.
+     *
+     * @param string $action    What kind of form to build, default (null) = review form.
+     * @param int $article_id   What article to build, default (null) = not article specific.
+     *
+     * @return array $result    Render array for the main page content + side bar.
+     *                          MENU_NOT_FOUND if unable to determine type of page requested.
      */
     function pdq_ebms_citations($action = null, $article_id = null) {
 
@@ -209,14 +245,15 @@ namespace {
                 $crumbs[] = 'Review Citations';
                 $crumbs[] = 'Full Citation';
 
+                // Build the full citation main page
                 $form = drupal_get_form('pdq_ebms_full_citation', $article_id);
 
+                // Build the left nav components
                 $result['left_nav'] = \Ebms\Util::build_left_nav();
-
                 $result['left_nav']['actions'] = _build_full_citation_actions($article_id);
-
                 $result['left_nav']['icon_key'] = _build_full_citation_icon_key();
 
+                // Combine the two into a single render array
                 $result['full_citation_form'] = $form;
 
                 break;
@@ -256,8 +293,8 @@ namespace {
         $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
 
         // hook into ajax completions to apply jQuery to form components
-        drupal_add_js('jQuery(document).ajaxComplete(function(){       
-            addHooks();                                      
+        drupal_add_js('jQuery(document).ajaxComplete(function(){
+            addHooks();
         });',
             'inline');
 
@@ -378,6 +415,33 @@ namespace {
         _clear_journal_select($form_state['input'], 'input');
     }
 
+    /**
+     * Should add/edit buttons be shown on the full citation page for any
+     * particular article, section of the display, and user?
+     *
+     * The only function that reads the above global.
+     *
+     * @return bool     True = Yes, show the buttons.
+     *                  False = No, leave them out.
+     */
+    function _showActionButtons() {
+        global $user;
+        global $citations_inc_display_phase;
+
+        // For most places and user roles, we show the buttons
+        $showButtons = true;
+
+        // Either publishing or librarian phases forbid showing action buttons
+        if ($citations_inc_display_phase) {
+            // But only to board managers
+            if (in_array('board manager', $user->roles)) {
+                $showButtons = false;
+            }
+        }
+
+        return $showButtons;
+    }
+
     // parse the values from the form state, keep the journals that have changed
     // from their initial state, and discard those that are unchanged.
     function _update_journal_select(&$form_state) {
@@ -389,7 +453,7 @@ namespace {
             if (strpos($key, 'not_list_state_') === 0) {
                 $hash = str_ireplace('not_list_state_', '', $key);
 
-                // compare the end of $hash with it's value - 
+                // compare the end of $hash with it's value -
                 // if the differ, add to $altered_states,
                 // else remove
                 if (strrpos($hash, (string) $value) == (strlen($hash) - 1)) {
@@ -471,7 +535,7 @@ namespace {
 
     function _write_not_list($values) {
         // need to use the mapped values to insert / delete rows in ebms_not_list
-        // 
+        //
         // loop though the values, explode and split up based on values
         $changed = array(1 => array(), 0 => array());
         foreach ($values as $value => $state) {
@@ -858,26 +922,26 @@ namespace {
         );
         drupal_add_js($tag_style, 'setting');
     }
-    
-    function _citation_queue_handle_cached_values(&$form_state, 
+
+    function _citation_queue_handle_cached_values(&$form_state,
             $saveActions = false){
         global $citation_cached_value_keys;
         $cachedKeys = drupal_map_assoc($citation_cached_value_keys);
-        
+
         $query = drupal_get_query_parameters();
         if(isset($query['queue'])){
             $queryId = $query['queue'];
             require_once('search.inc');
             $jsonString = EbmsSearch::fetch_search_spec($queryId, false);
-            
+
             if($jsonString !== FALSE){
                 // populate the values
                 $jsonValues = drupal_json_decode($jsonString);
-                
+
                 // if this is at least a valid cache type
                 if (isset($jsonValues['type']) &&
                         $jsonValues['type'] == 'citation_queue') {
-                    
+
                     // make use of the values
                     if (isset($jsonValues['values'])) {
                         // merge the values into the form state
@@ -895,7 +959,7 @@ namespace {
                         $form_state['cached_values']['values'] =
                             $jsonValues['values'];
                     }
-                    
+
                     if(!isset($form_state['altered_topics']) &&
                         isset($jsonValues['altered_topics']) &&
                         isset($jsonValues['source_state'])) {
@@ -904,11 +968,11 @@ namespace {
                         // combo still in the given source state
                         $cachedSourceState = $jsonValues['source_state'];
                         $cachedSourceSequence = Ebms\getStateTypeSequence($cachedSourceState);
-                        
+
                         foreach($jsonValues['altered_topics'] as $key => $actions) {
                             list($articleId, $topicId) = explode('|', $key);
                             $currState = Ebms\getCurrentState($articleId, $topicId);
-                            
+
                             if($currState['sequence'] == $cachedSourceSequence) {
                                 $form_state['altered_topics'][$key] = $actions;
                             }
@@ -917,34 +981,34 @@ namespace {
                 }
             }
         }
-        
+
         // capture certain inputs for caching
         $jsonValues = array();
-        
+
         // save any matching values
         if (isset($form_state['values'])) {
-            $cachedValues = 
+            $cachedValues =
                 array_intersect_key($form_state['values'], $cachedKeys);
-            
+
             $jsonValues['values'] = $cachedValues;
         }
-        
+
         // dig out any altered topics as well
-        if($saveActions && 
-                isset($form_state['altered_topics']) && 
+        if($saveActions &&
+                isset($form_state['altered_topics']) &&
                 !empty($form_state['altered_topics'])) {
             $sourceState = _citation_queue_get_source_state($form_state);
 
             $jsonValues['altered_topics'] = $form_state['altered_topics'];
             $jsonValues['source_state'] = $sourceState;
         }
-            
+
         // if any data has been retrieved for caching
         if(!empty($jsonValues)) {
             $jsonValues['type'] = 'citation_queue';
-            
+
             $jsonString = drupal_json_encode($jsonValues);
-            
+
             // generate a new database row if the inputs have changed
             if (!isset($form_state['cached_values']['json_string']) ||
                 $jsonString != $form_state['cached_values']['json_string']) {
@@ -966,7 +1030,7 @@ namespace {
                 $form_state['cached_values']['id'] = $search_id;
             }
         }
-        
+
         // set the queue query parameter, in case something builds a link to
         // the current page
         if(isset($form_state['cached_values']['id'])){
@@ -974,16 +1038,16 @@ namespace {
             $_GET['queue'] = $form_state['cached_values']['id'];
         }
     }
-    
+
     /**
      * Build an array suitable for use in a select element defining the user's
      * available topics, with article counts for each.
-     * 
+     *
      * @param int $boardId         The chosen board's id
-     * @param bool $abstractReview Flag set if generating topics for the 
+     * @param bool $abstractReview Flag set if generating topics for the
      *                             NCI reviewer step, or false if for a full
      *                             text review
-     * @return array               A keyed array of topic id/topic name pairs, 
+     * @return array               A keyed array of topic id/topic name pairs,
      *                             with article counts for each topic
      */
     function _build_board_topic_options($boardId, $abstractReview) {
@@ -1000,7 +1064,7 @@ namespace {
             ->execute()
             ->fetchAll();
 
-        $targetState = $abstractReview ? Ebms\EbmsArticleStates::Published : 
+        $targetState = $abstractReview ? Ebms\EbmsArticleStates::Published :
             Ebms\EbmsArticleStates::PassedBMReview;
         $stateId = Ebms\getStateTypebyTextId($targetState)->state_id;
 
@@ -1030,15 +1094,15 @@ namespace {
         // text.
         if (!$abstractReview)
             return $topicOptions;
-        
-        // can return this value if th user is unknown or the user has no 
+
+        // can return this value if th user is unknown or the user has no
         // specific topics
         global $user;
         $account = user_load($user->uid);
         if(!$account || empty($account->topics)){
             return $topicOptions;
         }
-        
+
         // otherwise, need to examine user topics to see if any are assigned
         $assignedTopics = array();
         $otherTopics = array();
@@ -1048,7 +1112,7 @@ namespace {
             else
                 $otherTopics[$tid] = $topicLabel;
         }
-        
+
         if (empty($assignedTopics))
             return $topicOptions;
 
@@ -1065,12 +1129,12 @@ namespace {
         $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
 
         // hook into ajax completions to apply jQuery to form components
-        drupal_add_js('jQuery(document).ajaxComplete(function(){       
-            addHooks();                                      
+        drupal_add_js('jQuery(document).ajaxComplete(function(){
+            addHooks();
         });',
             'inline');
 
-        // if triggered by the board select, clear any current value for 
+        // if triggered by the board select, clear any current value for
         // topic select
         if (isset($form_state['triggering_element']['#name'])) {
             if ($form_state['triggering_element']['#name'] == 'board_select') {
@@ -1081,18 +1145,18 @@ namespace {
 
         // process and save any queued values
         _citation_queue_handle_cached_values($form_state);
-        
+
         // preserve existing page query, if any
         if(current_path() == 'system/ajax' &&
             isset($form_state['complete form']['#action'])) {
             $url = drupal_parse_url($form_state['complete form']['#action']);
-            
+
             if(isset($url['query'])) {
                 global $_GET;
                 $_GET += $url['query'];
             }
         }
-        
+
         _include_modal_scripts();
 
         // maintain triggered element states
@@ -1100,24 +1164,24 @@ namespace {
 
         // handle header sorting
         _update_table_sort($form_state);
-        
+
         // convert any cached values to available defaults
         global $citation_cached_value_keys;
         $cachedKeys = drupal_map_assoc($citation_cached_value_keys);
         foreach($cachedKeys as $cachedKey) {
             $keyname = "default_$cachedKey";
             $$keyname = null;
-            
+
             if(isset($form_state['cached_values']['values'][$cachedKey]))
                 $$keyname = $form_state['cached_values']['values'][$cachedKey];
         }
-        
+
         // retrieve boards
         $boards = Ebms\Util::boards();
 
         // pull the default user board, if any
         global $user;
-        
+
         // comb the user topics to find all related boards
         if (!empty($user->topics)) {
             $topicBoards = db_select('ebms_topic', 't')
@@ -1131,7 +1195,7 @@ namespace {
         }
         else
             $userBoards = $user->boards;
-        
+
         if(!$default_board_select) {
             $default_board_select = reset($userBoards);
             if ($default_board_select === false) {
@@ -1164,7 +1228,7 @@ namespace {
             ),
         );
         $form['citation_queue']['board_select']['#options'] += $boards;
-        
+
         $defaultBoardTopics = array();
         $selectionDesc = empty($default_topic_select) ? '' : 'Selected Topics';
 
@@ -1193,7 +1257,7 @@ namespace {
                             ->execute()
                             ->fetchAllKeyed();
                     } catch (Exception $e) {
-                        
+
                     }
 
                     $form['citation_queue']['topic_select']['#options'] =
@@ -1283,7 +1347,7 @@ namespace {
             $form['citation_queue']['tag_select']['#options'] += $tags;
 
             $checks = array();
-            
+
             $checks["abstract_review_check"] = array(
                 '#type' => 'checkbox',
                 '#title' => t('Abstract Review'),
@@ -1321,8 +1385,8 @@ namespace {
             '#type' => 'hidden',
         );
 
-        _citation_queue_results($form, $form_state, $is_librarian, 
-            $default_board_select, 
+        _citation_queue_results($form, $form_state, $is_librarian,
+            $default_board_select,
             $default_topic_select ? $default_topic_select : $defaultBoardTopics,
             $selectionDesc);
 
@@ -1351,7 +1415,7 @@ namespace {
             $board_id = $form_state['values']['board_select'];
             if (isset($form_state['values']['topic_select']))
                 $topic_values = $form_state['values']['topic_select'];
-            
+
             if(!empty($topic_values))
                 $topic_id = $topic_values;
 
@@ -1422,7 +1486,7 @@ namespace {
             $stateQuery->condition('eas.state_id', $state->state_id);
             $stateQuery->condition('eas.current', 'Y');
 
-            // if filter topics exist, select all articles that belong to 
+            // if filter topics exist, select all articles that belong to
             // any of them
             if (!empty($selectedTopics)) {
                 $stateQuery->condition('eas.topic_id', $selectedTopics, 'IN');
@@ -1689,7 +1753,7 @@ namespace {
                 }
             }
 
-            // now that all boards are known and indexed, create an array that 
+            // now that all boards are known and indexed, create an array that
             // maps boards to topic objects
             $boardTopicMap = array();
             foreach ($boards as $boardName) {
@@ -1712,7 +1776,7 @@ namespace {
 
             // need to construct a set of rows for eact record, as rowspans will
             // be used for every column apart from topics
-            // $topicRows indicates the total number of rows per result, with 
+            // $topicRows indicates the total number of rows per result, with
             // the actions and citation columns spanning all rows,
             // each topic spanning just its topics' rows, and the topics each
             // taking up a single row.
@@ -1722,7 +1786,7 @@ namespace {
             //                      board   topic
             //                              topic
             //                              topic
-            // will use an index into the current board and topic to generate 
+            // will use an index into the current board and topic to generate
             // each row, incrementing topic until it rolls over into the next
             // board, and then board until all boards are done.
 
@@ -1848,7 +1912,7 @@ namespace {
             }
 
             while (isset($boardTopicMap[$boardIx])) {
-                // add the board (and potentially actions), and cycle through 
+                // add the board (and potentially actions), and cycle through
                 // the topics
                 $topicIx = 0;
                 $boardName = $boardTopicMap[$boardIx]['boardName'];
@@ -2033,10 +2097,10 @@ namespace {
                             $currTopic = 0;
 
                             // if the topic is still 0, carry on with no selected topic
-                            // 
+                            //
                             // find the board id, and build a list or available topics
                             if ($currBoard) {
-                                // subquery to find the in-use topics for the 
+                                // subquery to find the in-use topics for the
                                 // article
                                 $usedTopic = db_select('ebms_article_topic',
                                         'eat')
@@ -2174,8 +2238,8 @@ namespace {
                             $row['cycle_select']['#prefix'] = "<td colspan='$topicspan' class='summary-review_cycle borderless'>";
                             $row['cycle_select']['#suffix'] = "</td>";
                         }
-                        // else, proceed with showing or hiding 
-                        else if ((!isset($topic->curr_state) || 
+                        // else, proceed with showing or hiding
+                        else if ((!isset($topic->curr_state) ||
                             $topic->curr_state == $state->state_id) && (
                             user_access('administer ebms') ||
                             $is_librarian ||
@@ -2277,11 +2341,11 @@ namespace {
         foreach($cachedKeys as $cachedKey) {
             $keyname = "default_$cachedKey";
             $$keyname = null;
-            
+
             if(isset($form_state['cached_values']['values'][$cachedKey]))
                 $$keyname = $form_state['cached_values']['values'][$cachedKey];
         }
-        
+
         $form = array(
             '#prefix' => '<div class="citation-input-div childfix">',
             '#suffix' => '</div>',
@@ -2321,7 +2385,7 @@ namespace {
                 '#type' => 'radios',
                 '#title' => t('Format'),
                 '#options' => $formatOptions,
-                '#default_value' => $default_format !== null ? 
+                '#default_value' => $default_format !== null ?
                     $default_format : 'brief',
             );
         }
@@ -2388,11 +2452,11 @@ namespace {
         // fall-back sorting in case no author exists
         $query->orderBy('a.brf_jrnl_title', $dir);
     }
-    
+
     /**
      * Retrieves the article state from which all articles on the page should
      * originate, as defined in Ebms\EbmsArticleStates.
-     * 
+     *
      * @param array $form_state The current form state
      * @return string A string matching an article state's text id
      */
@@ -2401,14 +2465,14 @@ namespace {
 
         $fulltext_review = isset($form_state['values']['fulltext_review_check'])
                 ? $form_state['values']['fulltext_review_check'] : false;
-        
+
         if (!$is_librarian) {
             if ($fulltext_review)
                 return Ebms\EbmsArticleStates::PassedBMReview;
             else
                 return \Ebms\EbmsArticleStates::Published;
         }
-        
+
         return \Ebms\EbmsArticleStates::ReadyInitReview;
     };
 
@@ -2464,7 +2528,7 @@ namespace {
     /**
      * Formats an article's abstract into a useful HTML fragment, with classes
      * applied to the labels and text.
-     * 
+     *
      * @param Ebms\EbmsArticle $article
      * @return string $abstract
      */
@@ -2493,10 +2557,23 @@ namespace {
         }
     }
 
+    /**
+     * Construct a render array for the contents of the article citation.  This
+     * is only for the record itself, not any states or decisions that pertain
+     * to it - which may be added to the form later.
+     *
+     * @param object $article       Loaded EbmsArticle object for the article.
+     * @param boolean $long_form    True=show the fuller form of the article.
+     * @param boolean $showAbstract True=include the abstract.
+     * @param boolean $showFullText True=include a link to the full article
+     *                              text PDF, if we have it in our database.
+     *
+     * @return Render array for the article.
+     */
     function _cite_article(Ebms\EbmsArticle $article, $long_form = true,
         $showAbstract = false, $showFullText = true) {
         $form = array();
-        
+
         $article_id = $article->getId();
 
         // Fetch the legacy CMS ID if available.
@@ -2584,7 +2661,7 @@ namespace {
             if ($legacy_id)
                 $legacy_id = "LEGACY CMS ID: $legacy_id";
         }
-        
+
         $form['authors']['#markup'] =
             implode('',
             array(
@@ -2593,7 +2670,7 @@ namespace {
                 "</div>$tTitle"
             )
         );
-        
+
         $form['title'] = $title;
 
         $pieces = array(
@@ -2665,24 +2742,24 @@ namespace {
                 $pieces[] = "$tReviewCycle<div>$reviewCycle</div>";
         }
         $pieces[] = '</div>';
-        
+
         $form['citation']['#markup'] = implode('', $pieces);
-        
+
         return $form;
         #$results = db_select('ebms_article', 'a')
         #    ->fields('a', array('article_title', 'source_id',
         #return "Article $position (CMS ID $article_id)";
     }
-    
-    function _full_citation_redirect($form, &$form_state){        
+
+    function _full_citation_redirect($form, &$form_state){
         // check for the article id
         if(isset($form_state['triggering_element']['#article_id'])) {
             // update the form state's topic actions
             _update_topic_actions($form_state);
-            
+
             // update any changed values, including pass/reject/fyi
             _citation_queue_handle_cached_values($form_state, true);
-            
+
             // also check for saved query parameters
             $query = drupal_get_query_parameters();
             $options = array();
@@ -2690,10 +2767,10 @@ namespace {
                 $options['query']['page'] = $query['page'];
             }
             if(isset($form_state['cached_values']['id'])){
-                $options['query']['queue'] = 
+                $options['query']['queue'] =
                     $form_state['cached_values']['id'];
             }
-            
+
             $articleId = $form_state['triggering_element']['#article_id'];
             drupal_goto("citations/full/$articleId", $options);
         }
@@ -2721,7 +2798,7 @@ namespace {
     /**
      * Retrieves the reject or pass decisions on the listed topics from the form state
      * and stores the relevant values for later use.
-     * @param array $form_state 
+     * @param array $form_state
      */
     function _update_topic_actions(&$form_state) {
         $altered_topics = array();
@@ -2769,7 +2846,7 @@ namespace {
     }
 
     /**
-     * 
+     *
      * @param type $target
      * @param type $desc
      */
@@ -2804,7 +2881,7 @@ namespace {
             $fyi_name = $citations_state_map[$initial_state]['fyi'];
         }
 
-        // look through each article/topic hash and determine if they are 
+        // look through each article/topic hash and determine if they are
         // rejected or passed
         try {
             foreach ($values as $hash => $actions) {
@@ -2819,7 +2896,7 @@ namespace {
                 // define the new state, default to reject
                 $new_state_name = $reject_name;
 
-                // if not exactly one state set, then save cycle to initial 
+                // if not exactly one state set, then save cycle to initial
                 // state, if available
                 if (($pass + $reject + $fyi != 1)) {
                     if ($cycle) {
@@ -2851,9 +2928,9 @@ namespace {
     /**
      * Sets the prefix and suffix of a form so as to wrap it in a div with
      * given classes.
-     * 
+     *
      * @param mixed $form The form, passed by reference, to modify.
-     * 
+     *
      * @param mixed $classes An array of class string to be added to the wrapping
      *      div.
      */
@@ -2870,7 +2947,7 @@ namespace {
         $form['title']['#markup'] = '<h3>' . t('Citation Actions') . '</h3>';
 
         $article = new Ebms\EbmsArticle($articleId);
-        
+
         $links = array();
 
         // check for search query
@@ -2880,7 +2957,7 @@ namespace {
             $searchPath = "citations/search/R$searchId";
             $links[] = array('Refine Search', $searchPath, array());
         }
-        
+
         if (isset($query['queue'])){
             $options = array(
                 'query' => array(
@@ -2891,7 +2968,7 @@ namespace {
                 $options['query']['page'] = $query['page'];
             $links[] = array('Return to Queue', 'citations', $options);
         }
-        
+
         // build full citation text url
         $fileUrl = null;
         if ($article->getFullTextId()) {
@@ -2979,26 +3056,41 @@ namespace {
         return $form;
     }
 
+    /**
+     * Build the form for a full citation display for one article.
+     *
+     * @param array $form           Standard drupal form render array
+     * @param array &$form_state
+     * @param int $articleId        Internal EBMS unique ID of one article citation.
+     *
+     * @return Updated $form render array.
+     */
     function pdq_ebms_full_citation($form, &$form_state, $articleId) {
         require_once('EbmsArticle.inc');
+
+        // This global is set and reset here
+        global $citations_inc_display_phase;
+        $citations_inc_display_phase = null;
 
         //include js to add radio/checkbox behavior
         $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
 
         // hook into ajax completions to apply jQuery to form components
-        drupal_add_js('jQuery(document).ajaxComplete(function(){       
-            addHooks();                                      
+        drupal_add_js('jQuery(document).ajaxComplete(function(){
+            addHooks();
         });',
             'inline');
 
         // include modal script necessities
         _include_modal_scripts();
-        
+
         // maintain triggered element states
         _update_persistent_elements($form_state);
 
+        // Get the full article object data from the database
         $article = new Ebms\EbmsArticle($articleId);
 
+        // Construct a render array for the citation itself (not its history).
         $cite = _cite_article($article);
 
         $form['#prefix'] = '<div id="citation-form-div">';
@@ -3012,7 +3104,7 @@ namespace {
             '#suffix' => "</div>",
         );
 
-        // build the citation tags    
+        // build array of currently active citation tags ever assigned, in date order
         $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');
 
         // reverse order so most recent is first
@@ -3020,6 +3112,8 @@ namespace {
 
         // build the render array of tags
         $tag_array = _format_tags($form_state, $tags);
+
+        // False if no active tags for article
         $no_tags = (empty($tag_array));
 
         // generate the add tag button (or placeholder if triggered)
@@ -3036,13 +3130,21 @@ namespace {
             $form['button_form'] = $button_array['form'];
         }
 
-        // build the board topics
+        // Retrieve an array of Ebms\ArticleStatus objects for every board,
+        //  topic, and state, active or not, ever assigned to the article.
+        // Order is B(oard), T(opic), S(equence number).
         $history = Ebms\getStatusHistory($articleId, null, null, true, true,
             'BTS');
+
+        // Place the info in a render array
         $form['editorial_boards'] = _format_boards($form_state, $article,
             $history, $tags);
 
+        // Retrieve an array of import activities by Board, Topic, Active
+        //  status, import batch ID.
         $importData = Ebms\getArticleImportData($article->getId());
+
+        // And render the import info
         $form['import_process'] = array(
             '#type' => 'fieldset',
             '#title' => '<span class="citation-subheader">Import Process</span>',
@@ -3053,27 +3155,30 @@ namespace {
             '#suffix' => "</div>",
         );
 
+        // Render the initial_review info, i.e., first review at import time
+        $citations_inc_display_phase = 'librarian';
         $form['initial_review'] = array(
             '#type' => 'fieldset',
             '#title' => '<span class="citation-subheader">Medical Librarian Initial Review</span>',
-            'section' => _format_boards($form_state, $article, $history, $tags,
-                'librarian'),
+            'section' => _format_boards($form_state, $article, $history, $tags, 'librarian'),
             '#collapsible' => true,
             '#collapsed' => true,
             '#prefix' => "<div class='full-citation-element citation-subheader'>",
             '#suffix' => "</div>",
         );
 
+        // Render the publishing history section
+        $citations_inc_display_phase = 'publishing';
         $form['publishing'] = array(
             '#type' => 'fieldset',
             '#title' => '<span class="citation-subheader">Publishing</span>',
-            'section' => _format_boards($form_state, $article, $history, $tags,
-                'publishing'),
+            'section' => _format_boards($form_state, $article, $history, $tags, 'publishing'),
             '#collapsible' => true,
             '#collapsed' => true,
             '#prefix' => "<div class='full-citation-element citation-subheader'>",
             '#suffix' => "</div>",
         );
+        $citations_inc_display_phase = null;
 
         // need to ensure that the fieldsets leading to any triggered element
         // are expanded
@@ -3093,7 +3198,7 @@ namespace {
                     break;
             }
         }
-        
+
         return $form;
     }
 
@@ -3128,6 +3233,19 @@ namespace {
         return $form;
     }
 
+    /**
+     * Create a string referencing an icon suitable for inclusion in a form
+     * that displays an image icon for adding a comment (via an ajax subform)
+     * to an article state.
+     *
+     * See also _build_decision_icon_tag(), _build_add_state_comment_button().
+     *
+     * @param array &$form_state    Drupal form state to find if related form
+     *                              is triggered.
+     * @param int $articleTagId     Used in making a unique ID for the button.
+     *
+     * @return                      Render array for icon and ajax invoked form.
+     */
     function _build_add_tag_comment_button(&$form_state, $articleTagId) {
         $form = array();
 
@@ -3143,10 +3261,11 @@ namespace {
 
             // create add tag button
             $form[$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' alt ='' src='$iconPath'>",
+                '#markup' =>
+                  "<img class='full-citation-button image-button' alt ='' src='$iconPath'>",
             );
 
-            // create add comment form 
+            // create add comment form
             $formId = "add_tag_comment_form_$hash";
             $form[$formId] = _build_add_tag_comment_form($articleTagId);
             $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
@@ -3202,7 +3321,7 @@ namespace {
                 '#markup' => "<img class='full-citation-button image-button' alt='' src='$iconPath'>",
             );
 
-            // create add comment form 
+            // create add comment form
             $formId = "add_state_comment_form_$hash";
             $form[$formId] = _build_add_state_comment_form($stateId);
             $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
@@ -3281,11 +3400,13 @@ namespace {
 
     /**
      * Formats an array of tags for rendering.
+     * @param array ref &$form_state    Drupal form state
      * @param mixed $tags
+     * @param int $topicId              Unique ID of the topic of an article.
+     *
      * @return mixed the formatted render array.
      */
-    function _format_tags(&$form_state, $tags, $showButtons = true,
-        $topicId = null) {
+    function _format_tags(&$form_state, $tags, $topicId = null) {
         $form = array();
 
         // organize the tags by topic
@@ -3295,6 +3416,9 @@ namespace {
         $targetTopicId = $topicId;
         if ($topicId == null)
             $targetTopicId = 0;
+
+        // Are we showing buttons?
+        $showButtons = _showActionButtons();
 
         if (isset($topic_tags[$targetTopicId])) {
             //add header
@@ -3359,7 +3483,7 @@ namespace {
 
     /**
      * Builds a button and form for adding a tag to a article or topic.
-     * 
+     *
      * @param bool $noTags      Indicates if no tags yet exist.
      * @param type $form_state  The form_state, used to determine if the button
      *      has been clicked.
@@ -3373,6 +3497,8 @@ namespace {
         $topicId = null) {
         $form = array();
 
+        $showButtons = _showActionButtons();
+
         // create hash for article/topic
         $hash = "$articleId|$topicId";
 
@@ -3381,7 +3507,7 @@ namespace {
         // check if related form is triggered
         $triggered = _is_triggered_by($form_state, $buttonId);
 
-        if ($triggered) {
+        if ($triggered && $showButtons) {
             // grab icon for button
             $iconPath = $noTags ? Ebms\TAG_ACTIVE : Ebms\ADD_DECISION_ACTIVE;
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png';
@@ -3394,7 +3520,7 @@ namespace {
             $form['form'][$formId] = _build_add_tag_form($articleId, $topicId);
             $form['form'][$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
             $form['form'][$formId]['#suffix'] = '</div>';
-        } else {
+        } else if ($showButtons) {
             // grab icon for button
             $iconPath = $noTags ? Ebms\TAG_INACTIVE : Ebms\ADD_DECISION_INACTIVE;
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png';
@@ -3424,13 +3550,21 @@ namespace {
     }
 
     /**
-     * Checks if the form has been triggered by an element with a particular return
+     * Checks if an ajax element in the form has been triggered with a particular
      * value.
-     * 
+     *
+     * If a button has been triggered (clicked) in the past and the result
+     * saved by our code in the form_state, then it is known to be triggered.
+     *
      * @param mixed $form_state     The current form state.
      * @param string $element_value The return value of interest.
-     * @return bool                 Returns true if the form state has a triggering
-     *                              element with the given return value.
+     *
+     * @return string or bool       'cleared' = Element value was triggered but is cleared.
+     *                              'persist' = Element value was persisted in form.
+     *                              'trigger' = Element was #return_value in last form action.
+     *                              false     = form_state['triggered_element'] and
+     *                                           form_state['triggering_element']
+     *                                           both unset for this element value.
      */
     function _is_triggered_by(&$form_state, $element_value) {
         // check existing triggered elements
@@ -3864,6 +3998,10 @@ namespace {
         $form_state['rebuild'] = TRUE;
     }
 
+    /**
+     * Interface to _build_add_decision_button that converts last parameter
+     * to an array of length 1.
+     */
     function _build_edit_decision_button(&$form_state, $articleId, $topicId,
         Ebms\EbmsTopicDecisions $decision) {
         return _build_add_decision_button($form_state, $articleId, $topicId,
@@ -3883,6 +4021,8 @@ namespace {
             $hash .= "|$index";
         }
 
+        // Are we in a place where we add buttons?
+        $showButtons = _showActionButtons();
 
         $buttonId = $isAdd ? "add_decision_$hash" : "edit_decision_$hash";
         $altText = $isAdd ? "Add Decisions" : "Edit Decision";
@@ -3890,45 +4030,52 @@ namespace {
         // check if related form is triggered
         $triggered = _is_triggered_by($form_state, $buttonId);
 
-        if ($triggered) {
-            // grab icon for button
-            $iconPath = Ebms\ADD_DECISION_ACTIVE;
-            // create add tag button
-            $form['button'][$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' alt='$altText' src='$iconPath'>",
-            );
+        if ($showButtons) {
+            if ($triggered) {
+                // Prepare action button
+                $iconPath = Ebms\ADD_DECISION_ACTIVE;
+                $form['button'][$buttonId] = array('#markup' =>
+                    "<img class='full-citation-button image-button' alt='$altText' src='$iconPath'>",
+                );
 
-            $formId = "edit_decision_form_$hash";
-            $form['form'][$formId] = _build_edit_decision_form($form_state,
-                $articleId, $topicId, $decisions, $isAdd);
-            $form['form'][$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
-            $form['form'][$formId]['#suffix'] = '</div>';
-        } else {
-            // grab icon for button
-            $iconPath = Ebms\ADD_DECISION_INACTIVE;
+                $formId = "edit_decision_form_$hash";
+                $form['form'][$formId] = _build_edit_decision_form($form_state,
+                    $articleId, $topicId, $decisions, $isAdd);
+                $form['form'][$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+                $form['form'][$formId]['#suffix'] = '</div>';
+            } else {
+                // Prepare action button and ajax function, if we need it
+                // grab icon for button
+                $iconPath = Ebms\ADD_DECISION_INACTIVE;
 
-            // create edit decision button
-            $form['button'][$buttonId] = array(
-                '#type' => 'image_button',
-                '#return_value' => $buttonId,
-                '#src' => $iconPath,
-                '#ajax' => array(
-                    'callback' => '_ajax_full_citation',
-                    'wrapper' => 'citation-form-div',
-                    'progress' => array(
-                        'type' => 'throbber',
-                        'message' => t('')
+                // create edit decision button
+                $form['button'][$buttonId] = array(
+                    '#type' => 'image_button',
+                    '#return_value' => $buttonId,
+                    '#src' => $iconPath,
+                    '#ajax' => array(
+                        'callback' => '_ajax_full_citation',
+                        'wrapper' => 'citation-form-div',
+                        'progress' => array(
+                            'type' => 'throbber',
+                            'message' => t('')
+                        ),
                     ),
-                ),
-                '#attributes' => array(
-                    'class' => array('full-citation-button', 'image-button'),
-                    'title' => $altText,
-                    'alt' => $altText,
-                ),
-                '#persist' => array(
-                    'type' => 'toggle',
-                    'group' => $buttonId),
-            );
+                    '#attributes' => array(
+                        'class' => array('full-citation-button', 'image-button'),
+                        'title' => $altText,
+                        'alt' => $altText,
+                    ),
+                    '#persist' => array(
+                        'type' => 'toggle',
+                        'group' => $buttonId),
+                );
+                $form['form'] = array();
+            }
+        }
+        else{
+            // No buttons
+            $form['button'] = '';
             $form['form'] = array();
         }
 
@@ -4187,32 +4334,32 @@ namespace {
                         ),
                         '#disabled' => !$reviewerId,
                     );
-                    
+
                     // need to clean up the select input and value arrays
                     // to prevent selection of reject and other values at the
                     // same time
-                    
+
                     if(isset($form_state['triggering_element']['#name'])){
                         $name = $form_state['triggering_element']['#name'];
                         $element = "member_responses_select_$hash";
-                        
+
                         // check if the name is of the select element with an
                         // offset to indicate which checkbox was clicked
                         $stem = preg_quote($element);
                         $pattern = "#$stem\\[(?'option'[\\d])\\]#";
                         $matches = array();
-                        
+
                         $ret = preg_match($pattern, $name, $matches);
-                        
+
                         // if an option is found
                         if(isset($matches['option'])){
                             $option = $matches['option'];
-                            
+
                             // ...and it is on...
                             if($form_state['values'][$element][$option]){
-                                // loop though values and inputs to turn off 
+                                // loop though values and inputs to turn off
                                 // the unrelated options
-                                foreach($form_state['values'][$element] 
+                                foreach($form_state['values'][$element]
                                         as $index => $value){
                                     // if the chosen option is 1 and the
                                     // current index is not (or vice versa)
@@ -4335,7 +4482,7 @@ namespace {
                             if($datespan) {
                                 $date = format_date($datespan['value'], 'custom', 'm/d/Y');
                                 $suffix = " - $date";
-                            }                            
+                            }
                             $futureEvents[$node->nid] = $fullNode->title . $suffix;
                         }
                     }
@@ -4360,7 +4507,7 @@ namespace {
                             if($datespan) {
                                 $date = format_date($datespan['value'], 'custom', 'm/d/Y');
                                 $suffix = " - $date";
-                            }                            
+                            }
                             $pastEvents[$node->nid] = $fullNode->title . $suffix;
                         }
                     }
@@ -4472,8 +4619,8 @@ namespace {
 
         // hook into ajax completions to apply jQuery to form components
         drupal_add_js(
-            'jQuery(document).ajaxComplete(function(){       
-                addHooks();       
+            'jQuery(document).ajaxComplete(function(){
+                addHooks();
             });',
             'inline');
 
@@ -4816,7 +4963,7 @@ namespace {
                 ->fields('r', array('review_id'))
                 ->execute()
                 ->fetchField();
-            
+
             // clear the review disposition table
             db_delete('ebms_review_disposition')
                 ->condition('review_id', $reviewId)
@@ -4837,7 +4984,7 @@ namespace {
                     $query->execute();
                 }
             }
-            
+
             // clear all current rejections for the review
             db_delete('ebms_review_rejection_reason')
                 ->condition('review_id', $reviewId)
@@ -4938,7 +5085,7 @@ namespace {
             $articleStateId = Ebms\setArticleState($articleId,
                 Ebms\EbmsArticleStates::FinalBoardDecision, $topicId, null,
                 $comment);
-            
+
             // fetch review cycle, should only be one for an article/topic
             // combo
             $cycles = Ebms\getArticleReviewCycle($articleId, $topicId);
@@ -4950,7 +5097,7 @@ namespace {
             $fields = array(
                 'discussed' => $discussed,
             );
-            
+
             if(!empty($cycles)){
                 $cycle_ids = array_keys($cycles);
                 $fields['meeting_date'] = reset($cycle_ids);
@@ -4993,7 +5140,6 @@ namespace {
     function _format_boards(&$form_state, Ebms\EbmsArticle $article, $history,
         $tags, $mode = null) {
         $form = array();
-
         $showButtons = true;
         // if in a specific mode, hide buttons for the managers
         if ($mode) {
@@ -5055,6 +5201,17 @@ namespace {
         return $form;
     }
 
+    /**
+     * Construct a render array of all of the import actions for this article.
+     *
+     * @param object &$article      Loaded EbmsArticle object for the article.
+     * @param array &$importData    Array of arrays, one for each import action
+     *                              for this article.
+     *
+     *
+     * @return array $form          Render array for the import activity info,
+     *                              by board, topic, action.
+     */
     function _format_import(Ebms\EbmsArticle &$article, &$importData) {
         $form = array();
 
@@ -5192,9 +5349,13 @@ namespace {
     }
 
     /**
-     * Formats a topic name and set of topic states for rendering.
-     * @param string $topic
-     * @param mixed $topic_states
+     * Formats a topic a single name and associated topic states for rendering.
+     * Subroutine of _format_topics.
+     *
+     * @param array &$form_state        Current drupal form state.
+     * @param object $article           Loaded EbmsArticle object for which we generate info.
+     * @param string $topicName         Human readable topic name.
+     * @param mixed $topic_sequences
      * @return mixed the formatted render array.
      */
     function _format_topic(&$form_state, $article, $topicName, $topic_sequences,
@@ -5217,7 +5378,7 @@ namespace {
         $topicId = Ebms\getTopicIdByName($topicName);
 
         // generate the add tag button and render array of tags
-        $tag_array = _format_tags($form_state, $tags, $showButtons, $topicId);
+        $tag_array = _format_tags($form_state, $tags, $topicId);
         $no_tags = empty($tag_array);
         $button_array = _build_add_tag_button($no_tags, $form_state, $articleId,
             $topicId);
@@ -5258,18 +5419,19 @@ namespace {
         if ($mode == 'librarian') {
             $decisions = array();
             $decisionInfo = Ebms\EbmsTopicDecisions::$INITIALREVIEW;
-            if ($showButtons) {
+            // if ($showButtons) {
+            if (true) {
                 $decision = _format_topic_decision($decisionInfo,
-                    $topic_sequences, $form_state);
+                    $topic_sequences, $form_state, null, $showButtons);
                 $decisions['topic_initial_review_decision'] = _wrap_decision($form_state,
                     $articleId, $topicId, $decision, $decisionInfo,
                     $empty_decisions);
             } else {
-                $decisions['topic_initial_review_decision'] = _format_topic_decision($decisionInfo,
-                    $topic_sequences);
+                $decisions['topic_initial_review_decision'] =
+                    _format_topic_decision($decisionInfo, $topic_sequences);
             }
         } else if ($mode == 'publishing') {
-            
+
         } else {
             $decisions = array();
             $decisionInfo = Ebms\EbmsTopicDecisions::$NCIREVIEWER;
@@ -5352,7 +5514,7 @@ namespace {
     /**
      * Wraps a decision with edit buttons and determines if the decision
      * is empty.
-     * 
+     *
      * @param array $form_state
      * @param int $articleId
      * @param int $topicId
@@ -5371,6 +5533,7 @@ namespace {
         $buttonArray = _build_edit_decision_button($form_state, $articleId,
             $topicId, $decisionInfo);
 
+        // Sometimes there is no button, value should be ''
         $form['button'] = $buttonArray['button'];
         $form['decision'] = $decision;
         $form['form'] = $buttonArray['form'];
@@ -5479,8 +5642,24 @@ namespace {
       return $form;
       } */
 
+    /**
+     * Generate a render array for a decision pertaining to an article state.
+     * Called for each article state for a citation during a full display.
+     * Constructs form components for the title of the state, the name of the
+     * user, date, and buttons, depending on the content to be formatted, any
+     * custom formatter invoked (see class EbmsTopicDecisions->formatter), and
+     * other factors.
+     *
+     * @param object $decisionInfo     EbmsTopicDecisions object general state info.
+     * @param array $topic_sequences   Array of state info for one topic for one article.
+     * @param array &$form_state       Standard Drupal form state info.
+     * @param string $modifier         'publishing', 'librarian, or null, tells something
+     *                                  about the purpose of the formatted data.
+     *
+     * @return array $form             Render array to render this data in a form.
+     */
     function _format_topic_decision(Ebms\EbmsTopicDecisions $decisionInfo,
-        $topic_sequences, &$form_state = null, $modifier = null) {
+        $topic_sequences, &$form_state = null, $modifier = null, $showButtons = true) {
         $form = array();
 
         // generating past content if no form_state (and)
@@ -5525,7 +5704,7 @@ namespace {
                     $decision['decision']['#prefix'] = '<div class="full-citation-indent">';
                     $decision['decision']['#suffix'] = '</div>';
 
-                    if ($form_state != null && $modifier != 'publishing') {
+                    if ($form_state != null && $modifier != 'publishing' && $showButtons) {
                         //drop in 'add comment' button
                         $decision['comments_add_button'] =
                             _build_add_state_comment_button($form_state, $status);
@@ -5548,7 +5727,8 @@ namespace {
         }
 
         // also dig up the past decisions if the currently displayed set is current
-        if (!$show_past && $modifier != 'publishing' && isset($topic_sequences[$sequenceIndex]['I'])) {
+        if (!$show_past && $modifier != 'publishing'
+                        && isset($topic_sequences[$sequenceIndex]['I'])) {
             // ensure the header exists
             $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>$title</div>");
 
@@ -5657,7 +5837,7 @@ namespace {
         $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
         $form['header']['#prefix'] = '<div class="full-citation-indent">';
         $form['header']['#suffix'] = '</div>';
-            
+
         if (!empty($packetIds)) {
             $form['current_decisions']['blocks'] = _format_packet_ids($packetIds);
         }
@@ -5698,7 +5878,7 @@ namespace {
         }
 
         $form = $packetBlocks;
-        
+
         $form['#prefix'] = '<div class="full-citation-indent">';
         $form['#suffix'] = '</div>';
 
@@ -5801,19 +5981,19 @@ namespace {
         $account = user_load($uid);
 
         // check the first disposition for a rejection
-        if(isset($response->dispositions[0]) && 
+        if(isset($response->dispositions[0]) &&
                 $response->dispositions[0]->value_id != 1) {
             $img = _build_decision_icon_tag('pass');
         }
         else {
             $img = _build_decision_icon_tag('reject');
         }
-        
+
         $form['decision'] = array("#markup" => "<div class='full-citation-indent'>$img$date - $account->name</div>");
         $form['dispositions'] = array();
         foreach($response->dispositions as $disposition) {
             $action = $disposition->value_name;
-            $form['dispositions'][] = 
+            $form['dispositions'][] =
                 array("#markup" => "<div class='full-citation-indent'>ACTION: $action</div>");
         }
         foreach ($response->reasons as $index => $reason) {
@@ -6065,6 +6245,19 @@ namespace {
         return $form;
     }
 
+    /**
+     * Create a string referencing an icon suitable for inclusion in a form
+     * that displays an image icon for passing, rejecting, or fyi'ing an
+     * article state.
+     *
+     * See also _build_add_tag_comment().
+     *
+     * @param string $type      The kind of icon we want.  Unsupported names return ''.
+     * @param bool $active      True=select the active flavored icon, else inactive.
+     *                          The meaning of active/inactive seems to vary with context.
+     *
+     * @return                  String for inclusion in the form.
+     */
     function _build_decision_icon_tag($type, $active = true) {
 
         $icon = null;
@@ -6171,8 +6364,8 @@ namespace {
                 if($datespan) {
                     $date = format_date($datespan['value'], 'custom', 'm/d/Y');
                     $suffix = " - $date";
-                }                            
-                
+                }
+
                 $form[] = array(
                     "#markup" =>
                     "<div class='full-citation-indent'>MEETING: $event->title$suffix</div>"
