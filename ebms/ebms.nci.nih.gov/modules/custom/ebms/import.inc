@@ -196,7 +196,9 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $future_meeting = 0;
     $selected_members = array();
     $members = array();
-    if (false && $board) { /// XXX BOARD MEMBERS??? OCEEBMS-58 NEED FEEDBACK!!!
+
+    // OCEEBMS-58: disabled (for now) by user decision.
+    if (false && $board) {
         $query = db_select('users', 'u');
         $query->fields('u', array('uid', 'name'));
         $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
@@ -300,8 +302,8 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
                     '' => ' ',
                     'PassedBMReview' => 'Passed abstract review',
                     'PassedFullReview' => 'Passed full text review',
-                    'FinalBoardDecision' => 'Editorial Board decision',
                     'OnAgenda' => 'On Agenda',
+                    'FinalBoardDecision' => 'Editorial Board decision',
                 ),
                 '#default_value' => $placement,
                 '#states' => array(
@@ -328,11 +330,11 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             'agenda-meeting' => array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'meeting-fields'),
-                'past-meeting' => array(
+                'future-meeting' => array(
                     '#type' => 'select',
-                    '#title' => 'PAST MEETING',
-                    '#options' => $past_meetings,
-                    '#default_value' => $past_meeting,
+                    '#title' => 'FUTURE MEETING',
+                    '#options' => $future_meetings,
+                    '#default_value' => $future_meeting,
                     '#states' => array(
                         'visible' => array(
                             ':input[name="placement"]' => array(
@@ -341,11 +343,11 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
                         ),
                     ),
                 ),
-                'future-meeting' => array(
+                'past-meeting' => array(
                     '#type' => 'select',
-                    '#title' => 'FUTURE MEETING',
-                    '#options' => $future_meetings,
-                    '#default_value' => $future_meeting,
+                    '#title' => 'PAST MEETING',
+                    '#options' => $past_meetings,
+                    '#default_value' => $past_meeting,
                     '#states' => array(
                         'visible' => array(
                             ':input[name="placement"]' => array(
@@ -363,7 +365,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
                 '#states' => array(
                     'visible' => array(
                         ':input[name="placement"]' => array(
-                            'value' => 'XXXOnAgenda', /// XXX BOARD MEMBERS???
+                            'value' => 'XXXOnAgenda', // Disabled for now
                         ),
                     ),
                 ),
