@@ -1310,7 +1310,7 @@ table.docs-table.admin td.col-5 { text-align: center; }
 }
 #group-form-buttons { padding-bottom: 20px; }
 
-/* PRINT  -- FOR FUTURE ENHANCEMENT - SEE JIRA ticket OCEEBMS-113
+/* PRINT  -- SEE JIRA ticket OCEEBMS-113 */
 @media print {
     #banner, #header, #nav, #breadcrumb, #message-wrapper, #tabs,
     #reports-top, #footer { display: none; }
@@ -1328,7 +1328,6 @@ table.docs-table.admin td.col-5 { text-align: center; }
     #message-wrapper,
     .content .node.node-page { width: auto; }
 }
-*/
 
 div.ctools-modal-content .modal-header {
     background-color: #696559;
