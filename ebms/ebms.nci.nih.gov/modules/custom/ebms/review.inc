@@ -1500,6 +1500,8 @@ class EbmsReview {
             );
             return drupal_get_form('pdq_ebms_reviewer_upload_form', $this);
         }
+        if ($this->action == 'others')
+            return $this->show_other_reviews();
         if ($this->article_id) {
             if (!$this->already_reviewed())
                 return $this->member_review();
@@ -1512,6 +1514,102 @@ class EbmsReview {
             $this->packet_id = 0;
         }
         return $this->member_packets();
+    }
+
+    private function show_other_reviews() {
+        pdq_ebms_debug('OTHER REVIEWS', $this);
+        // Set the bread crumbs.
+        $options = array('query' => $this->query_parms());
+        unset($options['query']['article']);
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                l($this->packet_title, EbmsReview::$url, $options),
+                'OTHER REVIEWS',
+            )
+        );
+
+        // Start building the render array for the page.
+        $title = db_select('ebms_article', 'a')
+            ->fields('a', array('article_title'))
+            ->condition('a.article_id', $this->article_id)
+            ->execute()
+            ->fetchField();
+        $title = htmlspecialchars($title);
+        $page = array(
+            'title' => array('#markup' => "<h2>$title</h2>"),
+        );
+        global $user;
+        $query = db_select('ebms_article_review', 'r')
+            ->fields('r', array('review_id', 'when_posted', 'comments',
+                    'loe_info'))
+            ->condition('r.packet_id', $this->packet_id)
+            ->condition('r.article_id', $this->article_id)
+            ->condition('r.reviewer_id', $user->uid, '<>');
+        $query->join('users', 'u', 'u.uid = r.reviewer_id');
+        $query->orderBy('u.name');
+        $query->fields('u', array('name'));
+        $reviews = $query->execute();
+        $hr = '';
+        foreach ($reviews as $review) {
+            $block = array();
+            $name = htmlspecialchars($review->name);
+            $date = date('Y-m-d', strtotime($review->when_posted));
+            $block['hr'] = array('#markup' => $hr);
+            $hr = '<hr>';
+            $block['reviewer'] = array(
+                'title' => array('#markup' => '<h3>Reviewer</h3>'),
+                'value' => array('#markup' => "<p>$name</p>"),
+            );
+            $block['reviewed'] = array(
+                'title' => array('#markup' => '<h3>Review Date</h3>'),
+                'value' => array('#markup' => "<p>$date</p>"),
+            );
+            $query = db_select('ebms_review_disposition', 'd');
+            $query->join('ebms_review_disposition_value', 'v',
+                'v.value_id = d.value_id');
+            $query->fields('v', array('value_name'));
+            $query->condition('d.review_id', $review->review_id);
+            $query->orderBy('v.value_pos');
+            $dispositions = $query->execute()->fetchCol();
+            if (count($dispositions) > 0) {
+                $block['dispositions'] = array(
+                    '#theme' => 'item_list',
+                    '#items' => $dispositions,
+                    '#prefix' => '<h3>REVIEW DISPOSITION(S)</h3>',
+                );
+            }
+            $query = db_select('ebms_review_rejection_reason', 'r');
+            $query->join('ebms_review_rejection_value', 'v',
+                'v.value_id = r.value_id');
+            $query->fields('v', array('value_name'));
+            $query->condition('r.review_id', $review->review_id);
+            $query->orderBy('v.value_pos');
+            $reasons = $query->execute()->fetchCol();
+            if (count($reasons) > 0) {
+                $block['reasons'] = array(
+                    '#theme' => 'item_list',
+                    '#items' => $reasons,
+                    '#prefix' => '<h3>REJECTION REASON(S)</h3>',
+                );
+            }
+            if ($review->comments) {
+                $comments = htmlspecialchars($review->comments);
+                $block['comments'] = array(
+                    'title' => array('#markup' => '<h3>COMMENTS</h3>'),
+                    'value' => array('#markup' => "<p>$comments</p>"),
+                );
+            }
+            if ($review->loe_info) {
+                $loe = htmlspecialchars($review->loe_info);
+                $block['loe'] = array(
+                    'title' => array('#markup' => '<h3>LOE INFO</h3>'),
+                    'value' => array('#markup' => "<p>$loe</p>"),
+                );
+            }
+            $page[$review->review_id] = $block;
+        }
+        return $page;
     }
 
     /**
@@ -1763,9 +1861,17 @@ class EbmsReview {
             $options['query']['expanded'] = $expanded . 'a';
             $options['attributes']['class'] = array('button');
 
+            // Separate set for viewing other board member reviews.
+            $other_opts = array(
+                'html' => true,
+                'query' => $this->query_parms()
+            );
+
             // Build the array of rows for the article table.
             $rows = array();
+            global $user;
             foreach ($articles as $article) {
+                $options['query']['article'] = $article->article_id;
                 $pm_id = $article->source_id;
                 $links = '<div class="links">' .
                     l('view abstract', $pubmed . $pm_id, $target);
@@ -1776,9 +1882,25 @@ class EbmsReview {
                     $ft_link = l('download full text', $ft_url, $target);
                     $links .= " &nbsp; | &nbsp; $ft_link";
                 }
+
+                // Add a link to view reviews by other board members
+                // (OCEEBMS-96).
+                $count = db_select('ebms_article_review', 'r')
+                    ->condition('r.packet_id', $this->packet_id)
+                    ->condition('r.article_id', $article->article_id)
+                    ->condition('r.reviewer_id', $user->uid, '<>')
+                    ->countQuery()
+                    ->execute()
+                    ->fetchField();
+                if ($count > 0) {
+                    $other_opts['query']['article'] = $article->article_id;
+                    $other_url = EbmsReview::$url . '/others';
+                    $other_link = l('other reviews', $other_url, $other_opts);
+                    $links .= " &nbsp; | &nbsp; $other_link";
+                }
+
                 $links .= '</div>';
                 $citation = EbmsReview::show_citation($article->article_id, 3);
-                $options['query']['article'] = $article->article_id;
                 if ($article->when_posted) {
                     $when_posted = date('m/d/Y',
                                    strtotime($article->when_posted));
