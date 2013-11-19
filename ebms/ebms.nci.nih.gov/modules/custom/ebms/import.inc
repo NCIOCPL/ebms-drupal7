@@ -113,7 +113,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     // Start off with defaults appropriate for a new form.
     // Replace tags with single "special search" checkbox (TIR 2422).
     $board = $topic = $cycle = $not_list = $test_mode = $fast_track =
-        $special_search = 0;
+        $special_search = $disposition = $past_meeting = $future_meeting = 0;
     //$selected_tags = array();
     $pmid = $comments = $placement = $ft_comments = '';
 
@@ -139,6 +139,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $fast_track = $params['fast-track'];
         $placement = $params['placement'];
         $ft_comments = $params['ft-comments'];
+        $disposition = $params['disposition'];
     }
 
     // An ajax call can override the board selection.
@@ -148,6 +149,8 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     // Build the picklist value sets.
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $topics = array(0 => ' ');
+    $past_meetings = array(0 => ' ');
+    $future_meetings = array(0 => ' ');
     if ($board) {
         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
@@ -157,8 +160,6 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             ->execute();
         foreach ($results as $result)
             $topics[$result->topic_id] = $result->topic_name;
-        if (!array_key_exists($topic, $topics))
-            $topic = 0;
     }
     $results = db_select('ebms_cycle', 'c')
         ->fields('c', array('cycle_id', 'cycle_name'))
@@ -167,13 +168,47 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     $review_cycles = array(0 => ' ');
     foreach ($results as $result)
         $review_cycles[$result->cycle_id] = $result->cycle_name;
-    $results = db_select('ebms_article_tag_type', 't')
-        ->fields('t', array('text_id', 'tag_name'))
-        ->orderBy('t.tag_name')
-        ->execute();
+    //$results = db_select('ebms_article_tag_type', 't')
+    //    ->fields('t', array('text_id', 'tag_name'))
+    //    ->orderBy('t.tag_name')
+    //    ->execute();
     //$tags = array();
     //foreach ($results as $result)
     //    $tags[$result->text_id] = $result->tag_name;
+    $results = db_select('ebms_article_board_decision_value', 'v')
+        ->fields('v', array('value_id', 'value_name'))
+        ->orderBy('v.value_name')
+        ->execute();
+    $dispositions = array(0 => ' ');
+    foreach ($results as $result)
+        $dispositions[$result->value_id] = $result->value_name;
+
+    if ($disposition == 'OnAgenda') {
+        $now = time();
+        $past_meetings = pdq_ebms_agenda_meeting_picklist(true, $now, $board);
+        $future_meetings = pdq_ebms_agenda_meeting_picklist(false, $now, $board);
+    }
+    if (!array_key_exists($topic, $topics))
+        $topic = 0;
+    if (!array_key_exists($past_meeting, $past_meetings))
+        $past_meeting = 0;
+    if (!array_key_exists($future_meeting, $future_meetings))
+        $future_meeting = 0;
+    $selected_members = array();
+    $members = array();
+    if (false && $board) { /// XXX BOARD MEMBERS??? OCEEBMS-58 NEED FEEDBACK!!!
+        $query = db_select('users', 'u');
+        $query->fields('u', array('uid', 'name'));
+        $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+        $query->join('users_roles', 'ur', 'ur.uid = u.uid');
+        $query->join('role', 'r', 'r.rid = ur.rid');
+        $query->condition('m.board_id', $board);
+        $query->condition('r.name', 'board member');
+        $query->condition('u.status', 1);
+        $results = $query->execute();
+        foreach ($results as $result)
+            $members[$result->uid] = $result->name;
+    }
 
     // Assemble the form's render array.
     $form = array(
@@ -189,88 +224,147 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#default_value' => $board,
             '#ajax' => array(
                 'callback' => 'pdq_ebms_import_board_ajax',
-                'wrapper' => 'topic',
+                'wrapper' => 'board-controlled', #'topic',
             ),
         ),
-        'topic' => array(
-            '#type' => 'select',
-            '#title' => 'SUMMARY TOPIC *',
-            '#options' => $topics,
-            '#default_value' => $topic,
-            '#prefix' => '<div id="topic">',
-            '#suffix' => '</div>',
-        ),
-        'cycle' => array(
-            '#type' => 'select',
-            '#title' => 'REVIEW CYCLE *',
-            '#options' => $review_cycles,
-            '#default_value' => $cycle,
-        ),
-        /*
-        'tags' => array(
-            '#type' => 'select',
-            '#multiple' => 'true',
-            '#title' => 'CITATION TAGS',
-            '#options' => $tags,
-            '#default_value' => $selected_tags,
-        ),*/
-        'pmid' => array(
-            '#type' => 'textfield',
-            '#default_value' => $pmid,
-            '#title' => 'PUB MED IDS',
-        ),
-        'comments' => array(
-            '#type' => 'textfield',
-            '#default_value' => $comments,
-            '#title' => 'COMMENTS',
-        ),
-        'not-list' => array(
-            '#type' => 'checkbox',
-            '#title' => 'NOT LIST',
-            '#prefix' => '<div class="checkbox-line">',
-            '#suffix' => '</div>',
-            '#default_value' => $not_list,
-        ),
-        'test-mode' => array(
-            '#type' => 'checkbox',
-            '#title' => 'TEST MODE',
-            '#prefix' => '<div class="checkbox-line">',
-            '#suffix' => '</div>',
-            '#default_value' => $test_mode,
-        ),
-        'fast-track' => array(
-            '#type' => 'checkbox',
-            '#title' => 'FAST TRACK',
-            '#prefix' => '<div class="checkbox-line">',
-            '#suffix' => '</div>',
-            '#default_value' => $fast_track,
-        ),
-        'special-search' => array(
-            '#type' => 'checkbox',
-            '#title' => 'SPECIAL SEARCH',
-            '#prefix' => '<div class="checkbox-line">',
-            '#suffix' => '</div>',
-            '#default_value' => $special_search,
-        ),
+        'board-controlled' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'board-controlled'),
+            'topic' => array(
+                '#type' => 'select',
+                '#title' => 'SUMMARY TOPIC *',
+                '#options' => $topics,
+                '#default_value' => $topic,
+                '#prefix' => '<div id="topic">',
+                '#suffix' => '</div>',
+            ),
+            'cycle' => array(
+                '#type' => 'select',
+                '#title' => 'REVIEW CYCLE *',
+                '#options' => $review_cycles,
+                '#default_value' => $cycle,
+            ),
+            'pmid' => array(
+                '#type' => 'textfield',
+                '#default_value' => $pmid,
+                '#title' => 'PUB MED IDS',
+            ),
+            'comments' => array(
+                '#type' => 'textfield',
+                '#default_value' => $comments,
+                '#title' => 'COMMENTS',
+            ),
+            'not-list' => array(
+                '#type' => 'checkbox',
+                '#title' => 'NOT LIST',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $not_list,
+            ),
+            'test-mode' => array(
+                '#type' => 'checkbox',
+                '#title' => 'TEST MODE',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $test_mode,
+            ),
+            'fast-track' => array(
+                '#type' => 'checkbox',
+                '#title' => 'FAST TRACK',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $fast_track,
+            ),
+            'special-search' => array(
+                '#type' => 'checkbox',
+                '#title' => 'SPECIAL SEARCH',
+                '#prefix' => '<div class="checkbox-line">',
+                '#suffix' => '</div>',
+                '#default_value' => $special_search,
+            ),
 
-        // XXX I wasn't given a list of states to include here, so I picked
-        //     the ones which seemed most appropriate.  Users may wish to
-        //     have others added before we go into production.
-        // 2012-12-26 (Bob): Robin has told us which state are to be used;
-        //                   see TIR 2206.
-        'placement' => array(
-            '#type' => 'select',
-            '#title' => 'PLACEMENT LEVEL *',
-            '#options' => array(
-                '' => ' ',
-                'PassedBMReview' => 'Passed abstract review',
-                'PassedFullReview' => 'Passed full text review',
+            // XXX I wasn't given a list of states to include here, so I picked
+            //     the ones which seemed most appropriate.  Users may wish to
+            //     have others added before we go into production.
+            // 2012-12-26 (Bob): Robin has told us which state are to be used;
+            //                   see TIR 2206.
+            // 2013-11-13 (Bob): Things have become much more complicated.
+            //                   more states, with lots more magic fields
+            //                   popping in and out dynamically.  See
+            //                   JIRA ticket OCEEBMS-58 (cloned from TIR
+            //                   2437).
+            'placement' => array(
+                '#type' => 'select',
+                '#title' => 'PLACEMENT LEVEL *',
+                '#options' => array(
+                    '' => ' ',
+                    'PassedBMReview' => 'Passed abstract review',
+                    'PassedFullReview' => 'Passed full text review',
+                    'FinalBoardDecision' => 'Editorial Board decision',
+                    'OnAgenda' => 'On Agenda',
+                ),
+                '#default_value' => $placement,
+                '#states' => array(
+                    'visible' => array(
+                        '#edit-fast-track' => array(
+                            'checked' => true
+                        ),
+                    ),
+                ),
             ),
-            '#default_value' => $placement,
-            '#states' => array(
-                'visible' => array(
-                    '#edit-fast-track' => array(
-                        'checked' => true
+            'disposition' => array(
+                '#type' => 'select',
+                '#title' => 'DISPOSITION *',
+                '#options' => $dispositions,
+                '#default_value' => $disposition,
+                '#states' => array(
+                    'visible' => array(
+                        ':input[name="placement"]' => array(
+                            'value' => 'FinalBoardDecision',
+                        ),
+                    ),
+                ),
+            ),
+            'agenda-meeting' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'meeting-fields'),
+                'past-meeting' => array(
+                    '#type' => 'select',
+                    '#title' => 'PAST MEETING',
+                    '#options' => $past_meetings,
+                    '#default_value' => $past_meeting,
+                    '#states' => array(
+                        'visible' => array(
+                            ':input[name="placement"]' => array(
+                                'value' => 'OnAgenda',
+                            ),
+                        ),
+                    ),
+                ),
+                'future-meeting' => array(
+                    '#type' => 'select',
+                    '#title' => 'FUTURE MEETING',
+                    '#options' => $future_meetings,
+                    '#default_value' => $future_meeting,
+                    '#states' => array(
+                        'visible' => array(
+                            ':input[name="placement"]' => array(
+                                'value' => 'OnAgenda',
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            'members' => array(
+                '#type' => 'checkboxes',
+                '#title' => 'BOARD MEMBERS',
+                '#options' => $members,
+                '#default_value' => $selected_members,
+                '#states' => array(
+                    'visible' => array(
+                        ':input[name="placement"]' => array(
+                            'value' => 'XXXOnAgenda', /// XXX BOARD MEMBERS???
+                        ),
                     ),
                 ),
             ),
@@ -331,11 +425,66 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
 }
 
 /**
+ * Construct a picklist of past or future meetings.  Make the caller
+ * pass in the value representing the current date/time.  This allows
+ * the caller to calculate that value once, so the same moment in time
+ * can be used to build both the past meeting list and the future meeting
+ * list, avoiding the possibility that a meeting will omitted from
+ * both lists or included in both lists, which could occur if the
+ * meeting's start time were later than the value returned by time() on
+ * the first call to this function, but earlier than the value for
+ * the the call to time() on the second call of this function.
+ * Also, although most of the logic for this function is modeled after
+ * code for the "full citation" page in citations.inc, I'm not using
+ * the meeting's ending date/time when collecting past meetings, as
+ * that code does, because it could result in the same meeting appearing
+ * on both lists, possibly leading the user to wonder whether there
+ * were two different meetings with the same title in the system.
+ */
+function pdq_ebms_agenda_meeting_picklist($past, $now, $board=null) {
+    if ($past) {
+        $op = '<=';
+        $ord = 'ASC';
+    }
+    else {
+        $op = '>';
+        $ord = 'DESC';
+    }
+    $query = new EntityFieldQuery();
+    $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', 'ebms_event')
+        ->propertyCondition('status', '1')
+        ->fieldCondition('field_datespan', 'value', $now, $op)
+        ->fieldOrderBy('field_datespan', 'value', $ord)
+        ->entityOrderBy('entity_id', $ord);
+    // If the users change their minds and want only meetings for the
+    // selected board, this is how we would do it (without "false &").
+    if (false && $board)
+        $query->fieldCondition('field_boards', 'value', $board, '=');
+    $result = $query->execute();
+    $meetings = array(0 => '');
+    if (isset($result['node'])) {
+        foreach ($result['node'] as $node) {
+            $fullNode = node_load($node->nid);
+            $nodeWrapper = entity_metadata_wrapper('node', $fullNode);
+            $datespan = $nodeWrapper->field_datespan->value();
+            $suffix = '';
+            if($datespan) {
+                $date = format_date($datespan['value'], 'custom', 'Y-m-d');
+                $suffix = " - $date";
+            }
+            $meetings[$node->nid] = $fullNode->title . $suffix;
+        }
+    }
+    return $meetings;
+}
+
+/**
  * Callback to populate the topic dropdown based on which board has been
  * selected.
  */
 function pdq_ebms_import_board_ajax($form, $form_state) {
-    return $form['topic'];
+    return $form['board-controlled'];
 }
 
 /**
@@ -359,6 +508,21 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
         if (!$form_state['values']['placement'])
             form_set_error('placement',
                 'A placement selection is required for fast-track imports');
+        elseif ($form_state['values']['placement'] == 'FinalBoardDecision') {
+            if (!$form_state['values']['disposition'])
+                form_set_error('disposition',
+                    'A disposition must be selected for Editorial Board ' .
+                    'decisions.');
+        }
+        elseif ($form_state['values']['placement'] == 'OnAgenda') {
+            $future_meeting = $form_state['values']['future-meeting'];
+            $past_meeting = $form_state['values']['past-meeting'];
+            if ($past_meeting && $future_meeting ||
+                    !$past_meeting && !$future_meeting)
+                form_set_error('past-meeting',
+                    'Exactly one meeting must be selected for ' .
+                    'On Agenda state.');
+        }
     }
     $pmids = array();
     $validators = array('file_validate_extensions' => array());
@@ -445,11 +609,36 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
 
             // If the user checked the "Fast Track" option, add the new state.
             if ($fast_track) {
+                $disposition = $values['disposition'];
+                $future_meeting = $values['future-meeting'];
+                $past_meeting = $values['past-meeting'];
+                $meeting = $future_meeting ? $future_meeting : $past_meeting;
                 $cmt = $values['ft-comments'];
                 $state = $values['placement'];
                 foreach ($review_ready as $id) {
-                    Ebms\setArticleState($id, $state, $topic, $board, $cmt);
+                    $state_id = Ebms\setArticleState($id, $state, $topic,
+                                                     $board, $cmt);
                     Ebms\addArticleTag('i_fasttrack', $id, $topic);
+                    if ($state == 'OnAgenda' && $meeting) {
+                        db_insert('ebms_agenda_meeting')
+                            ->fields(
+                                array(
+                                    'nid' => $meeting,
+                                    'article_state_id' => $state_id,
+                                )
+                            )
+                            ->execute();
+                    }
+                    elseif ($state == 'FinalBoardDecision' && $disposition) {
+                        db_insert('ebms_article_board_decision')
+                            ->fields(
+                                array(
+                                    'article_state_id' => $state_id,
+                                    'decision_value_id' => $disposition,
+                                )
+                            )
+                            ->execute();
+                    }
                 }
             }
         }

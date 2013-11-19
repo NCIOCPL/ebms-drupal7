@@ -374,7 +374,11 @@ class Menu {
 
                 return new Menu('Literature', 'review/reviews', $submenus);
             case 'member':
-                return new Menu('Literature', 'review');
+                $submenus = array(
+                    new Menu('Assigned Packets', 'review/assigned'),
+                    new Menu('Archived Reviews', 'review/archived'),
+                );
+                return new Menu('Literature', 'review', $submenus);
         }
     }
 

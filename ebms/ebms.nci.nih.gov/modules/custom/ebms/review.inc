@@ -44,6 +44,7 @@ class EbmsReview {
      * browser.
      */
     public function __construct($action, $packet_id, $article_id) {
+        pdq_ebms_debug('REVIEW', $action);
         $this->packet_id    = Ebms\Util::get_request_value('packet',
                               $packet_id);
         $this->article_id   = Ebms\Util::get_request_value('article',
@@ -137,8 +138,8 @@ class EbmsReview {
     }
 
     /**
-     * Shows the form to select a user and optionally a packet in order to enter
-     * responses on behalf of a board member.
+     * Shows the form to select a user and optionally a packet in order to
+     * enter responses on behalf of a board member.
      *
      * @return array a Drupal render array containing the form and left nav.
      */
@@ -161,8 +162,9 @@ class EbmsReview {
             'left-nav' => $this->build_left_nav('Record Responses'),
             'right-panel' => array(
                 'form' => drupal_get_form('pdq_ebms_record_responses_form'),
-                '#prefix' => "<div id='main-right-panel'><h2>Record Responses</h2>",
-                '#suffix' => "</div>",
+                '#prefix' =>
+                '<div id="main-right-panel"><h2>Record Responses</h2>',
+                '#suffix' => '</div>',
             ),
         );
     }
@@ -1088,8 +1090,8 @@ class EbmsReview {
 
             $markup[] = '<h3>Comments</h3>';
             if ($result->comments) {
-                $markup[] = '<p>' . filter_xss($result->comments, array('br', 'i')) .
-                    '</p>';
+                $markup[] = '<p>' .
+                    filter_xss($result->comments, array('br', 'i')) . '</p>';
             }
             $markup[] = '<h3>LOE Info</h3>';
             if ($result->loe_info) {
@@ -1165,10 +1167,339 @@ class EbmsReview {
     }
 
     /**
+     * Build the page for showing the board member a packet which has
+     * been archived, or for which she has already submitted at least
+     * one review, or both.  OCEEBMS-95.
+     *
+     *  @return  array    Drupal render array for archived packet page
+     */
+    private function member_archived_packet() {
+
+        // Get the basic information for the packet.
+        $packet_info = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_title', 'created_at', 'active_status'))
+            ->condition('p.packet_id', $this->packet_id)
+            ->execute()
+            ->fetch();
+        $title = htmlspecialchars($packet_info->packet_title);
+
+        // Override the default breadcrumbs.
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                l('ARCHIVED', EbmsReview::$url . '/archived'),
+                $title,
+            )
+        );
+
+        // Start building the render array.
+        $body = array(
+            'title' => array(
+                '#markup' => "<h2>$title</h2>",
+            ),
+        );
+
+        // Add links to the summaries posted by the board manager for the
+        // packet.
+        $body['summaries']['heading'] = array(
+            '#type' => 'markup',
+            '#markup' => "<h3>Summary Documents</h3>",
+        );
+        $summaries = $this->fetch_packet_summaries();
+        $links = array();
+        foreach ($summaries as $uri => $description)
+            $links[] = l($description, file_create_url($uri));
+        $body['summaries']['links'] = array(
+            '#prefix' => '<div id="summary-links">',
+            '#suffix' => '</div>',
+            '#items' => $links,
+            '#theme' => 'item_list',
+        );
+
+        // Fetch the articles in the packet.
+        $body['articles']['heading'] = array(
+            '#type' => 'markup',
+            '#markup' => "<h3>Articles</h3>",
+        );
+        $query = db_select('ebms_article', 'a');
+        $query->join('ebms_packet_article', 'p',
+            'p.article_id = a.article_id');
+        $query->condition('p.packet_id', $this->packet_id);
+        $query->fields('a', array('article_id'));
+        $query->fields('p', array('drop_flag', 'archived'));
+        $query->orderBy('a.article_title');
+        $articles = $query->execute();
+
+        // Show each article, along with the board member's review (if any).
+        global $user;
+        foreach ($articles as $article) {
+            $citation = EbmsReview::show_citation($article->article_id, 3);
+            $block = array();
+            $block['citation'] = array(
+                '#markup' => '<p>' . $citation . '</p>',
+            );
+            if ($article->drop_flag)
+                $block['dropped'] = array(
+                    '#markup' =>
+                    '<p>This article was dropped from the packet.</p>',
+                );
+            $review = db_select('ebms_article_review', 'r')
+                ->fields('r', array('review_id', 'when_posted', 'comments',
+                        'loe_info'))
+                ->condition('r.packet_id', $this->packet_id)
+                ->condition('r.article_id', $article->article_id)
+                ->condition('r.reviewer_id', $user->uid)
+                ->execute()
+                ->fetch();
+            if ($review) {
+                $block['review'] = array(
+                    '#markup' =>
+                    "<p>You reviewed this articles $review->when_posted</p>",
+                );
+                $query = db_select('ebms_review_disposition', 'd');
+                $query->join('ebms_review_disposition_value', 'v',
+                    'v.value_id = d.value_id');
+                $query->fields('v', array('value_name'));
+                $query->condition('d.review_id', $review->review_id);
+                $query->orderBy('v.value_pos');
+                $dispositions = $query->execute()->fetchCol();
+                if (count($dispositions) > 0) {
+                    $block['dispositions'] = array(
+                        '#theme' => 'item_list',
+                        '#items' => $dispositions,
+                        '#prefix' => '<p><b>REVIEW DISPOSITION(S)</b>:<br>',
+                        '#suffix' => '</p>',
+                    );
+                }
+                $query = db_select('ebms_review_rejection_reason', 'r');
+                $query->join('ebms_review_rejection_value', 'v',
+                    'v.value_id = r.value_id');
+                $query->fields('v', array('value_name'));
+                $query->condition('r.review_id', $review->review_id);
+                $query->orderBy('v.value_pos');
+                $reasons = $query->execute()->fetchCol();
+                if (count($reasons) > 0) {
+                    $block['reasons'] = array(
+                        '#theme' => 'item_list',
+                        '#items' => $reasons,
+                        '#prefix' => '<p><b>REJECTION REASON(S):</b><br>',
+                        '#suffix' => '</p>',
+                    );
+                }
+                if ($review->comments)
+                    $block['comments'] = array(
+                        '#markup' =>
+                        '<p><b>COMMENTS: </b>' .
+                        htmlspecialchars($review->comments) . '</p>',
+                    );
+                if ($review->loe_info)
+                    $block['loe'] = array(
+                        '#markup' =>
+                        '<p><b>LOE INFO:</b> ' .
+                        htmlspecialchars($review->loe_info) . '</p>',
+                    );
+            }
+            else
+                $block['review'] = array(
+                    '#markup' => '<p>You did not review this article.</p>',
+                );
+            $block['divider'] = array(
+                '#markup' => '<hr>',
+            );
+            $body['articles']["article-$article->article_id"] = $block;
+        }
+
+        // Show the docs posted by board members, with a button to post more.
+        $opts = array(
+            'attributes' => array(
+                'class' => array('button float-right pad-top-10'),
+            ),
+        );
+        $url = EbmsReview::$url . "/archpost/$this->packet_id";
+        $body['uploads']['heading'] = array(
+            '#type' => 'markup',
+            '#markup' => '<div class="clearfix">' .
+            '<h3 class="float-left">Reviewer Uploads</h3>' .
+            l('POST DOCUMENT', $url, $opts) . '</div>',
+        );
+        $query = db_select('file_managed', 'f');
+        $query->join('ebms_reviewer_doc', 'd', 'd.file_id = f.fid');
+        $query->join('users', 'u', 'u.uid = d.reviewer_id');
+        $query->fields('f', array('uri', 'filename'));
+        $query->fields('u', array('name'));
+        $query->fields('d', array('when_posted', 'description'));
+        $query->condition('d.packet_id', $this->packet_id);
+        $query->condition('d.drop_flag', 0);
+        $query->orderBy('f.filename');
+        $headers = array(
+            'FILE NAME',
+            'NOTES',
+            'UPLOADED BY',
+            'WHEN POSTED',
+        );
+        $result = $query->execute();
+        $docs = array();
+        foreach ($result as $record)
+            $docs[] = $record;
+        $rows = array();
+
+        // Create new options array for document links.
+        $doc_opts = array(
+            'attributes' => array(
+                'target' => '_blank',
+                'title' => 'Click to download/open document',
+            ),
+        );
+        foreach ($docs as $doc) {
+            $url = file_create_url($doc->uri);
+            $posted = date("Y-m-d", strtotime($doc->when_posted));
+            $rows[] = array(
+                'data' => array(
+                    array(
+                        'data' => l($doc->filename, $url, $doc_opts),
+                        'class' => array('c1'),
+                    ),
+                    array('data' => htmlspecialchars($doc->description)),
+                    array(
+                        'data' => htmlspecialchars($doc->name),
+                        'class' => array('c2'),
+                    ),
+                    array(
+                        'data' => $posted,
+                        'class' => array('c3'),
+                    ),
+                ),
+                #    'no_striping' => true,
+            );
+        }
+        $body['docs'] = array(
+            '#attributes' => array(
+                'id' => 'reviewer-uploads-table',
+                'class' => array('clearfix'),
+            ),
+            '#theme' => 'table',
+            '#rows' => $rows,
+            '#header' => $headers,
+        );
+        return $body;
+    }
+
+    /**
+     * Build the Drupal render array for the page showing the board member
+     * packets to which she has been assigned, and which have been archived,
+     * or have at least one article which she has already reviewed, or both.
+     * See JIRA ticket OCEEBMS-95.
+     *
+     *  @return  array     Drupal render array for the page
+     */
+    private function member_archives() {
+
+        // Override the default breadcrumbs.
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                'ARCHIVED',
+            )
+        );
+
+        // Start building the render array.
+        $body = array(
+            'title' => array(
+                '#markup' => '<h2>ARCHIVED PACKETS/REVIEWS</h2>',
+            ),
+        );
+
+        // Find the relevant packets.
+        global $user;
+        $rows = array();
+        $query = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_id', 'packet_title', 'created_at',
+                    'active_status'));
+        $query->join('ebms_packet_reviewer', 'r',
+            'r.packet_id = p.packet_id');
+        $query->condition('r.reviewer_id', $user->uid);
+        $query->orderBy('p.created_at', 'DESC');
+        $results = $query->execute();
+
+        // Create the rows for the table of packets.
+        foreach ($results as $result) {
+            $reviewed = db_select('ebms_article_review', 'r')
+                ->condition('r.packet_id', $result->packet_id)
+                ->condition('r.reviewer_id', $user->uid)
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+            if (!$reviewed && $result->active_status == 'A')
+                continue;
+            $originally_assigned = db_select('ebms_packet_article', 'a')
+                ->condition('a.packet_id', $result->packet_id)
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+            $dropped = db_select('ebms_packet_article', 'a')
+                ->condition('a.packet_id', $result->packet_id)
+                ->condition('a.drop_flag', 1)
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+            $rows[] = array(
+                l(htmlspecialchars($result->packet_title),
+                    EbmsReview::$url . "/archived/$result->packet_id"),
+                array(
+                    'data' => date('Y-m-d', strtotime($result->created_at)),
+                    'class' => array('ebms-align-center'),
+                ),
+                array(
+                    'data' => $originally_assigned,
+                    'class' => array('ebms-align-right'),
+                ),
+                array(
+                    'data' => $dropped,
+                    'class' => array('ebms-align-right'),
+                ),
+                array(
+                    'data' => $reviewed,
+                    'class' => array('ebms-align-right'),
+                ),
+            );
+        }
+        $headers = array(
+            'Packet Name',
+            'Created',
+            'Originally Assigned',
+            'Dropped Articles',
+            'Reviewed'
+        );
+        $body['table'] = array(
+            '#attributes' => array('id' => 'archived-packets-table'),
+            '#theme' => 'table',
+            '#rows' => $rows,
+            '#header' => $headers,
+        );
+        return $body;
+    }
+
+    /**
      * Pick the page for the board member/reviewer.
      */
     private function choose_member_review_page() {
 
+        if ($this->action == 'archived') {
+            if ($this->packet_id)
+                return $this->member_archived_packet();
+            return $this->member_archives();
+        }
+        if ($this->action == 'archpost') {
+            $url = EbmsReview::$url . '/archived/' . $this->packet_id;
+            drupal_set_breadcrumb(
+                array(
+                    l('Literature', EbmsReview::$url),
+                    l($this->packet_title, $url),
+                    "UPLOAD",
+                )
+            );
+            return drupal_get_form('pdq_ebms_reviewer_upload_form', $this);
+        }
         if ($this->article_id) {
             if (!$this->already_reviewed())
                 return $this->member_review();
@@ -1195,7 +1526,7 @@ class EbmsReview {
             array(
                 l('Literature', EbmsReview::$url),
                 l($this->packet_title, EbmsReview::$url, $options),
-                "REVIEW",
+                'REVIEW',
             )
         );
 
@@ -2557,6 +2888,10 @@ function pdq_ebms_reviewer_upload_form($form, &$form_state, $review) {
             '#type' => 'hidden',
             '#value' => $review->sort_dir,
         ),
+        'context-action' => array(
+            '#type' => 'hidden',
+            '#value' => $review->action,
+        ),
         'filepath' => array(
             '#id' => 'filepath',
             '#type' => 'file',
@@ -2614,6 +2949,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
     $sort_col = $form_state['values']['sort-col'];
     $sort_dir = $form_state['values']['sort-dir'];
     $filenotes = $form_state['values']['filenotes'];
+    $action = $form_state['values']['context-action'];
 
     // Save the file (allow any extensions for now).
     $validators = array('file_validate_extensions' => array());
@@ -2690,6 +3026,9 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
         // Tell the user that we failed.
         drupal_set_message('File not found', 'error');
 
+    if ($action == 'archpost')
+        drupal_goto(EbmsReview::$url . '/archived/' . $packet_id);
+    else {
     // Go back to the user's packet.
     $options = array(
         'query' => array(
@@ -2701,6 +3040,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
     );
     pdq_ebms_preserve_on_behalf($options);
     drupal_goto(EbmsReview::$url, $options);
+    }
 }
 
 /**

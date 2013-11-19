@@ -61,6 +61,8 @@ legend {
     font-weight: bold;
 }
 
+.ebms-align-right { text-align: right; }
+.ebms-align-center { text-align: center; }
 .pad-top-10 { padding-top: 10px; }
 .left-indent { padding-left: 11px; }
 .nobreak { white-space: nowrap; }
@@ -68,6 +70,7 @@ legend {
 .float-right { float: right; }
 .float-clear { clear: both; }
 .inline { display: inline; }
+
 /*
  * This next bit is a trick to avoid problems caused by the fact that
  * CSS collapses the height of a block which contains only floated
@@ -1307,11 +1310,25 @@ table.docs-table.admin td.col-5 { text-align: center; }
 }
 #group-form-buttons { padding-bottom: 20px; }
 
-/* PRINT */
+/* PRINT  -- FOR FUTURE ENHANCEMENT - SEE JIRA ticket OCEEBMS-113
 @media print {
     #banner, #header, #nav, #breadcrumb, #message-wrapper, #tabs,
     #reports-top, #footer { display: none; }
+    .travel-left-nav { display: none; }
+    body.sidebar-first #content {
+        margin-left: 0; width: 100%; float: none; margin-right: 0;
+    }
+    .edit-button-icon { display: none; }
+    #header div.section,
+    #banner div.section,
+    #breadcrumb,
+    #login-image-wrapper,
+    #main-wrapper,
+    #footer div.section,
+    #message-wrapper,
+    .content .node.node-page { width: auto; }
 }
+*/
 
 div.ctools-modal-content .modal-header {
     background-color: #696559;
