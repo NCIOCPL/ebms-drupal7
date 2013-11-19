@@ -719,48 +719,33 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
         'common-fields' => array(
             '#type' => 'container',
             '#attributes' => array('class' => array('clearfix')),
-        'pmid' => array(
-            '#type' => 'textfield',
-            '#default_value' => $defaults->pmid,
-            '#title' => 'PMID',
-            '#title_display' => 'after',
-            '#attributes' => array('class' => array('fixed-width')),
-        ),
-        'cms-id' => array(
-            '#type' => 'textfield',
-            '#title' => 'EBMS ID',
-            '#title_display' => 'after',
-            '#attributes' => array('class' => array('fixed-width')),
-            '#default_value' => $defaults->cms_id,
-        ),
-        'author' => array(
-            '#type' => 'textfield',
-            '#title' => 'AUTHOR',
-            '#title_display' => 'after',
-            '#attributes' => array('class' => array('fixed-width')),
-            '#default_value' => $defaults->author,
-        ),
-        'title' => array(
-            '#type' => 'textfield',
-            '#title' => 'TITLE',
-            '#title_display' => 'after',
-            '#attributes' => array('class' => array('fixed-width')),
-            '#default_value' => $defaults->title,
-        ),),
-
-        // Another collapsible portion of the form.
-        'advanced search' => array(
-            '#type' => 'fieldset',
-            '#title' => 'ADVANCED SEARCH',
-            '#attributes' => array('class' => array('clearfix')),
-            '#collapsible' => true,
-            '#collapsed' => true,
-            'journal' => array(
+            'pmid' => array(
                 '#type' => 'textfield',
-                '#title' => 'JOURNAL',
+                '#default_value' => $defaults->pmid,
+                '#title' => 'PMID',
                 '#title_display' => 'after',
                 '#attributes' => array('class' => array('fixed-width')),
-                '#default_value' => $defaults->journal,
+            ),
+            'cms-id' => array(
+                '#type' => 'textfield',
+                '#title' => 'EBMS ID',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
+                '#default_value' => $defaults->cms_id,
+            ),
+            'author' => array(
+                '#type' => 'textfield',
+                '#title' => 'AUTHOR',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
+                '#default_value' => $defaults->author,
+            ),
+            'title' => array(
+                '#type' => 'textfield',
+                '#title' => 'TITLE',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
+                '#default_value' => $defaults->title,
             ),
             'publication-date' => array(
                 '#type' => 'container',
@@ -777,7 +762,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 'publication-month' => array(
                     '#type' => 'select',
                     '#title' => 'PUBLICATION MONTH',
-                    '#title_display' => 'MONTH',
+                    '#title_display' => 'none',
                     '#options' => $pub_months,
                     '#default_value' => $defaults->publication_month,
                 ),
@@ -785,6 +770,22 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                     '#type' => 'markup',
                     '#markup' => '<span>PUBLICATION DATE</span>',
                 ),
+            ),
+        ),
+
+        // Another collapsible portion of the form.
+        'advanced search' => array(
+            '#type' => 'fieldset',
+            '#title' => 'ADVANCED SEARCH',
+            '#attributes' => array('class' => array('clearfix')),
+            '#collapsible' => true,
+            '#collapsed' => true,
+            'journal' => array(
+                '#type' => 'textfield',
+                '#title' => 'JOURNAL',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
+                '#default_value' => $defaults->journal,
             ),
             'review-cycle' => array(
                 '#type' => 'select',
