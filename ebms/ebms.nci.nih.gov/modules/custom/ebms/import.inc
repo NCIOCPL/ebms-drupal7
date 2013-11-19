@@ -521,7 +521,7 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
             $past_meeting = $form_state['values']['past-meeting'];
             if ($past_meeting && $future_meeting ||
                     !$past_meeting && !$future_meeting)
-                form_set_error('past-meeting',
+                form_set_error('future-meeting',
                     'Exactly one meeting must be selected for ' .
                     'On Agenda state.');
         }
