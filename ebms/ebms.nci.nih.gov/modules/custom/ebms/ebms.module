@@ -1575,6 +1575,8 @@ function ebms_ckeditor_link_types_alter(&$types) {
  */
 function ebms_wysiwyg_editor_settings_alter(&$settings, $context) {
     if ($context['profile']->editor == 'ckeditor') {
+        $settings['customConfig'] = base_path() .
+            drupal_get_path('module', 'ebms') . '/js/ckeditor.config.js';
         $settings['toolbar'] = array(
             array('Bold', 'Italic', 'Underline'),
             array('JustifyLeft', 'JustifyCenter', 'JustifyRight'),

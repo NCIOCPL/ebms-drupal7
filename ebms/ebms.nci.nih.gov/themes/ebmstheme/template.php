@@ -681,10 +681,11 @@ function preprocess_ebms_event(&$variables) {
     // build links to the various documents
     $documents = field_get_items('node', $node, 'field_documents');
     $docLinks = array();
+    $target = array('attributes' => array('target' => '_blank'));
     if ($documents)
         foreach ($documents as $document) {
-            $docLinks[] = l($document['filename'],
-                file_create_url($document['uri']));
+            $url = file_create_url($document['uri']);
+            $docLinks[] = l($document['filename'], $url, $target);
         }
 
     $variables['docLinks'] = $docLinks;
