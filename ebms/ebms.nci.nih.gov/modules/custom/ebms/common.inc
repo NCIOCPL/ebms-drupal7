@@ -308,9 +308,8 @@ class Menu {
      */
     public static function admin_tool() {
         return new Menu(
-            'Administrator Tool', 'admin-tool', array(
-                new Menu('Manage Summary Topics', 'admin-tool/topics'),
-                new Menu('Add Review Cycle', 'admin-tool/add-cycle'),
+            'Administrator Tool', 'admin/topics', array(
+                new Menu('Manage Summary Topics', 'admin/topics'),
             )
         );
     }
