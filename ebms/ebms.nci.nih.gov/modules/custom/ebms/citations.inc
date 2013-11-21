@@ -1278,7 +1278,7 @@ namespace {
                     }
 
                     $form['citation_queue']['topic_select']['#options'] =
-                        $topicOptions;
+                        array(0 => '') + $topicOptions;
                 }
             }
         } else {
