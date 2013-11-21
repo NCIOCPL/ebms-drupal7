@@ -206,6 +206,8 @@ INSERT INTO ebms_tag (tag_name, tag_comment)
              CONCAT('Used by board managers in combination with the "summary"',
                     ' tag for general-information documents to appear on the',
                     'Summaries pages'));
+INSERT INTO ebms_tag (tag_name, tag_comment)
+     VALUES ('help', 'Documents to be listed on user help landing page');
 
 /*
  * Assignment of tags to posted documents.
