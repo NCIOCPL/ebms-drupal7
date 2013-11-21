@@ -139,7 +139,8 @@ namespace Ebms {
                         EbmsArticleStates::AgendaFutureChg,
                         EbmsArticleStates::AgendaBoardDiscuss,
                         EbmsArticleStates::AgendaWrkGrpDiscuss,
-                        EbmsArticleStates::FullEnd,));
+                        EbmsArticleStates::FullEnd,
+                        EbmsArticleStates::OnHold,));
             self::$ONAGENDA =
                 new EbmsTopicDecisions($index++, 'On Agenda',
                     '_format_topic_on_agenda_decision',

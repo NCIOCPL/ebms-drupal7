@@ -875,6 +875,11 @@ CREATE TABLE ebms_article_state_type (
         VALUES ('FinalBoardDecision', 'Final board decision',
         'Article was discussed at a board meeting and a decision was reached',
         90, 'Y');
+    INSERT ebms_article_state_type 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('OnHold', 'On Hold',
+        'New board manager action added for request in ticket OCEEBMS-82.',
+        70, 'N');
 
 
 /*
