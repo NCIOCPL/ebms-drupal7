@@ -49,21 +49,6 @@ namespace Ebms {
     );
 
     /**
-     * Global variable declaring the section of the full citation screen that
-     * is currently being processed.  This is global in order to make the data
-     * available six levels deep in the call stack from where the data
-     * originates without having to modify all of the intervening layers.
-     *
-     * See _showActionButtons().
-     *
-     * Values:
-     *   'librarian;  - The Medical Librarian Initial Review section of the display.
-     *   'publishing' - The the Publishing section of the display.
-     *   null         - Everywhere else.
-     */
-    $citations_inc_display_phase = null;
-
-    /**
      * Class encapsulating information and methods used in decisions (i.e.,
      * state assignments) that can be made about an article.
      *
@@ -210,6 +195,29 @@ namespace Ebms {
 }
 
 namespace {
+
+    /**
+     * Class encapsulating phases of a full citation display.
+     */
+    class DISPLAY_PHASE {
+        const NO_PHASE            = 0;
+        const REVIEW_CYCLE        = 1;
+        const IMPORT_PROCESS      = 2;
+        const MED_LIB_INIT_REVIEW = 3;
+        const PUBLISHING          = 4;
+    }
+
+    /**
+     * Global variable declaring the section of the full citation screen that
+     * is currently being processed.  This is global in order to make the data
+     * available six levels deep in the call stack from where the data
+     * originates without having to modify all of the intervening layers.
+     *
+     * See _showActionButtons().
+     *
+     * Values:          One of the DISPLAY_PHASE constants.
+     */
+    $citations_inc_display_phase = DISPLAY_PHASE::NO_PHASE;
 
     /**
      * @file
@@ -421,6 +429,11 @@ namespace {
      *
      * The only function that reads the above global.
      *
+     * Note: This routine is a later addition to this module.  Not all
+     *       decisions about buttons are made here.  However any change to
+     *       those decisions should be made by updating and using this
+     *       function.
+     *
      * @return bool     True = Yes, show the buttons.
      *                  False = No, leave them out.
      */
@@ -432,7 +445,10 @@ namespace {
         $showButtons = true;
 
         // Either publishing or librarian phases forbid showing action buttons
-        if ($citations_inc_display_phase) {
+        // XXX If BM is also icrdb manager, is this still right?
+        if (in_array($citations_inc_display_phase,
+                    array(DISPLAY_PHASE::MED_LIB_INIT_REVIEW,
+                          DISPLAY_PHASE::PUBLISHING))) {
             // But only to board managers
             if (in_array('board manager', $user->roles)) {
                 $showButtons = false;
@@ -3070,7 +3086,7 @@ namespace {
 
         // This global is set and reset here
         global $citations_inc_display_phase;
-        $citations_inc_display_phase = null;
+        $citations_inc_display_phase = DISPLAY_PHASE::NO_PHASE;
 
         //include js to add radio/checkbox behavior
         $ret = drupal_add_js(EBMS\JS_DIR . '/citations.js', 'file');
@@ -3104,6 +3120,7 @@ namespace {
             '#suffix' => "</div>",
         );
 
+        $citations_inc_display_phase = DISPLAY_PHASE::REVIEW_CYCLE;
         // build array of currently active citation tags ever assigned, in date order
         $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');
 
@@ -3145,6 +3162,7 @@ namespace {
         $importData = Ebms\getArticleImportData($article->getId());
 
         // And render the import info
+        $citations_inc_display_phase = DISPLAY_PHASE::IMPORT_PROCESS;
         $form['import_process'] = array(
             '#type' => 'fieldset',
             '#title' => '<span class="citation-subheader">Import Process</span>',
@@ -3156,11 +3174,12 @@ namespace {
         );
 
         // Render the initial_review info, i.e., first review at import time
-        $citations_inc_display_phase = 'librarian';
+        $citations_inc_display_phase = DISPLAY_PHASE::MED_LIB_INIT_REVIEW;
         $form['initial_review'] = array(
             '#type' => 'fieldset',
             '#title' => '<span class="citation-subheader">Medical Librarian Initial Review</span>',
-            'section' => _format_boards($form_state, $article, $history, $tags, 'librarian'),
+            'section' => _format_boards($form_state, $article, $history, $tags,
+                                        DISPLAY_PHASE::MED_LIB_INIT_REVIEW),
             '#collapsible' => true,
             '#collapsed' => true,
             '#prefix' => "<div class='full-citation-element citation-subheader'>",
@@ -3168,17 +3187,18 @@ namespace {
         );
 
         // Render the publishing history section
-        $citations_inc_display_phase = 'publishing';
+        $citations_inc_display_phase = DISPLAY_PHASE::PUBLISHING;
         $form['publishing'] = array(
             '#type' => 'fieldset',
             '#title' => '<span class="citation-subheader">Publishing</span>',
-            'section' => _format_boards($form_state, $article, $history, $tags, 'publishing'),
+            'section' => _format_boards($form_state, $article, $history, $tags,
+                                        DISPLAY_PHASE::PUBLISHING),
             '#collapsible' => true,
             '#collapsed' => true,
             '#prefix' => "<div class='full-citation-element citation-subheader'>",
             '#suffix' => "</div>",
         );
-        $citations_inc_display_phase = null;
+        $citations_inc_display_phase = DISPLAY_PHASE::NO_PHASE;
 
         // need to ensure that the fieldsets leading to any triggered element
         // are expanded
@@ -3837,7 +3857,7 @@ namespace {
                 $topicId = $values['add_board_topic']['select_topic'];
 
                 $decisions = array();
-                if ($mode == 'librarian') {
+                if ($mode == DISPLAY_PHASE::MED_LIB_INIT_REVIEW) {
                     $decisions = array(Ebms\EbmsTopicDecisions:: $READYINITIAL);
                 } else {
                     $decisions = array(Ebms\EbmsTopicDecisions:: $PUBLISHED);
@@ -5167,10 +5187,10 @@ namespace {
 
         $button_array = _build_add_topic_button($form_state, $mode,
             $article->getId());
-        if ($showButtons && $mode != 'publishing')
+        if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
             $form['boards_header']['button'] = $button_array['button'];
         $form['boards_header']['title'] = array("#markup" => '<div class="citation-subheader full-citation-indent full-citation-element">Editorial Board(s)</div>');
-        if ($showButtons && $mode != 'publishing')
+        if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
             $form['boards_header']['form'] = $button_array['form'];
 
         foreach ($board_topic_states as $board_name => $topics) {
@@ -5179,7 +5199,7 @@ namespace {
             // create add topic button
             $button_array = _build_add_topic_button($form_state, $mode,
                 $article->getId(), $boardId);
-            if ($showButtons && $mode != 'publishing')
+            if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
                 $form[$board_name]['button'] = $button_array['button'];
             $form[$board_name]['fieldset'] = array(
                 '#type' => 'fieldset',
@@ -5194,7 +5214,7 @@ namespace {
             if (!$mode) {
                 $form[$board_name]['fieldset']['#attributes']['class'][] = 'full-citation-topic';
             }
-            if ($showButtons && $mode != 'publishing')
+            if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
                 $form[$board_name]['form'] = $button_array['form'];
         }
 
@@ -5391,12 +5411,12 @@ namespace {
             $form['topic_cycle'] = _format_topic_cycle($articleId, $topicId);
         }
 
-        if ($mode == 'publishing') {
+        if ($mode == DISPLAY_PHASE::PUBLISHING) {
             $decision = _format_topic_publish($articleId, $topicId,
                 $topic_sequences, $form_state);
             if (empty($decision)) {
                 /* $decision = _format_topic_decision($decisionInfo,
-                  $topic_sequences, $form_state, 'publishing'); */
+                  $topic_sequences, $form_state, DISPLAY_PHASE::PUBLISHING); */
 
                 $info = _format_topic_publishing_info($articleId, $topicId,
                     $topic_sequences);
@@ -5416,7 +5436,7 @@ namespace {
 
 
         $decisions = array();
-        if ($mode == 'librarian') {
+        if ($mode == DISPLAY_PHASE::MED_LIB_INIT_REVIEW) {
             $decisions = array();
             $decisionInfo = Ebms\EbmsTopicDecisions::$INITIALREVIEW;
             // if ($showButtons) {
@@ -5430,7 +5450,7 @@ namespace {
                 $decisions['topic_initial_review_decision'] =
                     _format_topic_decision($decisionInfo, $topic_sequences);
             }
-        } else if ($mode == 'publishing') {
+        } else if ($mode == DISPLAY_PHASE::PUBLISHING) {
 
         } else {
             $decisions = array();
@@ -5650,11 +5670,13 @@ namespace {
      * custom formatter invoked (see class EbmsTopicDecisions->formatter), and
      * other factors.
      *
-     * @param object $decisionInfo     EbmsTopicDecisions object general state info.
-     * @param array $topic_sequences   Array of state info for one topic for one article.
+     * @param object $decisionInfo     EbmsTopicDecisions object general
+     *                                  state info.
+     * @param array $topic_sequences   Array of state info for one topic
+     *                                  for one article.
      * @param array &$form_state       Standard Drupal form state info.
-     * @param string $modifier         'publishing', 'librarian, or null, tells something
-     *                                  about the purpose of the formatted data.
+     * @param string $modifier         DISPLAY_PHASE constant, tells about
+     *                                  the purpose of the formatted data.
      *
      * @return array $form             Render array to render this data in a form.
      */
@@ -5675,7 +5697,7 @@ namespace {
         if (isset($topic_sequences[$sequenceIndex][$activeIndex])) {
             $statii = $topic_sequences[$sequenceIndex][$activeIndex];
 
-            if (!$show_past && $modifier != 'publishing') {
+            if (!$show_past && $modifier != DISPLAY_PHASE::PUBLISHING) {
                 $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>$title</div>");
             }
 
@@ -5704,7 +5726,10 @@ namespace {
                     $decision['decision']['#prefix'] = '<div class="full-citation-indent">';
                     $decision['decision']['#suffix'] = '</div>';
 
-                    if ($form_state != null && $modifier != 'publishing' && $showButtons) {
+                    if ($form_state != null &&
+                        $modifier != DISPLAY_PHASE::PUBLISHING &&
+                        $showButtons) {
+
                         //drop in 'add comment' button
                         $decision['comments_add_button'] =
                             _build_add_state_comment_button($form_state, $status);
@@ -5727,7 +5752,7 @@ namespace {
         }
 
         // also dig up the past decisions if the currently displayed set is current
-        if (!$show_past && $modifier != 'publishing'
+        if (!$show_past && $modifier != DISPLAY_PHASE::PUBLISHING
                         && isset($topic_sequences[$sequenceIndex]['I'])) {
             // ensure the header exists
             $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>$title</div>");
