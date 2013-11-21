@@ -1322,9 +1322,16 @@ namespace {
         }
 
         if ($is_librarian) {
+
+            // I've kept the name of this field (journal_id_field),
+            // even though OCEEBMS-98 modifies the meaning of the
+            // field for this form to represent journal title
+            // abbreviations, because I'm afraid I'll break something
+            // in the intricate value caching mechanism in play for
+            // this very large and complicated file.  (RMK 2013-11-21)
             $form['citation_queue']['journal_id_field'] = array(
                 '#type' => 'textfield',
-                '#title' => 'Journal ID',
+                '#title' => 'Journal Abbr',
                 '#prefix' => '<div class="citation-input-div">',
                 '#suffix' => '</div>',
                 '#default_value' => $default_journal_id_field,
@@ -1531,7 +1538,7 @@ namespace {
                 $articleQuery->isNotNull('ea.full_text_id');
 
             if ($journal_id)
-                $articleQuery->condition('ea.source_jrnl_id', "%$journal_id%",
+                $articleQuery->condition('ea.brf_jrnl_title', "%$journal_id%",
                     'LIKE');
 
             if ($cycle_id) {
