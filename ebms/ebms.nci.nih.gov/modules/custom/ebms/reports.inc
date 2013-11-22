@@ -2168,13 +2168,14 @@ class EbmsReports {
         );
         if (!$params['disposition'])
             $headers[] = 'Disposition';
-        $headers[] = 'Comments';
+        if (!$params['topic'])
+            $headers[] = array(
+                'data' => 'Summary Topic',
+                'field' => 'tn.topic_name',
+            );
         $headers[] = 'Review Cycle';
         $headers[] = 'Date Assigned';
-        $headers[] = array(
-            'data' => 'Summary Topic',
-            'field' => 'tn.topic_name',
-        );
+        $headers[] = 'Comments';
 
         // Construct the query for the report.
         $query = db_select('ebms_article_state', 's');
@@ -2235,11 +2236,12 @@ class EbmsReports {
             $comments = array();
             foreach ($comment_rows as $comment_row)
                 $comments[] = htmlspecialchars($comment_row->comment);
-            $row[] = implode('<br />', $comments);
+            if (!$params['topic'])
+                $row[] = htmlspecialchars($result->topic_name);
             $row[] = $result->cycle_name;
             $status_dt = strtotime($result->status_dt);
             $row[] = date('m/d/Y', $status_dt);
-            $row[] = htmlspecialchars($result->topic_name);
+            $row[] = implode('<br />', $comments);
             $rows[] = array(
                 'data' => $row,
                 'no_striping' => true,
@@ -2296,13 +2298,14 @@ class EbmsReports {
                 'class' => array('col-1'),
             ),
             'Meeting Date (Type)',
-            'Comments',
-            'Review Cycle',
-            array(
+        );
+        if (!$params['topic'])
+            $headers[] = array(
                 'data' => 'Summary Topic',
                 'field' => 'tn.topic_name',
-            ),
-        );
+            );
+        $headers[] = 'Review Cycle';
+        $headers[] = 'Comments';
 
         // Start off with an empty report table.
         $counter = 0;
@@ -2387,9 +2390,10 @@ class EbmsReports {
                     }
                     $col2 = "$start_date ($meeting_type)";
                 }
-                $col3 = implode('<br />', $comments);
+                if (!$params['topic'])
+                    $col3 = htmlspecialchars($result->topic_name);
                 $col4 = $result->cycle_name;
-                $col5 = htmlspecialchars($result->topic_name);
+                $col5 = implode('<br />', $comments);
                 $row = array(
                     array(
                         'data' => ++$counter,
@@ -2400,10 +2404,11 @@ class EbmsReports {
                         'class' => array('col-1'),
                     ),
                     $col2,
-                    $col3,
-                    $col4,
-                    $col5,
                 );
+                if (!$params['topic'])
+                    $row[] = $col3;
+                $row[] = $col4;
+                $row[] = $col5;
                 $rows[] = array(
                     'data' => $row,
                     'no_striping' => true,
