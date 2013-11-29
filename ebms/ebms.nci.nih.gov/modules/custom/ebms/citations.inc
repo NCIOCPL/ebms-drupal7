@@ -4036,6 +4036,50 @@ namespace {
                 array($decision));
     }
 
+    /**
+     * Determines whether a given meeting is associated with a board, either
+     * directly, or through an ad-hoc group.
+     *
+     *  @param  meeting   array           node wrapper for meeting node
+     *  @param  board_id  integer         primary key for PDQ board
+     *
+     *  return            boolean         true iff meeting is associated
+     *                                    with a PDQ board
+     */
+    function _meeting_for_board(\EntityDrupalWrapper $meeting, $board_id) {
+        pdq_ebms_debug('MEETING FOR BOARD',
+            array(
+                $meeting->field_boards->value(),
+                $meeting->field_subgroups->value(),
+                $meeting->field_ad_hoc_groups->value(),
+            )
+        );
+        if (in_array($board_id, $meeting->field_boards->value()))
+            return true;
+        $subgroup_ids = $meeting->field_subgroups->value();
+        if (count($subgroup_ids) > 0) {
+            $count = db_select('ebms_subgroup', 's')
+                ->condition('s.board_id', $board_id)
+                ->condition('s.sg_id', $subgroup_ids, 'IN')
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+            if ($count > 0)
+                return true;
+        }
+        foreach ($meeting->field_ad_hoc_groups->value() as $group_id) {
+            $count = db_select('ebms_ad_hoc_group_board', 'gb')
+                ->condition('gb.group_id', $group_id)
+                ->condition('gb.board_id', $board_id)
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+            if ($count == 1)
+                return true;
+        }
+        return false;
+    }
+
     function _build_add_decision_button(&$form_state, $articleId, $topicId,
         $decisions, $isAdd = false) {
         $form = array();
@@ -4487,6 +4531,7 @@ namespace {
                     break;
 
                 case Ebms\EbmsTopicDecisions::$ONAGENDA:
+                    $board_id = Ebms\getTopicBoard($topic_id);
                     $form['on_agenda_title'] = $full_title;
 
                     $query = new EntityFieldQuery();
@@ -4505,6 +4550,8 @@ namespace {
                         foreach ($result['node'] as $node) {
                             $fullNode = node_load($node->nid);
                             $nodeWrapper = entity_metadata_wrapper('node', $fullNode);
+                            if (!_meeting_for_board($nodeWrapper, $board_id))
+                                continue;
                             $datespan = $nodeWrapper->field_datespan->value();
                             $suffix = '';
                             if($datespan) {

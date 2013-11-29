@@ -282,6 +282,7 @@ function pdq_ebms_group_form($form, &$form_state, $control, $group_id=0) {
     // Build the list of existing group membership (empty for new group).
     $default_name = '';
     $default_members = array();
+    $default_boards = array();
     if ($group_id) {
         $default_name = db_select('ebms_ad_hoc_group', 'g')
             ->fields('g', array('group_name'))
@@ -294,6 +295,13 @@ function pdq_ebms_group_form($form, &$form_state, $control, $group_id=0) {
             ->execute();
         foreach ($results as $member) {
             $default_members[] = $member->user_id;
+        }
+        $results = db_select('ebms_ad_hoc_group_board', 'b')
+            ->fields('b', array('board_id'))
+            ->condition('b.group_id', $group_id)
+            ->execute();
+        foreach ($results as $board) {
+            $default_boards[] = $board->board_id;
         }
     }
 
@@ -309,6 +317,7 @@ function pdq_ebms_group_form($form, &$form_state, $control, $group_id=0) {
     $users = array();
     foreach ($results as $u)
         $users[$u->uid] = $u->name;
+    $boards = Ebms\Util::boards();
 
     // Assemble and return the render array for the form.
     $instr = 'Highlighted names are part of this group; hold down the Ctrl ' .
@@ -345,6 +354,18 @@ function pdq_ebms_group_form($form, &$form_state, $control, $group_id=0) {
         'instructions' => array(
             '#type' => 'markup',
             '#markup' => '<p id="member-instructions">' . $instr . '</p>',
+        ),
+        'boards' => array(
+            '#type' => 'select',
+            '#multiple' => true,
+            '#size' => 6,
+            '#options' => $boards,
+            '#default_value' => $default_boards,
+        ),
+        'board-instructions' => array(
+            '#type' => 'markup',
+            '#markup' => '<p id="board-instructions">Highlighted boards ' .
+            'are associated with the group (optional).',
         ),
         'buttons' => array(
             '#type' => 'container',
@@ -401,6 +422,7 @@ function pdq_ebms_group_form_submit($form, &$form_state) {
     $group_id = trim($form_state['values']['group']);
     $name = trim($form_state['values']['name']);
     $members = $form_state['selected members'];
+    $boards = $form_state['values']['boards'];
     if ($group_id) {
         db_update('ebms_ad_hoc_group')
             ->fields(array('group_name' => $name))
@@ -409,6 +431,9 @@ function pdq_ebms_group_form_submit($form, &$form_state) {
 
         // These will be re-populated.
         db_delete('ebms_ad_hoc_group_member')
+            ->condition('group_id', $group_id)
+            ->execute();
+        db_delete('ebms_ad_hoc_group_board')
             ->condition('group_id', $group_id)
             ->execute();
     }
@@ -425,6 +450,18 @@ function pdq_ebms_group_form_submit($form, &$form_state) {
                 array(
                     'group_id' => $group_id,
                     'user_id' => $user_id,
+                )
+            )
+            ->execute();
+    }
+
+    // Add a row for each group board.
+    foreach ($boards as $board_id) {
+        db_insert('ebms_ad_hoc_group_board')
+            ->fields(
+                array(
+                    'group_id' => $group_id,
+                    'board_id' => $board_id,
                 )
             )
             ->execute();
