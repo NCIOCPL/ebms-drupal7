@@ -1254,7 +1254,7 @@ class EbmsReview {
             if ($review) {
                 $block['review'] = array(
                     '#markup' =>
-                    "<p>You reviewed this articles $review->when_posted</p>",
+                    "<p>You reviewed this article $review->when_posted</p>",
                 );
                 $query = db_select('ebms_review_disposition', 'd');
                 $query->join('ebms_review_disposition_value', 'v',
