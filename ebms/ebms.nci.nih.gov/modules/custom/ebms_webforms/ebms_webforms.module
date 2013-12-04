@@ -854,9 +854,12 @@ function _webform_csv_data_ebms_travel($component, $export_options, $value) {
  * We extract the report request's ID from the URL.  We also extract from
  * the URL the node ID for the webform node used for the hotel request form.
  *
+ * 2013-11-29: new requirement for filtering of the reimbursement report
+ * form (OCEEBMS-111).
+ *
  *  @return  array   filtering parameters, plus the hotel request form ID
  */
-function _ebms_webforms_hotel_report_params() {
+function _ebms_webforms_report_params() {
     $path_components = explode('/', request_path());
     $node_id = $path_components[1];
     if (count($path_components) == 5)
@@ -910,10 +913,12 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
         switch ($url) {
             case '/travel/reimbursement-request':
                 $isReimbursementRequest = true;
+                $report = 'Reimbursement Requests';
                 break;
             case '/travel/hotel-request':
                 $isHotelRequest = true;
-                $params = _ebms_webforms_hotel_report_params();
+                $report = 'Hotel Requests';
+                break;
         }
     }
 
@@ -957,30 +962,31 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
     $query->condition('c.form_key', 'meeting');
     $query->condition('s.nid', $node->nid);
 
-    // Filtering for the hotel request form.
-    if ($isHotelRequest) {
-        if ($params['meeting'])
-            $query->condition('d.data', $params['meeting']);
-        elseif ($params['board']) {
-            $query->join('field_data_field_boards', 'b',
-                         'b.entity_id = d.data');
-            $query->condition('b.deleted', 0);
-            $query->condition('b.field_boards_value', $params['board']);
-            $query->condition('b.bundle', 'ebms_event');
-            $query->condition('b.entity_type', 'node');
-        }
-        if ($params['start-date']) {
-            $start_date = _ebms_webforms_unix_timestamp($params['start-date']);
-            $query->condition('s.submitted', $start_date, '>=');
-        }
-        if ($params['end-date']) {
-            $end_date = $params['end-date'] . ' 23:59:59';
-            $end_date = _ebms_webforms_unix_timestamp($end_date);
-            $query->condition('s.submitted', $end_date, '<=');
-        }
+    // Fetch any filtering parameters used for the report.
+    $params = _ebms_webforms_report_params();
+
+    // Filtering for the report request form.
+    if ($params['meeting'])
+        $query->condition('d.data', $params['meeting']);
+    elseif ($params['board']) {
+        $query->join('field_data_field_boards', 'b',
+            'b.entity_id = d.data');
+        $query->condition('b.deleted', 0);
+        $query->condition('b.field_boards_value', $params['board']);
+        $query->condition('b.bundle', 'ebms_event');
+        $query->condition('b.entity_type', 'node');
+    }
+    if ($params['start-date']) {
+        $start_date = _ebms_webforms_unix_timestamp($params['start-date']);
+        $query->condition('s.submitted', $start_date, '>=');
+    }
+    if ($params['end-date']) {
+        $end_date = $params['end-date'] . ' 23:59:59';
+        $end_date = _ebms_webforms_unix_timestamp($end_date);
+        $query->condition('s.submitted', $end_date, '<=');
     }
 
-    // Side trip to get the total number of reimbursement requests.
+    // Side trip to get the total number of rows for the report.
     $total_count = $query->countQuery()->execute()->fetchField();
 
     // Override the $header variable set above.
@@ -1082,7 +1088,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
     if (count($rows) == 0) {
         $placeholder = array('!url' => url('node/' . $node->nid));
-        $data = t('There are no submissions for this form. ' .
+        $data = t('There are no relevant submissions for this form. ' .
                 '<a href="!url">View this form</a>.', $placeholder);
         $rows[] = array(array('data' => $data, 'colspan' => 4));
     }
@@ -1101,8 +1107,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
     $output = '';
 
     // Build Left Nav, if appropriate
-    $current = $isHotelRequest ? 'Hotel Requests' : 'Reimbursement Requests';
-    $left_nav = EbmsReports::build_left_nav('Board Management', $current);
+    $left_nav = EbmsReports::build_left_nav('Board Management', $report);
     $output .= render($left_nav);
 
     // Add the title and add the -right class
@@ -1111,14 +1116,12 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
     // Hotel report now needs filtering (OCEEBMS-47).  Build the form which
     // lets the user specify which requests should appear in the report.
-    if ($isHotelRequest) {
-        $form = drupal_get_form('ebms_webforms_hotel_report_form', $params);
-        $output .= drupal_render($form);
-    }
+    // 2013-11-29; now both reports need filtering (OCEEBMS-111).
+    $form = drupal_get_form('ebms_webforms_report_form', $params, $report);
+    $output .= drupal_render($form);
 
     // Both reports have enough columns now that they need more width.
     $output .= '<br></div><div id="webform-table-long-right">';
-
 
     // Add the results table
     $output .= theme('table', array('header' => $header, 'rows' => $rows));
@@ -1148,12 +1151,18 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
  * that meeting, include the meeting on the dropdown list even
  * if the meeting was later switched to webex).
  *
- *  @param  integer     if not zero, represents the ID of a PDQ board
+ * New requirement from Robin (OCEEBMS-111): use the same logic
+ * for filtering reimbursement request reports.
  *
- *  @return array       display labels and integers for the meetings
- *                      picklist
+ *  @param  integer  $board_id    if not zero, represents the ID of a
+ *                                PDQ board
+ *  @param  integer  $webform_id  primary key for node used for the form
+ *                                whose requests are being reported
+ *
+ *  @return array                 display labels and integers for the
+ *                                meetings picklist
  */
-function _ebms_webforms_hotel_report_meetings($board_id, $webform_id) {
+function _ebms_webforms_report_meetings($board_id, $webform_id) {
     $query = db_select('node', 'n')
         ->condition('n.type', 'ebms_event')
         ->fields('n', array('nid', 'title'));
@@ -1190,6 +1199,7 @@ function _ebms_webforms_hotel_report_meetings($board_id, $webform_id) {
  * PDQ board has been selected (if any).  If no board has been selected,
  * shows all the in-person meetings.  Modified 2013-11-05: now shows only
  * meetings for which at least one hotel request has been submitted.
+ * 2013-12-04: Merged hotel and reimbursement report filtering forms together.
  *
  *  @param  array   $form         Structured array containing the
  *                                elements and properties of the form
@@ -1197,26 +1207,32 @@ function _ebms_webforms_hotel_report_meetings($board_id, $webform_id) {
  *                                containing the current values
  *                                of the form, as well as other
  *                                form state information
+ *  @param  array   $params       array of parameters used to filter
+ *                                the report
+ *  @param  string  $report       name of the report (e.g., 'Hotel Requests')
  *
  *  @return array                 Array containing specification
  *                                of the fields to appear on the
  *                                form, as well as other markup
  */
-function ebms_webforms_hotel_report_form($form, &$form_state, $params) {
+function ebms_webforms_report_form($form, &$form_state, $params, $report) {
     $boards = array(0 => '') + Ebms\Util::boards();
     $board_id = $params['board'];
     $meeting_id = $params['meeting'];
     if (isset($form_state['values'])) {
         $board_id = $form_state['values']['board'];
     }
-    $meetings = _ebms_webforms_hotel_report_meetings($board_id,
-                                                     $params['node']);
+    $meetings = _ebms_webforms_report_meetings($board_id, $params['node']);
     if ($meeting_id && !array_key_exists($meeting_id, $meetings))
         $meeting_id = $form_state['values']['meeting'] = 0;
     return array(
         'node' => array(
             '#type' => 'hidden',
             '#value' => $params['node'],
+        ),
+        'report' => array(
+            '#type' => 'hidden',
+            '#value' => $report,
         ),
         'board' => array(
             '#type' => 'select',
@@ -1226,7 +1242,7 @@ function ebms_webforms_hotel_report_form($form, &$form_state, $params) {
             '#default_value' => $board_id,
             '#attributes' => array('class' => array('fixed-width')),
             '#ajax' => array(
-                'callback' => 'ebms_webforms_hotel_report_ajax',
+                'callback' => 'ebms_webforms_report_ajax',
                 'wrapper' => 'board-dependent',
             ),
         ),
@@ -1287,6 +1303,7 @@ function ebms_webforms_hotel_report_form($form, &$form_state, $params) {
  * Serialize the values specified in the hotel request report form,
  * store them in the database, and navigate to the URL representing
  * the request.
+ * 2013-12-04: modified to handle reimbursement reports as well.
  *
  *  @param  array   $form         Structured array containing the
  *                                elements and properties of the form
@@ -1297,16 +1314,17 @@ function ebms_webforms_hotel_report_form($form, &$form_state, $params) {
  *
  *  @return     none
  */
-function ebms_webforms_hotel_report_form_submit($form, &$form_state) {
+function ebms_webforms_report_form_submit($form, &$form_state) {
     $values = $form_state['values'];
-    $request_id = EbmsReports::save_report_request($values, 'Hotel Requests');
+    $report = $values['report'];
+    $request_id = EbmsReports::save_report_request($values, $report);
     $node_id = $values['node'];
     $url = "node/$node_id/webform-results/table/$request_id";
     drupal_goto($url);
 }
 
 /**
- * Return the portion of the hotel request report form dynamically
+ * Return the portion of a request report form dynamically
  * controlled by the selection of a particular PDQ board.
  *
  *  @param  array   $form         Structured array containing the
@@ -1317,7 +1335,7 @@ function ebms_webforms_hotel_report_form_submit($form, &$form_state) {
  *
  *  @return array                 render array for the meeting list
  */
-function ebms_webforms_hotel_report_ajax($form, $form_state) {
+function ebms_webforms_report_ajax($form, $form_state) {
     return $form['meeting-wrapper'];
 }
 
