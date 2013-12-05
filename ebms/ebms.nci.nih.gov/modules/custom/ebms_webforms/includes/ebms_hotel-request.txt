@@ -111,9 +111,9 @@ $webform = array (
       'value' => '',
       'extra' => 
       array (
-        'items' => 'marriott|Bethesda North Marriott Hotel & Conference Center
-hilton|Hilton Washington DC/Rockville Hotel & Executive Meeting Center
-legacy|The Legacy Hotel & Meeting Centre',
+        'items' => 'gbcourtyard|Courtyard Gaithersburg Washingtonian Center
+gbmarriot|Gaithersburg Marriott Washingtonian Center
+hhsuites|Hilton Homewood Suites',
         'multiple' => 0,
         'title_display' => 'before',
         'private' => 0,
