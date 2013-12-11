@@ -61,7 +61,6 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
   if (substr($form_id, 0, 19) != 'webform_client_form') {
         return;
     }
-
     $event_block = _ebms_travel_get_meeting_block($form);
 
     //add js file for show/hide.
@@ -140,7 +139,6 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
                 }
             }
         }
-
     }
 }
 
@@ -365,7 +363,7 @@ function _webform_defaults_ebms_travel() {
         'title_display' => 0,
         'date_description' => t('Please select the date in which this expense occured.'),
         'select_description' => t('Please select an option from the list above.'),
-        'text_description' => t('Please enter the cost of the expense.'),
+        'text_description' => t('Please enter the cost of the expense. Please submit a receipt for any expense over $75.00.'),
         'text_prefix', t(''),
         'attributes' => array(),
         'private' => FALSE,
@@ -512,28 +510,34 @@ function ebms_webforms_webform_submission_presave($node, &$submission) {
 }
 
 /**
-* Render a Webform component to be part of a form.
-*/
-function _webform_render_ebms_travel($component, $value = NULL, $filter = TRUE) {
-    //If this is an edit for, unserialize the value.
-    $count = 0;
-    $val_array = array();
-    if(is_array($value)){
-        $val_array = unserialize($value[0]);
-        $count = count($val_array);
-    }
+ * Render a Webform component to be part of a form.  Implements a hook
+ * with a very strange name.  See http://drupalcontrib.org/api/drupal/contributions!webform!webform.api.php/function/_webform_render_component/7
+ */
+function _webform_render_ebms_travel($component, $value=NULL, $filter=TRUE) {
 
-    $options = _webform_select_options($component, false, $filter);
-    $id = 'ebms-travel-'.$component['cid'];
-    $fieldset = $id.'-fieldset';
+  //If this is an edit for, unserialize the value.
+  $count = 0;
+  $val_array = array();
+  if (is_array($value)) {
+    $val_array = unserialize($value[0]);
+    $count = count($val_array);
+  }
+
+  $options = _webform_select_options($component, false, $filter);
+  $id = 'ebms-travel-'.$component['cid'];
+  $fieldset = $id.'-fieldset';
+
   //Setup a fieldet that we will be adding dynamic fields too.
   $form[$fieldset] = array(
     '#type' => 'fieldset',
     '#title' => $component['name'],
-    // Set up the wrapper so that AJAX will be able to replace the fieldset.
+    // Set up the wrapper so that AJAX can replace the fieldset.
     '#prefix' => '<div id="'.$id.'-fieldset-wrapper">',
     '#suffix' => '</div>',
   );
+
+  // If we don't do this, webforms divides our weights by 1000!
+  $form['#weight'] = $component['weight'];
 
   // Build the fieldset with the proper number of names. We'll use
   // $form_state['num_names'] to determine the number of textfields to build.
@@ -996,7 +1000,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
             array('data' => 'User', 'field' => 'u.name'),
             array('data' => 'Meeting', 'field' => 'meeting_with_date'),
             'Transportation', 'Parking and Tolls', 'Hotel', 'Amount',
-            'Receipts', 'Meals and Incidentals', 'Honorarium',
+            'Meals and Incidentals', 'Honorarium',
             'Reimbursement', 'Comments',
         );
     else
@@ -1053,9 +1057,14 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
         // Generate a cell for each component.
         foreach ($node->webform['components'] as $component) {
-            if ($isReimbursementRequest && $component['form_key'] == 'certify')
-                // Do not display "Certify" comment; should always be yes
-                continue;
+
+            // Not all fields are included in the report.
+            if ($isReimbursementRequest) {
+                $skip = array('certify', 'arrival_date', 'departure_date',
+                              'total_amount_requested');
+                if (in_array($component['form_key'], $skip))
+                    continue;
+            }
             $data = isset($submission->data[$component['cid']])
                 ? $submission->data[$component['cid']] : NULL;
             $submission_output = webform_component_invoke($component['type'],

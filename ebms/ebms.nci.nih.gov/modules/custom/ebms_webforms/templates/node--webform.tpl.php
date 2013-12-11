@@ -83,42 +83,46 @@ $administer = user_access('edit any webform content');
 <div id="node-<?php print $node->nid; ?>" class="<?php print $classes; ?> clearfix"<?php print $attributes; ?>>
 
 
-    <h2>
-             <?php
-            
-            if ($administer):
-                drupal_add_js("(function ($) {
-                    $(document).ready(function() {
-$('#edit-forum-icon').hover(function () {
-$(this).children('a').children('img').attr('src', '/".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Active.png');
-}, function () {
-$(this).children('a').children('img').attr('src', '/".drupal_get_path('theme', 'ebmstheme')."/images/EBMS_Edit_Icon_Inactive.png');
-});                   
-}); }) (jQuery);", 'inline');
-                ?>
-            <span id="edit-forum-icon">
-            <a href="<?php print url('node/'.$nid.'/edit'); ?>">
-            <img src="/<?php print 
-                drupal_get_path('theme', 'ebmstheme');?>/images/EBMS_Edit_Icon_Inactive.png" alt="Edit This Forum Topic"/>
-            </a> 
-            </span>
-        <?php endif;
-        print $title;
-        ?>
-    </h2>
+  <h2>
+<?php
+if ($administer):
+    drupal_add_js('(function ($) {
+    $(document).ready(function() {
+        $("#edit-forum-icon").hover(function () {
+            $(this).children("a")
+                   .children("img")
+                   .attr("src", "/' . drupal_get_path('theme', 'ebmstheme') .
+                   '/images/EBMS_Edit_Icon_Active.png");
+        }, function() {
+            $(this).children("a")
+                   .children("img")
+                   .attr("src", "/' . drupal_get_path('theme', 'ebmstheme') .
+                   '/images/EBMS_Edit_Icon_Inactive.png");
+        });
+    });
+})(jQuery);', 'inline');
+?>
+    <span id="edit-forum-icon">
+      <a href="<?php print url('node/'.$nid.'/edit'); ?>">
+        <img src="/<?php
+           print drupal_get_path('theme', 'ebmstheme');
+           ?>/images/EBMS_Edit_Icon_Inactive.png"
+             alt="Edit This Forum Topic"/>
+      </a>
+    </span>
+<?php endif;
+    print $title;
+?>
+  </h2>
 
   <div class="content"<?php print $content_attributes; ?>>
-    <?php
-      // We hide the comments and links now so that we can render them later.
-        // There are no Drupal Comments on webforms
-      //hide($content['comments']);
-      hide($content['links']);
-      print render($content);
-    ?>
+<?php
+    // We hide the links now so that we can render them later.
+    hide($content['links']);
+    print render($content);
+?>
   </div>
 
-  <?php print render($content['links']); ?>
-
-  <?php // print render($content['comments']); ?>
+<?php print render($content['links']); ?>
 
 </div>
