@@ -52,3 +52,9 @@
 #webform-table-right .container-inline-date { display: inline-block; }
 #webform-table-right .container-inline-date .date-padding { padding: 0; }
 #webform-table-right div.date-pair { display: inline-block; }
+
+/*
+ * For some reason, the webforms module displays the description text
+ * above *and* below the radio buttons.  Don't want that.
+ */
+#webform-component-reimbursement > .description { display: none; }
