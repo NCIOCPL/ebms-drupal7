@@ -510,7 +510,7 @@ function pdq_ebms_login() {
             ),
         ),
     );
-    $link = l('NCI Login', 'ssologin', $options);
+    $link = l('NIH Login', 'ssologin', $options);
     $page = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'login-wrapper'),
@@ -518,11 +518,11 @@ function pdq_ebms_login() {
         'nih-login-link' => array(
             '#type' => 'markup',
             '#markup' => '<div id="ssopanel">' .
-            '<p>If you have an NCI account use this page instead.</p>' .
+            '<p>If you have an NIH account use this page instead.</p>' .
             $link .
             '</div>
 <div id="nci-login-instructions">
- <p><u>NON-NCI USERS:</u></p>
+ <p><u>NON-NIH USERS:</u></p>
  <p>Your <strong>EBMS username</strong> is your first and last name
     separated by a space (e.g., <strong>John Smith</strong>).</p>
  <p>Your password can be changed using the <a
