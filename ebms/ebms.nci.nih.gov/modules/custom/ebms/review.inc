@@ -1170,10 +1170,14 @@ class EbmsReview {
      * Build the page for showing the board member a packet which has
      * been archived, or for which she has already submitted at least
      * one review, or both.  OCEEBMS-95.
+     * 2013-12-06: users asked for extensive changes to the requirements
+     * for this page.  It's now exclusively used to show full completed
+     * packets.  See Robin's comment posted to the JIRA ticket
+     * 2013-12-05 15:20.
      *
      *  @return  array    Drupal render array for archived packet page
      */
-    private function member_archived_packet() {
+    private function member_completed_packet() {
 
         // Get the basic information for the packet.
         $packet_info = db_select('ebms_packet', 'p')
@@ -1187,7 +1191,7 @@ class EbmsReview {
         drupal_set_breadcrumb(
             array(
                 l('Literature', EbmsReview::$url),
-                l('ARCHIVED', EbmsReview::$url . '/archived'),
+                l('COMPLETED PACKETS', EbmsReview::$url . '/completed'),
                 $title,
             )
         );
@@ -1227,13 +1231,22 @@ class EbmsReview {
         $query->condition('p.packet_id', $this->packet_id);
         $query->fields('a', array('article_id'));
         $query->fields('p', array('drop_flag', 'archived'));
+        $query->leftJoin('ebms_article_author_cite', 'sort_auth_cite',
+            'a.article_id = sort_auth_cite.article_id AND ' .
+            'sort_auth_cite.cite_order = 1');
+        $query->leftJoin('ebms_article_author', 'sort_auth',
+            'sort_auth.author_id = sort_auth_cite.author_id');
+        $query->orderBy('sort_auth.last_name');
+        $query->orderBy('sort_auth.initials');
+        $query->orderBy('sort_auth.collective_name');
         $query->orderBy('a.article_title');
         $articles = $query->execute();
 
         // Show each article, along with the board member's review (if any).
         global $user;
         foreach ($articles as $article) {
-            $citation = EbmsReview::show_citation($article->article_id, 3);
+            $article_id = $article->article_id;
+            $citation = EbmsReview::show_citation($article_id, 3, true);
             $block = array();
             $block['citation'] = array(
                 '#markup' => '<p>' . $citation . '</p>',
@@ -1241,13 +1254,27 @@ class EbmsReview {
             if ($article->drop_flag)
                 $block['dropped'] = array(
                     '#markup' =>
-                    '<p>This article was dropped from the packet.</p>',
+                    '<p>This article was removed from the packet ' .
+                    'by your Board Manager.</p>',
                 );
+            $query = db_select('ebms_article_review', 'r');
+            $query->join('users', 'u', 'u.uid = r.reviewer_id');
+            $query->condition('r.packet_id', $this->packet_id);
+            $query->orderBy('u.name');
+            $query->fields('u', array('name'));
+            $results = $query->execute()->fetchCol();
+            $reviewers = array();
+            foreach ($results as $reviewer)
+                $reviewers[] = htmlspecialchars($reviewer);
+            $reviewers = implode(', ', $reviewers);
+            $block['reviewers'] = array(
+                '#markup' => "<p>Reviewed by $reviewers.</p>",
+            );
             $review = db_select('ebms_article_review', 'r')
                 ->fields('r', array('review_id', 'when_posted', 'comments',
                         'loe_info'))
                 ->condition('r.packet_id', $this->packet_id)
-                ->condition('r.article_id', $article->article_id)
+                ->condition('r.article_id', $article_id)
                 ->condition('r.reviewer_id', $user->uid)
                 ->execute()
                 ->fetch();
@@ -1306,7 +1333,7 @@ class EbmsReview {
             $block['divider'] = array(
                 '#markup' => '<hr>',
             );
-            $body['articles']["article-$article->article_id"] = $block;
+            $body['articles']["article-$article_id"] = $block;
         }
 
         // Show the docs posted by board members, with a button to post more.
@@ -1329,8 +1356,11 @@ class EbmsReview {
         $query->fields('u', array('name'));
         $query->fields('d', array('when_posted', 'description'));
         $query->condition('d.packet_id', $this->packet_id);
-        $query->condition('d.drop_flag', 0);
+
+        // Robin asked (2013-12-05) that we eliminate this test.
+        // $query->condition('d.drop_flag', 0);
         $query->orderBy('f.filename');
+
         $headers = array(
             'FILE NAME',
             'NOTES',
@@ -1385,77 +1415,98 @@ class EbmsReview {
     }
 
     /**
+     * Has the current user reviewed all the articles in the packet?
+     * Ignore drop flag.  Called by member_completed() method.
+     */
+    private static function packet_fully_completed($packet_id) {
+        global $user;
+        $query = db_select('ebms_packet_article', 'a');
+        $query->leftJoin('ebms_article_review', 'r',
+            'r.article_id = a.article_id AND ' .
+            'r.packet_id = a.packet_id AND ' .
+            'r.reviewer_id = ' . $user->uid);
+        $query->condition('a.packet_id', $packet_id);
+        $query->isNull('r.article_id');
+        $count = $query->countQuery()->execute()->fetchField();
+        return $count == 0;
+    }
+
+    /**
      * Build the Drupal render array for the page showing the board member
      * packets to which she has been assigned, and which have been archived,
      * or have at least one article which she has already reviewed, or both.
      * See JIRA ticket OCEEBMS-95.
+     * 2013-12-06: Users asked for extensive changes to the requirements
+     * for this page.  See Robin's 2013-12-05 15:20 comment posted to the
+     * JIRA ticket.
      *
      *  @return  array     Drupal render array for the page
      */
-    private function member_archives() {
+    private function member_completed() {
 
         // Override the default breadcrumbs.
         drupal_set_breadcrumb(
             array(
                 l('Literature', EbmsReview::$url),
-                'ARCHIVED',
+                'COMPLETED PACKETS',
             )
         );
 
         // Start building the render array.
         $body = array(
             'title' => array(
-                '#markup' => '<h2>ARCHIVED PACKETS/REVIEWS</h2>',
+                '#markup' => '<h2>COMPLETED PACKETS</h2>',
             ),
         );
 
-        // Find the relevant packets.
+        // Make two of the columns sortable.
+        $headers = array(
+            array(
+                'data' => 'Packet Name',
+                'field' => 'p.packet_title',
+                'sort' => 'asc',
+            ),
+            array(
+                'data' => 'Date Completed',
+                'field' => 'last_review',
+            ),
+            'Number of Articles',
+        );
+
+        // Find the relevant packets.  Drupal's DB API isn't capable of
+        // handling an expression in the havingCondition() method, so
+        // we get the value in a separate query.
+        $two_years_ago = db_query('SELECT DATE_SUB(NOW(), INTERVAL 2 YEAR)')
+            ->fetchField();
         global $user;
         $rows = array();
         $query = db_select('ebms_packet', 'p')
-            ->fields('p', array('packet_id', 'packet_title', 'created_at',
-                    'active_status'));
-        $query->join('ebms_packet_reviewer', 'r',
-            'r.packet_id = p.packet_id');
+            ->fields('p', array('packet_id', 'packet_title'));
+        $query = $query->extend('TableSort');
+        $query->join('ebms_article_review', 'r', 'r.packet_id = p.packet_id');
         $query->condition('r.reviewer_id', $user->uid);
-        $query->orderBy('p.created_at', 'DESC');
+        $query->addExpression('MAX(r.when_posted)', 'last_review');
+        $query->groupBy('p.packet_id');
+        $query->havingCondition('last_review', $two_years_ago, '>');
+        $query->orderByHeader($headers);
         $results = $query->execute();
 
         // Create the rows for the table of packets.
         foreach ($results as $result) {
+            if (!EbmsReview::packet_fully_completed($result->packet_id))
+                continue;
             $reviewed = db_select('ebms_article_review', 'r')
                 ->condition('r.packet_id', $result->packet_id)
                 ->condition('r.reviewer_id', $user->uid)
                 ->countQuery()
                 ->execute()
                 ->fetchField();
-            if (!$reviewed && $result->active_status == 'A')
-                continue;
-            $originally_assigned = db_select('ebms_packet_article', 'a')
-                ->condition('a.packet_id', $result->packet_id)
-                ->countQuery()
-                ->execute()
-                ->fetchField();
-            $dropped = db_select('ebms_packet_article', 'a')
-                ->condition('a.packet_id', $result->packet_id)
-                ->condition('a.drop_flag', 1)
-                ->countQuery()
-                ->execute()
-                ->fetchField();
             $rows[] = array(
                 l(htmlspecialchars($result->packet_title),
-                    EbmsReview::$url . "/archived/$result->packet_id"),
+                    EbmsReview::$url . "/completed/$result->packet_id"),
                 array(
-                    'data' => date('Y-m-d', strtotime($result->created_at)),
+                    'data' => date('Y-m-d', strtotime($result->last_review)),
                     'class' => array('ebms-align-center'),
-                ),
-                array(
-                    'data' => $originally_assigned,
-                    'class' => array('ebms-align-right'),
-                ),
-                array(
-                    'data' => $dropped,
-                    'class' => array('ebms-align-right'),
                 ),
                 array(
                     'data' => $reviewed,
@@ -1463,15 +1514,8 @@ class EbmsReview {
                 ),
             );
         }
-        $headers = array(
-            'Packet Name',
-            'Created',
-            'Originally Assigned',
-            'Dropped Articles',
-            'Reviewed'
-        );
         $body['table'] = array(
-            '#attributes' => array('id' => 'archived-packets-table'),
+            '#attributes' => array('id' => 'completed-packets-table'),
             '#theme' => 'table',
             '#rows' => $rows,
             '#header' => $headers,
@@ -1484,13 +1528,13 @@ class EbmsReview {
      */
     private function choose_member_review_page() {
 
-        if ($this->action == 'archived') {
+        if ($this->action == 'completed') {
             if ($this->packet_id)
-                return $this->member_archived_packet();
-            return $this->member_archives();
+                return $this->member_completed_packet();
+            return $this->member_completed();
         }
         if ($this->action == 'archpost') {
-            $url = EbmsReview::$url . '/archived/' . $this->packet_id;
+            $url = EbmsReview::$url . '/completed/' . $this->packet_id;
             drupal_set_breadcrumb(
                 array(
                     l('Literature', EbmsReview::$url),
@@ -2575,7 +2619,8 @@ SELECT DISTINCT t.topic_id, t.topic_name
      * page has slightly different requirements for how the citations
      * are to be formatted.
      */
-    public static function show_citation($article_id, $max_authors=99999) {
+    public static function show_citation($article_id, $max_authors=99999,
+                                         $include_links=false) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
             ->condition('a.article_id', $article_id)
@@ -2628,6 +2673,19 @@ SELECT DISTINCT t.topic_id, t.topic_name
         }
         $pmid = $doc->MedlineCitation->PMID;
         $pieces[] = "PMID: $pmid";
+        if ($include_links) {
+            $pieces[] = '<br><br>';
+            $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
+                $pmid . '" target="_blank">VIEW ABSTRACT</a>';
+            $ft_uri = Ebms\Util::get_ft_uri($article_id);
+            if ($ft_uri) {
+                $ft_url = file_create_url($ft_uri);
+                $target = array('attributes' => array('target' => '_blank'));
+                $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $target);
+                $pieces[] = ' &nbsp;|&nbsp; ' . $ft_link;
+            }
+            $pieces[] = '<br />';
+        }
         return implode($pieces);
     }
 }
@@ -3149,7 +3207,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
         drupal_set_message('File not found', 'error');
 
     if ($action == 'archpost')
-        drupal_goto(EbmsReview::$url . '/archived/' . $packet_id);
+        drupal_goto(EbmsReview::$url . '/completed/' . $packet_id);
     else {
     // Go back to the user's packet.
     $options = array(
