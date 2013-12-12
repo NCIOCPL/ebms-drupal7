@@ -91,3 +91,23 @@ h3.pkt-rvwr-files { margin-top: 40px; border-bottom: solid 1px #696559; }
 #pdq-ebms-edit-packet-form #edit-articles a:hover {
     border-color: #a90101; color: #a90101; text-decoration: none;
 }
+
+/* ************ For filter form at top ************* */
+#packet-filter-form .container-inline-date .date-padding {
+    float: none; 
+}
+#packet-filter-form .date-padding .description {
+    display: none; 
+}
+#packet-filter-form .container-inline-date .label-508 {
+    margin-left: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+#packet-filter-form #edit-pkt-scope .form-type-checkbox { 
+    display: inline; 
+}
+#packet-filter-form .form-submit {
+    margin-top: 5px; 
+}
+/* ************ End filter form at top ************* */
