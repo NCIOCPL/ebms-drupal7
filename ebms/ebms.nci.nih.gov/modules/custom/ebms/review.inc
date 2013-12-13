@@ -99,6 +99,7 @@ class EbmsReview {
      * Pick the page for the board manager.
      */
     private function choose_manager_review_page() {
+
         switch ($this->action) {
             case 'add':
                 return drupal_get_form('pdq_ebms_edit_packet_form');
@@ -279,14 +280,17 @@ class EbmsReview {
         );
 
         // See if the user has identified one or more boards.
-        $opts = array('query' => drupal_get_query_parameters());
-        $boards = array();
-        if (isset($opts['query']['boards']))
-            $boards = explode(',', $opts['query']['boards']);
-        else
-            $boards = $this->user->boards;
+        $boards = EbmsReview::get_board_ids();
 
-        // Build the query.
+        // If there was a filter request, the drupal path will say:
+        //  {url}/packets/search/{num}
+        // where {num} is a string form row id in the ebms_search table
+        if ($this->packet_id == 'search')
+            $search_id = intval($this->article_id);
+        else
+            $search_id = 0;
+
+        // Build the query to show packets
         $query = db_select('ebms_packet', 'p');
         if ($this->pager != 'off')
             $query = $query->extend('PagerDefault')->limit(10);
@@ -306,13 +310,20 @@ class EbmsReview {
             $query->condition('b.board_id', reset($boards));
         elseif (count($boards) > 1)
             $query->condition('b.board_id', $boards, 'IN');
-        //$query->condition('p.created_by', $this->user->uid);
-        $query->condition('p.active_status', 'A');
+        // $query->condition('p.created_by', $this->user->uid);
+        // $query->condition('p.active_status', 'A');
+
+        // Apply any filters
+        $query = EbmsReview::apply_manager_packet_filters($query, $search_id);
+
         $query->orderByHeader($headers);
+        // Execute packet selection
         $packets = $query->execute();
+
         $divider = '<span class="action-divider">|</span>';
         $main_url = EbmsReview::$url;
         $del_func = 'javascript:ebmsscript.delete_packet';
+        $opts = array('query' => drupal_get_query_parameters());
         $rows = array();
         foreach ($packets as $p) {
             $edit_url = "$main_url/edit/{$p->packet_id}";
@@ -340,6 +351,13 @@ class EbmsReview {
         $title = 'Literature Surveillance Packets';
         $id = 'manager-packets-page-title';
         $table = array(
+            'filter' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'manager-packets-filter'),
+                'fblock' =>
+                    drupal_get_form('pdq_ebms_manager_packets_filter_form',
+                                    $search_id),
+            ),
             'title' => array(
                 '#type' => 'markup',
                 '#markup' => "<h2 id='$id'>$title $add $view</h2>",
@@ -387,6 +405,143 @@ class EbmsReview {
                 'report' => $table,
             ),
         );
+    }
+
+    /**
+     * Apply filter criteria to the manager_packets list.
+     * Subroutine of manager_packets().
+     *
+     * @param object $query     Partially completed
+     * @param int $search_id    Row ID in the ebms_search table.
+     *
+     * @return                  Modified query object.
+     */
+    private static function apply_manager_packet_filters($query, $search_id) {
+
+        // Filter criteria are in the database, get them
+        $filters = array();
+        if ($search_id > 0)
+            $filters = get_filter_criteria($search_id);
+
+        if (count($filters)) {
+            // Topics checkboxes
+            if (count($filters['filt_topic']) > 0) {
+
+                // Gather checked topic ids
+                $topics = array();
+                foreach ($filters['filt_topic'] as $tid => $val)
+                    if ($val != 0)
+                        array_push($topics, $tid);
+
+                // If any, add them to the query
+                if (count($topics) > 0)
+                    $query->condition('t.topic_id', $topics, 'IN');
+            }
+
+            // Wildcard string in title
+            if ($filters['packet_title_text'])
+                $query->condition('p.packet_title',
+                                   $filters['packet_title_text'], 'LIKE');
+            // Packet creation date limits
+            if (isset($filters['start-date']))
+                $query->condition('p.created_at', $filters['start-date'], '>=');
+            if (isset($filters['end-date']))
+                $query->condition('p.created_at', $filters['end-date'], '<=');
+
+            // Inactive and legacy system packets.  These are interrelated
+            $active   = $filters['pkt_scope']['Active'] ? True : False;
+            $inactive = $filters['pkt_scope']['Inactive'] ? True : False;
+            $legacy   = $filters['pkt_scope']['Legacy'] ? True : False;
+
+            // If users turn off all the checkboxes, default to active
+            if (!($active || $inactive || $legacy))
+                $active = True;
+
+            // Fetch active or inactive documents only?
+            if (!($inactive || $legacy))
+                $query->condition('p.active_status', 'A');
+            else if (!$active)
+                $query->condition('p.active_status', 'I');
+
+            // If inactive but not legacy requested, exclude legacy
+            if ($inactive  && !$legacy)
+                $query->condition('p.created_at', Ebms\CONVERSION_DATE, ">=");
+        }
+
+        // No filters selected, default to just active docs
+        else
+            $query->condition('p.active_status', 'A');
+
+        return $query;
+    }
+
+    /**
+     * Apply filter criteria to modifying the default values in
+     * the filtering form for the manager_packets list.
+     *
+     * When a user filters the packets to display we rebuild the form for
+     * filtering when constructing the newly filtered packet display.  By
+     * showing the just used filter criteria as default values the user
+     * can see what criteria caused her search results to appear as they
+     * are, and can also easily refine the search without remembering and
+     * re-entering everything.
+     *
+     * @param object $form      Modify defaults in this form render array.
+     * @param int $search_id    Row ID in the ebms_search table containing
+     *                          the last search - new default values.
+     *
+     * @return                  Modified form array
+     */
+    public static function apply_manager_packet_filter_search($form,
+                                                              $search_id=0) {
+        $filters = get_filter_criteria($search_id);
+        if (count($filters) == 0) {
+            // Nothing to do
+            return $form;
+        }
+
+        // Checked topics
+        $checked_topics = array();
+        if (count($filters['filt_topic']) > 0) {
+            foreach ($filters['filt_topic'] as $key => $val) {
+                if ($key == $val) {
+                    array_push($checked_topics, $val);
+                }
+            }
+        }
+        if (count($checked_topics) > 0)
+            $form['topic_box']['filt_topic']['#default_value']=$checked_topics;
+
+        // Wildcard string in title
+        if ($filters['packet_title_text']) {
+            $form['packet_title_text']['#default_value'] =
+                    $filters['packet_title_text'];
+        }
+
+        // Date limits
+        if (isset($filters['start-date'])) {
+            $form['date-limits']['date-pair']['start-date']['#default_value'] =
+                    $filters['start-date'];
+        }
+        if (isset($filters['end-date'])) {
+            $form['date-limits']['date-pair']['end-date']['#default_value'] =
+                    $filters['end-date'];
+        }
+
+        // Scope checkboxes
+        $default_scope = array();
+        foreach ($filters['pkt_scope'] as $key => $val) {
+            if ($key === $val) {
+                array_push($default_scope, $val);
+            }
+        }
+        if (count($default_scope) > 0)
+            $form['pkt_scope']['#default_value'] = $default_scope;
+        else
+            // Ensure that active is checked if nothing else is
+            $form['pkt_scope']['#default_value'] = array('Active');
+
+        return $form;
     }
 
     /**
@@ -511,13 +666,7 @@ class EbmsReview {
     private function reviewed_packet_list($opts) {
 
         // See if the user has identified one or more boards.
-        $boards = array();
-        if (isset($opts['query']['boards']))
-            $boards = explode(',', $opts['query']['boards']);
-
-        // If not, find the boards of which she's a member.
-        if (count($boards) < 1)
-            $boards = $this->user->boards;
+        $boards = EbmsReview::get_board_ids();
 
         // If we don't have any boards, then there's nothing more to do.
         if (count($boards) < 1) {
@@ -701,7 +850,7 @@ class EbmsReview {
      * down (red X icon).  We also show that last update to the article
      * activity for the packet, as well as a checkbox allowing the board
      * manager to suppress ("archive") the article from the packet (or to
-     * turn off that suppression.
+     * turn off that suppression.)
      */
     private function show_reviewed_packet($opts) {
 
@@ -2688,6 +2837,69 @@ SELECT DISTINCT t.topic_id, t.topic_name
         }
         return implode($pieces);
     }
+
+    /**
+     * Get an array of board IDs established for the current literature
+     * review activity.
+     *
+     * For board managers, this is usually the manager's board.  However some
+     * users (e.g., and administrative assistant) will see a menu in a side
+     * bar allowing them to select one or more boards.
+     *
+     * Uses globals to find the info.
+     *
+     * @return Array of zero or more integer board ids.
+     */
+    public static function get_board_ids() {
+
+        global $user;
+
+        $boards = array();
+        $opts   = array('query' => drupal_get_query_parameters());
+
+        // From the sidebar checkboxes
+        if (isset($opts['query']['boards']))
+            $boards = explode(',', $opts['query']['boards']);
+
+        // Or from the user's boards
+        if (count($boards) == 0)
+            $boards = $user->boards;
+
+        // Can't happen I think
+        if (count($boards) == 0) {
+            watchdog('review.inc',
+                     "User {$user->name} has no boards.  How can that be?");
+            $boards = array();
+        }
+
+        return $boards;
+    }
+
+    /**
+     * Get a list of topic names to use in constructing a topic filter options
+     * list.
+     *
+     * @return array    topic_id => topic_name, in name alpha order.
+     */
+    public static function packet_topic_list() {
+
+        global $user;
+
+        $boards = EbmsReview::get_board_ids();
+
+        $query = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $boards, 'IN')
+            ->orderBy('t.topic_name');
+
+        $results = $query->execute();
+
+        // Results in an array
+        $topics = $results->fetchAllKeyed(0, 1);
+
+        return $topics;
+    }
+
 }
 
 /**
@@ -3758,6 +3970,138 @@ function pdq_ebms_packet_reviewers_ajax($form, $form_state) {
 }
 
 /**
+ * Create a form to filter packets appearing in the literature
+ * surveillance packet listing.  The form will appear above the main body
+ * of the View/Edit packets display.
+ *
+ * A user may fill in the search fields and click the Filter button
+ * to restrict the packets appearing on the page.
+ *
+ * If no filtering is done, the page will show all packets that
+ * belong to the board(s) being viewed by this manager which have not
+ * been archived.
+ *
+ * Subroutine of manager_packets.
+ *
+ *  @param array $form
+ *  @param array &$form_state
+ *  @param_search_id          If non-zero, the value is passed to
+ *                            EbmsReview::apply_manager_packet_filter_search()
+ *                            to replace default values with values from the
+ *                            last conducted search.
+ *
+ *  @return the drupal render array for the form.
+ */
+function pdq_ebms_manager_packets_filter_form (
+        $form, &$form_state, $search_id=0) {
+
+    $form['#id'] = 'packet-filter-form';
+
+    $form['title'] = array(
+        '#type' => 'markup',
+        '#markup' => '<h3>Filter packet selection</h3>',
+    );
+    $form['topic_box'] = array(
+        '#type' => 'fieldset',
+        '#title' => 'Summary topics',
+        '#collapsible' => true,
+        '#collapsed' => true,
+    );
+    $form['topic_box']['filt_topic'] = array(
+        '#type' => 'checkboxes',
+        '#options' => EbmsReview::packet_topic_list(),
+    );
+    $form['packet_title_text'] = array(
+        '#type' => 'textfield',
+        '#size' => 40,
+        '#title' => 'Pkt title: ',
+        '#title_display' => 'before',
+    );
+    $form['date-limits'] = array(
+        '#type' => 'container',
+        '#attributes' => array('class' => array('date-with-range')),
+        'date-pair' => array(
+            '#type' => 'container',
+            'start-date' => array(
+                '#type' => 'date_popup',
+                '#title' => 'Start date:',
+                '#date_year_range' => '2002:+0',
+                '#date_format' => 'Y-m-d',
+                // This next attribute suppresses the unwanted extra 'Date'
+                // label.
+                '#date_label_position' => '',
+            ),
+            'end-date' => array(
+                '#type' => 'date_popup',
+                '#title' => 'End date:',
+                '#date_year_range' => '2002:+0',
+                '#date_format' => 'Y-m-d',
+                '#date_label_position' => '',
+            ),
+        ),
+    );
+    $scope_opts = array(
+        '1' => 'Active',
+        '2' => 'Inactive',
+        '3' => 'Legacy'
+    );
+    $form['pkt_scope'] = array(
+        '#type' => 'checkboxes',
+        '#options' => drupal_map_assoc($scope_opts),
+        '#default_value' => array('1'=>'Active'),
+        '#title' => 'Include packets that are',
+    );
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Filter',
+    );
+    $form['reset'] = array(
+        '#type' => 'submit',
+        '#value' => '  Reset  ',
+    );
+
+    // Modify default values to conform to previous search if needed
+    if ($search_id > 0)
+        $form = EbmsReview::apply_manager_packet_filter_search($form,
+                                                               $search_id);
+
+    return $form;
+}
+
+/**
+ * Submit function gathers the info into a JSON string and inserts it in
+ * the database.  Then re-invokes the top level function with the row ID
+ * of the row in ebms_search containing the filter criteria.
+ */
+function pdq_ebms_manager_packets_filter_form_submit (
+        $form, &$form_state) {
+
+    global $user;
+
+    // Reset just repaint the screen from scratch
+    if (trim($form_state['values']['op']) == 'Reset')
+        drupal_goto(EbmsReview::$url . '/packets');
+
+    // Prepare parms to store
+    $filter_spec = drupal_json_encode($form_state['values']);
+    $now         = db_query('SELECT NOW()')->fetchField();
+    $uid         = $user->uid;
+
+    // Save 'em in the database for access in the goto/callback
+    $ins = db_insert('ebms_search')
+             ->fields(array(
+                         'when_searched' => $now,
+                         'searched_by'   => $uid,
+                         'search_spec'   => $filter_spec));
+    $search_id = $ins->execute();
+
+    // Re-invoke the entry point for packet reviewing with the search ID
+    // Using "search" + id to avoid any future conflicts with use of the
+    //  article_id parameter after "/packets/"
+    drupal_goto(EbmsReview::$url . "/packets/search/$search_id");
+}
+
+/**
  * Allows searching through boards and board members in order to find all
  * packets available for review or a specific packet.
  *
@@ -3919,4 +4263,51 @@ function pdq_ebms_find_effective_user($include_user = true) {
     }
 
     return false;
+}
+
+function _get_query_string(SelectQueryInterface $query) {
+  $string = (string) $query;
+  $arguments = $query->arguments();
+
+  if (!empty($arguments) && is_array($arguments)) {
+    foreach ($arguments as $placeholder => &$value) {
+      if (is_string($value)) {
+        $value = "'$value'";
+      }
+    }
+
+    $string = strtr($string, $arguments);
+  }
+
+  return $string;
+}
+
+/**
+ * Retrieve and decode any packet search filtering criteria.
+ * Subroutine of manager_packets().
+ *
+ * @param int $search_id    Row ID in the ebms_search table.
+ *
+ * @return                  Array of search key=>values.
+ *                          Empty array if none.
+ */
+function get_filter_criteria($search_id) {
+
+    $fltr_json = null;
+    try {
+        $fltr_json = db_select('ebms_search', 's')
+            ->fields('s', array('search_spec'))
+            ->condition('search_id', $search_id)
+            ->execute()
+            ->fetchField();
+    }
+    catch (\Exception $e) {
+        watchdog('review.inc',
+            "Database error fetching filter criteria: $e");
+        drupal_set_message('Lost filter criteria, tell support staff');
+    }
+    if ($fltr_json)
+        return json_decode($fltr_json, true);
+    else
+        return array();
 }
