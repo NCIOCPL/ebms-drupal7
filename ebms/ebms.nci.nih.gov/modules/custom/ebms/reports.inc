@@ -75,6 +75,12 @@ class EbmsReports {
             case 'citation-followup':
             case 'boards-and-topics':
                 return $this->not_yet_implemented();
+            case 'responses-by-reviewer':
+                return drupal_get_form('pdq_ebms_responses_by_reviewer',
+                                       $this->request_id);
+            case 'articles-without-responses':
+                return drupal_get_form('pdq_ebms_articles_without_responses',
+                                       $this->request_id);
             case 'membership':
                 return drupal_get_form('pdq_ebms_membership_report_form',
                                        $this->request_id);
@@ -374,6 +380,8 @@ class EbmsReports {
                         array('Reimbursement Requests',
                             $reimbursement_report_url),
                         array('Board Membership', 'reports/membership'),
+                        array('Responses By Reviewer',
+                            'reports/responses-by-reviewer'),
                     ),
                 ),
                 array(
@@ -4364,7 +4372,7 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
     // connected with the chosen board.
     $topics = array(0 => ' ');
     if ($board) {
-        $results = db_select('ebms_topic', 't')
+         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
             ->condition('t.board_id', $board)
             ->orderBy('t.topic_name')
@@ -5004,4 +5012,625 @@ function pdq_ebms_report_ajax($form, $form_state) {
  */
 function pdq_ebms_cit_status_report_ajax($form, $form_state) {
     return $form['top']['report-form']['status-dep'];
+}
+
+/**
+ * Drupal form API callback which generates the form for the
+ * report on packet responses by reviewer.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Board Managment Reports', 'reports/board'),
+            'Responses By Reviewer',
+        )
+    );
+
+    // Initialize defaults for the form field's values.
+    $board = 0;
+    $selected_topics = $selected_reviewers = array();
+    $start = $end = '';
+
+    // Pull request parameters from the database if appropriate.
+    if ($request_id) {
+        $values = EbmsReports::fetch_report_request($request_id);
+        $board = $values['board'];
+        $selected_topics = $values['topics'];
+        $selected_reviewers = $values['reviewers'];
+        $start = $values['start-date'];
+        $end = $values['end-date'];
+    }
+
+    // Get the values of interest for ajax callbacks.
+    if (isset($form_state['values'])) {
+        $board = $form_state['values']['board'];
+        $selected_topics = $form_state['values']['topics'];
+        $selected_reviewers = $form_state['values']['reviewers'];
+    }
+
+    // How tall should the picklists allowing multiple selections be?
+    $size = 6;
+
+    // Create the picklists.
+    $topics = $reviewers = array();
+    $boards = array(0 => ' ') + Ebms\Util::boards();
+
+    // If a board has been selected, populate the board-dependent picklists.
+    if ($board) {
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->orderBy('t.topic_name')
+            ->execute();
+        $topics = array();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+        $query = db_select('users', 'u')
+            ->fields('u', array('uid', 'name'));
+        $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
+        $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->condition('t.board_id', $board);
+        $query->orderBy('u.name');
+        $query->distinct();
+        $results = $query->execute();
+        $reviewers = array();
+        foreach ($results as $result)
+            $reviewers[$result->uid] = htmlspecialchars($result->name);
+        foreach ($selected_topics as $key => $value)
+            if (!array_key_exists($value, $topics))
+                unset($selected_topics[$key]);
+        foreach ($selected_reviewers as $key => $value)
+            if (!array_key_exists($value, $reviewers))
+                unset($selected_reviewers[$key]);
+     }
+
+    // Assemble the request form.
+    $form = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'report-form'),
+        'title' => array('#markup' => '<h2>Responses By Reviewer</h2>'),
+        'board' => array(
+            '#type' => 'select',
+            '#options' => $boards,
+            '#required' => true,
+            '#default_value' => $board,
+            '#title' => 'Editorial Board',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#ajax' => array(
+                'callback' => 'pdq_ebms_report_ajax',
+                'wrapper' => 'board-dependent',
+            ),
+        ),
+        'ajax fields' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'board-dependent'),
+            'topics' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $topics,
+                '#default_value' => $selected_topics,
+                '#title' => 'Topic(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'reviewers' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $reviewers,
+                '#default_value' => $selected_reviewers,
+                '#title' => 'Reviewer(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+        ),
+        'start-date' => array(
+            '#type' => 'date_popup',
+            '#title' => 'Start Date',
+            '#date_format' => 'Y-m-d',
+            '#default_value' => $start,
+            '#date_label_position' => 'within',
+            '#attributes' => array(
+                'title' =>
+                 'Packet creation date (defaults to no starting date)',
+            ),
+        ),
+        'end-date' => array(
+            '#type' => 'date_popup',
+            '#title' => 'End Date',
+            '#date_format' => 'Y-m-d',
+            '#default_value' => $end,
+            '#date_label_position' => 'within',
+            '#attributes' => array(
+                'title' =>
+                 'Packet creation date (defaults to no ending date)',
+            ),
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+    );
+
+    // Assemble the page where the form lives, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Board Management',
+                                            'Responses By Reviewer');
+    $page['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'cites-by-status-report-top'),
+        'left-nav' => $left_nav,
+        'report-form' => $form,
+    );
+
+    // If we have a submitted report request, add the report under the form.
+    if ($request_id) {
+        $query = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_id', 'packet_title'));
+        $query = $query->extend('TableSort');
+        $query->leftJoin('ebms_packet_reviewer', 'r',
+            'r.packet_id = p.packet_id');
+        $query->leftJoin('users', 'u', 'u.uid = r.reviewer_id');
+        $query->fields('u', array('uid', 'name'));
+        if (count($values['topics']))
+            $query->condition('p.topic_id', $values['topics'], 'IN');
+        else {
+            $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+            $query->condition('t.board_id', $board);
+        }
+        if (count($values['reviewers']))
+            $query->condition('r.reviewer_id', $values['reviewers'], 'IN');
+        if ($values['start-date'])
+            $query->condition('p.created_at', $values['start-date'], '>=');
+        if ($values['end-date']) {
+            $end = $values['end-date'] . ' 23:59:59';
+            $query->condition('p.created_at', $end, '<=');
+        }
+        //pdq_ebms_debug('QUERY VALUES', $values);
+        $headers = array(
+            array(
+                'data' => 'Packet Name',
+                'field' => 'p.packet_title',
+                'sort' => 'asc',
+            ),
+            array(
+                'data' => 'Reviewer',
+                'field' => 'u.name',
+            ),
+            'Assigned',
+            'Completed',
+            'Not Completed',
+        );
+        $query->orderByHeader($headers);
+        $rows = array();
+        $results = $query->execute();
+        foreach ($results as $result) {
+            $query = db_select('ebms_packet_article', 'a')
+                ->condition('a.packet_id', $result->packet_id)
+                ->fields('a', array('drop_flag'));
+            $query->leftJoin('ebms_article_review', 'r',
+                'r.packet_id = a.packet_id AND ' .
+                'r.article_id = a.article_id AND ' .
+                'r.reviewer_id = ' . $result->uid);
+            $query->fields('r', array('review_id'));
+            $articles = $query->execute();
+            $assigned = $completed = $not_completed = 0;
+            foreach ($articles as $article) {
+                ++$assigned;
+                if ($article->review_id)
+                    ++$completed;
+                elseif (!$article->drop_flag)
+                    ++$not_completed;
+            }
+            $row = array();
+            $row[] = htmlspecialchars($result->packet_title);
+            $row[] = htmlspecialchars($result->name);
+            $row[] = $assigned;
+            $row[] = $completed;
+            $row[] = $not_completed;
+            $rows[] = $row;
+        }
+        // Assemble the table.
+        $id = 'report-title';
+        $title = 'Responses';
+        $page['report'] = array(
+            'title' => array(
+                '#markup' => "<h2 id='$id'>$title</h2>",
+            ),
+            'table' => array(
+                '#attributes' => array('id' => 'responses-by-reviewer-report'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+        );
+//         $page['report'] = array(
+//             '#attributes' => array('id' => 'responses-by-reviewer-report'),
+//             '#theme' => 'table',
+//             '#rows' => $rows,
+//             '#header' => $headers,
+//         );
+    }
+    return $page;
+}
+
+/**
+ * Store the report request parameters in the database and send the user
+ * to the URL which knows where those parameters were stored.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_responses_by_reviewer_submit($form, &$form_state) {
+    $values = $form_state['values'];
+    $report = 'Responses by Reviewer';
+    $request_id = EbmsReports::save_report_request($values, $report);
+    drupal_goto('reports/responses-by-reviewer/' . $request_id);
+}
+
+/**
+ * Drupal form API callback which generates the form for the
+ * report on articles which have not yet been reviewed by
+ * any of the board members assigned to it for a given topic.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_articles_without_responses($form, &$form_state,
+                                             $request_id=0) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Board Managment Reports', 'reports/board'),
+            'Articles Without Responses',
+        )
+    );
+
+    // Initialize defaults for the form field's values.
+    $board = 0;
+    $selected_topics = $selected_reviewers = $selected_cycles = array();
+    $order_by = 'author';
+    $start = $end = '';
+
+    // Pull request parameters from the database if appropriate.
+    if ($request_id) {
+        $values = EbmsReports::fetch_report_request($request_id);
+        $board = $values['board'];
+        $selected_topics = $values['topics'];
+        $selected_reviewers = $values['reviewers'];
+        $selected_cycles = $values['cycles'];
+        $start = $values['start-date'];
+        $end = $values['end-date'];
+        $order_by = $values['order-by'];
+    }
+
+    // Get the values of interest for ajax callbacks.
+    if (isset($form_state['values'])) {
+        $board = $form_state['values']['board'];
+        $selected_topics = $form_state['values']['topics'];
+        $selected_reviewers = $form_state['values']['reviewers'];
+        $selected_cycles = $form_state['values']['cycles'];
+    }
+
+    // How tall should the picklists allowing multiple selections be?
+    $size = 6;
+
+    // Create the picklists.
+    $topics = $reviewers = array();
+    $boards = array(0 => ' ') + Ebms\Util::boards();
+    $cycles = Ebms\Util::cycles();
+
+    // If a board has been selected, populate the board-dependent picklists.
+    if ($board) {
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->orderBy('t.topic_name')
+            ->execute();
+        $topics = array();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+        $query = db_select('users', 'u')
+            ->fields('u', array('uid', 'name'));
+        $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+        $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->condition('t.board_id', $board);
+        $query->orderBy('u.name');
+        $query->distinct();
+        $results = $query->execute();
+        $reviewers = array();
+        foreach ($results as $result)
+            $reviewers[$result->uid] = htmlspecialchars($result->name);
+        foreach ($selected_topics as $key => $value)
+            if (!array_key_exists($value, $topics))
+                unset($selected_topics[$key]);
+        foreach ($selected_reviewers as $key => $value)
+            if (!array_key_exists($value, $reviewers))
+                unset($selected_reviewers[$key]);
+     }
+
+    // Assemble the request form.
+    $form = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'report-form'),
+        'title' => array('#markup' => '<h2>Articles Without Responses</h2>'),
+        'board' => array(
+            '#type' => 'select',
+            '#options' => $boards,
+            '#required' => true,
+            '#default_value' => $board,
+            '#title' => 'Editorial Board',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#ajax' => array(
+                'callback' => 'pdq_ebms_report_ajax',
+                'wrapper' => 'board-dependent',
+            ),
+        ),
+        'ajax fields' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'board-dependent'),
+            'topics' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $topics,
+                '#default_value' => $selected_topics,
+                '#title' => 'Topic(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'reviewers' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $reviewers,
+                '#default_value' => $selected_reviewers,
+                '#title' => 'Reviewer(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+        ),
+        'cycles' => array(
+            '#type' => 'select',
+            '#multiple' => true,
+            '#options' => $cycles,
+            '#default_value' => $selected_cycles,
+            '#title' => 'Cycle(s)',
+            '#size' => $size,
+            '#attributes' => array('class' => array('fixed-width')),
+        ),
+        'start-date' => array(
+            '#type' => 'date_popup',
+            '#title' => 'Start Date',
+            '#date_format' => 'Y-m-d',
+            '#default_value' => $start,
+            '#date_label_position' => 'within',
+            '#attributes' => array(
+                'title' =>
+                 'Assigned date (defaults to no starting date)',
+            ),
+        ),
+        'end-date' => array(
+            '#type' => 'date_popup',
+            '#title' => 'End Date',
+            '#date_format' => 'Y-m-d',
+            '#default_value' => $end,
+            '#date_label_position' => 'within',
+            '#attributes' => array(
+                'title' =>
+                 'Assigned date (defaults to no ending date)',
+            ),
+        ),
+        'order-by' => array(
+            '#type' => 'radios',
+            '#title' => 'Order By',
+            '#options' => array(
+                'author' => 'First Article Author',
+                'topic' => 'Topic',
+            ),
+            '#default_value' => $order_by,
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+    );
+
+    // Assemble the page where the form lives, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Board Management',
+                                            'Articles Without Responses');
+    $page['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'cites-by-status-report-top'),
+        'left-nav' => $left_nav,
+        'report-form' => $form,
+    );
+
+    // If we have a submitted report request, add the report under the form.
+    if ($request_id) {
+        $query = db_select('ebms_article', 'a');
+        //$query = $query->extend('TableSort');
+        $query->join('ebms_packet_article', 'pa',
+            'pa.article_id = a.article_id');
+        $query->join('ebms_packet', 'p', 'p.packet_id = pa.packet_id');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        if (count($values['topics']))
+            $query->condition('p.topic_id', $values['topics'], 'IN');
+        else
+            $query->condition('t.board_id', $board);
+        $query->leftJoin('ebms_article_review', 'r',
+            'r.article_id = a.article_id AND p.packet_id = r.packet_id');
+        $query->isNull('r.review_id');
+        $query->fields('a', array('article_id'));
+        $query->fields('p', array('packet_id', 'created_at'));
+        $query->fields('t', array('topic_id', 'topic_name'));
+        if (count($values['reviewers'])) {
+            $query->join('ebms_packet_reviewer', 'pr',
+                         'pr.packet_id = p.packet_id');
+            $query->condition('pr.reviewer_id', $values['reviewers'], 'IN');
+            $query->distinct();
+        }
+        if (count($values['cycles'])) {
+            $query->join('ebms_article_topic', 'at',
+                'at.article_id = a.article_id AND at.topic_id = p.topic_id');
+            $query->condition('at.cycle_id', $values['cycles'], 'IN');
+        }
+        if ($values['start-date'])
+            $query->condition('p.created_at', $values['start-date'], '>=');
+        if ($values['end-date']) {
+            $end = $values['end-date'] . ' 23:59:59';
+            $query->condition('p.created_at', $end, '<=');
+        }
+        $query->leftJoin('ebms_article_author_cite', 'ac',
+                         'a.article_id = ac.article_id AND ac.cite_order = 1');
+        $query->leftJoin('ebms_article_author', 'aa',
+                         'aa.author_id = ac.author_id');
+        $query->addExpression('IFNULL(aa.last_name, aa.collective_name)',
+                              'author_sort');
+        if ($order_by == 'topic')
+            $query->orderBy('t.topic_name');
+        $query->orderBy('aa.last_name');
+        $query->orderBy('aa.initials');
+        $query->orderBy('aa.collective_name');
+        if ($order_by != 'topic')
+            $query->orderBy('t.topic_name');
+        //$query->orderBy('sort_auth.last_name');
+        //$query->orderBy('sort_auth.initials');
+        //$query->orderBy('sort_auth.collective_name');
+
+        //pdq_ebms_debug('QUERY VALUES', $values);
+        $headers = array(
+            array(
+                'data' => 'Article',
+                //'field' => 'author_sort', //'a.article_title',
+                //'sort' => 'asc',
+            ),
+            array(
+                'data' => 'Topic',
+                //'field' => 't.topic_name',
+                //'sort' => 'asc',
+            ),
+            'Reviewer',
+            'Assigned',
+        );
+        //$query->orderByHeader($headers);
+        $rows = array();
+        $results = $query->execute();
+
+        // Find the sequence number for the highest state for which
+        // we want to include an article/topic combination on the report.
+        $sequence = db_select('ebms_article_state_type', 't')
+            ->fields('t', array('sequence'))
+            ->condition('t.state_text_id', 'PassedFullReview')
+            ->execute()
+            ->fetchField();
+
+        // Assemble the rows in the report.
+        foreach ($results as $result) {
+
+            // Winnow out rows for article/state combinations which have
+            // moved on past the review state.
+            $query = db_select('ebms_article_state', 's')
+                ->condition('s.article_id', $result->article_id)
+                ->condition('s.topic_id', $result->topic_id)
+                ->condition('s.active_status', 'A');
+            $query->join('ebms_article_state_type', 't',
+                't.state_id = s.state_id');
+            $query->condition('t.sequence', $sequence, '>');
+            $count = $query->countQuery()->execute()->fetchField();
+            if ($count > 0)
+                continue;
+
+            // Collect the list of reviewers assigned to the article.
+            $query = db_select('users', 'u')
+                ->fields('u', array('name'));
+            $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+            $query->condition('r.packet_id', $result->packet_id);
+            $query->orderBy('u.name');
+            $reviewer_results = $query->execute();
+            $reviewers = array();
+            foreach ($reviewer_results as $reviewer_result)
+                $reviewers[] = htmlspecialchars($reviewer_result->name);
+
+            // Assemble the report row for this article/topic combo.
+            $row = array();
+            $row[] = EbmsReports::format_citation($result->article_id);
+            $row[] = htmlspecialchars($result->topic_name);
+            $row[] = implode('<br><br>', $reviewers);
+            $row[] = date('Y-m-d', strtotime($result->created_at));
+            $rows[] = $row;
+        }
+
+        // Assemble the table.
+        $id = 'report-title';
+        $title = 'Articles';
+        $page['report'] = array(
+            'title' => array(
+                '#markup' => "<h2 id='$id'>$title</h2>",
+            ),
+            'table' => array(
+                '#attributes' => array('id' => 'unreviewed-articles-report'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+        );
+    }
+    return $page;
+}
+
+/**
+ * Store the report request parameters in the database and send the user
+ * to the URL which knows where those parameters were stored.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_articles_without_responses_submit($form, &$form_state) {
+    $values = $form_state['values'];
+    $report = 'Articles Without Responses';
+    $request_id = EbmsReports::save_report_request($values, $report);
+    drupal_goto('reports/articles-without-responses/' . $request_id);
 }
