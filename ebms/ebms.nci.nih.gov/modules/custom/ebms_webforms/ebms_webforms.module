@@ -319,6 +319,9 @@ function ebms_webforms_ctools_modal_review($js = FALSE) {
 
 /**
 * Implements hook_webform_component_info().
+*
+* Creates a new (compound) component webform datatype for
+* EBMS travel expenses reimbursement.
 */
 function ebms_webforms_webform_component_info() {
     $components = array();
@@ -345,6 +348,10 @@ function ebms_webforms_webform_component_info() {
 
 /**
 * Implements _webform_defaults_component().
+*
+* Provides information used in constructing the GUI form for
+* administering an instance of the new ebms_travel component in
+* an instance of a webform definition.
 */
 function _webform_defaults_ebms_travel() {
     return array(
@@ -377,6 +384,9 @@ function _webform_defaults_ebms_travel() {
 }
 /**
 * Implements _webform_edit_component().
+*
+* Creates the form that lets an administrator configure an
+* instance of our ebms_travel component.
 */
 function _webform_edit_ebms_travel($component) {
     $form = array();
@@ -512,6 +522,9 @@ function ebms_webforms_webform_submission_presave($node, &$submission) {
 /**
  * Render a Webform component to be part of a form.  Implements a hook
  * with a very strange name.  See http://drupalcontrib.org/api/drupal/contributions!webform!webform.api.php/function/_webform_render_component/7
+ *
+ * Defines the subfields for this component that appear on the travel
+ * reimbursement form shown to the Board Member.
  */
 function _webform_render_ebms_travel($component, $value=NULL, $filter=TRUE) {
 
