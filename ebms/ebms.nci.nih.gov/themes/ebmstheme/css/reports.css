@@ -139,7 +139,15 @@ div.import-reports ul li a { text-transform: uppercase; }
 #cites-by-status-report .col-1 { border-left: none; }
 /* #disposition-field.hidden { display: none; } */
 
+#cites-by-status-report-top label.form-item-cycles { vertical-align: top; }
+
 /* Unfortunately, earlier versions of IE have to be beaten into submission. */
 #cites-by-status-report-top #edit-meeting-date-year,
 #cites-by-status-report-top #edit-meeting-date-year { width: 125px; }
 
+.container-inline-date { margin-left: 12px; }
+.container-inline-date .date-padding { float: none; padding: 0; }
+.container-inline-date .description { display: none; }
+.container-inline-date .form-item { float: none; }
+.container-inline-date .form-item .form-item { float: none; }
+.container-inline-date .form-item input { width: 500px; }

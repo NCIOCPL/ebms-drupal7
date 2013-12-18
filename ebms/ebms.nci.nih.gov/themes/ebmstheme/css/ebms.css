@@ -13,6 +13,11 @@ body { margin: 0; }
 img { border: none; }
 strong { font-weight: bold; }
 a { color: inherit; text-decoration: none; }
+
+/* Underline links, per JIRA::OCEEBMS-124. */
+p a, #forum-comments a, #calendar-enclosure a { text-decoration: underline; }
+#calendar-enclosure .date-nav-wrapper a { text-decoration: none; }
+
 a:focus, li a:hover, a:hover, div.breadcrumb a:hover,
 a:focus span, a:hover span,
 .hover {
