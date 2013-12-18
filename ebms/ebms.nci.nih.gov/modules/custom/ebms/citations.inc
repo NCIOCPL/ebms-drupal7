@@ -2349,7 +2349,7 @@ namespace {
 
         $results['trailing-buttons']['save_button'] = array(
             '#type' => 'submit',
-            '#value' => 'Save',
+            '#value' => 'Submit',
         );
 
         $results['bottom-pager'] = array(

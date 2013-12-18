@@ -354,8 +354,10 @@ class EbmsReports {
                         array('Documents', 'reports/documents'),
                         array('Meeting Dates', 'reports/meeting-dates'),
                         array('Hotel Requests', $hotel_report_url),
-                        array('Reimbursement Requests',
-                            $reimbursement_report_url),
+                        array(
+                            'Reimbursement Requests',
+                            $reimbursement_report_url,
+                        ),
                     ),
                 ),
                 array(
@@ -377,11 +379,11 @@ class EbmsReports {
                         array('Documents', 'reports/documents'),
                         array('Meeting Dates', 'reports/meeting-dates'),
                         array('Hotel Requests', $hotel_report_url),
-                        array('Reimbursement Requests',
-                            $reimbursement_report_url),
+                        array(
+                            'Reimbursement Requests',
+                            $reimbursement_report_url,
+                        ),
                         array('Board Membership', 'reports/membership'),
-                        array('Responses By Reviewer',
-                            'reports/responses-by-reviewer'),
                     ),
                 ),
                 array(
@@ -391,7 +393,14 @@ class EbmsReports {
                         array('Import Reports', 'reports/import'),
                         array('Citations By Status', 'reports/cites-status'),
                         array('Literature Reviews', 'reports/lit-review'),
-                        array('No Responses', 'reports/no-responses'),
+                        array(
+                            'Responses By Reviewer',
+                            'reports/responses-by-reviewer',
+                        ),
+                        array(
+                            'Articles Without Responses',
+                            'reports/articles-without-responses',
+                        ),
                         array(
                             'Citation Follow-up',
                             'reports/citation-followup',
@@ -1417,8 +1426,7 @@ class EbmsReports {
         if (!$params['disposition'])
             $headers[] = 'Disposition';
         $headers[] = 'Comments';
-        if (!$params['cycle'])
-            $headers[] = 'Review Cycle';
+        $headers[] = 'Review Cycle';
         $headers[] = 'Date Reviewed';
         $headers[] = 'Reviewer';
 
@@ -1439,12 +1447,10 @@ class EbmsReports {
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
-        if ($params['cycle'])
-            $query->condition('t.cycle_id', $params['cycle']);
-        else {
-            $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
-            $query->fields('c2', array('cycle_name'));
-        }
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
+        $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+        $query->fields('c2', array('cycle_name'));
         switch ($params['disposition']) {
         case 'yes':
             $query->condition('s.state_id', $passed);
@@ -1494,8 +1500,7 @@ class EbmsReports {
             if (!$params['disposition'])
                 $row[] = $result->state_id == $passed ? 'Yes' : 'No';
             $row[] = $comments;
-            if (!$params['cycle'])
-                $row[] = $result->cycle_name;
+            $row[] = $result->cycle_name;
             $row[] = date('m/d/Y', $status_dt);
             $row[] = $reviewer;
             $rows[] = array(
@@ -1558,8 +1563,7 @@ class EbmsReports {
         if (!$params['disposition'])
             $headers[] = 'Disposition';
         $headers[] = 'Comments';
-        if (!$params['cycle'])
-            $headers[] = 'Review Cycle';
+        $headers[] = 'Review Cycle';
         $headers[] = 'Date Reviewed';
 
         // Construct the query for the report.
@@ -1579,12 +1583,10 @@ class EbmsReports {
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
-        if ($params['cycle'])
-            $query->condition('t.cycle_id', $params['cycle']);
-        else {
-            $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
-            $query->fields('c2', array('cycle_name'));
-        }
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
+        $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+        $query->fields('c2', array('cycle_name'));
         switch ($params['disposition']) {
         case 'yes':
             $query->condition('s.state_id', $passed);
@@ -1648,8 +1650,7 @@ class EbmsReports {
                 $row[] = $disposition;
             }
             $row[] = $comments;
-            if (!$params['cycle'])
-                $row[] = $result->cycle_name;
+            $row[] = $result->cycle_name;
             $row[] = date('m/d/Y', $status_dt);
             $rows[] = array(
                 'data' => $row,
@@ -1728,24 +1729,20 @@ class EbmsReports {
                 'u.article_id = s.article_id');
             $query->fields('u', array('comment'));
             $headers[] = 'Comments';
-            if (!$params['cycle'])
-                $headers[] = 'Review Cycle';
+            $headers[] = 'Review Cycle';
         }
         else {
             $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
             $query->join('file_managed', 'f', 'f.fid = a.full_text_id');
             $query->fields('f', array('filename', 'timestamp'));
             $headers[] = 'Filename';
-            if (!$params['cycle'])
-                $headers[] = 'Review Cycle';
+            $headers[] = 'Review Cycle';
             $headers[] = 'Date Uploaded';
         }
-        if ($params['cycle'])
-            $query->condition('t.cycle_id', $params['cycle']);
-        else {
-            $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
-            $query->fields('c2', array('cycle_name'));
-        }
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
+        $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
+        $query->fields('c2', array('cycle_name'));
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'aa',
@@ -1776,8 +1773,7 @@ class EbmsReports {
                 $row[] = htmlspecialchars($result->comment);
             else
                 $row[] = htmlspecialchars($result->filename);
-            if (!$params['cycle'])
-                $row[] = $result->cycle_name;
+            $row[] = $result->cycle_name;
             if ($params['disposition'] != 'no')
                 $row[] = date('m/d/Y', $result->timestamp);
             $rows[] = array(
@@ -1852,8 +1848,8 @@ class EbmsReports {
         $query->fields('c2', array('cycle_name'));
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
-        if ($params['cycle'])
-            $query->condition('t.cycle_id', $params['cycle']);
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'aa',
@@ -2015,8 +2011,8 @@ class EbmsReports {
         $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
         $query->fields('c2', array('cycle_name'));
         $query->condition('s.board_id', $params['board']);
-        if ($params['cycle'])
-            $query->condition('t.cycle_id', $params['cycle']);
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'aa',
@@ -2205,8 +2201,8 @@ class EbmsReports {
         else
             $query->condition('s.state_id',
                 array_keys($manager_actions), 'IN');
-        if ($params['cycle'])
-            $query->condition('t.cycle_id', $params['cycle']);
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->fields('s', array('article_id', 'article_state_id',
                                   'state_id', 'status_dt'));
         $query->join('ebms_topic', 'tn', 'tn.topic_id = t.topic_id');
@@ -2351,8 +2347,8 @@ class EbmsReports {
                 $query->condition('s.topic_id', $params['topic']);
             $query->condition('s.current', 'Y');
             $query->condition('s.state_id', $state_id);
-            if ($params['cycle'])
-                $query->condition('t.cycle_id', $params['cycle']);
+            if (count($params['cycles']))
+                $query->condition('t.cycle_id', $params['cycles'], 'IN');
             $query->fields('s',
                 array('article_id', 'article_state_id', 'status_dt'));
             $query->fields('m', array('nid'));
@@ -2521,8 +2517,8 @@ class EbmsReports {
                 'd.article_state_id = s.article_state_id');
             $query->condition('d.decision_value_id', $params['disposition']);
         }
-        if ($params['cycle'])
-            $query->condition('t.cycle_id', $params['cycle']);
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->fields('s',
             array('article_id', 'article_state_id', 'status_dt'));
         $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
@@ -4640,7 +4636,8 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = $topic = $cycle = $status = $meeting_type = $disposition = 0;
+    $board = $topic = $status = $meeting_type = $disposition = 0;
+    $selected_cycles = array();
     $meeting_date = Ebms\Util::empty_date();
 
     // Check for overrides of the defaults by request parameters
@@ -4652,7 +4649,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         $status = $values['status'];
         if (isset($values['disposition']))
             $disposition = $values['disposition'];
-        $cycle = $values['cycle'];
+        $selected_cycles = $values['cycles'];
         if (isset($values['meeting-type']))
             $meeting_type = $values['meeting-type'];
         if (isset($values['meeting-date']))
@@ -4661,7 +4658,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
 
     // Create the picklists for cycles, boards, meeting types,
     // and article states.
-    $cycles = array(0 => ' ') + Ebms\Util::cycles();
+    $cycles = Ebms\Util::cycles();
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $info = field_info_field('field_event_category');
     $meeting_types = array(0 => ' ') + $info['settings']['allowed_values'];
@@ -4825,17 +4822,19 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             ),
         );
 
-    // The Review Cycle field is always required, but it's sandwiched
+    // The Review Cycles field is always present, but it's sandwiched
     // between fields which depend on what has been selected for the
     // Status field, and the Drupal field states mechanism is broken,
     // so this field always gets redrawn by the ajax callback for
     // the change of Status.
-    $form['top']['report-form']['status-dep']['cycle'] = array(
+    $form['top']['report-form']['status-dep']['cycles'] = array(
         '#type' => 'select',
-        '#title' => 'Review Cycle',
+        '#multiple' => true,
+        '#size' => 6,
+        '#title' => 'Review Cycle(s)',
         '#title_display' => 'after',
         '#options' => $cycles,
-        '#default_value' => $cycle,
+        '#default_value' => $selected_cycles,
         '#attributes' => array('class' => array('fixed-width')),
     );
 
