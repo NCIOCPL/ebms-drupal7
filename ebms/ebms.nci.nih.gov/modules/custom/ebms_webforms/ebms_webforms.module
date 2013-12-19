@@ -634,7 +634,7 @@ function _webform_render_ebms_travel($component, $value=NULL, $filter=TRUE) {
   }
   $form['trans_add_rem'][$fieldset]['add_trans'] = array(
     '#type' => 'submit',
-    '#value' => t('Add one more'),
+    '#value' => t('Add Another Expense'),
     '#submit' => array('ebms_webforms_add_one'),
       '#name' => $id,
     // See the examples in ajax_example.module for more details on the

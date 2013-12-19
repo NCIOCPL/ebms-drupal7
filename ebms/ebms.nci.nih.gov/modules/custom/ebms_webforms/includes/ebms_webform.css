@@ -58,3 +58,4 @@
  * above *and* below the radio buttons.  Don't want that.
  */
 #webform-component-reimbursement > .description { display: none; }
+.webform-client-form .form-wrapper legend { margin-top: 20px; }
