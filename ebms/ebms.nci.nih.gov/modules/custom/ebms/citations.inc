@@ -4582,7 +4582,10 @@ namespace {
                     $pastEvents = array(0 => '');
                     if (isset($result['node'])) {
                         foreach ($result['node'] as $node) {
-                            $fullNode = node_load($node->nid);$nodeWrapper = entity_metadata_wrapper('node', $fullNode);
+                            $fullNode = node_load($node->nid);
+                            $nodeWrapper = entity_metadata_wrapper('node', $fullNode);
+                            if (!_meeting_for_board($nodeWrapper, $board_id))
+                                continue;
                             $datespan = $nodeWrapper->field_datespan->value();
                             $suffix = '';
                             if($datespan) {
