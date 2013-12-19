@@ -1074,7 +1074,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
             // Not all fields are included in the report.
             if ($isReimbursementRequest) {
                 $skip = array('certify', 'arrival_date', 'departure_date',
-                              'total_amount_requested');
+                        'total_amount_requested', 'confirmation_email');
                 if (in_array($component['form_key'], $skip))
                     continue;
             }
