@@ -5416,7 +5416,6 @@ namespace {
                     $form['actions'][$batchId][] = $disposition;
                 }
 
-                $form['actions'][$batchId]['tag']['#markup'] = "<div class='citation-subheader'>TAG(S)</div>";
                 $date = _format_date($dt);
                 $form['actions'][$batchId]['time']['#markup'] = "<div>Batch - $date</div>";
                 $form['actions'][$batchId]['comment']['#markup'] = "<div>COMMENT: $action->comment</div>";
