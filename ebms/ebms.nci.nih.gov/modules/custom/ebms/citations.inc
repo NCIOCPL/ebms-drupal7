@@ -6303,7 +6303,11 @@ namespace {
 
         $date = _format_date($status->dt);
 
-        $img = _build_decision_icon_tag('pass');
+        // Use reject image for "no further action" state (OCEEBMS-85).
+        if ($status->type_text_id == \Ebms\EbmsArticleStates::FullEnd)
+            $img = _build_decision_icon_tag('reject');
+        else
+            $img = _build_decision_icon_tag('pass');
 
         $form['decision'] = array("#markup" => "<div class='full-citation-indent'>$img$date - $status->user_name</div>");
         $form['action'] = array("#markup" => "<div class='full-citation-indent'>ACTION: $status->type_name</div>");
