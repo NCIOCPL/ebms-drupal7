@@ -1692,6 +1692,25 @@ class Util {
      *  @return                     Render array for report
      */
     public static function import_report(&$batch, $title) {
+        $ebms_ids = array();
+        $blocks = array(
+            'imported' => 'ARTICLE{S} IMPORTED',
+            'notListed' => 'ARTICLE{S} NOT LISTED',
+            'duplicate' => 'DUPLICATE ARTICLE{S}',
+            'reviewReady' => 'ARTICLE{S} READY FOR REVIEW',
+            'topicAdded' => 'ARTICLE{S} WITH TOPIC ADDED',
+            'replaced' => 'ARTICLE{S} REPLACED',
+            'error' => 'ARTICLE{S} WITH ERRORS',
+        );
+        foreach ($blocks as $key => $val) {
+            foreach ($batch->action[$key] as $article) {
+                if (array_key_exists($article[0], $ebms_ids)) {
+                    if ($ebms_ids[$article[0]])
+                        continue;
+                }
+                $ebms_ids[$article[0]] = $article[1];
+            }
+        }
         $report = array(
             '#type' => 'container',
             '#attributes' => array('id' => 'import-report'),
@@ -1700,7 +1719,14 @@ class Util {
             '#type' => 'markup',
             '#markup' => '<h2>' . $title . '</h2>',
         );
-        $ids = array_keys($batch->uniqIds);
+        $unique_ids = array_keys($batch->uniqIds);
+        $ids = array();
+        foreach ($unique_ids as $pmid) {
+            if (array_key_exists($pmid, $ebms_ids))
+                $ids[$pmid] = $ebms_ids[$pmid];
+            else
+                $ids[$pmid] = null;
+        }
         $report['report-totals'] =
             Util::import_report_block('UNIQUE ID{S} IN BATCH', $ids);
         $blocks = array(
@@ -1715,7 +1741,7 @@ class Util {
         foreach ($blocks as $key => $title) {
             $ids = array();
             foreach ($batch->action[$key] as $article)
-                $ids[] = $article[0];
+                $ids[$article[0]] = $article[1];
             $report["report-$key"] = Util::import_report_block($title, $ids);
         }
         return $report;
@@ -1728,21 +1754,26 @@ class Util {
     static function import_report_block($title, $ids) {
         $s = count($ids) == 1 ? '' : 'S';
         $title = count($ids) . ' ' . str_replace('{S}', $s, $title);
-        sort($ids, SORT_NUMERIC);
+        ksort($ids, SORT_NUMERIC);
         $table = array('<table class="pmids">');
         $counter = 0;
-        $cols = 5;
+        $cols = 4;
         $options = array('attributes' => array('target' => '_blank'));
-        foreach ($ids as $id) {
+        foreach ($ids as $pmid => $ebmsid) {
             if ($counter % $cols == 0) {
                 if ($counter)
                     $table[] = '</tr>';
                 $table[] = '<tr>';
             }
             ++$counter;
-            $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $id;
-            $link = l($id, $url, $options);
-            $table[] = "<td>$link</td>";
+            $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $pmid;
+            $pmlink = l($pmid, $url, $options);
+            $fclink = '';
+            if ($ebmsid) {
+                $url = 'citations/full/' . $ebmsid;
+                $fclink = ' (' . l($ebmsid, $url, $options) . ')';
+            }
+            $table[] = "<td>$pmlink$fclink</td>";
         }
         while ($counter++ % $cols)
             $table[] = '<td>&nbsp;</td>';

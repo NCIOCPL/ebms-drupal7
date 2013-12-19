@@ -2215,6 +2215,9 @@ function pdq_ebms_member_doc_form($form, &$form_state, $control) {
             '#id' => 'filepath',
             '#type' => 'file',
             '#title' => 'CHOOSE FILE',
+            '#description' =>
+            'Select the document you would like to upload. To complete ' .
+            'the file upload, you must click the Upload File button below.',
             '#prefix' => '<div id="choose-file">',
             '#suffix' => '</div>',
             '#element_validate' => array('pdq_ebms_doc_file_required'),

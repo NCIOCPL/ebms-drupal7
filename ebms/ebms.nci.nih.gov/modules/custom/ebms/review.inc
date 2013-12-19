@@ -1952,7 +1952,12 @@ class EbmsReview {
             '#suffix' => "</div>$body_suffix",
             'packet-title' => array(
                 '#type' => 'markup',
-                '#markup' => "<h2>{$this->packet_title} $header_suffix</h2>",
+                '#markup' => "<h2>{$this->packet_title} $header_suffix</h2>" .
+                '<p><em>Click on the summary document to open it on your ' .
+                'computer. Review articles. If needed, make changes to ' .
+                'the summary using Track Changes and save it to your ' .
+                'computer. Then, upload the document with your changes ' .
+                'using the Post Document button.</em></p>',
             ),
         );
 
@@ -2214,7 +2219,12 @@ class EbmsReview {
                 '#suffix' => '</div>',
                 'heading' => array(
                     '#type' => 'markup',
-                    '#markup' => "<h3 class='expanded'>$collapse_link</h3>",
+                    '#markup' => "<h3 class='expanded'>$collapse_link</h3>" .
+                    '<p><em>Before you can upload a summary with your ' .
+                    'changes,  you must save it to your computer. Click on ' .
+                    'the Browse button to select the summary you would like ' .
+                    'to upload. To complete the file upload, you must click ' .
+                    'the Upload File button.</em></p>',
                 ),
                 'post link' => array(
                     '#type' => 'markup',
@@ -3099,7 +3109,10 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
             '#type' => 'textarea',
             '#resizable' => false,
             '#title' => 'Comments',
-            '#description' => 'Detailed recommendations',
+            '#description' =>
+            'Please make your suggested changes directly in the summary ' .
+            'using Track Changes. If you have additional comments, please ' .
+            'add them here.',
         ),
         'loe' => array(
             '#type' => 'textarea',

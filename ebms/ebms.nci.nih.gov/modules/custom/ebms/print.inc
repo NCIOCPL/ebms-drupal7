@@ -67,9 +67,9 @@ function pdq_ebms_prtpkts_run_form() {
     $form['packetId'] = array(
         '#type' => 'textfield',
         '#size' => 8,
-        '#title' => 'Packet internal ID',
+        '#title' => 'Packet ID',
         '#description' => 'To print a single packet, regardless of board ' .
-            'or board member, enter the packet internal integer ID.<br />' .
+            'or board member, enter the packet ID.<br />' .
             'If a member name is entered, response sheets will be created, ' .
             'otherwise no response sheets will be created.',
         '#required' => false
@@ -80,13 +80,9 @@ function pdq_ebms_prtpkts_run_form() {
         '#size' => 16,
         '#title' => 'Only print packets created on or after this start date',
         '#description' => 'Optionally, print packets created on or after '.
-            'the specified date, entered as "YYYY-MM-DD {HH:MM:SS}".<br />' .
-            'Default for "board" or "package" printing is the datetime ' .
-            'immediately after the last packet ' .
-            'print job for the specified board or member.<br />' .
-            'If a single packet ID is specified, start and end dates are ' .
-            'ignored.<br />' .
-            'HH:MM:SS (Hours:Minutes:Seconds) are optional.',
+            'the specified date, entered as "YYYY-MM-DD."<br />' .
+            'Packets that have already been printed will not be printed ' .
+            'again unless an earlier date or a packet ID is specified.',
         '#required' => false
     );
 
@@ -95,17 +91,18 @@ function pdq_ebms_prtpkts_run_form() {
         '#size' => 16,
         '#title' => 'Only print packets created before this end date',
         '#description' => 'Optionally, print packets created before '.
-            'the specified date, entered as "YYYY-MM-DD {HH:MM:SS}"<br />.' .
-            'The default end date is right now.',
+            'the specified date, entered as "YYYY-MM-DD."<br />' .
+            'The default end date is today.',
         '#required' => false
     );
-
+    $link = l('View Packet Print Jobs', 'print-packets/view');
     $form['oldJobId'] = array(
         '#type' => 'textfield',
         '#size' => 6,
-        '#title' => 'Old print job ID',
+        '#title' => 'Reprint Successful Print Job',
         '#description' =>
-            'Optionally, the ID of a print job to be re-run.<br />' .
+            'Optionally, enter the job ID of a print job to be re-run. ' .
+            '(See <u>' . $link . '</u> page).<br />' .
             'If supplied, all other parameters except Job mode and comment ' .
             'are ignored and the parameters of the old job are re-used.',
         '#required' => false
@@ -440,8 +437,8 @@ function pdq_ebms_prtpkts_mbrs_form() {
     $form['instruct'] = array(
         '#type' => 'markup',
         '#markup' => "<p>To add a board member to the list, select the board ".
-            "member, enter start and end dates, and click Submit.<br />\n".
-            "To select a board member, select the member's name, check ".
+            "member, enter a start date, and click Submit.<br />\n".
+            "To delete a board member, select the member's name, check ".
             "the Delete checkbox, and click Submit.<br />\n".
             "To alter the dates, select the member, enter the new dates, ".
             "and click Submit.</p>\n".
@@ -458,7 +455,7 @@ function pdq_ebms_prtpkts_mbrs_form() {
         '#type' => 'textfield',
         '#size' => 16,
         '#title' => 'Only print packets created on or after this start date '.
-                    '(YYYY-MM-DD {hh:mm:ss optional}',
+                    '(YYYY-MM-DD)',
         '#required' => false
     );
 
@@ -466,7 +463,7 @@ function pdq_ebms_prtpkts_mbrs_form() {
         '#type' => 'textfield',
         '#size' => 16,
         '#title' => 'No printing for this member after this date '.
-                    '(YYYY-MM-DD {hh:mm:ss optional}',
+                    '(YYYY-MM-DD)',
         '#required' => false
     );
 

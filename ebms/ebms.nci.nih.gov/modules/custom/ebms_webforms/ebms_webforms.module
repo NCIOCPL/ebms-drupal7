@@ -368,7 +368,7 @@ function _webform_defaults_ebms_travel() {
         'disabled' => 0,
         'unique' => FALSE,
         'title_display' => 0,
-        'date_description' => t('Please select the date in which this expense occured.'),
+        'date_description' => t('Please select the date on which this expense occured.'),
         'select_description' => t('Please select an option from the list above.'),
         'text_description' => t('Please enter the cost of the expense. Please submit a receipt for any expense over $75.00.'),
         'text_prefix', t(''),

@@ -406,7 +406,9 @@ function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
     // Fold in the Description field, used by new and existing documents.
     $form['desc'] = array(
         '#type' => 'textfield',
-        '#title' => 'Description',
+        '#title' => 'EBMS Name',
+        '#description' =>
+        'This will be the title of the document in the EBMS.',
         '#default_value' => $desc_default,
     );
 
