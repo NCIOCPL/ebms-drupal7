@@ -1742,7 +1742,13 @@ namespace {
             $page = $parms['page'];
         }
 
-        $rows_per_page = 10;
+        // Fix for bug OCEEBMS-36.
+        if ($per_page == 'all') {
+            $page = 0;
+            $rows_per_page = 10000;
+        }
+        else
+            $rows_per_page = $per_page;
 
         $first_row = ($page * $rows_per_page) + 1;
 
