@@ -157,6 +157,15 @@ class EbmsReports {
             drupal_goto('reports');
         }
         list($group, $title) = $reports[$report];
+        $words = explode(' ', $group);
+        $url = 'reports/' . strtolower($words[0]);
+        drupal_set_breadcrumb(
+            array(
+                l('Reports', 'reports'),
+                l($group, $url),
+                $title,
+            )
+        );
         $left_nav = EbmsReports::build_left_nav($group, $title);
         return array(
             '#type' => 'container',
@@ -3749,7 +3758,7 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
-            l('Board Managment Reports', 'reports/board'),
+            l('Board Management Reports', 'reports/board'),
             'Documents',
         )
     );
@@ -3987,7 +3996,7 @@ function pdq_ebms_membership_report_form($form, &$form_state, $request_id) {
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
-            l('Board Managment Reports', 'reports/board'),
+            l('Board Management Reports', 'reports/board'),
             'Board Membership',
         )
     );
@@ -4143,7 +4152,7 @@ function pdq_ebms_doc_edit_form($form, &$form_state, $doc_id, $report_id) {
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
-            l('Board Managment Reports', 'reports/board'),
+            l('Board Management Reports', 'reports/board'),
             l('Documents', $parent_url, array('query' => $parms)),
             $file_name,
         )
@@ -4313,7 +4322,7 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
-            l('Citation Managment Reports', 'reports/cite'),
+            l('Citation Management Reports', 'reports/cite'),
             'Literature Reviews',
         )
     );
@@ -4630,7 +4639,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
-            l('Citation Managment Reports', 'reports/cite'),
+            l('Citation Management Reports', 'reports/cite'),
             'Citations By Status',
         )
     );
@@ -5038,7 +5047,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
-            l('Board Managment Reports', 'reports/board'),
+            l('Citation Management Reports', 'reports/cite'),
             'Responses By Reviewer',
         )
     );
@@ -5170,7 +5179,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
     );
 
     // Assemble the page where the form lives, including the left nav penel.
-    $left_nav = EbmsReports::build_left_nav('Board Management',
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
                                             'Responses By Reviewer');
     $page['top'] = array(
         '#type' => 'container',
@@ -5317,7 +5326,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     drupal_set_breadcrumb(
         array(
             l('Reports', 'reports'),
-            l('Board Managment Reports', 'reports/board'),
+            l('Citation Management Reports', 'reports/cite'),
             'Articles Without Responses',
         )
     );
@@ -5472,7 +5481,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     );
 
     // Assemble the page where the form lives, including the left nav penel.
-    $left_nav = EbmsReports::build_left_nav('Board Management',
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
                                             'Articles Without Responses');
     $page['top'] = array(
         '#type' => 'container',

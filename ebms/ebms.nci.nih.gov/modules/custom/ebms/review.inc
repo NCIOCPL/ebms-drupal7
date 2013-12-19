@@ -251,7 +251,7 @@ class EbmsReview {
         drupal_set_breadcrumb(
             array(
                 l('Literature', EbmsReview::$url . '/reviews'),
-                'Literature Surveillance Packets',
+                'View/Edit Packets',
             )
         );
         $headers = array(
@@ -3500,7 +3500,7 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
     drupal_set_breadcrumb(
         array(
             l('Literature', EbmsReview::$url . '/reviews'),
-            $packet_header,
+            'Create Packet',
         )
     );
 

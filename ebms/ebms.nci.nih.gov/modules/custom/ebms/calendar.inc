@@ -50,6 +50,15 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
 
         $all = sizeof($span_parts) > 1;
         $granularity = '/' . $span_parts[0];
+
+        // This might not be the best place to do this, but it's the
+        // most straightforward place.  OCEEBMS-41.
+        drupal_set_breadcrumb(
+            array(
+                l('Calendar', 'calendar'),
+                $span_parts[0],
+            )
+        );
     }
 
     $suffix = $all ? '/all' : '';
