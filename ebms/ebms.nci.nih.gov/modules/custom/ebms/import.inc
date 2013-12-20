@@ -599,6 +599,9 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
             $imported = array();
             foreach ($batch->action['imported'] as $info)
                 $imported[] = $info[1];
+            $duplicate = array();
+            foreach ($batch->action['duplicate'] as $info)
+                $duplicate[] = $info[1];
             $review_ready = array();
             foreach ($batch->action['reviewReady'] as $info)
                 $review_ready[] = $info[1];
@@ -606,6 +609,10 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
             // Apply special search tag to each article if appropriate.
             if ($special_search) {
                 foreach ($imported as $article_id)
+                    Ebms\addArticleTag('i_specialsearch', $article_id, $topic);
+
+                // Do this for dups, too (OCEEBMS-13).
+                foreach ($duplicate as $article_id)
                     Ebms\addArticleTag('i_specialsearch', $article_id, $topic);
             }
 
