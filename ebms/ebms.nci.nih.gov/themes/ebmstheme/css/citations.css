@@ -279,3 +279,7 @@ td.board-cell {
 .summary-topic-name div{
     padding-left: 25px;
 }
+
+div .citation-divider{
+    border-top: 1px solid #000;
+}
