@@ -283,3 +283,6 @@ td.board-cell {
 div .citation-divider{
     border-top: 1px solid #000;
 }
+
+/* JIRA::OCEEBMS-83 */
+#citation-results-table th input { font-weight: bold; }
