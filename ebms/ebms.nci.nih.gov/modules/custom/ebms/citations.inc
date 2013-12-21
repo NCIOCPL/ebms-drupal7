@@ -2623,7 +2623,7 @@ namespace {
             // create link-like submit element
             $title = array (
                 '#type' => 'submit',
-                '#value' => filter_xss($rawTitle),
+                '#value' => $rawTitle,
                 '#article_id' => $article_id,
                 '#button_type' => 'full-citation-link',
                 '#submit' => array('_full_citation_redirect'),
