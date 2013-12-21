@@ -532,8 +532,8 @@ function pdq_ebms_login() {
     as your EBMS username</strong>.  Contact your Board manager if
     you do not know your NCI username.</p>
  <p>For assistance, call the NIH help desk at 301-496-4357 and
-    explain that you are calling with a problem related to an NCI
-    system call the PDQ Editorial Board Management System (EBMS).</p>
+    explain that you are not able to log into an NCI system called
+    the PDQ Editorial Board Management System (EBMS).</p>
 </div>',
         ),
     );
