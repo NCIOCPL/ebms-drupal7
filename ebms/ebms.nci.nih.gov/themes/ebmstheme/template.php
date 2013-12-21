@@ -85,6 +85,22 @@ function ebmstheme_pager($variables) {
             'parameters' => $parameters,
         )
     );
+    $li_first = theme(
+        'pager_first',
+        array(
+            'text' => EBMS\DOUBLE_LEFT_ARROW,
+            'element' => $element,
+            'parameters' => $parameters,
+        )
+    );
+    $li_last = theme(
+        'pager_last',
+        array(
+            'text' => EBMS\DOUBLE_RIGHT_ARROW,
+            'element' => $element,
+            'parameters' => $parameters,
+        )
+    );
 
     // Add a link for turning paging off.
     $query = pager_get_query_parameters();
@@ -94,6 +110,15 @@ function ebmstheme_pager($variables) {
     $items[] = "<a href='$url'>VIEW ALL</a>";
     $items[] = '|';
     $items[] = 'Page';
+
+    // Add link to jump to the front for search results (TIR 2304/OCEEBMS-68).
+    $is_search = strpos($_GET['q'], 'citations/search') !== false;
+    if ($is_search && $li_first) {
+        $items[] = array(
+            'class' => array('pager-first'),
+            'data' => $li_first,
+        );
+    }
 
     // Add the "previous" link if we're not on the first page.
     if ($li_previous) {
@@ -129,6 +154,14 @@ function ebmstheme_pager($variables) {
         $items[] = array(
                 'class' => array('pager-next'),
                 'data' => $li_next,
+        );
+    }
+
+    // Add link to jump to the end for search results (TIR 2304/OCEEBMS-68).
+    if ($is_search && $li_last) {
+        $items[] = array(
+            'class' => array('pager-last'),
+            'data' => $li_last,
         );
     }
 

@@ -30,6 +30,8 @@ define('Ebms\JS_DIR', MODULE_DIR . '/js');
 define('Ebms\FROM', 'PDQ Editorial Board Management System <ebms@cancer.gov>');
 define('Ebms\LEFT_ARROW', "\xe2\x97\x80");
 define('Ebms\RIGHT_ARROW', "\xe2\x96\xb6");
+define('Ebms\DOUBLE_LEFT_ARROW', "\xe2\x8f\xaa");
+define('Ebms\DOUBLE_RIGHT_ARROW', "\xe2\x8f\xa9");
 define('Ebms\UP_ARROW', "\xe2\x96\xb2");
 define('Ebms\DOWN_ARROW', "\xe2\x96\xbc");
 define('Ebms\ELLIPSIS', "\xe2\x80\xa6");
