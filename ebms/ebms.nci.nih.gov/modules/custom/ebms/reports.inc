@@ -68,6 +68,8 @@ class EbmsReports {
         Ebms\Menu::$active = 'Reports';
         drupal_add_css(Ebms\CSS_DIR . '/reports.css');
         switch ($this->report) {
+            case 'board-members-last-login':
+                return pdq_ebms_board_members_last_login();
             case 'meeting-dates':
             case 'not-list':
             case 'yes-list':
@@ -393,6 +395,10 @@ class EbmsReports {
                             $reimbursement_report_url,
                         ),
                         array('Board Membership', 'reports/membership'),
+                        array(
+                            'Board Member Activity Report',
+                            'reports/board-members-last-login',
+                        ),
                     ),
                 ),
                 array(
@@ -2310,7 +2316,7 @@ class EbmsReports {
                 'field' => 'a.last_name',
                 'class' => array('col-1'),
             ),
-            'Meeting Date (Type)',
+            'Meeting Date (Category)',
         );
         if (!$params['topic'])
             $headers[] = array(
@@ -2391,7 +2397,7 @@ class EbmsReports {
                     // type from the new event category field, not from
                     // whether boards or subgroups have been linked to
                     // the event.
-                    $meeting_type = 'no type';
+                    $meeting_type = 'no category';
                     $event_types = field_get_items('node', $meeting,
                               'field_event_category');
                     if (is_array($event_types)) {
@@ -4853,7 +4859,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         !strcmp($status, 'editorial board decision')) {
         $form['top']['report-form']['status-dep']['meeting-type'] = array(
             '#type' => 'select',
-            '#title' => 'Meeting Type',
+            '#title' => 'Meeting Category',
             '#title_display' => 'after',
             '#options' => $meeting_types,
             '#default_value' => $meeting_type,
@@ -5641,4 +5647,136 @@ function pdq_ebms_articles_without_responses_submit($form, &$form_state) {
     $report = 'Articles Without Responses';
     $request_id = EbmsReports::save_report_request($values, $report);
     drupal_goto('reports/articles-without-responses/' . $request_id);
+}
+
+/*
+ * Generates an Excel report of the last time each active board
+ * member logged in.  JIRA::OCEEBMS-133.
+ */
+function pdq_ebms_board_members_last_login() {
+    $xllib = libraries_get_path('PHPExcel');
+    require_once $xllib . '/Classes/PHPExcel.php';
+    require_once $xllib . '/Classes/PHPExcel/IOFactory.php';
+    $excel = new PHPExcel();
+    $excel->setActiveSheetIndex(0);
+    $sheet = $excel->getActiveSheet();
+    $sheet->setTitle('Board Members');
+    $sheet->getColumnDimension('A')->setAutoSize(true);
+    $sheet->getColumnDimension('B')->setAutoSize(true);
+    $sheet->getColumnDimension('C')->setAutoSize(true);
+    $sheet->setCellValue('A1', 'Name');
+    $sheet->setCellValue('B1', 'Board');
+    $sheet->setCellValue('C1', 'Last Login');
+    //$sheet->getStyle('A1:C1')->getFont()->setBold(true);
+    $sheet->getStyle('A1:C1')->applyFromArray(
+        array(
+            'fill' => array(
+                'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                'color' => array('rgb' => '0101DF'),
+            ),
+            'font' => array(
+                'bold' => true,
+                'color' => array(
+                    'argb' => PHPExcel_Style_Color::COLOR_WHITE,
+                ),
+                //'size' => 15,
+                //'name' => 'Verdana',
+            ),
+            'alignment' => array(
+                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+            ),
+        )
+    );
+    $row = 2;
+    $query = db_select('users', 'u')
+        ->fields('u', array('name', 'login'))
+        ->condition('u.status', 1);
+    $query->join('users_roles', 'ur', 'ur.uid = u.uid');
+    $query->join('role', 'r', 'r.rid = ur.rid');
+    $query->condition('r.name', 'board member');
+    $query->addExpression('FROM_UNIXTIME(u.login, \'%Y-%m-%d\')', 'last');
+    $query->leftJoin('ebms_board_member', 'm', 'm.user_id = u.uid');
+    $query->leftJoin('ebms_board', 'b', 'b.board_id = m.board_id');
+    $query->fields('b', array('board_name'));
+    $query->orderBy('u.name');
+    $query->orderBy('b.board_name');
+    $results = $query->execute();
+    $name = 'board-members-last-login-' . strftime('%Y%m%d%H%M%S') . '.xls';
+    foreach ($results as $result) {
+        $last_login = $result->login ? $result->last : '';
+        $board = $result->board_name ? $result->board_name : '';
+        $sheet->setCellValue("A$row", $result->name);
+        $sheet->setCellValue("B$row", $result->board_name);
+        $sheet->setCellValue("C$row", $last_login);
+        ++$row;
+    }
+    $sheet->setSelectedCell('A2');
+    $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
+    drupal_add_http_header('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
+    drupal_add_http_header('Cache-control', 'must-revalidate, post-check=0, pre-check=0');
+    drupal_add_http_header('Content-disposition', 'attachment;filename=' . $name);
+    drupal_add_http_header('Content-transfer-encoding', 'binary');
+    $writer->save('php://output');
+    exit(0);
+    return '<p>DONE!!</p>';
+
+
+    echo pack('ss', 0x0A, 0x0);
+    exit(0);
+}
+
+/*
+ * Fallback, in case we can't get CBIIT to install PHPExcel in the upper
+ * tiers.  This version creates a spreadsheet using the Excel 2 format,
+ * which is so ancient that current versions of Excel won't let you edit
+ * or save the file (you have to transfer the cell data to a new workbook
+ * using the clipboard).
+ */
+function xpdq_ebms_board_members_last_login() {
+    $name = 'board-members-last-login-' . strftime('%Y%m%d%H%M%S') . '.xls';
+    //drupal_add_http_header('Content-type', 'application/force-download');
+    //drupal_add_http_header('Content-type', 'application/octet-stream', true);
+    //drupal_add_http_header('Content-type', 'application/download', true);
+    drupal_add_http_header('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
+    drupal_add_http_header('Cache-control', 'must-revalidate, post-check=0, pre-check=0');
+    drupal_add_http_header('Content-disposition', 'attachment;filename=' . $name);
+    drupal_add_http_header('Content-transfer-encoding', 'binary');
+
+    echo pack('ssssss', 0x809, 0x8, 0x0, 0x10, 0x0, 0x0);
+    echo pdq_ebms_xls_write_string(0, 0, 'Name');
+    echo pdq_ebms_xls_write_string(0, 1, 'Board');
+    echo pdq_ebms_xls_write_string(0, 2, 'Last Login');
+    $row = 1;
+    $query = db_select('users', 'u')
+        ->fields('u', array('name', 'login'))
+        ->condition('u.status', 1);
+    $query->join('users_roles', 'ur', 'ur.uid = u.uid');
+    $query->join('role', 'r', 'r.rid = ur.rid');
+    $query->condition('r.name', 'board member');
+    $query->addExpression('FROM_UNIXTIME(u.login, \'%Y-%m-%d\')', 'last');
+    $query->leftJoin('ebms_board_member', 'm', 'm.user_id = u.uid');
+    $query->leftJoin('ebms_board', 'b', 'b.board_id = m.board_id');
+    $query->fields('b', array('board_name'));
+    $query->orderBy('u.name');
+    $query->orderBy('b.board_name');
+    $results = $query->execute();
+    foreach ($results as $result) {
+        $last_login = $result->login ? $result->last : '';
+        $board = $result->board_name ? $result->board_name : '';
+        echo pdq_ebms_xls_write_string($row, 0, $result->name);
+        echo pdq_ebms_xls_write_string($row, 1, $result->board_name);
+        echo pdq_ebms_xls_write_string($row, 2, $last_login);
+        ++$row;
+    }
+    echo pack('ss', 0x0A, 0x0);
+    exit(0);
+}
+
+/*
+ * Helper function for fallback approach above.
+ */
+function pdq_ebms_xls_write_string($row, $col, $string) {
+    $len = strlen($string);
+    $s = pack('ssssss', 0x204, 8 + $len, $row, $col, 0x0, $len);
+    return $s . $string;
 }
