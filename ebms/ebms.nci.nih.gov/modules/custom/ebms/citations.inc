@@ -3392,7 +3392,9 @@ namespace {
 
     function _format_date($dt) {
         list($date) = explode(' ', $dt);
-        $date = str_replace('-', '/', $date);
+
+        // Don't do this - see OCEEBMS-84.
+        //$date = str_replace('-', '/', $date);
 
         return $date;
     }
@@ -4170,7 +4172,7 @@ namespace {
         $hash = "$article_id|$topic_id";
 
         $ts = time();
-        $date = format_date($ts, 'custom', 'm/d/Y');
+        $date = format_date($ts, 'custom', 'Y-m-d');
 
         global $user;
 
@@ -4561,7 +4563,7 @@ namespace {
                             $datespan = $nodeWrapper->field_datespan->value();
                             $suffix = '';
                             if($datespan) {
-                                $date = format_date($datespan['value'], 'custom', 'm/d/Y');
+                                $date = format_date($datespan['value'], 'custom', 'Y-m-d');
                                 $suffix = " - $date";
                             }
                             $futureEvents[$node->nid] = $fullNode->title . $suffix;
@@ -4589,7 +4591,7 @@ namespace {
                             $datespan = $nodeWrapper->field_datespan->value();
                             $suffix = '';
                             if($datespan) {
-                                $date = format_date($datespan['value'], 'custom', 'm/d/Y');
+                                $date = format_date($datespan['value'], 'custom', 'Y-m-d');
                                 $suffix = " - $date";
                             }
                             $pastEvents[$node->nid] = $fullNode->title . $suffix;
@@ -5894,7 +5896,7 @@ namespace {
         $uid = $record->uid;
         $filename = $record->filename;
         $ts = $record->timestamp;
-        $date = format_date($ts, 'custom', 'm/d/Y');
+        $date = format_date($ts, 'custom', 'Y-m-d');
 
         $account = user_load($uid);
         $icon = _build_decision_icon_tag('pass');
@@ -6454,7 +6456,7 @@ namespace {
                 $datespan = $nodeWrapper->field_datespan->value();
                 $suffix = '';
                 if($datespan) {
-                    $date = format_date($datespan['value'], 'custom', 'm/d/Y');
+                    $date = format_date($datespan['value'], 'custom', 'Y-m-d');
                     $suffix = " - $date";
                 }
 
