@@ -258,7 +258,7 @@ namespace {
                 $form = drupal_get_form('pdq_ebms_full_citation', $article_id);
 
                 // Build the left nav components
-                $result['left_nav'] = \Ebms\Util::build_left_nav();
+                $result['left_nav'] = \Ebms\Util::build_left_nav('Review Citations');
                 $result['left_nav']['actions'] = _build_full_citation_actions($article_id);
                 $result['left_nav']['icon_key'] = _build_full_citation_icon_key();
 
@@ -281,7 +281,7 @@ namespace {
 
                 $form = drupal_get_form('pdq_ebms_citation_queue', $is_librarian);
 
-                $result['left_nav'] = \Ebms\Util::build_left_nav();
+                $result['left_nav'] = \Ebms\Util::build_left_nav('Review Citations');
 
                 $result['cite_queue_form'] = $form;
 
