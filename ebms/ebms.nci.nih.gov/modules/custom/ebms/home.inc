@@ -347,7 +347,7 @@ class EbmsHomePage {
                 $items[] = $item;
             }
         }
-        $title = 'PDQ&reg; Board Rosters';
+        $title = 'PDQ<sup>&reg;</sup> Board Rosters';
         $id = 'board-rosters';
         return $this->list_block($title, $id, $items, $middle);
     }

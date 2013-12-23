@@ -155,7 +155,7 @@ if ($logged_in) {
                    title="Home" rel="home">EBMS</a>
               </div>
               <div id="site-slogan"
-                             >PDQ&reg; Editorial Board Management System</div>
+                             >PDQ<sup>&reg;</sup> Editorial Board Management System</div>
             </div> <!-- /#name-and-slogan -->
 <?php if ($logged_in) { ?>
             <div id="user-profile">

@@ -948,7 +948,8 @@ function pdq_embs_profile_membership_form($form, &$form_state, $uid) {
             '#type' => 'checkboxes',
             '#title' => 'Boards',
             '#description' =>
-            "Of which PDQ\xc2\xae board(s) is this user a member?",
+            //"Of which PDQ\xc2\xae board(s) is this user a member?",
+            "Of which PDQ<sup>&reg;</sup> board(s) is this user a member?",
             '#options' => $boards,
             '#default_value' => $current_boards,
         ),
