@@ -273,14 +273,11 @@ class EbmsHomePage {
         switch ($this->role) {
             case 'librarian':
                 $items = array(
-                    // l('Send a Message', 'stub'),
-                    l('Search Database', 'citations/search'),
-                    //l('Find/Edit a Record', 'stub'),
-                    //l('Manage Journals', 'stub'),
-                    l('Import Citations', 'citations/import'),
                     l('Review Citations', 'citations'),
-                    l('Publish Citations', 'citations/publish'),
+                    l('Search Database', 'citations/search'),
+                    l('Import Citations', 'citations/import'),
                     l('Not List Maintenance', 'citations/not-list'),
+                    l('Publish Citations', 'citations/publish'),
                 );
                 break;
             default:
@@ -288,7 +285,6 @@ class EbmsHomePage {
                     l('Post a Document', 'docs/post'),
                     l('Manage Documents', 'docs'),
                     l('Manage Groups', 'groups'),
-                    // l('Send a Message', 'stub'),
                     l('Print Packets', 'print-packets/run'),
                     l('View Packet Printing Jobs', 'print-packets/view'),
                     l('Manage Print Recipients', 'print-packets/mbrs'),
@@ -518,9 +514,11 @@ class EbmsHomePage {
                 '1' => array(
                     'title' => l('Citation Management', 'citations'),
                     'links' => array(
-                        l('Import Citations', 'citations/import'),
-                        l('Publish Citations', 'citations/publish'),
                         l('Review Citations', 'citations'),
+                        l('Search Database', 'citations/search'),
+                        l('Import Citations', 'citations/import'),
+                        l('Not List Maintenance', 'citations/not-list'),
+                        l('Publish Citations', 'citations/publish'),
                     ),
                 ),
                 '2' => array(
