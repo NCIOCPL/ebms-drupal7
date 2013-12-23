@@ -1828,8 +1828,15 @@ namespace {
             // set up the rows array, and prep the first one.
             $rows = array();
 
+            // Extra spacing between abstracts (OCEEBMS-38).
+            $prefix = '<tr>';
+            if ($isAbstract && $ix)
+                $prefix = '<tr class="extra-abstract-space">' .
+                    '<td colspan="5">&nbsp;</td></tr>' .
+                    //'<tr><td>&nbsp;</td></tr>' .
+                    '<tr>';
             $rows[$rowIx] = array(
-                '#prefix' => "<tr>",
+                '#prefix' => $prefix,
                 '#suffix' => '</tr>',
             );
 

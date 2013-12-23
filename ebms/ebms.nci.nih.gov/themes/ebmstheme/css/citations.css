@@ -280,9 +280,7 @@ td.board-cell {
     padding-left: 25px;
 }
 
-div .citation-divider{
-    border-top: 1px solid #000;
-}
+tr.extra-abstract-space { height: 75px; xborder-bottom: 1px solid black; }
 
 /* JIRA::OCEEBMS-83 */
 #citation-results-table th input { font-weight: bold; }
