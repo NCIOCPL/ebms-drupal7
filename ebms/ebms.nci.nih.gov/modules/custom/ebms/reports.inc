@@ -2743,7 +2743,7 @@ class EbmsReports {
         if ($cycle)
             $query->condition('t2.cycle_id', $cycle);
         if ($packet)
-            $query->condition('p.packet_title', $packet);
+            $query->condition('p.packet_id', $packet);
         if ($reviewer)
             $query->condition('r.reviewer_id', $reviewer);
         if ($rrange)
@@ -4334,9 +4334,8 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = $topic = $reviewer = $cycle = $rrange = $prange = 0;
+    $board = $topic = $reviewer = $cycle = $rrange = $prange = $packet = 0;
     $rstart = $rend = $pstart = $pend = Ebms\Util::empty_date();
-    $packet = '';
 
     // Check for overrides of the defaults by request parameters
     // stored in the database.
@@ -4358,6 +4357,7 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
     // Build picklist arrays (except topics, handled below).
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $cycles = array(0 => ' ') + Ebms\Util::cycles(false);
+    $packets = array(0 => ' ');
     $reviewers = array(0 => ' ');
     $board_member_role = db_select('role', 'r')
         ->fields('r', array('rid'))
@@ -4381,6 +4381,7 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
 
     // Use the board choice to fill the topic picklist with the topics
     // connected with the chosen board.
+    // OCEEBMS-70: same for packets.
     $topics = array(0 => ' ');
     if ($board) {
          $results = db_select('ebms_topic', 't')
@@ -4390,6 +4391,18 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
             ->execute();
         foreach ($results as $result)
             $topics[$result->topic_id] = $result->topic_name;
+        if (!array_key_exists($topic, $topics))
+            $topic = 0;
+        $query = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_id', 'packet_title'));
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->condition('t.board_id', $board);
+        $query->orderBy('p.packet_title');
+        $results = $query->execute();
+        foreach ($results as $result)
+            $packets[$result->packet_id] = $result->packet_title;
+        if (!array_key_exists($packet, $packets))
+            $packet = 0;
     }
 
     // Begin the form structure, including the left nav penel.
@@ -4429,29 +4442,30 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
                     '#default_value' => $topic,
                     '#attributes' => array('class' => array('fixed-width')),
                 ),
-            ),
-            'reviewer' => array(
-                '#type' => 'select',
-                '#title' => 'Reviewer',
-                '#title_display' => 'after',
-                '#options' => $reviewers,
-                '#default_value' => $reviewer,
-                '#attributes' => array('class' => array('fixed-width')),
-            ),
-            'cycle' => array(
-                '#type' => 'select',
-                '#title' => 'Review Cycle',
-                '#title_display' => 'after',
-                '#options' => $cycles,
-                '#default_value' => $cycle,
-                '#attributes' => array('class' => array('fixed-width')),
-            ),
-            'packet' => array(
-                '#type' => 'textfield',
-                '#title' => 'Packet Name',
-                '#title_display' => 'after',
-                '#default_value' => $packet,
-                '#attributes' => array('class' => array('fixed-width')),
+                'reviewer' => array(
+                    '#type' => 'select',
+                    '#title' => 'Reviewer',
+                    '#title_display' => 'after',
+                    '#options' => $reviewers,
+                    '#default_value' => $reviewer,
+                    '#attributes' => array('class' => array('fixed-width')),
+                ),
+                'cycle' => array(
+                    '#type' => 'select',
+                    '#title' => 'Review Cycle',
+                    '#title_display' => 'after',
+                    '#options' => $cycles,
+                    '#default_value' => $cycle,
+                    '#attributes' => array('class' => array('fixed-width')),
+                ),
+                'packet' => array(
+                    '#type' => 'select',
+                    '#title' => 'Packet Name',
+                    '#title_display' => 'after',
+                    '#options' => $packets,
+                    '#default_value' => $packet,
+                    '#attributes' => array('class' => array('fixed-width')),
+                ),
             ),
             'review-date-line' => array(
                 '#type' => 'container',
