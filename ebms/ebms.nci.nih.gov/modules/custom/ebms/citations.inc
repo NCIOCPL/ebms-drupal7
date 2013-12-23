@@ -1133,6 +1133,10 @@ namespace {
         if (empty($assignedTopics))
             return $topicOptions;
 
+        // Do the same thing when $otherTopics is empty (OCEEBMS-28).
+        if (empty($otherTopics))
+            return $assignedTopics;
+
         return array(
             'My Topics' => $assignedTopics,
             'Other Topics' => $otherTopics,
