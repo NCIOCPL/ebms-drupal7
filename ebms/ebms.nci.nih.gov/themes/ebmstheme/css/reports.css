@@ -109,11 +109,13 @@ div.import-reports ul li a { text-transform: uppercase; }
 #membership-top { overflow: hidden; }
 #membership-top div.form-item-board { margin-bottom: 10px; }
 #pdq-ebms-membership-report-form div.item-list { margin: 20px 20px; }
+#pdq-ebms-membership-report-form #left-nav div.item-list { margin: 0; }
 #pdq-ebms-membership-report-form div.item-list h3 {
     clear: both; color: #696559; font-size: 18px;
     border-bottom: 1px solid #696559;
 }
 #pdq-ebms-membership-report-form div.item-list ul { margin-left: 20px; }
+#pdq-ebms-membership-report-form #left-nav div.item-list ul { margin-left: 0; }
 
 #doc-report { margin-top: 35px; }
 
