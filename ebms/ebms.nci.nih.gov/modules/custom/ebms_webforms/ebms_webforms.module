@@ -140,6 +140,22 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
             }
         }
     }
+
+    // Add validation routine (OCEEBMS-6).
+    $form['#validate'][] = 'ebms_webforms_form_validate';
+}
+
+// Validation added for JIRA ticket OCEEBMS-6 (TIR 2374).
+function ebms_webforms_form_validate($form, &$form_state) {
+    pdq_ebms_debug('WEBFORMS VALIDATION', $form_state['values']);
+    if (isset($form_state['values']['submitted']['check_in'])) {
+        $check_in = $form_state['values']['submitted']['check_in'];
+        $check_out = $form_state['values']['submitted']['check_out'];
+        $in = Ebms\Util::date_field_to_timestamp($check_in);
+        $out = Ebms\Util::date_field_to_timestamp($check_out);
+        if ($in > $out)
+            form_set_error('check_out', 'Check-out cannont be earlier than check-in.');
+    }
 }
 
 /**
