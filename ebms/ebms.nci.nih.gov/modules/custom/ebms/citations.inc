@@ -4655,11 +4655,17 @@ namespace {
 
                     $boardId = Ebms\getTopicBoard($topic_id);
 
-                    $memberIds = db_select('ebms_board_member', 'm')
+                    // Query modified to restrict choices to board members, and
+                    // alphebetize the list. (OCEEBMS-71).
+                    $query = db_select('ebms_board_member', 'm')
                         ->condition('m.board_id', $boardId)
-                        ->fields('m', array('user_id'))
-                        ->execute()
-                        ->fetchCol();
+                        ->fields('m', array('user_id'));
+                    $query->join('users_roles', 'ur', 'ur.uid = m.user_id');
+                    $query->join('role', 'r', 'r.rid = ur.rid');
+                    $query->join('users', 'u', 'u.uid = ur.uid');
+                    $query->condition('r.name', 'board member');
+                    $query->orderBy('u.name');
+                    $memberIds = $query->execute()->fetchCol();
 
                     $members = user_load_multiple($memberIds);
                     $memberOpts = array();
