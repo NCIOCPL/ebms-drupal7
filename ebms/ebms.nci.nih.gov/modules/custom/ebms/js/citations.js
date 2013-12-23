@@ -4,7 +4,7 @@
  */
 
 jQuery(document).ready(function(){
-    addHooks();
+    addHooks(); 
 });
 
 function addHooks() {
@@ -41,14 +41,7 @@ function addHooks() {
         form.attr('action', '/citations');
         return true;
     });
-
-    // Check for abstracts on document ready or AJAX call completed and
-    // draw a horizontal line citation separator if they are present.
-    separateAbstract();
-    jQuery(document).ajaxComplete(function() {
-        separateAbstract();
-    });
-
+    
     // test to disable each topic check box
     //jQuery('.citation-cell .topic-checks input.form-checkbox').attr("disabled", "disabled");
     //jQuery('.citation-cell .topic-checks .form-type-checkbox label').fadeTo('fast', 0.5);
@@ -165,16 +158,4 @@ function repositionModal(){
     // Create our content div, get the dimensions, and hide it
     var mdcTop = wt + ( winHeight / 2 ) - (  modalContent.outerHeight() / 2);
     modalContent.css({top: mdcTop + 'px'});
-}
-
-/**
- * If there are abstracts in the citation display 
- *      "<div class='citation-abstract-text>" exists
- * Then add a class to each citation container div that alerts our CSS
- * to produce a horizontal line border/separator above the citation.
- */
-function separateAbstract(){
-    if (jQuery('div').hasClass('citation-abstract-text')) {
-      jQuery('div.article-citation').not(':first').addClass('citation-divider');
-    }
 }
