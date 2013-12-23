@@ -5222,6 +5222,10 @@ namespace {
                     }
                 }
             }
+
+            // Added per request in OCEEBMS-92.
+            drupal_set_message("Added Editorial Board decision to article $articleId.");
+
         } catch (Exception $e) {
             watchdog_exception('citations', $e);
             drupal_set_message('Could not save the Editorial Board decision.',
