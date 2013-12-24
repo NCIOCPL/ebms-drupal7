@@ -6490,6 +6490,15 @@ namespace {
             }
         }
 
+        // Allow more comments to be added, as long as the state hasn't
+        // been inactivated by the arrival of a subsequent state rolling
+        // the article/topic back to an earlier processing step.
+        // TIR 2539 / JIRA::OCEEBMS-22.
+        if ($form_state != null) {
+            $form['comments_add_button'] =
+                _build_add_state_comment_button($form_state, $status);
+        }
+
         $form['comments'] = _format_comments($status->comments);
 
         if (empty($form['comments']) && !empty($form['comments_add_button'])) {
