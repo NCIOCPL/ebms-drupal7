@@ -6209,7 +6209,7 @@ namespace {
 
         if ($published) {
 
-            // Display "published by" name (JIRA ticket OCEEBMS-15).
+            // Display "published by" name (TIR 2443 / JIRA ticket OCEEBMS-15).
             $name = $published->user_name;
             $dt = $published->dt;
             $date = _format_date($dt);
