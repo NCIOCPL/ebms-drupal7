@@ -1523,9 +1523,10 @@ function ebms_ckeditor_link_types() {
 function ebms_ckeditor_link_ebms_file_autocomplete($string) {
     $links = array();
 
+    $ascii_string = Ebms\Util::indexify($string, true);
     $articleQuery = db_select('ebms_article', 'a')
         ->condition('a.active_status', 'A')
-        ->condition('a.article_title', "%$string%", 'LIKE')
+        ->condition('a.article_title', "%$ascii_string%", 'LIKE')
         ->isNotNull('a.full_text_id')
         ->fields('a', array('full_text_id', 'article_title'))
         ->orderBy('a.article_title')
