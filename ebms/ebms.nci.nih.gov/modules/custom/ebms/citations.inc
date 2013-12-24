@@ -6209,12 +6209,14 @@ namespace {
 
         if ($published) {
 
+            // Display "published by" name (JIRA ticket OCEEBMS-15).
+            $name = $published->user_name;
             $dt = $published->dt;
             $date = _format_date($dt);
-            $form['publish']['header']["#markup"] = "Publication Date";
+            $form['publish']['header']["#markup"] = "Publication";
             _wrap_in_classes($form['publish']['header'],
                 array('citation-subheader', 'full-citation-indent'));
-            $form['publish']['date']["#markup"] = "$date";
+            $form['publish']['date']["#markup"] = "$date BY $name";
             _wrap_in_classes($form['publish']['date'],
                 array('full-citation-indent'));
             $form['publish']['comments'] = _format_comments($published->comments);
