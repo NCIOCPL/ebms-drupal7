@@ -406,6 +406,7 @@ class EbmsReports {
                     'reports/cite',
                     array(
                         array('Import Reports', 'reports/import'),
+                        array('Citation Reports', 'reports/citations'),
                         array('Citations By Status', 'reports/cites-status'),
                         array('Literature Reviews', 'reports/lit-review'),
                         array(
@@ -424,6 +425,8 @@ class EbmsReports {
                             'Board and Topic Lists',
                             'reports/boards-and-topics',
                         ),
+                        array('Not List', 'reports/not-list'),
+                        array('Yes List', 'reports/yes-list'),
                     ),
                 ),
             ),
