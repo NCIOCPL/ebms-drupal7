@@ -541,7 +541,8 @@ class EbmsHomePage {
                     'title' => l('Citation Management', 'citations'),
                     'links' => array(
                         l('Search Database', 'citations/search'),
-                        l('Review Citations', 'citations'),
+                        // l('Review Citations', 'citations'),
+                        l('Full Text Retrieval', 'citations/fulltext'),
                         l('Add Citation', 'citations/import'),
                     ),
                 ),
