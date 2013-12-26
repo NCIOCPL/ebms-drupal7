@@ -284,3 +284,8 @@ tr.extra-abstract-space { height: 75px; xborder-bottom: 1px solid black; }
 
 /* JIRA::OCEEBMS-83 */
 #citation-results-table th input { font-weight: bold; }
+
+/* JIRA::OCEEBMS-34 */
+.member-response-warning {
+    color: #a90101; font-weight: bold; font-style: italic;
+}
