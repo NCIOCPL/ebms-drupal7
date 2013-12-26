@@ -358,6 +358,7 @@ class EbmsReports {
             $role = 'manager';
         $links = array(
             'librarian' => array(
+                /* No longer to appear for librarians
                 array(
                     'Board Management',
                     'reports/board',
@@ -371,6 +372,7 @@ class EbmsReports {
                         ),
                     ),
                 ),
+                */
                 array(
                     'Citation Management',
                     'reports/cite',
