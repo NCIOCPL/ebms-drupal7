@@ -297,12 +297,18 @@ class Menu {
      * Build the EBMS menu information for reports.
      */
     public static function reports() {
-        return new Menu(
-            'Reports', 'reports', array(
-                new Menu('Board Management', 'reports/board'),
-                new Menu('Citation Management', 'reports/cite'),
-            )
-        );
+        global $user;
+
+        $entry_list = array();
+
+        // Librarians don't see the Board Management reports
+        if (!in_array('medical librarian', $user->roles)) {
+            $entry_list[] = new Menu('Board Management', 'reports/board');
+        }
+        // Everybody who sees reports, sees citation reports
+        $entry_list[] = new Menu('Citation Management', 'reports/cite');
+
+        return new Menu('Reports', 'reports', $entry_list);
     }
 
     /**
@@ -1219,7 +1225,7 @@ class Util {
         $wrapper = entity_metadata_wrapper('message', $message);
 
         \Ebms\Util::wrapEventMetadata($nodeWrapper, $wrapper);
-        
+
         // additionally add the event type
         $node_event_type = $nodeWrapper->field_event_type->value();
         if ($node_event_type) {
@@ -1228,7 +1234,7 @@ class Util {
 
         $wrapper->save();
     }
-    
+
     public static function activityPacketCreated($name, $reviewers){
             $message = message_create('activity_new_packet');
             $message->save();
@@ -1241,7 +1247,7 @@ class Util {
 
     public static function activityNewSummary(array $args = array()) {
         if(empty($args) || !is_array($args)) return;
-        
+
         // provide placeholder arguments
         $args += array(
             'title' => null,
@@ -1249,31 +1255,31 @@ class Util {
             'board' => null,
             'topics' => array(),
         );
-        
+
         $title = $args['title'];
         $account = $args['account'];
         $board = $args['board'];
         $topics = $args['topics'];
-        
-        // check input arguments        
+
+        // check input arguments
         // reject if no title, or no board and no valid topics
         if(empty($title) || (empty($board) && empty($topics))) return;
-        
+
         // search board and/or topics to find intended recipients of message
         $boards = array();
         if($board)
             $boards[$board] = $board;
-        
+
         // dig through any topics for board as well
         foreach($topics as $topic){
             $topicBoard = \Ebms\getTopicBoard($topic);
-            
+
             $boards[$topicBoard] = $topicBoard;
         }
-        
+
         $individuals = array_keys(
             Util::get_active_users(array('board manager'), $boards));
-        
+
         // abort if no users available to see notification
         if(empty($individuals)) return;
 
@@ -1285,7 +1291,7 @@ class Util {
         $wrapper->field_individuals->set($individuals);
         $wrapper->save();
     }
-    
+
     public static function wrapEventMetadata(\EntityDrupalWrapper $nodeWrapper,
         \EntityDrupalWrapper $msgWrapper)
     {
