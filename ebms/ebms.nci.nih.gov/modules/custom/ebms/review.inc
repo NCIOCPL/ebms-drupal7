@@ -2910,6 +2910,39 @@ SELECT DISTINCT t.topic_id, t.topic_name
         return $topics;
     }
 
+    /**
+     * Collect board members who have review work pending.  The result
+     * will be used for the picklist on the form for recording responses
+     * on behalf of a board member.
+     *
+     *  @param  integer           ID of board from which to collect
+     *                            members
+     *
+     *  @return array             board member names, keyed by user
+     *                            ID, sorted by name
+     */
+    public static function reviewers_with_work($board_id) {
+        $query = db_select('users', 'u')
+            ->fields('u', array('uid', 'name'));
+        $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+        $query->join('ebms_packet_article', 'a',
+            'a.packet_id = r.packet_id AND a.drop_flag = 0');
+        $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->leftJoin('ebms_article_review', 'w',
+            'w.packet_id = a.packet_id AND ' .
+            'w.article_id = w.article_id AND ' .
+            'w.reviewer_id = u.uid');
+        $query->condition('p.active_status', 'A');
+        $query->condition('t.board_id', $board_id);
+        $query->isNull('w.review_id');
+        $query->orderBy('u.name');
+        $results = $query->execute();
+        $reviewers = array();
+        foreach ($results as $result)
+            $reviewers[$result->uid] = $result->name;
+        return $reviewers;
+    }
 }
 
 /**
@@ -4149,8 +4182,7 @@ function pdq_ebms_record_responses_form($form, &$form_state) {
         $boardId = $form_state['values']['board'];
 
         if ($boardId) {
-            $memberOptions = Ebms\Util::get_active_users(array('board member'),
-                    array($boardId));
+            $memberOptions = EbmsReview::reviewers_with_work($boardId);
             $memberRequired = true;
         }
     }
