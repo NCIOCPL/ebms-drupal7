@@ -249,7 +249,9 @@ class Menu {
     public static function init() {
         // XXX Slice the roles finer as development evolves.
         global $user;
-        if (in_array('medical librarian', $user->roles))
+        if (in_array('icrdb manager', $user->roles))
+            $role = 'icrdb manager';
+        else if (in_array('medical librarian', $user->roles))
             $role = 'librarian';
         elseif (in_array('board member', $user->roles))
             $role = 'member';
@@ -258,6 +260,22 @@ class Menu {
         else
             $role = 'admin';
         switch ($role) {
+            case 'icrdb manager':
+                // Other software doesn't know 'icrdb manager' role
+                //  in the menu context
+                $effectiveRole = 'admin';
+                self::$menus = array(
+                    Menu::citations($effectiveRole),
+                    Menu::calendar($effectiveRole),
+                    Menu::literature($effectiveRole),
+                    Menu::summaries(),
+                    Menu::reports(),
+                    Menu::admin_tool(),
+                    Menu::travel($effectiveRole),
+                    Menu::forums($user),
+                    Menu::about(),
+                );
+                break;
             case 'librarian':
                 self::$menus = array(
                     Menu::citations($role),
