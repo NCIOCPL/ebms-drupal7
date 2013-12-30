@@ -1396,6 +1396,10 @@ function addArticleStateComment($articleStateId, $comment,
  */
 function getCurrentState($articleId, $topicId) {
 
+    // If there's no topic, there's no current state.
+    if (!$topicId)
+        return null;
+
     $qry = db_select('ebms_article_state', 'state');
     $qry->join('ebms_article_state_type', 'type',
         'state.state_id = type.state_id');

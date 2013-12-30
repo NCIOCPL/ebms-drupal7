@@ -798,6 +798,8 @@ function loadNotList ($boardId, $source='Pubmed') {
  *  @param int $cycleId         Review cycle ID, required.
  *  @param int $topicId         Summary topic for which we are importing.
  *                               Could be null but think that should be rare.
+ *                               Will be null when we're just refreshing
+ *                               article XML from NLM.
  *  @param string $comment      Comment to record in import_batch table (only
  *                               in live mode), default is none.
  *                               Comment is also recorded in setArticleState()
@@ -827,7 +829,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
         throw new \Exception("importArticlesFromNLM: illegal mode \"$mode\"");
     if (count($articleIds) < 1)
         throw new \Exception("importArticlesFromNLM: empty PMID list");
-    if (is_null($cycleId) || $cycleId < 1) {
+    if ($topicId && (is_null($cycleId) || $cycleId < 1)) {
         // XXX Add more checks?  Must be one of last one or two?  Ask users
         throw new \Exception(
             "importArticlesFromNLM: illegal cycleId=$cycleId");
@@ -921,13 +923,17 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 $ib->addArticle('duplicate', $pmid, $foundId, $msgs);
 
                 // Have we got a new topic, not seen in this article before?
-                $newTopic = true;
-                foreach ($topicObjs as $top) {
-                    if ($top->topic_id == $topicId) {
-                        $newTopic = false;
-                        break;
+                if ($topicId) {
+                    $newTopic = true;
+                    foreach ($topicObjs as $top) {
+                        if ($top->topic_id == $topicId) {
+                            $newTopic = false;
+                            break;
+                        }
                     }
                 }
+                else
+                    $newTopic = false;
                 if ($newTopic) {
                     if ($mode == 'live') {
                         $rec->setArticleState('ReadyInitReview',
@@ -948,7 +954,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
 
                 // If not marking it for not list, mark it ready for review
                 if (!$useNotList || !array_key_exists($nlmJrnlId, $notList)) {
-                    if ($mode == 'live') {
+                    if ($mode == 'live' && $topicId) {
                         $rec->setArticleState('ReadyInitReview',
                                $topicId, $boardId, $comment, $userId,
                                $pi->constantDt, $cycleId);
@@ -963,7 +969,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 // If it was previously processed for this topic,
                 //   we don't want to reject it now.  That could override
                 //   a human's decision.
-                if (is_null($oldTopicState)) {
+                if ($topicId && is_null($oldTopicState)) {
                     if ($mode == 'live') {
                         $rec->setArticleState('RejectJournalTitle',
                                $topicId, $boardId, $comment, $userId,
