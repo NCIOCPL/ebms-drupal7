@@ -669,3 +669,270 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     // Draw the form again.
     drupal_goto($url);
 }
+
+// OCEEBMS-87
+//function pdq_ebms_refresh_xml() {
+//    return drupal_get_form('pdq_ebms_refresh_xml_form');
+//}
+
+// OCEEBMS-87
+function pdq_ebms_refresh_xml_form($form, &$form_state) {
+    return array(
+        'page title' => array(
+            '#markup' => '<h2>Refresh Article XML From Pubmed</h2>',
+        ),
+        'max' => array(
+            '#type' => 'textfield',
+            '#title' => 'Maximum number of articles to check',
+            '#default_value' => 2500,
+            '#description' => '2500 is a safe limit, running little risk of ' .
+            'timing out the web server connection.',
+        ),
+//         'pmids' => array(
+//             '#type' => 'textarea',
+//             '#title' => 'Pubmed IDS',
+//             '#required' => true,
+//         ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+    );
+}
+
+/*
+ * Can't use this, as it turns out, because it uses up too much memory,
+ * at least in the current condition of the database.  It's possible
+ * that it will be useful once we've caught up on refreshing most of
+ * the article XML, so I'll leave it here until I've created at least
+ * one new version of this file.  It may always be risky, though, because
+ * NLM has a habit of arbitrarily changing little insignificant things
+ * in massive numbers of their records all at once from time to time
+ * (this has bitten us many times with their clinical trials database)
+ * so we may never get to use this function.
+ */
+function pdq_ebms_ask_nlm_which_have_changed($since, $pmids) {
+
+    // NLM expects dates in a funky format.
+    $since = str_replace('-', '/', substr($since, 0, 10));
+
+    // Construct a URL to fetch.
+    $retmax = count($pmids);
+    $base = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+    $parms = "db=pubmed&retmax=$retmax&term=($since" .
+        '[MDAT]:3000[MDAT])+AND+' . implode(',', $pmids) . '[UID]';
+    $url = "$base?$parms";
+
+    // Fetch the Pubmed IDs for the articles which have changed since
+    // our cutoff date.
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $base);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $parms);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+    $results = curl_exec($ch);
+    curl_close($ch);
+
+    // Check for problems.
+    $error = array();
+    if (preg_match('#<ERROR>(.*)</ERROR>#Us', $results, $error)) {
+        drupal_set_message($error[1], 'error');
+        return null;
+    }
+    if (!preg_match('#<IdList#', $results)) {
+        drupal_set_message('Failure retrieving PMID list from NLM.', 'error');
+        pdq_ebms_debug('MDAT FAILURE', $results);
+        return null;
+    }
+
+    // Extract the PMIDs into an array.
+    $pattern = '#<Id>(\d+)</Id>#';
+    $offset = 0;
+    $pmids = array();
+    while (true) {
+        $matches = array();
+        $found = preg_match($pattern, $results, $matches,
+                 PREG_OFFSET_CAPTURE, $offset);
+        if ($found == 1) {
+            $pmids[] = trim($matches[1][0]);
+            $offset = $matches[1][1] + strlen($matches[1][0]);
+            $count = count($pmids);
+        }
+        else {
+            return $pmids;
+        }
+    }
+}
+
+/*
+ * Bulk refresh of article XML from Pubmed.  Check a large chunk
+ * of articles which have never been checked before, or whose last
+ * check was done over a week ago.  Can't do too many at once,
+ * or we'll time out the web server connection.
+ */
+function pdq_ebms_refresh_xml_form_submit($form, &$form_state) {
+
+    // Set up working variables.
+    $today = date('Y-m-d');
+    $start = microtime(true);
+    $max_to_check = 2500;
+    if ($form_state['values']['max'])
+        $max_to_check = $form_state['values']['max'];
+    $last_week = date('Y-m-d', strtotime('-7 days'));
+
+    // Collect PMIDs for articles we've never checked before.
+    $pmids = array();
+    $results = db_select('ebms_article', 'a')
+        ->condition('a.source', 'Pubmed')
+        ->isNull('a.data_checked')
+        ->fields('a', array('source_id'))
+        ->orderBy('a.article_id')
+        ->range(0, $max_to_check)
+        ->execute();
+    foreach ($results as $result) {
+        $pmid = trim($result->source_id);
+        if ($pmid)
+            $pmids[] = $pmid;
+    }
+
+    // If we can handle more articles, get the ones which have gone the
+    // longest since their last check.
+    if (count($pmids) < $max_to_check) {
+        $results = db_select('ebms_article', 'a')
+            ->condition('a.source', 'Pubmed')
+            ->condition('a.data_checked', $last_week, '<')
+            ->fields('a', array('source_id'))
+            ->orderBy('a.data_checked')
+            ->range(0, $max_to_check - count($pmids))
+            ->execute();
+        foreach ($results as $result) {
+            $pmid = trim($result->source_id);
+            if ($pmid)
+                $pmids[] = $pmid;
+        }
+    }
+    $changed = pdq_ebms_ask_nlm_which_have_changed('2012/01/01', $pmids);
+    if (is_null($changed))
+        return;
+
+    pdq_ebms_debug('REFRESHING XML FROM NLM',
+        array('candidates' => count($pmids), 'changed' => count($changed)));
+
+    // Ask NLM for fresh documents for these PMIDs.
+    if (!empty($changed)) {
+        $batch = Ebms\importArticlesFromNLM('live', $changed, null, null,
+                 'BATCH REPLACEMENT OF UPDATED ARTICLES FROM PUBMED');
+        $count = count($batch->action['replaced']);
+    }
+    else
+        $count = 0;
+    pdq_ebms_debug('REFRESH COUNT', $count);
+
+    // Record our check of these articles.
+    $updated = db_update('ebms_article')
+        ->fields(array('data_checked' => $today))
+        ->condition('source', 'Pubmed')
+        ->condition('source_id', $pmids, 'IN')
+        ->execute();
+    pdq_ebms_debug('DATA CHECKED', $updated);
+
+    // Tell the user what we've done.
+    $checked = count($pmids);
+    $unchecked = db_select('ebms_article', 'a')
+        ->condition('a.source', 'Pubmed')
+        ->isNull('a.data_checked')
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+    $stale = db_select('ebms_article', 'a')
+        ->condition('a.source', 'Pubmed')
+        ->condition('a.data_checked', $last_week, '<')
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+    $pending = $unchecked + $stale;
+    $stats = "Checked $checked articles; $count refreshed; " .
+        "$pending still need to be checked";
+    $finish = microtime(true);
+    $elapsed = $finish - $start;
+    $performance = sprintf("%.3f seconds", $elapsed);
+    pdq_ebms_debug('REFRESH STATS',
+        array($checked, $pending, $performance));
+    drupal_set_message("$stats ($performance).");
+}
+
+/*
+ * Bulk refresh of article XML for a given source.  Look at all of the
+ * articles for which the source has informed us of a modification
+ * later than we last imported fresh XML or verified that the modification
+ * reported by the source does not result in any actual change to the
+ * XML document.  We do an update for as many as we think we can
+ * safely handle in a single HTTP connection, and report back how
+ * many articles from this source still need to be checked.
+ *
+ * JIRA::OCEEBMS-87
+ */
+function pdq_ebms_refresh_xml($source) {
+
+    // Collect PMIDs for articles we've never checked before.
+    drupal_add_http_header('Content-type', 'text/plain');
+    $start = microtime(true);
+    $max_to_refresh = 2500;
+    $pmids = array();
+    $checked = array();
+    $query = db_select('ebms_article', 'a')
+        ->condition('a.source', $source)
+        ->isNotNull('a.data_mod')
+        ->where('a.data_checked IS NULL OR a.data_checked < a.data_mod');
+    $total = $query->countQuery()->execute()->fetchField();
+    if (!$total) {
+        print "0";
+        exit(0);
+    }
+    pdq_ebms_debug('REFRESH XML TOTAL', $total);
+    $fields = array('source_id', 'import_date', 'update_date', 'data_mod');
+    $articles = $query->fields('a', $fields)->orderBy('a.data_mod')->execute();
+    foreach ($articles as $art) {
+        $checked[] = $art->source_id;
+        if ($art->update_date && $art->update_date > $art->data_mod)
+            continue;
+        if ($art->import_date > $art->data_mod)
+            continue;
+        $pmids[] = $art->source_id;
+        if (count($pmids) >= $max_to_refresh)
+            break;
+    }
+
+    pdq_ebms_debug('REFRESHING XML FROM NLM',
+        array('checked' => count($checked), 'pmids' => count($pmids)));
+
+    // Ask NLM for fresh documents for these PMIDs.
+    if (!empty($pmids)) {
+        $batch = Ebms\importArticlesFromNLM('live', $pmids, null, null,
+                 'BATCH REPLACEMENT OF UPDATED ARTICLES FROM PUBMED');
+        $count = count($batch->action['replaced']);
+    }
+    else
+        $count = 0;
+    pdq_ebms_debug('XML REPLACED', $count);
+
+    // Record our check of these articles.
+    $today = date('Y-m-d');
+    $updated = db_update('ebms_article')
+        ->fields(array('data_checked' => $today))
+        ->condition('source', 'Pubmed')
+        ->condition('source_id', $checked, 'IN')
+        ->execute();
+    pdq_ebms_debug('DATA CHECKED', $updated);
+
+    // Tell the user what we've done.
+    $remaining = $total - count($checked);
+    $finish = microtime(true);
+    $elapsed = $finish - $start;
+    $performance = sprintf("%.3f seconds", $elapsed);
+    pdq_ebms_debug('REFRESH WRAPUP', array($remaining, $performance));
+
+    // Tell the caller how many articles are still to be checked.
+    print $remaining;
+    exit(0);
+}

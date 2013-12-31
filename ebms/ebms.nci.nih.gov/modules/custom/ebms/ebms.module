@@ -482,6 +482,38 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
+
+        // SUPPORT FOR QA TEAM'S AUTOMATED TESTING
+        'get-source-ids' => array(
+            'page callback' => 'pdq_ebms_get_source_ids',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // SUPPORT FOR QA TEAM'S AUTOMATED TESTING
+        'update-source-mod' => array(
+            'page callback' => 'pdq_ebms_update_source_mod',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
+        // SUPPORT FOR QA TEAM'S AUTOMATED TESTING
+        'refresh-xml' => array(
+            'page callback' => 'pdq_ebms_refresh_xml',
+            'access callback' => true,
+            'file' => 'import.inc',
+            'type' => MENU_CALLBACK,
+        ),
+
+        // REFRESH XML FROM NLM (OCEEBMS-87).
+        'admin/refresh-xml-from-nlm' => array(
+            'title' => 'Refresh XML From NLM',
+            'description' => 'Utility to update article XML from Pubmed.',
+            'page callback' => 'pdq_ebms_refresh_xml',
+            'access arguments' => array('administer ebms'),
+            'file' => 'import.inc',
+            'type' => MENU_CALLBACK,
+        ),
     );
 }
 
@@ -986,8 +1018,16 @@ function ebms_page_build(&$page) {
  */
 function ebms_init() {
     $exploded = explode('/', $_GET['q']);
-    if ($exploded && $exploded[0] == 'get-article-id')
-        return;
+    if ($exploded) {
+        $ok = array(
+            'get-article-id',
+            'get-source-ids',
+            'update-source-mod',
+            'refresh-xml',
+        );
+        if (in_array($exploded[0], $ok))
+            return;
+    }
     global $user;
     $allowed = array('login', 'password', 'account-email-status', 'ssologin');
     if (!user_is_logged_in() && !in_array($_GET['q'], $allowed)) {
@@ -1656,5 +1696,44 @@ function pdq_ebms_get_article_id_from_source_id($source=null, $source_id=0) {
         ->execute()
         ->fetchField();
     print $article_id;
+    exit(0);
+}
+
+function pdq_ebms_update_source_mod() {
+    $source = $_POST['source'];
+    $date = $_POST['date'];
+    $ids = explode("\t", $_POST['ids']);
+    pdq_ebms_debug('UPDATE SOURCE MOD', array($date, count($ids)));
+    $updated = db_update('ebms_article')
+        ->fields(array('data_mod' => $date))
+        ->condition('source', $source)
+        ->condition('source_id', $ids, 'IN')
+        ->execute();
+    drupal_add_http_header('Content-type', 'text/plain');
+    //drupal_set_message($_POST);
+    print "Updated data_mod column in $updated rows for $date\n";
+    exit(0);
+}
+function pdq_ebms_get_source_ids($source) {
+    pdq_ebms_debug('GET SOURCE IDS', $source);
+    drupal_add_http_header('Content-type', 'text/plain');
+    $results = db_select('ebms_article', 'a')
+        ->fields('a', array('source_id', 'import_date', 'update_date',
+                'data_mod', 'data_checked'))
+        ->condition('a.source', $source)
+        ->execute();
+    foreach ($results as $result) {
+        $source_id = trim(preg_replace('/\s+/', ' ', $result->source_id));
+        if (!$source_id)
+            continue;
+        $latest = $result->import_date;
+        if ($result->update_date && $result->update_date > $latest)
+            $latest = $result->update_date;
+        if ($result->data_checked && $result->data_checked > $latest)
+            $latest = $result->data_checked;
+        $latest = substr($latest, 0, 10);
+        $mod = $result->data_mod;
+        echo "$source_id\t$latest\t$mod\n";
+    }
     exit(0);
 }
