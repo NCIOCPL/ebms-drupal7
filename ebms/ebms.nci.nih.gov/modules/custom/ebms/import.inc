@@ -876,7 +876,7 @@ function pdq_ebms_refresh_xml($source) {
 
     // Collect PMIDs for articles we've never checked before.
     drupal_add_http_header('Content-type', 'text/plain');
-    $start = microtime(true);
+    //$start = microtime(true);
     $max_to_refresh = 2500;
     $pmids = array();
     $checked = array();
@@ -889,7 +889,7 @@ function pdq_ebms_refresh_xml($source) {
         print "0";
         exit(0);
     }
-    pdq_ebms_debug('REFRESH XML TOTAL', $total);
+    //pdq_ebms_debug('REFRESH XML TOTAL', $total);
     $fields = array('source_id', 'import_date', 'update_date', 'data_mod');
     $articles = $query->fields('a', $fields)->orderBy('a.data_mod')->execute();
     foreach ($articles as $art) {
@@ -903,8 +903,8 @@ function pdq_ebms_refresh_xml($source) {
             break;
     }
 
-    pdq_ebms_debug('REFRESHING XML FROM NLM',
-        array('checked' => count($checked), 'pmids' => count($pmids)));
+    //pdq_ebms_debug('REFRESHING XML FROM NLM',
+    //    array('checked' => count($checked), 'pmids' => count($pmids)));
 
     // Ask NLM for fresh documents for these PMIDs.
     if (!empty($pmids)) {
@@ -914,23 +914,33 @@ function pdq_ebms_refresh_xml($source) {
     }
     else
         $count = 0;
-    pdq_ebms_debug('XML REPLACED', $count);
+    //pdq_ebms_debug('XML REPLACED', $count);
 
-    // Record our check of these articles.
+    // Record our check of these articles.  Skip any articles with errors.
+    $errors = array();
+    foreach ($batch->action['error'] as $error)
+        $errors[] = $error[0];
+    $checked = array_diff($checked, $errors);
+
+    // If everything we looked at errored out, better stop now.
+    if (empty($checked)) {
+        print '0';
+        exit(0);
+    }
     $today = date('Y-m-d');
     $updated = db_update('ebms_article')
         ->fields(array('data_checked' => $today))
         ->condition('source', 'Pubmed')
         ->condition('source_id', $checked, 'IN')
         ->execute();
-    pdq_ebms_debug('DATA CHECKED', $updated);
+    //pdq_ebms_debug('DATA CHECKED', $updated);
 
     // Tell the user what we've done.
     $remaining = $total - count($checked);
-    $finish = microtime(true);
-    $elapsed = $finish - $start;
-    $performance = sprintf("%.3f seconds", $elapsed);
-    pdq_ebms_debug('REFRESH WRAPUP', array($remaining, $performance));
+    //$finish = microtime(true);
+    //$elapsed = $finish - $start;
+    //$performance = sprintf("%.3f seconds", $elapsed);
+    //pdq_ebms_debug('REFRESH WRAPUP', array($remaining, $performance));
 
     // Tell the caller how many articles are still to be checked.
     print $remaining;
