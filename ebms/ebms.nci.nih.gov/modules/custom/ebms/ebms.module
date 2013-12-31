@@ -483,25 +483,28 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        // SUPPORT FOR QA TEAM'S AUTOMATED TESTING
+        // SUPPORT FOR REFRESHING PUBMED XML (OCEEBMS-87).
         'get-source-ids' => array(
             'page callback' => 'pdq_ebms_get_source_ids',
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
-        // SUPPORT FOR QA TEAM'S AUTOMATED TESTING
         'update-source-mod' => array(
             'page callback' => 'pdq_ebms_update_source_mod',
             'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
-
-        // SUPPORT FOR QA TEAM'S AUTOMATED TESTING
         'refresh-xml' => array(
             'page callback' => 'pdq_ebms_refresh_xml',
             'access callback' => true,
             'file' => 'import.inc',
+            'type' => MENU_CALLBACK,
+        ),
+
+        // ACCOUNT INFORMATION
+        'ebms-accounts' => array(
+            'page callback' => 'pdq_ebms_account_info',
+            'access callback' => true,
             'type' => MENU_CALLBACK,
         ),
 
@@ -1024,6 +1027,7 @@ function ebms_init() {
             'get-source-ids',
             'update-source-mod',
             'refresh-xml',
+            'ebms-accounts',
         );
         if (in_array($exploded[0], $ok))
             return;
@@ -1685,6 +1689,19 @@ function getUTC($strTime="now", $timeZone="America/New_York") {
     $utc = date("Ymd\THis\Z", $unixTime);
 
     return $utc;
+}
+
+function pdq_ebms_account_info() {
+    drupal_add_http_header('Content-type', 'text/plain');
+    $results = db_select('users', 'u')
+        ->fields('u', array('uid', 'name', 'created', 'login', 'status'))
+        ->execute();
+    $accounts = array();
+    foreach ($results as $result)
+        $accounts[] = $result;
+    pdq_ebms_debug('ACCOUNT INFO', $accounts);
+    print drupal_json_encode($accounts);
+    exit(0);
 }
 
 function pdq_ebms_get_article_id_from_source_id($source=null, $source_id=0) {
