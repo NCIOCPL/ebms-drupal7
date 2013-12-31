@@ -61,6 +61,7 @@ DROP TABLE IF EXISTS ebms_article;
 DROP TABLE IF EXISTS ebms_topic_reviewer;
 DROP TABLE IF EXISTS ebms_doc_topic;
 DROP TABLE IF EXISTS ebms_topic;
+DROP TABLE IF EXISTS ebms_ad_hoc_group_board;
 DROP TABLE IF EXISTS ebms_ad_hoc_group_member;
 DROP TABLE IF EXISTS ebms_ad_hoc_group;
 DROP TABLE IF EXISTS ebms_doc_board;
@@ -256,6 +257,22 @@ CREATE TABLE ebms_ad_hoc_group
 
 
 /*
+ * Optional association of ad-hoc groups with one or more boards.
+ * This allows meetings for an ad-hoc group to show up on the picklists
+ * which are used for the "On Agenda" state.  See OCEEBMS-59.
+ *
+ * group_id       foreign key into the ebms_ad_hoc_group table
+ * board_id       foreign key into the ebms_board table
+ */
+CREATE TABLE ebms_ad_hoc_group_board
+   (group_id INTEGER NOT NULL,
+    board_id INTEGER NOT NULL,
+ PRIMARY KEY (group_id, board_id),
+ FOREIGN KEY (group_id) REFERENCES ebms_ad_hoc_group (group_id),
+ FOREIGN KEY (board_id) REFERENCES ebms_board (board_id))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
  * Membership in ad-hoc groups.
  *
  * user_id        foreign key into Drupal's users table
@@ -372,6 +389,8 @@ CREATE TABLE ebms_topic_reviewer
  *  source_data     Unmodified XML or whatever downloaded from the source.
  *                    We'll assume it's always there and make it not null
  *                    changing that only if there's a real use case.
+ *  data_mod        Date article information was last updated in the source.
+ *  data_checked    Last date we verified that we have the most recent data.
  *  full_text_id    Foreign key into the Drupal file mgt table for PDF of 
  *                    article.  Full text is actually stored in the file 
  *                    system.  The file_managed table tells us where.
@@ -398,6 +417,7 @@ CREATE TABLE ebms_article (
   update_date       DATETIME NULL,
   imported_by       INTEGER UNSIGNED NOT NULL,
   source_data       LONGTEXT NULL,
+  data_checked      DATE NULL,
   full_text_id      INTEGER UNSIGNED NULL,
   active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
   FOREIGN KEY (imported_by) REFERENCES users(uid),
@@ -422,6 +442,10 @@ CREATE TABLE ebms_article (
              ON ebms_article(import_date);
       CREATE INDEX ebms_article_published_date_index
              ON ebms_article(published_date);
+      CREATE INDEX ebms_article_update_date
+             ON ebms_article(update_date);
+      CREATE INDEX ebms_article_data_checked
+             ON ebms_article(data_checked);
 
 /*
  * Make it possible to match up records from the old CiteMS system
