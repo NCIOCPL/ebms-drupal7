@@ -584,6 +584,13 @@ function _webform_render_ebms_travel($component, $value=NULL, $filter=TRUE) {
       }
     $form[$fieldset][$i]['date'] = array(
         '#type' => 'date',
+        '#datepicker' => 1,
+        '#theme' => 'webform_date',
+        '#start_date' => '-2 years',
+        '#end_date' => '+1 years',
+        '#process' => array('webform_expand_date'),
+        '#timezone' => 'site',
+        '#year_textfield' => 0,
         '#title' => 'Date of Expense',
         '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
         '#default_value' => $val ? $val['date'] : $component['value'],
