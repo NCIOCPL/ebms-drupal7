@@ -28,16 +28,16 @@ define('Ebms\CSS_DIR', drupal_get_path('theme', THEME_NAME) . '/css');
 define('Ebms\MODULE_DIR', drupal_get_path('module', 'ebms'));
 define('Ebms\JS_DIR', MODULE_DIR . '/js');
 define('Ebms\FROM', 'PDQ Editorial Board Management System <ebms@cancer.gov>');
-define('Ebms\LEFT_ARROW', "\xe2\x97\x80");
-define('Ebms\RIGHT_ARROW', "\xe2\x96\xb6");
-define('Ebms\DOUBLE_LEFT_ARROW', "\xe2\x8f\xaa");
-define('Ebms\DOUBLE_RIGHT_ARROW', "\xe2\x8f\xa9");
+define('Ebms\LEFT_ARROW', '<');
+define('Ebms\RIGHT_ARROW', '>');
 define('Ebms\UP_ARROW', "\xe2\x96\xb2");
 define('Ebms\DOWN_ARROW', "\xe2\x96\xbc");
 define('Ebms\ELLIPSIS', "\xe2\x80\xa6");
 define('Ebms\STAR', "\xe2\x98\x86");
 define('Ebms\BLACK_STAR', "\xe2\x98\x85");
 define('Ebms\PICTURE_SIZE', 135);
+define('Ebms\DOUBLE_RIGHT_ARROW', '>>');
+define('Ebms\DOUBLE_LEFT_ARROW', '<<');
 
 define('Ebms\ADD_DECISION_ACTIVE',
     IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png');
