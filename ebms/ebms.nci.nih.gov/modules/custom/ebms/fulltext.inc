@@ -332,11 +332,13 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
                         '#id' => 'pdf-' . $article_id,
                         '#attributes' => array('class' => $file_class),
                     ),
+                    /*
                     'unavailable-' . $article_id => array(
                         '#type' => 'checkbox',
                         '#id' => 'unavailable-' . $article_id,
                         '#title' => 'Unable to Upload',
                     ),
+                */
                 ),
             );
             ++$counter;
@@ -458,6 +460,7 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
             }
 
             // No file; how about the "unavailable" flag?
+            /*
             elseif ($form_state['values']['unavailable-' . $article_id]) {
                 try {
                     db_insert('ebms_ft_unavailable')
@@ -478,6 +481,7 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
                         'article ' . $article_id . '.', 'error');
                 }
             }
+            */
         }
     }
 
