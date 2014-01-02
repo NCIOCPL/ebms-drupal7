@@ -4096,7 +4096,7 @@ function pdq_ebms_manager_packets_filter_form (
         '#type' => 'checkboxes',
         '#options' => drupal_map_assoc($scope_opts),
         '#default_value' => array('1'=>'Active'),
-        '#title' => 'Include packets that are',
+        '#title' => 'Include packets that are:',
     );
     $form['submit'] = array(
         '#type' => 'submit',

@@ -94,7 +94,7 @@ h3.pkt-rvwr-files { margin-top: 40px; border-bottom: solid 1px #696559; }
 
 /* ************ For filter form at top ************* */
 #packet-filter-form .container-inline-date .date-padding {
-    float: none; 
+    float: none; clear: both; padding-top: 0;
 }
 #packet-filter-form .date-padding .description {
     display: none; 
@@ -106,6 +106,9 @@ h3.pkt-rvwr-files { margin-top: 40px; border-bottom: solid 1px #696559; }
 }
 #packet-filter-form #edit-pkt-scope .form-type-checkbox { 
     display: inline; 
+}
+#packet-filter-form #edit-pkt-scope legend {
+    margin-bottom: 10px;
 }
 #packet-filter-form .form-submit {
     margin-top: 5px; 
