@@ -725,7 +725,12 @@ CREATE TABLE ebms_import_disposition (
  *  cycle_id        Unique ID of a review cycle for the import batch.
  *  user_id         Unique ID of user running the import.
  *  not_list        'Y' = NOT list was used, 'N' = no NOT list.
- *  input_type      One of 'R'egular, 'F'ast track, 'S'pecial search.
+ *  input_type      One of
+ *                   'R'egular import, 
+ *                   'F'ast track import, 
+ *                   'S'pecial search import,
+ *                   'D'ata refresh from source (batch job that gets
+ *                      latest data to replace ebms_article.source_data.)
  *  article_count   Number of unique article IDs.  May be less than the
  *                   number of import_action rows referencing this row
  *                   because one article can appear in multiple categories.
@@ -740,7 +745,7 @@ CREATE TABLE ebms_import_batch (
     cycle_id        INT NOT NULL,
     user_id         INT UNSIGNED NOT NULL,
     not_list        ENUM ('Y', 'N') NOT NUlL DEFAULT 'Y',
-    input_type      ENUM ('R', 'F', 'S') NOT NULL DEFAULT 'R',
+    input_type      ENUM ('R', 'F', 'S', 'D') NOT NULL DEFAULT 'R',
     article_count   INT NOT NULL,
     comment         VARCHAR(2048) NULL,
     FOREIGN KEY (topic_id) REFERENCES ebms_topic(topic_id),
