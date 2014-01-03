@@ -1537,8 +1537,10 @@ INSERT INTO ebms_review_rejection_value (value_name, value_pos)
 INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Unvalidated outcome measure(s) used', 14,
              'e.g., unvalidated surrogate endpoint[s]');
+INSERT INTO ebms_review_rejection_value (value_name, value_pos)
+     VALUES ('I am unable to suggest changes due to a conflict of interest', 15);
 INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
-     VALUES ('Other', 15, 'specify reason(s) in the Comments field');
+     VALUES ('Other', 16, 'specify reason(s) in the Comments field');
 
 /*
  * Assignment of disposition to an article in a specific packet by
