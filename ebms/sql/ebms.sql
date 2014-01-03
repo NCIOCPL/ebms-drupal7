@@ -417,6 +417,7 @@ CREATE TABLE ebms_article (
   update_date       DATETIME NULL,
   imported_by       INTEGER UNSIGNED NOT NULL,
   source_data       LONGTEXT NULL,
+  data_mod          DATE NULL,
   data_checked      DATE NULL,
   full_text_id      INTEGER UNSIGNED NULL,
   active_status     ENUM('A', 'D') NOT NULL DEFAULT 'A',
@@ -444,6 +445,8 @@ CREATE TABLE ebms_article (
              ON ebms_article(published_date);
       CREATE INDEX ebms_article_update_date
              ON ebms_article(update_date);
+      CREATE INDEX ebms_article_data_mod
+             ON ebms_article(data_mod);
       CREATE INDEX ebms_article_data_checked
              ON ebms_article(data_checked);
 
