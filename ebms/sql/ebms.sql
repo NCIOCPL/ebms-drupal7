@@ -736,6 +736,13 @@ CREATE TABLE ebms_import_disposition (
  *                   because one article can appear in multiple categories.
  *  comment         Optional comment, e.g., if the batch was a special
  *                   import, why it was imported.
+ *  messages        General error messages produced by the process, if any,
+ *                   These pertain to the batch as a whole, not to individual
+ *                   articles.
+ *  status          'Success' = No general errors.  Some individual articles 
+ *                   may have failed.
+ *                  'Failure' = Process aborted before completion.  Some
+ *                   individual articles may have still been imported.
  */
 CREATE TABLE ebms_import_batch (
     import_batch_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -748,6 +755,8 @@ CREATE TABLE ebms_import_batch (
     input_type      ENUM ('R', 'F', 'S', 'D') NOT NULL DEFAULT 'R',
     article_count   INT NOT NULL,
     comment         VARCHAR(2048) NULL,
+    messages        TEXT NULL,
+    status          VARCHAR(32) DEFAULT 'Success',
     FOREIGN KEY (topic_id) REFERENCES ebms_topic(topic_id),
     FOREIGN KEY (cycle_id) REFERENCES ebms_cycle(cycle_id),
     FOREIGN KEY (user_id)  REFERENCES users(uid)
