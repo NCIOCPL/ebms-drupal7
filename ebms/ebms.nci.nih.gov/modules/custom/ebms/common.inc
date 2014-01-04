@@ -1741,9 +1741,20 @@ class Util {
             '#type' => 'container',
             '#attributes' => array('id' => 'import-report'),
         );
+
+        // If the job failed, add that to the report
+        if ($batch->status != 'Success') {
+            $msg = "<div class='messages'>" .
+                   "<h4 class='error'>Job status = {$batch->status}:" .
+                   "<br />{$batch->messages}</h4>" .
+                   "</div>";
+        }
+        else
+            $msg = '';
+
         $report['report-title'] = array(
             '#type' => 'markup',
-            '#markup' => '<h2>' . $title . '</h2>',
+            '#markup' => '<h2>' . $title . '</h2>' . $msg,
         );
         $unique_ids = array_keys($batch->uniqIds);
         $ids = array();
