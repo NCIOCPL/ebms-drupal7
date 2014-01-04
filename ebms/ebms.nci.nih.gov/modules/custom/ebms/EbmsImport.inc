@@ -9,11 +9,19 @@ require_once('EbmsArticle.inc');
 /**
  * Constants
  */
+// Regex for error responses on request as a whole
+define('Ebms\NLM_BAD_RESPONSE_PAT',
+       '/<eFetchResult.*>(?P<result>.*)<\/eFetchResult>/smuU');
+
+// Regex for error inside an eFetchResponse
+define('Ebms\REC_ERR_PAT', '/<ERROR>(?P<errMsg>.*)<\/ERROR>/smuU');
+
 // Regex for parsing out Pubmed Articles
 define('Ebms\ART_PAT', '/<PubmedArticle>.*<\/PubmedArticle>/smuU');
 
 // Regex for parsing out errors embedded in Pubmed output
-define('Ebms\ERR_PAT', '/<!-- Error>(.*)<\/Error -->/smuU');
+// Looks like NLM didn't want to include error info in the data
+define('Ebms\ARTICLE_ERR_PAT', '/<!-- Error>(.*)<\/Error -->/smuU');
 
 // Max output for one line of Pubmed, should be waaay high
 define('Ebms\MAX_LINE', 100000);
@@ -22,7 +30,7 @@ define('Ebms\MAX_LINE', 100000);
 define('Ebms\MAX_ACTION_MSG', 400);
 
 // Get a Pubmed ID out of an error message, 7-8 digits
-define('Ebms\PMID_PAT', '/[^\d](\d{7,8})[^\d]/');
+define('Ebms\PMID_PAT', '/[^\d](?P<pmid>\d{7,8})[^\d]/');
 
 // Medline format Pubmed ID
 define('Ebms\MEDLINE_PMID_PAT', '/^PMID- (\d{2,8})/m');
@@ -30,8 +38,14 @@ define('Ebms\MEDLINE_PMID_PAT', '/^PMID- (\d{2,8})/m');
 // Pubmed XML format recognizer
 define('Ebms\PUBMED_XML_START_PAT', '/<!DOCTYPE PubmedArticleSet/m');
 
+// The import batch was completed successfully or not
+define('Ebms\IMPORT_BATCH_SUCCESS', 'Success');
+define('Ebms\IMPORT_BATCH_FAILURE', 'Failure');
+
 /**
- * Class for importing records from NLM
+ * Class for importing records from NLM.
+ *
+ * Should only be instantiated from an ImportBatch object.
  */
 class PubmedInterface {
     public
@@ -47,9 +61,13 @@ class PubmedInterface {
     /**
      * Construct an interface for a set of Pubmed IDs.
      *
+     *  @param &$ib             Reference to calling ImportBatch object.
+     *                           Used for propagating error/status info up.
+     *
      *  @param array ids        Pubmed IDs as ASCII digit chars
      */
-    public function __construct(array $ids) {
+    public function __construct(&$ib, array $ids) {
+        $this->ib     = $ib;       // Reference back to caller's object
         $this->idList = $ids;      // List of Pubmed IDs to import
         $this->nextId = 0;         // Next one to fetch is first one
 
@@ -67,7 +85,7 @@ class PubmedInterface {
      *  @return int               Number of batches (interactions with NLM)
      *                              represented in retrieved $xml.
      *
-     *  @throws Exception         If thrown by lower level.
+     * CURRENTLY UNUSED - SHOULD TEST AGAIN BEFORE USE
      */
     public function getXmlFromNLM($fetchCount, &$xml) {
 
@@ -76,11 +94,13 @@ class PubmedInterface {
         $errorArray   = array();
         $recCount     = 0;
         $errCount     = 0;
+        $xmlCount     = 0;
 
         $this->fromNLM($fetchCount, true, $articleArray, $errorArray,
                        $xml, $recCount, $errCount, $xmlCount);
 
         // XML data was appended to $xml, return count of appended blocks
+        // A failure may have occurred.  Caller must check $ib->status
         return $xmlCount;
     }
 
@@ -110,19 +130,9 @@ class PubmedInterface {
         $this->fromNLM($fetchCount, false, $retArts, $retErrs, $xml,
                        $recCount, $errCount, $xmlBlockCount);
 
-        // Data was appended to $retArts and $retErrs.  Return the sum.
+        // Data (if any) was appended to $retArts, $retErrs.  Return the sum.
         return ($recCount + $errCount);
     }
-
-    /**
-     * Get size of list of Pubmed IDs in this PubmedInterface
-     *
-     *  @return int Number of items total, both retrieved and waiting.
-     */
-    public function getPmidCount() {
-        return count($this->ids);
-    }
-
 
     /**
      * Get number of Pubmed IDs not yet retrieved.
@@ -163,15 +173,12 @@ class PubmedInterface {
      *  @param int   &$errCount    Number of error messages produced.
      *  @param int   &$xmlCount    Number of blocks of XML fetched from NLM.
      *
-     *  @return Void.
-     *
-     *  @throws Exception if unable to connect or parse error in rawMode.
+     *  @return void.
      */
     private function fromNLM($fetchCount, $rawMode,
                              &$retRecs, &$retErrors, &$retXml,
                              &$recCount, &$errCount, &$xmlCount) {
 
-        $SCRIPT = "fromNLM";
 
         // Construct a URL to fetch
         $base = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
@@ -188,8 +195,11 @@ class PubmedInterface {
             $remainCount = $fetchCount;
 
         // Okay to start?
-        if ($idListCount < 1)
-            throw new \Exception("$SCRIPT: No Pubmed IDs to fetch");
+        if ($idListCount < 1) {
+            $msg = 'Requested 0 Pubmed IDs';
+            $this->ib->addGeneralError($msg, IMPORT_BATCH_FAILURE);
+            return;
+        }
 
         // Return counts are for this call, not cumulative with other calls
         // If caller wants cumulation, he does it
@@ -226,10 +236,42 @@ class PubmedInterface {
             // Post it
             $results = curl_exec($ch);
 
+            // Failed?
+            if (!$results) {
+                $err = curl_error($ch);
+                $msg = 'Unable to retrieve data from NLM: ' . $err;
+                $this->ib->addGeneralError($msg, IMPORT_BATCH_FAILURE);
+            }
+
+            /* Commenting this out for now.  Might mask more useful err info
+             *  below.  Need experiment and thought.
+            // Also check the HTTP return code, more belt and suspenders
+            if ($this->ib->status == IMPORT_BATCH_SUCCESS) {
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                if ($httpCode != 200) {
+                    $msg = "HTTP request produced error $httpCode";
+                    $this->ib->addGeneralError($msg, IMPORT_BATCH_FAILURE);
+                }
+            }
+            */
+
+            // HTTP request might succeed but NLM not like the request
+            if ($this->ib->status == IMPORT_BATCH_SUCCESS) {
+                $err = checkNLMReturn($results);
+                if ($err) {
+                    $msg = "Request error returned by NLM: $err";
+                    $this->ib->addGeneralError($msg, IMPORT_BATCH_FAILURE);
+                }
+            }
+
             // DEBUG - Log or do something with $headers if desired
             // $headers = curl_getinfo($ch);
 
             curl_close($ch);
+
+            // If we had a general failure, we're done
+            if ($this->ib->status != IMPORT_BATCH_SUCCESS)
+                return;
 
             // Save results
             if (!$rawMode) {
@@ -241,6 +283,10 @@ class PubmedInterface {
                 // Raw results appended to string
                 $retXml .= $results;
             }
+
+            // Parse errors in parsePubmed are treated as general errors
+            if ($this->ib->status != IMPORT_BATCH_SUCCESS)
+                return;
 
 
             // Update index and counters for next time through loop
@@ -264,18 +310,16 @@ class PubmedInterface {
      * Extract records from a serial Pubmed XML results file, convert them
      * to EbmsArticle objects, and make them available to the caller.
      *
-     *  @param string &$serialXml   XML as downloaded from Pubmed.
-     *                              Passed as reference to avoid extra copying
+     *  @param string $serialXml    XML as downloaded from Pubmed.
      *  @param array  &$retRecs     Append EbmsArticle objects here.
      *  @param array  &$retErrors   Append error messages here.
      *  @param int    &$recCount    Return num EbmsArticles constructed.
      *  @param int    &$errCount    Return num error messages produced.
      *
-     *  @return void
-     *
-     *  @throws Exception          From lower level XML parsing
+     *  @return void                If an error occurs, $ib->messages
+     *                               and $ib->status tell the tale.
      */
-    private function parsePubmed(&$serialXml,
+    private function parsePubmed($serialXml,
                                  array &$retRecs, array &$retErrors,
                                  &$recCount, &$errCount) {
 
@@ -286,7 +330,7 @@ class PubmedInterface {
             $matches = array();
 
             // Search for next error
-            $found = preg_match(ERR_PAT, $serialXml, $matches,
+            $found = preg_match(ARTICLE_ERR_PAT, $serialXml, $matches,
                                 PREG_OFFSET_CAPTURE, $offset);
             if ($found == 1) {
                 // Extract error message and append to list
@@ -313,8 +357,20 @@ class PubmedInterface {
                 $docXml = $matches[0][0];
 
                 // Create an EbmsArticle object for it
-                // Throws Exception if parser or xml error
-                $artObj = new EbmsArticle(null, $docXml, 'Pubmed');
+                // Catches Exception if parser or xml error
+                try {
+                    $artObj = new EbmsArticle(null, $docXml, 'Pubmed');
+                }
+                catch (\Exception $e) {
+                    // Parse errors are serious, probably indicating
+                    //  corruption of the data stream
+                    $err = $e->getMessage();
+                    $msg = "Error parsing article XML: $msg";
+                    $this->ib->addGeneralError($msg, IMPORT_BATCH_FAILURE);
+
+                    // Don't continue
+                    return;
+                }
                 $offset = $matches[0][1] + strlen($docXml);
 
                 // Return it
@@ -351,10 +407,9 @@ class ImportBatch {
      */
     public function __construct($batchId=null) {
 
-        if (is_null($batchId))
-            // Other software must initialize for use
-            $this->clear();
-        else
+        // Known initial state
+        $this->clear();
+        if (!is_null($batchId))
             $this->load($batchId);
     }
 
@@ -376,14 +431,15 @@ class ImportBatch {
         $this->inputType    = null;
         $this->userId       = null;
         $this->comment      = null;
+        $this->messages     = null;
         $this->articleCount = 0;
 
         // Building an instance from an import, we track unique source IDs
         // Loading from the database, we just have the count
-        //  idCount == -1          = not yet loaded from the database
-        //  uniqIds == empty array = not yet loaded from an import
-        $this->idCount = -1;
         $this->uniqIds = array();
+
+        // Assume everything worked until we find it didn't
+        $this->status = IMPORT_BATCH_SUCCESS;
 
         // Data describing individual articles, by disposition
         // Note: One article can be in more than one category
@@ -461,6 +517,36 @@ class ImportBatch {
         $this->comment = $comment;
     }
 
+    /**
+     * Add a general error to the ImportBatch object.
+     *
+     * In this context, a "general" error is an error pertaining to
+     * an entire operation, not just a single article.
+     *
+     * When an error is added, the status may also be changed.
+     * Status values will never be changed from worse to better, only
+     * from better to worse, i.e., if the object already has the status
+     * 'Failure', it won't be changed to 'Success'.
+     *
+     *  @param string $msg      Add this.
+     *  @param string $status   And set this.
+     *
+     *  @throws \Excepton if invalid status string passed.
+     */
+    public function addGeneralError($msg, $status) {
+
+        if (isset($this->messages))
+            $this->messages .= '; ' . $msg;
+        else
+            $this->messages = $msg;
+
+        // Only two possibilities at this time (2014-01-03)
+        if ($status == IMPORT_BATCH_FAILURE)
+            $this->status = $status;
+        else if ($status != IMPORT_BATCH_SUCCESS)
+            throw new \Exception
+              ("EbmsImportBatch:addGeneralError: Unknown status code $status");
+    }
 
     /**
      * Add a pubmed ID and description to an ImportBatch.
@@ -472,7 +558,7 @@ class ImportBatch {
      *
      *  @return void
      *
-     *  @throw Exception if unrecognized category
+     *  @throw Exception from lower level if unrecognized category
      */
     public function addArticle($category, $sourceId, $articleId=null,
                                 $desc=null) {
@@ -496,9 +582,7 @@ class ImportBatch {
      */
     public function getIdCount() {
         // See comments in the constructor
-        if ($this->idCount < 0)
-            return count($this->uniqIds);
-        return $this->idCound;
+        return count($this->uniqIds);
     }
 
     /**
@@ -563,15 +647,14 @@ class ImportBatch {
     /**
      * Store a complete EbmsImport object in the database.
      *
+     * We store the object even if an error occurred that prevented any
+     * articles from being retrieved from NLM
+     *
      *  @return int ebms_import_batch.batch_id.
      *
      *  @throws Exception if database error.
      */
     public function store() {
-
-        // If no import attempted, do not store anything
-        if ($this->idCount < 0 && count($this->uniqIds) == 0)
-            throw new \Exception('EbmsImport.store: Nothing to store');
 
         // Start a transaction for the whole batch
         $txn = db_transaction();
@@ -588,11 +671,14 @@ class ImportBatch {
                   'input_type'   => $this->inputType,
                   'user_id'      => $this->userId,
                   'comment'      => $this->comment,
-                  'article_count'=> count($this->uniqIds)
+                  'article_count'=> count($this->uniqIds),
+                  'messages'     => $this->messages,
+                  'status'       => $this->status
                 ));
             $this->batchId = $qry->execute();
 
             // Save each set of attempted import IDs
+            // Does nothing if there are no articles in category
             foreach (self::$categories as $category)
                 $this->storeDispositions($this->batchId, $category,
                                          $this->action[$category]);
@@ -648,6 +734,8 @@ class ImportBatch {
         $this->userId       = $row->user_id;
         $this->comment      = $row->comment;
         $this->articleCount = $row->article_count;
+        $this->messages     = $row->messages;
+        $this->status       = $row->status;
 
         // Load all of the different article actions
         $query = db_select('ebms_import_action', 'act');
@@ -819,10 +907,20 @@ function loadNotList ($boardId, $source='Pubmed') {
  *  @throws Exception if database or other error.
  */
 function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
-           $comment=null, $useNotList=true, $inputType='R', $userId=null) {
+           $comment=null, $useNotList=true, $inputType=null, $userId=null) {
 
     // Max we'll fetch at once - good citzenship
     define('PUBMED_BATCH_SIZE', 100);
+
+    // Set default inputType
+    if (is_null($inputType)) {
+        // If there's a topic, the default is R)egular input
+        if (!is_null($topicId))
+            $inputType = 'R';
+        // Otherwise it's a batch refresh of the source data from NLM
+        else
+            $inputType = 'D';
+    }
 
     // Have to have some info
     if ($mode != 'live' && $mode != 'test')
@@ -850,17 +948,21 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
     if ($useNotList && !is_null($boardId))
         $notList = loadNotList($boardId, 'Pubmed');
 
-    // Instantiate a PubmedInterface to talk to NLM
-    $pi = new PubmedInterface($articleIds);
-
     // Instantiate an ImportBatch to contain stats and report
     $ib = new ImportBatch();
     $initNotList = $useNotList ? 'Y' : 'N';
     $ib->init('Pubmed', $topicId, $cycleId, $initNotList, $inputType,
                $comment, $userId);
 
+    // Instantiate a PubmedInterface to talk to NLM
+    $pi = new PubmedInterface($ib, $articleIds);
+
+    // Create a keyed array of input IDs.  We'll check later to make sure
+    //  that every one of them was found
+    $inPmids = array_fill_keys($articleIds, 0);
+
     // Get batches of articles from NLM until we got them all
-    while ($pi->getRemainCount() > 0) {
+    while ($pi->getRemainCount() > 0 && $ib->status == IMPORT_BATCH_SUCCESS) {
 
         // Hold results of NLM request
         $recs = array();
@@ -882,8 +984,36 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
             $topicObjs = array();
             $msgs      = null;
 
+            // This input Pubmed ID was located by NLM
+            if (!isset($inPmids[$pmid])) {
+                // This could be a rare case where we send an invalid pmid
+                //  to Pubmed and it parses a valid ID out of it
+                //  e.g., send "abc12345" and it converts it to "12345"
+                // Let's treat that as an error
+                // It will be found later when we look for unprocessed ids
+                $ib->addArticle('error', $pmid, null,
+                   'Article with this Pubmed ID was sent by NLM but not ' .
+                   'requested by EBMS.  Can happen when alpha chars are ' .
+                   'in our PMID and are stripped out by Pubmed');
+                continue;
+            }
+            $inPmids[$pmid]++;
+
+            // This should never happen because Pubmed will de-dup requests,
+            //  but belt and suspenders
+            if ($inPmids[$pmid] > 1) {
+                watchdog("EbmsImport:importArticlesFromNLM",
+                         "$pmid returned twice in one search by NLM");
+                $ib->addArticle('error', $pmid, null,
+                    "Article for $pmid returned more than once by Pubmed");
+
+                // Done with this one
+                continue;
+            }
+
             // Article has no discovered state yet
             $oldTopicState = null;
+
 
             // XXX ISSUE: Do we want this?  Or should the user interface
             //  just hyperlink pmids to Pubmed?
@@ -986,18 +1116,70 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
         foreach ($errs as $err) {
             // Try to find a Pubmed ID
             if (preg_match(PMID_PAT, $err, $matches))
-                $errPmid = $matches[1];
+                $errPmid = $matches['pmid'];
             else
-                $errPmid = null;
+                $errPmid = '[unavailable]';
 
             $ib->addArticle('error', $errPmid, $err);
+        }
+    }
+
+    if ($ib->status == IMPORT_BATCH_SUCCESS) {
+        // Track any missing records, i.e., NLM returned nothing for them
+        foreach ($inPmids as $pmid => $count) {
+            if ($count == 0) {
+                $ib->addArticle('error', $pmid, null,
+                    "No article with this Pubmed ID was returned by Pubmed");
+            }
         }
     }
 
     // Store and return results
     if ($mode == 'live')
         $ib->store();
+
     return($ib);
+}
+
+/**
+ * Look for general errors in a download from NLM.  These are not errors with
+ * individual articles, but errors in the download as a whole.
+ *
+ * There is probably documentation at NLM for how error information is
+ * returned but I couldn't find it.  So the techniques below are based on
+ * searching for error patterns that I have actually encountered.  If new
+ * types are encountered, or documentation found, this can be improved.
+ *
+ *  @param string $nlmData      Data returned by the http request.
+ *
+ *  @return                     Error message, or '' if no error.
+ */
+function checkNLMReturn($nlmData) {
+
+    // We should get an eFetchResponse error on general errors
+    $matches = array();
+    if (preg_match(NLM_BAD_RESPONSE_PAT, $nlmData, $matches)) {
+        // Look for specific error message
+        $text    = trim($matches['result']);
+        $matches = array();
+        if (preg_match(REC_ERR_PAT, $text, $matches)) {
+
+            // Add to the list of messages
+            return trim($matches['errMsg']);
+        }
+
+        // If xml error found, we'll just use some of whatever text we found
+        else {
+            return trim(substr($text, 0, 250));
+        }
+    }
+
+    // Any successful request from NLM should be a PubmedArticleSet
+    $found = preg_match(PUBMED_XML_START_PAT, $nlmData);
+    if (!$found)
+        return trim(substr($nlmData, 0, 250));
+
+    return '';
 }
 
 
@@ -1100,8 +1282,9 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
         }
         return findPubmedIDsInMedlineFmt($dataStr);
     }
-    else $found = preg_match(PUBMED_XML_START_PAT, $dataStr, $matches,
-                        PREG_OFFSET_CAPTURE);
+    else
+        $found = preg_match(PUBMED_XML_START_PAT, $dataStr);
+
     if ($found) {
         // Won't be found if saved as html, see exception below
         return findPubmedIDsInXML($dataStr);
