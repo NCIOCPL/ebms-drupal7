@@ -3,8 +3,8 @@
 /* GENERAL SETTINGS */
 body,
 h2 > *,
-h3 > *
-H3 sup {
+h3 > *,
+h3 sup {
     font-family: Arial, Verdana, sans-serif;
     color: #2d2c28;
     font-weight: normal;
