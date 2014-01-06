@@ -508,6 +508,13 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // LOG INFORMATION
+        'log-tail' => array(
+            'page callback' => 'pdq_ebms_log_tail',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
         // REFRESH XML FROM NLM (OCEEBMS-87).
         'admin/refresh-xml-from-nlm' => array(
             'title' => 'Refresh XML From NLM',
@@ -1028,6 +1035,7 @@ function ebms_init() {
             'update-source-mod',
             'refresh-xml',
             'ebms-accounts',
+            'log-tail',
         );
         if (in_array($exploded[0], $ok))
             return;
@@ -1753,4 +1761,91 @@ function pdq_ebms_get_source_ids($source) {
         echo "$source_id\t$latest\t$mod\n";
     }
     exit(0);
+}
+function pdq_ebms_log_tail() {
+    try {
+        $p = $_GET['p']; // path
+        $s = $_GET['s']; // start
+        $c = $_GET['c']; // count
+        $r = $_GET['r']; // raw (binary)?
+        if (!$p)
+            $p = '/tmp/ebms.debug';
+        if (preg_match('/[*?]/', $p)) {
+            drupal_add_http_header('Content-type', 'text/plain');
+            foreach (glob($p) as $n) {
+                $size = filesize($n);
+                $time = date('Y-m-d H:i:s', filemtime($n));
+                printf("%s %10d %s\n", $time, $size, $n);
+            }
+            exit(0);
+        }
+        $stat = stat($p);
+        if (!$stat) {
+            drupal_add_http_header('Content-type', 'text/plain');
+            echo "$p not found\n";
+            exit(0);
+        }
+        $size = $stat['size'];
+        $time = date('Y-m-d Y:i:s', $stat['mtime']);
+        if (!strcmp($c, 'all'))
+            $c = $size;
+        $count = is_numeric($c) ? intval($c) : 100000;
+        $start = is_numeric($s) ? intval($s) : 0;
+        if ($c < 0)
+            $c = 0;
+        if (!$start && strcmp('0', $s)) {
+            if (!$count)
+                $count = 200000;
+            if ($count > $size)
+                $count = $size;
+            else
+                $start = $size - $count;
+        }
+        else {
+            if ($start < 0)
+                $start = abs($start) > $size ? 0 : $size + $start;
+            elseif ($start > $size)
+                $start = $size;
+            $available = $size - $start;
+            if ($count > $available)
+                $count = $available;
+        }
+        if ($count) {
+            $fp = fopen($p, 'rb');
+            if ($start)
+                fseek($fp, $start);
+            $bytes = fread($fp, $count);
+            if (!$r) {
+                $first = $start + 1;
+                $last = $start + $count;
+                drupal_add_http_header('Content-type', 'text/plain');
+                print "$p $size bytes ($time) $first-$last\n";
+                $ascii = preg_replace_callback(
+                    '/[\x80-\xff%]/',
+                    function ($m) {
+                        return sprintf('%%%02X', ord($m[0]));
+                    },
+                    $bytes);
+                print $bytes;
+            }
+            else {
+                $name = basename($p);
+                drupal_add_http_header('Content-type',
+                    'application/octet-stream');
+                drupal_add_http_header('Content-disposition',
+                    "attachment;filename=$name");
+                print $bytes;
+            }
+        }
+        else {
+            drupal_add_http_header('Content-type', 'text/plain');
+            echo "No bytes for $p\n";
+        }
+        exit(0);
+    }
+    catch (Exception $e) {
+        drupal_add_http_header('Content-type', 'text/plain');
+        echo "log-tail failure: $e\n";
+        exit(0);
+    }
 }
