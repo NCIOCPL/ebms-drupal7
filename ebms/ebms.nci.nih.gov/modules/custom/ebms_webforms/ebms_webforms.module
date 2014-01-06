@@ -1418,7 +1418,7 @@ function ebms_webforms_preprocess_page(&$vars) {
         } else {
             drupal_set_breadcrumb(array(
                 l('Travel', 'travel'),
-                l('Board Management Reports', 'reports/board'),
+                //l('Board Management Reports', 'reports/board'),
                 drupal_get_title(),
             ));
         }
