@@ -545,8 +545,15 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
         }
     }
     elseif ($form_state['values']['pmid']) {
-        $pmids = preg_split('/[\s,]/', $form_state['values']['pmid'], null,
+        $pmids = preg_split('/[\s,]+/', $form_state['values']['pmid'], null,
                  PREG_SPLIT_NO_EMPTY);
+        //pdq_ebms_debug('PMIDS', $pmids);
+        foreach ($pmids as $pmid) {
+            if (!preg_match('/^\d{1,8}$/', $pmid)) {
+                form_set_error('pmid', 'Invalid Pubmed ID format.');
+                break;
+            }
+        }
     }
     if (!$errors && count($pmids) < 1)
         form_set_error('pmid', 'You must either specify Pubmed IDs or ' .
@@ -583,6 +590,7 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     try {
         $batch = Ebms\importArticlesFromNLM($mode, $pmids, $topic, $cycle,
                  $comments, $use_not_list, $import_type);
+        //pdq_ebms_debug('IMPORT BATCH INFO', $batch);
     }
     catch (\Exception $e) {
         drupal_set_message($e);
@@ -910,6 +918,10 @@ function pdq_ebms_refresh_xml($source) {
     if (!empty($pmids)) {
         $batch = Ebms\importArticlesFromNLM('live', $pmids, null, null,
                  'BATCH REPLACEMENT OF UPDATED ARTICLES FROM PUBMED');
+        if ($batch->status != 'Success') {
+            print '0';
+            exit(0);
+        }
         $count = count($batch->action['replaced']);
     }
     else
