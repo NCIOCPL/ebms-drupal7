@@ -4396,7 +4396,7 @@ namespace {
                         'If you enter a review for an article which has ' .
                         'already been reviewed for the packet you select ' .
                         'by the reviewer you select the original review ' .
-                        'will be competely replaced.  You should consider ' .
+                        'will be completely replaced.  You should consider ' .
                         'preserving information from the original review in ' .
                         'the comment field.</p>',
                     );
