@@ -164,7 +164,7 @@ class EbmsReports {
         drupal_set_breadcrumb(
             array(
                 l('Reports', 'reports'),
-                l($group, $url),
+                l($group . ' Reports', $url),
                 $title,
             )
         );
