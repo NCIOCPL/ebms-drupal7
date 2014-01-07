@@ -358,21 +358,14 @@ class EbmsReports {
             $role = 'manager';
         $links = array(
             'librarian' => array(
-                /* No longer to appear for librarians
                 array(
                     'Board Management',
                     'reports/board',
                     array(
                         array('Documents', 'reports/documents'),
                         array('Meeting Dates', 'reports/meeting-dates'),
-                        array('Hotel Requests', $hotel_report_url),
-                        array(
-                            'Reimbursement Requests',
-                            $reimbursement_report_url,
-                        ),
                     ),
                 ),
-                */
                 array(
                     'Citation Management',
                     'reports/cite',
