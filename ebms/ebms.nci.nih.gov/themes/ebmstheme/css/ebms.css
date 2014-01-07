@@ -222,6 +222,9 @@ div.messages.error {
 }
 #ebms-menu > li.active > a { color: #a90101; }
 #nav #ebms-menu a { padding-left: 35px; padding-right: 35px; }
+/* Reduce width of over-wide icrdb manager menu */
+#nav.icrdb-manager #ebms-menu a {
+    padding-left: 10px; padding-right: 10px; font-size: 14px; }
 #nav.manager #ebms-menu a {
     padding-left: 11px; padding-right: 12px; font-size: 17px;
 }
