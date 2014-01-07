@@ -77,6 +77,8 @@ if ($logged_in) {
         $menu_class = 'librarian';
     elseif (in_array('board member', $user->roles))
         $menu_class = 'member';
+    elseif (in_array('icrdb manager', $user->roles))
+        $menu_class = 'icrdb-manager';
     else
         $menu_class = 'manager';
     $user_name = htmlspecialchars($user->name);
