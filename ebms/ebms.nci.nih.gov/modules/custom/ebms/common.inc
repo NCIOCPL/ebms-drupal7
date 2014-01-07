@@ -315,18 +315,13 @@ class Menu {
      * Build the EBMS menu information for reports.
      */
     public static function reports() {
-        global $user;
 
-        $entry_list = array();
-
-        // Librarians don't see the Board Management reports
-        if (!in_array('medical librarian', $user->roles)) {
-            $entry_list[] = new Menu('Board Management', 'reports/board');
-        }
-        // Everybody who sees reports, sees citation reports
-        $entry_list[] = new Menu('Citation Management', 'reports/cite');
-
-        return new Menu('Reports', 'reports', $entry_list);
+        return new Menu(
+            'Reports', 'reports', array(
+                new Menu('Board Management', 'reports/board'),
+                new Menu('Citation Management', 'reports/cite'),
+            )
+        );
     }
 
     /**
