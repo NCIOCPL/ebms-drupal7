@@ -570,7 +570,8 @@ function _ebms_forums_view_forum_access_callback($forum=null) {
     $account = user_load($user->uid);
 
     // 1-3: These roles can see all forums.
-    $roles = array('administrator', 'site manager', 'icrdb manager');
+    $roles = array('administrator', 'admin assistant', 
+                   'site manager', 'icrdb manager');
     $common = array_intersect($roles, $user->roles);
     if (!empty($common))
         return true;
