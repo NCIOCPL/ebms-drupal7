@@ -1411,6 +1411,7 @@ class EbmsReview {
             $query->condition('r.packet_id', $this->packet_id);
             $query->orderBy('u.name');
             $query->fields('u', array('name'));
+            $query->distinct();
             $results = $query->execute()->fetchCol();
             $reviewers = array();
             foreach ($results as $reviewer)
