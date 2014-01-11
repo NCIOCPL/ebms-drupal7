@@ -215,3 +215,11 @@ li.calendar-date{
 .region-sidebar-second #calendar-enclosure .view .date-nav-wrapper .date-next a{
     color: white;
 }
+
+/* Robin asked us to switch the underlining on the home page calendar days. */
+body.page-home div#calendar-enclosure div.mini-day-off a {
+   text-decoration: none;
+}
+body.page-home div#calendar-enclosure div.mini-day-on a {
+   text-decoration: underline;
+}
