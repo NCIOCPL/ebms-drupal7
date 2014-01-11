@@ -4066,13 +4066,6 @@ namespace {
      *                                    with a PDQ board
      */
     function _meeting_for_board(\EntityDrupalWrapper $meeting, $board_id) {
-        pdq_ebms_debug('MEETING FOR BOARD',
-            array(
-                $meeting->field_boards->value(),
-                $meeting->field_subgroups->value(),
-                $meeting->field_ad_hoc_groups->value(),
-            )
-        );
         if (in_array($board_id, $meeting->field_boards->value()))
             return true;
         $subgroup_ids = $meeting->field_subgroups->value();
@@ -5354,17 +5347,60 @@ namespace {
         $form['importer_title'] = array("#markup" => '<div class="citation-subheader">Imported By</div>');
         $form['importer_name'] = array("#markup" => "<div class='full-citation-element'>$name - $date</div>");
 
+        // Defer display of import actions to refresh XML using nightly
+        // sweep.  Such actions will not have a board or topic.
+        // OCEEBMS-152 and OCEEBMS-87.
+        $noBoard = array();
         foreach ($importData as $boardId => $topics) {
-            $boardName = Ebms\getBoardNameById($boardId);
+            if ($boardName) {
 
-            // wrap board-specific import data in fieldset
-            $form[$boardName]['fieldset'] = array(
+                $boardName = Ebms\getBoardNameById($boardId);
+
+                // wrap board-specific import data in fieldset
+                $form[$boardName]['fieldset'] = array(
+                    '#type' => 'fieldset',
+                    '#title' => $boardName,
+                    '#collapsible' => TRUE,
+                    '#collapsed' => TRUE,
+                    'underscore' => array('#markup' => '<hr>'),
+                    'topics' => _format_import_topics($article, $topics),
+                    '#prefix' => '<div class="full-citation-element">',
+                    '#suffix' => '</div>',
+                );
+            }
+            else
+                $noBoard = $topics;
+        }
+
+        // If we have ever refreshed the XML using the nightly sweep
+        // of Pubmed changes, show that activity here.
+        $refresh = array();
+        foreach ($noBoard as $actionSet) {
+            if (isset($actionSet['A'])) {
+                foreach ($actionSet['A'] as $batch => $actions) {
+                    $dt = '';
+                    $comment = null;
+                    foreach ($actions as $action) {
+                        if ($action->text_id == 'replaced') {
+                            $dt = $action->import_date;
+                            $src = $action->source;
+                            $refresh[] =
+                                "Source updated from $src $dt (batch $batch)";
+                        }
+                    }
+                }
+            }
+        }
+        if (!empty($refresh)) {
+            $form['source data refresh']['fieldset'] = array(
                 '#type' => 'fieldset',
-                '#title' => $boardName,
-                '#collapsible' => TRUE,
-                '#collapsed' => TRUE,
-                'underscore' => array('#markup' => '<hr>'),
-                'topics' => _format_import_topics($article, $topics),
+                '#title' => 'Source Data Refresh',
+                '#collapsible' => true,
+                '#collapsed' => true,
+                'events' => array(
+                    '#theme' => 'item_list',
+                    '#items' => $refresh,
+                ),
                 '#prefix' => '<div class="full-citation-element">',
                 '#suffix' => '</div>',
             );
@@ -5379,7 +5415,7 @@ namespace {
         foreach ($topics as $topicId => $topic) {
             if (!empty($form)) {
                 // drop in a dividing rule
-                $form[] = array('#markup' => '<hr>');
+                $form['hr'] = array('#markup' => '<hr>');
             }
 
             $topicName = Ebms\getTopicNameById($topicId);
@@ -5428,13 +5464,14 @@ namespace {
         // topic id should have error-checking, but originates from an error-checked
         // method
         $articleId = $article->getId();
-        $topicId = Ebms\getTopicIdByName($topicName);
 
-        $form['header'] = array(
-            "#markup" => "<div class='citation-subheader'>Summary Topic</div>"
-        );
-        $form['topic'] = array(
-            "#markup" => "<div class='full-citation-element'>$topicName</div>");
+        if ($topicName) {
+            $form['header'] = array(
+                "#markup" => "<div class='citation-subheader'>Summary Topic</div>"
+            );
+            $form['topic'] = array(
+                "#markup" => "<div class='full-citation-element'>$topicName</div>");
+        }
 
         // find each of the dispositions, along with the related date
         if (isset($importData['A'])) {
