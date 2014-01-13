@@ -5352,7 +5352,7 @@ namespace {
         // OCEEBMS-152 and OCEEBMS-87.
         $noBoard = array();
         foreach ($importData as $boardId => $topics) {
-            if ($boardName) {
+            if ($boardId) {
 
                 $boardName = Ebms\getBoardNameById($boardId);
 
