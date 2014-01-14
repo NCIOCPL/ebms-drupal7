@@ -583,7 +583,7 @@ function _webform_render_ebms_travel($component, $value=NULL, $filter=TRUE) {
           $val = $val_array[$i];
       }
     $form[$fieldset][$i]['date'] = array(
-        '#type' => 'date',
+        '#type' => 'date-popup',
         '#datepicker' => 1,
         '#theme' => 'webform_date',
         '#start_date' => '-2 years',
