@@ -36,7 +36,7 @@ div.review-board input { margin-left: 10px; margin-right: 10px; }
 #manager-packet-table .reviewer { clear: both; width: 230px; }
 #manager-packet-table .reviewer .reviewer-name { float: left; width: 150px; }
 #manager-packet-table .reviewer img { float: right; }
-#report-button .button { float: left; margin: 10px; }
+#buttons .button { float: left; margin: 10px; }
 /* #manager-packet-table .col-2 { width: 230px; } */
 #manager-packet-table .col-4 { text-align: center; }
 #manager-packet-table div.links { margin: 20px 0px; }
@@ -114,3 +114,5 @@ h3.pkt-rvwr-files { margin-top: 40px; border-bottom: solid 1px #696559; }
     margin-top: 5px; 
 }
 /* ************ End filter form at top ************* */
+
+p.archived-review-header { border: 1px solid black; font-style: italic; }

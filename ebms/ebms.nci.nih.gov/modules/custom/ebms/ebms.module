@@ -1641,7 +1641,7 @@ function ebms_wysiwyg_editor_settings_alter(&$settings, $context) {
         $settings['customConfig'] = base_path() .
             drupal_get_path('module', 'ebms') . '/js/ckeditor.config.js';
         $settings['toolbar'] = array(
-            array('Bold', 'Italic', 'Underline'),
+            array('Bold', 'Italic', 'Underline', 'Superscript', 'Subscript'),
             array('JustifyLeft', 'JustifyCenter', 'JustifyRight'),
             array('BulletedList', 'NumberedList'),
             array('Outdent', 'Indent'),

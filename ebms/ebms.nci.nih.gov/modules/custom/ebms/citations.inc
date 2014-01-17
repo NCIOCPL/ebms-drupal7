@@ -4386,12 +4386,12 @@ namespace {
                     $form['member_responses_title'] = $full_title;
                     $form['member_responses_warning'] = array(
                         '#markup' => '<p class="member-response-warning">' .
-                        'If you enter a review for an article which has ' .
-                        'already been reviewed for the packet you select ' .
-                        'by the reviewer you select the original review ' .
-                        'will be completely replaced.  You should consider ' .
-                        'preserving information from the original review in ' .
-                        'the comment field.</p>',
+                        'If you enter a review for an article that has ' .
+                        'already been recorded for the packet and reviewer ' .
+                        'combination you select, the original review will ' .
+                        'be completely replaced. Consider preserving ' .
+                        'information from the original review in the ' .
+                        'comment field.</p>',
                     );
 
                     $form["member_responses_packet_$hash"] = array(

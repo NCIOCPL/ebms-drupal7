@@ -153,3 +153,6 @@ div.import-reports ul li a { text-transform: uppercase; }
 .container-inline-date .form-item { float: none; }
 .container-inline-date .form-item .form-item { float: none; }
 .container-inline-date .form-item input { width: 500px; }
+
+/* OCEEBMS-128; comment by Robin 2014-01-17. */
+#unreviewed-articles-report tr.odd { border-bottom: 1px solid #ccc; }

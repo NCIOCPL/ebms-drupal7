@@ -4375,6 +4375,7 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
     if (isset($form_state['values'])) {
         $values = $form_state['values'];
         $board = $values['board'];
+        $topic = $values['topic'];
     }
 
     // Use the board choice to fill the topic picklist with the topics
@@ -4393,9 +4394,14 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
             $topic = 0;
         $query = db_select('ebms_packet', 'p')
             ->fields('p', array('packet_id', 'packet_title'));
-        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
-        $query->condition('t.board_id', $board);
+        if ($topic)
+            $query->condition('p.topic_id', $topic);
+        else {
+            $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+            $query->condition('t.board_id', $board);
+        }
         $query->orderBy('p.packet_title');
+        //pdq_ebms_debug('PACKET QUERY', $query);
         $results = $query->execute();
         foreach ($results as $result)
             $packets[$result->packet_id] = $result->packet_title;
@@ -4439,6 +4445,10 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
                     '#options' => $topics,
                     '#default_value' => $topic,
                     '#attributes' => array('class' => array('fixed-width')),
+                    '#ajax' => array(
+                        'callback' => 'pdq_ebms_report_topic_ajax',
+                        'wrapper' => 'topic-dependent',
+                    ),
                 ),
                 'reviewer' => array(
                     '#type' => 'select',
@@ -4456,13 +4466,19 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
                     '#default_value' => $cycle,
                     '#attributes' => array('class' => array('fixed-width')),
                 ),
-                'packet' => array(
-                    '#type' => 'select',
-                    '#title' => 'Packet Name',
-                    '#title_display' => 'after',
-                    '#options' => $packets,
-                    '#default_value' => $packet,
-                    '#attributes' => array('class' => array('fixed-width')),
+                'topic dependent' => array(
+                    '#type' => 'container',
+                    '#attributes' => array('id' => 'topic-dependent'),
+                    'packet' => array(
+                        '#type' => 'select',
+                        '#title' => 'Packet Name',
+                        '#title_display' => 'after',
+                        '#options' => $packets,
+                        '#default_value' => $packet,
+                        '#attributes' => array(
+                            'class' => array('fixed-width'),
+                        ),
+                    ),
                 ),
             ),
             'review-date-line' => array(
@@ -5033,6 +5049,15 @@ function pdq_ebms_report_ajax($form, $form_state) {
 }
 
 /**
+ * Return the portion of a form dynamically controlled by values
+ * selected elsewhere on the form.  Used in common by several of
+ * the report forms.
+ */
+function pdq_ebms_report_topic_ajax($form, $form_state) {
+    return $form['top']['report-form']['ajax fields']['topic dependent'];
+}
+
+/**
  * Return the refreshed portion of the Citations by Status request
  * form when the value of the Status field has changed.
  */
@@ -5176,7 +5201,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             '#date_label_position' => 'within',
             '#attributes' => array(
                 'title' =>
-                 'Packet creation date (defaults to no starting date)',
+                 'Assigned date (defaults to no start date)',
             ),
         ),
         'end-date' => array(
@@ -5187,8 +5212,12 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             '#date_label_position' => 'within',
             '#attributes' => array(
                 'title' =>
-                 'Packet creation date (defaults to no ending date)',
+                 'Assigned date (defaults to no end date)',
             ),
+        ),
+        'reset' => array(
+            '#type' => 'submit',
+            '#value' => 'Reset',
         ),
         'submit' => array(
             '#type' => 'submit',
@@ -5209,7 +5238,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
     // If we have a submitted report request, add the report under the form.
     if ($request_id) {
         $query = db_select('ebms_packet', 'p')
-            ->fields('p', array('packet_id', 'packet_title'));
+            ->fields('p', array('packet_id', 'packet_title', 'created_at'));
         $query = $query->extend('TableSort');
         $query->leftJoin('ebms_packet_reviewer', 'r',
             'r.packet_id = p.packet_id');
@@ -5234,7 +5263,11 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             array(
                 'data' => 'Packet Name',
                 'field' => 'p.packet_title',
-                'sort' => 'asc',
+            ),
+            array(
+                'data' => 'Created',
+                'field' => 'p.created_at',
+                'sort' => 'desc',
             ),
             array(
                 'data' => 'Reviewer',
@@ -5247,6 +5280,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
         $query->orderByHeader($headers);
         $rows = array();
         $results = $query->execute();
+        $total_assigned = $total_completed = $total_not_completed = 0;
         foreach ($results as $result) {
             $query = db_select('ebms_packet_article', 'a')
                 ->condition('a.packet_id', $result->packet_id)
@@ -5267,12 +5301,25 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             }
             $row = array();
             $row[] = htmlspecialchars($result->packet_title);
+            $row[] = substr($result->created_at, 0, 10);
             $row[] = htmlspecialchars($result->name);
             $row[] = $assigned;
             $row[] = $completed;
             $row[] = $not_completed;
             $rows[] = $row;
+            $total_assigned += $assigned;
+            $total_completed += $completed;
+            $total_not_completed += $not_completed;
         }
+        $rows[] = array(
+            '<b>TOTALS</b>',
+            '',
+            '',
+            "<b>$total_assigned</b>",
+            "<b>$total_completed</b>",
+            "<b>$total_not_completed</b>",
+        );
+
         // Assemble the table.
         $id = 'report-title';
         $title = 'Responses';
@@ -5311,6 +5358,8 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
  *  @return     none
  */
 function pdq_ebms_responses_by_reviewer_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/responses-by-reviewer');
     $values = $form_state['values'];
     $report = 'Responses by Reviewer';
     $request_id = EbmsReports::save_report_request($values, $report);
@@ -5351,7 +5400,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
 
     // Initialize defaults for the form field's values.
     $board = 0;
-    $selected_topics = $selected_reviewers = $selected_cycles = array();
+    $selected_topics = $selected_cycles = array();
     $order_by = 'author';
     $start = $end = '';
 
@@ -5360,7 +5409,6 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         $values = EbmsReports::fetch_report_request($request_id);
         $board = $values['board'];
         $selected_topics = $values['topics'];
-        $selected_reviewers = $values['reviewers'];
         $selected_cycles = $values['cycles'];
         $start = $values['start-date'];
         $end = $values['end-date'];
@@ -5371,7 +5419,6 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     if (isset($form_state['values'])) {
         $board = $form_state['values']['board'];
         $selected_topics = $form_state['values']['topics'];
-        $selected_reviewers = $form_state['values']['reviewers'];
         $selected_cycles = $form_state['values']['cycles'];
     }
 
@@ -5379,7 +5426,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     $size = 6;
 
     // Create the picklists.
-    $topics = $reviewers = array();
+    $topics = array();
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $cycles = Ebms\Util::cycles();
 
@@ -5390,27 +5437,11 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
             ->condition('t.board_id', $board)
             ->orderBy('t.topic_name')
             ->execute();
-        $topics = array();
         foreach ($results as $result)
             $topics[$result->topic_id] = $result->topic_name;
-        $query = db_select('users', 'u')
-            ->fields('u', array('uid', 'name'));
-        $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
-        $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
-        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
-        $query->condition('t.board_id', $board);
-        $query->orderBy('u.name');
-        $query->distinct();
-        $results = $query->execute();
-        $reviewers = array();
-        foreach ($results as $result)
-            $reviewers[$result->uid] = htmlspecialchars($result->name);
         foreach ($selected_topics as $key => $value)
             if (!array_key_exists($value, $topics))
                 unset($selected_topics[$key]);
-        foreach ($selected_reviewers as $key => $value)
-            if (!array_key_exists($value, $reviewers))
-                unset($selected_reviewers[$key]);
      }
 
     // Assemble the request form.
@@ -5442,15 +5473,6 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
                 '#size' => $size,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
-            'reviewers' => array(
-                '#type' => 'select',
-                '#multiple' => true,
-                '#options' => $reviewers,
-                '#default_value' => $selected_reviewers,
-                '#title' => 'Reviewer(s)',
-                '#size' => $size,
-                '#attributes' => array('class' => array('fixed-width')),
-            ),
         ),
         'cycles' => array(
             '#type' => 'select',
@@ -5469,7 +5491,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
             '#date_label_position' => 'within',
             '#attributes' => array(
                 'title' =>
-                 'Assigned date (defaults to no starting date)',
+                 'Assigned date (defaults to no start date)',
             ),
         ),
         'end-date' => array(
@@ -5480,7 +5502,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
             '#date_label_position' => 'within',
             '#attributes' => array(
                 'title' =>
-                 'Assigned date (defaults to no ending date)',
+                 'Assigned date (defaults to no end date)',
             ),
         ),
         'order-by' => array(
@@ -5491,6 +5513,10 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
                 'topic' => 'Topic',
             ),
             '#default_value' => $order_by,
+        ),
+        'reset' => array(
+            '#type' => 'submit',
+            '#value' => 'Reset',
         ),
         'submit' => array(
             '#type' => 'submit',
@@ -5526,12 +5552,6 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         $query->fields('a', array('article_id'));
         $query->fields('p', array('packet_id', 'created_at'));
         $query->fields('t', array('topic_id', 'topic_name'));
-        if (count($values['reviewers'])) {
-            $query->join('ebms_packet_reviewer', 'pr',
-                         'pr.packet_id = p.packet_id');
-            $query->condition('pr.reviewer_id', $values['reviewers'], 'IN');
-            $query->distinct();
-        }
         if (count($values['cycles'])) {
             $query->join('ebms_article_topic', 'at',
                 'at.article_id = a.article_id AND at.topic_id = p.topic_id');
@@ -5655,6 +5675,8 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
  *  @return     none
  */
 function pdq_ebms_articles_without_responses_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/articles-without-responses');
     $values = $form_state['values'];
     $report = 'Articles Without Responses';
     $request_id = EbmsReports::save_report_request($values, $report);
