@@ -902,10 +902,10 @@ function pdq_ebms_refresh_xml($source) {
     $articles = $query->fields('a', $fields)->orderBy('a.data_mod')->execute();
     foreach ($articles as $art) {
         $checked[] = $art->source_id;
-        if ($art->update_date && $art->update_date > $art->data_mod)
-            continue;
-        if ($art->import_date > $art->data_mod)
-            continue;
+        //if ($art->update_date && $art->update_date > $art->data_mod)
+        //    continue;
+        //if ($art->import_date > $art->data_mod)
+        //    continue;
         $pmids[] = $art->source_id;
         if (count($pmids) >= $max_to_refresh)
             break;
