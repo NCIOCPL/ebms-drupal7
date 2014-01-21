@@ -37,7 +37,7 @@ def get_articles(host):
     url = "https://%s/get-source-ids/Pubmed" % host
     f = urllib2.urlopen(url)
     pmids = {}
-    latest_mod = "2012-01-01"
+    latest_mod = "2011-01-01"
     if f.code == 200:
         for line in f.readlines():
             fields = line.strip().split("\t")
@@ -115,26 +115,32 @@ def get_mod_pmids(date, articles):
 #
 #  @return            string summarizing processing activity
 #----------------------------------------------------------------------
-def update_mod_dates(host, articles, latest_mod):
+def update_mod_dates(host, articles, latest_mod, stop_date=None):
+    BATCH_SIZE = 10000
     url = "https://%s/update-source-mod" % host
     y, m, d = [int(p) for p in latest_mod.split("-")]
     first = date = datetime.date(y, m, d)
     one_day = datetime.timedelta(1)
-    one_week = datetime.timedelta(7)
-    today = datetime.date.today()
-    last_week = today - one_week
-    if first >= last_week:
+    if stop_date:
+        y, m, d = [int(p) for p in stop_date.split("-")]
+        stop_date = datetime.date(y, m, d)
+    else:
+        one_week = datetime.timedelta(7)
+        today = datetime.date.today()
+        stop_date = today - one_week
+    if first >= stop_date:
         return "The data_mod column is up to date (as of %s)" % first
     total = 0
-    while date < last_week:
+    while date < stop_date:
+        sys.stderr.write("\r%s" % date)
         last = date
         mod_pmids = get_mod_pmids(date, articles)
         date += one_day
         if mod_pmids:
             offset = 0
             while offset < len(mod_pmids):
-                subset = "\t".join(mod_pmids[offset:offset+10000])
-                offset += 10000
+                subset = "\t".join(mod_pmids[offset:offset+BATCH_SIZE])
+                offset += BATCH_SIZE
                 parms = "date=%s&source=Pubmed&ids=%s" % (date, subset)
                 f = urllib2.urlopen(url, parms)
                 if f.code != 200:
@@ -142,6 +148,7 @@ def update_mod_dates(host, articles, latest_mod):
                            % (date, f.code))
                     return msg
             total += len(mod_pmids)
+    sys.stderr.write("\n")
     return "Updated data_mod column in %d rows (%s--%s)" % (total, first, last)
 
 #----------------------------------------------------------------------
@@ -156,7 +163,9 @@ def refresh_xml(host):
         if f.code != 200:
             return "Failure refreshing XML (code %s)" % f.code
         remaining = int(f.read().strip())
+        sys.stderr.write("\r%d remaining" % remaining)
         if not remaining:
+            sys.stderr.write("\n")
             return "All modified XML has been refreshed."
         
 #----------------------------------------------------------------------
@@ -198,7 +207,12 @@ def main():
         start = time.time()
         host = sys.argv[1]
         articles, latest_mod = get_articles(host)
-        mod_date_report = update_mod_dates(host, articles, latest_mod)
+        stop = None
+        if len(sys.argv) > 2:
+            latest_mod = sys.argv[2]
+        if len(sys.argv) > 3:
+            stop = sys.argv[3]
+        mod_date_report = update_mod_dates(host, articles, latest_mod, stop)
         refresh_report = refresh_xml(host)
         elapsed = "Elapsed: %.3f seconds" % (time.time() - start)
         report("%s\n%s\n%s" % (mod_date_report, refresh_report, elapsed))
