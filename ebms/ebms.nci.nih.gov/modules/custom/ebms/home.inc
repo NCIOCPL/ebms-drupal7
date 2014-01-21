@@ -509,6 +509,10 @@ class EbmsHomePage {
      * panel the user wants to see.
      */
     private static function featured_info($role, $focus) {
+        global $user;
+        $fulltext_or_review = l('Full Text Retrieval', 'citations/fulltext');
+        if (in_array('icrdb manager', $user->roles))
+            $fulltext_or_review = l('Review Citations', 'citations');
         $info = array(
             'librarian' => array(
                 '1' => array(
@@ -541,8 +545,7 @@ class EbmsHomePage {
                     'title' => l('Citation Management', 'citations'),
                     'links' => array(
                         l('Search Database', 'citations/search'),
-                        // l('Review Citations', 'citations'),
-                        l('Full Text Retrieval', 'citations/fulltext'),
+                        $fulltext_or_review,
                         l('Add Citation', 'citations/import'),
                     ),
                 ),
