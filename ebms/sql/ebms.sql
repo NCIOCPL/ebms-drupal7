@@ -1549,8 +1549,9 @@ INSERT INTO ebms_review_rejection_value (value_name, value_pos)
 INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Unvalidated outcome measure(s) used', 14,
              'e.g., unvalidated surrogate endpoint[s]');
-INSERT INTO ebms_review_rejection_value (value_name, value_pos)
-     VALUES ('I am unable to suggest changes due to a conflict of interest', 15);
+INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
+     VALUES ('Conflict of interest', 15,
+             'e.g., article author, competing financial, commercial, or professional interests');
 INSERT INTO ebms_review_rejection_value (value_name, value_pos, extra_info)
      VALUES ('Other', 16, 'specify reason(s) in the Comments field');
 
