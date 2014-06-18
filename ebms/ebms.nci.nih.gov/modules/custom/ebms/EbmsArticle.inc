@@ -499,9 +499,10 @@ class EbmsArticle {
      * Initially, this will always be for a PDF doc, but conceptually it
      * could be anything such as a Word, XML, or text document.
      *
-     * Note: Nothing happens in the database unless $this->store() is called.
-     *       For immediate storage of an already existing record, call
-     *       storeArticleFullText() instead.
+     * Note: Nothing happens in the database, even after store() is called.
+     *       This function is likely only useful after an update, not before!
+     *       To store a new full_text_id in an already existing record, call
+     *       storeArticleFullTextId() instead.
      *
      *  @param unsigned int $fullTextFileId   An ID key into the Drupal
      *                                         "file_managed" table.
@@ -509,7 +510,7 @@ class EbmsArticle {
      *  @return void.
      *
      */
-    public function setFullText($fullTextFileId) {
+    public function setFullTextId($fullTextFileId) {
         $this->full_text_id = $fullTextFileId;
     }
 
@@ -899,8 +900,8 @@ class EbmsArticle {
             $newRec = false;
 
         // Here are the fields we'll store
-        //   article_id and dates handled separately for new
-        //   and replace records
+        //   article_id, dates, and full_text_id handled separately
+        //   for new and replace records
         $fields = array(
             'source'         => $this->source,
             'source_id'      => $this->source_id,
@@ -912,8 +913,7 @@ class EbmsArticle {
             'abstract'       => $this->abstract,
             'published_date' => $this->published_date,
             'brf_citation'   => $this->brf_citation,
-            'source_data'    => $this->source_data,
-            'full_text_id'   => $this->full_text_id
+            'source_data'    => $this->source_data
         );
 
         // Wrap this in a transaction
@@ -2161,8 +2161,8 @@ function getTagTypeNames($articleOnly = true) {
 function storeArticleFullTextId($articleId, $fullTextId) {
 
     $qry = db_update('ebms_article');
-    $qry->fields(array('full_text_id'));
-    $qry->condition('article_id', $this->article_id);
+    $qry->fields(array('full_text_id' => $fullTextId));
+    $qry->condition('article_id', $articleId);
     $qry->execute();
 }
 
