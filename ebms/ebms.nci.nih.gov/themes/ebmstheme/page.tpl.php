@@ -130,7 +130,7 @@ if ($logged_in) {
 ?>
 
     <div id="page-wrapper">
-      <div id="page">
+      <div id="page" class="<?php print $menu_class; ?>">
 
         <!-- Banner strip with approved NCI logo -->
         <div id="banner">
@@ -160,6 +160,10 @@ if ($logged_in) {
                              >PDQ<sup>&reg;</sup> Editorial Board Management System</div>
             </div> <!-- /#name-and-slogan -->
 <?php if ($logged_in) { ?>
+            <div id="help-and-about-links">
+              <?php print l('About PDQ', 'about') ?> &nbsp;|&nbsp;
+              <?php print l('Help', 'help') ?>
+            </div>
             <div id="user-profile">
 <?php if ($photo) { ?>
              <?php echo $photo; ?>

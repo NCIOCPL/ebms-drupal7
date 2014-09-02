@@ -14,13 +14,28 @@ ini_set('display_startup_errors', TRUE);
  * Testing for Alan.
  */
 function pdq_ebms_alantest() {
-    // Test
-    // return '<i>Stub for Alan\'s testing</i>';
-    // require_once('logw.inc');
+    // Comment out this to run anything below
+    return '<i>Stub for Alan\'s testing</i>';
+
+    require_once('common.inc');
+    Ebms\Util::download_file('/tmp/ziparchivetest.zip', 'HeresYourFile.zip',
+            'application/zip', true);
+    print("Should have downloaded");
+    return;
+
     require_once('EbmsArticle.inc');
     require_once('EbmsImport.inc');
     require_once('EbmsSearch.inc');
-    require_once('EbmsPrint.inc');
+    // require_once('EbmsPrint.inc');
+
+    // ONE TIME TEST - results in Permission Denied
+    $cmd = 'ls -l /tmp';
+    $output = array();
+    $rc = exec($cmd, $output);
+    return("rc=$rc");
+
+    // Ebms\storeArticleFullTextId(285179, 117);
+    // return '<i>Stub for Alan\'s storeArticleFullTextId testing</i>';
 
     pdq_ebms_debug('ALAN POST', $_POST);
     $test = Ebms\Util::get_request_value('test');
@@ -1149,7 +1164,7 @@ function ebms_testapi_printouts_form($form) {
         '#size' => 8,
         '#title' => 'Job ID',
         '#description' => 'Enter a job number to download the output for ' .
-            'the job.'
+            'the job.',
         '#required' => false
     );
 

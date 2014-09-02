@@ -33,11 +33,11 @@
     if ($editor) {
         print "<div class='edit-button-icon'><a href='$editNodePath'><img alt='Edit Event' src='$editIconPath'></a></div>";
     }
-    ?> 
+    ?>
     <?php else: ?>
     <div class='preview-enclosure'>
     <?php endif; ?>
-    <h2 class='indent trailing'> 
+    <h2 class='indent trailing'>
         <?php
         if ($cancelled)
             print "Cancelled: ";
@@ -87,10 +87,21 @@
 
                 <?php
                 foreach ($docLinks as $link)
-                        print "<div class='indent'>$link</div>";
+                    print "<div class='indent'>$link</div>";
                 ?>
             </div>
         <?php endif; ?>
+
+        <?php
+            if (!$agenda_status) {
+                if ($docLinks || count(extract_file_hrefs($agenda))) {
+                    print "<div class='trailing subheader indent'>";
+                    print l('Download All Documents to a .zip File',
+                            "download-meeting-docs/$nid");
+                    print "</div>\n";
+                }
+            }
+        ?>
 
         <div class='trailing subheader indent'>
             <?php

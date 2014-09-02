@@ -20,7 +20,7 @@ p a, #forum-comments a, #calendar-enclosure a { text-decoration: underline; }
 #calendar-enclosure .date-nav-wrapper a { text-decoration: none; }
 
 a:focus, li a:hover, a:hover, div.breadcrumb a:hover,
-a:focus span, a:hover span,
+a:focus span, a:hover span, a:focus sup, a:hover sup,
 .hover {
     color: #a90101; text-decoration: underline;
 }
@@ -175,6 +175,13 @@ div.messages.error {
     padding-top: 30px;
     padding-right: 0px;
 }
+#user-profile { padding-top: 0px; padding-right: 15px; clear: right; }
+#help-and-about-links {
+    float: right;
+    display: inline-block;
+    padding: 10px 20px 0;
+}
+#help-and-about-links a { font-size: 11pt; }
 #user-photo { display: inline; position: relative; padding-right: 10px; }
 #user-photo #picture { position: relative; top: 15px; }
 #user-photo #picframe { position: absolute; top: -15px; left: 0;}
@@ -213,25 +220,44 @@ div.messages.error {
 #nav.manager.admin div.section { width: 975px; padding-left: 10px; }
 #ebms-menu, .ebms-submenu { list-style-type: none; }
 #ebms-menu, #ebms-menu li { float: left; }
-#ebms-menu li, #ebms-menu a { position: relative;}
-#ebms-menu > li > a { text-decoration: none; }
+#ebms-menu li, #ebms-menu a { position: relative; }
+#ebms-menu > li > .firefox-bug-63895 > a { text-decoration: none; }
 
-#ebms-menu > li > a {
-    font-size: 20px; text-transform: uppercase; line-height: 19px;
-    padding-top: 12px; padding-bottom: 12px;
+#ebms-menu > li > .firefox-bug-63895 > a {
+    font-size: 17px; text-transform: uppercase; xline-height: 19px;
+    xpadding-top: 12px; xpadding-bottom: 12px;
 }
-#ebms-menu > li.active > a { color: #a90101; }
-#nav #ebms-menu a { padding-left: 35px; padding-right: 35px; }
-/* Reduce width of over-wide icrdb manager menu */
-#nav.icrdb-manager #ebms-menu a {
-    padding-left: 10px; padding-right: 10px; font-size: 14px; }
-#nav.manager #ebms-menu a {
-    padding-left: 11px; padding-right: 12px; font-size: 17px;
+#ebms-menu > li.active > .firefox-bug-63895 > a { color: #a90101; }
+
+/* New for JIRA::OCEEBMS-169 */
+ul#ebms-menu.sf-menu {
+    width: 976px;
+    list-style-type: none;
+    padding: 0;
+    margin-left: -8;
 }
-#nav.manager.admin #ebms-menu a {
-    padding-left: 10px; padding-right: 12px; font-size: 15px;
+ul#ebms-menu.sf-menu > li { padding: 0; }
+ul#ebms-menu.sf-menu > li .firefox-bug-63895 {
+    padding: 0;
+    height: 42px;
+    display: table-cell;
+    vertical-align: middle;
+    text-align: center;
 }
-#nav.librarian #ebms-menu a { padding-left: 25px; padding-right: 25px; }
+ul#ebms-menu.sf-menu > li li { text-align: left; }
+ul#ebms-menu.sf-menu > li li a { padding-left: 10px; }
+ul#ebms-menu.sf-menu.menu-items-1 > li > .firefox-bug-63895 { width: 976px; }
+ul#ebms-menu.sf-menu.menu-items-2 > li > .firefox-bug-63895 { width: 488px; }
+ul#ebms-menu.sf-menu.menu-items-3 > li > .firefox-bug-63895 { width: 325px; }
+ul#ebms-menu.sf-menu.menu-items-4 > li > .firefox-bug-63895 { width: 244px; }
+ul#ebms-menu.sf-menu.menu-items-5 > li > .firefox-bug-63895 { width: 195px; }
+ul#ebms-menu.sf-menu.menu-items-6 > li > .firefox-bug-63895 { width: 163px; }
+ul#ebms-menu.sf-menu.menu-items-7 > li > .firefox-bug-63895 { width: 139px; }
+ul#ebms-menu.sf-menu.menu-items-8 > li > .firefox-bug-63895 { width: 122px; }
+ul#ebms-menu.sf-menu.menu-items-9 > li > .firefox-bug-63895 { width: 108px; }
+ul#ebms-menu.sf-menu.menu-items-10 > li > .firefox-bug-63895 { width: 98px; }
+
+/* SUBMENU STUFF */
 #ebms-menu li li a {
     font-size: 17px; text-transform: none; line-height: 18px;
     background-color: white;
@@ -262,18 +288,6 @@ div.messages.error {
 #ebms-menu li:hover > .ebms-menu-restore-pixel,
 #ebms-menu li.sfHover > .ebms-menu-restore-pixel {
     border-bottom: solid #696559 1px;
-}
-
-.ebms-menu-left-divider, .ebms-menu-right-divider {
-    position: absolute; width: 0; height: 18px; top: 12px;
-    border-left: solid #696559 1px;
-}
-.ebms-menu-right-divider { right: -1px; }
-li.first .ebms-menu-left-divider { border-left-color: white; }
-li.last .ebms-menu-right-divider { border-left-color: white; }
-li.sfHover .ebms-menu-left-divider, li.sfHover .ebms-menu-right-divider,
-li:hover .ebms-menu-left-divider, li:hover .ebms-menu-right-divider {
-    top: 0; height: 43px; border-left-color: #696559;
 }
 
 /* LEFT NAV */
@@ -702,6 +716,11 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
     border-left: 1px #696559 solid; border-right: 1px #696559 solid;
     padding: 10px 0; margin: 0;
 }
+.activity-box .more-link { padding: 10px; }
+.activity-box td { padding: 0; }
+.activity-box td p { margin: 8px 0; }
+.activity-box .view-empty p { font-style: italic; }
+
 .ebms-block ul { list-style-type: none; }
 .ebms-block ul li { margin-left: 12px; padding-bottom: 8px; }
 .ebms-block-body p {
@@ -711,93 +730,123 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
 .ebms-block .more-link { padding-right: 10px; }
 .ebms-block-bottom { margin: 0; padding: 0; border: none; display: block; }
 
-#activity-enclosure.ebms-block p{
+#activity-enclosure.ebms-block p {
     margin: 0;
     padding: 0;
 }
 
 /* HOME PAGE */
-body.front div.region-content {
+body.front .region-content {
     float: left; margin: 0 0 50px 0; padding-right: 0;
 }
-body.front div.block-ebms {
-    width: 302px; float: left;
+body.front #main-wrapper { margin-top: 10px; }
+body.front .activity-box {
+    float: left;
+    width: 225px;
+    min-height: 460px;
+    border: 1px solid gray;
+    margin-right: 25px;
 }
-.ebms-featured-block {
-    height: 450px; width: 630px; position: relative;
-    margin: 20px 0 13px 0;
+/*body.front .activity-box { margin-right: 20px; }*/
+body.front .panels-2 .activity-box { width: 312px; }
+body.front .panels-2 .activity-box { width: 350px; }
+body.front .panels-1 .activity-box { width: 700px; }
+body.front .panels-1 .activity-box { width: 731px; }
+body.front .panels-1 img { margin-right: 15px; }
+body.front .activity-box, body.front .ebms-block,
+body.front #calendar-enclosure {
+    border-bottom-left-radius: 7px;
+    border-bottom-right-radius: 7px;
 }
-.ebms-featured-block a:hover { text-decoration: underline; }
-.ebms-featured-block div { position: relative; }
-.ebms-featured-block h3 {
-    line-height: 16px; padding: 1px 0; margin: 0;
-    color: #2d2c28; font-weight: normal;
-    text-transform: uppercase; font-size: 18px; margin-bottom: 1px; 
+body.front h3, body.front #calendar-enclosure h3 {
+    background: #696559;
+    color: white;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 8px 0;
+    margin: 0;
+    font-size: 13pt;
+    height: auto;
+    line-height: normal;
 }
-.ebms-featured-block div.item-list { width: 310px; }
-.ebms-featured-block div.item-list ul { list-style-type: none; }
-.ebms-featured-block div.item-list ul li {
-    margin-left: 0; margin-bottom: 0; height: 16px;
+body.front div.region-content .activity-box .image-wrapper {
+    width: 100%;
+    height: 80px;
+    overflow: hidden;
 }
-.ebms-featured-block div.item-list ul li a {
-    line-height: 7px; font-size: 12px;
+body.front div.region-content .activity-box .image-wrapper { 100px; }
+body.front .activity-box ul {
+    list-style-type: none;
+    margin-top: 10px;
 }
-.ebms-featured-block div { z-index: 2; }
-.ebms-featured-block img { position: absolute; z-index: 1; }
-#featured-admin-1 div { left: 30px; top: 308px; }
-#featured-admin-2 div { left: 120px; top: 308px; }
-#featured-admin-3 div { left: 210px; top: 308px; }
-#featured-admin-4 div { left: 320px; top: 308px; }
-#featured-member-1 div { left: 20px; top: 308px; }
-#featured-member-2 div { left: 120px; top: 308px; }
-#featured-member-3 div { left: 220px; top: 308px; }
-#featured-librarian-1 div { left: 30px; top: 310px; }
-#featured-librarian-2 div { left: 135px; top: 325px; }
-#featured-librarian-3 div { left: 235px; top: 325px; }
+body.front .activity-box ul li {
+    margin: 0 8px 8px;
+}
+body.front .activity-box p.more {
+    text-align: right;
+    padding-right: 10px;
+}
+body.front #sidebar-second {
+    float: left;
+    width: 200px;
+}
+body.front #sidebar-second .ebms-block {
+    width: 200px;
+    margin: 0 0 25px;
+    border: 1px #696559 solid;
+}
+body.front .ebms-block ul { border: none; }
+body.front #alerts li a {
+    font-size: 12pt;
+    text-transform: none;
+}
 
-/* Positioning for home page sidebar blocks */
-#sidebar-second .ebms-block {
-    margin-left: 27px; padding-left: 0; margin-right: 0;
+/* Monthly calendar formatting for home page */
+body.front #calendar-enclosure {
+    width: 200px;
+    margin: 0;
+    border: 1px #696559 solid;
 }
-
-/* Align middle box with right edge of the main home page panel */
-body.front .middle-block { float: right; margin-right: 0; padding: 0; }
+body.front #calendar-enclosure h3 a {
+    font-size: 13pt;
+    height: auto;
+    line-height: normal;
+    font-weight: bold;
+}
+body.front #calendar-enclosure .view .date-nav-wrapper .date-nav .date-prev a,
+body.front #calendar-enclosure .view .date-nav-wrapper .date-nav .date-next a {
+    font-size: 20px;
+    height: auto;
+    line-height: 27px;
+}
+body.front #calendar-enclosure table {
+    border: none;
+    margin: 0 5px 5px;
+    width: 190px;
+}
+body.front div.calendar-calendar .month-view thead tr {
+    border: none;
+    border-bottom: 1px #696559 solid;
+}
+body.front table td.mini { padding-top: 3px; }
+body.front .view .date-nav-wrapper {
+    margin: 0;
+}
 
 /* Custom formatting for the "alerts" box */
 body.front #alerts h3, body.front #alerts li { position: relative; }
-body.front #alerts h3 .alert-count { color: white; background-color: #696559; }
-body.front #alerts .alert-count { position: absolute; right: 20px; }
-body.front #alerts li .alert-count {
-    position: absolute; right: 20px; color: #a90101;
+body.front #alerts .alert-count {
+    position: absolute;
+    right: 20px;
+    color: #a90101;
+    font-size: 12pt;
+    font-weight: normal;
 }
-body.front #alerts li a { text-transform: uppercase; font-size: 20px; }
 body.front #alerts li.last { margin-bottom: 0; padding-bottom: 0; }
 
-/* Monthly calendar formatting for home page */
-body.front #calendar { position: relative; margin-bottom: 10px; }
-body.front #calendar table { border-collapse: collapse; }
-body.front #cal-prev-month, body.front #cal-next-month {
-    position: absolute;
-    top: 10px;
-    color: white;
-    font-size: 20px;
-}
-body.front #calendar tr.odd { background-color: white; }
-body.front #cal-prev-month { left: 15px; }
-body.front #cal-next-month { right: 15px; }
-body.front #calendar .ebms-block-title { text-align: center; }
-body.front #calendar td {
-    width: 38px; text-align: center; line-height: 27px; border: none;
-    padding: 0px;
-}
-body.front #calendar td.not-this-month { color: #adaca8; }
-body.front #calendar td.day-has-events { color: #a90101; }
-body.front #calendar #dow td { line-height: 25px; }
-body.front #calendar td.today {
-    color: white; font-weight: bold;
-    background-image: url("../images/today.png");
-    background-repeat: no-repeat;
-}
+/* Special handling for Next Meeting block - XXX still needed??? */
+body.front #next-meeting li { line-height: 24px; }
+body.front #next-meeting span { font-weight: bold; }
 
 /* calendar view-specific styling */
 .calendar-calendar td {
@@ -905,10 +954,6 @@ body.front #calendar td.today {
 .calendar-calendar .unpublished a:hover{
     color: #A90101;
 }
-
-/* Special handling for Next Meeting block */
-body.front #next-meeting li { line-height: 24px; }
-body.front #next-meeting span { font-weight: bold; }
 
 /* Formatting for the Create Event form */
 .file-widget input.form-file{

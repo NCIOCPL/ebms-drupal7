@@ -48,6 +48,8 @@ class EbmsHomePage {
         $this->role = user_access('administer') ? 'admin' : 'member';
         if (in_array('medical librarian', $user->roles))
             $this->role = 'librarian';
+        //if (in_array('board manager', $user->roles))
+        //    $this->role = 'board manager';
         $this->mini = Ebms\Util::get_request_value('mini');
         if ($this->mini) {
             if (!preg_match('/^\d\d\d\d-\d\d$/', $this->mini)) {
@@ -75,44 +77,242 @@ class EbmsHomePage {
      * If the blocks on this page need to be rearranged, it should
      * be much more straightforward to adjust the data structures
      * below than to try and work around the bugs in the Block API.
+     * Redesigned for JIRA ticket OCEEBMS-169.
      */
     public function build() {
         drupal_set_title('');
         drupal_set_breadcrumb(array('Home'));
+        $activity_panels = $this->activity_panels();
+        $panel_count = count($activity_panels);
+        $class = "panels-$panel_count";
+        $content = array(
+            '#prefix' => "<div id='left-panels' class='$class'>",
+            '#suffix' => '</div>',
+        );
+        foreach ($activity_panels as $name => $panel)
+            $content[$name] = $panel;
         return array(
             '#theme' => 'page',
             '#type' => 'page',
             '#show_messages' => true,
-            'content' => $this->main_panel(),
-            'sidebar_second' => $this->right_panel(),
+            'content' => $content,
+            'sidebar_second' => array(
+                '#prefix' => '<div id="right-panels">',
+                '#suffix' => '</div>',
+                'blocks' => $this->right_panel(),
+            ),
         );
     }
 
     /**
-     * The main panel has three blocks.  The first block is the
-     * sliding image block with links to tasks common performed
-     * by the current user ("featured" task areas).  The other
-     * two blocks are smaller blocks aligned next to each other.
-     * The content of the blocks varies depending on the role
-     * of the current user.
+     * Choose the activity panels shown on the home page for this role.
      */
-    private function main_panel() {
+    private function activity_panels() {
         switch ($this->role) {
-            case 'librarian':
-                return array('featured' => $this->featured());
             case 'member':
                 return array(
-                    'featured' => $this->featured(),
-                    'recent' => $this->recent(),
-                    'rosters' => $this->rosters(true),
+                    'literature' => $this->literature_activity(),
+                    'meetings' => $this->meeting_activity(),
+                );
+            case 'librarian':
+                return array(
+                    'librarian' => $this->librarian_activity(),
+                    //'literature' => $this->literature_activity(),
+                    //'documents' => $this->document_activity(),
                 );
             case 'admin':
+            default:
                 return array(
-                    'featured' => $this->featured(),
-                    'recent' => $this->recent(),
-                    'admin' => $this->admin(),
+                    'literature' => $this->literature_activity(),
+                    'documents' => $this->document_activity(),
+                    'meetings' => $this->meeting_activity(),
                 );
         }
+    }
+
+    /**
+     * Assemble Drupal reneder array for Literature Activity panel.
+     */
+    private function literature_activity() {
+        $title = 'Literature Activity';
+        $id = 'literature-activity';
+        $items = array();
+        $more = '';
+        if ($this->role != 'admin')
+            $img = Ebms\IMAGES_DIR . '/literature-activity-2-panel.jpg';
+        else
+            $img = Ebms\IMAGES_DIR . '/literature-activity-3-panel.jpg';
+        $nada = '<p>No recent literature activity</p>';
+        $view = views_get_view('recent_activity');
+        $content = $view ? $view->preview('literature_activity_block') : $nada;
+        return $this->activity_box2($id, $title, $img, $content);
+        switch ($this->role) {
+            case 'member':
+                $query = db_select('ebms_packet', 'p');
+                $query->fields('p', array('packet_title', 'created_at'));
+                $query->join('ebms_topic_reviewer', 't',
+                    't.topic_id = p.topic_id');
+                $query->condition('t.user_id', $this->user->uid);
+                $query->range(0, 4);
+                $query->orderBy('p.created_at', 'DESC');
+                $results = $query->execute();
+                foreach ($results as $result) {
+                    $when = date('m/d/Y', strtotime($result->created_at));
+                    if (count($items) > 2)
+                        $more = l('more', 'literature-activity');
+                    else
+                        $items[] = "$result->packet_title posted $when";
+                }
+                break;
+            case 'admin':
+            default:
+                $items[] = 'New Cancer Genetics articles posted. ' .
+                    '06/20/2014';
+                break;
+        }
+        return $this->activity_box($id, $title, $img, $items, $more);
+    }
+
+    private function activity_box2($id, $title, $img, $content) {
+        $h3 = "<h3>$title</h3>";
+        $image = "<div class='image-wrapper'><img src='$img' alt=''></div>";
+        $box = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => $id,
+                'class' => array('activity-box'),
+            ),
+            'top' => array('#markup' => $h3 . $image),
+            'content' => array('#markup' => $content),
+        );
+        /*
+        if ($more)
+            $box['more'] = array(
+                '#markup' => "<p class='more'>$more</p>",
+            );
+    */
+        return $box;
+    }
+    /**
+     * Assemble Drupal reneder array for Meeting Activity panel.
+     */
+    private function meeting_activity() {
+        if ($this->role != 'admin')
+            $img = Ebms\IMAGES_DIR . '/meeting-activity-2-panel.jpg';
+        else
+            $img = Ebms\IMAGES_DIR . '/meeting-activity-3-panel.jpg';
+        $id = 'meeting-activity';
+        $title = 'Meeting Activity';
+        $nada = '<p>No recent meeting activity</p>';
+        $view = views_get_view('recent_activity');
+        $content = $view ? $view->preview('meeting_activity_block') : $nada;
+        //pdq_ebms_debug('MEETING ACTIVITY', array($view, $content));
+        return $this->activity_box2($id, $title, $img, $content);
+        return array(
+            '#markup' => "<h3>Recent Activity</h3>" . $display,
+            '#prefix' => "<div id='activity-enclosure' class='ebms-block'>",
+            '#suffix' => /*$this->block_bottom_img() .*/ "</div>",
+        );
+        $more = l('more', 'meeting-activity');
+        $items = array();
+        switch ($this->role) {
+            case 'member':
+            case 'admin':
+            default:
+                $items = array(
+                    'Genetics Board Meeting changed to Webex/Phone Conf ' .
+                    '06/20/2014',
+                    'Breast/Ovarian WB time updated 06/20/2014',
+                    'Agenda published for Breast/Ovarian WG 06/20/2014',
+                );
+        }
+        return $this->activity_box($id, $title, $img, $items, $more);
+    }
+
+    /**
+     * Assemble Drupal reneder array for Document Activity panel.
+     */
+    private function document_activity() {
+        if ($this->role != 'admin')
+            $img = Ebms\IMAGES_DIR . '/document-activity-2-panel.jpg';
+        else
+            $img = Ebms\IMAGES_DIR . '/document-activity-3-panel.jpg';
+        $more = l('more', 'document-activity');
+        $id = 'document-activity';
+        $title = 'Document Activity';
+        $nada = '<p>No recent document activity</p>';
+        $view = views_get_view('recent_activity');
+        $content = $view ? $view->preview('document_activity_block') : $nada;
+        //pdq_ebms_debug('MEETING ACTIVITY', array($view, $content));
+        return $this->activity_box2($id, $title, $img, $content);
+        $items = array();
+        switch ($this->role) {
+            case 'admin':
+            default:
+                $items = array(
+                    'Mary Daly posted Genetics of Breast and Ovarian Cancer ' .
+                    '4_28_14 - TBM edits + MD edits. 06/20/2014',
+                    'Test Board Member posted Genetics of Breast and ' .
+                    'Ovarian Cancer 4_28_14 - TBM edits + MD edits. ' .
+                    '06/20/2014',
+                    'Test Board Member posted Genetics of Breast and ' .
+                    'Ovarian Cancer 4_28_14 - TBM edits + MD edits. ' .
+                    '06/20/2014',
+                    'Test Board Member posted Genetics of Breast and ' .
+                    'Ovarian Cancer 4_28_14 - TBM edits + MD edits. ' .
+                    '06/20/2014',
+                );
+                break;
+        }
+        return $this->activity_box($id, $title, $img, $items, $more);
+    }
+
+    /**
+     * Assemble the Drupal render array for a single home page activity
+     * box.
+     */
+    private function activity_box($id, $title, $img, $items, $more) {
+        $h3 = "<h3>$title</h3>";
+        $image = "<div class='image-wrapper'><img src='$img' alt=''></div>";
+        $box = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => $id,
+                'class' => array('activity-box'),
+            ),
+            'top' => array('#markup' => $h3 . $image),
+            'content' => array(
+                '#theme' => 'item_list',
+                '#items' => $items,
+            ),
+        );
+        if ($more)
+            $box['more'] = array(
+                '#markup' => "<p class='more'>$more</p>",
+            );
+        return $box;
+    }
+
+    /**
+     * Assemble Drupal reneder array for Librarian Activity panel.
+     */
+    private function librarian_activity() {
+        $img = Ebms\IMAGES_DIR . '/librarian.jpg';
+        return array('#markup' => "<img src='$img' alt=''>");
+        if ($this->role != 'admin')
+            $img = Ebms\IMAGES_DIR . '/literature-activity-2-panel.jpg';
+        else
+            $img = Ebms\IMAGES_DIR . '/literature-activity-3-panel.jpg';
+        $img = Ebms\IMAGES_DIR . '/member-activity-box.jpg';
+        $more = l('more', 'librarian-activity');
+        $id = 'libraian-activity';
+        $title = 'Librarian Activity';
+        $items = array();
+        $items = array(
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec suscipit dignissim elementum. Nulla nec dolor non velit suscipit convallis eget et ipsum. Pellentesque malesuada tempor interdum. Mauris venenatis justo nec velit gravida, eget vehicula quam lobortis. Nulla imperdiet risus id imperdiet malesuada. Cras imperdiet, eros sit amet dictum tincidunt, est diam interdum ligula, eu volutpat nulla augue at nunc. Vestibulum volutpat ipsum nisi, id tempus orci ultrices ac. Quisque a mi nec libero congue egestas. Fusce quis mollis nulla, eu tincidunt leo. Fusce porta mattis risus, in porta diam molestie suscipit. Donec egestas, neque ut interdum porttitor, lectus dui venenatis nisl, in mollis mauris lorem eget massa. Donec ultrices orci vel mi imperdiet viverra.',
+            'Vivamus tristique posuere leo, id mattis nulla venenatis vitae. Curabitur interdum et erat pharetra congue. Nam ac tortor libero. Ut dignissim arcu in facilisis fringilla. Maecenas eget libero ac metus adipiscing tempus et varius purus. Proin tincidunt ligula nulla, ut ultricies magna bibendum convallis. Suspendisse purus ligula, blandit ac venenatis nec, porta eget quam. Etiam et sem dolor. Praesent vulputate libero arcu, nec pellentesque dolor vestibulum nec.',
+        );
+        return $this->activity_box($id, $title, $img, $items, $more);
     }
 
     /**
@@ -129,105 +329,14 @@ class EbmsHomePage {
                 // later release.
                 // 'alerts' => $this->alerts(),
                 'calendar' => $this->calendar(),
-                'admin tasks' => $this->admin(),
+                //'admin tasks' => $this->admin(),
             );
         $blocks = array(
             'alerts' => $this->alerts(),
             'next meeting' => $this->next_meeting(),
             'calendar' => $this->calendar(),
         );
-        if ($this->role == 'admin')
-            $blocks['rosters'] = $this->rosters();
         return $blocks;
-    }
-
-    /**
-     * The centerpiece of the home page is made up of a set of images,
-     * only one of which is displayed at any given time.  The images
-     * present the illusion of multiple stacked images, each representing
-     * one of the primary areas of the system in which the current user
-     * would work (for example, Citation Management or Literature
-     * Surveillance).  By clicking on the portions of the images which
-     * appear to represent another image underneath the one for the area
-     * which currently has the focus, she can cause the image to change
-     * so that another task area gets the focus.  In the portion of the
-     * image for the featured task area links are available for navigating
-     * to the pages used to perform the tasks in that portion of the system.
-     * In most cases, these links duplicate navigation provided by the
-     * main menu system.
-     */
-    private function featured() {
-        $info = $this->featured_info($this->role, $this->focus);
-        $id = "featured-{$this->role}-{$this->focus}";
-        $prefix = $this->featured_prefix($id);
-        foreach ($info['links'] as $link)
-            $items[] = $link;
-        return array(
-            '#theme' => 'item_list',
-            '#title' => $info['title'],
-            '#items' => $items,
-            '#prefix' => $prefix,
-            '#suffix' => '</div>',
-        );
-    }
-
-    /**
-     * Assemble the information needed for displaying the image
-     * for the home page's main block, as well as the linkable
-     * areas of the image for "sliding" to another featured
-     * task focus.
-     */
-    private function featured_prefix($id) {
-        $div = "<div class='ebms-featured-block' id='$id'>";
-        $url = Ebms\IMAGES_DIR . "/$id.jpg";
-        $img = "<img src='$url' usemap='#featured-map' alt='' />";
-        $map = array('<map id="featured-map" name="featured-map">');
-        switch ($this->role) {
-            case 'admin':
-                $alts = array(
-                    'Citation Management',
-                    'Literature Surveillance',
-                    'Summaries',
-                    'Reports',
-                );
-                break;
-            case 'librarian':
-                $alts = array(
-                    'Citation Management',
-                    'Reports',
-                    'Administrator Tool',
-                );
-                break;
-            default:
-                $alts = array(
-                    'Literature Surveillance',
-                    'Summaries',
-                    'Travel',
-                );
-                break;
-        }
-        $shape = 'shape="rect"';
-        $base = "{$this->url}?focus=";
-        if ($this->mini)
-            $base = "{$this->url}?mini={$this->mini}&focus=";
-        for ($i = 0; $i < count($alts); ++$i) {
-            $f = $i + 1;
-            if ($f != $this->focus) {
-                $href = "href='$base$f'";
-                if ($f < $this->focus)
-                    $x1 = $i * 100 + 10;
-                else {
-                    $distance_from_last = count($alts) - $i;
-                    $x1 = 635 - 100 * $distance_from_last;
-                }
-                $x2 = $x1 + 85;
-                $coords = "coords='$x1,0,$x2,449'";
-                $alt = "alt='{$alts[$i]}'";
-                $map[] = "<area $href $shape $coords $alt />";
-            }
-        }
-        $map[] = '</map>';
-        return $div . $img . implode($map);
     }
 
     /**
@@ -476,7 +585,7 @@ class EbmsHomePage {
         return array(
             '#markup' => "<h3>Next Meeting</h3>" . $display,
             '#prefix' => "<div id='activity-enclosure' class='ebms-block'>",
-            '#suffix' => $this->block_bottom_img() . "</div>",
+            '#suffix' => '</div>',
             );
     }
 
@@ -498,109 +607,8 @@ class EbmsHomePage {
         return array(
             '#markup' => $display,
             '#prefix' => "<div id='calendar-enclosure'>",
-            '#suffix' => $this->block_bottom_img() . "</div>",
-            );
-    }
-
-    /**
-     * Data controlling which links are displayed in the featured
-     * task area of the main panel on the home page, depending
-     * the current user's role(s) and on which portion of the
-     * panel the user wants to see.
-     */
-    private static function featured_info($role, $focus) {
-        global $user;
-        $fulltext_or_review = l('Full Text Retrieval', 'citations/fulltext');
-        if (in_array('icrdb manager', $user->roles))
-            $fulltext_or_review = l('Review Citations', 'citations');
-        $info = array(
-            'librarian' => array(
-                '1' => array(
-                    'title' => l('Citation Management', 'citations'),
-                    'links' => array(
-                        l('Review Citations', 'citations'),
-                        l('Search Database', 'citations/search'),
-                        l('Import Citations', 'citations/import'),
-                        l('Not List Maintenance', 'citations/not-list'),
-                        l('Publish Citations', 'citations/publish'),
-                    ),
-                ),
-                '2' => array(
-                    'title' => l('Reports', 'reports'),
-                    'links' => array(
-                        l('Citation Management Reports', 'reports/cite'),
-                        l('Board Management Reports', 'reports/board'),
-                    ),
-                ),
-                '3' => array(
-                    'title' => 'Administrator Tool',
-                    'links' => array(
-                        l('Not List Maintenance', 'citations/not-list'),
-                        l('Refresh Journal List', 'admin/refresh-journals'),
-                    ),
-                ),
-            ),
-            'admin' => array(
-                '1' => array(
-                    'title' => l('Citation Management', 'citations'),
-                    'links' => array(
-                        l('Search Database', 'citations/search'),
-                        $fulltext_or_review,
-                        l('Add Citation', 'citations/import'),
-                    ),
-                ),
-                '2' => array(
-                    'title' => l('Literature Surveillance', 'review/reviews'),
-                    'links' => array(
-                        l('Create A Literature Surveillance Packet',
-                            'review/add'),
-                        l('Edit a Literature Surveillance Packet',
-                            'review/packets'),
-                        l('Review Responses to a Literature Surveillance ' .
-                            'Packet', 'review/reviews'),
-                    ),
-                ),
-                '3' => array(
-                    'title' => l('Summaries', 'summaries'),
-                    'links' => array(
-                        l('Post Summary Document', 'summaries'),
-                        l('Download and Review Summaries', 'summaries'),
-                    ),
-                ),
-                '4' => array(
-                    'title' => l('Reports', 'reports'),
-                    'links' => array(
-                        l('Literature Surveillance Review Report',
-                            'reports/lit-review'),
-                        l('Travel Reports', 'reports/board'),
-                    ),
-                ),
-            ),
-            'member' => array(
-                '1' => array(
-                    'title' => l('Literature Surveillance', 'review'),
-                    'links' => array(
-                        l('Review Assigned Articles', 'review'),
-                    )
-                ),
-                '2' => array(
-                    'title' => l('Summaries', 'summaries'),
-                    'links' => array(
-                        l('Download and Review Summaries', 'summaries'),
-                        l('Post Summaries with Changes', 'summaries'),
-                    )
-                ),
-                '3' => array(
-                    'title' => l('Travel', 'travel'),
-                    'links' => array(
-                        l('Hotel Reservations', 'travel'),
-                        l('Directions to NCI', 'travel'),
-                        l('Reimbursements', 'travel'),
-                    )
-                )
-            )
+            '#suffix' => '</div>',
         );
-        return $info[$role][$focus];
     }
 
     /**
@@ -617,45 +625,7 @@ class EbmsHomePage {
             '#items' => $items,
             '#attributes' => array('class' => 'ebms_block'),
             '#prefix' => '<div class="' . $class . '" id="' . $id . '">',
-            '#suffix' => $this->block_bottom_img() . '</div>',
+            '#suffix' => '</div>',
         );
-    }
-
-    /**
-     * Assemble the Drupal render array for a home page block containing
-     * a table.  If it turns out that we need similar blocks on other
-     * pages in the system, this functionality will be moved to the
-     * common.inc file and packaged in a separate class.
-     */
-    private function table_block($title, $id, $rows, $extra, $middle=false)
-    {
-        $class = $middle ? 'ebms-block middle-block' : 'ebms-block';
-        $title = '<h3 class="ebms-block-title">' . $title . '</h3>';
-        $div = '<div class="' . $class . '" id="' . $id . '">';
-        $prefix = $div . $title . $extra;
-        return array(
-            '#theme' => 'table',
-            '#title' => $title,
-            '#rows' => $rows,
-            '#prefix' => $prefix,
-            '#suffix' => $this->block_bottom_img() . '</div>',
-        );
-    }
-
-    /**
-     * Create the markup for the image used for the bottom of one of
-     * the EBMS home page boxes.
-     */
-    private static function block_bottom_img() {
-        $url = EbmsHomePage::block_bottom_image();
-        return "<img class='ebms-block-bottom' src='$url' alt='' />";
-    }
-
-    /**
-     * Create the URL for the image used for the bottom of one of the
-     * EBMS home page boxes.
-     */
-    private static function block_bottom_image() {
-        return Ebms\IMAGES_DIR . '/box-bottom.png';
     }
 }

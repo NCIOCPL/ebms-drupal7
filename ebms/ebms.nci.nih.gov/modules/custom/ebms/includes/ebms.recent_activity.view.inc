@@ -1,5 +1,4 @@
 <?php
-
 $view = new view();
 $view->name = 'recent_activity';
 $view->description = 'Show all existing messages.';
@@ -57,12 +56,16 @@ $handler->display->display_options['style_options']['info'] = array(
   ),
 );
 $handler->display->display_options['style_options']['sticky'] = TRUE;
+/* Header: Global: Unfiltered text */
+$handler->display->display_options['header']['area_text_custom']['id'] = 'area_text_custom';
+$handler->display->display_options['header']['area_text_custom']['table'] = 'views';
+$handler->display->display_options['header']['area_text_custom']['field'] = 'area_text_custom';
 /* No results behavior: Global: Text area */
 $handler->display->display_options['empty']['area']['id'] = 'area';
 $handler->display->display_options['empty']['area']['table'] = 'views';
 $handler->display->display_options['empty']['area']['field'] = 'area';
 $handler->display->display_options['empty']['area']['empty'] = TRUE;
-$handler->display->display_options['empty']['area']['content'] = 'There is no recent activity at this time.';
+$handler->display->display_options['empty']['area']['content'] = 'No activity within the past 60 days.';
 $handler->display->display_options['empty']['area']['format'] = 'filtered_html';
 /* Relationship: Message: User uid */
 $handler->display->display_options['relationships']['user']['id'] = 'user';
@@ -78,7 +81,7 @@ $handler->display->display_options['fields']['timestamp']['date_format'] = 'shor
 $handler->display->display_options['fields']['message_render']['id'] = 'message_render';
 $handler->display->display_options['fields']['message_render']['table'] = 'message';
 $handler->display->display_options['fields']['message_render']['field'] = 'message_render';
-$handler->display->display_options['fields']['message_render']['label'] = 'Message';
+$handler->display->display_options['fields']['message_render']['label'] = 'Events';
 $handler->display->display_options['fields']['message_render']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['message_render']['hide_alter_empty'] = FALSE;
 $handler->display->display_options['fields']['message_render']['partials'] = 0;
@@ -100,14 +103,8 @@ $handler->display->display_options['filters']['type']['id'] = 'type';
 $handler->display->display_options['filters']['type']['table'] = 'message';
 $handler->display->display_options['filters']['type']['field'] = 'type';
 $handler->display->display_options['filters']['type']['value'] = array(
-  'activity_agenda_published' => 'activity_agenda_published',
-  'activity_cancelled_event' => 'activity_cancelled_event',
-  'activity_changed_event' => 'activity_changed_event',
-  'activity_event_type' => 'activity_event_type',
   'activity_new_articles' => 'activity_new_articles',
-  'activity_new_event' => 'activity_new_event',
   'activity_new_packet' => 'activity_new_packet',
-  'activity_new_summary' => 'activity_new_summary',
 );
 $handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';
 $handler->display->display_options['filters']['type']['expose']['label'] = 'Message type';
@@ -129,29 +126,64 @@ $handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
 $handler->display->display_options['filters']['timestamp']['table'] = 'message';
 $handler->display->display_options['filters']['timestamp']['field'] = 'timestamp';
 $handler->display->display_options['filters']['timestamp']['operator'] = '>=';
-$handler->display->display_options['filters']['timestamp']['value']['value'] = '-30 days';
+$handler->display->display_options['filters']['timestamp']['value']['value'] = '-60 days';
 $handler->display->display_options['filters']['timestamp']['value']['type'] = 'offset';
 
-/* Display: Page */
-$handler = $view->new_display('page', 'Page', 'page_1');
+/* Display: Meeting Activity Page */
+$handler = $view->new_display('page', 'Meeting Activity Page', 'meeting_activity_page');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['header'] = FALSE;
 /* Header: Global: Text area */
 $handler->display->display_options['header']['area']['id'] = 'area';
 $handler->display->display_options['header']['area']['table'] = 'views';
 $handler->display->display_options['header']['area']['field'] = 'area';
-$handler->display->display_options['header']['area']['content'] = '<h2>Recent Activity</h2>
-<p>Site activity from the last 30 days.</p>';
+$handler->display->display_options['header']['area']['content'] = '<h2>Recent Meeting Activity</h2>
+<p>Meeting activity from the last 60 days</p>';
 $handler->display->display_options['header']['area']['format'] = 'full_html';
-$handler->display->display_options['path'] = 'recent-activity';
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Message: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'message';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'activity_agenda_published' => 'activity_agenda_published',
+  'activity_cancelled_event' => 'activity_cancelled_event',
+  'activity_changed_event' => 'activity_changed_event',
+  'activity_event_type' => 'activity_event_type',
+  'activity_new_event' => 'activity_new_event',
+);
+$handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['label'] = 'Message type';
+$handler->display->display_options['filters']['type']['expose']['operator'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['identifier'] = 'type';
+$handler->display->display_options['filters']['type']['expose']['remember_roles'] = array(
+  2 => '2',
+  9 => 0,
+  1 => 0,
+  5 => 0,
+  4 => 0,
+  6 => 0,
+  8 => 0,
+  7 => 0,
+  3 => 0,
+);
+/* Filter criterion: Message: Timestamp */
+$handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['table'] = 'message';
+$handler->display->display_options['filters']['timestamp']['field'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['operator'] = '>=';
+$handler->display->display_options['filters']['timestamp']['value']['value'] = '-60 days';
+$handler->display->display_options['filters']['timestamp']['value']['type'] = 'offset';
+$handler->display->display_options['path'] = 'recent-meeting-activity';
 $handler->display->display_options['menu']['title'] = 'Recent Activity';
 $handler->display->display_options['menu']['description'] = 'All activity messages from the last 30 days.';
 $handler->display->display_options['menu']['weight'] = '0';
 $handler->display->display_options['menu']['name'] = 'management';
 $handler->display->display_options['menu']['context'] = 0;
 
-/* Display: Block */
-$handler = $view->new_display('block', 'Block', 'activity_block');
+/* Display: Meeting Activity Block */
+$handler = $view->new_display('block', 'Meeting Activity Block', 'meeting_activity_block');
 $handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
 $handler->display->display_options['defaults']['use_more'] = FALSE;
 $handler->display->display_options['use_more'] = TRUE;
@@ -186,3 +218,232 @@ $handler->display->display_options['fields']['name']['field'] = 'name';
 $handler->display->display_options['fields']['name']['relationship'] = 'user';
 $handler->display->display_options['fields']['name']['label'] = 'User';
 $handler->display->display_options['fields']['name']['exclude'] = TRUE;
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Message: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'message';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'activity_agenda_published' => 'activity_agenda_published',
+  'activity_cancelled_event' => 'activity_cancelled_event',
+  'activity_changed_event' => 'activity_changed_event',
+  'activity_event_type' => 'activity_event_type',
+  'activity_new_event' => 'activity_new_event',
+);
+$handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['label'] = 'Message type';
+$handler->display->display_options['filters']['type']['expose']['operator'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['identifier'] = 'type';
+$handler->display->display_options['filters']['type']['expose']['remember_roles'] = array(
+  2 => '2',
+  9 => 0,
+  1 => 0,
+  5 => 0,
+  4 => 0,
+  6 => 0,
+  8 => 0,
+  7 => 0,
+  3 => 0,
+);
+/* Filter criterion: Message: Timestamp */
+$handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['table'] = 'message';
+$handler->display->display_options['filters']['timestamp']['field'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['operator'] = '>=';
+$handler->display->display_options['filters']['timestamp']['value']['value'] = '-60 days';
+$handler->display->display_options['filters']['timestamp']['value']['type'] = 'offset';
+
+/* Display: Literature Activity Page */
+$handler = $view->new_display('page', 'Literature Activity Page', 'literature_activity_page');
+$handler->display->display_options['defaults']['header'] = FALSE;
+/* Header: Global: Unfiltered text */
+$handler->display->display_options['header']['area_text_custom']['id'] = 'area_text_custom';
+$handler->display->display_options['header']['area_text_custom']['table'] = 'views';
+$handler->display->display_options['header']['area_text_custom']['field'] = 'area_text_custom';
+$handler->display->display_options['header']['area_text_custom']['content'] = '<h2>Recent Literature Activity</h2>
+<p>Literature activity from the last 60 days</p>';
+$handler->display->display_options['path'] = 'recent-literature-activity';
+
+/* Display: Literature Activity Block */
+$handler = $view->new_display('block', 'Literature Activity Block', 'literature_activity_block');
+$handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
+$handler->display->display_options['defaults']['use_more'] = FALSE;
+$handler->display->display_options['use_more'] = TRUE;
+$handler->display->display_options['defaults']['use_more_always'] = FALSE;
+$handler->display->display_options['defaults']['use_more_always'] = FALSE;
+$handler->display->display_options['use_more_always'] = FALSE;
+$handler->display->display_options['defaults']['use_more_text'] = FALSE;
+$handler->display->display_options['defaults']['link_display'] = FALSE;
+$handler->display->display_options['link_display'] = 'literature_activity_page';
+$handler->display->display_options['defaults']['pager'] = FALSE;
+$handler->display->display_options['pager']['type'] = 'some';
+$handler->display->display_options['pager']['options']['items_per_page'] = '5';
+$handler->display->display_options['pager']['options']['offset'] = '0';
+$handler->display->display_options['defaults']['fields'] = FALSE;
+/* Field: Message: Timestamp */
+$handler->display->display_options['fields']['timestamp']['id'] = 'timestamp';
+$handler->display->display_options['fields']['timestamp']['table'] = 'message';
+$handler->display->display_options['fields']['timestamp']['field'] = 'timestamp';
+$handler->display->display_options['fields']['timestamp']['exclude'] = TRUE;
+$handler->display->display_options['fields']['timestamp']['date_format'] = 'short';
+/* Field: Message: Render message (Get text) */
+$handler->display->display_options['fields']['message_render']['id'] = 'message_render';
+$handler->display->display_options['fields']['message_render']['table'] = 'message';
+$handler->display->display_options['fields']['message_render']['field'] = 'message_render';
+$handler->display->display_options['fields']['message_render']['label'] = '';
+$handler->display->display_options['fields']['message_render']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['message_render']['hide_alter_empty'] = FALSE;
+$handler->display->display_options['fields']['message_render']['partials'] = 0;
+$handler->display->display_options['fields']['message_render']['partials_delta'] = '0';
+/* Field: User: Name */
+$handler->display->display_options['fields']['name']['id'] = 'name';
+$handler->display->display_options['fields']['name']['table'] = 'users';
+$handler->display->display_options['fields']['name']['field'] = 'name';
+$handler->display->display_options['fields']['name']['relationship'] = 'user';
+$handler->display->display_options['fields']['name']['label'] = 'User';
+$handler->display->display_options['fields']['name']['exclude'] = TRUE;
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Message: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'message';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'activity_new_articles' => 'activity_new_articles',
+  'activity_new_packet' => 'activity_new_packet',
+);
+$handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['label'] = 'Message type';
+$handler->display->display_options['filters']['type']['expose']['operator'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['identifier'] = 'type';
+$handler->display->display_options['filters']['type']['expose']['remember_roles'] = array(
+  2 => '2',
+  9 => 0,
+  1 => 0,
+  5 => 0,
+  4 => 0,
+  6 => 0,
+  8 => 0,
+  7 => 0,
+  3 => 0,
+);
+/* Filter criterion: Message: Timestamp */
+$handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['table'] = 'message';
+$handler->display->display_options['filters']['timestamp']['field'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['operator'] = '>=';
+$handler->display->display_options['filters']['timestamp']['value']['value'] = '-60 days';
+$handler->display->display_options['filters']['timestamp']['value']['type'] = 'offset';
+
+/* Display: Document Activity Page */
+$handler = $view->new_display('page', 'Document Activity Page', 'document_activity_page');
+$handler->display->display_options['defaults']['header'] = FALSE;
+/* Header: Global: Unfiltered text */
+$handler->display->display_options['header']['area_text_custom']['id'] = 'area_text_custom';
+$handler->display->display_options['header']['area_text_custom']['table'] = 'views';
+$handler->display->display_options['header']['area_text_custom']['field'] = 'area_text_custom';
+$handler->display->display_options['header']['area_text_custom']['content'] = '<h2>Recent Document Activity</h2>
+<p>Document activity from the last 60 days</p>';
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Message: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'message';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'activity_new_summary' => 'activity_new_summary',
+);
+$handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['label'] = 'Message type';
+$handler->display->display_options['filters']['type']['expose']['operator'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['identifier'] = 'type';
+$handler->display->display_options['filters']['type']['expose']['remember_roles'] = array(
+  2 => '2',
+  9 => 0,
+  1 => 0,
+  5 => 0,
+  4 => 0,
+  6 => 0,
+  8 => 0,
+  7 => 0,
+  3 => 0,
+);
+/* Filter criterion: Message: Timestamp */
+$handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['table'] = 'message';
+$handler->display->display_options['filters']['timestamp']['field'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['operator'] = '>=';
+$handler->display->display_options['filters']['timestamp']['value']['value'] = '-60 days';
+$handler->display->display_options['filters']['timestamp']['value']['type'] = 'offset';
+$handler->display->display_options['path'] = 'recent-document-activity';
+
+/* Display: Document Activity Block */
+$handler = $view->new_display('block', 'Document Activity Block', 'document_activity_block');
+$handler->display->display_options['defaults']['hide_admin_links'] = FALSE;
+$handler->display->display_options['defaults']['use_more'] = FALSE;
+$handler->display->display_options['use_more'] = TRUE;
+$handler->display->display_options['defaults']['use_more_always'] = FALSE;
+$handler->display->display_options['defaults']['use_more_always'] = FALSE;
+$handler->display->display_options['use_more_always'] = FALSE;
+$handler->display->display_options['defaults']['use_more_text'] = FALSE;
+$handler->display->display_options['defaults']['link_display'] = FALSE;
+$handler->display->display_options['link_display'] = 'document_activity_page';
+$handler->display->display_options['defaults']['pager'] = FALSE;
+$handler->display->display_options['pager']['type'] = 'some';
+$handler->display->display_options['pager']['options']['items_per_page'] = '5';
+$handler->display->display_options['pager']['options']['offset'] = '0';
+$handler->display->display_options['defaults']['fields'] = FALSE;
+/* Field: Message: Timestamp */
+$handler->display->display_options['fields']['timestamp']['id'] = 'timestamp';
+$handler->display->display_options['fields']['timestamp']['table'] = 'message';
+$handler->display->display_options['fields']['timestamp']['field'] = 'timestamp';
+$handler->display->display_options['fields']['timestamp']['exclude'] = TRUE;
+$handler->display->display_options['fields']['timestamp']['date_format'] = 'short';
+/* Field: Message: Render message (Get text) */
+$handler->display->display_options['fields']['message_render']['id'] = 'message_render';
+$handler->display->display_options['fields']['message_render']['table'] = 'message';
+$handler->display->display_options['fields']['message_render']['field'] = 'message_render';
+$handler->display->display_options['fields']['message_render']['label'] = '';
+$handler->display->display_options['fields']['message_render']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['message_render']['hide_alter_empty'] = FALSE;
+$handler->display->display_options['fields']['message_render']['partials'] = 0;
+$handler->display->display_options['fields']['message_render']['partials_delta'] = '0';
+/* Field: User: Name */
+$handler->display->display_options['fields']['name']['id'] = 'name';
+$handler->display->display_options['fields']['name']['table'] = 'users';
+$handler->display->display_options['fields']['name']['field'] = 'name';
+$handler->display->display_options['fields']['name']['relationship'] = 'user';
+$handler->display->display_options['fields']['name']['label'] = 'User';
+$handler->display->display_options['fields']['name']['exclude'] = TRUE;
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Message: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'message';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'activity_new_summary' => 'activity_new_summary',
+);
+$handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['label'] = 'Message type';
+$handler->display->display_options['filters']['type']['expose']['operator'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['identifier'] = 'type';
+$handler->display->display_options['filters']['type']['expose']['remember_roles'] = array(
+  2 => '2',
+  9 => 0,
+  1 => 0,
+  5 => 0,
+  4 => 0,
+  6 => 0,
+  8 => 0,
+  7 => 0,
+  3 => 0,
+);
+/* Filter criterion: Message: Timestamp */
+$handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['table'] = 'message';
+$handler->display->display_options['filters']['timestamp']['field'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['operator'] = '>=';
+$handler->display->display_options['filters']['timestamp']['value']['value'] = '-60 days';
+$handler->display->display_options['filters']['timestamp']['value']['type'] = 'offset';

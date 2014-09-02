@@ -880,12 +880,12 @@ function pdq_ebms_refresh_xml_form_submit($form, &$form_state) {
  *
  * JIRA::OCEEBMS-87
  */
-function pdq_ebms_refresh_xml($source) {
+function pdq_ebms_refresh_xml($source, $max=null) {
 
     // Collect PMIDs for articles we've never checked before.
     drupal_add_http_header('Content-type', 'text/plain');
     //$start = microtime(true);
-    $max_to_refresh = 2500;
+    $max_to_refresh = $max ? $max : 2500;
     $pmids = array();
     $checked = array();
     $query = db_select('ebms_article', 'a')

@@ -120,7 +120,7 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
         $actions[] = l($title, "calendar$granularity$suffix");
         $actions[] = '</li>';
     }
-    
+
     if ($actions) {
         // build an action box
         $output[] = '<div class="nav-block">';
@@ -153,13 +153,13 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
 
 /**
  * Calendar helper function for altering a Views query.
- * 
+ *
  * @param type $view  The view object about to be processed.
  * @param type $query An object describing the query.
  */
 function _calendar_query_alter(&$view, &$query) {
     global $user;
-    
+
     //If the user is UID 1 or an EBMS administrator, there is no filtering of
     //events
     if (user_access("administer ebms"))
@@ -176,8 +176,11 @@ function _calendar_query_alter(&$view, &$query) {
     // Don't show board members article publication messages (TIR 2515).
     if ($view->base_table == 'message') {
         if (in_array('board member', $user->roles)) {
-            $query->add_where(0, 'message.type', 'activity_new_articles', '<>');
+            $query->add_where(0, 'message.type',
+                'activity_new_articles', '<>');
         }
+        else
+            $query->add_where(0, 'message.type', 'activity_new_packet', '<>');
     }
 
     //Initialize an OR conditional for selects
@@ -209,7 +212,7 @@ function _calendar_query_alter(&$view, &$query) {
     $nullConditions->isNull('field_data_field_boards.field_boards_value');
 
     //Subgroups:
-    
+
     //Add table to query
     $subgroupsjoin = new views_join();
     $subgroupsjoin->construct("field_data_field_subgroups",
@@ -233,7 +236,7 @@ function _calendar_query_alter(&$view, &$query) {
     $nullConditions->isNull('field_data_field_subgroups.field_subgroups_value');
 
     //Ad hoc groups:
-    
+
     //Add table to query
     $adhocgroupsjoin = new views_join();
     $adhocgroupsjoin->construct("field_data_field_ad_hoc_groups",
@@ -280,13 +283,13 @@ function _calendar_query_alter(&$view, &$query) {
 
     // or together both conditions (at least one filter match or all filters empty)
     $or_conditions->condition($nullConditions);
-    
+
     $query->add_where('membership', $or_conditions);
 }
 
 /**
  * Callback for editing an event node from the calendar.
- * 
+ *
  * @param string $nid Node id of the event
  */
 function ebms_calendar_edit_event($nid) {
@@ -309,7 +312,7 @@ function ebms_calendar_edit_event($nid) {
 /**
  * Local implementation of hook_form_alter.  Adds a default date to the event's
  * date fields.
- * 
+ *
  * @param array $form       The existing form to alter.
  * @param array $form_state The form's state.
  * @return array $form      The updated form.
@@ -352,4 +355,250 @@ function calendar_event_board_select_js($form, &$form_state) {
     $form_state['rebuild'] = true;
 
     return $form;
+}
+
+/**
+ * Package all of the files for a meeting into a zip archive and send it
+ * to the user.
+ *
+ * ASSUMPTIONS:
+ *   Software has already checked to be sure there are files that should
+ *   be sent to the user.  It has only put up a link to this function if
+ *   there are.
+ *
+ *  @param int $meetingNode     Identifier for the meeting record.
+ *
+ *  @return                     No return if successful.  Calls common.inc
+ *                              download_file() which sends the zip file and
+ *                              exits.
+ *                              Returns message in the event of error.
+ */
+function pdq_ebms_download_meeting_docs($meetingNode) {
+
+    // Get the agenda string and doc links from the meeting records.
+    $node = node_load($meetingNode);
+
+    // Extract info from the node
+    $dateData   = field_get_items('node', $node, 'field_datespan');
+    $docData    = field_get_items('node', $node, 'field_documents');
+    $agendaData = field_get_items('node', $node, 'field_agenda');
+
+    // Date info
+    if ($dateData) {
+        // Timezone established elsewhere
+        $timestamp = $dateData[0]['value'];
+        $eventDate = date('Y-m-j', $timestamp);
+    }
+    else
+        $eventDate = '';
+
+    // Extract document file names from meeting docs uris.
+    $meetingFiles = array();
+    if ($docData) {
+        foreach ($docData as $ddata) {
+            // Get the filename after the uri scheme:
+            $uri = $ddata['uri'];
+            if (substr($uri, 0, 9) == 'public://') {
+                $meetingFiles[] = substr($uri, 9);
+            }
+        }
+    }
+
+    // Extract document file names from the agenda
+    $agendaFiles = array();
+    if ($agendaData) {
+        $agenda = $agendaData[0]['value'];
+        $agendaFiles = extract_file_hrefs($agenda);
+    }
+
+    // Combine and deduplicate
+    // XXX This does not deduplicate pairs of identical files, only pairs
+    // XXX of identical filenames.
+    $allFiles = array_unique(array_merge($agendaFiles, $meetingFiles));
+
+    // Sanity check
+    if (count($allFiles) < 1) {
+        watchdog('pdq_ebms_download_meeting_docs',
+                 "No files to download for meeting with node id=$meetingNode");
+        return "Error, could not locate any files to download!";
+    }
+
+    // Create useful human readable names for zip output, no pesky spaces
+    $title = preg_replace('/\s+/', '_', $node->title);
+    $readablePath = $title . '_' . $eventDate . '_Docs';
+    $readableName = $readablePath . '.zip';
+
+    // Create a temporary zip archive
+    $zipName = tempnam(sys_get_temp_dir(), 'zipDocs');
+    $rc = make_zip_archive($allFiles, $zipName, $readablePath);
+    if (!$rc)
+        return "Error, zip operation failed!";
+
+    // Send the file and delete the zip
+    Ebms\Util::download_file($zipName, $readableName, 'application/zip', true);
+
+    // Should have exited.  If we got here report the error
+    return "Error, could not download zip file!";
+}
+
+/**
+ * Get names of files identifying EBMS managed files from a references in
+ * an HTML string, e.g. an agenda.
+ *
+ * Filenames found are not checked to see if the file actually exists.
+ * Caller must check if needed.
+ *
+ *  @param string $content  HTML string of the agenda.
+ *
+ *  @return                 Array of filenames in the files directory.
+ *                          Empty array if none found.
+ */
+function extract_file_hrefs($content) {
+
+    // Return results here
+    $filenames = array();
+
+    // Make sure we've got something to parse.
+    if (!$content)
+        return $filenames;
+
+    // Parse the doc
+    $doc = new DOMDocument();
+    $doc->loadHTML($content);
+
+    // Get all of the links
+    $nodes = $doc->getElementsByTagName('a');
+    foreach ($nodes as $node) {
+        $href = $node->getAttribute('href');
+
+        // Search for hrefs pointing in our managed files directory
+        if (preg_match('@nci\.nih\.gov/files/(.*)@', $href, $matches))
+            $filenames[] = urldecode($matches[1]);
+    }
+    return $filenames;
+}
+
+/**
+ * Put all of the files named in a passed array into a zip archive.
+ *
+ * ASSUMPTION:
+ *   All files are presumed to be in the public files directory.
+ *
+ *  @param array $fileNames     Array of public file uris.
+ *  @param string $zipName      Output archive name.  Will overwrite if it
+ *                              exists.
+ *  @param string $outputPath   If non-null, output the zip files as being
+ *                              in this path.
+ *
+ *  @return                     True on success.
+ *                              False if operations failed.  See watchdog.
+ */
+function make_zip_archive($fileNames, $zipName, $outputPath=null) {
+
+    // Don't do anything if there's nothing to do
+    if (count($fileNames) < 1)
+        return false;
+
+    // Create the zip file, overwriting anything there
+    $zip = new ZipArchive();
+    $rc = $zip->open($zipName, ZipArchive::CREATE);
+    if ($rc !== true) {
+        watchdog('make_zip_archive', "Error $rc creating $zipArchive", null,
+                 WATCHDOG_ERROR);
+        return false;
+    }
+
+    // All files must be in the public files path
+    $filesPath = Ebms\Util::get_public_files_path();
+
+    // Add all the files
+    $zipCount = 0;
+    foreach ($fileNames as $fname) {
+
+        // Setup names for finding files and placing them in the output zip
+        $inf  = $filesPath . '/' . $fname;
+        if ($outputPath)
+            $outf = $outputPath . '/' . $fname;
+        else
+            $outf = $fname;
+
+        // Archive it
+        $rc = $zip->addFile($inf, $outf);
+        if ($rc === true)
+            ++$zipCount;
+        else {
+            // Add an error document in its place
+            $errFile = create_zip_error_file($inf);
+            if ($errFile) {
+                // Add it to the archive with a useful name
+                $newName = $outf . "_ERROR.txt";
+                $zip->addFile($errFile, $newName);
+                unlink($errFile);
+            }
+            watchdog('make_zip_archive', "Error $rc adding $fname to $zipName",
+                      null, WATCHDOG_ERROR);
+        }
+    }
+
+    // Cleanup
+    $rc = $zip->close();
+    if ($rc !== true || $zipCount == 0) {
+        unlink($zipName);
+        if ($zipCount == 0)
+            watchdog('make_zip_archive', "No files were saved in $zipName",
+                      null, WATCHDOG_ERROR);
+        else
+            watchdog('make_zip_archive', "Error $rc closing $zipName",
+                      null, WATCHDOG_ERROR);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Create a temporary document in the file system to describe an error
+ * that occurred during a zip operation.  The caller should incorporate
+ * this error document in place of the failed doc, then erase it from the
+ * file system.
+ *
+ *  @param string $docName      Name of the doc that failed.
+ *
+ *  @return                     Name of the temp file, or false if failed.
+ */
+function create_zip_error_file($docName) {
+
+    // Create a temporary file, easy to get rid of
+    $fname = tempnam(sys_get_temp_dir(), 'zipErr');
+    if ($fname === false)
+        return false;
+    drupal_chmod($fname, 0666);
+
+    // Error message to show to the user
+    $msg = <<<EOT
+We're sorry, but an error has occurred while attempting to add the file named:
+
+  $docName
+
+to the zip archive file.
+
+Please contact the PDQ Board Manager for help getting a copy of this document.
+EOT;
+
+    // Assume failure until success happens
+    $ok = false;
+    $fp = fopen($fname, "w");
+    if ($fp !== false) {
+        $bytes = fwrite($fp, $msg);
+        if ($bytes)
+            if (fclose($fp))
+                $ok = true;
+    }
+
+    // Cleanup any failure
+    if (!$ok) {
+       unlink($fname);
+       return false;
+    }
+    return $fname;
 }

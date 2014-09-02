@@ -610,6 +610,7 @@ class EbmsSummaries {
                 'data' => 'Date',
                 'field' => 'd.when_posted',
                 'class' => array('col-4'),
+                'sort' => 'desc',
             ),
         );
 
@@ -785,10 +786,22 @@ class EbmsSummaries {
         }
 
         // Assemble the render array for the page and return it.
+        $instructions = '';
+        if ($this->role == 'member')
+            $instructions = '<p style="font-style: italic">Access the pages ' .
+                'below to view the current ' .
+                'summaries on Cancer.gov, view and download Word versions ' .
+                'of the summaries, post summaries with your changes, and ' .
+                'view summaries with recent changes from other Board ' .
+                'members. You may also post other documents related to ' .
+                'the summaries.</p>';
         return array(
             'page' => array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'summaries'),
+                'heading' => array(
+                    '#markup' => '<h2>Manage Summaries</h2>' . $instructions
+                ),
                 'boards' => $boards,
             ),
         );
@@ -1142,6 +1155,7 @@ class EbmsSummaries {
                 'data' => 'Date',
                 'field' => 'd.when_posted',
                 'class' => array('col-4'),
+                'sort' => 'desc',
             ),
         );
 
@@ -2302,6 +2316,7 @@ function pdq_ebms_member_doc_form_submit($form, &$form_state) {
         
         // notify of new summary
         \Ebms\Util::activityNewSummary(array('title' => $filename, 'board' => $board));
+        drupal_set_message("Posted document $filename.");
     }
     else
         drupal_set_message('File not found', 'error');

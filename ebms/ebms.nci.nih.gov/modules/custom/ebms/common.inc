@@ -188,10 +188,11 @@ class Menu {
      * can also include an array of child menu items.  The
      * EBMS menu structures have only a single level of nesting.
      */
-    public function __construct($label, $path, $children=null) {
+    public function __construct($label, $path, $children=null, $tip=null) {
         $this->label = $label;
         $this->path = $path;
         $this->children = $children ? $children : array();
+        $this->tip = $tip;
     }
 
     /**
@@ -201,7 +202,8 @@ class Menu {
      * here, without recursion.
      */
     public function render_array() {
-        $ra = array('data' => Menu::make_link($this->label, $this->path));
+        $link = Menu::make_link($this->label, $this->path, $this->tip);
+        $ra = array('data' => $link);
         if ($this->label == Menu::$active)
             $ra['class'] = array('active');
         $children = array();
@@ -218,18 +220,21 @@ class Menu {
      * it still comes out with the hash character replaced with '%23';
      * so we have to fix it on the way out by hand.  Ugly!
      */
-    static function make_link($label, $path) {
+    static function make_link($label, $path, $tip=null) {
         $options = array();
         if (strpos('#', $path) !== false) {
             list($path, $fragment) = explode('#', $path, 2);
             $options['fragment'] = $fragment;
         }
+        if ($tip)
+            $options['attributes']['title'] = $tip;
         $link = l($label, $path, $options);
-        return str_replace('%23', '#', $link);
+        $link = str_replace('%23', '#', $link);
+        return str_replace('@@BR@@', '<br>', $link);
     }
 
     /**
-     * Retrieve the static array of forums.  Build the array first if
+     * Retrieve the static array of menus.  Build the array first if
      * that hasn't been done already.  Do nothing if the user isn't
      * logged in.
      */
@@ -256,66 +261,106 @@ class Menu {
         elseif (in_array('board member', $user->roles))
             $role = 'member';
         elseif (in_array('admin assistant', $user->roles))
-            $role = 'admin'; // XXX maybe later 'assistant';
+            $role = 'admin assistant'; // XXX maybe later 'assistant';
         else
-            $role = 'admin';
+            $role = 'board manager';
         switch ($role) {
+            case 'board manager':
             case 'icrdb manager':
-                // Other software doesn't know 'icrdb manager' role
-                //  in the menu context
-                $effectiveRole = 'admin';
+            case 'admin assistant':
                 self::$menus = array(
-                    Menu::citations($effectiveRole),
-                    Menu::calendar($effectiveRole),
-                    Menu::literature($effectiveRole),
-                    Menu::summaries(),
-                    Menu::reports(),
-                    Menu::admin_tool(),
-                    Menu::travel($effectiveRole),
+                    Menu::admin($role),
+                    Menu::citations($role),
+                    Menu::reports($role),
+                    Menu::literature($role),
+                    Menu::summaries($role),
+                    Menu::calendar($role),
+                    Menu::travel($role),
                     Menu::forums($user),
-                    Menu::about(),
                 );
                 break;
             case 'librarian':
                 self::$menus = array(
+                    Menu::admin($role),
                     Menu::citations($role),
-                    Menu::reports(),
-                    Menu::admin_tool(),
+                    Menu::reports($role),
                     Menu::calendar($role),
-                    Menu::about(),
-                );
-                break;
-            case 'admin':
-                self::$menus = array(
-                    Menu::citations($role),
-                    Menu::calendar($role),
-                    Menu::literature($role),
-                    Menu::summaries(),
-                    Menu::reports(),
-                    Menu::travel($role),
-                    Menu::forums($user),
-                    Menu::about(),
                 );
                 break;
             case 'member':
                 self::$menus = array(
-                    Menu::calendar($role),
                     Menu::literature($role),
-                    Menu::summaries(),
+                    Menu::summaries($role),
+                    Menu::calendar($role),
                     Menu::travel($role),
                     Menu::forums($user),
-                    Menu::about(),
                 );
         }
-        if ($user->uid == 1)
-            self::$menus[] = new Menu('Admin', 'admin');
+    }
+
+    /**
+     * Build the EBMS administrator tool menu.
+     */
+    public static function admin($role) {
+        global $user;
+        $children = array();
+        if ($role != 'librarian') {
+            $children[] = new Menu('Upload Document', 'docs/post');
+            $children[] = new Menu('Manage Documents', 'docs');
+        }
+        $children[] = new Menu('Manage Summary Topics', 'admin/topics');
+        if ($role != 'librarian') {
+            $children[] = new Menu('Manage Groups', 'groups');
+            $children[] = new Menu('Print Packets', 'print-packets/run');
+            $children[] = new Menu('View Packet Printing Jobs',
+                          'print-packets/view');
+            $children[] = new Menu('Manage Print Recipients',
+                          'print-packets/mbrs');
+        }
+        $children[] = new Menu('Not List Maintenance', 'citations/not-list');
+        if ($role == 'librarian')
+            $children[] = new Menu('Refresh Journal List',
+                          'admin/refresh-journals');
+        if (in_array('site manager', $user->roles) || $user->uid == 1)
+            $children[] = new Menu('Site Administration', 'admin');
+        return new Menu('Admin', $children[0]->path, $children);
+    }
+
+    /**
+     * Build the EBMS menu information for Citation management.
+     */
+    public static function citations($role) {
+        $title = 'Manage@@BR@@Citations';
+        switch ($role) {
+            case 'librarian':
+                $children = array(
+                    new Menu('Review Citations', 'citations'),
+                    new Menu('Search Database', 'citations/search'),
+                    new Menu('Import Citations', 'citations/import'),
+                    new Menu('Publish Citations', 'citations/publish'),
+                );
+                return new Menu($title, 'citations', $children);
+            case 'admin assistant':
+                $children = array(
+                    new Menu('Full Text Retrieval', 'citations/fulltext'),
+                    new Menu('Search Database', 'citations/search'),
+                    new Menu('Import Citations', 'citations/import'),
+                );
+                return new Menu($title, 'citations/fulltext', $children);
+            default:
+                $children = array(
+                    new Menu('Review Citations', 'citations'),
+                    new Menu('Search Database', 'citations/search'),
+                    new Menu('Import Citations', 'citations/import'),
+                );
+                return new Menu($title, 'citations', $children);
+        }
     }
 
     /**
      * Build the EBMS menu information for reports.
      */
-    public static function reports() {
-
+    public static function reports($role) {
         return new Menu(
             'Reports', 'reports', array(
                 new Menu('Board Management', 'reports/board'),
@@ -325,36 +370,37 @@ class Menu {
     }
 
     /**
-     * Build the EBMS administrator tool menu.
+     * Build the EBMS menu information for literature review.
      */
-    public static function admin_tool() {
-        return new Menu(
-            'Administrator Tool', 'admin/topics', array(
-                new Menu('Manage Summary Topics', 'admin/topics'),
-            )
-        );
+    public static function literature($role) {
+        $title = 'Literature@@BR@@Packets';
+        switch ($role) {
+            case 'member':
+                $submenus = array(
+                    new Menu('Assigned Packets', 'review/assigned'),
+                    new Menu('Completed Packets', 'review/completed'),
+                    new Menu('FYI Packets', 'review/fyi'),
+                );
+                return new Menu($title, 'review', $submenus);
+            case 'admin assistant':
+            default:
+                $submenus = array(
+                    new Menu('Reviewed Packets', 'review/reviews'),
+                    new Menu('Create Packet', 'review/add'),
+                    new Menu('View/Edit Packets', 'review/packets'),
+                    new Menu('Record Responses', 'review/record'),
+                    //new Menu('Review Responses', 'review/reviews'),
+                );
+                return new Menu($title, 'review/reviews', $submenus);
+        }
     }
 
     /**
-     * Build the EBMS menu information for Citation management.
+     * Build the EBMS menu information for the Summaries pages.
      */
-    public static function citations($role) {
-        $landing_page = 'citations';
-        $first_child_title = 'Review Citations';
-        global $user;
-        if (in_array('admin assistant', $user->roles)) {
-            $landing_page = 'citations/fulltext';
-            $first_child_title = 'Full Text Retrieval';
-        }
-        $children = array(
-            new Menu($first_child_title, $landing_page),
-            new Menu('Search Database', 'citations/search'),
-            new Menu('Import Citations', 'citations/import'),
-            new Menu('Not List Maintenance', 'citations/not-list'),
-        );
-        if ($role == 'librarian')
-            $children[] = new Menu('Publish Citations', 'citations/publish');
-        return new Menu('Citation Management', $landing_page, $children);
+    public static function summaries($role) {
+        $tip = 'View, post, or download summary documents';
+        return new Menu('Manage@@BR@@Summaries', 'summaries', null, $tip);
     }
 
     /**
@@ -368,45 +414,6 @@ class Menu {
             new Menu('Day', 'calendar/day'),
         );
         return $menu;
-        // Dropped.
-        if (user_access('create ebms_event content')) {
-            $menu->children[] = new Menu('Create Event', 'node/add/ebms-event');
-        }
-        return $menu;
-    }
-
-    /**
-     * Build the EBMS menu information for literature review.
-     */
-    public static function literature($role) {
-        switch ($role) {
-            case 'admin':
-                // add non-permissioned menu items by default
-                $submenus = array(
-                    new Menu('Reviewed Packets', 'review/reviews'),
-                    new Menu('Create Packet', 'review/add'),
-                    new Menu('View/Edit Packets', 'review/packets'),
-                );
-
-                // include record responses if user has proper access
-                if (user_access('record print responses'))
-                    $submenus[] = new Menu('Record Responses', 'review/record');
-
-                return new Menu('Literature', 'review/reviews', $submenus);
-            case 'member':
-                $submenus = array(
-                    new Menu('Assigned Packets', 'review/assigned'),
-                    new Menu('Completed Packets', 'review/completed'),
-                );
-                return new Menu('Literature', 'review', $submenus);
-        }
-    }
-
-    /**
-     * Build the EBMS menu information for the Summaries pages.
-     */
-    public static function summaries() {
-        return new Menu('Summaries', 'summaries');
     }
 
     /**
@@ -417,9 +424,11 @@ class Menu {
             'Travel', 'travel', array(
                 new Menu('Directions', 'travel/directions'),
                 new Menu('Local Travel', 'travel/local-travel'),
-                new Menu('Long Distance Travel', 'travel/long-distance-travel'),
+                new Menu('Long Distance Travel',
+                    'travel/long-distance-travel'),
                 new Menu('Hotel Request', 'travel/hotel-request'),
-                new Menu('Reimbursement Request', 'travel/reimbursement-request'),
+                new Menu('Reimbursement Request',
+                    'travel/reimbursement-request'),
             )
         );
 
@@ -433,34 +442,6 @@ class Menu {
     public static function forums($user) {
         // The forums menu should just go to the main page.
         return new Menu('Forums', 'forum', array());
-
-        // None of this is accessed. This is old code prior to ebms_forums module.
-        $children = array();
-        $forums = Forum::forums();
-        //pdq_ebms_debug('MENU FORUMS', $forums);
-        foreach ($forums as $forum) {
-            if ($forum->visible()) {
-                $url = "forum/{$forum->id}";
-                $children[] = new Menu($forum->name, $url);
-            }
-        }
-        $url = $children[0]->path;
-        return new Menu('Forums', $url, $children);
-    }
-
-    /**
-     * Build the EBMS menu information for general information pages.
-     */
-    public static function about() {
-        return new Menu('About', 'about');
-        // Dropped.
-        $reg = drupal_convert_to_utf8("\xAE", 'latin1');
-        return new Menu(
-            'About', 'about', array(
-                new Menu('General Information', 'about'),
-                new Menu("PDQ$reg Editorial Boards", 'about#pdq-boards'),
-            )
-        );
     }
 }
 
@@ -1101,7 +1082,7 @@ class Util {
         $board_users = false;
         if (!empty($board_ids)) {
             $board_query = db_select('ebms_board_member', 'm')
-                ->condition('m.board_id', $board_ids);
+                ->condition('m.board_id', $board_ids, 'IN');
             $board_query->addExpression('DISTINCT m.user_id', 'uid');
             $board_users = $board_query->execute()
                 ->fetchCol();
@@ -1119,7 +1100,7 @@ class Util {
             }
 
             $role_query = db_select('users_roles', 'r')
-                ->condition('r.rid', $role_ids);
+                ->condition('r.rid', $role_ids, 'IN');
             $role_query->addExpression('DISTINCT r.uid', 'uid');
             $role_users = $role_query->execute()
                 ->fetchCol();
@@ -1259,7 +1240,7 @@ class Util {
     }
 
     public static function activityNewSummary(array $args = array()) {
-        if(empty($args) || !is_array($args)) return;
+        if (empty($args) || !is_array($args)) return;
 
         // provide placeholder arguments
         $args += array(
@@ -1276,25 +1257,33 @@ class Util {
 
         // check input arguments
         // reject if no title, or no board and no valid topics
-        if(empty($title) || (empty($board) && empty($topics))) return;
+        if (empty($title) || (empty($board) && empty($topics))) return;
 
         // search board and/or topics to find intended recipients of message
         $boards = array();
-        if($board)
+        if ($board)
             $boards[$board] = $board;
 
         // dig through any topics for board as well
-        foreach($topics as $topic){
+        foreach ($topics as $topic){
             $topicBoard = \Ebms\getTopicBoard($topic);
 
             $boards[$topicBoard] = $topicBoard;
         }
 
         $individuals = array_keys(
-            Util::get_active_users(array('board manager'), $boards));
+            Util::get_active_users(
+                array(
+                    'board manager',
+                    'icrdb manager',
+                    'admin assistant'
+                ),
+                $boards
+            )
+        );
 
         // abort if no users available to see notification
-        if(empty($individuals)) return;
+        if (empty($individuals)) return;
 
         $message = message_create('activity_new_summary', array(), $account);
         $message->save();
@@ -1846,6 +1835,23 @@ class Util {
     }
 
     /**
+     * Validate that a date is in 'YYYY-MM-DD' format.
+     *
+     *  @param string $ckDate   Date to be checked in ISO format. Time ignored.
+     *
+     *  @return                 True = success, else invalid ISO date.
+     */
+    public static function chkISOdate($ckDate) {
+
+        $y = intval(substr($ckDate, 0, 4));
+        $m = intval(substr($ckDate, 5, 2));
+        $d = intval(substr($ckDate, 8, 2));
+
+        // PHP date checker
+        return checkdate($m, $d, $y);
+    }
+
+    /**
      * Add period to end of string unless it already has terminal punctuation.
      */
     public static function full_stop($s) {
@@ -1909,6 +1915,44 @@ class Util {
         }
         else
             return $int;
+    }
+
+    /**
+     * Downlad a file to the user's workstation.
+     *
+     *  @param string $filePath         Full path to the file to download.
+     *  @param string $showName         File name to appear to the browser.
+     *  @param string $contentType      Mime content type.
+     *  @param bool $deleteFile         Delete file after sending it.
+     *
+     *  @return                         False if failure, else no return.
+     */
+    public static function download_file($filePath, $showName, $contentType,
+                                         $deleteFile=false) {
+
+        $fd = fopen($filePath, 'rb');
+        if (!$fd) {
+            watchdog('downlad_file', "Can't open $filePath for sending",
+                      null, WATCHDOG_ERROR);
+            return false;
+        }
+
+        // Send headers
+        drupal_add_http_header('Content-type', $contentType);
+        drupal_add_http_header('Content-disposition', "attachment; filename=$showName");
+        drupal_send_headers();
+
+        // Send contents
+        while (!feof($fd))
+            print(fread($fd, 1024));
+        fclose($fd);
+
+        // Delete file if requested
+        if ($deleteFile)
+            drupal_unlink($filePath);
+
+        // Exit causes data to be sent independently of drupal
+        drupal_exit();
     }
 }
 

@@ -7,14 +7,16 @@
 function ebmstheme_html_head_alter(&$head_elements) {
 
     // Force the latest IE rendering engine and Google Chrome Frame.
-    $head_elements['chrome_frame'] = array(
+    // Trying out doing this in ebms.module with an HTTP header instead.
+    if (false)
+        $head_elements['chrome_frame'] = array(
             '#type' => 'html_tag',
             '#tag' => 'meta',
             '#attributes' => array(
                     'http-equiv' => 'X-UA-Compatible',
                     'content' => 'IE=edge,chrome=1'
             ),
-    );
+        );
 }
 
 function ebmstheme_tablesort_indicator($variables) {

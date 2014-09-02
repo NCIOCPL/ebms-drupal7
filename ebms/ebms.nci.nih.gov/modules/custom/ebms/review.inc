@@ -44,19 +44,19 @@ class EbmsReview {
      * browser.
      */
     public function __construct($action, $packet_id, $article_id) {
-        //pdq_ebms_debug('REVIEW', $action);
-        $this->packet_id    = Ebms\Util::get_request_value('packet',
-                              $packet_id);
-        $this->article_id   = Ebms\Util::get_request_value('article',
-                              $article_id);
-        $this->expanded     = Ebms\Util::get_request_value('expanded');
-        $this->sort_col     = Ebms\Util::get_request_value('sort-col', 'f');
-        $this->sort_dir     = Ebms\Util::get_request_value('sort-dir', 'a');
-        $this->action       = $action;
-        $this->reviewed     = Ebms\Util::get_request_value('reviewed');
-        $this->pager        = Ebms\Util::get_request_value('pager');
-        $this->on_behalf    = Ebms\Util::get_request_value('obo');
-        $this->packet_title = EbmsPacket::fetch_title($this->packet_id);
+        $this->packet_id     = Ebms\Util::get_request_value('packet',
+                               $packet_id);
+        $this->article_id    = Ebms\Util::get_request_value('article',
+                               $article_id);
+        $this->expanded      = Ebms\Util::get_request_value('expanded');
+        $this->sort_col      = Ebms\Util::get_request_value('sort-col', 'f');
+        $this->sort_dir      = Ebms\Util::get_request_value('sort-dir', 'a');
+        $this->action        = $action;
+        $this->reviewed      = Ebms\Util::get_request_value('reviewed');
+        $this->last_reviewed = Ebms\Util::get_request_value('last-reviewed');
+        $this->pager         = Ebms\Util::get_request_value('pager');
+        $this->on_behalf     = Ebms\Util::get_request_value('obo');
+        $this->packet_title  = EbmsPacket::fetch_title($this->packet_id);
 
         // determine user
         global $user;
@@ -818,16 +818,20 @@ class EbmsReview {
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
         $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
         $authors = array();
-        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
-            if (sizeof($authors) == 3) {
-                $authors[] = 'et al.';
-                break;
+        if ($doc->MedlineCitation->Article->AuthorList->Author) {
+            foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
+                if (sizeof($authors) == 3) {
+                    $authors[] = 'et al.';
+                    break;
+                }
+                $name = $a->LastName;
+                if ($a->Initials)
+                    $name .= ' ' . $a->Initials;
+                $authors[] = htmlspecialchars($name);
             }
-            $name = $a->LastName;
-            if ($a->Initials)
-                $name .= ' ' . $a->Initials;
-            $authors[] = htmlspecialchars($name);
         }
+        else
+            $authors[] = '[No authors listed]';
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
@@ -867,6 +871,9 @@ class EbmsReview {
      */
     private function show_reviewed_packet($opts) {
 
+        // We'll use this a lot.
+        $packet_id = $this->packet_id;
+
         // We'll have at least one use for the current date/time.
         $now = strftime("%Y-%m-%d %H:%M:%S");
 
@@ -878,7 +885,7 @@ class EbmsReview {
                 db_update('ebms_packet_article')
                     ->fields(array('archived' => $now))
                     ->condition('article_id', $article_id)
-                    ->condition('packet_id', $this->packet_id)
+                    ->condition('packet_id', $packet_id)
                     ->execute();
             }
 
@@ -895,7 +902,7 @@ class EbmsReview {
                 db_update('ebms_packet_article')
                     ->fields(array('archived' => null))
                     ->condition('article_id', $article_id)
-                    ->condition('packet_id', $this->packet_id)
+                    ->condition('packet_id', $packet_id)
                     ->execute();
             }
 
@@ -905,7 +912,7 @@ class EbmsReview {
         }
 
         // Manual breadcrumb setting to match requirements.
-        $url = EbmsReview::$url . '/reviews/' . $this->packet_id;
+        $url = EbmsReview::$url . '/reviews/' . $packet_id;
         drupal_set_breadcrumb(
             array(
                 l('Literature', EbmsReview::$url . '/reviews'),
@@ -970,7 +977,7 @@ class EbmsReview {
         $query = $query->extend('TableSort');
         $query->join('ebms_article', 'a', 'a.article_id = p.article_id');
         $query->join('ebms_article_review', 'r',
-            'r.article_id = a.article_id');
+            "r.article_id = a.article_id AND r.packet_id = $packet_id");
         $query->join('ebms_review_disposition', 'd',
             'd.review_id = r.review_id');
         $query->leftJoin('file_managed', 'f', 'f.fid = a.full_text_id');
@@ -978,7 +985,7 @@ class EbmsReview {
         $query->fields('p', array('archived'));
         $query->fields('f', array('uri'));
         $query->addExpression('MAX(r.when_posted)', 'updated');
-        $query->condition('p.packet_id', $this->packet_id);
+        $query->condition('p.packet_id', $packet_id);
         if (!$sa)
             $query->isNull('p.archived');
         $query->groupBy('a.article_id');
@@ -990,7 +997,7 @@ class EbmsReview {
         $query = db_select('users', 'u');
         $query->fields('u', array('name'));
         $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
-        $query->condition('r.packet_id', $this->packet_id);
+        $query->condition('r.packet_id', $packet_id);
         $query->orderBy('u.name');
         $results = $query->execute();
         foreach ($results as $result)
@@ -1015,7 +1022,7 @@ class EbmsReview {
             $query->fields('r', array('review_id'));
             $query->join('ebms_review_disposition', 'd',
                 'd.review_id = r.review_id');
-            $query->condition('r.packet_id', $this->packet_id);
+            $query->condition('r.packet_id', $packet_id);
             $query->condition('r.article_id', $article_id);
             $query->orderBy('u.name');
             $query->distinct();
@@ -1083,7 +1090,7 @@ class EbmsReview {
                 $f_url = file_create_url($article->uri);
                 $links .= ' | ' . l('Download Full Text', $f_url, $target);
             }
-            $a_url = EbmsReview::$url . '/reviews/' . $this->packet_id . '/' .
+            $a_url = EbmsReview::$url . '/reviews/' . $packet_id . '/' .
                 $article_id;
             $links .= ' | ' . l('Show Details', $a_url) . '</div>';
             $data = array(
@@ -1105,7 +1112,7 @@ class EbmsReview {
         // only if it's one she created herself).
         db_update('ebms_packet')
             ->fields(array('last_seen' => $now))
-            ->condition('packet_id', $this->packet_id)
+            ->condition('packet_id', $packet_id)
             ->condition('created_by', $this->user->uid)
             ->execute();
 
@@ -1117,7 +1124,7 @@ class EbmsReview {
         $del_func = 'javascript:ebmsscript.delete_packet';
         $opts = array('query' => drupal_get_query_parameters());
         $opts['query']['target'] = 'reviews';
-        $del_parm = url("$main_url/delete/{$this->packet_id}", $opts);
+        $del_parm = url("$main_url/delete/$packet_id", $opts);
         $del_url = "$del_func('$del_parm');";
         $del_button = '<a href="' . $del_url .
             '" class="button">Archive Packet</a>';
@@ -1372,7 +1379,7 @@ class EbmsReview {
 
         // Get the basic information for the packet.
         $packet_info = db_select('ebms_packet', 'p')
-            ->fields('p', array('packet_title', 'created_at', 'active_status'))
+            ->fields('p', array('packet_title'))
             ->condition('p.packet_id', $this->packet_id)
             ->execute()
             ->fetch();
@@ -1607,6 +1614,246 @@ class EbmsReview {
         return $body;
     }
 
+    private function member_fyi_packet() {
+
+        // Get the basic information for the packet.
+        $packet_title = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_title'))
+            ->condition('p.packet_id', $this->packet_id)
+            ->execute()
+            ->fetchField();
+        $title = htmlspecialchars($packet_title);
+
+        // Override the default breadcrumbs.
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                l('FYI PACKETS', EbmsReview::$url . '/fyi'),
+                $title,
+            )
+        );
+
+        // Start building the render array.
+        $body = array(
+            'title' => array(
+                '#markup' => "<h2>$title [FYI]</h2>",
+            ),
+        );
+
+        // Add links to the summaries posted by the board manager for the
+        // packet.
+        $body['summaries']['heading'] = array(
+            '#type' => 'markup',
+            '#markup' => "<h3>Summary Documents</h3>",
+        );
+        $summaries = $this->fetch_packet_summaries();
+        $links = array();
+        foreach ($summaries as $uri => $description)
+            $links[] = l($description, file_create_url($uri));
+        $body['summaries']['links'] = array(
+            '#prefix' => '<div id="summary-links">',
+            '#suffix' => '</div>',
+            '#items' => $links,
+            '#theme' => 'item_list',
+        );
+
+        // Fetch the articles in the packet.
+        $body['articles']['heading'] = array(
+            '#type' => 'markup',
+            '#markup' => "<h3>Articles</h3>",
+        );
+        $query = db_select('ebms_article', 'a');
+        $query->join('ebms_packet_article', 'p',
+            'p.article_id = a.article_id');
+        $query->condition('p.packet_id', $this->packet_id);
+        $query->fields('a', array('article_id'));
+        $query->fields('p', array('drop_flag', 'archived'));
+        $query->leftJoin('ebms_article_author_cite', 'sort_auth_cite',
+            'a.article_id = sort_auth_cite.article_id AND ' .
+            'sort_auth_cite.cite_order = 1');
+        $query->leftJoin('ebms_article_author', 'sort_auth',
+            'sort_auth.author_id = sort_auth_cite.author_id');
+        $query->orderBy('sort_auth.last_name');
+        $query->orderBy('sort_auth.initials');
+        $query->orderBy('sort_auth.collective_name');
+        $query->orderBy('a.article_title');
+        $articles = $query->execute();
+
+        // Show each article, along with the board member's review (if any).
+        global $user;
+        foreach ($articles as $article) {
+            $article_id = $article->article_id;
+            $citation = EbmsReview::show_citation($article_id, 3, true);
+            $block = array();
+            $block['citation'] = array(
+                '#markup' => '<p>' . $citation . '</p>',
+            );
+            if ($article->drop_flag)
+                $block['dropped'] = array(
+                    '#markup' =>
+                    '<p>This article was removed from the packet ' .
+                    'by your Board Manager.</p>',
+                );
+            $query = db_select('ebms_article_review', 'r');
+            $query->join('users', 'u', 'u.uid = r.reviewer_id');
+            $query->condition('r.packet_id', $this->packet_id);
+            $query->condition('r.article_id', $article_id);
+            $query->orderBy('r.when_posted');
+            $query->fields('u', array('name'));
+            $query->fields('r', array('review_id', 'when_posted', 'comments',
+                    'loe_info'));
+            $results = $query->execute();
+            $reviews = array();
+            $reviewers = array();
+            foreach ($results as $result) {
+                $reviewer = htmlspecialchars($result->name);
+                if (!in_array($reviewer, $reviewers))
+                    $reviewers[] = $reviewer;
+                $reviews[] = $result;
+            }
+            sort($reviewers);
+            $reviewers = implode(', ', $reviewers);
+            # Suppressed; see 2014-01-10 comments for OCEEBMS-95.
+            #$block['reviewers'] = array(
+            #    '#markup' => "<p>Reviewed by $reviewers.</p>",
+            #);
+            foreach ($reviews as $review) {
+                $review_key = "review-$review->review_id";
+                $block[$review_key] = array();
+                $block[$review_key]['review-header'] = array(
+                    '#markup' =>
+                    '<p class="archived-review-header">Review posted ' .
+                    $review->when_posted . ' by ' .
+                    htmlspecialchars($review->name) . '</p>',
+                );
+                $query = db_select('ebms_review_disposition', 'd');
+                $query->join('ebms_review_disposition_value', 'v',
+                    'v.value_id = d.value_id');
+                $query->fields('v', array('value_name'));
+                $query->condition('d.review_id', $review->review_id);
+                $query->orderBy('v.value_pos');
+                $dispositions = $query->execute()->fetchCol();
+                if (count($dispositions) > 0) {
+                    $block[$review_key]['dispositions'] = array(
+                        '#theme' => 'item_list',
+                        '#items' => $dispositions,
+                        '#prefix' => '<p><b>REVIEW DISPOSITION(S)</b>:<br>',
+                        '#suffix' => '</p>',
+                    );
+                }
+                $query = db_select('ebms_review_rejection_reason', 'r');
+                $query->join('ebms_review_rejection_value', 'v',
+                    'v.value_id = r.value_id');
+                $query->fields('v', array('value_name'));
+                $query->condition('r.review_id', $review->review_id);
+                $query->orderBy('v.value_pos');
+                $reasons = $query->execute()->fetchCol();
+                if (count($reasons) > 0) {
+                    $block[$review_key]['reasons'] = array(
+                        '#theme' => 'item_list',
+                        '#items' => $reasons,
+                        '#prefix' => '<p><b>REJECTION REASON(S):</b><br>',
+                        '#suffix' => '</p>',
+                    );
+                }
+                if ($review->comments)
+                    $block[$review_key]['comments'] = array(
+                        '#markup' =>
+                        '<p><b>COMMENTS: </b>' .
+                        htmlspecialchars($review->comments) . '</p>',
+                    );
+                if ($review->loe_info)
+                    $block[$review_key]['loe'] = array(
+                        '#markup' =>
+                        '<p><b>LOE INFO:</b> ' .
+                        htmlspecialchars($review->loe_info) . '</p>',
+                    );
+            }
+            $block['divider'] = array(
+                '#markup' => '<hr>',
+            );
+            $body['articles']["article-$article_id"] = $block;
+        }
+
+        // Show the docs posted by board members, with a button to post more.
+        $opts = array(
+            'attributes' => array(
+                'class' => array('button float-right pad-top-10'),
+            ),
+        );
+        $url = EbmsReview::$url . "/archpost/$this->packet_id";
+        $body['uploads']['heading'] = array(
+            '#type' => 'markup',
+            '#markup' => '<div class="clearfix">' .
+            '<h3 class="float-left">Reviewer Uploads</h3>' .
+            //l('POST DOCUMENT', $url, $opts) .
+            '</div>',
+        );
+        $query = db_select('file_managed', 'f');
+        $query->join('ebms_reviewer_doc', 'd', 'd.file_id = f.fid');
+        $query->join('users', 'u', 'u.uid = d.reviewer_id');
+        $query->fields('f', array('uri', 'filename'));
+        $query->fields('u', array('name'));
+        $query->fields('d', array('when_posted', 'description'));
+        $query->condition('d.packet_id', $this->packet_id);
+
+        // Robin asked (2013-12-05) that we eliminate this test.
+        // $query->condition('d.drop_flag', 0);
+        $query->orderBy('f.filename');
+
+        $headers = array(
+            'FILE NAME',
+            'NOTES',
+            'UPLOADED BY',
+            'WHEN POSTED',
+        );
+        $result = $query->execute();
+        $docs = array();
+        foreach ($result as $record)
+            $docs[] = $record;
+        $rows = array();
+
+        // Create new options array for document links.
+        $doc_opts = array(
+            'attributes' => array(
+                'target' => '_blank',
+                'title' => 'Click to download/open document',
+            ),
+        );
+        foreach ($docs as $doc) {
+            $url = file_create_url($doc->uri);
+            $posted = date("Y-m-d", strtotime($doc->when_posted));
+            $rows[] = array(
+                'data' => array(
+                    array(
+                        'data' => l($doc->filename, $url, $doc_opts),
+                        'class' => array('c1'),
+                    ),
+                    array('data' => htmlspecialchars($doc->description)),
+                    array(
+                        'data' => htmlspecialchars($doc->name),
+                        'class' => array('c2'),
+                    ),
+                    array(
+                        'data' => $posted,
+                        'class' => array('c3'),
+                    ),
+                ),
+                #    'no_striping' => true,
+            );
+        }
+        $body['docs'] = array(
+            '#attributes' => array(
+                'id' => 'reviewer-uploads-table',
+                'class' => array('clearfix'),
+            ),
+            '#theme' => 'table',
+            '#rows' => $rows,
+            '#header' => $headers,
+        );
+        return $body;
+    }
+
     /**
      * Has the current user reviewed all the articles in the packet?
      * Ignore drop flag.  Called by member_completed() method.
@@ -1716,11 +1963,106 @@ class EbmsReview {
         return $body;
     }
 
+    private function member_fyi() {
+
+        // Override the default breadcrumbs.
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                'FYI PACKETS',
+            )
+        );
+
+        // Start building the render array.
+        $body = array(
+            'title' => array(
+                '#markup' => '<h2>FYI PACKETS</h2>',
+            ),
+        );
+
+        // Make two of the columns sortable.
+        $headers = array(
+            array(
+                'data' => 'Packet Name',
+                'field' => 'p.packet_title',
+            ),
+            array(
+                'data' => 'Date Created',
+                'field' => 'created_at',
+                'sort' => 'desc',
+            ),
+            'Number of Articles',
+        );
+
+        // Find the relevant packets.  Drupal's DB API isn't capable of
+        // handling an expression in the havingCondition() method, so
+        // we get the value in a separate query.
+        $two_years_ago = db_query('SELECT DATE_SUB(NOW(), INTERVAL 2 YEAR)')
+            ->fetchField();
+        global $user;
+        $uid = $user->uid;
+        $rows = array();
+        $subquery = db_select('ebms_packet_reviewer', 'r')
+            ->fields('r', array('packet_id'))
+            ->condition('r.reviewer_id', $this->user->uid);
+        $query = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_id', 'packet_title', 'created_at'));
+        $query = $query->extend('TableSort');
+        $query->join('ebms_topic_reviewer', 'tr', 'tr.topic_id = p.topic_id');
+        /*
+        $query->leftJoin('ebms_packet_reviewer', 'pr',
+            "pr.packet_id = p.packet_id AND pr.reviewer_id = $uid");
+        */
+        $query->condition('tr.user_id', $uid);
+        $query->condition('p.created_at', $two_years_ago, '>');
+        $query->condition('p.active_status', 'A');
+        //$query->isNull('pr.reviewer_id');
+        $query->condition('p.packet_id', $subquery, 'NOT IN');
+        $query->orderByHeader($headers);
+        $q = '' . $query;
+        $results = $query->execute();
+        pdq_ebms_debug('FYI QUERY', array($q, $uid, $two_years_ago, $results));
+
+        // Create the rows for the table of packets.
+        foreach ($results as $result) {
+            pdq_ebms_debug('FYI RESULT', $result);
+            $count = db_select('ebms_packet_article', 'a')
+                ->condition('a.packet_id', $result->packet_id)
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+            $rows[] = array(
+                l(htmlspecialchars($result->packet_title),
+                    EbmsReview::$url . "/fyi/$result->packet_id"),
+                array(
+                    'data' => date('Y-m-d', strtotime($result->created_at)),
+                    'class' => array('ebms-align-center'),
+                ),
+                array(
+                    'data' => $count,
+                    'class' => array('ebms-align-right'),
+                ),
+            );
+        }
+        $body['table'] = array(
+            '#attributes' => array('id' => 'fyi-packets-table'),
+            '#theme' => 'table',
+            '#rows' => $rows,
+            '#header' => $headers,
+        );
+        return $body;
+    }
+
     /**
      * Pick the page for the board member/reviewer.
      */
     private function choose_member_review_page() {
 
+        if ($this->action == 'fyi') {
+            if ($this->packet_id)
+                return $this->member_fyi_packet();
+            return $this->member_fyi();
+        }
         if ($this->action == 'completed') {
             if ($this->packet_id)
                 return $this->member_completed_packet();
@@ -1746,7 +2088,7 @@ class EbmsReview {
         }
         if ($this->packet_id) {
             $articles = $this->reviewer_articles();
-            if (count($articles) > 0)
+            if (count($articles) > 0 || $this->last_reviewed)
                 return $this->member_packet($articles);
             $this->packet_id = 0;
         }
@@ -2444,6 +2786,8 @@ class EbmsReview {
                 'source_id'));
         $query->join('ebms_packet_article', 'p',
             'p.article_id = a.article_id');
+        $query->join('ebms_journal', 'j',
+            'j.source = a.source AND j.source_jrnl_id = a.source_jrnl_id');
         $query->leftJoin('ebms_article_review', 'r',
             'r.article_id = a.article_id AND ' .
             'r.packet_id = p.packet_id AND ' .
@@ -2453,6 +2797,7 @@ class EbmsReview {
         $query->fields('r', array('review_id', 'when_posted'));
         $query->fields('p', array('drop_flag'));
         $query->condition('p.packet_id', $this->packet_id);
+        $query->orderBy('j.jrnl_title');
         $query->orderBy('a.import_date', 'DESC');
         $result = $query->execute();
         $articles = array();
@@ -2575,6 +2920,7 @@ class EbmsReview {
             'sort-dir' => $this->sort_dir,
             'expanded' => $this->expanded,
             'obo' => $this->on_behalf,
+            'last-reviewed' => $this->last_reviewed,
         );
         foreach ($names as $name => $value)
             if ($value)
@@ -2609,11 +2955,15 @@ class EbmsReview {
 
         // Assemble the pieces of the citation
         $citation = array();
-        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
-            if ($a->LastName)
-                $citation = array(htmlspecialchars($a->LastName));
-            break;
+        if ($doc->MedlineCitation->Article->AuthorList->Author) {
+            foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
+                if ($a->LastName)
+                    $citation[] = htmlspecialchars($a->LastName);
+                break;
+            }
         }
+        else
+            $citation[] = '[No authors listed]';
         $citation[] = htmlspecialchars($article->ArticleTitle);
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $citation[] = htmlspecialchars($ta);
@@ -2849,25 +3199,29 @@ SELECT DISTINCT t.topic_id, t.topic_name
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
         $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
         $authors = array();
-        foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
-        {
-            if (sizeof($authors) == $max_authors) {
-                $authors[] = 'et al.';
-                break;
-            }
-            $name = $author->CollectiveName;
-            if (!$name) {
-                $name = $author->LastName;
-                if ($name && $author->Initials)
-                    $name .= ' ' . $author->Initials;
-            }
-            if ($name)
-                $authors[] = htmlspecialchars($name);
-        }
         $pieces = array();
-        $authors = implode(', ', $authors);
-        if ($authors)
-            $pieces = array("$authors<br />");
+        if ($doc->MedlineCitation->Article->AuthorList->Author) {
+            foreach ($doc->MedlineCitation->Article->AuthorList->Author as $author)
+            {
+                if (sizeof($authors) == $max_authors) {
+                    $authors[] = 'et al.';
+                    break;
+                }
+                $name = $author->CollectiveName;
+                if (!$name) {
+                    $name = $author->LastName;
+                    if ($name && $author->Initials)
+                        $name .= ' ' . $author->Initials;
+                }
+                if ($name)
+                    $authors[] = htmlspecialchars($name);
+            }
+            $authors = implode(', ', $authors);
+            if ($authors)
+                $pieces[] = "$authors<br />";
+        }
+        else
+            $pieces[] = "[No authors listed]<br />";
         if ($title)
             $pieces[] = "<em>$title</em><br />";
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
@@ -3057,6 +3411,7 @@ class EbmsPacket {
             ->condition('r.packet_id', $packet_id)
             ->orderBy('u.name')
             ->execute();
+        $reviewers = array();
         foreach ($results as $result)
             $reviewers[] = $result->reviewer_id;
         return $reviewers;
@@ -3352,6 +3707,7 @@ function pdq_ebms_store_review($form, &$form_state) {
             'expanded' => $expanded,
             'sort-col' => $sort_col,
             'sort-dir' => $sort_dir,
+            'last-reviewed' => $article_id,
         ),
     );
     pdq_ebms_preserve_on_behalf($options);
@@ -3393,6 +3749,10 @@ function pdq_ebms_reviewer_upload_form($form, &$form_state, $review) {
         'context-action' => array(
             '#type' => 'hidden',
             '#value' => $review->action,
+        ),
+        'last-reviewed' => array(
+            '#type' => 'hidden',
+            '#value' => $review->last_reviewed,
         ),
         'filepath' => array(
             '#id' => 'filepath',
@@ -3450,6 +3810,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
     $expanded = $form_state['values']['expanded'];
     $sort_col = $form_state['values']['sort-col'];
     $sort_dir = $form_state['values']['sort-dir'];
+    $last_reviewed = $form_state['values']['last-reviewed'];
     $filenotes = $form_state['values']['filenotes'];
     $action = $form_state['values']['context-action'];
 
@@ -3538,6 +3899,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
             'expanded' => $expanded,
             'sort-col' => $sort_col,
             'sort-dir' => $sort_dir,
+            'last-reviewed' => $last_reviewed,
         ),
     );
     pdq_ebms_preserve_on_behalf($options);
@@ -3882,7 +4244,7 @@ function pdq_ebms_edit_packet_form_validate($form, &$form_state) {
             $reviewer_count++;
     if (!$article_count)
         form_set_error('articles', 'At least one article must be selected.');
-    if (!$reviewer_count)
+    if (false && !$reviewer_count)
         form_set_error('reviewers', 'At least one reviewer must be selected.');
         $form_state['redirect'] = array(
             EbmsReview::$url . '/packets',
@@ -3958,6 +4320,7 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
                     db_update('ebms_packet_article')
                         ->fields(array('drop_flag' => 0))
                         ->condition('article_id', $article_id)
+                        ->condition('packet_id', $packet_id)
                         ->execute();
             }
             else
@@ -3975,6 +4338,7 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
                     db_update('ebms_packet_article')
                         ->fields(array('drop_flag' => 1))
                         ->condition('article_id', $article_id)
+                        ->condition('packet_id', $packet_id)
                         ->execute();
         }
 

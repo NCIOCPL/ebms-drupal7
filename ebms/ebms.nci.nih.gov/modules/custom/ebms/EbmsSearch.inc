@@ -67,6 +67,7 @@ class EbmsSearch {
     private
         $topics,        // The topic IDs for this search, if any.
         $boards,        // The board IDs for this search, if any.
+        $needBoards,    // True=Need to qualify results by board.
         $earlyStates,   // These are the statuses the librarians control.
         $laterStates,   // Everything after published.
         $stateMap,      // Maps state_text_id strings to state_id integers.
@@ -82,7 +83,7 @@ class EbmsSearch {
         $this->json = $json;
         $this->spec = json_decode($json, true);
 
-        // Topics and not yet analyzed and collected
+        // Topics and boards not yet analyzed and collected
         $this->topics = array();
         $this->boards = array();
 
@@ -103,10 +104,12 @@ class EbmsSearch {
         }
 
         // Board specs only exist in the json if specified by user
-        // If board(s) specified with no topic
         // This code doesn't search boards, it just creates a list of them
         foreach ($this->spec['boards'] as $key => $val)
             $this->boards[] = $val;
+
+        // Boards may or may not be needed
+        $this->needBoards = $this->needBoardSrch();
 
         // Load the map of state_text_id values to state_id integers.
         $results = db_select('ebms_article_state_type', 't')
@@ -200,7 +203,7 @@ class EbmsSearch {
 
         // Look for the later states first.  The reason for doing it this
         // way is that the downstream (that is, after Published) status
-        // value guarantee that the Published state is also present
+        // values guarantee that the Published state is also present
         // (which means we don't have to bother checking the early
         // states if we filter on the later ones).
         if (!empty($this->laterStates)) {
@@ -243,8 +246,8 @@ class EbmsSearch {
                     }
                 }
 
-                // Only have to check boards if no topics are picked.
-                elseif (!empty($this->boards)) {
+                // Need to add board qualifications?
+                if ($this->needBoards) {
 
                     // Boards are always ANDed.
                     foreach ($this->boards as $boardId) {
@@ -315,8 +318,8 @@ class EbmsSearch {
                 }
             }
 
-            // No topics, so try boards.
-            elseif (!empty($this->boards)) {
+            // Boards needed?
+            if ($this->needBoards) {
 
                 // Again, boards are always checked in separate joins.
                 foreach ($this->boards as $boardId) {
@@ -395,7 +398,7 @@ class EbmsSearch {
                 }
 
                 // No topics specified.  Any boards?
-                else {
+                if ($this->needBoards) {
 
                     // Separate join required for each board.
                     foreach ($this->boards as $boardId) {
@@ -1156,5 +1159,35 @@ class EbmsSearch {
         if (strpos($srchString, '%') !== false)
             return true;
         return false;
+    }
+
+    /**
+     * Check to see if we need to consider boards in a search.
+     * We don't if no board was specified or if the single selected
+     * board is automatically implied automatically implied by the topic(s).
+     *
+     * ASSUMPTIONS:
+     *   $this->boards and $this->topics have already been set.
+     *
+     *  @return boolean    True = Must check boards.  Else False.
+     */
+    function needBoardSrch() {
+
+        if (count($this->boards) == 0)
+            // No boards to check
+            return False;
+
+        // At least one board found
+        if (count($this->topics) == 0)
+            // No topics to imply boards.  Must check the specified board(s)
+            return True;
+
+        // At least one board + one topic found
+        if (count($this->boards) == 1)
+            // Checking the topic(s) implies the one board
+            return False;
+
+        // Multiple boards specified.  Assume the user really needed them.
+        return True;
     }
 }

@@ -24,15 +24,15 @@ function pdq_ebms_about() {
 
     // Assemble the render array.
     $page = array(
-        'title' => array(
-            '#type' => 'markup',
-            '#markup' => '<h2>About PDQ<sup>&reg;</sup></h2>',
-        ),
         'image' => array(
             '#theme' => 'image',
-            '#path' => Ebms\IMAGES_DIR . '/EBMS_AboutPage_Image_101212.jpg',
+            '#path' => Ebms\IMAGES_DIR . '/about-pdq.png',
             '#title' => "About PDQ\xc2\xae",
             '#attributes' => array('id' => 'about-img'),
+        ),
+        'title' => array(
+            '#type' => 'markup',
+            '#markup' => '<h2 id="about-title">About PDQ<sup>&reg;</sup></h2>',
         ),
         'prologue' => array(
             '#type' => 'markup',
@@ -54,12 +54,14 @@ function pdq_ebms_about() {
         array(
             l(
                 //"PDQ\xc2\xae on NCI's Web Site",
-                'PDQ<sup>&reg;</sup> on NCI\'s Web Site',
+                'PDQ<sup>&reg;</sup> - NCI\'s Comprehensive ' .
+                'Cancer Database',
                 'http://cancer.gov/cancertopics/pdq/cancerdatabase',
                 array('html' => true)
             ),
             //"Background information on PDQ\xc2\xae",
-            'Background information on PDQ<sup>&reg;</sup>.',
+            //'Background information on PDQ<sup>&reg;</sup>.',
+            '',
         ),
     );
     $query = db_select('ebms_doc', 'd');
@@ -166,8 +168,8 @@ function pdq_ebms_about() {
     );
     $page['boards']['title'] = array(
         '#type' => 'markup',
-        '#markup' => '<h3 id="boards-title"><a name="pdq-boards"></a>' .
-        'PDQ<sup>&reg;</sup> EDITORIAL BOARDS</h3>',
+        '#markup' => '<h2 id="boards-title"><a name="pdq-boards"></a>' .
+        'PDQ<sup>&reg;</sup> EDITORIAL BOARDS</h2>',
     );
     foreach ($boards as $board) {
         $markup = array('<h4 class="board-name">' . $board[0] .

@@ -349,6 +349,15 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // DOWNLOAD MEETING DOCS
+        'download-meeting-docs' => array(
+            'page callback' => 'pdq_ebms_download_meeting_docs',
+            'page_arguments' => array(1),
+            'file' => 'calendar.inc',
+            'access callback' => 'user_is_logged_in',
+            'type' => MENU_CALLBACK,
+        ),
+
         // AD-HOC GROUPS
         'groups' => array(
             'page callback' => 'pdq_ebms_groups',
@@ -923,15 +932,15 @@ function pdq_ebms_404() {
  */
 function ebms_theme() {
     return array(
-            'ebms_menu_item_list' => array(
-                    'variables' => array(
-                            'items' => array(),
-                            'attributes' => array(),
-                    ),
+        'ebms_menu_item_list' => array(
+            'variables' => array(
+                'items' => array(),
+                'attributes' => array(),
             ),
-            'pdq_ebms_profile_email_form' => array(
-                    'render element' => 'form',
-            ),
+        ),
+        'pdq_ebms_profile_email_form' => array(
+            'render element' => 'form',
+        ),
     );
 }
 
@@ -972,12 +981,13 @@ function theme_ebms_menu_item_list($variables) {
             else
                 $data = $item;
             if (empty($variables['level'])) {
+                $data = "<div class='firefox-bug-63895'>$data</div>";
                 $data .= '<div class="ebms-menu-left-divider"></div>';
                 $data .= '<div class="ebms-menu-right-divider"></div>';
             }
             if (count($children) > 0) {
                 $data .= '<div class="ebms-menu-border-blur"></div>';
-                $data .= '<div class="ebms-menu-restore-pixel"></div>';
+                //$data .= '<div class="ebms-menu-restore-pixel"></div>';
                 $data .= theme_ebms_menu_item_list(
                     array(
                             'items' => $children,
@@ -1008,10 +1018,11 @@ function ebms_page_build(&$page) {
     $menus = Ebms\Menu::menus();
     $items = array();
     foreach ($menus as $m) $items[] = $m->render_array();
+    $count_class = 'menu-items-' . count($items);
     $page['ebms_menu'] = array(
             '#attributes' => array(
-                    'class' => array('sf-menu'),
-                    'id' => 'ebms-menu',
+                'class' => array('sf-menu', $count_class),
+                'id' => 'ebms-menu',
             ),
             '#theme' => 'ebms_menu_item_list',
             '#items' => $items,
@@ -1027,6 +1038,9 @@ function ebms_page_build(&$page) {
  * Implementation of hook_init().
  */
 function ebms_init() {
+    if (isset($_SERVER['HTTP_USER_AGENT']) &&
+        (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false))
+        drupal_add_http_header('X-UA-Compatible', 'IE=edge,chrome=1');
     $exploded = explode('/', $_GET['q']);
     if ($exploded) {
         $ok = array(

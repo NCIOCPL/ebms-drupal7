@@ -4666,6 +4666,7 @@ namespace {
                     $query->join('role', 'r', 'r.rid = ur.rid');
                     $query->join('users', 'u', 'u.uid = ur.uid');
                     $query->condition('r.name', 'board member');
+                    $query->condition('u.status', 1);
                     $query->orderBy('u.name');
                     $memberIds = $query->execute()->fetchCol();
 

@@ -5,4 +5,5 @@ function logw($msg) {
     fwrite($fp, $msg);
     fwrite($fp, "\n");
     fclose($fp);
+    drupal_chmod(FNAME, 0666);
 }

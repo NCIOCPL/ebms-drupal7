@@ -5542,6 +5542,8 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
             'pa.article_id = a.article_id');
         $query->join('ebms_packet', 'p', 'p.packet_id = pa.packet_id');
         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->join('ebms_packet_reviewer', 'rwr',
+            'rwr.packet_id = p.packet_id');
         if (count($values['topics']))
             $query->condition('p.topic_id', $values['topics'], 'IN');
         else
@@ -5597,6 +5599,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         );
         //$query->orderByHeader($headers);
         $rows = array();
+        $query->distinct();
         $results = $query->execute();
 
         // Find the sequence number for the highest state for which

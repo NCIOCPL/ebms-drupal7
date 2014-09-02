@@ -34,14 +34,14 @@
             <?php if (!empty($prev_url)) : ?>
                 <li class="date-prev">
                     <?php
-                    print l('<', $prev_url, $prev_options);
+                    print l('&lt;', $prev_url, $prev_options);
                     ?>
                     &nbsp;</li>
             <?php endif; ?>
             <?php if (!empty($next_url)) : ?>
                 <li class="date-next">&nbsp;
                     <?php
-                    print l('>', $next_url, $next_options);
+                    print l('&gt;', $next_url, $next_options);
                     ?>
                 </li>
                 <?php endif; ?>

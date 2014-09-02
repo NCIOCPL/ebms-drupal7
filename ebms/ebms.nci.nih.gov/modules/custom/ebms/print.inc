@@ -513,12 +513,12 @@ function pdq_ebms_prtpkts_mbrs_form_submit($form, $form_state) {
     else {
         // Try an insert or update
         $rc = Ebms\setPrintMember($memberId, $startDt, $endDt);
-        if (!$rc) {
+        if ($rc !== true) {
             drupal_set_message(
-               "Unable to update the wants-print list for $memberName.  ".
-               "Is there a start date in YYYY-MM-DD format?");
+               "Unable to update the wants-print list for $memberName: $rc");
         }
-        drupal_set_message("$memberName updated in wants-print list");
+        else
+            drupal_set_message("$memberName updated in wants-print list");
     }
 }
 
