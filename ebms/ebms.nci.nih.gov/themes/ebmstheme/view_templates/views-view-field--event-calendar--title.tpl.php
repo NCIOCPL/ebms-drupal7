@@ -23,10 +23,11 @@
  */
 ?>
 
-<?php 
+<?php
 $cancelled = (isset($row->field_field_event_status[0]['raw']['value']) &&
     $row->field_field_event_status[0]['raw']['value'] == 'cancelled');
 
 $prefix = $cancelled ? 'Cancelled: ' : '';
-print l("$prefix$row->node_title", "node/$row->nid");
+$filtering = EbmsCalendarFiltering::$filtering;
+print $filtering->event_nav_link("$prefix$row->node_title", $row->nid);
 ?>

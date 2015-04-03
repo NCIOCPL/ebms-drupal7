@@ -280,7 +280,6 @@ function pdq_ebms_subgroup_form_validate($form, &$form_state) {
  */
 function pdq_ebms_subgroup_form_submit($form, &$form_state) {
     $values = $form_state['values'];
-    pdq_ebms_debug('SUBGROUP', $values);
     if ($values['op'] == 'Save') {
         $subgroup = $values['subgroup'];
         $name = $values['name'];
@@ -316,4 +315,182 @@ function pdq_ebms_subgroup_form_submit($form, &$form_state) {
         drupal_set_message('Subgroup ' . htmlspecialchars($name) . ' saved.');
     }
     drupal_goto('admin/subgroups');
+}
+
+/**
+ * Haven't been asked for this by the users, but I realized it would be
+ * prudent to have a way to edit information about the boards, as well
+ * as add a new board, without depending on CBIIT.
+ */
+function pdq_ebms_boards($action='list', $board_id=0) {
+    switch ($action) {
+        case 'edit':
+            return drupal_get_form('pdq_ebms_board_form', $board_id);
+        case 'add':
+            return drupal_get_form('pdq_ebms_board_form');
+        case 'view':
+        default:
+            return pdq_ebms_list_boards();
+    }
+}
+
+/**
+ * Show the existing board information, with links for editing,
+ * as well as creating a new board. Deleting a board wouldn't
+ * really be feasible, once rows in other tables began to depend
+ * on it, so if that ever becomes necessary, we'll probably need
+ * to add a column to make a board inactive.
+ */
+function pdq_ebms_list_boards() {
+    $query = db_select('ebms_board', 'b')
+        ->fields('b', array('board_id', 'board_name'));
+    $query->join('users', 'm', 'm.uid = b.board_manager');
+    $query->fields('m', array('uid', 'name'));
+    $query->leftJoin('ebms_doc', 'd', 'd.doc_id = b.loe_guidelines');
+    $query->leftJoin('file_managed', 'f', 'f.fid = d.file_id');
+    $query->fields('f', array('uri'));
+    $query->orderBy('b.board_name');
+    $results = $query->execute();
+    $rows = array();
+    foreach ($results as $result) {
+        $uri = $name = $result->uri;
+        if (substr($uri, 0, 9) == 'public://')
+            $name = substr($uri, 9);
+        $file_url = file_create_url($uri);
+        $file_link = l($name, $file_url);
+        $manager_link = l($result->name, "profile/view/$result->uid");
+        $rows[] = array(
+            l($result->board_name, "admin/boards/edit/$result->board_id"),
+            $manager_link,
+            $file_link,
+        );
+    }
+    $opts = array(
+        'attributes' => array(
+            'class' => 'button',
+            'style' => 'text-decoration: none',
+        ),
+    );
+    $button = l('Create New Board', 'admin/boards/add', $opts);
+    return array(
+        'title' => array('#markup' => '<h2>Boards</h2>'),
+        'table' => array(
+            '#theme' => 'table',
+            '#rows' => $rows,
+            '#header' => array('Name', 'Manager', 'LOE Guidelines'),
+        ),
+        'button' => array(
+            '#markup' => "<p style='padding-top: 20px'>$button</p>"),
+    );
+}
+
+/**
+ * Edit the information for an existing board or create a new one.
+ */
+function pdq_ebms_board_form($form, &$form_state, $board_id=0) {
+    $query = db_select('users', 'u')->fields('u', array('uid', 'name'));
+    $query->join('users_roles', 'ur', 'ur.uid = u.uid');
+    $query->join('role', 'r', 'r.rid = ur.rid');
+    $query->condition('u.status', 1);
+    $query->condition('r.name', 'board manager');
+    $query->orderBy('u.name');
+    $managers = array(0 => 'Select a manager') +
+        $query->execute()->fetchAllKeyed();
+    $query = db_select('file_managed', 'f');
+    $query->fields('f', array('uri'));
+    $query->join('ebms_doc', 'd', 'd.file_id = f.fid');
+    $query->fields('d', array('doc_id'));
+    $query->condition('d.description', 'LOE%', 'LIKE');
+    $query->orderBy('f.uri');
+    $results = $query->execute();
+    $docs = array(0 => 'Select LOE guidelines document');
+    foreach ($results as $result) {
+        $name = $result->uri;
+        if (substr($name, 0, 9) == 'public://')
+            $name = substr($name, 9);
+        $docs[$result->doc_id] = $name;
+    }
+    $loe_guidelines = $manager = 0;
+    $name = '';
+    if ($board_id) {
+        $board = db_select('ebms_board', 'b')
+            ->fields('b')
+            ->condition('b.board_id', $board_id)
+            ->execute()
+            ->fetchObject();
+        $name = $board->board_name;
+        $manager = $board->board_manager;
+        $loe_guidelines = $board->loe_guidelines;
+    }
+    return array(
+        'board' => array(
+            '#type' => 'hidden',
+            '#value' => $board_id,
+        ),
+        'title' => array('#markup' => '<h2>Board</h2>'),
+        'name' => array(
+            '#type' => 'textfield',
+            '#default_value' => $name,
+            '#title' => 'Name',
+            '#required' => true,
+            '#maxlength' => 255,
+        ),
+        'manager' => array(
+            '#type' => 'select',
+            '#title' => 'Manager',
+            '#required' => true,
+            '#options' => $managers,
+            '#default_value' => $manager,
+        ),
+        'loe-guidelines' => array(
+            '#type' => 'select',
+            '#title' => 'LOE Guidelines',
+            '#options' => $docs,
+            '#default_value' => $loe_guidelines,
+        ),
+        'save' => array(
+            '#type' => 'submit',
+            '#value' => 'Save',
+        ),
+        'cancel' => array(
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+            '#submit' => array('pdq_ebms_board_form_submit'),
+            '#limit_validation_errors' => array(),
+        ),
+    );
+}
+
+/**
+ * Handle the submit buttons. If the Save button was clicked,
+ * store the information for the new or existing board.
+ * In any case, jump back to the page which shows all the
+ * boards.
+ */
+function pdq_ebms_board_form_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Save') {
+        $board_id = $form_state['values']['board'];
+        $name = $form_state['values']['name'];
+        $manager = $form_state['values']['manager'];
+        $loe_guidelines = $form_state['values']['loe-guidelines'];
+        if (!$loe_guidelines)
+            $loe_guidelines = null;
+        $fields = array(
+            'board_name' => $name,
+            'board_manager' => $manager,
+            'loe_guidelines' => $loe_guidelines,
+        );
+        if ($board_id) {
+            db_update('ebms_board')
+                ->fields($fields)
+                ->condition('board_id', $board_id)
+                ->execute();
+        }
+        else {
+            db_insert('ebms_board')
+                ->fields($fields)
+                ->execute();
+        }
+    }
+    drupal_goto('admin/boards');
 }

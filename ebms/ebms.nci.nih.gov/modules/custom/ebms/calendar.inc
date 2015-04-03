@@ -1,89 +1,135 @@
 <?php
 
-// $Id$
+/**
+ * $Id$
+ *
+ * Support routines for customizing the calendar views.
+ *
+ * Don't bother looking here for the code that creates the page for a
+ * calendar display. That's tucked away in the EBMS theme (see, for
+ * example, view_templates/views-view--event-calendar--page.tpl.php.
+ * (Isn't Drupal tricky?)
+ */
 
-function _calendar_get_upcoming_events() {
-    $query = new EntityFieldQuery();
-    $query
-        ->entityCondition('entity_type', 'node')
-        ->entityCondition('bundle', 'ebms_event')
-        ->propertyCondition('status', '1')
-        ->fieldCondition('field_datespan', 'value2', time(), '>')
-        ->range(0, 6)
-        ->fieldOrderBy('field_datespan', 'value')
-        ->entityOrderBy('entity_id');
-
-    $result = $query->execute();
-
-    if (!isset($result['node']))
-        return array();
-
-    $eventNids = array_keys($result['node']);
-    $events = entity_load('node', $eventNids);
-    $groupedResults = array();
-    foreach ($events as $event) {
-        $event_date = field_get_items('node', $event, 'field_datespan');
-        if ($event_date === false) {
-            watchdog("ebms - calendar", 'bad event date');
-            continue;
-        }
-
-        $timestamp = $event_date[0]['value'];
-
-        $date = date('F j, Y', $timestamp);
-        $groupedResults[$date][] = $event;
+/**
+ * Parameters for controlling visibility of calendar events.
+ */
+class EbmsCalendarFiltering {
+    public static $filtering = null;
+    public
+        $boards,
+        $meetings;
+    public function __construct() {
+        $parms = drupal_get_query_parameters();
+        $this->boards = $this->boards_default = 'mine';
+        $this->meetings = $this->meetings_default = 'all';
+        if (!empty($parms['boards']))
+            $this->boards = $parms['boards'];
+        if (!empty($parms['meetings']))
+            $this->meetings = $parms['meetings'];
+        $this->path = current_path();
     }
-    return $groupedResults;
+
+    // Create checkbox-like link for choosing a filtering option.
+    public function option($option, $value, $label='') {
+        $boards = $this->boards;
+        $meetings = $this->meetings;
+        $img = Ebms\CB_CHECKED;
+        if ($option == 'boards' && $value != $boards) {
+            $boards = $value;
+            $img = Ebms\CB_UNCHECKED;
+        }
+        if ($option == 'meetings' && $value != $meetings) {
+            $meetings = $value;
+            $img = Ebms\CB_UNCHECKED;
+        }
+        $opts = $this->opts($boards, $meetings);
+        $url = url($this->path, $opts);
+        $label = $label ? $label : "$value $option";
+        $label = strtoupper($label);
+        $html[] = '<li class="cal-event-filter-box">';
+        $html[] = "<a href='$url'><img src='$img' alt=''> ";
+        $html[] = "<span>$label</span></a></li>";
+        return implode('', $html);
+    }
+
+    // Create a box for the calendar left-nav.
+    public function box($title, $items) {
+        $html[] = '<div class="nav-block">';
+        $html[] = "<h3>$title</h3>";
+        $html[] = '<div class="actions">';
+        $html[] = '<ul>';
+        $html = array_merge($html, $items);
+        $html[] = '</ul>';
+        $html[] = '</div>';
+        $html[] = '<div class="footer"></div>';
+        $html[] = '</div>';
+        return implode('', $html);
+    }
+
+    // Assemble query parameters for calendar URL.
+    public function opts($boards='', $meetings='') {
+        $board = $boards ? $boards : $this->boards;
+        $meetings = $meetings ? $meetings : $this->meetings;
+        $opts = array();
+        if ($boards != $this->boards_default)
+            $opts['query']['boards'] = $boards;
+        if ($meetings != $this->meetings_default)
+            $opts['query']['meetings'] = $meetings;
+        return $opts;
+    }
+
+    // Create a link to another calendar event.
+    public function event_nav_link($label, $nid) {
+        if (!isset($nid))
+            return '';
+        return l($label, "node/$nid", $this->opts());
+    }
 }
 
+// We only need one of these for the entire process.
+EbmsCalendarFiltering::$filtering = new EbmsCalendarFiltering;
+
+/**
+ * Assemble the left column for calendar and event pages.
+ */
 function ebms_calendar_left_nav($span = null, $args = array()) {
+
+    $filtering = EbmsCalendarFiltering::$filtering;
+    $opts = $filtering->opts();
     $output = array();
 
-    $date = null;
-    if (isset($args[0]))
-        $date = $args[0];
-
-    $all = false;
-    $granularity = '';
+    $date = isset($args[0]) ? $args[0] : null;
     if ($span) {
-        $span_parts = explode('_', $span);
-
-        $all = sizeof($span_parts) > 1;
-        $granularity = '/' . $span_parts[0];
 
         // This might not be the best place to do this, but it's the
         // most straightforward place.  OCEEBMS-41.
         drupal_set_breadcrumb(
             array(
-                l('Calendar', 'calendar'),
-                $span_parts[0],
+                l('Calendar', 'calendar', $opts),
+                $span,
             )
         );
     }
 
-    $suffix = $all ? '/all' : '';
-
     // create the links to month, week, and day views
     $output[] = '<div id="calendar-views">';
     $output[] = '<div class="item-list">';
-    if ($granularity == '/month') {
-        $granularity = '';
+    if ($span == 'month')
         $output[] = '<ul><li class="active first">';
-    }
     else
         $output[] = '<ul><li class="inactive first">';
-    $output[] = l('Month', "calendar$suffix");
-    if ($granularity == '/week')
+    $output[] = l('Month', 'calendar', $opts);
+    if ($span == 'week')
         $output[] = '</li><li class="active">';
     else
         $output[] = '</li><li class="inactive">';
-    $output[] = l('Week', "calendar/week$suffix");
-    if ($granularity == '/day')
+    $output[] = l('Week', 'calendar/week', $opts);
+    if ($span == 'day')
         $output[] = '</li><li class="active last">';
     else
         $output[] = '</li><li class="inactive last">';
-    $output[] = l('Day', "calendar/day$suffix");
-
+    $output[] = l('Day', 'calendar/day', $opts);
     $output[] = '</li></ul>';
     $output[] = '</div>';
     $output[] = '</div>';
@@ -93,58 +139,32 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
 
     if (user_access('create ebms_event content')) {
         // create event on shown day if possible
-        $query = array();
-        if ($granularity == '/day')
-            $query['query']['date'] = $date;
-
-        $actions[] = '<li>';
-        $actions[] = l('Create Event', "node/add/ebms-event", $query);
-        $actions[] = '</li>';
+        if ($span == 'day')
+            $opts['query']['date'] = $date;
+        $link = l('Create Event', 'node/add/ebms-event', $opts);
+        $actions[] = "<li>$link</li>";
+        $output[] = $filtering->box('Calendar Actions', $actions);
     }
 
     if (user_access('view all events')) {
-        // preserve current 'all' state if possible
-        $title = 'Show All Events';
-        $suffix = '/all';
-
-        if ($all) {
-            $title = 'Show Own Events';
-            $suffix = '';
-        }
-
-        if ($date) {
-            $suffix .= "/$date";
-        }
-
-        $actions[] = '<li>';
-        $actions[] = l($title, "calendar$granularity$suffix");
-        $actions[] = '</li>';
-    }
-
-    if ($actions) {
-        // build an action box
-        $output[] = '<div class="nav-block">';
-
-        $output[] = '<h3>Calendar Actions</h3>';
-
-        $output[] = '<div class="actions">';
-        $output[] = '<ul>';
-
-        $output = array_merge($output, $actions);
-
-        $output[] = '</ul>';
-        $output[] = '</div>';
-
-        $output[] = "<div class='footer'></div>";
-        $output[] = '</div>';
+        global $user;
+        $s = count($user->boards) > 1 ? 's' : '';
+        $options = array(
+            $filtering->option('boards', 'mine', "My Board$s"),
+            $filtering->option('boards', 'all'),
+        );
+        $output[] = $filtering->box('Board Filtering', $options);
+        $options = array(
+            $filtering->option('meetings', 'board'),
+            $filtering->option('meetings', 'all'),
+        );
+        $output[] = $filtering->box('Event Categories', $options);
     }
 
     // retrieve upcoming events view
     $view = views_get_view('event_calendar');
     if ($view) {
-
         $display = $view->preview('block_upcoming');
-
         $output[] = $display;
     }
 
@@ -159,18 +179,20 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
  */
 function _calendar_query_alter(&$view, &$query) {
     global $user;
-
-    //If the user is UID 1 or an EBMS administrator, there is no filtering of
-    //events
-    if (user_access("administer ebms"))
-        return;
-
-    //TODO: If power users are viewing all items, then don't filter
-    //if viewing all then just return.
-    if (user_access("view all events")
-        && in_array($view->current_display,
-            array('month_all', 'week_all', 'day_all', 'ical_event_feed'))) {
-        return;
+    $filtering = EbmsCalendarFiltering::$filtering;
+    if ($filtering->meetings == 'board') {
+        $join = new views_join;
+        $table = 'field_data_field_event_category';
+        $join->construct($table, 'node', 'nid', 'entity_id');
+        $alias = $query->add_relationship('ec', $join, $table);
+        $field = "$alias.field_event_category_value";
+        $query->add_where('category', $field, 'board');
+    }
+    if (user_access('administer ebms') || user_access('view all events')) {
+        if ($filtering->boards == 'all')
+            return;
+        if ($view->current_display == 'ical_event_feed')
+            return;
     }
 
     // Don't show board members article publication messages (TIR 2515).
@@ -325,8 +347,24 @@ function calendar_node_form_alter(&$form, &$form_state) {
         )
     );
 
+    // Date module ignores #datepicker_options when the type is date_combo
+    // (see https://www.drupal.org/node/2324567). So we have to sneak in
+    // a patch to the options on the run.
+    $js = '
+jQuery(function() {
+    var start = jQuery("#edit-field-datespan-und-0-value-datepicker-popup-0");
+    var end = jQuery("#edit-field-datespan-und-0-value2-datepicker-popup-0");
+    start.focus(function() {
+        jQuery(this).datepicker("option", "changeMonth", false)
+                    .datepicker("option", "changeYear", false);
+    });
+    end.focus(function() {
+        jQuery(this).datepicker("option", "changeMonth", false)
+                    .datepicker("option", "changeYear", false);
+    });
+});';
+    drupal_add_js($js, 'inline');
     $params = drupal_get_query_parameters();
-
     if (isset($params['date'])) {
         $date = $params['date'];
 

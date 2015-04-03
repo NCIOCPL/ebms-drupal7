@@ -389,6 +389,13 @@ function ebms_menu() {
             'access arguments' => array('administer'),
         ),
 
+        // MANAGE CORE JOURNAL LIST
+        'admin/core-journals' => array(
+            'title' => 'Core Journals',
+            'page callback' => 'pdq_ebms_core_journals',
+            'access arguments' => array('administer'),
+        ),
+
         // MANAGE EBMS TOPICS
         'admin/topics' => array(
             'title' => 'EBMS Topics',
@@ -401,6 +408,14 @@ function ebms_menu() {
         'admin/subgroups' => array(
             'title' => 'EBMS Subgroups',
             'page callback' => 'pdq_ebms_subgroups',
+            'access arguments' => array('administer'),
+            'file' => 'subgroups.inc',
+        ),
+
+        // MANAGE EBMS BOARDS
+        'admin/boards' => array(
+            'title' => 'EBMS Boards',
+            'page callback' => 'pdq_ebms_boards',
             'access arguments' => array('administer'),
             'file' => 'subgroups.inc',
         ),
@@ -524,6 +539,13 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // DUMP MESSAGE TYPES
+        'dump-message-types' => array(
+            'page callback' => 'pdq_ebms_dump_message_types',
+            'access callback' => true,
+            'type' => MENU_CALLBACK,
+        ),
+
         // REFRESH XML FROM NLM (OCEEBMS-87).
         'admin/refresh-xml-from-nlm' => array(
             'title' => 'Refresh XML From NLM',
@@ -532,6 +554,11 @@ function ebms_menu() {
             'access arguments' => array('administer ebms'),
             'file' => 'import.inc',
             'type' => MENU_CALLBACK,
+        ),
+        'admin/vars' => array(
+            'title' => 'Drupal Variables',
+            'page callback' => 'pdq_ebms_vars',
+            'access arguments' => array('administer ebms'),
         ),
     );
 }
@@ -592,7 +619,6 @@ function pdq_ebms_login() {
 }
 
 function ebms_form_alter(&$form, &$form_state, $form_id) {
-    //pdq_ebms_debug('FORM ALTER', array($form['actions'], $form_id));
     switch ($form_id) {
         case 'user_login':
             $url = 'https://iforgotmypassword.nih.gov/';
@@ -603,7 +629,6 @@ function ebms_form_alter(&$form, &$form_state, $form_id) {
             $form['actions']['submit']['#value'] = 'Login';
             $form['actions']['submit']['#prefix'] = '<div id="login-wrpr">';
             $form['actions']['submit']['#suffix'] = '</div>';
-                //"<a href='$url' id='$id'>Can't access your account?</a></div>";
             break;
         case 'ebms_event_node_form':
             $form['actions']['submit']['#weight'] = 10;
@@ -615,19 +640,10 @@ function pdq_ebms_home_redirect() {
     drupal_goto('home');
 }
 function ebms_menu_alter(&$items) {
-    //$items['user']['page callback'] = 'pdq_ebms_home_redirect';
     $items['user/%user']['page callback'] = 'pdq_ebms_home_redirect';
     $items['user/%user']['access callback'] = true;
 }
-/*
-            // LANDING PAGE
-            'home' => array(
-                    'page callback' => 'pdq_ebms_home',
-                    'file' => 'home.inc',
-                    'access callback' => true,
-                    'type' => MENU_CALLBACK,
-            ),
-*/
+
 /**
  * Custom login page.
  */
@@ -941,6 +957,10 @@ function ebms_theme() {
         'pdq_ebms_profile_email_form' => array(
             'render element' => 'form',
         ),
+        'stripped' => array(
+            'variables' => array('page' => array()),
+            'template' => 'stripped', // stripped.tpl.php in the module directory
+        ),
     );
 }
 
@@ -1096,7 +1116,7 @@ function ebms_init() {
         $user->ebms_ad_hoc_groups = array();
         foreach ($result as $record)
                 $user->ebms_ad_hoc_groups[] = $record->group_id;
-        
+
         // populate with the same values as any loaded user
         // (should ultimately only perform this to unify the fields
         // between the global user and any other loaded user)
@@ -1120,7 +1140,7 @@ function ebms_user_load($users) {
         $boards = array();
         foreach ($results as $result) $boards[] = $result->board_id;
         $users[$uid]->boards = $boards;
-        
+
         $topics = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id'))
             ->condition('t.nci_reviewer', $uid)
@@ -1130,12 +1150,12 @@ function ebms_user_load($users) {
         //$topics = array();
         //foreach ($tresults as $result) $topics[] = $result->board_id;
         $users[$uid]->topics = $topics;
-        
+
         // select all subgroups to which the member explicitly belongs
         $sgMemberQuery = db_select('ebms_subgroup_member', 'm')
             ->fields('m', array('sg_id'))
             ->condition('m.user_id', $uid);
-        
+
         // also select all subgroups based on the user's boards -
         // this will allow the user to see all nodes that specify
         // a subgroup belonging to one of the user's boards without regard
@@ -1200,6 +1220,138 @@ function pdq_ebms_refresh_journals() {
 }
 
 /**
+ * List/set Drupal variables. Ignores complex values.
+ */
+function pdq_ebms_vars($name='', $value='') {
+    $base_url = 'admin/vars';
+    if ($name) {
+        $val = variable_get($name);
+        if (is_array($val))
+            drupal_set_message("Variable $name is an array", 'error');
+        else {
+            if (is_int($val) || is_null($val) && ctype_digit($value))
+                $value = (int)$value;
+            variable_set($name, $value);
+        }
+        drupal_goto($base_url);
+    }
+    $rows = array();
+    $names = db_select('variable', 'v')->fields('v', array('name'))
+        ->orderBy('v.name')
+        ->execute()->fetchCol();
+    $skip = array('drupal_private_key', 'ldap_servers_encrypt_key');
+    foreach ($names as $name) {
+        if (!in_array($name, $skip)) {
+            $val = variable_get($name);
+            if (!is_array($val))
+                $rows[] = array($name, $val);
+        }
+    }
+    return array(
+        'title' => array('#markup' => '<h2>Variables</h2>'),
+        'table' => array(
+            '#theme' => 'table',
+            '#rows' => $rows,
+            '#header' => array('Name', 'Value'),
+        ),
+    );
+}
+
+/**
+ * Maintain list of core journals. Users said they didn't want this page,
+ * but I've implemented it for myself, so I don't have to go to CBIIT
+ * when they need the list adjusted.
+ */
+function pdq_ebms_core_journals($action='show', $jrnl_id='', $source='Pubmed') {
+    //drupal_set_message("action=$action; jrnl_id=$jrnl_id; source=$source");
+    $base_url = 'admin/core-journals';
+    $brief_title = '';
+    if (in_array($action, array('add', 'drop', 'delete'))) {
+        if (!$jrnl_id || !$source) {
+            drupal_set_message('Both source and source ID are required',
+                               'error');
+            drupal_goto($base_url);
+        }
+        else {
+            $results = db_select('ebms_journal', 'j')
+                ->fields('j', array('brf_jrnl_title'))
+                ->condition('j.source', $source)
+                ->condition('j.source_jrnl_id', $jrnl_id)
+                ->execute();
+            $brief_title = '';
+            foreach ($results as $result)
+                $brief_title = $result->brf_jrnl_title;
+            if (!$brief_title) {
+                drupal_set_message("Can't find journal $source $jrnl_id", 'error');
+                drupal_goto($base_url);
+            }
+        }
+    }
+    if ($action == 'add') {
+        try {
+            db_insert('ebms_core_journal')
+                ->fields(
+                    array(
+                        'source'=>$source,
+                        'source_jrnl_id' => $jrnl_id,
+                    )
+                )
+                ->execute();
+            drupal_set_message("Added $brief_title to core set");
+        }
+        catch (\Exception $e) {
+            $message = "$e";
+            watchdog('EBMS - core journals', $message);
+            $expected = 'Integrity constraint violation';
+            if (strpos($message, $expected) !== false)
+                $message = "$source journal $jrnl_id ($brief_title) already in core set";
+            else
+                $message = 'Unexepected failure - consult logs';
+            drupal_set_message($message, 'error');
+        }
+        drupal_goto($base_url);
+    }
+    if (in_array($action, array('drop', 'delete'))) {
+        $result = db_delete('ebms_core_journal')
+            ->condition('source', $source)
+            ->condition('source_jrnl_id', $jrnl_id)
+            ->execute();
+        if ($result == 1)
+            drupal_set_message("Dropped $brief_title from core set");
+        else
+            drupal_set_message("$source journal $jrnl_id ($brief_title) wasn't in the core set", 'error');
+        drupal_goto($base_url);
+    }
+    $query = db_select('ebms_journal', 'j')->fields('j');
+    $query->join('ebms_core_journal', 'c',
+                 'c.source = j.source AND ' .
+                 'c.source_jrnl_id = j.source_jrnl_id');
+    $query->orderBy('j.brf_jrnl_title');
+    $query->orderBy('j.jrnl_title');
+    $results = $query->execute()->fetchAll();
+    $headers = array('Brief Title', 'Title', 'Source', 'ID', 'Actions');
+    $rows = array();
+    foreach ($results as $result) {
+        $url = "$base_url/drop/$result->source_jrnl_id/$result->source";
+        $rows[] = array(
+            $result->brf_jrnl_title,
+            $result->jrnl_title,
+            $result->source,
+            $result->source_jrnl_id,
+            l('Drop', $url),
+        );
+    }
+    return array(
+        'title' => array('#markup' => '<h2>Core Journals</h2>'),
+        'table' => array(
+            '#theme' => 'table',
+            '#rows' => $rows,
+            '#header' => $headers,
+        ),
+    );
+}
+
+/**
  * Write debugging information to a file in the /tmp directory.  Only
  * does anything on the development and QA system.  Each log entry is
  * date/time stamped.
@@ -1246,7 +1398,7 @@ function ebms_views_api() {
 function ebms_views_query_alter(&$view, &$query) {
     switch ($view->name) {
         case 'event_calendar':
-        case 'recent_activity': //Using the same function - same functionality   
+        case 'recent_activity': //Using the same function - same functionality
             require_once 'calendar.inc';
             _calendar_query_alter($view, $query);
             break;
@@ -1259,7 +1411,7 @@ function ebms_form_node_form_alter(&$form, &$form_state, $form_id) {
         calendar_node_form_alter($form, $form_state);
         return;
     }
-    
+
     // add 'cancel' button that redirects back to the originating node
     if (isset($form['#node']->nid)) {
         $nid = $form['#node']->nid;
@@ -1271,19 +1423,19 @@ function ebms_form_node_form_alter(&$form, &$form_state, $form_id) {
                 ),
             ),
         );
-    
+
         $url = l('Cancel', "node/$nid", $options);
         $form['actions']['cancel'] = array(
             '#markup' => $url,
             '#weight' => 30,
         );
-    
+
     }
 }
 
 /**
  * Allowed values callback function for the EBMS Board Field.
- * 
+ *
  * @param type $field The field this is controlling.
  */
 function ebms_board_allowed_values_callback($field) {
@@ -1294,7 +1446,7 @@ function ebms_board_allowed_values_callback($field) {
 
 /**
  * Allowed values callback function for the EBMS Subgroup Field.
- * 
+ *
  * @param type $field The field this is controlling.
  */
 function ebms_subgroup_allowed_values_callback($field) {
@@ -1309,7 +1461,7 @@ function ebms_subgroup_allowed_values_callback($field) {
 
 /**
  * Allowed values callback function for the EBMS Ad-Hoc Group Field.
- * 
+ *
  * @param type $field The field this is controlling.
  */
 function ebms_ad_hoc_group_allowed_values_callback($field) {
@@ -1325,7 +1477,7 @@ function ebms_ad_hoc_group_allowed_values_callback($field) {
 
 /**
  * Allowed values callback function for the EBMS Individuals Field.
- * 
+ *
  * @param type $field The field this is controlling.
  */
 function ebms_individuals_allowed_values_callback($field) {
@@ -1364,34 +1516,34 @@ function ebms_individuals_allowed_values_callback($field) {
 /**
  * Implementation of hook_node_presave.  Triggers appropriate recent activity
  * messages based on changes to event nodes.
- * 
+ *
  * @param node $node the node about to be saved
  */
 function ebms_node_presave($node) {
     // if a published ebms_event (don't generate any activity from unpublished
     // nodes)
     if ($node->type == 'ebms_event' && $node->status) {
-        
+
         $nodeWrapper = entity_metadata_wrapper('node', $node);
         $originalWrapper = FALSE;
-        
+
         // retrieve the event status
         $event_status = $nodeWrapper->field_event_status->value();
-        
+
         $original_status = null;
         $original_agenda_status = null;
         $original_event_type = null;
         if(isset($node->original)){
             $originalWrapper = entity_metadata_wrapper('node', $node->original);
-            
+
             $original_status = $originalWrapper->field_event_status->value();
             $original_agenda_status = $originalWrapper->field_agenda_status->value();
             $original_event_type = $originalWrapper->field_event_type->value();
         }
-        
+
         // if the node is published and either is new or was previously
         // unpublished
-        if ($event_status == 'scheduled' && 
+        if ($event_status == 'scheduled' &&
             ($node->is_new ||
                 $original_status == 'cancelled')) {
             // note the publish activity
@@ -1400,7 +1552,7 @@ function ebms_node_presave($node) {
 
         // vice versa, if the node is not new and was previously published
         else if ($event_status == 'cancelled' &&
-            !$node->is_new && 
+            !$node->is_new &&
             $original_status == 'scheduled') {
             // note the unpublish activity
             \Ebms\Util::activityEventCancelled($nodeWrapper);
@@ -1419,27 +1571,27 @@ function ebms_node_presave($node) {
             if (!empty($diff))
                 \Ebms\Util::activityEventChanged($nodeWrapper);
         }
-        
-        // if the agenda is published and the event is 
+
+        // if the agenda is published and the event is
         // new or the agenda was not previously published
         $curr_agenda_status = $nodeWrapper->field_agenda_status->value();
 
-        if($curr_agenda_status == 1 && 
+        if($curr_agenda_status == 1 &&
             ($node->is_new || $original_agenda_status == 0)) {
             // note the agenda publish activity
             \Ebms\Util::activityAgendaPublished($nodeWrapper);
         }
-        
-        // if the previous type exists and the current and past event types 
+
+        // if the previous type exists and the current and past event types
         // don't match
         $curr_event_type = $nodeWrapper->field_event_type->value();
         if($original_event_type && $curr_event_type != $original_event_type) {
             // note the type changed activity
             \Ebms\Util::activityEventType($nodeWrapper);
-            
+
         }
-        
-        
+
+
     }
 }
 
@@ -1607,14 +1759,14 @@ function ebms_ckeditor_link_ebms_file_autocomplete($string) {
         $fileUri = "$files_dir/$file->filename";
         $links[$fileUri] = $desc;
     }
-    
+
     $documents = db_select('ebms_doc', 'd')
         ->condition('d.drop_flag', 0)
         ->condition('d.description', "%$string%", 'LIKE')
         ->fields('d', array('file_id', 'description'))
         ->execute()
         ->fetchAllKeyed();
-    
+
     foreach($documents as $fileId => $desc){
         $file = file_load($fileId);
         $files_dir = file_stream_wrapper_get_instance_by_uri('public://')->getDirectoryPath();
@@ -1622,7 +1774,7 @@ function ebms_ckeditor_link_ebms_file_autocomplete($string) {
         $links[$fileUri] = $desc;
     }
     asort($links);
-    
+
     return $links;
 }
 
@@ -1721,7 +1873,6 @@ function pdq_ebms_account_info() {
     $accounts = array();
     foreach ($results as $result)
         $accounts[] = $result;
-    pdq_ebms_debug('ACCOUNT INFO', $accounts);
     print drupal_json_encode($accounts);
     exit(0);
 }
@@ -1742,19 +1893,16 @@ function pdq_ebms_update_source_mod() {
     $source = $_POST['source'];
     $date = $_POST['date'];
     $ids = explode("\t", $_POST['ids']);
-    pdq_ebms_debug('UPDATE SOURCE MOD', array($date, count($ids)));
     $updated = db_update('ebms_article')
         ->fields(array('data_mod' => $date))
         ->condition('source', $source)
         ->condition('source_id', $ids, 'IN')
         ->execute();
     drupal_add_http_header('Content-type', 'text/plain');
-    //drupal_set_message($_POST);
     print "Updated data_mod column in $updated rows for $date\n";
     exit(0);
 }
 function pdq_ebms_get_source_ids($source) {
-    pdq_ebms_debug('GET SOURCE IDS', $source);
     drupal_add_http_header('Content-type', 'text/plain');
     $results = db_select('ebms_article', 'a')
         ->fields('a', array('source_id', 'import_date', 'update_date',
@@ -1862,4 +2010,88 @@ function pdq_ebms_log_tail() {
         echo "log-tail failure: $e\n";
         exit(0);
     }
+}
+
+function ebms_date_popup_process_alter(&$element) {
+    if (strpos($element['#name'], 'field_datespan') === 0) {
+        $element['#datepicker_options'] = array(
+            'changeYear' => false,
+            'changeMonth' => false,
+        );
+    }
+    else
+        $element['#element_validate'] = array('pdq_ebms_date_validate');
+}
+
+/**
+ * We have a more lenient approach to date validation than is used
+ * by the stock Drupal date field.  Our requirements ask us to accept
+ * partially-specified dates, provide no less granular components are
+ * omitted when more granular components are specified.  For example,
+ * it is not permitted to specify a month and day, but fail to
+ * specify the year, whereas it is OK to give the year without
+ * specifying the month or day.
+ */
+function pdq_ebms_date_validate($element, &$form_state, $form) {
+    if (count($element['#value']) == 3) {
+        $y = $element['#value']['year'];
+        $m = $element['#value']['month'];
+        $d = $element['#value']['day'];
+    }
+    else {
+        $y = $m = $d = 0;
+        $pieces = explode('-', $element['#value']['date']);
+        if (!empty($pieces[0]))
+            $y = $pieces[0];
+        if (!empty($pieces[1]))
+            $m = $pieces[1];
+        if (!empty($pieces[2]))
+            $d = $pieces[2];
+    }
+    if ($d) {
+        if (!$y || !$m)
+            form_error($element, 'Day cannot be specified without full date');
+        elseif (!checkdate($m, $d, $y))
+            form_error($element, 'The specified date is invalid');
+    }
+    elseif ($m && !$y)
+        form_error($element, 'Month cannot be specified without year');
+}
+
+/*
+ * Implementation of hook_default_message_type().
+ */
+function ebms_default_message_type() {
+    require 'includes/ebms.message_types.inc';
+    $types = array();
+    foreach ($pdq_ebms_recent_activity_message_types as $name => $export) {
+        $types[$name] = entity_import('message_type', $export);
+    }
+    return $types;
+}
+
+/*
+ * Show what the file includes/ebms.message_types.inc looks like.
+ */
+function pdq_ebms_dump_message_types() {
+    $output = array(
+        '<?php',
+        '',
+        '// Use https://ebms.nci.nih.gov/dump-message-types to generate ' .
+        'current definitions.',
+        '$pdq_ebms_recent_activity_message_types = array('
+    );
+    $definitions = array();
+    require 'includes/ebms.message_types.inc';
+    foreach ($pdq_ebms_recent_activity_message_types as $name => $export) {
+        $message_type = message_type_load($name);
+        $export = entity_export('message_type', $message_type, '  ');
+        $definitions[] = "  '$name' => '$export'";
+    }
+    $output[] = implode(",\n", $definitions);
+    $output[] = ");\n";
+    $output = implode("\n", $output);
+    drupal_add_http_header('Content-type', 'text/plain');
+    echo $output;
+    exit(0);
 }

@@ -11,6 +11,7 @@
 
 require_once('EbmsArticle.inc');
 require_once('EbmsPrint.inc');
+// require_once('logw.inc');
 
 function pdq_ebms_print_packets($action=null) {
 
@@ -76,8 +77,10 @@ function pdq_ebms_prtpkts_run_form() {
     );
 
     $form['startDate'] = array(
-        '#type' => 'textfield',
-        '#size' => 16,
+        '#type' => 'date_popup',
+        '#date_format' => 'Y-m-d',
+        '#datepicker_options' => Ebms\Util::datepicker_options(':+0'),
+        '#date_label_position' => 'within',
         '#title' => 'Only print packets created on or after this start date',
         '#description' => 'Optionally, print packets created on or after '.
             'the specified date, entered as "YYYY-MM-DD."<br />' .
@@ -87,8 +90,10 @@ function pdq_ebms_prtpkts_run_form() {
     );
 
     $form['endDate'] = array(
-        '#type' => 'textfield',
-        '#size' => 16,
+        '#type' => 'date_popup',
+        '#date_format' => 'Y-m-d',
+        '#datepicker_options' => Ebms\Util::datepicker_options(),
+        '#date_label_position' => 'within',
         '#title' => 'Only print packets created before this end date',
         '#description' => 'Optionally, print packets created before '.
             'the specified date, entered as "YYYY-MM-DD."<br />' .
@@ -173,8 +178,9 @@ function pdq_ebms_prtpkts_run_form_validate($form, &$form_state) {
     }
 
     // Date validation
-    $startDt = $vals['startDate'];
-    $endDt   = $vals['endDate'];
+    $startDt = $vals['startDate']['date'];
+    $endDt   = $vals['endDate']['date'];
+
     if ($startDt) {
         // Returns 1 if start date < now, 0 if >, null if invalid date format
         $val = db_query('SELECT DATE(:startDt) <= NOW()',
@@ -214,8 +220,8 @@ function pdq_ebms_prtpkts_run_form_submit($form, &$form_state) {
     $memberIdx = $vals['memberId'];
     $packetId  = $vals['packetId'];
     $oldJobId  = $vals['oldJobId'];
-    $startDt   = $vals['startDate'];
-    $endDt     = $vals['endDate'];
+    $startDt   = $vals['startDate']['date'];
+    $endDt     = $vals['endDate']['date'];
     $jobMode   = $vals['jobMode'];
     $comment   = $vals['comment'];
 
@@ -262,21 +268,21 @@ function pdq_ebms_prtpkts_run_form_submit($form, &$form_state) {
     }
 
     // Create a new job, ready to run
-    $qry = db_insert('ebms_print_job')
-      ->fields(array(
-              'old_job_id'        => $oldJobId,
-              'user_id'           => $userId,
-              'print_job_type_id' => $jobType,
-              'packet_start_dt'   => $startDt,
-              'packet_end_dt'     => $endDt,
-              'print_dt'          => null,
-              'board_id'          => $boardId,
-              'board_member_id'   => $memberId,
-              'packet_id'         => $packetId,
-              'mode'              => $jobMode,
-              'comment'           => $comment,
-              'status'            => 'queued')
-          );
+    $fields = array(
+        'old_job_id'        => $oldJobId,
+        'user_id'           => $userId,
+        'print_job_type_id' => $jobType,
+        'packet_start_dt'   => $startDt,
+        'packet_end_dt'     => $endDt,
+        'print_dt'          => null,
+        'board_id'          => $boardId,
+        'board_member_id'   => $memberId,
+        'packet_id'         => $packetId,
+        'mode'              => $jobMode,
+        'comment'           => $comment,
+        'status'            => 'queued',
+    );
+    $qry = db_insert('ebms_print_job')->fields($fields);
     $jobId = $qry->execute();
 
     // Execute the print job
@@ -499,6 +505,9 @@ function pdq_ebms_prtpkts_mbrs_form_submit($form, $form_state) {
     $memberName = $mm['memberName'];
 
     $delBox  = $vals['delBox'];
+
+    // start/end dates are using text input, not popups here.
+    // Therefore not using $vals[startDate][date] created by the popups.
     $startDt = $vals['startDate'];
     $endDt   = $vals['endDate'];
 

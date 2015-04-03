@@ -1,9 +1,27 @@
 <?php
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Definitions of custom fields added to the existing ebms node types.
+ *
+ * These fields are created by hand and stored in $GLOBALS where they are
+ * picked up via module_load_include() by ebms.install, which creates
+ * or updates the fields as needed.
+ *
+ * Edits to the field definitions here may fail if any changes violate the
+ * limits Drupal imposes in field_update_field() and field_update_instance().
+ * [I'm not sure it's possible to find what those limits are except by
+ * reading the source code for those Drupal functions.]
+ *
+ * As of this writing, deleting a field definition from this array
+ * does NOT delete the field from the database if it is already there.
  */
+
+// DEBUG
+/*
+function t($x) {}
+define('FIELD_CARDINALITY_UNLIMITED', 0);
+define('LANGUAGE_NONE', 'und');
+*/
 
 $GLOBALS['ebms_node_fields'] = array(
     // event status - on calendar or cancelled
@@ -344,3 +362,132 @@ foreach ($GLOBALS['ebms_node_fields'] as $field) {
             break;
     }
 }
+
+/**
+ * Per user fields, added to support some user profile information.
+ *
+ * Most of these are used in storing user selected default display
+ * options for various screens offering options.
+ *
+ * As of this writing, values for these fields are set by a user
+ * clicking "Save as defaults" in the user interface for Display Options
+ * in one of the EBMS pages that supports defaults.  The options construction
+ * and value validation for the fields is done there, not by settings
+ * added here.  That way additions to values can be added without modifying
+ * anything here.
+ */
+$GLOBALS['ebms_user_fields'] = array(
+    // --------------------------------
+    // Overall defaults, applying in multiple places
+    // --------------------------------
+    // Default board selection
+    // The value is the board_id as stored in the ebms_board table
+    array(
+        'label' => t('Board'),
+        'entity_type' => 'user',
+        'description' => 'Default editorial board',
+        'field_name' => 'dft_editorial_board',
+        'required' => FALSE,
+        'type' => 'number_integer',
+        'settings' => array('max_length' => '128',),
+        'cardinality' => 1,
+        'bundles' => array('user'),
+        'locked' => FALSE,
+        'no_ui' => FALSE
+    ),
+
+    // --------------------------------
+    // Citation review display options
+    // --------------------------------
+    // Citation review sort order, 'EBMS ID#', 'Author', etc.
+    array(
+        'label' => t('Sort By'),
+        'entity_type' => 'user',
+        'description' => 'Default field for sorting citation review queue',
+        'field_name' => 'dft_cite_review_sort_key',
+        'required' => FALSE,
+        'type' => 'text',
+        'settings' => array('max_length' => '32',),
+        'cardinality' => 1,
+        'bundles' => array('user'),
+        'locked' => TRUE,
+        'no_ui' => TRUE
+    ),
+    // Citation format, 'Brief', 'Abstract'
+    array(
+        'label' => t('Format'),
+        'entity_type' => 'user',
+        'description' => 'Default format for citation review display',
+        'field_name' => 'dft_cite_review_format',
+        'required' => FALSE,
+        'type' => 'text',
+        'settings' => array('max_length' => '32',),
+        'cardinality' => 1,
+        'bundles' => array('user'),
+        'locked' => TRUE,
+        'no_ui' => TRUE
+    ),
+    // Citations per review page
+    array(
+        'label' => t('Items per page'),
+        'entity_type' => 'user',
+        'description' => 'Default number of review citations per page',
+        'field_name' => 'dft_cite_review_items_per_page',
+        'required' => FALSE,
+        'type' => 'number_integer',
+        'cardinality' => 1,
+        'bundles' => array('user'),
+        'locked' => TRUE,
+        'no_ui' => TRUE
+    ),
+
+    // --------------------------------
+    // Citation search display options
+    // --------------------------------
+    // Citation search results sort order, 'EBMS ID#', 'Author', etc.
+    array(
+        'label' => t('Sort By'),
+        'entity_type' => 'user',
+        'description' => 'Default field for sorting citation search results',
+        'field_name' => 'dft_cite_search_sort_key',
+        'required' => FALSE,
+        'type' => 'text',
+        'settings' => array('max_length' => '32',),
+        'cardinality' => 1,
+        'bundles' => array('user'),
+        'locked' => TRUE,
+        'no_ui' => TRUE
+    ),
+
+    // Citations per search results page
+    array(
+        'label' => t('Items per page'),
+        'entity_type' => 'user',
+        'description' => 'Default number of search citations per page',
+        'field_name' => 'dft_cite_search_items_per_page',
+        'required' => FALSE,
+        'type' => 'number_integer',
+        'cardinality' => 1,
+        'bundles' => array('user'),
+        'locked' => TRUE,
+        'no_ui' => TRUE
+    ),
+
+    // --------------------------------
+    // Create packet display options
+    // --------------------------------
+    // Packet article sort order, Author or Article title
+    array(
+        'label' => t('Sort by'),
+        'entity_type' => 'user',
+        'description' => 'Default field for sorting article list',
+        'field_name' => 'dft_packet_article_sort_key',
+        'required' => FALSE,
+        'type' => 'text',
+        'settings' => array('max_length' => '32',),
+        'cardinality' => 1,
+        'bundles' => array('user'),
+        'locked' => TRUE,
+        'no_ui' => TRUE
+    ),
+);

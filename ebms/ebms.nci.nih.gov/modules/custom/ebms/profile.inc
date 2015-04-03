@@ -61,7 +61,7 @@ class EbmsProfile {
                 break;
             case 'memberships':
                 $u = $this->user->uid;
-                return drupal_get_form('pdq_embs_profile_membership_form', $u);
+                return drupal_get_form('pdq_ebms_profile_membership_form', $u);
             case 'view':
             case 'crop':
             case 'edit-email':
@@ -899,7 +899,7 @@ function pdq_ebms_profile_picture_crop_form_submit($form, &$form_state) {
  * tiers, so we have to have it after all.  This is the form where
  * board and subgroup membership is assigned for a given member.
  */
-function pdq_embs_profile_membership_form($form, &$form_state, $uid) {
+function pdq_ebms_profile_membership_form($form, &$form_state, $uid) {
     $name = db_select('users', 'u')
         ->condition('u.uid', $uid)
         ->fields('u', array('name'))
@@ -971,7 +971,7 @@ function pdq_embs_profile_membership_form($form, &$form_state, $uid) {
  * Clear out the rows for this user's board and subgroup memberships and
  * repopulate based on the submitted form's values.
  */
-function pdq_embs_profile_membership_form_submit($form, &$form_state) {
+function pdq_ebms_profile_membership_form_submit($form, &$form_state) {
     $values = $form_state['values'];
     $uid = $values['uid'];
     $boards = $values['boards'];

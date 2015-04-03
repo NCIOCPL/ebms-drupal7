@@ -142,6 +142,14 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $disposition = $params['disposition'];
     }
 
+    // If board not set, default it
+    if (!$board)
+        $board = \Ebms\Util::get_user_default_board();
+
+    // Default to the current review cycle (JIRA::OCEEBMS-166).
+    if (!$cycle)
+        $cycle = Ebms\Util::get_default_cycle();
+
     // An ajax call can override the board selection.
     if (isset($form_state['values']))
         $board = $form_state['values']['board'];
@@ -165,7 +173,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         ->fields('c', array('cycle_id', 'cycle_name'))
         ->orderBy('c.start_date', 'DESC')
         ->execute();
-    $review_cycles = array(0 => ' ');
+    $review_cycles = array();
     foreach ($results as $result)
         $review_cycles[$result->cycle_id] = $result->cycle_name;
     //$results = db_select('ebms_article_tag_type', 't')
@@ -213,6 +221,11 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     }
 
     // Assemble the form's render array.
+    $nl_tip = "Don't reject articles on the board's NOT list.";
+    $tm_tip = 'See what a job would do without actually doing it.';
+    $ft_tip = 'Advance the imported articles to a later state.';
+    $ss_tip = "Tag the articles in this batch\n" .
+        'so they can be easily found later.';
     $form = array(
         '#id' => 'import-form',
         'page title' => array(
@@ -259,28 +272,28 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             'not-list' => array(
                 '#type' => 'checkbox',
                 '#title' => 'NOT LIST',
-                '#prefix' => '<div class="checkbox-line">',
+                '#prefix' => "<div class='checkbox-line' title=\"$nl_tip\">",
                 '#suffix' => '</div>',
                 '#default_value' => $not_list,
             ),
             'test-mode' => array(
                 '#type' => 'checkbox',
                 '#title' => 'TEST MODE',
-                '#prefix' => '<div class="checkbox-line">',
+                '#prefix' => "<div class='checkbox-line' title=\"$tm_tip\">",
                 '#suffix' => '</div>',
                 '#default_value' => $test_mode,
             ),
             'fast-track' => array(
                 '#type' => 'checkbox',
                 '#title' => 'FAST TRACK',
-                '#prefix' => '<div class="checkbox-line">',
+                '#prefix' => "<div class='checkbox-line' title=\"$ft_tip\">",
                 '#suffix' => '</div>',
                 '#default_value' => $fast_track,
             ),
             'special-search' => array(
                 '#type' => 'checkbox',
                 '#title' => 'SPECIAL SEARCH',
-                '#prefix' => '<div class="checkbox-line">',
+                '#prefix' => "<div class='checkbox-line' title=\"$ss_tip\">",
                 '#suffix' => '</div>',
                 '#default_value' => $special_search,
             ),
@@ -446,11 +459,11 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
 function pdq_ebms_agenda_meeting_picklist($past, $now, $board=null) {
     if ($past) {
         $op = '<=';
-        $ord = 'ASC';
+        $ord = 'DESC';
     }
     else {
         $op = '>';
-        $ord = 'DESC';
+        $ord = 'ASC';
     }
     $query = new EntityFieldQuery();
     $query->entityCondition('entity_type', 'node')

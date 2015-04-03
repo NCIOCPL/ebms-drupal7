@@ -464,9 +464,21 @@ class EbmsHomePage {
     /**
      * Helper method to create the markup for a single line in
      * the Alerts box on the home page.
+     *
+     * 2014-08-01 (JIRA::OCEEBMS-183): default Reviewed Packets
+     * page to View All.
      */
     private static function alert($url, $label, $count) {
-        $link = l($label, $url);
+        $opts = array();
+        if ($url == 'review/reviews')
+            $opts['query']['pager'] = 'off';
+        elseif (strpos($url, 'webform-results') !== false) {
+            $opts['query'] = array(
+                'sort' => 'desc',
+                'order' => 'Submitted',
+            );
+        }
+        $link = l($label, $url, $opts);
         return "$link <span class='alert-count'>$count</span>";
     }
 
@@ -503,7 +515,53 @@ class EbmsHomePage {
             $topic_ids = _ebms_forums_get_new_topics();
             $count = count($topic_ids);
             $url = $count ? "node/$topic_ids[0]" : 'forum';
-            $items[] = EbmsHomePage::alert($url, "Forums", $count);
+            $items[] = EbmsHomePage::alert($url, 'Forums', $count);
+        }
+
+        // OCEEBMS-168: alerts for hotel requests (board managers only)
+        // OCEEBMS-66: alerts for posted summaries (board managers only)
+        if (in_array('board manager', $user->roles) &&
+            !empty($this->user->boards)) {
+
+            $hotel_request = db_select('node', 'n')
+                ->condition('n.type', 'webform')
+                ->condition('n.title', 'Hotel Request')
+                ->condition('n.status', 1)
+                ->fields('n', array('nid'))
+                ->execute()
+                ->fetchField();
+            $query = db_select('webform_submissions', 's');
+            $query->join('ebms_board_member', 'm', 'm.user_id = s.uid');
+            $query->condition('m.board_id', $user->boards, 'IN');
+            $query->condition('s.nid', $hotel_request);
+            $query->where('FROM_UNIXTIME(s.submitted) >= ' .
+                'DATE_SUB(NOW(), INTERVAL 60 DAY)');
+            $query->fields('s', array('sid'));
+            $query->distinct();
+            $count = $query->countQuery()->execute()->fetchField();
+            $url = "node/$hotel_request/webform-results/table";
+            $items[] = EbmsHomePage::alert($url, 'Hotel Requests', $count);
+            $subquery = db_select('ebms_reviewer_doc', 'r')
+                ->fields('r', array('file_id'));
+            $query = db_select('ebms_summary_returned_doc', 's');
+            $query->join('ebms_doc', 'd', 'd.doc_id = s.doc_id');
+            $query->join('file_managed', 'f', 'f.fid = d.file_id');
+            $query->join('ebms_board_member', 'm', 'm.user_id = f.uid');
+            $query->leftJoin('ebms_reviewer_doc', 'r',
+                'r.file_id = d.file_id');
+            $query->condition('m.board_id', $user->boards, 'IN');
+            $query->where('d.when_posted >= DATE_SUB(NOW(), INTERVAL 30 DAY)');
+            $query->isNull('r.file_id');
+            $query->fields('s', array('doc_id'));
+            $query->distinct();
+            $count = $query->countQuery()->execute()->fetchField();
+            if (count($user->boards) == 1) {
+                $board = $user->boards[0];
+                $url = "summaries/board/$board";
+            }
+            else
+                $url = 'summaries';
+            $items[] = EbmsHomePage::alert($url, 'Posted Summaries', $count);
         }
 
         // Assemble and return the box.
@@ -553,14 +611,17 @@ class EbmsHomePage {
         }
 
         // To find unseen reviews, we check:
-        //    1. is the review for a packet this user created?
+        //    1. is the review for a packet for this manager's board?
         //    2. Was the review posted since the last time the board
         //       manager looked at the packet?
         //    3. Is the packet still active?
+        // Logic changed 2014-08-08 (see OCEEBMS-184).
         $query = db_select('ebms_article_review', 'r');
         $query->fields('r', array('review_id'));
         $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
-        $query->condition('p.created_by', $this->user->uid);
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
+        $query->condition('b.board_manager', $this->user->uid);
         $query->condition('p.active_status', 'A');
         $query->where('(p.last_seen IS NULL OR r.when_posted > p.last_seen)');
         $query->distinct();

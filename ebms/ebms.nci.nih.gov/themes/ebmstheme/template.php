@@ -382,6 +382,19 @@ function ebmstheme_form_element_label($variables) {
     }
 }
 
+/* Make sure we can pick out the time portion of pair of widgets for
+ * date and time.
+ */
+function ebmstheme_textfield($variables) {
+    $parents = $variables['element']['#array_parents'];
+    if (in_array('field_datespan', $parents, true)) {
+        if (in_array('time', $parents, true)) {
+            $variables['element']['#attributes']['class'][] = 'time-subfield';
+        }
+    }
+    return theme_textfield($variables);
+}
+
 function ebmstheme_file($variables) {
     // Added by Lauren for 508
 
@@ -658,16 +671,63 @@ function preprocess_ebms_event(&$variables) {
     if ($eventType[0]['value'] != 'in_person')
         $variables['eventType'] = 'Webex/Phone Conference';
 
+    // Collect information about participants. See JIRA::OCEEBMS-8.
+    $participants = array();
     $board = field_get_items('node', $node, 'field_boards');
     $variables['boardName'] = null;
     if ($board) {
         $values = array();
         foreach ($board as $data) {
             $value = field_view_value('node', $node, 'field_boards', $data);
-            $values[] = render($value);
+            $board = render($value) . ' Board';
+            $values[] = $board;
+            $query = db_select('users', 'u')->fields('u', array('name'));
+            $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+            $query->condition('u.status', 1);
+            $query->condition('m.board_id', $data['value']);
+            $query->orderBy('u.name');
+            $members = $query->execute()->fetchCol();
+            $participants[] = _group_span_with_members($board, $members);
         }
-
         $variables['boardName'] = implode(', ', $values);
+    }
+
+    // Same thing for subgroups.
+    $subgroups = field_get_items('node', $node, 'field_subgroups');
+    if ($subgroups) {
+        foreach ($subgroups as $data) {
+            $name = htmlspecialchars(db_select('ebms_subgroup', 's')
+                ->fields('s', array('sg_name'))
+                ->condition('s.sg_id', $data['value'])
+                ->execute()
+                ->fetchfield());
+            $query = db_select('users', 'u')->fields('u', array('name'));
+            $query->join('ebms_subgroup_member', 'm', 'm.user_id = u.uid');
+            $query->condition('u.status', 1);
+            $query->condition('m.sg_id', $data['value']);
+            $query->orderBy('u.name');
+            $members = $query->execute()->fetchCol();
+            $participants[] = _group_span_with_members($name, $members);
+        }
+    }
+
+    // Same thing for subgroups.
+    $ad_hoc_groups = field_get_items('node', $node, 'field_ad_hoc_groups');
+    if ($ad_hoc_groups) {
+        foreach ($ad_hoc_groups as $data) {
+            $name = htmlspecialchars(db_select('ebms_ad_hoc_group', 'g')
+                ->fields('g', array('group_name'))
+                ->condition('g.group_id', $data['value'])
+                ->execute()
+                ->fetchfield());
+            $query = db_select('users', 'u')->fields('u', array('name'));
+            $query->join('ebms_ad_hoc_group_member', 'm', 'm.user_id = u.uid');
+            $query->condition('u.status', 1);
+            $query->condition('m.group_id', $data['value']);
+            $query->orderBy('u.name');
+            $members = $query->execute()->fetchCol();
+            $participants[] = _group_span_with_members($name, $members);
+        }
     }
 
     $eventNotes = field_get_items('node', $node, 'field_notes');
@@ -710,8 +770,10 @@ function preprocess_ebms_event(&$variables) {
     $individualNames = array();
     foreach ($users as $individual) {
         $individualNames[] = $individual->name;
+        $participants[] = htmlspecialchars($individual->name);
     }
     $variables['individuals'] = implode(', ', $individualNames);
+    $variables['participants'] = implode(', ', $participants);
 
     // build links to the various documents
     $documents = field_get_items('node', $node, 'field_documents');
@@ -724,6 +786,12 @@ function preprocess_ebms_event(&$variables) {
         }
 
     $variables['docLinks'] = $docLinks;
+}
+
+function _group_span_with_members($group, $members) {
+    $members = htmlspecialchars(implode(', ', $members));
+    $members = str_replace('"', '&#34', $members);
+    return "<span title=\"$members\">$group</span>";
 }
 
 /**

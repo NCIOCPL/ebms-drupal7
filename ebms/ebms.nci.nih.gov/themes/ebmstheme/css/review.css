@@ -1,5 +1,6 @@
 #main-right-panel { float: left; width: 710px; }
-#main-right-panel .button { float: left; margin-top: 10px; margin-left: 10px; }
+#main-right-panel .button,
+#reviewed-packet-list .button { float: left; margin-top: 10px; margin-left: 10px; }
 div.more-actions { margin: 30px 10px; }
 #left-nav .ebms_left_nav_block { padding-left: 0; }
 #left-nav .ebms_left_nav_block li {
@@ -45,6 +46,7 @@ div.review-board input { margin-left: 10px; margin-right: 10px; }
 }
 #manager-packet-table div.links a:first-child { padding-left: 0; }
 #manager-packet-table div.links a:last-child { padding-right: 0; }
+#manager-packets-table span.new { font-weight: bold; color: #a90101; }/*red; }*/
 
 #left-nav ul.ebms_left_nav_block { border: none; }
 /* #left-nav ul.ebms_left_nav_block li { border-left: 1px #696559 solid; } */
@@ -84,35 +86,58 @@ div.review-board input { margin-left: 10px; margin-right: 10px; }
 #member-review div.links { margin-left: 12px; }
 h3.pkt-rvwr-files { margin-top: 40px; border-bottom: solid 1px #696559; }
 #member-packet #reviewer-uploads td { padding-left: 5px; width: auto; }
-#pdq-ebms-edit-packet-form #edit-articles label { width: 650px; }
-#pdq-ebms-edit-packet-form #edit-articles a {
+#pdq-ebms-edit-packet-form #packet-article-block label { width: 650px; }
+#pdq-ebms-edit-packet-form #packet-article-block a {
     float: left; border: solid 1px #696559; border-radius: 7px; padding: 7px;
 }
-#pdq-ebms-edit-packet-form #edit-articles a:hover {
+#pdq-ebms-edit-packet-form #packet-article-block label a {
+    float: none; border: none; padding: 0;
+}
+#pdq-ebms-edit-packet-form #packet-article-block a:hover {
     border-color: #a90101; color: #a90101; text-decoration: none;
 }
 
-/* ************ For filter form at top ************* */
+/* ************ For filter forms at top ************* */
+#reviewed-packets-filter-form .container-inline-date .date-padding,
 #packet-filter-form .container-inline-date .date-padding {
     float: none; clear: both; padding-top: 0;
 }
+#reviewed-packets-filter-form .date-padding .description,
 #packet-filter-form .date-padding .description {
-    display: none; 
+    display: none;
 }
+#reviewed-packets-filter-form .container-inline-date .label-508,
 #packet-filter-form .container-inline-date .label-508 {
     margin-left: 10px;
     margin-top: 10px;
     margin-bottom: 10px;
 }
-#packet-filter-form #edit-pkt-scope .form-type-checkbox { 
-    display: inline; 
+#reviewed-packets-filter-form #edit-pkt-scope .form-type-checkbox,
+#packet-filter-form #edit-pkt-scope .form-type-checkbox {
+    display: inline;
 }
+#reviewed-packets-filter-form #edit-pkt-scope legend,
 #packet-filter-form #edit-pkt-scope legend {
     margin-bottom: 10px;
 }
+#reviewed-packets-filter-form .form-submit,
 #packet-filter-form .form-submit {
-    margin-top: 5px; 
+    margin-top: 5px;
 }
+#packet-filter-form fieldset#edit-topic-box { margin-top: 20px; }
+#packet-filter-form fieldset#edit-topic-box legend { margin-left: -17px; }
+
 /* ************ End filter form at top ************* */
 
 p.archived-review-header { border: 1px solid black; font-style: italic; }
+
+#reviewed-packets-filter-form { margin-bottom: 48px; }
+#reviewed-packets-filter-form h3 { margin-bottom: 18px; }
+#reviewed-packets-filter-form fieldset { margin-bottom: 24px; }
+#reviewed-packets-filter-form fieldset legend { margin-left: -17px; }
+#reviewed-packets-filter-form .form-item-packet-title-text {
+    margin-bottom: 10px;
+}
+#reviewed-packets-filter-form .button-wrapper { margin-top: 30px; }
+#reviewed-packets-filter-form #edit-date-limits { margin-bottom: 15px; }
+#reviewed-packet-list { clear: both; }

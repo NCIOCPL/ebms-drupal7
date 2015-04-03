@@ -6,12 +6,15 @@ namespace Ebms;
 
 require_once('EbmsArticle.inc');
 require_once('fpdf/fpdf.php');
-// require_once('logw.inc');
 
 // Constants for locating system dependent paths
 define ('SERVER_BASE_PATH',     100);
 define ('SERVER_SAVE_PATH',     101);
 define ('SERVER_FILES_PATH',    102);
+
+// The only Drupal file_managed files "scheme" we support
+define ('FILES_SCHEME',     'public://');
+define ('FILES_SCHEME_LEN', strlen(FILES_SCHEME));
 
 // Font info for response sheets
 define ('DFT_FONT_HEIGHT', 13);         // Default font
@@ -80,7 +83,7 @@ function getServerPath($whichPath, $jobId=null) {
  */
 function getFilesPath($scheme) {
     // Path to our Drupal site's directory for public managed files.
-    if (substr($scheme, 0, 9) == 'public://')
+    if (substr($scheme, 0, FILES_SCHEME_LEN) == FILES_SCHEME)
         return getServerPath(SERVER_FILES_PATH);
 
     throw new \Exception(
@@ -334,14 +337,65 @@ function createPrintJob() {
 }
 
 /**
+ * Check to see if a board member is registered for printing right now.
+ * He must have a row in the ebms_member_wants_print table with start_date
+ * <= now and end_dt >= now.
+ *
+ * Don't need this if printing unconditionally.
+ *
+ *  @param
+ *      Board member user ID.
+ *
+ *  @return
+ *      True = success, test with !== true
+ *      If failed, returns a message explaining the failure.
+ */
+function chkPrintMember($memberId) {
+
+    try {
+        $row = db_query('
+            SELECT start_dt, end_dt, NOW() as now
+              FROM ebms_member_wants_print
+             WHERE board_member_id = :mbrId',
+            array(':mbrId' => $memberId))->fetchAssoc();
+    }
+    catch (\Exception $e) {
+        watchdog("EbmsPrint..chkPrintMember($memberId) db error",
+                 $e->getMessage());
+        return("Database error checking member's printing record");
+    }
+
+    // Do we know anything about him?
+    if (!$row)
+        return "Board member is not registered for printing";
+
+    // Check dates
+    $startDt = $row['start_dt'];
+    $endDt   = $row['end_dt'];
+    $now     = $row['now'];
+
+    if ($startDt && $startDt > $now)
+        return ("Board member doesn't start printing until $startDt");
+    if ($endDt && $endDt < $now)
+        return ("Board member requested end printing on $endDt");
+
+    // Looks okay
+    return true;
+}
+
+/**
  * Add or update a row to the ebms_member_wants_print table.
  *
- *  @param int $memberId    Board member user ID.
- *  @param string $startDt  Start date.
- *  @param string $endDt    End date.
+ *  @param int $memberId
+ *      Board member user ID.
+ *  @param string $startDt
+ *      Start date.
+ *  @param string $endDt
+ *      End date.
  *
- *  @return                 True = success, else failure, e.g., bad date
- *                           format, missing start date.
+ *  @return
+ *      True = success, test with !== true
+ *      If failed, returns a message explaining the failure.
  */
 function setPrintMember($memberId, $startDt, $endDt=null) {
 
@@ -350,6 +404,18 @@ function setPrintMember($memberId, $startDt, $endDt=null) {
         $startDt = null;
     if (!$endDt)
         $endDt = null;
+
+    // Test format
+    if (!Util::chkISOdate($startDt))
+        return "Invalid start date '$startDt', requires valid YYYY-MM-DD";
+    if ($endDt && !Util::chkISOdate($endDt))
+        return "Invalid end date '$endDt', requires valid YYYY-MM-DD";
+
+    // Test consistency
+    if (!is_null($startDt) && !is_null($endDt)) {
+        if ($endDt <= $startDt)
+            return ("Start date ($startDt) must be before end date ($endDt)");
+    }
 
     $fields = array('board_member_id' => $memberId,
                     'start_dt'        => $startDt,
@@ -377,9 +443,10 @@ function setPrintMember($memberId, $startDt, $endDt=null) {
         $qry->execute();
     }
     catch (\Exception $e) {
-        pdq_ebms_debug("setPrintMember() failed: ", "memberId=$memberId, ".
-                "startDt=$startDt, endDt=$endDt:\n$e");
-        return false;
+        $dberr = $e->getMessage();
+        $msg = "Database error during update: $dberr";
+        watchdog('setPrintMember', $msg);
+        return $msg;
     }
     return true;
 }
@@ -547,7 +614,7 @@ class EbmsPrintJob {
      */
     function getFullPath($uri, $filename) {
 
-        // Find the scheme
+        // Find the fully qualified path for this uri
         $dir = getFilesPath($uri);
         return "$dir/$filename";
     }
@@ -915,15 +982,14 @@ class EbmsPrintJob {
         $qry->join('ebms_member_wants_print', 'mwp',
                    'rev.reviewer_id = mwp.board_member_id');
         $qry->addField('pkt', 'packet_id');
+        $qry->distinct();
         $qry->condition('top.board_id', $this->board_id, '=')
          ->condition('pkt.created_at', $this->packet_start_dt, '>=')
          ->condition('pkt.created_at', $this->packet_end_dt, '<')
          ->condition('rev.reviewer_id', $memberId, '=')
          ->condition('pkt.active_status', 'A', '=')
-         ->condition('mwp.start_dt', 'pkt.created_at', '<=')
-         ->condition(
-            db_or()->isNull('mwp.end_dt')
-                   ->condition('mwp.end_dt', 'pkt.created_at', '>'));
+         ->condition('mwp.start_dt', 'pkt.created_at', '<=');
+
         if (!$always)
             $qry->condition('pkt.packet_id', $subqry, 'NOT IN');
         $qry->orderBy('pkt.packet_id');
@@ -988,7 +1054,7 @@ class EbmsPrintJob {
         $qry->fields('psum', array('doc_id'));
         $qry->fields('doc', array('description'));
         $qry->fields('fman',
-                array('fid', 'filename', 'uri', 'filemime', 'filesize'));
+                array('fid', 'uri', 'filemime', 'filesize'));
         $qry->condition('psum.packet_id', $packetId, '=');
 
         try {
@@ -1002,13 +1068,15 @@ class EbmsPrintJob {
         // There should be exactly one but I'm taking no chances
         foreach ($rows as $row) {
 
+            // Extract true filename from uri
+            $filename = substr($row->uri, FILES_SCHEME_LEN);
+
             // Construct an object to represent this file
             $epf = new EbmsPrintFile();
             $epf->boardMemberId = $memberId;
             $epf->drupalFileId  = $row->fid;
             $epf->purpose       = 'summary';
-            $epf->path          = $this->getFullPath($row->uri,
-                                                     $row->filename);
+            $epf->path          = $this->getFullPath($row->uri, $filename);
             $epf->description   = $row->description;
             $epf->filesize      = $row->filesize;
 
@@ -1018,7 +1086,7 @@ class EbmsPrintJob {
             if (is_null($epf->filetype) || (!in_array($epf->filetype,
                             array('word', 'pdf')))) {
                 $this->reportError(
-                    "Summary file named \"{$row->filename}\" in packet " .
+                    "Summary file named \"$filename\" in packet " .
                     "$packetId has an unknown or unsupported file type.  " .
                     "One of .doc, .docx, .rtf, or .pdf is required.  " .
                     "Please replace this file before printing.");
@@ -1041,7 +1109,7 @@ class EbmsPrintJob {
         $qry->join('file_managed', 'fman', 'art.full_text_id = fman.fid');
         $qry->fields('art', array('article_id', 'article_title'));
         $qry->fields('fman',
-                     array('fid', 'filename', 'uri', 'filemime', 'filesize'));
+                     array('fid', 'uri', 'filemime', 'filesize'));
         $qry->condition('pktart.packet_id', $packetId, '=')
             ->condition('pktart.drop_flag', 0, '=')
             ->isNotNull('art.full_text_id');
@@ -1068,13 +1136,16 @@ class EbmsPrintJob {
         // Construct an EbmsPrintFile object for each one found
         foreach ($rows as $row) {
 
+            // Extract true filename from uri
+            $filename = substr($row->uri, FILES_SCHEME_LEN);
+
+            // Initialize object
             $epf = new EbmsPrintFile();
             $epf->boardMemberId = $memberId;
             $epf->drupalFileId  = $row->fid;
             $epf->ebmsArticleId = $row->article_id;
             $epf->purpose       = 'article';
-            $epf->path          = $this->getFullPath($row->uri,
-                                                     $row->filename);
+            $epf->path          = $this->getFullPath($row->uri, $filename);
             $epf->filesize      = $row->filesize;
             $epf->numPages      = estimatePageCount($epf->path,
                                                     $epf->filesize);
@@ -1083,7 +1154,7 @@ class EbmsPrintJob {
 
             if (is_null($epf->filetype) || $epf->filetype != 'pdf') {
                 $this->reportError(
-                    "Full text file named \"{$row->filename}\" for article " .
+                    "Full text file named \"$filename\" for article " .
                     "with EBMS ID={$row->article_id} in packet $packetId " .
                     "has an unknown or unsupported file type.  PDF type file " .
                     "is required.  Please replace this file before printing.");
@@ -1191,18 +1262,22 @@ class EbmsPrintJob {
 
         $authorStr = '';
         $authorCnt = 0;
-        foreach ($authors as $authObj) {
-            if ($authorCnt > 0)
-                $authorStr .= '; ';
-            if ($authObj->collective_name)
-                $authorStr = $authObj->collective_name;
-            else {
-                $authorStr .= $authObj->last_name;
-                $authorStr .= ' ';
-                $authorStr .= $authObj->initials;
+        if (!empty($authors)) {
+            foreach ($authors as $authObj) {
+                if ($authorCnt > 0)
+                    $authorStr .= '; ';
+                if ($authObj->collective_name)
+                    $authorStr = $authObj->collective_name;
+                else {
+                    $authorStr .= $authObj->last_name;
+                    $authorStr .= ' ';
+                    $authorStr .= $authObj->initials;
+                }
+                ++$authorCnt;
             }
-            ++$authorCnt;
         }
+        else
+            $authorStr = '[No authors listed]';
 
         // Get the name(s) of the topic(s)
         $topicList = $artObj->getTopics();
@@ -1975,6 +2050,15 @@ function runPrintJob() {
 
             // If we're printing one board member's package, we already
             //  know who it is.
+
+            // Make sure he wants printing.
+            $rc = chkPrintMember($pj->board_member_id);
+            if ($rc !== true) {
+                $pj->reportError($rc);
+                break;
+            }
+
+
             // Find his package, if any, then his docs, if any
             // Get the packets for him within the packet print dates
             // But don't get anything he's already seen.

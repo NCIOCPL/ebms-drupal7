@@ -2,6 +2,8 @@
 
 // $Id$
 
+define('VIEW_ALL', 'View All');     // User choice for all on one page
+
 /**
  * @file
  *
@@ -152,12 +154,12 @@ class EbmsSearch {
         $show_pages_link = '';
         if (isset($this->parms['pager']) && $this->parms['pager'] == 'off') {
             $pager = false;
-            if ($per_page != 'View All' && $per_page < $count) {
+            if ($per_page != VIEW_ALL && $per_page < $count) {
                 $url = EbmsSearch::$url . '/' . $this->search_id;
                 $show_pages_link = l('VIEW PAGES', $url);
             }
         }
-        if (!$pager || $per_page == 'View All')
+        if (!$pager || $per_page == VIEW_ALL)
             $per_page = $count;
         if ($count > $per_page)
             $query = $query->extend('PagerDefault')->limit($per_page);
@@ -379,25 +381,24 @@ class EbmsSearchSpec {
         $committee_decision = '',
         $core_journals = '',
         $unpublished = 1,
+        $only_unpublished = 0,
         $not_listed = 1,
+        $only_not_listed = 0,
         $rejected = 1,
+        $only_rejected = 0,
         $summary_topics_added = 0,
         $reviewer = 0,
         $response = 0,
         $decision = 0,
         $tag = 0,
-        $comment_added_start = array('year' => 0, 'month' => 0, 'day' => 0),
-        $comment_added_end = array('year' => 0, 'month' => 0, 'day' => 0),
-        $tag_added_start = array('year' => 0, 'month' => 0, 'day' => 0),
-        $tag_added_end = array('year' => 0, 'month' => 0, 'day' => 0),
-        $input_start = array('year' => 0, 'month' => 0, 'day' => 0),
-        $input_end = array('year' => 0, 'month' => 0, 'day' => 0),
-        $modified_start = array('year' => 0, 'month' => 0, 'day' => 0),
-        $modified_end = array('year' => 0, 'month' => 0, 'day' => 0),
-        $use_comment_date_range = 0,
-        $use_tag_date_range = 0,
-        $use_input_date_range = 0,
-        $use_modified_date_range = 0,
+        $comment_added_start = '',
+        $comment_added_end = '',
+        $tag_added_start = '',
+        $tag_added_end = '',
+        $input_start = '',
+        $input_end = '',
+        $modified_start = '',
+        $modified_end = '',
         $sort_by = 'CMS ID#',
         $format = 'Brief',
         $items_per_page = 10;
@@ -423,6 +424,9 @@ class EbmsSearchSpec {
             $this->unpublished = $spec['unpublished'];
             $this->not_listed = $spec['not-listed'];
             $this->rejected = $spec['rejected'];
+            $this->only_unpublished = $spec['only-unpublished'];
+            $this->only_not_listed = $spec['only-not-listed'];
+            $this->only_rejected = $spec['only-rejected'];
             $this->summary_topics_added = $spec['summary-topics-added'];
             $this->topic_connector = $spec['topic-logic'];
             $this->pmid = $spec['pmid'];
@@ -438,21 +442,41 @@ class EbmsSearchSpec {
             $this->response = $spec['response'];
             $this->decision = $spec['decision'];
             $this->tag = $spec['tag'];
-            $this->comment_added_start = $spec['comment-added-start'];
-            $this->comment_added_end = $spec['comment-added-end'];
-            $this->tag_added_start = $spec['tag-added-start'];
-            $this->tag_added_end = $spec['tag-added-end'];
-            $this->input_start = $spec['input-start'];
-            $this->input_end = $spec['input-end'];
-            $this->modified_start = $spec['modified-start'];
-            $this->modified_end = $spec['modified-end'];
-            $this->use_comment_date_range = $spec['use-comment-date-range'];
-            $this->use_tag_date_range = $spec['use-tag-date-range'];
-            $this->use_input_date_range = $spec['use-input-date-range'];
-            $this->use_modified_date_range = $spec['use-mod-date-range'];
+            $this->comment_added_start = $spec['comment-added-start']['date'];
+            $this->comment_added_end = $spec['comment-added-end']['date'];
+            $this->tag_added_start = $spec['tag-added-start']['date'];
+            $this->tag_added_end = $spec['tag-added-end']['date'];
+            $this->input_start = $spec['input-start']['date'];
+            $this->input_end = $spec['input-end']['date'];
+            $this->modified_start = $spec['modified-start']['date'];
+            $this->modified_end = $spec['modified-end']['date'];
             $this->sort_by = $spec['sort-by'];
             //$this->format = $spec['format'];
             $this->items_per_page = $spec['items-per-page'];
+            if ($this->comment_added_start)
+                $this->comment_added_start =
+                    Ebms\Util::fill_in_date($this->comment_added_start);
+            if ($this->comment_added_end)
+                $this->comment_added_end =
+                    Ebms\Util::fill_in_date($this->comment_added_end, true);
+            if ($this->tag_added_start)
+                $this->tag_added_start =
+                    Ebms\Util::fill_in_date($this->tag_added_start);
+            if ($this->tag_added_end)
+                $this->tag_added_end =
+                    Ebms\Util::fill_in_date($this->tag_added_end, true);
+            if ($this->input_start)
+                $this->input_start =
+                    Ebms\Util::fill_in_date($this->input_start);
+            if ($this->input_end)
+                $this->input_end =
+                    Ebms\Util::fill_in_date($this->input_end, true);
+            if ($this->modified_start)
+                $this->modified_start =
+                    Ebms\Util::fill_in_date($this->modified_start);
+            if ($this->modified_end)
+                $this->modified_end =
+                    Ebms\Util::fill_in_date($this->modified_end, true);
         }
     }
 }
@@ -496,13 +520,15 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
     // with the ones that widen the net rather than narrow it (for
     // example, 'unpublished' or 'not-listed' or 'rejected').
     if (!$have_value) {
-        $simple_fields = array('pmid', 'cms-id', 'author', 'title', 'journal',
-                         'comments', 'publication-year', 'review-cycle',
-                         'reviewer', 'response', 'decision', 'tag',
-                         'fyi-citation', 'nci-reviewer-decision',
-                         'committee-decision', 'full-text-retrieved',
-                         // 'core-journals', XXX not implemeted yet
-                         'summary-topics-added',
+        $simple_fields = array(
+            'pmid', 'cms-id', 'author', 'title', 'journal',
+            'comments', 'publication-year', 'review-cycle',
+            'reviewer', 'response', 'decision', 'tag',
+            'fyi-citation', 'nci-reviewer-decision',
+            'committee-decision', 'full-text-retrieved',
+            // 'core-journals', XXX not implemeted yet
+            'summary-topics-added',
+            'only-unpublished', 'only-rejected', 'only-not-listed',
         );
         foreach ($simple_fields as $field) {
             if ($values[$field]) {
@@ -513,27 +539,19 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
     }
 
     // Check the date fields.
-    $date_fields = array(
-        'comment-added' => 'use-comment-date-range',
-        'tag-added' => 'use-tag-date-range',
-        'input' => 'use-input-date-range',
-        'modified' => 'use-mod-date-range',
-    );
-    $message = 'Date range must be specified with complete dates.';
-    foreach ($date_fields as $field => $flag_field) {
-        $start_name = $field . '-start';
-        $start_date = $values[$start_name];
-        if ($start_date['year'])
+    $date_fields = array('comment-added', 'tag-added', 'input', 'modified');
+    $message = 'Start date cannot be earlier than end date.';
+    foreach ($date_fields as $date_field) {
+        $start_name ="$date_field-start";
+        $start_date = $values[$start_name]['date'];
+        $end_name = "$date_field-end";
+        $end_date = $values[$end_name]['date'];
+        if ($start_date || $end_date)
             $have_value = true;
-        if ($values[$flag_field]) {
-            $end_name = $field . '-end';
-            $end_date = $values[$end_name];
-            if (!$start_date['day'])
+        if ($start_date && $end_date) {
+            $end_date = Ebms\Util::fill_in_date($end_date);
+            if (strcmp($start_date, $end_date) > 0)
                 form_set_error($start_name, $message);
-            elseif (!$end_date['day'])
-                form_set_error($start_name, $message);
-            else
-                pdq_ebms_check_date_range($start_name, $start_date, $end_date);
         }
     }
 
@@ -541,6 +559,20 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
     if (!$have_value)
         form_set_error('pmid',
             'At least one (non-board) search criterion is required.');
+
+    // If requested that display options be saved
+    if (!empty($values['save-as-default'])) {
+        // Convert string to integer representation
+        $per_page = $values['items-per-page'];
+        if ($per_page == VIEW_ALL)
+            $per_page = 0;
+
+        global $user;
+        $items = array(
+            'dft_cite_search_sort_key' => $values['sort-by'],
+            'dft_cite_search_items_per_page' => $per_page);
+        Ebms\Util::set_custom_user_field_values($items, $user->uid);
+    }
 }
 
 /**
@@ -564,6 +596,24 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     // Get the default values, possibly drawn from a previous search.
     $defaults = new EbmsSearchSpec($search_id);
 
+    // For new searches only, override with any user specific defaults
+    if (!$search_id) {
+        // Sorting
+        $dft = Ebms\Util::get_custom_user_field_value(
+                'dft_cite_search_sort_key');
+        if (!is_null($dft))
+            $defaults->sort_by = $dft;
+
+        // Items per page, 0 requests all citations
+        $dft = Ebms\Util::get_custom_user_field_value(
+                    'dft_cite_search_items_per_page');
+        if (!is_null($dft))
+            if ($dft == 0)
+                $defaults->items_per_page = VIEW_ALL;
+            else
+                $defaults->items_per_page = $dft;
+    }
+
     // Find out which board are already selected.
     $checked_boards = $defaults->boards;
     if (isset($form_state['values'])) {
@@ -572,6 +622,21 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             if ($val)
                 $checked_boards[] = $val;
     }
+
+    /* Users changed their minds and decided against this.
+     * I left it in but commented out in case they change again.
+     * (AHM) 2014-09-16
+    // If none selected, establish a default
+    // "else" forces emptying of topics if user de-selected all boards
+    // No reason for user to do that but behave properly if they do
+    else if (empty($checked_boards)) {
+        $checked_boards = array();
+        $dftBoard = \Ebms\Util::get_user_default_board();
+        if ($dftBoard)
+            $checked_boards[] = $dftBoard;
+        $defaults->boards = $checked_boards;
+    }
+    */
 
     // Build the topics picklist, based on which boards are selected.
     $topics = array();
@@ -869,42 +934,10 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#attributes' => array('class' => array('fixed-width')),
                 '#default_value' => $defaults->comments,
             ),
-            'comment-added' => array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'class' => array('date-with-range'),
-                ),
-                'comment-added-start' => array(
-                    '#type' => 'date',
-                    '#element_validate' => array('pdq_ebms_date_validate'),
-                    '#default_value' => $defaults->comment_added_start,
-                    '#pre_render' => array('pdq_ebms_fix_date'),
-                ),
-                'use-comment-date-range' => array(
-                    '#type' => 'checkbox',
-                    '#title' => 'RANGE',
-                    '#prefix' => '<div class="use-range-checkbox">',
-                    '#suffix' => '</div>',
-                    '#default_value' => $defaults->use_comment_date_range,
-                ),
-                'comment-added-label' => array(
-                    '#type' => 'markup',
-                    '#markup' => '<span>DATE COMMENT ADDED</span>',
-                ),
-            ),
-            'comment-added-end' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $defaults->comment_added_end,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-                '#states' => array(
-                    'visible' => array(
-                        '#edit-use-comment-date-range' => array(
-                            'checked' => true
-                        ),
-                    ),
-                ),
-            ),
+            'comment-added' =>
+            Ebms\Util::date_range_field('Date Comment Added', 'comment-added',
+                                        $defaults->comment_added_start,
+                                        $defaults->comment_added_end),
             'tag' => array(
                 '#type' => 'select',
                 '#title' => 'TAG',
@@ -913,42 +946,10 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#options' => $tags,
                 '#default_value' => $defaults->tag,
             ),
-            'tag-added' => array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'class' => array('date-with-range'),
-                ),
-                'tag-added-start' => array(
-                    '#type' => 'date',
-                    '#element_validate' => array('pdq_ebms_date_validate'),
-                    '#default_value' => $defaults->tag_added_start,
-                    '#pre_render' => array('pdq_ebms_fix_date'),
-                ),
-                'use-tag-date-range' => array(
-                    '#type' => 'checkbox',
-                    '#title' => 'RANGE',
-                    '#prefix' => '<div class="use-range-checkbox">',
-                    '#suffix' => '</div>',
-                    '#default_value' => $defaults->use_tag_date_range,
-                ),
-                'tag-added-label' => array(
-                    '#type' => 'markup',
-                    '#markup' => '<span>DATE TAG ADDED</span>',
-                ),
-            ),
-            'tag-added-end' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $defaults->tag_added_end,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-                '#states' => array(
-                    'visible' => array(
-                        '#edit-use-tag-date-range' => array(
-                            'checked' => true
-                        ),
-                    ),
-                ),
-            ),
+            'tag-added' =>
+            Ebms\Util::date_range_field('Date Tag Added', 'tag-added',
+                                        $defaults->tag_added_start,
+                                        $defaults->tag_added_end),
             'core-journals' => array(
                 '#type' => 'radios',
                 '#title' => 'CORE JOURNALS',
@@ -970,98 +971,55 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             '#collapsible' => true,
             '#collapsed' => true,
             '#attributes' => array('class' => array('clearfix')),
-            'input' => array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'class' => array('date-with-range'),
-                ),
-                'input-start' => array(
-                    '#type' => 'date',
-                    '#element_validate' => array('pdq_ebms_date_validate'),
-                    '#default_value' => $defaults->input_start,
-                    '#pre_render' => array('pdq_ebms_fix_date'),
-                ),
-                'use-input-date-range' => array(
-                    '#type' => 'checkbox',
-                    '#title' => 'RANGE',
-                    '#prefix' => '<div class="use-range-checkbox">',
-                    '#suffix' => '</div>',
-                    '#default_value' => $defaults->use_input_date_range,
-                ),
-                'comment-added-label' => array(
-                    '#type' => 'markup',
-                    '#markup' => '<span>INPUT DATE</span>',
-                ),
-            ),
-            'input-end' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $defaults->input_end,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-                '#states' => array(
-                    'visible' => array(
-                        '#edit-use-input-date-range' => array(
-                            'checked' => true
-                        ),
-                    ),
-                ),
-            ),
-            'modified' => array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'class' => array('date-with-range'),
-                ),
-                'modified-start' => array(
-                    '#type' => 'date',
-                    '#element_validate' => array('pdq_ebms_date_validate'),
-                    '#default_value' => $defaults->modified_start,
-                    '#pre_render' => array('pdq_ebms_fix_date'),
-                ),
-                'use-mod-date-range' => array(
-                    '#type' => 'checkbox',
-                    '#title' => 'RANGE',
-                    '#prefix' => '<div class="use-range-checkbox">',
-                    '#suffix' => '</div>',
-                    '#default_value' => $defaults->use_modified_date_range,
-                ),
-                'comment-added-label' => array(
-                    '#type' => 'markup',
-                    '#markup' => '<span>MODIFIED DATE</span>',
-                ),
-            ),
-            'modified-end' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $defaults->modified_end,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-                '#states' => array(
-                    'visible' => array(
-                        '#edit-use-mod-date-range' => array(
-                            'checked' => true
-                        ),
-                    ),
-                ),
-            ),
+            'input' =>
+            Ebms\Util::date_range_field('Input Date', 'input',
+                                        $defaults->input_start,
+                                        $defaults->input_end),
+            'modified' =>
+            Ebms\Util::date_range_field('Modified Date', 'modified',
+                                        $defaults->modified_start,
+                                        $defaults->modified_end),
             'unpublished' => array(
                 '#type' => 'checkbox',
                 '#title' => 'INCLUDE UNPUBLISHED',
-                '#prefix' => '<div class="checkbox-line">',
+                '#prefix' => '<div class="checkbox-line early-box">',
                 '#suffix' => '</div>',
                 '#default_value' => $defaults->unpublished,
+            ),
+            'only-unpublished' => array(
+                '#type' => 'checkbox',
+                '#title' => 'UNPUBLISHED ONLY',
+                '#prefix' => '<div class="checkbox-line only-box">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->only_unpublished,
             ),
             'not-listed' => array(
                 '#type' => 'checkbox',
                 '#title' => 'INCLUDE NOT LISTED',
-                '#prefix' => '<div class="checkbox-line">',
+                '#prefix' => '<div class="checkbox-line early-box">',
                 '#suffix' => '</div>',
                 '#default_value' => $defaults->not_listed,
+            ),
+            'only-not-listed' => array(
+                '#type' => 'checkbox',
+                '#title' => 'NOT LISTED ONLY',
+                '#prefix' => '<div class="checkbox-line only-box">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->only_not_listed,
             ),
             'rejected' => array(
                 '#type' => 'checkbox',
                 '#title' => 'INCLUDE REJECTED',
-                '#prefix' => '<div class="checkbox-line">',
+                '#prefix' => '<div class="checkbox-line early-box">',
                 '#suffix' => '</div>',
                 '#default_value' => $defaults->rejected,
+            ),
+            'only-rejected' => array(
+                '#type' => 'checkbox',
+                '#title' => 'REJECTED ONLY',
+                '#prefix' => '<div class="checkbox-line only-box">',
+                '#suffix' => '</div>',
+                '#default_value' => $defaults->only_rejected,
             ),
             'summary-topics-added' => array(
                 '#type' => 'checkbox',
@@ -1091,6 +1049,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                         'Title',
                         'Author',
                         'Journal',
+                        'Core Journals',
                         //'Publication Date',
                     )
                 ),
@@ -1120,9 +1079,14 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#title_display' => 'after',
                 '#attributes' => array('class' => array('fixed-width')),
                 '#options' => drupal_map_assoc(
-                    array('10', '25', '50', 'View All')
+                    array('10', '25', '50', VIEW_ALL)
                 ),
                 '#default_value' => $defaults->items_per_page,
+            ),
+            'save-as-default' => array(
+                '#type' => 'checkbox',
+                '#title' => t('SAVE AS DEFAULT'),
+                'checked' => '',
             ),
         ),
 
@@ -1181,24 +1145,4 @@ function pdq_ebms_fix_date($element) {
     array_unshift($element['month']['#options'], 'MONTH');
     array_unshift($element['day']['#options'], 'DAY');
     return $element;
-}
-
-/**
- * Override Drupal's default date field validation.  It's OK if the
- * user specifies incomplete values, as long as no fields which are
- * more granular are specified when less granular fields are not.
- * For example, you can't search for everything entered on April 1,
- * regardless of which year.
- */
-function pdq_ebms_date_validate($element, &$form_state, $form) {
-    $y = $element['#value']['year'];
-    $m = $element['#value']['month'];
-    $d = $element['#value']['day'];
-    if ($y && $m && $d && !checkdate($m, $d, $y))
-        form_error($element, 'The specified date is invalid.');
-    elseif ($m && !$y)
-        form_error($element, 'Month cannot be specified without year.');
-    elseif ($d && !$m)
-        form_error($element,
-            'Day cannot be specified without month and year.');
 }

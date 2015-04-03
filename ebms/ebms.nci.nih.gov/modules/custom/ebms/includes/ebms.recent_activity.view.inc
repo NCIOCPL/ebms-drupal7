@@ -263,6 +263,46 @@ $handler->display->display_options['header']['area_text_custom']['table'] = 'vie
 $handler->display->display_options['header']['area_text_custom']['field'] = 'area_text_custom';
 $handler->display->display_options['header']['area_text_custom']['content'] = '<h2>Recent Literature Activity</h2>
 <p>Literature activity from the last 60 days</p>';
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['empty'] = TRUE;
+$handler->display->display_options['empty']['area']['content'] = 'No activity within the past 30 days.';
+$handler->display->display_options['empty']['area']['format'] = 'filtered_html';
+$handler->display->display_options['defaults']['filter_groups'] = FALSE;
+$handler->display->display_options['defaults']['filters'] = FALSE;
+/* Filter criterion: Message: Type */
+$handler->display->display_options['filters']['type']['id'] = 'type';
+$handler->display->display_options['filters']['type']['table'] = 'message';
+$handler->display->display_options['filters']['type']['field'] = 'type';
+$handler->display->display_options['filters']['type']['value'] = array(
+  'activity_new_articles' => 'activity_new_articles',
+  'activity_new_packet' => 'activity_new_packet',
+);
+$handler->display->display_options['filters']['type']['expose']['operator_id'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['label'] = 'Message type';
+$handler->display->display_options['filters']['type']['expose']['operator'] = 'type_op';
+$handler->display->display_options['filters']['type']['expose']['identifier'] = 'type';
+$handler->display->display_options['filters']['type']['expose']['remember_roles'] = array(
+  2 => '2',
+  9 => 0,
+  1 => 0,
+  5 => 0,
+  4 => 0,
+  6 => 0,
+  8 => 0,
+  7 => 0,
+  3 => 0,
+);
+/* Filter criterion: Message: Timestamp */
+$handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['table'] = 'message';
+$handler->display->display_options['filters']['timestamp']['field'] = 'timestamp';
+$handler->display->display_options['filters']['timestamp']['operator'] = '>=';
+$handler->display->display_options['filters']['timestamp']['value']['value'] = '-30 days';
+$handler->display->display_options['filters']['timestamp']['value']['type'] = 'offset';
 $handler->display->display_options['path'] = 'recent-literature-activity';
 
 /* Display: Literature Activity Block */
@@ -280,6 +320,14 @@ $handler->display->display_options['defaults']['pager'] = FALSE;
 $handler->display->display_options['pager']['type'] = 'some';
 $handler->display->display_options['pager']['options']['items_per_page'] = '5';
 $handler->display->display_options['pager']['options']['offset'] = '0';
+$handler->display->display_options['defaults']['empty'] = FALSE;
+/* No results behavior: Global: Text area */
+$handler->display->display_options['empty']['area']['id'] = 'area';
+$handler->display->display_options['empty']['area']['table'] = 'views';
+$handler->display->display_options['empty']['area']['field'] = 'area';
+$handler->display->display_options['empty']['area']['empty'] = TRUE;
+$handler->display->display_options['empty']['area']['content'] = 'No activity within the past 30 days.';
+$handler->display->display_options['empty']['area']['format'] = 'filtered_html';
 $handler->display->display_options['defaults']['fields'] = FALSE;
 /* Field: Message: Timestamp */
 $handler->display->display_options['fields']['timestamp']['id'] = 'timestamp';
@@ -333,7 +381,7 @@ $handler->display->display_options['filters']['timestamp']['id'] = 'timestamp';
 $handler->display->display_options['filters']['timestamp']['table'] = 'message';
 $handler->display->display_options['filters']['timestamp']['field'] = 'timestamp';
 $handler->display->display_options['filters']['timestamp']['operator'] = '>=';
-$handler->display->display_options['filters']['timestamp']['value']['value'] = '-60 days';
+$handler->display->display_options['filters']['timestamp']['value']['value'] = '-30 days';
 $handler->display->display_options['filters']['timestamp']['value']['type'] = 'offset';
 
 /* Display: Document Activity Page */

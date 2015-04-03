@@ -1,4 +1,4 @@
-/* 
+/*
     Document   : calendar
     Created on : Nov 21, 2012, 4:56:47 PM
     Author     : youngdr
@@ -223,3 +223,9 @@ body.page-home div#calendar-enclosure div.mini-day-off a {
 body.page-home div#calendar-enclosure div.mini-day-on a {
    text-decoration: underline;
 }
+.cal-event-filter-box a { position: relative; }
+.cal-event-filter-box a:hover, .cal-event-filter-box a:focus,
+.cal-event-filter-box a:hover span, .cal-event-filter-box a:focus span {
+    text-decoration: none;
+}
+.cal-event-filter-box a span { position: relative; top: -5px; left: 2px; }

@@ -20,6 +20,11 @@ function getSearchQuery($json) {
     $srch = new EbmsSearch($json);
 
     // Try all of the search criteria
+    // Some of the later criteria filters depend on work done in previous
+    //  filters.  Some will check the results of earlier filters and short
+    //  circuit tests that are already done as side effects of earlier
+    //  filters.
+    // Do not change the order of filters without considering this issue.
     $srch->srchIds();
     $srch->srchStates();
     $srch->srchTopicsBoards();
@@ -41,7 +46,9 @@ function getSearchQuery($json) {
     // Sort them
     $srch->srchOrder();
 
-    // XXX - Should we limit results?
+    // XXX - Should we limit results to speed searching?
+    // Users preferred unrestricted searching, accepting the performance
+    //  penalty for difficult cases.
     // $srch->qry->range(0,500);
 
 // DEBUG
@@ -65,6 +72,8 @@ class EbmsSearch {
         $spec;          // $json decoded into an array
 
     private
+        $delta,         // Used to create unique table aliases
+        $stateFilters,  // Boolean: did we use states in the query?
         $topics,        // The topic IDs for this search, if any.
         $boards,        // The board IDs for this search, if any.
         $needBoards,    // True=Need to qualify results by board.
@@ -75,6 +84,13 @@ class EbmsSearch {
                         // in an active status row to count).
 
     function __construct($json) {
+
+        // Make sure our table aliases are distinct.
+        $this->delta = 1;
+
+        // Remember if we've done filtering by state.
+        $this->stateFilters = false;
+
         // Convert any utf-8 to ASCII using the same algorithm used
         //  when we constructed index strings.
         $json = Util::utf8ToAscii($json);
@@ -189,17 +205,33 @@ class EbmsSearch {
      * If no states later than Published are specified, but the user
      * checks any of the boxes to include articles which have states
      * earlier than Published, even if they don't also have the Published
-     * state, we broaden the net to add those articles, but still including
+     * state, we broaden the net to add those articles, but still include
      * the ones that do have the Published state.  In other words,
      * specifying later states narrows the search, and specifying only
      * earlier states broadens the search.
      *
      * The states we're looking for are collected in the constructor.
+     *
+     * 2014-08-01 (OCEEBMS-203): we've added options for filtering
+     * down to just articles whose current states are early states.
+     * See details at the top of this method.
      */
     function srchStates() {
 
-        // Use a counter to distinguish table aliases from each other.
-        $delta = 1;
+        // Librarians can now limit the search results to include only
+        //  articles which have been rejected at an early stage, either
+        //  by the NOT list, or by the librarian initial review, or
+        //  articles that have not yet been reviewed.
+        if (!empty($this->spec['only-not-listed']))
+            $this->matchEarlyStates('RejectJournalTitle');
+        elseif (!empty($this->spec['only-rejected']))
+            $this->matchEarlyStates('RejectInitReview');
+        elseif (!empty($this->spec['only-unpublished']))
+            $this->matchEarlyStates();
+
+        // If the matchEarlyStates() method set stateFilters, we're done here.
+        if ($this->stateFilters)
+            return;
 
         // Look for the later states first.  The reason for doing it this
         // way is that the downstream (that is, after Published) status
@@ -210,66 +242,8 @@ class EbmsSearch {
 
             // Each state mentioned must be present.
             foreach ($this->laterStates as $stateId) {
-
-                // Match up the state with the topics named.
-                if (!empty($this->topics)) {
-
-                    // Handle the cases where a single join will suffice.
-                    $logic = $this->spec['topic-logic'];
-                    if ($logic == 'OR' || count($this->topics) == 1) {
-                        $alias = 'state_alias_' . $delta++;
-                        $this->qry->join('ebms_article_state', $alias,
-                            "$alias.article_id = art.article_id");
-                        $this->qry->condition("$alias.state_id", $stateId);
-                        if ($stateId != $this->fyi)
-                            $this->qry->condition("$alias.active_status", 'A');
-                        if (count($this->topics) == 1)
-                            $this->qry->condition("$alias.topic_id",
-                                $this->topics[0]);
-                        else
-                            $this->qry->condition("$alias.topic_id",
-                                $this->topics, 'IN');
-                    }
-
-                    // We're AND-ing more than one topic; separate joins.
-                    else {
-                        foreach ($this->topics as $topicId) {
-                            $alias = 'state_alias_' . $delta++;
-                            $this->qry->join('ebms_article_state', $alias,
-                                "$alias.article_id = art.article_id");
-                            $this->qry->condition("$alias.state_id", $stateId);
-                            $this->qry->condition("$alias.topic_id", $topicId);
-                            if ($stateId != $this->fyi)
-                                $this->qry->condition("$alias.active_status",
-                                    'A');
-                        }
-                    }
-                }
-
-                // Need to add board qualifications?
-                if ($this->needBoards) {
-
-                    // Boards are always ANDed.
-                    foreach ($this->boards as $boardId) {
-                        $alias = 'state_alias_' . $delta++;
-                        $this->qry->join('ebms_article_state', $alias,
-                            "$alias.article_id = art.article_id");
-                        $this->qry->condition("$alias.state_id", $stateId);
-                        $this->qry->condition("$alias.board_id", $boardId);
-                        if ($stateId != $this->fyi)
-                            $this->qry->condition("$alias.active_status", 'A');
-                    }
-                }
-
-                // Simple case: no topics or boards specified.
-                else {
-                    $alias = 'state_alias_' . $delta++;
-                    $this->qry->join('ebms_article_state', $alias,
-                        "$alias.article_id = art.article_id");
-                    $this->qry->condition("$alias.state_id", $stateId);
-                    if ($stateId != $this->fyi)
-                        $this->qry->condition("$alias.active_status", 'A');
-                }
+                $stateFilter = $stateId == $this->fyi ? 'any' : 'active';
+                $this->matchStates($stateId, $stateFilter);
             }
         }
 
@@ -277,70 +251,149 @@ class EbmsSearch {
         // later states were asked for.
         elseif (!empty($this->earlyStates)) {
 
-            // Decide whether the state condition is an IN or =
+            // Optimize for the case of a single state.
             $states = $this->earlyStates;
-            if (count($this->earlyStates) > 1) {
+            if (count($this->earlyStates) == 1)
                 $states = $states[0];
-                $op = '=';
+
+            // For these we check all the states at once.
+            $this->matchStates($states, 'active');
+        }
+    }
+
+    /**
+     * New method to support OCEEBMS-203.
+     *
+     * Called by srchStates().
+     *
+     * The librarians can now search for only articles which have
+     * early states. If a state name is passed, we match only
+     * articles with that state. Otherwise, we match any state
+     * which is earlier than 'Published'.  If topics or boards
+     * were selected, we handle narrowing by those criteria, too.
+     *
+     * The principal difference between what we're doing here
+     * and state filtering we do elsewhere, is that we're only
+     * accepting article states which are the current state for
+     * the article.
+     */
+    function matchEarlyStates($state_name='') {
+
+        // Are we looking for one state or multiple?
+        if ($state_name) {
+            $states = $this->stateMap[$state_name];
+        }
+        else {
+            $pub_sequence = db_select('ebms_article_state_type', 't')
+                ->fields('t', array('sequence'))
+                ->condition('t.state_text_id', 'Published')
+                ->execute()
+                ->fetchField();
+            $states = db_select('ebms_article_state_type', 't')
+                ->fields('t', array('state_id'))
+                ->condition('t.sequence', $pub_sequence, '<')
+                ->execute()
+                ->fetchCol();
+        }
+
+        // Add the state condition to the query.
+        $this->matchStates($states, 'current');
+    }
+
+    /**
+     * Common code to check for specified article states. Called
+     * separately for later (post-published) states, where all of the
+     * states specified must be present, earlier (pre-published) states,
+     * where the presence any of the states specified cause an article
+     * to be included, and a special set of new searches, which find
+     * articles with an early state as the current (not just active)
+     * state.
+     *
+     *  @param  mixed  $states        Either an array of state IDs, or
+     *                                an integer for a single state ID
+     *
+     *  @param  string $state_filter  One of three values:
+     *                                 'current': only match current states
+     *                                 'active':  match any state row
+     *                                            which is still valid
+     *                                 'any':     no state status filtering
+     *
+     *  @return  none
+     */
+    function matchStates($states, $state_filter) {
+
+        // Try the most granular (topics) first.
+        if (!empty($this->topics)) {
+
+            // "OR" means we can do all the topics in one join.
+            if ($this->spec['topic-logic'] == 'OR') {
+                $alias = $this->addStateJoin($states, $state_filter);
+                $this->qry->condition("$alias.topic_id", $this->topics, 'IN');
             }
-            else
-                $op = 'IN';
 
-            // Again, we try the most granular (topics) first.
-            if (!empty($this->topics)) {
-
-                // Can we get away with just a single join?
-                $logic = $this->spec['topic-logic'];
-                if ($logic == 'OR' || count($this->topics) == 1) {
-                    $alias = 'state_alias_' . $delta++;
-                    $this->qry->join('ebms_article_state', $alias,
-                        "$alias.article_id = art.article_id");
-                    $this->qry->condition("$alias.state_id", $states, $op);
-                    if (count($this->topics) == 1)
-                        $this->qry->condition("$alias.topic_id",
-                            $this->topics[0]);
-                    else
-                        $this->qry->condition("$alias.topic_id",
-                            $this->topics, 'IN');
-                    $this->qry->condition("$alias.active_status", 'A');
-                }
-
-                // User wants multiple topics all to be represented
-                else {
-                    foreach ($this->topics as $topicId) {
-                        $alias = 'state_alias_' . $delta++;
-                        $this->qry->join('ebms_article_state', $alias,
-                            "$alias.article_id = art.article_id");
-                        $this->qry->condition("$alias.state_id", $states, $op);
-                        $this->qry->condition("$alias.topic_id", $topicId);
-                        $this->qry->condition("$alias.active_status", 'A');
-                    }
-                }
-            }
-
-            // Boards needed?
-            if ($this->needBoards) {
-
-                // Again, boards are always checked in separate joins.
-                foreach ($this->boards as $boardId) {
-                    $alias = 'state_alias_' . $delta++;
-                    $this->qry->join('ebms_article_state', $alias,
-                        "$alias.article_id = art.article_id");
-                    $this->qry->condition("$alias.state_id", $states, $op);
-                    $this->qry->condition("$alias.board_id", $boardId);
-                    $this->qry->condition("$alias.active_status", 'A');
-                }
-            }
-
-            // Test for the state(s) without regard to topic or board.
+            // Otherwise, user wants multiple topics all to be represented
             else {
-                $alias = 'state_alias_' . $delta++;
-                $this->qry->join('ebms_article_state', $alias,
-                    "$alias.article_id = art.article_id");
-                $this->qry->condition("$alias.state_id", $states, $op);
-                $this->qry->condition("$alias.active_status", 'A');
+                foreach ($this->topics as $topicId) {
+                    $alias = $this->addStateJoin($states, $state_filter);
+                    $this->qry->condition("$alias.topic_id", $this->topicId);
+                }
             }
         }
+
+        // Boards needed?
+        if ($this->needBoards) {
+
+            // Boards are always checked in separate joins.
+            foreach ($this->boards as $boardId) {
+                $alias = $this->addStateJoin($states, $state_filter);
+                $this->qry->condition("$alias.board_id", $boardId);
+            }
+        }
+
+        // Test for the state(s) without regard to topic or board,
+        // IFF we didn't create any joins earlier in this method.
+        if (!$this->stateFilters)
+            $this->addStateJoin($states, $state_filter);
+    }
+
+    /**
+     * Add a join to the ebms_article_state table to match one
+     * or more states.  Can also add a join to restrict the state
+     * rows to those which belong to a specific cycle.  See notes
+     * on matchStates() for an explanation of the parameters.  As
+     * noted there, $states can be an array or a single integer.
+     * The condition() method for the query object automatically
+     * uses the correct operator: 'IN' for arrays, '=' otherwise.
+     *
+     *  @return  string     Alias for the joined state table
+     */
+    function addStateJoin($states, $state_filter) {
+        $alias = 'state_alias_' . $this->delta;
+        $this->qry->join('ebms_article_state', $alias,
+            "$alias.article_id = art.article_id");
+        $this->qry->condition("$alias.state_id", $states);
+        if ($state_filter == 'current')
+            $this->qry->condition("$alias.current", 'Y');
+        elseif ($state_filter == 'active')
+            $this->qry->condition("$alias.active_status", 'A');
+        $cycle_id = $this->spec['review-cycle'];
+        if ($cycle_id) {
+            $cycle_alias = 'cycle_alias_' . $this->delta;
+            $this->qry->join('ebms_article_topic', $cycle_alias,
+                "$cycle_alias.article_id = $alias.article_id AND " .
+                "$cycle_alias.topic_id = $alias.topic_id");
+            $this->qry->condition("$cycle_alias.cycle_id", $cycle_id);
+        }
+
+        // Remember that we've filtered by state.
+        $this->stateFilters = true;
+
+        // Increment here so the two aliases created above have the same
+        // number.
+        $this->delta++;
+
+        // Alias needed by the caller for possible further joins.
+        return $alias;
     }
 
     /**
@@ -362,51 +415,46 @@ class EbmsSearch {
      */
     function srchTopicsBoards() {
 
-        // Make sure our table aliases are distinct.
-        $delta = 1;
-
         // Make sure this hasn't been taken care of already.
-        if (empty($this->earlyStates) && empty($this->laterStates)) {
-            if (!$this->spec['review-cycle']) {
+        if (!$this->stateFilters && !$this->spec['review-cycle']) {
 
-                // Check topics first.
-                if (!empty($this->topics)) {
+            // Check topics first.
+            if (!empty($this->topics)) {
 
-                    // Can we handle this is with a single join?
-                    $logic = $this->spec['topic-logic'];
-                    if ($logic == 'OR' || count($this->topics) == 1) {
-                        $alias = 'topic_alias_' . $delta++;
-                        $this->qry->join('ebms_article_state', $alias,
-                            "$alias.article_id = art.article_id");
-                        if (count($this->topics) == 1)
-                            $this->qry->condition("$alias.topic_id",
-                                $this->topics[0]);
-                        else
-                            $this->qry->condition("$alias.topic_id",
-                                $this->topics, 'IN');
-                    }
-
-                    // User wants each topic to be present in each article.
-                    else {
-                        foreach ($this->topics as $topicId) {
-                            $alias = 'topic_alias_' . $delta++;
-                            $this->qry->join('ebms_article_state', $alias,
-                                "$alias.article_id = art.article_id");
-                            $this->qry->condition("$alias.topic_id", $topicId);
-                        }
-                    }
+                // Can we handle this is with a single join?
+                $logic = $this->spec['topic-logic'];
+                if ($logic == 'OR' || count($this->topics) == 1) {
+                    $alias = 'topic_alias_' . $this->delta++;
+                    $this->qry->join('ebms_article_state', $alias,
+                                     "$alias.article_id = art.article_id");
+                    if (count($this->topics) == 1)
+                        $this->qry->condition("$alias.topic_id",
+                                              $this->topics[0]);
+                    else
+                        $this->qry->condition("$alias.topic_id",
+                                              $this->topics, 'IN');
                 }
 
-                // No topics specified.  Any boards?
-                if ($this->needBoards) {
-
-                    // Separate join required for each board.
-                    foreach ($this->boards as $boardId) {
-                        $alias = 'topic_alias_' . $delta++;
+                // User wants each topic to be present in each article.
+                else {
+                    foreach ($this->topics as $topicId) {
+                        $alias = 'topic_alias_' . $this->delta++;
                         $this->qry->join('ebms_article_state', $alias,
-                            "$alias.article_id = art.article_id");
-                        $this->qry->condition("$alias.board_id", $boardId);
+                                         "$alias.article_id = art.article_id");
+                        $this->qry->condition("$alias.topic_id", $topicId);
                     }
+                }
+            }
+
+            // No topics specified.  Any boards?
+            if ($this->needBoards) {
+
+                // Separate join required for each board.
+                foreach ($this->boards as $boardId) {
+                    $alias = 'topic_alias_' . $this->delta++;
+                    $this->qry->join('ebms_article_state', $alias,
+                                     "$alias.article_id = art.article_id");
+                    $this->qry->condition("$alias.board_id", $boardId);
                 }
             }
         }
@@ -521,16 +569,18 @@ class EbmsSearch {
         $comment = $this->spec['comments'];
 
         // See if user wants to search for comment-added date
-        $startYear = $this->spec['comment-added-start']['year'];
+        $dateStart = $this->spec['comment-added-start']['date'];
+        $dateEnd = $this->spec['comment-added-end']['date'];
 
         // But if we're searching any mod date, don't need to repeat here
-        if ($this->spec['modified-start']['year'])
-            $startYear = null;
+        if ($this->spec['modified-start']['date'] ||
+            $this->spec['modified-end']['date'])
+            $dateStart = $dateEnd = '';
 
         // If we have either of them, we need to join states and comments
         // This could be optimized if modified-start also, but it's not
         //  worth the trouble.  It should be a rare search.
-        if ($comment || $startYear) {
+        if ($comment || $dateStart || $dateEnd) {
             $this->qry->join('ebms_article_state', 'comstate',
                      'comstate.article_id = art.article_id');
             $this->qry->join('ebms_article_state_comment', 'statecom',
@@ -545,18 +595,17 @@ class EbmsSearch {
             }
 
             // Search comment dates
-            if ($startYear) {
-                $dateLimits = $this->chkDates(
-                        $this->spec['comment-added-start'],
-                        $this->spec['comment-added-end'],
-                        $this->spec['use-comment-date-range']);
+            if ($dateStart || $dateEnd) {
+                $range = $this->chkDates($dateStart, $dateEnd);
 
                 // If we found a valid range
-                if ($dateLimits) {
-                    $this->qry->condition('statecom.comment_dt',
-                                           $dateLimits[0], '>=');
-                    $this->qry->condition('statecom.comment_dt',
-                                           $dateLimits[1], '<');
+                if ($range) {
+                    if ($range[0])
+                        $this->qry->condition('statecom.comment_dt',
+                                              $range[0], '>=');
+                    if ($range[1])
+                        $this->qry->condition('statecom.comment_dt',
+                                              $range[1], '<=');
                 }
             }
 
@@ -574,10 +623,11 @@ class EbmsSearch {
     function srchTags() {
 
         $tagId     = $this->spec['tag'];
-        $startYear = $this->spec['tag-added-start']['year'];
+        $dateStart = $this->spec['tag-added-start']['date'];
+        $dateEnd   = $this->spec['tag-added-end']['date'];
 
-        // If we have either of them, we need to join tags
-        if ($tagId || $startYear) {
+        // If we have any of these, we need to join tags
+        if ($tagId || $dateStart || $dateEnd) {
 
             // Look in the table of active tags
             $this->qry->join('ebms_article_tag', 'tag',
@@ -590,18 +640,17 @@ class EbmsSearch {
 
             // Looking for a date range?
             // Do it whether or not we're looking for a specific tag
-            if ($startYear) {
+            if ($dateStart || $dateEnd) {
 
                 // Search for tags within the modified range
-                $dateLimits = $this->chkDates(
-                        $this->spec['tag-added-start'],
-                        $this->spec['tag-added-end'],
-                        $this->spec['use-tag-date-range']);
+                $range = $this->chkDates($dateStart, $dateEnd);
 
                 // If we found a valid range
-                if ($dateLimits) {
-                    $this->qry->condition('tag.tag_dt', $dateLimits[0], '>=');
-                    $this->qry->condition('tag.tag_dt', $dateLimits[1], '<');
+                if ($range) {
+                    if ($range[0])
+                        $this->qry->condition('tag.tag_dt', $range[0], '>=');
+                    if ($range[1])
+                        $this->qry->condition('tag.tag_dt', $range[1], '<=');
                 }
             }
 
@@ -621,6 +670,19 @@ class EbmsSearch {
                 $this->qry->condition('art.jrnl_title', $jrnlTitle, 'LIKE');
             else
                 $this->qry->condition('art.jrnl_title', $jrnlTitle);
+        }
+        switch ($this->spec['core-journals']) {
+        case 'yes':
+            $this->qry->join('ebms_core_journal', 'core',
+                             'core.source = art.source AND ' .
+                             'core.source_jrnl_id = art.source_jrnl_id');
+            break;
+        case 'no':
+            $this->qry->leftJoin('ebms_core_journal', 'core',
+                                 'core.source = art.source AND ' .
+                                 'core.source_jrnl_id = art.source_jrnl_id');
+            $this->qry->isNull('core.source_jrnl_id');
+            break;
         }
     }
 
@@ -709,6 +771,10 @@ class EbmsSearch {
      * created for just this purpose.
      */
     function srchCycle() {
+
+        // If we filtered by states, this has already been taken care of.
+        if ($this->stateFilters)
+            return;
 
         // Don't do anything unless a specific cycle was chosen.
         $cycleId  = $this->spec['review-cycle'];
@@ -853,16 +919,17 @@ class EbmsSearch {
      */
     function srchInputDate() {
 
-        if ($this->spec['input-start']['year']) {
-            $dateLimits = $this->chkDates(
-                    $this->spec['input-start'],
-                    $this->spec['input-end'],
-                    $this->spec['use-input-date-range']);
+        $dateStart = $this->spec['input-start']['date'];
+        $dateEnd = $this->spec['input-end']['date'];
+        if ($dateStart || $dateEnd) {
+            $range = $this->chkDates($dateStart, $dateEnd);
 
-            if ($dateLimits) {
+            if ($range) {
                 // We already specified the article table
-                $this->qry->condition('art.import_date', $dateLimits[0], '>=');
-                $this->qry->condition('art.import_date', $dateLimits[1], '<');
+                if ($range[0])
+                    $this->qry->condition('art.import_date', $range[0], '>=');
+                if ($range[1])
+                    $this->qry->condition('art.import_date', $range[1], '<=');
             }
         }
     }
@@ -880,21 +947,22 @@ class EbmsSearch {
      */
     function srchModifiedDate() {
 
-        if ($this->spec['modified-start']['year']) {
-            $dateLimits = $this->chkDates(
-                    $this->spec['modified-start'],
-                    $this->spec['modified-end'],
-                    $this->spec['use-mod-date-range']);
+        $dateStart = $this->spec['modified-start']['date'];
+        $dateEnd = $this->spec['modified-end']['date'];
+        if ($dateStart || $dateEnd) {
+            $range = $this->chkDates($dateStart, $dateEnd);
 
-            if ($dateLimits) {
+            if ($range) {
                 // Build a subquery to find articles that have rows
                 //   for states, state comments, tags, tag comments
 
                 // 1. State changes
                 $stateQry = db_select('ebms_article_state', 'mstat');
                 $stateQry->addField('mstat', 'article_id');
-                $stateQry->condition('mstat.status_dt', $dateLimits[0], '>=');
-                $stateQry->condition('mstat.status_dt', $dateLimits[1], '<');
+                if ($range[0])
+                    $stateQry->condition('mstat.status_dt', $range[0], '>=');
+                if ($range[1])
+                    $stateQry->condition('mstat.status_dt', $range[1], '<=');
 
                 // Have to qualify by topic or board if needed
                 $this->modDateQuals($stateQry, 'mstat.topic_id',
@@ -905,15 +973,19 @@ class EbmsSearch {
                 $scmtQry->join('ebms_article_state', 'mst',
                                'mcmt.article_state_id = mst.article_state_id');
                 $scmtQry->addField('mst', 'article_id');
-                $scmtQry->condition('mcmt.comment_dt', $dateLimits[0], '>=');
-                $scmtQry->condition('mcmt.comment_dt', $dateLimits[1], '<');
+                if ($range[0])
+                    $scmtQry->condition('mcmt.comment_dt', $range[0], '>=');
+                if ($range[1])
+                    $scmtQry->condition('mcmt.comment_dt', $range[1], '<=');
                 $this->modDateQuals($scmtQry, 'mst.topic_id', 'mst.board_id');
 
                 // 3. Tag additions
                 $tagQry = db_select('ebms_article_tag', 'mtag');
                 $tagQry->addField('mtag', 'article_id');
-                $tagQry->condition('mtag.tag_dt', $dateLimits[0], '>=');
-                $tagQry->condition('mtag.tag_dt', $dateLimits[1], '<');
+                if ($range[0])
+                    $tagQry->condition('mtag.tag_dt', $range[0], '>=');
+                if ($range[1])
+                    $tagQry->condition('mtag.tag_dt', $range[1], '<=');
                 $this->modDateQuals($tagQry, 'mtag.topic_id');
 
                 // 4. Tag comment additions
@@ -921,8 +993,10 @@ class EbmsSearch {
                 $tcmtQry->join('ebms_article_tag', 'ctag',
                                'tcmt.article_tag_id = ctag.article_tag_id');
                 $tcmtQry->addField('ctag', 'article_id');
-                $tcmtQry->condition('tcmt.comment_dt', $dateLimits[0], '>=');
-                $tcmtQry->condition('tcmt.comment_dt', $dateLimits[1], '<');
+                if ($range[0])
+                    $tcmtQry->condition('tcmt.comment_dt', $range[0], '>=');
+                if ($range[1])
+                    $tcmtQry->condition('tcmt.comment_dt', $range[1], '<=');
                 $this->modDateQuals($tcmtQry, 'ctag.topic_id');
 
                 // We want the union of these queries,
@@ -1001,105 +1075,40 @@ class EbmsSearch {
      * There are tricks and twists here to provide usable defaults when
      * a user does not specify a complete date.
      *
-     *  @param array $startDate     Three integers for year, month, day.
-     *  @param array $endDate       Three more.
-     *  @param bool $endSpecified   True = $endDate is real.  Else ignore it.
+     *  @param string $startDate    ISO format, possibly incomplete
+     *  @param string $endDate      ISO format, possibly incomplete
      *
-     *  @return array               Tuple of SQL standard dates, YYYY-MM-DD.
+     *  @return array               Tuple of date/time strings
      *                              Return NULL if no valid date passed or
-     *                              end date is <= start date.
+     *                              end date is < start date.
      *
      * Notes:
-     *  Values of 0 mean there was no input for that field.
-     *  Years are origin 1899.
-     *    Year 0 = no input.
-     *    Year 1 = 1900
-     *    Year 113 = 2012
-     *      etc.
-     *  We provide defaults in many cases where values = 0.
-     *  As I said, there tricks and twists here.
+     *  Users are allowed to omit trailing portions of the date strings.
+     *  For example:
+     *   '2012'
+     *   '2014-03'
+     *  We provide appropriate expansions for these cases.
      */
-    function chkDates($startDate, $endDate, $endSpecified) {
+    function chkDates($startDate, $endDate) {
 
-        // Convert everything to integers, original and modified
-        $sYear  = $startYear  = intval($startDate['year']);
-        $sMonth = $startMonth = intval($startDate['month']);
-        $sDay   = $startDay   = intval($startDate['day']);
-        $eYear  = $endYear    = intval($endDate['year']);
-        $eMonth = $endMonth   = intval($endDate['month']);
-        $eDay   = $endDay     = intval($endDate['day']);
-
-        // Start year is absolutely required
-        if ($sYear == 0)
+        // Make sure we have at least one (possibly partial) date.
+        if (!$startDate && !$endDate)
             return null;
 
-        // Set year relative to origin
-        //     $startYear = $sYear + 1899;
-        // if ($eYear > 0)
-        //     $endYear = $eYear + 1899;
+        // Initial assumptions.
+        $startSqlDate = $endSqlDate = '';
 
-        // No start month means start in Jan 1.
-        if ($sMonth == 0) {
-            $startMonth = 1;
-            $startDay   = 1;
-        }
-        else if ($sDay == 0)
-            $startDay = 1;
+        // Fill out partial dates.
+        if ($startDate)
+            $startSqlDate = Util::fill_in_date($startDate);
+        if ($endDate)
+            $endSqlDate = Util::fill_in_date($endDate, true);
 
-        // We've got the first return value
-        $startSqlDate = sprintf("%04d-%02d-%02d",
-                                 $startYear, $startMonth, $startDay);
-
-        // Handle specified end date
-        if ($endSpecified && $eYear > 0) {
-
-            // Set the end dates from the passed data in the same way
-            if ($eMonth == 0) {
-                $endMonth = 1;
-                $endDay   = 1;
-            }
-            else if ($eDay == 0)
-                $endDay = 1;
-        }
-
-        // Else end dates were not specified, compute defaults
-        else {
-            $endYear = $startYear;
-            if ($sMonth == 0) {
-                // Searching for entire year
-                $endYear  = $endYear + 1;
-                $endMonth = 1;
-                $endDay   = 1;
-            }
-            else if ($sDay == 0) {
-                // Searching to end of start month
-                $endMonth = $startMonth + 1;
-                if ($eMonth > 12) {
-                    $endYear  = $endYear + 1;
-                    $endMonth = 1;
-                };
-                $endDay = 1;
-            }
-            else {
-                // End is exactly 1 day after start, searching one day
-                // Let PHP do the month/day/leapyear calculations for us
-                $phpStartDate = new \DateTime($startSqlDate);
-                $phpEndDate   = $phpStartDate->add(new \DateInterval("P1D"));
-                $endYear      = $phpEndDate->format('Y');
-                $endMonth     = $phpEndDate->format('m');
-                $endDay       = $phpEndDate->format('j');
-            }
-        }
-
-        // Ending date, as a return value
-        $endSqlDate = sprintf("%04d-%02d-%02d",
-                               $endYear, $endMonth, $endDay);
-
-        // If the end date is <= start date, there's no point going on
-        if (strcmp($endSqlDate, $startSqlDate) <= 0)
-            return null;
-
-        return(array($startSqlDate, $endSqlDate));
+        // If the end date is < start date, there's no point going on
+        if ($startSqlDate && $endSqlDate)
+            if (strcmp($endSqlDate, $startSqlDate) < 0)
+                return null;
+        return array($startSqlDate, $endSqlDate);
     }
 
     /**
@@ -1123,6 +1132,14 @@ class EbmsSearch {
                 $this->qry->orderBy('art.article_title');
                 break;
             case 'Journal':
+                $this->qry->orderBy('art.jrnl_title');
+                break;
+            case 'Core Journals':
+                $this->qry->leftJoin('ebms_core_journal', 'cj',
+                                     'cj.source = art.source AND ' .
+                                     'cj.source_jrnl_id = art.source_jrnl_id');
+                $this->qry->addExpression('ISNULL(cj.source_jrnl_id)', 'core');
+                $this->qry->orderBy('core');
                 $this->qry->orderBy('art.jrnl_title');
                 break;
             case 'Author':
@@ -1164,7 +1181,7 @@ class EbmsSearch {
     /**
      * Check to see if we need to consider boards in a search.
      * We don't if no board was specified or if the single selected
-     * board is automatically implied automatically implied by the topic(s).
+     * board is automatically implied by the topic(s).
      *
      * ASSUMPTIONS:
      *   $this->boards and $this->topics have already been set.

@@ -1082,15 +1082,19 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 }
                 $ib->addArticle('imported', $pmid, $rec->getId(), null);
 
-                // If not marking it for not list, mark it ready for review
-                if (!$useNotList || !array_key_exists($nlmJrnlId, $notList)) {
-                    if ($mode == 'live' && $topicId) {
-                        $rec->setArticleState('ReadyInitReview',
-                               $topicId, $boardId, $comment, $userId,
-                               $pi->constantDt, $cycleId);
-                    }
-                    $ib->addArticle('reviewReady', $pmid, $rec->getId(), null);
-                }
+                // Mark the object as ready for review for this topic.
+                // Note that "review" at this early stage of processing
+                // includes a check to see if the article was published
+                // in a journal whose articles the board for this topic
+                // prefers not to look at. If that's the case, and that
+                // check hasn't been suppressed by the import job's
+                // options, then in a few milliseconds the state row
+                // we're creating here will lose its "current" flag.
+                if ($mode == 'live' && $topicId)
+                    $rec->setArticleState('ReadyInitReview', $topicId,
+                        $boardId, $comment, $userId, $pi->constantDt,
+                        $cycleId);
+                $ib->addArticle('reviewReady', $pmid, $rec->getId(), null);
             }
 
             // Is it not listed?

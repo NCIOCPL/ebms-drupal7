@@ -14,6 +14,24 @@ ini_set('display_startup_errors', TRUE);
  * Testing for Alan.
  */
 function pdq_ebms_alantest() {
+    module_load_include('inc', 'ebms', 'includes/ebms.fields');
+
+    $items = array('dft_editorial_board' => 6,
+                   'dft_cite_search_items_per_page' => 20,
+                   'dft_cite_search_sort_key' => 'Author');
+    // 262 = 'alan'
+    Ebms\Util::set_custom_user_field_values($items, 262);
+    $usrx = user_load(262);
+    Ebms\Util::set_custom_user_field_values(array('dft_editorial_board'=>4),$usrx);
+
+    $x = Ebms\Util::get_custom_user_field_value(
+                'dft_editorial_board', 262);
+    $y = Ebms\Util::get_custom_user_field_value(
+                'dft_cite_search_items_per_page', 262);
+    $z = Ebms\Util::get_custom_user_field_value(
+                'dft_cite_search_sort_key', 262);
+    return("board=$x, per_page=$y, sort_key=$z");
+
     // Comment out this to run anything below
     return '<i>Stub for Alan\'s testing</i>';
 

@@ -113,7 +113,7 @@ $webform = array (
       array (
         'items' => 'gbcourtyard|Courtyard Gaithersburg Washingtonian Center
 gbmarriot|Gaithersburg Marriott Washingtonian Center
-hhsuites|Hilton Homewood Suites',
+hhsuites|Homewood Suites by Hilton Rockville-Gaithersburg',
         'multiple' => 0,
         'title_display' => 'before',
         'private' => 0,

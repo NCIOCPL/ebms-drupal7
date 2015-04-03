@@ -10,3 +10,22 @@ ebmsscript.count_search_topics = function() {
     else
         jQuery("#topselcnt").text('');
 };
+jQuery(function() {
+    // Make the 'only-' checkboxes exclusive (as if they were radios).
+    jQuery("#edit-administrator-search .only-box input").click(function() {
+        if (jQuery(this).attr("checked")) {
+            var boxes = jQuery("#edit-administrator-search .only-box input");
+            boxes.attr("checked", "");
+            jQuery("#edit-unpublished").attr("checked", "");
+            jQuery("#edit-not-listed").attr("checked", "");
+            jQuery("#edit-rejected").attr("checked", "");
+            jQuery(this).attr("checked", "checked");
+        }
+    });
+    jQuery("#edit-administrator-search .early-box input").click(function() {
+        if (jQuery(this).attr("checked")) {
+            var boxes = jQuery("#edit-administrator-search .only-box input");
+            boxes.attr("checked", "");
+        }
+    });
+});

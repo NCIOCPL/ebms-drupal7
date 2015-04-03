@@ -64,6 +64,11 @@ div.ctools-modal-content #citation-form-div{
     bottom: auto;
 }
 
+.form-item-save-as-default {
+    position: relative;
+    right: 4px;
+}
+
 #pdq-ebms-citation-not-list .page-citations #citation-form-div .citation-input-div>
 .form-type-checkbox>input.form-checkbox:not(#foo){
     margin: 0 0 0 505px;

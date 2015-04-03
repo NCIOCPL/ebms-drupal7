@@ -63,7 +63,9 @@ div.right-aligned-date + label.option {
     clear: none; font-weight: normal;
 }
 
-#report { clear: both; }
+#report, #import-report, #review-report-title { clear: both; }
+#report, #import-report { padding-top: 30px; }
+#review-report-title { padding-top: 50px; }
 #report caption { font-weight: bold; margin-top: 50px; margin-bottom: 20px; }
 #report .meta { margin-left: 11px; }
 /*
@@ -102,7 +104,12 @@ div.right-aligned-date + label.option {
 div.import-reports h2 { margin-bottom: 15px; }
 div.import-reports ul li a { text-transform: uppercase; }
 #import-report td, #import-report th { border-left: none; }
-#documents-top div.form-item-archived { clear: both; margin-left: 476px; }
+#documents-top div.form-item-archived { clear: both; margin-left: 489px; }
+#documents-top .form-item label.form-item.form-type-textfield { margin-left: 2px; }
+#documents-top #report-form .fixed-width.form-text { width: 494px; }
+form .form-item.form-type-checkbox:not(#foo) label.form-item-archived {
+    padding-left: 27px;
+}
 #membership-top div.form-type-checkbox {
     clear: both; margin: 5px 0 5px 476px;
 }
@@ -141,7 +148,15 @@ div.import-reports ul li a { text-transform: uppercase; }
 #cites-by-status-report .col-1 { border-left: none; }
 /* #disposition-field.hidden { display: none; } */
 
-#cites-by-status-report-top label.form-item-cycles { vertical-align: top; }
+#cites-by-status-report-top div.form-item-disposition,
+#cites-by-status-report-top div.form-item-cycles {
+    position: relative;
+}
+
+#cites-by-status-report-top label.form-item-disposition,
+#cites-by-status-report-top label.form-item-cycles {
+    vertical-align: top; position: relative; top: 4px;
+}
 
 /* Unfortunately, earlier versions of IE have to be beaten into submission. */
 #cites-by-status-report-top #edit-meeting-date-year,
@@ -156,3 +171,6 @@ div.import-reports ul li a { text-transform: uppercase; }
 
 /* OCEEBMS-128; comment by Robin 2014-01-17. */
 #unreviewed-articles-report tr.odd { border-bottom: 1px solid #ccc; }
+
+#pdq-ebms-articles-without-responses .date-label,
+#pdq-ebms-responses-by-reviewer .date-label { margin-left: 0; }

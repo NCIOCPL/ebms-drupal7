@@ -63,6 +63,8 @@ define('Ebms\COMMENT_INACTIVE',
 
 define('Ebms\FYI_ACTIVE', IMAGES_DIR . '/EBMS_FlagFYI_Icon_Active.png');
 define('Ebms\FYI_INACTIVE', IMAGES_DIR . '/EBMS_FlagFYI_Icon_Inactive.png');
+define('Ebms\CB_CHECKED', IMAGES_DIR . '/checkbox-checked.png');
+define('Ebms\CB_UNCHECKED', IMAGES_DIR . '/checkbox-unchecked.png');
 
 define('Ebms\DOC_TYPES', 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg');
 
@@ -139,7 +141,6 @@ class Forum {
     public static function forums() {
         if (empty(self::$forums))
             self::init();
-        // pdq_ebms_debug('FORUMS', self::$forums);
         return self::$forums;
     }
 
@@ -228,6 +229,11 @@ class Menu {
         }
         if ($tip)
             $options['attributes']['title'] = $tip;
+
+        // Default Reviewed Packets page to view all (JIRA::OCEEBMS-183).
+        if ($path == 'review/reviews')
+            $options['query']['pager'] = 'off';
+
         $link = l($label, $path, $options);
         $link = str_replace('%23', '#', $link);
         return str_replace('@@BR@@', '<br>', $link);
@@ -389,7 +395,6 @@ class Menu {
                     new Menu('Create Packet', 'review/add'),
                     new Menu('View/Edit Packets', 'review/packets'),
                     new Menu('Record Responses', 'review/record'),
-                    //new Menu('Review Responses', 'review/reviews'),
                 );
                 return new Menu($title, 'review/reviews', $submenus);
         }
@@ -1069,6 +1074,45 @@ class Util {
     }
 
     /**
+     * Find the "default board" for a user.
+     *
+     * Selects the default board according to the following priority:
+     *   field_data_dft_editorial_board.dft_editorial_board_value.
+     *      A custom field in the 'user' bundle.
+     *      Settable in ebms.../admin/people, choose person, "edit".
+     *   First board found in $user->ebms_boards, established at login.
+     *   Null.
+     *
+     * @param mixed $dft
+     *   Return this as the default if no default found.
+     * @param mixed $uid
+     *   Integer or string of digits identifying the user.
+     *   Null = use the current global $user.
+     *
+     * @return int
+     *   Unique board ID, or null if no default established.
+     */
+    public static function get_user_default_board($dft=null, $uid=null) {
+
+        global $user;
+
+        // Default return value
+        $dftBoard = $dft;
+
+        // Do we have a stored custom default
+        $dftBoard = self::get_custom_user_field_value('dft_editorial_board',
+                                                       $uid);
+
+        // Have we already loaded associated boards?
+        if (!$dftBoard && !$uid) {
+            if (isset($user->ebms_boards))
+                $dftBoard = reset($user->ebms_boards);
+        }
+
+        return $dftBoard;
+    }
+
+    /**
      * Retrieves a list of active users, optionally limited by role and board.
      *
      * @param array $role_names An optional array of role names.
@@ -1510,12 +1554,6 @@ class Util {
         $start_date = sprintf('%04d-%02d-01', $year, $month);
         $time = mktime(0, 0, 0, $month, 1, $year);
         $cycle_name = date('F Y', $time);
-        pdq_ebms_debug('ADD NEXT CYCLE', array(
-                           'start date' => $start_date,
-                           'time' => $time,
-                           'cycle name' => $cycle_name,
-            )
-        );
         db_insert('ebms_cycle')
             ->fields(
                 array(
@@ -1549,12 +1587,10 @@ class Util {
         $safety = 0;
         while (!$cycle_id) {
             $last_cycle = Util::get_last_cycle_date();
-            pdq_ebms_debug('DEFAULT CYCLE - LAST CYCLE', $last_cycle);
             if ($last_cycle > $start_date)
                 throw new \Exception('Fatal error: gaps in cycle table');
             Util::add_next_cycle($last_cycle);
             $cycle_id = Util::get_cycle_id_from_start_date($start_date);
-            pdq_ebms_debug('DEFAULT CYCLE - TRYING AGAIN', $cycle_id);
         }
         return $cycle_id;
     }
@@ -1613,12 +1649,50 @@ class Util {
     }
 
     /**
+     * Convert a possibly incomplete date to a valid ISO date or
+     * date time string.
+     *
+     *  @param object   $date    Date string or component array
+     *  @param boolean  $latest  Optional flag indicating that
+     *                           the date represents the end of a
+     *                           range, so any gaps should be
+     *                           filled in using the latest
+     *                           possible value
+     *
+     *  @return                  ISO date time string if $latest
+     *                           is true; otherwise ISO date string
+     */
+    public static function fill_in_date($date, $latest=false) {
+        if (is_string($date))
+            $date = self::date_string_to_array($date);
+        $y = $date['year'];
+        $m = $date['month'];
+        $d = $date['day'];
+        if ($d) {
+            if ($latest)
+                return sprintf("%04d-%02d-%02d 23:59:59", $y, $m, $d);
+            return sprintf("%04d-%02d-%02d", $y, $m, $d);
+        }
+        elseif ($m) {
+            if ($latest)
+                return date("Y-m-d H:i:s", mktime(0, 0, -1, $m + 1, 1, $y));
+            return sprintf("%04d-%02d-01", $y, $m);
+        }
+        elseif ($y) {
+            if ($latest)
+                return sprintf("%04d-12-31 23:59:59", $y);
+            return sprintf("%04d-01-01", $y);
+        }
+        return $latest ? '9999-12-31' : '1900-01-01';
+    }
+
+    /**
      * Adds a condition to a DB query, restricting the results to
      * the date range specified by the caller.
      *
      *  @param SelectQuery $query   Reference to query object
-     *  @param array       $start   Beginning of date range
-     *  @param array       $end     End of date range
+     *  @param string      $start   Beginning of date range
+     *  @param string      $end     End of date range
      *  @param string      $field   Qualified string for date column
      *                              to be tested against date range
      *
@@ -1630,17 +1704,125 @@ class Util {
     {
         try {
             $range = array(
-                @sprintf("%04d-%02d-%02d", $start['year'], $start['month'],
-                    $start['day']),
-                @sprintf("%04d-%02d-%02d 23:59:59", $end['year'],
-                    $end['month'], $end['day']),
+                self::fill_in_date($start),
+                self::fill_in_date($end, true),
             );
             $query->condition($field, $range, 'BETWEEN');
             return true;
         }
         catch (Exception $e) {
+            pdq_ebms_debug('ADD DATE RANGE TO QUERY', array('error'=>$e));
             return false;
         }
+    }
+
+    /**
+     * Builds an array of options to be passed to the JQuery
+     * datepicker package. By default these options just
+     * include the instructions to disable picklists in
+     * the popup title bar for jumping to specific years
+     * or months. Can also include restriction of the
+     * available dates which can be selected from the
+     * widget.
+     *
+     *  @param  string  $range   Optional colon-delimited pair
+     *                           of number of years back or
+     *                           forward the range of allowable
+     *                           dates should include; either
+     *                           side of the colon can be blank;
+     *                           e.g.: -3:+2
+     *
+     *  @return array            Option array
+     */
+    public static function datepicker_options($range='') {
+        $options = array(
+            'changeMonth' => false,
+            'changeYear' => false,
+        );
+        if ($range) {
+            list($min, $max) = @explode(':', $range);
+            if (isset($min) && $min !== '')
+                $options['minDate'] = $min . 'y';
+            if (isset($max) && $max !== '')
+                $options['maxDate'] = $max . 'y';
+        }
+        return $options;
+    }
+
+    /**
+     * Create a Drupal date popup field array.
+     *
+     *  @param  string  $default  Optional default value for the field
+     *  @param  string  $range    Optional limit for available values
+     *                            (see notes on datepicker_options()
+     *                            above)
+     *  @param  string  $title    Optional string assigned to the
+     *                            title attribute of the field to
+     *                            pop up with an explanation when
+     *                            the user hovers over the field
+     *
+     *  @return  array            Drupal field array
+     */
+    public static function date_field($default='', $range='', $title='') {
+        $field = array(
+            '#type' => 'date_popup',
+            '#date_format' => 'Y-m-d',
+            '#datepicker_options' => self::datepicker_options($range),
+            '#default_value' => $default,
+            '#date_label_position' => 'within',
+            '#element_validate' => array('pdq_ebms_date_validate'),
+        );
+        if ($title)
+            $field['#attributes'] = array('title' => $title);
+        return $field;
+    }
+
+    /**
+     * Assemble a Drupal form array for a pair of date_popup
+     * fields.
+     *
+     *  @param  string  $label  Required label for the field pair
+     *  @param  string  $name   Base name for the fields; will
+     *                          have '-start' and '-end' appended
+     *                          to the two fields respectively
+     *  @param  string  $start  Optional default value for the
+     *                          start of the date range
+     *  @param  string  $end    Optional default value for the
+     *                          end of the date range
+     *  @param  boolean $label_right
+     *                          Flag indicating that the label
+     *                          should be inline to the right
+     *                          of the field pair
+     *
+     *  @return array           Drupal form array for the
+     *                          date pair block
+     */
+    public static function date_range_field($label, $name, $start='', $end='',
+                                            $range='', $label_right=true) {
+        $start_title = 'Start date (defaults to no starting date)';
+        $end_title = 'End date (defaults to no ending date)';
+        $start_field = self::date_field($start, $range, $start_title);
+        $end_field = self::date_field($end, $range, $end_title);
+        $separator = '<span class="date-range-sep">&mdash;</span>';
+        $label = array('#markup' => "<div class='date-label'>$label</div>");
+        $field = array(
+            '#type' => 'container',
+            '#attributes' => array('class' => array('date-field-wrapper')),
+        );
+        if ($label_right)
+            $field['#attributes']['class'][] = 'label-on-right';
+        else
+            $field['label'] = $label;
+        $field['date-pair'] = array(
+            '#type' => 'container',
+            '#attributes' => array('class' => array('date-field-widgets')),
+            "$name-start" => $start_field,
+            'separator' => array('#markup' => $separator),
+            "$name-end" => $end_field,
+        );
+        if ($label_right)
+            $field['label'] = $label;
+        return $field;
     }
 
     /**
@@ -1661,6 +1843,8 @@ class Util {
      */
     public static function add_date_to_query(&$query, $date, $field) {
         try {
+            if (is_string($date))
+                $date = self::date_string_to_array($date);
             $y = $date['year'];
             $m = $date['month'];
             $d = $date['day'];
@@ -1681,7 +1865,6 @@ class Util {
                 );
             else
                 return false;
-            pdq_ebms_debug('DATE RANGE', $range);
             $query->condition($field, $range, 'BETWEEN');
             return true;
         }
@@ -1698,10 +1881,12 @@ class Util {
      *  @param ImportBatch  $batch  Reference to object containing
      *                              statistics for an import job
      *  @param string       $title  Header for the report
+     *  @param int          $cols   Number of ID pair columns
+     *                              to create in each block
      *
      *  @return                     Render array for report
      */
-    public static function import_report(&$batch, $title) {
+    public static function import_report(&$batch, $title, $cols=5) {
         $ebms_ids = array();
         $blocks = array(
             'imported' => 'ARTICLE{S} IMPORTED',
@@ -1749,7 +1934,7 @@ class Util {
                 $ids[$pmid] = null;
         }
         $report['report-totals'] =
-            Util::import_report_block('UNIQUE ID{S} IN BATCH', $ids);
+            Util::import_report_block('UNIQUE ID{S} IN BATCH', $ids, $cols);
         $blocks = array(
             'imported' => 'ARTICLE{S} IMPORTED',
             'notListed' => 'ARTICLE{S} NOT LISTED',
@@ -1763,7 +1948,8 @@ class Util {
             $ids = array();
             foreach ($batch->action[$key] as $article)
                 $ids[$article[0]] = $article[1];
-            $report["report-$key"] = Util::import_report_block($title, $ids);
+            $block = Util::import_report_block($title, $ids, $cols);
+            $report["report-$key"] = $block;
         }
         return $report;
     }
@@ -1772,13 +1958,12 @@ class Util {
      * Helper function to add to a form a collapsible block showing imported
      * articles in a specific category.  Invoked by import_report() above.
      */
-    static function import_report_block($title, $ids) {
+    static function import_report_block($title, $ids, $cols) {
         $s = count($ids) == 1 ? '' : 'S';
         $title = count($ids) . ' ' . str_replace('{S}', $s, $title);
         ksort($ids, SORT_NUMERIC);
         $table = array('<table class="pmids">');
         $counter = 0;
-        $cols = 4;
         $options = array('attributes' => array('target' => '_blank'));
         foreach ($ids as $pmid => $ebmsid) {
             if ($counter % $cols == 0) {
@@ -1831,7 +2016,37 @@ class Util {
      *  @return int              Standard Unix epoch-based seconds counter
      */
     public static function date_field_to_timestamp($date) {
+        if (is_string($date))
+            $date = self::date_string_to_array($date);
         return mktime(0, 0, 0, $date['month'], $date['day'], $date['year']);
+    }
+
+    /**
+     * Convert Drupal date field value array to ISO string.
+     *
+     *  @param  array  $d    Array of pieces of a date (month, day,
+     *                       and year)
+     *
+     *  @return string       ISO formatted string for date
+     */
+    public static function date_array_to_string($d) {
+        return sprintf("%04d-%02d-%02d", $d['year'], $d['month'], $d['day']);
+    }
+
+    /**
+     * Convert an ISO date string to a Drupal date field value array.
+     *
+     *  @param  string  $string  ISO-formatted date string
+     *
+     *  @return array            Array of date components
+     */
+    public static function date_string_to_array($string) {
+        $s = explode('-', substr($string, 0, 10));
+        return array(
+            'year' => intval(empty($s[0]) ? '0' : $s[0]),
+            'month' => intval(empty($s[1]) ? '0' : $s[1]),
+            'day' => intval(empty($s[2]) ? '0' : $s[2]),
+        );
     }
 
     /**
@@ -1939,7 +2154,8 @@ class Util {
 
         // Send headers
         drupal_add_http_header('Content-type', $contentType);
-        drupal_add_http_header('Content-disposition', "attachment; filename=$showName");
+        drupal_add_http_header(
+                'Content-disposition', "attachment; filename=$showName");
         drupal_send_headers();
 
         // Send contents
@@ -1953,6 +2169,156 @@ class Util {
 
         // Exit causes data to be sent independently of drupal
         drupal_exit();
+    }
+
+    /**
+     * Get all user custom field item values.
+     *
+     * Retrieves every field defined in the global $ebms_user_fields,
+     * which is populated in ebms.fields.inc.
+     *
+     * @param int $usr
+     *   User uid identifying the user.  Null = use current global user.
+     *
+     * @return array
+     *   Array of field_name = field value.
+     *   Only one value is retrieved per field.
+     *   NULL if user is not found.
+     */
+    private static function load_custom_user_fields($usr=NULL) {
+
+        // Identify user and get all vals from the database
+        if (is_null($usr)) {
+            global $user;
+            $usr = $user->uid;
+        }
+        // XXX Should I throw an exception if user not found?
+        $account = user_load($usr);
+
+        // Use the field_names set in ebms.fields.inc and stored in
+        // $GLOBALS['ebms_user_fields'] to find values
+        module_load_include('inc', 'ebms', 'includes/ebms.fields');
+        global $ebms_user_fields;
+        $fields = array();
+        foreach ($ebms_user_fields as $fld) {
+            $fld_name = $fld['field_name'];
+            $val_array = field_get_items('user', $account, $fld_name);
+            if ($val_array)
+                $fields[$fld_name] = $val_array[0]['value'];
+        }
+
+        return $fields;
+    }
+
+    /**
+     * Get user custom field item values.
+     *
+     *  @param string $field_name
+     *    Name of the custom user field (not the table).  See ebms.fields.inc.
+     *  @param mixed $usr
+     *    Pass user uid to load a user object from the database, works with any
+     *      user, not just the current one.
+     *    Pass null to use the global current user.
+     *
+     *  @return string
+     *    Single value of the field.  NULL if usr or field value not found.
+     *    Note: integers are returned as strings, e.g., '10'.
+     */
+    public static function get_custom_user_field_value($field_name, $usr=NULL)
+    {
+        // Data may already be loaded into global.  If not, load it now.
+        global $loaded_user_custom_fields;
+        if (!isset($loaded_user_custom_fields)) {
+            $loaded_user_custom_fields = self::load_custom_user_fields($usr);
+        }
+
+        if (array_key_exists($field_name, $loaded_user_custom_fields)) {
+            return $loaded_user_custom_fields[$field_name];
+        }
+
+        // Either key or user is not found
+        return NULL;
+    }
+
+    /**
+     * Set user custom field item values.  Values are set in the user object
+     * and saved to the database.
+     *
+     * WARNINGS:
+     *   1. A side effect of passing null or user object is that object in
+     *      memory is modified and saved to disk.  Any other changes in the
+     *      user object will also be saved.
+     *
+     *      This is usually desirable but if saving without modifying the user
+     *      in memory is desirable, pass the current user->uid instead of the
+     *      object.
+     *
+     *   2. Field and value types are unchecked.  Be careful!
+     *
+     *  @param array $items
+     *    Array of field name => field value pairs.
+     *  @param mixed $usr
+     *    Pass the user object to retrieve data from the in-memory object.
+     *    Pass user uid to load a user object from the database, works with any
+     *      user, not just the current one.
+     *    Pass null to use the current user object.
+     *
+     *  @return
+     *    Void.
+     */
+    public static function set_custom_user_field_values($items, $usr=NULL) {
+
+        // Resolve user
+        $account = self::_resolve_usr($usr);
+
+        // Set our value
+        foreach ($items as $field_name => $value) {
+            // Language should always be LANGUAGE_NONE but I'll check
+            $field_info = field_info_field($field_name);
+            $lang = $field_info['translatable'] ?
+                entity_language($entity_type, $entity) : LANGUAGE_NONE;
+
+            // Set the value into the user object
+            $account->{$field_name}[$lang]['0']['value'] = $value;
+        }
+
+        // Save to database
+        user_save($account);
+    }
+
+    /**
+     * Find or load a user object.
+     *
+     * Subroutine of pdq_ebms_(set|get)_custom_user_field_value(s).
+     *
+     *  @param mixed $usr
+     *    Pass the user object to retrieve data from the in-memory object.
+     *    Pass user uid to load a user object from the database, works with any
+     *      user, not just the current one.
+     *    Pass null to use the current user object.
+     *
+     *  @return
+     *    Initialized user object or null if user not found.
+     */
+    private static function _resolve_usr($usr) {
+
+        // Current user
+        if (is_null($usr)) {
+            global $user;
+            return $user;
+        }
+
+        // User identified by integer uid
+        else if (ctype_digit($usr)) {
+            $account = user_load(intval($usr));
+            if (!$account)
+                return NULL;
+            else
+                return $account;
+        }
+
+        // No resolution needed (or maybe not possible)
+        return $usr;
     }
 }
 

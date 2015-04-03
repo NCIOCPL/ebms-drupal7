@@ -8,7 +8,7 @@
  * Implementation of EBMS page for running system reports.
  */
 function pdq_ebms_reports($report=null, $request_id=0) {
-    register_shutdown_function('pdq_ebms_shutdown');
+    //register_shutdown_function('pdq_ebms_shutdown');
     $control = new EbmsReports($report, $request_id);
     return $control->run();
 }
@@ -60,6 +60,34 @@ class EbmsReports {
      * landing page.  For the documents report, handles any additional
      * actions embedded in the URL's request parameters.
      */
+    private function awr_member() {
+        $report = articles_without_responses_report($this->request_id, true);
+        $title = "Articles Without Responses ($report->total)";
+        $table = array(
+            'title' => array('#markup' => "<h1>$title</h1>"),
+            'table' => array(
+                '#theme' => 'table',
+                '#rows' => $report->rows,
+                '#header' => $report->headers,
+            ),
+        );
+        $css = Ebms\CSS_DIR . '/stripped-report.css';
+        $page = array(
+            'language' => 'en',
+            'head' => '<meta charset="utf-8">',
+            'title' => 'Articles Without Responses',
+            'scripts' => '',
+            'favicon' => '',
+            'css' => "<link rel='stylesheet' href='/$css'>",
+            'message' => array(),
+            'footer_scripts' => '',
+            'body' => drupal_render($table),
+        );
+        $html = theme('stripped', array('page' => $page));
+        drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+        drupal_send_headers();
+        print $html;
+    }
     public function run() {
 
         $parms = drupal_get_query_parameters();
@@ -68,6 +96,8 @@ class EbmsReports {
         Ebms\Menu::$active = 'Reports';
         drupal_add_css(Ebms\CSS_DIR . '/reports.css');
         switch ($this->report) {
+            case 'awr-member':
+                return $this->awr_member();
             case 'board-members-last-login':
                 return pdq_ebms_board_members_last_login();
             case 'meeting-dates':
@@ -255,14 +285,14 @@ class EbmsReports {
      * XXX To be rewritten when Alan has the API for getting the abstract
      *     elements ready.
      */
-    static function format_citation($article_id, $counter=null) {
+    static function format_citation($article_id, $counter=null,
+                                    $member_version=false) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
             ->condition('a.article_id', $article_id)
             ->execute()
             ->fetchField();
         $doc = new \SimpleXMLElement($xml);
-        $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
         $title = $article->ArticleTitle;
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
@@ -296,18 +326,25 @@ class EbmsReports {
         $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
         $full_url = 'citations/full/' . $article_id;
-        $title_opts = array(
-            'attributes' => array(
-                'class' => array('article-title'),
-            )
-        );
-        $title_link = l($title, $full_url, $title_opts);
+        if ($member_version) {
+            $uri = Ebms\Util::get_ft_uri($article_id);
+            if ($uri)
+                $title = l($title, file_create_url($uri));
+        }
+        else {
+            $title_opts = array(
+                'attributes' => array(
+                    'class' => array('article-title'),
+                )
+            );
+            $title = l($title, $full_url, $title_opts);
+        }
         $pieces = array('<span class="article-citation">');
         if ($counter)
             $pieces[] = '<span class="article-counter">' . $counter .
                 '</span>';
         $pieces[] = implode(', ', $authors) . '<br />';
-        $pieces[] = "$title_link<br />$ta $vol";
+        $pieces[] = "$title<br />$ta $vol";
         if ($issue)
             $pieces[] = "($issue)";
         if ($pgn)
@@ -625,13 +662,16 @@ class EbmsReports {
         );
 
         // Construct the report's query.
-        $state_id = Ebms\Util::state_id_from_text_id('ReadyInitReview');
+        $state_ids = array(
+            Ebms\Util::state_id_from_text_id('ReadyInitReview'),
+            Ebms\Util::state_id_from_text_id('RejectJournalTitle'),
+        );
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
         $query->condition('a.cycle_id', $cycle);
-        $query->condition('s.state_id', $state_id);
+        $query->condition('s.state_id', $state_ids, 'IN');
         $query->fields('b', array('board_name'));
         $query->groupBy('b.board_name');
         if ($board)
@@ -642,7 +682,7 @@ class EbmsReports {
         // can't get by summing the per-board/topic counts, because an
         // article can be represented in those counts more than once).
         $total_query = clone($query);
-        $total_query->addExpression('COUNT(DISTINCT a.article_id)', 'n');
+        $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
         $results = $total_query->execute();
         $totals = array();
         foreach ($results as $result)
@@ -653,7 +693,7 @@ class EbmsReports {
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
         $query->fields('t', array('topic_name'));
         $query->groupBy('t.topic_name');
-        $query->addExpression('COUNT(*)', 'n');
+        $query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
         $query->orderBy('b.board_name');
         $query->orderBy('t.topic_name');
 
@@ -701,6 +741,10 @@ class EbmsReports {
      */
     public static function initial_decision($board, $cycle) {
 
+        // Primary keys for the states we're looking for.
+        $rejected = Ebms\Util::state_id_from_text_id('RejectInitReview');
+        $accepted = Ebms\Util::state_id_from_text_id('PassedInitReview');
+
         // Will be caught by validation function.
         $cycle_name = Ebms\Util::get_cycle_name($cycle);
         if (!$cycle_name) {
@@ -726,9 +770,24 @@ class EbmsReports {
             )
         );
 
+        // New requirement (OCEEBMS-204): If no board is selected,
+        // add a total count of unique rejected articles at the top
+        // of the report.
+        if (!$board) {
+            $on = 't.article_id = s.article_id AND t.topic_id = s.topic_id';
+            $query = db_select('ebms_article_state', 's');
+            $query->join('ebms_article_topic', 't', $on);
+            $query->condition('s.state_id', $rejected);
+            $query->condition('t.cycle_id', $cycle);
+            $query->addExpression('COUNT(DISTINCT s.article_id)', 'total');
+            $total_rejected = $query->execute()->fetchField();
+            $label = '<span class="label">Total Articles Rejected:</span>';
+            $markup = "<div class='meta'>$label $total_rejected</div>";
+            $report['grant total rejected'] = array('#markup' => $markup);
+        }
+
+
         // Construct the report's query.
-        $rejected = Ebms\Util::state_id_from_text_id('RejectInitReview');
-        $accepted = Ebms\Util::state_id_from_text_id('PassedInitReview');
         $state_ids = array($rejected, $accepted);
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
@@ -895,7 +954,7 @@ class EbmsReports {
         // Prep for links to NLM's PubMed.
         $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
             'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
-        $pubmed_opts = array('attributes' => array('target' => '_blank'));
+        $new_tab = array('attributes' => array('target' => '_blank'));
 
         // Walk through the query results, assembling the rows for the
         // report table.
@@ -918,8 +977,9 @@ class EbmsReports {
                 $comments[] = $comment_row->comment;
             $col5 = implode('; ', $comments);
             if ($article_id != $last_article_id) {
-                $col1 = l($article_id, 'citations/full/' . $article_id);
-                $col2 = l($pmid, $pubmed_base . $pmid, $pubmed_opts);
+                $col1 = l($article_id, 'citations/full/' . $article_id,
+                          $new_tab);
+                $col2 = l($pmid, $pubmed_base . $pmid, $new_tab);
                 $last_article_id = $article_id;
             }
             else
@@ -1035,7 +1095,7 @@ class EbmsReports {
         // Prep for links to NLM's PubMed.
         $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
             'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
-        $pubmed_opts = array('attributes' => array('target' => '_blank'));
+        $new_tab = array('attributes' => array('target' => '_blank'));
 
         // Walk through the query results, assembling the rows for the
         // report table.
@@ -1044,8 +1104,8 @@ class EbmsReports {
         foreach ($results as $result) {
             $article_id = $result->article_id;
             $pmid = $result->source_id;
-            $col1 = l($article_id, 'citations/full/' . $article_id);
-            $col2 = l($pmid, $pubmed_base . $pmid, $pubmed_opts);
+            $col1 = l($article_id, 'citations/full/' . $article_id, $new_tab);
+            $col2 = l($pmid, $pubmed_base . $pmid, $new_tab);
             $col3 = EbmsReports::get_topics($article_id, $librarian_approval);
             $col4 = EbmsReports::get_topics($article_id, $manager_approval);
             $rows[] = array(
@@ -1068,22 +1128,20 @@ class EbmsReports {
      * This display is the interim display for the "Import Reports"
      * page.
      *
-     *  @param  int    $board   Primary key for ebms_board table
-     *  @param  int    $topic   Primary key for ebms_topic table
-     *  @param  int    $cycle   Primary key for ebms_cycle table
-     *  @param  array  $start   Drupal form date array for beginning
-     *                          of date range for filtering
-     *  @param  array  $end     Drupal form date array for end
-     *                          of date range for filtering
-     *  @param  bool   $range   Flag indicating whether both dates
-     *                          ($start and $end) should be used
-     *                          for filtering
+     *  @param  int    $request_id  ID of request stored in DB
      *
-     *  @return array           Drupal render array for the list
-     *                          of import batch jobs
+     *  @return array                Drupal render array for the list
+     *                               of import batch jobs
      */
-    public static function import_reports($board, $topic, $cycle, $start,
-                                          $end, $range) {
+    public static function import_reports($request_id) {
+
+        // Fetch the report request's parameters.
+        $params = EbmsReports::fetch_report_request($request_id);
+        $board = $params['board'];
+        $topic = $params['topic'];
+        $cycle = $params['cycle'];
+        $start = $params['import-start']['date'];
+        $end = $params['import-end']['date'];
 
         // Construct the query object for the report.
         $query = db_select('ebms_import_batch', 'j');
@@ -1097,7 +1155,7 @@ class EbmsReports {
             $query->condition('t.topic_id', $topic);
         if ($cycle)
             $query->condition('j.cycle_id', $cycle);
-        elseif ($range) {
+        elseif ($start || $end) {
             if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
                     'j.import_date')) {
                 drupal_set_message('Failure restricting query by range',
@@ -1105,8 +1163,6 @@ class EbmsReports {
                 return array();
             }
         }
-        else
-            Ebms\Util::add_date_to_query($query, $start, 'j.import_date');
         $query->fields('j', array('import_batch_id', 'import_date'));
         $query->fields('t', array('topic_name'));
         $query->fields('b', array('board_name'));
@@ -1128,7 +1184,8 @@ class EbmsReports {
             if ($result->citations != 1)
                 $count .= 's';
             $line = "$date | $board_name | $topic_name | $count";
-            $items[] = l($line, 'reports/import/' . $result->import_batch_id);
+            $opts = array('query' => array('job' => $result->import_batch_id));
+            $items[] = l($line, "reports/import/$request_id", $opts);
         }
 
         // Assemble and return the render array for the list.
@@ -1165,7 +1222,7 @@ class EbmsReports {
         require_once('EbmsImport.inc');
         $batch = new Ebms\ImportBatch($id);
         $title = 'Import Batch ' . $id;
-        return Ebms\Util::import_report($batch, $title);
+        return Ebms\Util::import_report($batch, $title, 7);
         return;
         return array(
             '#type' => 'container',
@@ -1206,11 +1263,9 @@ class EbmsReports {
             $member = $params['member'];
             $uploader_board = $params['uploader-board'];
             $archived = $params['archived'];
-            $start = $params['upload-start'];
-            $range = $params['use-upload-date-range'];
-            if ($range)
-                $end = $params['upload-end'];
-            //pdq_ebms_debug('DOCS PARAMS', $params);
+            $start = $params['upload-start']['date'];
+            $end = $params['upload-end']['date'];
+            $range = $start || $end;
         }
 
         // Find out whether we're paging the results.
@@ -1306,7 +1361,6 @@ class EbmsReports {
         $archive_parms = drupal_get_query_parameters();
 
         // Build the array of table rows.
-        //pdq_ebms_debug('DOC REPORT QUERY', 'query: ' . $query);
         $docs = $query->execute();
         $rows = array();
         $target = array('attributes' => array('target' => '_blank'));
@@ -1434,6 +1488,7 @@ class EbmsReports {
                 'data' => 'Citation',
                 'field' => 'a.last_name',
                 'class' => array('col-1'),
+                'sort' => 'asc',
             ),
         );
         if (!$params['disposition'])
@@ -1571,6 +1626,7 @@ class EbmsReports {
                 'data' => 'Citation',
                 'field' => 'a.last_name',
                 'class' => array('col-1'),
+                'sort' => 'asc',
             ),
         );
         if (!$params['disposition'])
@@ -1722,6 +1778,7 @@ class EbmsReports {
                 'data' => 'Citation',
                 'field' => 'aa.last_name',
                 'class' => array('col-1'),
+                'sort' => 'asc',
             ),
         );
 
@@ -1840,6 +1897,7 @@ class EbmsReports {
                 'data' => 'Citation',
                 'field' => 'aa.last_name',
                 'class' => array('col-1'),
+                'sort' => 'asc',
             ),
             'Reviewers',
             'Date Assigned',
@@ -1998,6 +2056,7 @@ class EbmsReports {
                 'data' => 'Citation',
                 'field' => 'aa.last_name',
                 'class' => array('col-1'),
+                'sort' => 'asc',
             ),
             'Reviewer',
             'Disposition',
@@ -2171,6 +2230,7 @@ class EbmsReports {
      *                           table and its title.
      */
     static function cites_by_status_bma($params) {
+
         $manager_actions = EbmsReports::manager_actions();
 
         // Create the table column headers, specifying the column which
@@ -2181,9 +2241,10 @@ class EbmsReports {
                 'data' => 'Citation',
                 'field' => 'a.last_name',
                 'class' => array('col-1'),
+                'sort' => 'asc',
             ),
         );
-        if (!$params['disposition'])
+        if (count($params['disposition']) != 1)
             $headers[] = 'Disposition';
         if (!$params['topic'])
             $headers[] = array(
@@ -2193,6 +2254,13 @@ class EbmsReports {
         $headers[] = 'Review Cycle';
         $headers[] = 'Date Assigned';
         $headers[] = 'Comments';
+        $headers[] = 'Merits Discussion'; // OCEEBMS-201
+
+        // Used in the loop below for OCEEBMS-201 support.
+        $merits_discussion_id = db_select('ebms_review_disposition_value', 'v')
+            ->fields('v', array('value_id'))
+            ->condition('v.value_name', 'Merits discussion')
+            ->execute()->fetchField();
 
         // Construct the query for the report.
         $query = db_select('ebms_article_state', 's');
@@ -2209,7 +2277,7 @@ class EbmsReports {
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
-        if ($params['disposition'])
+        if (!empty($params['disposition']))
             $query->condition('s.state_id', $params['disposition']);
         else
             $query->condition('s.state_id',
@@ -2219,7 +2287,7 @@ class EbmsReports {
         $query->fields('s', array('article_id', 'article_state_id',
                                   'state_id', 'status_dt'));
         $query->join('ebms_topic', 'tn', 'tn.topic_id = t.topic_id');
-        $query->fields('tn', array('topic_name'));
+        $query->fields('tn', array('topic_name', 'topic_id'));
         $query->orderByHeader($headers);
         $query->distinct();
 
@@ -2229,6 +2297,7 @@ class EbmsReports {
         $rows = array();
         foreach ($results as $result) {
             $article_id = $result->article_id;
+            $topic_id = $result->topic_id;
             $citation = EbmsReports::format_citation($article_id);
             $row = array(
                 array(
@@ -2240,7 +2309,7 @@ class EbmsReports {
                     'class' => array('col-1'),
                 ),
             );
-            if (!$params['disposition']) {
+            if (count($params['disposition']) != 1) {
                 $disp = $manager_actions[$result->state_id];
                 $row[] = htmlspecialchars($disp);
             }
@@ -2259,6 +2328,18 @@ class EbmsReports {
             $status_dt = strtotime($result->status_dt);
             $row[] = date('m/d/Y', $status_dt);
             $row[] = implode('<br />', $comments);
+
+            // New column added (OCEEBMS-201).
+            $query = db_select('users', 'u');
+            $query->fields('u', array('name'));
+            $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
+            $query->join('ebms_review_disposition', 'd',
+                         'd.review_id = r.review_id');
+            $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+            $query->condition('p.topic_id', $topic_id);
+            $query->condition('r.article_id', $article_id);
+            $query->condition('d.value_id', $merits_discussion_id);
+            $row[] = implode('<br>', $query->execute()->fetchCol());
             $rows[] = array(
                 'data' => $row,
                 'no_striping' => true,
@@ -2313,6 +2394,7 @@ class EbmsReports {
                 'data' => 'Citation',
                 'field' => 'a.last_name',
                 'class' => array('col-1'),
+                'sort' => 'asc',
             ),
             'Meeting Date (Category)',
         );
@@ -2329,9 +2411,8 @@ class EbmsReports {
         $rows = array();
 
         // We construct the list of eligible meetings first.
-        // pdq_ebms_debug('ON AGENDA PARAMS', $params);
         $query = new EbmsEventQuery();
-        $query->restrict_by_date($params['meeting-date']);
+        $query->restrict_by_date($params);
         $query->restrict_by_type($params['meeting-type']);
         $results = $query->execute();
 
@@ -2340,7 +2421,6 @@ class EbmsReports {
 
             // Construct the query for the report.
             $meeting_ids = array_keys($results['node']);
-            //pdq_ebms_debug('MEETING IDS', $meeting_ids);
             $state_id = Ebms\Util::state_id_from_text_id('OnAgenda');
             $query = db_select('ebms_article_state', 's');
             $query = $query->extend('TableSort');
@@ -2476,6 +2556,7 @@ class EbmsReports {
                 'data' => 'Citation',
                 'field' => 'a.last_name',
                 'class' => array('col-1'),
+                'sort' => 'asc',
             ),
             'Disposition',
             'Comments',
@@ -2489,12 +2570,13 @@ class EbmsReports {
         // board decision" state rows.  Instead, we have to find the latest
         // "on agenda" row for the same article/topic and check the meeting
         // linked to *that* row!  TIR 2446.
-        $restrict_by_meeting = false;
-        if ($params['meeting-type'] || $params['meeting-date']['year']) {
-            $on_agenda_decision = Ebms\Util::state_id_from_text_id('OnAgenda');
+        $have_date = (!empty($params['date-start']['date']) ||
+                      !empty($params['date-end']['date']));
+        if ($have_date || $params['meeting-type']) {
             $restrict_by_meeting = true;
+            $on_agenda_decision = Ebms\Util::state_id_from_text_id('OnAgenda');
             $query = new EbmsEventQuery();
-            $query->restrict_by_date($params['meeting-date']);
+            $query->restrict_by_date($params);
             $query->restrict_by_type($params['meeting-type']);
             $meeting_results = $query->execute();
             $meeting_ids = array();
@@ -2704,18 +2786,15 @@ class EbmsReports {
 
         // Retrieve the filtering values from the database.
         $params = EbmsReports::fetch_report_request($request_id);
-        //pdq_ebms_debug('REVIEWS TABLE PARAMS', $params);
         $board = $params['board'];
         $topic = $params['topic'];
         $cycle = $params['cycle'];
         $packet = $params['packet'];
         $reviewer = $params['reviewer'];
-        $rrange = $params['rrange'];
-        $rstart = $params['rstart'];
-        $rend = $params['rend'];
-        $prange = $params['prange'];
-        $pstart = $params['pstart'];
-        $pend = $params['pend'];
+        $rstart = $params['review-date-start']['date'];
+        $rend = $params['review-date-end']['date'];
+        $pstart = $params['packet-date-start']['date'];
+        $pend = $params['packet-date-end']['date'];
 
         // Build the database query for the report.
         $query = db_select('ebms_article_review', 'r');
@@ -2744,16 +2823,12 @@ class EbmsReports {
             $query->condition('p.packet_id', $packet);
         if ($reviewer)
             $query->condition('r.reviewer_id', $reviewer);
-        if ($rrange)
+        if ($rstart || $rend)
             Ebms\Util::add_date_range_to_query($query, $rstart, $rend,
                 'r.when_posted');
-        else
-            Ebms\Util::add_date_to_query($query, $rstart, 'r.when_posted');
-        if ($prange)
+        if ($pstart || $pend)
             Ebms\Util::add_date_range_to_query($query, $pstart, $pend,
                 'p.created_at');
-        else
-            Ebms\Util::add_date_to_query($query, $pstart, 'p.created_at');
         $query->distinct();
         $query->orderByHeader($headers);
 
@@ -2812,7 +2887,6 @@ class EbmsReports {
                 list($year, $month) = explode('/', $packet);
                 $p = "$month/$year";
                 $packet_rows[$p] = array();
-                $packet_rowspan = 0;
                 ksort($reviews);
                 foreach ($reviews as $reviewer => $review_id) {
                     $comment_rows = db_select('ebms_article_review', 'r')
@@ -2839,7 +2913,6 @@ class EbmsReports {
                     }
                     $disp = $ok ? 'Y' : ($rejected ? 'N' : '');
                     $packet_rows[$p][] = array($reviewer, $disp, $comments);
-                    ++$packet_rowspan;
                     ++$article_rowspan;
                 }
             }
@@ -2874,16 +2947,16 @@ class EbmsReports {
                         if ($article_rowspan > 1)
                             $col['rowspan'] = $article_rowspan;
                         $row[] = $col;
-                        if (!$have_packet_row) {
-                            $have_packet_row = true;
-                            $col = array(
-                                'data' => $packet,
-                                'class' => array('col-2'),
-                            );
-                            if ($packet_rowspan > 1)
-                                $col['rowspan'] = $packet_rowspan;
-                            $row[] = $col;
-                        }
+                    }
+                    if (!$have_packet_row) {
+                        $have_packet_row = true;
+                        $col = array(
+                            'data' => $packet,
+                            'class' => array('col-2'),
+                        );
+                        if (count($reviews) > 1)
+                            $col['rowspan'] = count($reviews);
+                        $row[] = $col;
                     }
                     $img = '';
                     if ($disp) {
@@ -2942,7 +3015,6 @@ class EbmsReports {
      */
     static function membership($request_id) {
         $params = EbmsReports::fetch_report_request($request_id);
-        //pdq_ebms_debug('MEMBERSHIP', $params);
         $board_id = $params['board'];
         $query = db_select('users', 'u');
         $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
@@ -3048,7 +3120,8 @@ class EbmsReports {
             ->condition('r.request_id', $request_id)
             ->execute()
             ->fetchField();
-        return drupal_json_decode($json);
+        $request = drupal_json_decode($json);
+        return $request;
     }
 
     /**
@@ -3124,20 +3197,26 @@ class EbmsReports {
     }
 
     /**
-     * Common routine to format a Drupal form date field in the pattern
+     * Common routine to format a possibly incomplete date in the pattern
      * MM/DD/YYYY.
      *
-     *  @param  array  $date    Drupal form date field with separate
-     *                          elements for 'year', 'month', and 'day'
+     *  @param  string  $date   ISO date string (possibly incomplete)
+     *  @param  boolean $end    Flag indicating whether this date
+     *                          represents the end point for a data
+     *                          range, in which case any missing
+     *                          parts of the date are to be filled in
+     *                          with the latest possible values
      *
      *  @return string          Date string as MM/DD/YYYY
      */
-    static function format_date($date) {
+    static function format_date($date, $end=false) {
+        if (!$date)
+            return $end ? '[no ending date]' : '[no starting date]';
+        $date = Ebms\Util::fill_in_date($date, $end);
+        $date = Ebms\Util::date_string_to_array($date);
         $y = $date['year'];
         $m = $date['month'];
         $d = $date['day'];
-        if (!$y || !$m || !$d)
-            return '';
         $t = mktime(0, 0, 0, $m, $d, $y);
         return date('m/d/Y', $t);
     }
@@ -3147,18 +3226,14 @@ class EbmsReports {
      * range block for the meta-data at the top of one of the citation
      * reports.
      *
-     *  @param  array  $start   Drupal form date field for the beginning
-     *                          of a date range
-     *  @param  array  $end     Drupal form date field for the end of a
-     *                          date range
+     *  @param  string  $start   ISO date string (possibly incomplete)
+     *  @param  string  $end     ISO date string (possibly incomplete)
      *
-     *  @return string          HTML markup for date range block
+     *  @return string           HTML markup for date range block
      */
     static function format_date_range($start, $end) {
-        $s = EbmsReports::format_date($start);
-        $e = EbmsReports::format_date($end);
-        if (!$s || !$e)
-            return '';
+        $s = self::format_date($start);
+        $e = self::format_date($end, true);
         return '<div class="meta"><span class="label">Date Range:</span> ' .
             $s . ' - ' . $e . '</div>';
     }
@@ -3191,32 +3266,23 @@ class EbmsEventQuery extends EntityFieldQuery {
      * routine will have enforced this assumption.
      *
      *  @param  array   $date   Structured array representing the
-     *                          separate values for year, month,
-     *                          and day components of a Drupal
-     *                          stock date form field.
+     *                          filtering options for this request
      *
-     *  @return                 None
+     *  @return                 True iff query restricted
      */
-    public function restrict_by_date($date) {
-        $y = $date['year'];
-        $m = $date['month'];
-        $d = $date['day'];
-        if ($d) {
-            $start = mktime(0, 0, 0, $m, $d, $y);
-            $end = mktime(0, 0, -1, $m, $d + 1, $y);
+    public function restrict_by_date($params) {
+        $start = $params['date-start']['date'];
+        $end = $params['date-end']['date'];
+        if ($start || $end) {
+            $range = array(
+                strtotime(Ebms\Util::fill_in_date($start)),
+                strtotime(Ebms\Util::fill_in_date($end, true)),
+            );
+            $field = 'field_datespan';
+            $this->fieldCondition($field, 'value', $range, 'BETWEEN');
+            return true;
         }
-        elseif ($m) {
-            $start = mktime(0, 0, 0, $m, 1, $y);
-            $end = mktime(0, 0, -1, $m + 1, 1, $y);
-        }
-        elseif ($y) {
-            $start = mktime(0, 0, 0, 1, 1, $y);
-            $end = mktime(0, 0, -1, 1, 1, $y + 1);
-        }
-        else
-            return;
-        $field = 'field_datespan';
-        $this->fieldCondition($field, 'value', array($start, $end), 'BETWEEN');
+        return false;
     }
 
     /**
@@ -3274,8 +3340,9 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = $cycle = $report = 0;
-    $start_date = $end_date = array('year' => 0, 'month' => 0, 'day' => 0);
+    $board = \Ebms\Util::get_user_default_board(0);
+    $cycle = $report = 0;
+    $start_date = $end_date = '';
 
     // Check for overrides of the defaults from the form's current state.
     $values = array();
@@ -3287,10 +3354,16 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             $cycle = $values['cycle'];
         if (isset($values['report']))
             $report = $values['report'];
-        if (isset($values['start-date']))
-            $start_date = $values['start-date'];
-        if (isset($values['end-date']))
-            $end_date = $values['end-date'];
+        if (isset($values['date-start'])) {
+            $start_date = $values['date-start']['date'];
+            if ($start_date)
+                $start_date = Ebms\Util::fill_in_date($start_date);
+        }
+        if (isset($values['date-end'])) {
+            $end_date = $values['date-end']['date'];
+            if ($end_date)
+                $end_date = Ebms\Util::fill_in_date($end_date, true);
+        }
     }
 
     // Build picklist arrays.
@@ -3385,24 +3458,9 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
     // for filtering.
     if (!strcmp($report, 'Citation Summary Topic Changes') ||
         !strcmp($report, 'Citations Not Selected for Full Text Retrieval')) {
-        $form['top']['report-form']['ajax fields']['start-date'] = array(
-            '#type' => 'date',
-            '#title' => 'START DATE',
-            '#title_display' => 'after',
-            '#default_value' => $start_date,
-            '#pre_render' => array('pdq_ebms_fix_date'),
-            '#attributes' => array('class' => array('right-aligned-date')),
-            '#element_validate' => array('pdq_ebms_date_validate'),
-        );
-        $form['top']['report-form']['ajax fields']['end-date'] = array(
-            '#type' => 'date',
-            '#title' => 'END DATE',
-            '#title_display' => 'after',
-            '#default_value' => $end_date,
-            '#pre_render' => array('pdq_ebms_fix_date'),
-            '#attributes' => array('class' => array('right-aligned-date')),
-            '#element_validate' => array('pdq_ebms_date_validate'),
-        );
+        $date_field = Ebms\Util::date_range_field('Decision Date', 'date',
+                                                  $start_date, $end_date);
+        $form['top']['report-form']['ajax fields']['date'] = $date_field;
     }
 
     // If we actually have a request for one of the reports, invoke
@@ -3477,45 +3535,27 @@ function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
             // ensure that both dates are complete if a date range is
             // specified.
             case 'Citations Not Selected for Full Text Retrieval':
-                $start = $values['start-date'];
-                $end = $values['end-date'];
-                $have_start = $have_end = false;
-                $start_complete = $end_complete = true;
-                foreach ($start as $val)
-                    if ($val)
-                        $have_start = true;
-                    else
-                        $start_complete = false;
-                foreach ($end as $val)
-                    if ($val)
-                        $have_end = true;
-                    else
-                        $end_complete = false;
+                $start = $values['date-start']['date'];
+                $end = $values['date-end']['date'];
                 if ($cycle) {
-                    if ($have_start)
-                        form_set_error('start-date',
-                            'Cannot specify cycle and date range');
-                    elseif ($have_end)
-                        form_set_error('end-date',
-                            'Cannot specify cycle and date range');
+                    $msg = 'Cannot specify both cycle and dates.';
+                    if ($start)
+                        form_set_error('date-start', $msg);
+                    elseif ($end)
+                        form_set_error('end-date', $msg);
                 }
-                elseif (!$start_complete || !$end_complete)
-                    form_set_error('cycle',
-                        'Must specify cycle or complete date range');
+                elseif (!$start && !$end)
+                    form_set_error('cycle', 'Must specify cycle or dates.');
                 break;
 
             // For the report on articles for which the board manager
             // have added topics not included by the librarian,
             // we must have a fully specified date range.
             case 'Citation Summary Topic Changes':
-                $s = $values['start-date'];
-                $e = $values['end-date'];
-                if (!$s['year'] || !$s['month'] || !$s['day'])
-                    form_set_error('start-date',
-                        'A complete date range is required');
-                elseif (!$e['year'] || !$e['month'] || !$e['day'])
-                    form_set_error('end-date',
-                        'A complete date range is required');
+                $start = $values['date-start']['date'];
+                $end = $values['date-end']['date'];
+                if (!$start && !$end)
+                    form_set_error('date-start', 'A date is required.');
                 break;
         }
     }
@@ -3564,7 +3604,7 @@ function pdq_ebms_citation_reports_form_submit($form, &$form_state) {
  *                                of the fields to appear on the
  *                                form, as well as other markup
  */
-function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
+function pdq_ebms_import_reports_form($form, &$form_state, $request_id=0) {
 
     // Override the breadcrumbs which Drupal would automatically
     // set based on the menu callback, in order to comply with
@@ -3578,21 +3618,23 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = $cycle = $topic = 0;
-    $op = '';
-    $range = false;
-    $start = $end = array('year' => 0, 'month' => 0, 'day' => 0);
+    $board = \Ebms\Util::get_user_default_board(0);
+    $cycle = $topic = 0;
+    $op = $start = $end = '';
 
-    // Check for overrides of the defaults from the form's current state.
-    if (isset($form_state['values'])) {
-        $values = $form_state['values'];
-        $board = $values['board'];
-        $topic = $values['topic'];
-        $cycle = $values['cycle'];
-        $start = $values['import-start'];
-        $end = $values['import-end'];
-        $range = $values['use-import-date-range'];
-        $op = $values['op'];
+    // Check for overrides of the form's defaults if we have a request.
+    if ($request_id) {
+        $params = EbmsReports::fetch_report_request($request_id);
+        $board = $params['board'];
+        $topic = $params['topic'];
+        $cycle = $params['cycle'];
+        $start = $params['import-start']['date'];
+        $end = $params['import-end']['date'];
+        $op = $params['op'];
+        if ($start)
+            $start = Ebms\Util::fill_in_date($start);
+        if ($end)
+            $end = Ebms\Util::fill_in_date($end);
     }
 
     // Build picklist arrays.
@@ -3615,6 +3657,8 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
     // Begin the form structure, including the left nav penel.
     $left_nav = EbmsReports::build_left_nav('Citation Management',
                                             'Import Reports');
+    $import_date = Ebms\Util::date_range_field('Import Date', 'import',
+                                               $start, $end);
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'fulltext-top'),
@@ -3650,40 +3694,7 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
                 '#default_value' => $cycle,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
-            'import-date-line' => array(
-                '#type' => 'container',
-                '#attributes' => array('class' => array('date-with-range')),
-                'import-start' => array(
-                    '#type' => 'date',
-                    '#element_validate' => array('pdq_ebms_date_validate'),
-                    '#default_value' => $start,
-                    '#pre_render' => array('pdq_ebms_fix_date'),
-                ),
-                'use-import-date-range' => array(
-                    '#type' => 'checkbox',
-                    '#title' => 'RANGE',
-                    '#prefix' => '<div class="box-on-right">',
-                    '#suffix' => '</div>',
-                    '#default_value' => $range,
-                ),
-            ),
-            'import-date-label' => array(
-                '#type' => 'markup',
-                '#markup' => '<div class="date-label">Import Date</div>',
-            ),
-            'import-end' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $start,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-                '#states' => array(
-                    'invisible' => array(
-                        '#edit-use-input-date-range' => array(
-                            'checked' => false
-                        ),
-                    ),
-                ),
-            ),
+            'import-date' => $import_date,
             'buttons' => array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'report-buttons'),
@@ -3701,14 +3712,14 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
 
     // If the user has selected a specific import job, show what
     // happened during that job.
-    if ($job)
-        $form['report'] = EbmsReports::import_job($job);
+    $parms = drupal_get_query_parameters();
+    if (!empty($parms['job']))
+        $form['report'] = EbmsReports::import_job($parms['job']);
 
     // If the user has given us the criteria for selecting import
     // jobs, build and display the list of matching jobs.
-    elseif ($op == 'Submit')
-        $form['report'] = EbmsReports::import_reports($board, $topic,
-                          $cycle, $start, $end, $range);
+    elseif ($request_id)
+        $form['report'] = EbmsReports::import_reports($request_id);
     return $form;
 }
 
@@ -3730,8 +3741,9 @@ function pdq_ebms_import_reports_form($form, &$form_state, $job=0) {
 function pdq_ebms_import_reports_form_submit($form, &$form_state) {
     if ($form_state['values']['op'] == 'Reset')
         drupal_goto('reports/import');
-    $form_state['rebuild'] = true;
-    return;
+    $values = $form_state['values'];
+    $request_id = EbmsReports::save_report_request($values, 'Imports');
+    drupal_goto('reports/import/' . $request_id);
 }
 
 /**
@@ -3768,10 +3780,10 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = $tag = $inhouse = $member = $uploader_board = 0;
-    $keyword = '';
-    $range = $archived = false;
-    $start = $end = array('year' => 0, 'month' => 0, 'day' => 0);
+    $board = \Ebms\Util::get_user_default_board(0);
+    $tag = $inhouse = $member = $uploader_board = 0;
+    $keyword = $start = $end = '';
+    $archived = false;
 
     // Check for overrides of the defaults by request parameters
     // stored in the database.
@@ -3784,10 +3796,12 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
         $member = $params['member'];
         $uploader_board = $params['uploader-board'];
         $archived = $params['archived'];
-        $start = $params['upload-start'];
-        $range = $params['use-upload-date-range'];
-        if ($range)
-            $end = $params['upload-end'];
+        $start = $params['upload-start']['date'];
+        $end = $params['upload-end']['date'];
+        if ($start)
+            $start = Ebms\Util::fill_in_date($start);
+        if ($end)
+            $end = Ebms\Util::fill_in_date($end);
     }
 
     // Build picklist arrays for boards, tags, roles, etc.
@@ -3831,6 +3845,8 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
     // Begin the form structure, including the left nav penel.
     $left_nav = EbmsReports::build_left_nav('Board Management',
                                             'Documents');
+    $date_field = Ebms\Util::date_range_field('Date Uploaded', 'upload',
+                                              $start, $end);
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'documents-top'),
@@ -3889,40 +3905,7 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
                 '#default_value' => $uploader_board,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
-            'upload-date-line' => array(
-                '#type' => 'container',
-                '#attributes' => array('class' => array('date-with-range')),
-                'upload-start' => array(
-                    '#type' => 'date',
-                    '#element_validate' => array('pdq_ebms_date_validate'),
-                    '#default_value' => $start,
-                    '#pre_render' => array('pdq_ebms_fix_date'),
-                ),
-                'use-upload-date-range' => array(
-                    '#type' => 'checkbox',
-                    '#title' => 'RANGE',
-                    '#prefix' => '<div class="box-on-right">',
-                    '#suffix' => '</div>',
-                    '#default_value' => $range,
-                ),
-            ),
-            'upload-date-label' => array(
-                '#type' => 'markup',
-                '#markup' => '<div class="date-label">Date Uploaded</div>',
-            ),
-            'upload-end' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $end,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-                '#states' => array(
-                    'invisible' => array(
-                        '#edit-use-upload-date-range' => array(
-                            'checked' => false
-                        ),
-                    ),
-                ),
-            ),
+            '$upload-date' => $date_field,
             'archived' => array(
                 '#type' => 'checkbox',
                 '#title' => 'ARCHIVED',
@@ -4006,7 +3989,7 @@ function pdq_ebms_membership_report_form($form, &$form_state, $request_id) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = 0;
+    $board = \Ebms\Util::get_user_default_board(0);
     //$include_inactive = false;
     $show_subgroups = false;
 
@@ -4142,8 +4125,6 @@ function pdq_ebms_doc_edit_form($form, &$form_state, $doc_id, $report_id) {
     $query->join('file_managed', 'f', 'f.fid = d.file_id');
     $query->fields('f', array('filename'));
     $query->condition('d.doc_id', $doc_id);
-    //pdq_ebms_debug('DOC EDIT FORM QUERY', array('q: ' . $query,
-    //        $query->arguments()));
     $file_name = htmlspecialchars($query->execute()->fetchField());
 
     // Set up the custom breadcrumbs, including a link back to the
@@ -4332,8 +4313,9 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = $topic = $reviewer = $cycle = $rrange = $prange = $packet = 0;
-    $rstart = $rend = $pstart = $pend = Ebms\Util::empty_date();
+    $board = \Ebms\Util::get_user_default_board(0);
+    $topic = $reviewer = $cycle = $rrange = $prange = $packet = 0;
+    $rstart = $rend = $pstart = $pend = '';
 
     // Check for overrides of the defaults by request parameters
     // stored in the database.
@@ -4344,31 +4326,42 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
         $reviewer = $values['reviewer'];
         $cycle = $values['cycle'];
         $packet = $values['packet'];
-        $rrange = $values['rrange'];
-        $prange = $values['prange'];
-        $rstart = $values['rstart'];
-        $pstart = $values['pstart'];
-        $rend = $values['rend'];
-        $pend = $values['pend'];
+        $rstart = $values['review-date-start']['date'];
+        $pstart = $values['packet-date-start']['date'];
+        $rend = $values['review-date-end']['date'];
+        $pend = $values['packet-date-end']['date'];
+        if ($pstart)
+            $pstart = Ebms\Util::fill_in_date($pstart, true);
+        if ($rstart)
+            $rstart = Ebms\Util::fill_in_date($rstart, true);
+        if ($pend)
+            $pend = Ebms\Util::fill_in_date($pend, true);
+        if ($rend)
+            $rend = Ebms\Util::fill_in_date($rend, true);
     }
 
-    // Build picklist arrays (except topics, handled below).
+    // OCEEBMS-200: pre-populate lit reviews report
+    else {
+        $parms = drupal_get_query_parameters();
+        if (!empty($parms['packet'])) {
+            $packet = $parms['packet'];
+            $query = db_select('ebms_packet', 'p');
+            $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+            $query->fields('p', array('topic_id', 'created_at'));
+            $query->fields('t', array('board_id'));
+            $query->condition('p.packet_id', $packet);
+            $packet_info = $query->execute()->fetchObject();
+            $board = $packet_info->board_id;
+            $topic = $packet_info->topic_id;
+            $created = $packet_info->created_at;
+            $pstart = $created;
+        }
+    }
+
+    // Initialize picklist arrays (except topics and reviewers, handled below).
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $cycles = array(0 => ' ') + Ebms\Util::cycles(false);
     $packets = array(0 => ' ');
-    $reviewers = array(0 => ' ');
-    $board_member_role = db_select('role', 'r')
-        ->fields('r', array('rid'))
-        ->condition('r.name', 'board member')
-        ->execute()
-        ->fetchField();
-    $query = db_select('users', 'u');
-    $query->join('users_roles', 'r', 'r.uid = u.uid');
-    $query->condition('r.rid', $board_member_role);
-    $query->fields('u', array('uid', 'name'));
-    $results = $query->execute();
-    foreach ($results as $result)
-        $reviewers[$result->uid] = $result->name;
 
     // See if the board field has changed value since the last request
     // was stored in the database (needed in case of an ajax callback).
@@ -4382,6 +4375,7 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
     // connected with the chosen board.
     // OCEEBMS-70: same for packets.
     $topics = array(0 => ' ');
+    $reviewers = array(0 => ' ');
     if ($board) {
          $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
@@ -4401,17 +4395,35 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
             $query->condition('t.board_id', $board);
         }
         $query->orderBy('p.packet_title');
-        //pdq_ebms_debug('PACKET QUERY', $query);
         $results = $query->execute();
         foreach ($results as $result)
             $packets[$result->packet_id] = $result->packet_title;
         if (!array_key_exists($packet, $packets))
             $packet = 0;
+        $board_member_role = db_select('role', 'r')
+            ->fields('r', array('rid'))
+            ->condition('r.name', 'board member')
+            ->execute()
+            ->fetchField();
+        $query = db_select('users', 'u');
+        $query->join('users_roles', 'r', 'r.uid = u.uid');
+        $query->condition('r.rid', $board_member_role);
+        $query->fields('u', array('uid', 'name'));
+        $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+        $query->condition('m.board_id', $board);
+        $query->orderBy('u.name');
+        $results = $query->execute();
+        foreach ($results as $result)
+            $reviewers[$result->uid] = $result->name;
     }
 
     // Begin the form structure, including the left nav penel.
     $left_nav = EbmsReports::build_left_nav('Citation Management',
                                             'Literature Reviews');
+    $rdate_field = Ebms\Util::date_range_field('Date Review Submitted',
+                                               'review-date', $rstart, $rend);
+    $pdate_field = Ebms\Util::date_range_field('Date Packet Created',
+                                               'packet-date', $pstart, $pend);
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'lit-review-report-top'),
@@ -4481,72 +4493,8 @@ function pdq_ebms_lit_review_report_form($form, &$form_state, $request_id=0) {
                     ),
                 ),
             ),
-            'review-date-line' => array(
-                '#type' => 'container',
-                '#attributes' => array('class' => array('date-with-range')),
-                'rstart' => array(
-                    '#type' => 'date',
-                    '#element_validate' => array('pdq_ebms_date_validate'),
-                    '#default_value' => $rstart,
-                    '#pre_render' => array('pdq_ebms_fix_date'),
-                ),
-                'rrange' => array(
-                    '#type' => 'checkbox',
-                    '#title' => 'RANGE',
-                    '#prefix' => '<div class="box-on-right">',
-                    '#suffix' => '</div>',
-                    '#default_value' => $rrange,
-                ),
-            ),
-            'review-date-label' => array(
-                '#type' => 'markup',
-                '#markup' =>
-                '<div class="date-label">Date Review Submitted</div>',
-            ),
-            'rend' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $rend,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-                '#states' => array(
-                    'invisible' => array(
-                        '#edit-rrange' => array('checked' => false),
-                    ),
-                ),
-            ),
-            'packet-date-line' => array(
-                '#type' => 'container',
-                '#attributes' => array('class' => array('date-with-range')),
-                'pstart' => array(
-                    '#type' => 'date',
-                    '#element_validate' => array('pdq_ebms_date_validate'),
-                    '#default_value' => $pstart,
-                    '#pre_render' => array('pdq_ebms_fix_date'),
-                ),
-                'prange' => array(
-                    '#type' => 'checkbox',
-                    '#title' => 'RANGE',
-                    '#prefix' => '<div class="box-on-right">',
-                    '#suffix' => '</div>',
-                    '#default_value' => $prange,
-                ),
-            ),
-            'packet-date-label' => array(
-                '#type' => 'markup',
-                '#markup' =>
-                '<div class="date-label">Date Packet Created</div>',
-            ),
-            'pend' => array(
-                '#type' => 'date',
-                '#element_validate' => array('pdq_ebms_date_validate'),
-                '#default_value' => $pend,
-                '#pre_render' => array('pdq_ebms_fix_date'),
-                '#states' => array(
-                    'invisible' => array(
-                        '#edit-prange' => array('checked' => false),
-                    ),
-                ),
-            ),
+            'review-date' => $rdate_field,
+            'packet-date' => $pdate_field,
             'buttons' => array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'report-buttons'),
@@ -4592,28 +4540,18 @@ function pdq_ebms_lit_review_report_form_validate($form, &$form_state) {
     if ($values['op'] == 'Submit') {
         if (!$values['board'])
             form_set_error('board', 'No board selected.');
-        if ($values['prange']) {
-            if (!$values['pend']['day'] || !$values['pstart']['day'])
-                form_set_error('pstart',
-                    'Complete from and to dates required for date range.');
-            else {
-                $from = Ebms\Util::date_field_to_timestamp($values['pstart']);
-                $to = Ebms\Util::date_field_to_timestamp($values['pend']);
-                if ($from > $to)
-                    form_set_error('pstart', 'Invalid date range.');
-            }
-        }
-        if ($values['rrange']) {
-            if (!$values['rend']['day'] || !$values['rstart']['day'])
-                form_set_error('rstart',
-                    'Complete from and to dates required for date range.');
-            else {
-                $from = Ebms\Util::date_field_to_timestamp($values['rstart']);
-                $to = Ebms\Util::date_field_to_timestamp($values['rend']);
-                if ($from > $to)
-                    form_set_error('rstart', 'Invalid date range');
-            }
-        }
+        $pstart = $values['packet-date-start']['date'];
+        $rstart = $values['review-date-start']['date'];
+        $pend = $values['packet-date-end']['date'];
+        $rend = $values['review-date-end']['date'];
+        if ($pend)
+            $pend = Ebms\Util::fill_in_date($pend, true);
+        if ($rend)
+            $rend = Ebms\Util::fill_in_date($rend, true);
+        if ($pstart && $pend && $pstart >= $pend)
+            form_set_error('packet-date-start', 'Invalid date range.');
+        if ($rstart && $rend && $rstart >= $rend)
+            form_set_error('review-date-start', 'Invalid date range.');
     }
 }
 
@@ -4679,9 +4617,10 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = $topic = $status = $meeting_type = $disposition = 0;
+    $board = \Ebms\Util::get_user_default_board(0);
+    $topic = $status = $meeting_type = $disposition = 0;
     $selected_cycles = array();
-    $meeting_date = Ebms\Util::empty_date();
+    $date_start = $date_end = '';
 
     // Check for overrides of the defaults by request parameters
     // stored in the database.
@@ -4695,8 +4634,12 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         $selected_cycles = $values['cycles'];
         if (isset($values['meeting-type']))
             $meeting_type = $values['meeting-type'];
-        if (isset($values['meeting-date']))
-            $meeting_date = $values['meeting-date'];
+        if (!empty($values['date-start']['date']))
+            $date_start =
+                Ebms\Util::fill_in_date($values['date-start']['date']);
+        if (!empty($values['date-end']['date']))
+            $date_end = Ebms\Util::fill_in_date($values['date-end']['date'],
+                                                true);
     }
 
     // Create the picklists for cycles, boards, meeting types,
@@ -4722,7 +4665,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     // field.  Assemble the possible Disposition picklists value sets.
     $yes_no = $yes_no_fyi = array(0 => ' ', 'yes' => 'Yes', 'no' => 'No');
     $yes_no_fyi['fyi'] = 'Flag for FYI';
-    $manager_actions = array(0 => ' ') + EbmsReports::manager_actions();
+    $manager_actions = EbmsReports::manager_actions();
     $review_dispositions = array(0 => ' ');
     $results = db_select('ebms_review_disposition_value', 'v')
         ->fields('v', array('value_id', 'value_name'))
@@ -4789,8 +4732,15 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
 
     // Unselect any leftover Disposition selection which is no longer
     // valid after the Status select has changed.
-    if ($disposition && !array_key_exists($disposition, $dispositions))
+    if ($status == 'board manager action') {
+        if (!is_array($disposition))
+            $disposition = $form_state['values']['disposition'] = array();
+    }
+    elseif (is_array($disposition))
         $disposition = $form_state['values']['disposition'] = 0;
+    elseif ($disposition && !array_key_exists($disposition, $dispositions))
+        $disposition = $form_state['values']['disposition'] = 0;
+
 
     // Begin the form structure, including the left nav penel.
     $left_nav = EbmsReports::build_left_nav('Citation Management',
@@ -4860,6 +4810,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             '#title_display' => 'after',
             '#options' => $dispositions,
             '#default_value' => $disposition,
+            '#multiple' => $status == 'board manager action',
             '#attributes' => array(
                 'class' => array('fixed-width')
             ),
@@ -4893,15 +4844,9 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             '#default_value' => $meeting_type,
             '#attributes' => array('class' => array('fixed-width')),
         );
-        $form['top']['report-form']['status-dep']['meeting-date'] = array(
-            '#type' => 'date',
-            '#title' => 'Meeting Date',
-            '#title_display' => 'after',
-            '#default_value' => $meeting_date,
-            '#pre_render' => array('pdq_ebms_fix_date'),
-            '#attributes' => array('class' => array('right-aligned-date')),
-            '#element_validate' => array('pdq_ebms_date_validate'),
-        );
+        $date_field = Ebms\Util::date_range_field('Meeting Date', 'date',
+                                                  $date_start, $date_end);
+        $form['top']['report-form']['status-dep']['date'] = $date_field;
     }
 
     // Add the buttons to the form to complete it.
@@ -5003,29 +4948,6 @@ function pdq_ebms_fix_date($element) {
 }
 
 /**
- * We have a more lenient approach to date validation than is used
- * by the stock Drupal date field.  Our requirements ask us to accept
- * partially-specified dates, provide no less granular components are
- * omitted when more granular components are specified.  For example,
- * it is not permitted to specify a month and day, but fail to
- * specify the year, whereas it is OK to give the year without
- * specifying the month or day.
- */
-function pdq_ebms_date_validate($element, &$form_state, $form) {
-    $y = $element['#value']['year'];
-    $m = $element['#value']['month'];
-    $d = $element['#value']['day'];
-    if ($d) {
-        if (!$y || !$m)
-            form_error($element, 'Day cannot be specified without full date');
-        elseif (!checkdate($m, $d, $y))
-            form_error($element, 'The specified date is invalid');
-    }
-    elseif ($m && !$y)
-        form_error($element, 'Month cannot be specified without year');
-}
-
-/**
  * Validation function to ensure that a document was selected for a file
  * upload field (Drupal's validation of required file upload fields is
  * broken).  Make sure we don't make this check if the Cancel button
@@ -5096,7 +5018,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
     );
 
     // Initialize defaults for the form field's values.
-    $board = 0;
+    $board = \Ebms\Util::get_user_default_board(0);
     $selected_topics = $selected_reviewers = array();
     $start = $end = '';
 
@@ -5106,8 +5028,12 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
         $board = $values['board'];
         $selected_topics = $values['topics'];
         $selected_reviewers = $values['reviewers'];
-        $start = $values['start-date'];
-        $end = $values['end-date'];
+        $start = $values['date-start']['date'];
+        $end = $values['date-end']['date'];
+        if ($start)
+            $start = Ebms\Util::fill_in_date($start);
+        if ($end)
+            $end = Ebms\Util::fill_in_date($end, true);
     }
 
     // Get the values of interest for ajax callbacks.
@@ -5193,28 +5119,8 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
                 '#attributes' => array('class' => array('fixed-width')),
             ),
         ),
-        'start-date' => array(
-            '#type' => 'date_popup',
-            '#title' => 'Start Date',
-            '#date_format' => 'Y-m-d',
-            '#default_value' => $start,
-            '#date_label_position' => 'within',
-            '#attributes' => array(
-                'title' =>
-                 'Assigned date (defaults to no start date)',
-            ),
-        ),
-        'end-date' => array(
-            '#type' => 'date_popup',
-            '#title' => 'End Date',
-            '#date_format' => 'Y-m-d',
-            '#default_value' => $end,
-            '#date_label_position' => 'within',
-            '#attributes' => array(
-                'title' =>
-                 'Assigned date (defaults to no end date)',
-            ),
-        ),
+        'dates' => Ebms\Util::date_range_field('DATE ASSIGNED', 'date',
+                                               $start, $end, '', false),
         'reset' => array(
             '#type' => 'submit',
             '#value' => 'Reset',
@@ -5230,7 +5136,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
                                             'Responses By Reviewer');
     $page['top'] = array(
         '#type' => 'container',
-        '#attributes' => array('id' => 'cites-by-status-report-top'),
+        '#attributes' => array('id' => 'responses-by-reviewer-report-top'),
         'left-nav' => $left_nav,
         'report-form' => $form,
     );
@@ -5240,9 +5146,8 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
         $query = db_select('ebms_packet', 'p')
             ->fields('p', array('packet_id', 'packet_title', 'created_at'));
         $query = $query->extend('TableSort');
-        $query->leftJoin('ebms_packet_reviewer', 'r',
-            'r.packet_id = p.packet_id');
-        $query->leftJoin('users', 'u', 'u.uid = r.reviewer_id');
+        $query->join('ebms_packet_reviewer', 'r', 'r.packet_id = p.packet_id');
+        $query->join('users', 'u', 'u.uid = r.reviewer_id');
         $query->fields('u', array('uid', 'name'));
         if (count($values['topics']))
             $query->condition('p.topic_id', $values['topics'], 'IN');
@@ -5252,13 +5157,14 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
         }
         if (count($values['reviewers']))
             $query->condition('r.reviewer_id', $values['reviewers'], 'IN');
-        if ($values['start-date'])
-            $query->condition('p.created_at', $values['start-date'], '>=');
-        if ($values['end-date']) {
-            $end = $values['end-date'] . ' 23:59:59';
+        if ($values['date-start']['date']) {
+            $start = Ebms\Util::fill_in_date($values['date-start']['date']);
+            $query->condition('p.created_at', $start, '>=');
+        }
+        if ($values['date-end']['date']) {
+            $end = Ebms\Util::fill_in_date($values['date-end']['date'], true);
             $query->condition('p.created_at', $end, '<=');
         }
-        //pdq_ebms_debug('QUERY VALUES', $values);
         $headers = array(
             array(
                 'data' => 'Packet Name',
@@ -5399,7 +5305,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     );
 
     // Initialize defaults for the form field's values.
-    $board = 0;
+    $board = \Ebms\Util::get_user_default_board(0);
     $selected_topics = $selected_cycles = array();
     $order_by = 'author';
     $start = $end = '';
@@ -5410,8 +5316,12 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         $board = $values['board'];
         $selected_topics = $values['topics'];
         $selected_cycles = $values['cycles'];
-        $start = $values['start-date'];
-        $end = $values['end-date'];
+        $start = $values['date-start']['date'];
+        $end = $values['date-end']['date'];
+        if ($start)
+            $start = Ebms\Util::fill_in_date($start);
+        if ($end)
+            $end = Ebms\Util::fill_in_date($end, true);
         $order_by = $values['order-by'];
     }
 
@@ -5483,34 +5393,15 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
             '#size' => $size,
             '#attributes' => array('class' => array('fixed-width')),
         ),
-        'start-date' => array(
-            '#type' => 'date_popup',
-            '#title' => 'Start Date',
-            '#date_format' => 'Y-m-d',
-            '#default_value' => $start,
-            '#date_label_position' => 'within',
-            '#attributes' => array(
-                'title' =>
-                 'Assigned date (defaults to no start date)',
-            ),
-        ),
-        'end-date' => array(
-            '#type' => 'date_popup',
-            '#title' => 'End Date',
-            '#date_format' => 'Y-m-d',
-            '#default_value' => $end,
-            '#date_label_position' => 'within',
-            '#attributes' => array(
-                'title' =>
-                 'Assigned date (defaults to no end date)',
-            ),
-        ),
+        'date' => Ebms\Util::date_range_field('Assigned Date', 'date',
+                                              $start, $end, '', false),
         'order-by' => array(
             '#type' => 'radios',
             '#title' => 'Order By',
             '#options' => array(
                 'author' => 'First Article Author',
                 'topic' => 'Topic',
+                'core-journals' => 'Journal (Core Journals First)',
             ),
             '#default_value' => $order_by,
         ),
@@ -5536,132 +5427,170 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
 
     // If we have a submitted report request, add the report under the form.
     if ($request_id) {
-        $query = db_select('ebms_article', 'a');
-        //$query = $query->extend('TableSort');
-        $query->join('ebms_packet_article', 'pa',
-            'pa.article_id = a.article_id');
-        $query->join('ebms_packet', 'p', 'p.packet_id = pa.packet_id');
-        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
-        $query->join('ebms_packet_reviewer', 'rwr',
-            'rwr.packet_id = p.packet_id');
-        if (count($values['topics']))
-            $query->condition('p.topic_id', $values['topics'], 'IN');
-        else
-            $query->condition('t.board_id', $board);
-        $query->leftJoin('ebms_article_review', 'r',
-            'r.article_id = a.article_id AND p.packet_id = r.packet_id');
-        $query->isNull('r.review_id');
-        $query->fields('a', array('article_id'));
-        $query->fields('p', array('packet_id', 'created_at'));
-        $query->fields('t', array('topic_id', 'topic_name'));
-        if (count($values['cycles'])) {
-            $query->join('ebms_article_topic', 'at',
-                'at.article_id = a.article_id AND at.topic_id = p.topic_id');
-            $query->condition('at.cycle_id', $values['cycles'], 'IN');
-        }
-        if ($values['start-date'])
-            $query->condition('p.created_at', $values['start-date'], '>=');
-        if ($values['end-date']) {
-            $end = $values['end-date'] . ' 23:59:59';
-            $query->condition('p.created_at', $end, '<=');
-        }
-        $query->leftJoin('ebms_article_author_cite', 'ac',
-                         'a.article_id = ac.article_id AND ac.cite_order = 1');
-        $query->leftJoin('ebms_article_author', 'aa',
-                         'aa.author_id = ac.author_id');
-        $query->addExpression('IFNULL(aa.last_name, aa.collective_name)',
-                              'author_sort');
-        if ($order_by == 'topic')
-            $query->orderBy('t.topic_name');
-        $query->orderBy('aa.last_name');
-        $query->orderBy('aa.initials');
-        $query->orderBy('aa.collective_name');
-        if ($order_by != 'topic')
-            $query->orderBy('t.topic_name');
-        //$query->orderBy('sort_auth.last_name');
-        //$query->orderBy('sort_auth.initials');
-        //$query->orderBy('sort_auth.collective_name');
-
-        //pdq_ebms_debug('QUERY VALUES', $values);
-        $headers = array(
-            array(
-                'data' => 'Article',
-                //'field' => 'author_sort', //'a.article_title',
-                //'sort' => 'asc',
-            ),
-            array(
-                'data' => 'Topic',
-                //'field' => 't.topic_name',
-                //'sort' => 'asc',
-            ),
-            'Reviewer',
-            'Assigned',
-        );
-        //$query->orderByHeader($headers);
-        $rows = array();
-        $query->distinct();
-        $results = $query->execute();
-
-        // Find the sequence number for the highest state for which
-        // we want to include an article/topic combination on the report.
-        $sequence = db_select('ebms_article_state_type', 't')
-            ->fields('t', array('sequence'))
-            ->condition('t.state_text_id', 'PassedFullReview')
-            ->execute()
-            ->fetchField();
-
-        // Assemble the rows in the report.
-        foreach ($results as $result) {
-
-            // Winnow out rows for article/state combinations which have
-            // moved on past the review state.
-            $query = db_select('ebms_article_state', 's')
-                ->condition('s.article_id', $result->article_id)
-                ->condition('s.topic_id', $result->topic_id)
-                ->condition('s.active_status', 'A');
-            $query->join('ebms_article_state_type', 't',
-                't.state_id = s.state_id');
-            $query->condition('t.sequence', $sequence, '>');
-            $count = $query->countQuery()->execute()->fetchField();
-            if ($count > 0)
-                continue;
-
-            // Collect the list of reviewers assigned to the article.
-            $query = db_select('users', 'u')
-                ->fields('u', array('name'));
-            $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
-            $query->condition('r.packet_id', $result->packet_id);
-            $query->orderBy('u.name');
-            $reviewer_results = $query->execute();
-            $reviewers = array();
-            foreach ($reviewer_results as $reviewer_result)
-                $reviewers[] = htmlspecialchars($reviewer_result->name);
-
-            // Assemble the report row for this article/topic combo.
-            $row = array();
-            $row[] = EbmsReports::format_citation($result->article_id);
-            $row[] = htmlspecialchars($result->topic_name);
-            $row[] = implode('<br><br>', $reviewers);
-            $row[] = date('Y-m-d', strtotime($result->created_at));
-            $rows[] = $row;
-        }
-
-        // Assemble the table.
+        $report = articles_without_responses_report($request_id);
         $id = 'report-title';
-        $title = 'Articles';
+        $title = "Articles ($report->total)";
+        $opts = array(
+            'attributes' => array(
+                'target' => '_blank',
+                'class' => 'button member-version',
+                'style' => 'position: relative; top: -15px; float: right',
+            ),
+        );
+        $link = l('Member Version', "reports/awr-member/$request_id", $opts);
         $page['report'] = array(
             'title' => array(
-                '#markup' => "<h2 id='$id'>$title</h2>",
+                '#markup' =>
+                "<h2 style='position: relative' id='$id'>$title $link</h2>",
             ),
             'table' => array(
                 '#attributes' => array('id' => 'unreviewed-articles-report'),
                 '#theme' => 'table',
-                '#rows' => $rows,
-                '#header' => $headers,
+                '#rows' => $report->rows,
+                '#header' => $report->headers,
             ),
         );
     }
     return $page;
+}
+
+/**
+ * This has been hoisted out so that it can be used by the version shown
+ * to board managers as well as the stripped-down version which can be
+ * copied to the clipboard and pasted into a Word document.
+ */
+function articles_without_responses_report($request_id, $member_version=false) {
+
+    // Our return value will be an object.
+    $report = new stdClass();
+    $report->headers = array('Article', 'Topic', 'Reviewer', 'Assigned');
+
+    // Fetch the settings for this request, use them to find the report data.
+    $values = EbmsReports::fetch_report_request($request_id);
+    $query = db_select('ebms_article', 'a');
+    $query->join('ebms_packet_article', 'pa', 'pa.article_id = a.article_id');
+    $query->join('ebms_packet', 'p', 'p.packet_id = pa.packet_id');
+    $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+    $query->join('ebms_packet_reviewer', 'rwr', 'rwr.packet_id = p.packet_id');
+    $query->fields('a', array('article_id'));
+    $query->fields('p', array('packet_id', 'created_at'));
+    $query->fields('t', array('topic_id', 'topic_name'));
+
+    // Filter on topics, if any specified, otherwise by the board.
+    if (count($values['topics']))
+        $query->condition('p.topic_id', $values['topics'], 'IN');
+    else
+        $query->condition('t.board_id', $values['board']);
+
+    // Exclude articles which have at least one review for the packet.
+    $query->leftJoin('ebms_article_review', 'r',
+                     'r.article_id = a.article_id AND ' .
+                     'p.packet_id = r.packet_id');
+    $query->isNull('r.review_id');
+
+    // Filter by review cycle if any have been selected.
+    if (count($values['cycles'])) {
+        $query->join('ebms_article_topic', 'at',
+                'at.article_id = a.article_id AND at.topic_id = p.topic_id');
+        $query->condition('at.cycle_id', $values['cycles'], 'IN');
+    }
+
+    // Filter by date if asked to do so.
+    if ($values['date-start']['date']) {
+        $start = Ebms\Util::fill_in_date($values['date-start']['date']);
+        $query->condition('p.created_at', $start, '>=');
+    }
+    if ($values['date-end']['date']) {
+        $end = Ebms\Util::fill_in_date($values['date-end']['date'], true);
+        $query->condition('p.created_at', $end, '<=');
+    }
+
+    // Get the first author's (last or collective) name (for sorting).
+    $query->leftJoin('ebms_article_author_cite', 'ac',
+                     'a.article_id = ac.article_id AND ac.cite_order = 1');
+    $query->leftJoin('ebms_article_author', 'aa',
+                     'aa.author_id = ac.author_id');
+    $query->addExpression('IFNULL(aa.last_name, aa.collective_name)',
+                          'author_sort');
+
+    // Apply the requested sorting.
+    if ($values['order-by'] == 'topic')
+        $query->orderBy('t.topic_name');
+    elseif ($values['order-by'] == 'core-journals') {
+        $query->leftJoin('ebms_core_journal', 'cj',
+                         'cj.source = a.source AND ' .
+                         'cj.source_jrnl_id = a.source_jrnl_id');
+        $query->addExpression('ISNULL(cj.source_jrnl_id)', 'core');
+        $query->orderBy('core');
+        $query->orderBy('a.jrnl_title');
+    }
+    $query->orderBy('aa.last_name');
+    $query->orderBy('aa.initials');
+    $query->orderBy('aa.collective_name');
+    if ($values['order-by'] != 'topic')
+        $query->orderBy('t.topic_name');
+
+    // Might not be necessary (see isNull() above), but doesn't hurt.
+    $query->distinct();
+
+    // Snag a count of articles in the report.
+    // $report->total = $query->countQuery()->execute()->fetchField();
+    // No longer using the original query's total. Even though the
+    // title of the report implies that we're showing the number of
+    // articles which haven't got any reviews, Robin wants the displayed
+    // total to avoid including the articles which somehow reached a
+    // later stage without any reviews.
+
+    // Find the sequence number for the highest state for which
+    // we want to include an article/topic combination on the report.
+    $sequence = db_select('ebms_article_state_type', 't')
+        ->fields('t', array('sequence'))
+        ->condition('t.state_text_id', 'PassedFullReview')
+        ->execute()
+        ->fetchField();
+
+    // Assemble the rows in the report.
+    $report->rows = array();
+    $results = $query->execute();
+    $reviewer_break = $member_version ? '<br>' : '<br><br>';
+    foreach ($results as $result) {
+
+        // Winnow out rows for article/state combinations which have
+        // moved on past the review state.
+        $query = db_select('ebms_article_state', 's')
+            ->condition('s.article_id', $result->article_id)
+            ->condition('s.topic_id', $result->topic_id)
+            ->condition('s.active_status', 'A');
+        $query->join('ebms_article_state_type', 't', 't.state_id = s.state_id');
+        $query->condition('t.sequence', $sequence, '>');
+        $count = $query->countQuery()->execute()->fetchField();
+        if ($count > 0)
+            continue;
+
+        // Collect the list of reviewers assigned to the article.
+        $query = db_select('users', 'u')->fields('u', array('name'));
+        $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+        $query->condition('r.packet_id', $result->packet_id);
+        $query->orderBy('u.name');
+        $reviewer_results = $query->execute();
+        $reviewers = array();
+        foreach ($reviewer_results as $reviewer_result)
+            $reviewers[] = htmlspecialchars($reviewer_result->name);
+
+        // Assemble the report row for this article/topic combo.
+        $report->rows[] = array(
+            EbmsReports::format_citation($result->article_id, null, true),
+            htmlspecialchars($result->topic_name),
+            implode($reviewer_break, $reviewers),
+            date('Y-m-d', strtotime($result->created_at)),
+        );
+    }
+
+    // Snag a count of articles in the report.
+    $report->total = count($report->rows);
+
+    // Return the assembled object.
+    return $report;
 }
 
 /**
@@ -5695,36 +5624,6 @@ function pdq_ebms_board_members_last_login() {
     require_once $xllib . '/Classes/PHPExcel.php';
     require_once $xllib . '/Classes/PHPExcel/IOFactory.php';
     $excel = new PHPExcel();
-    $excel->setActiveSheetIndex(0);
-    $sheet = $excel->getActiveSheet();
-    $sheet->setTitle('Board Members');
-    $sheet->getColumnDimension('A')->setAutoSize(true);
-    $sheet->getColumnDimension('B')->setAutoSize(true);
-    $sheet->getColumnDimension('C')->setAutoSize(true);
-    $sheet->setCellValue('A1', 'Name');
-    $sheet->setCellValue('B1', 'Board');
-    $sheet->setCellValue('C1', 'Last Login');
-    //$sheet->getStyle('A1:C1')->getFont()->setBold(true);
-    $sheet->getStyle('A1:C1')->applyFromArray(
-        array(
-            'fill' => array(
-                'type' => PHPExcel_Style_Fill::FILL_SOLID,
-                'color' => array('rgb' => '0101DF'),
-            ),
-            'font' => array(
-                'bold' => true,
-                'color' => array(
-                    'argb' => PHPExcel_Style_Color::COLOR_WHITE,
-                ),
-                //'size' => 15,
-                //'name' => 'Verdana',
-            ),
-            'alignment' => array(
-                'horizontal' => PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
-            ),
-        )
-    );
-    $row = 2;
     $query = db_select('users', 'u')
         ->fields('u', array('name', 'login'))
         ->condition('u.status', 1);
@@ -5734,86 +5633,72 @@ function pdq_ebms_board_members_last_login() {
     $query->addExpression('FROM_UNIXTIME(u.login, \'%Y-%m-%d\')', 'last');
     $query->leftJoin('ebms_board_member', 'm', 'm.user_id = u.uid');
     $query->leftJoin('ebms_board', 'b', 'b.board_id = m.board_id');
-    $query->fields('b', array('board_name'));
+    $query->leftJoin('authmap', 'a', 'a.uid = u.uid');
+    $query->addExpression('IFNULL(b.board_name, \'ZZZ\')', 'board');
+    $query->fields('a', array('authname'));
+    $query->orderBy('board');
     $query->orderBy('u.name');
-    $query->orderBy('b.board_name');
     $results = $query->execute();
-    $name = 'board-members-last-login-' . strftime('%Y%m%d%H%M%S') . '.xls';
+    $current_board = null;
+    $sheet_id = 0;
     foreach ($results as $result) {
         $last_login = $result->login ? $result->last : '';
-        $board = $result->board_name ? $result->board_name : '';
-        $sheet->setCellValue("A$row", $result->name);
-        $sheet->setCellValue("B$row", $result->board_name);
+        $board = $result->board;
+        if ($board == 'Cancer Complementary and Alternative Medicine')
+            $board = 'Cancer CAM';
+        elseif ($board == 'ZZZ')
+            $board = 'NO BOARDS';
+        $name = $result->name;
+        $authname = $result->authname ? $result->authname : '';
+        if ($board != $current_board) {
+            $current_board = $board;
+            if ($sheet_id)
+                $excel->createSheet();
+            $excel->setActiveSheetIndex($sheet_id++);
+            $sheet = $excel->getActiveSheet();
+            $sheet->setTitle($board);
+            $sheet->getColumnDimension('A')->setAutoSize(true);
+            $sheet->getColumnDimension('B')->setAutoSize(true);
+            $sheet->getColumnDimension('C')->setAutoSize(true);
+            $sheet->setCellValue('A1', 'Name');
+            $sheet->setCellValue('B1', 'Authname');
+            $sheet->setCellValue('C1', 'Last Login');
+            $sheet->getStyle('A1:C1')->applyFromArray(
+                array(
+                    'fill' => array(
+                        'type' => PHPExcel_Style_Fill::FILL_SOLID,
+                        'color' => array('rgb' => '0101DF'),
+                    ),
+                    'font' => array(
+                        'bold' => true,
+                        'color' => array(
+                            'argb' => PHPExcel_Style_Color::COLOR_WHITE,
+                        ),
+                    ),
+                    'alignment' => array(
+                        'horizontal' =>
+                        PHPExcel_Style_Alignment::HORIZONTAL_CENTER,
+                    ),
+                )
+            );
+            $row = 2;
+        }
+        $sheet->setCellValue("A$row", $name);
+        $sheet->setCellValue("B$row", $authname);
         $sheet->setCellValue("C$row", $last_login);
         ++$row;
+        $sheet->setSelectedCell('A2');
     }
-    $sheet->setSelectedCell('A2');
+    $excel->setActiveSheetIndex(0);
+    $name = 'board-members-last-login-' . strftime('%Y%m%d%H%M%S') . '.xls';
     $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel5');
-    drupal_add_http_header('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
-    drupal_add_http_header('Cache-control', 'must-revalidate, post-check=0, pre-check=0');
-    drupal_add_http_header('Content-disposition', 'attachment;filename=' . $name);
+    drupal_add_http_header('Content-Type',
+                           'application/vnd.ms-excel; charset=utf-8');
+    drupal_add_http_header('Cache-control',
+                           'must-revalidate, post-check=0, pre-check=0');
+    drupal_add_http_header('Content-disposition',
+                           'attachment;filename=' . $name);
     drupal_add_http_header('Content-transfer-encoding', 'binary');
     $writer->save('php://output');
     exit(0);
-    return '<p>DONE!!</p>';
-
-
-    echo pack('ss', 0x0A, 0x0);
-    exit(0);
-}
-
-/*
- * Fallback, in case we can't get CBIIT to install PHPExcel in the upper
- * tiers.  This version creates a spreadsheet using the Excel 2 format,
- * which is so ancient that current versions of Excel won't let you edit
- * or save the file (you have to transfer the cell data to a new workbook
- * using the clipboard).
- */
-function xpdq_ebms_board_members_last_login() {
-    $name = 'board-members-last-login-' . strftime('%Y%m%d%H%M%S') . '.xls';
-    //drupal_add_http_header('Content-type', 'application/force-download');
-    //drupal_add_http_header('Content-type', 'application/octet-stream', true);
-    //drupal_add_http_header('Content-type', 'application/download', true);
-    drupal_add_http_header('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
-    drupal_add_http_header('Cache-control', 'must-revalidate, post-check=0, pre-check=0');
-    drupal_add_http_header('Content-disposition', 'attachment;filename=' . $name);
-    drupal_add_http_header('Content-transfer-encoding', 'binary');
-
-    echo pack('ssssss', 0x809, 0x8, 0x0, 0x10, 0x0, 0x0);
-    echo pdq_ebms_xls_write_string(0, 0, 'Name');
-    echo pdq_ebms_xls_write_string(0, 1, 'Board');
-    echo pdq_ebms_xls_write_string(0, 2, 'Last Login');
-    $row = 1;
-    $query = db_select('users', 'u')
-        ->fields('u', array('name', 'login'))
-        ->condition('u.status', 1);
-    $query->join('users_roles', 'ur', 'ur.uid = u.uid');
-    $query->join('role', 'r', 'r.rid = ur.rid');
-    $query->condition('r.name', 'board member');
-    $query->addExpression('FROM_UNIXTIME(u.login, \'%Y-%m-%d\')', 'last');
-    $query->leftJoin('ebms_board_member', 'm', 'm.user_id = u.uid');
-    $query->leftJoin('ebms_board', 'b', 'b.board_id = m.board_id');
-    $query->fields('b', array('board_name'));
-    $query->orderBy('u.name');
-    $query->orderBy('b.board_name');
-    $results = $query->execute();
-    foreach ($results as $result) {
-        $last_login = $result->login ? $result->last : '';
-        $board = $result->board_name ? $result->board_name : '';
-        echo pdq_ebms_xls_write_string($row, 0, $result->name);
-        echo pdq_ebms_xls_write_string($row, 1, $result->board_name);
-        echo pdq_ebms_xls_write_string($row, 2, $last_login);
-        ++$row;
-    }
-    echo pack('ss', 0x0A, 0x0);
-    exit(0);
-}
-
-/*
- * Helper function for fallback approach above.
- */
-function pdq_ebms_xls_write_string($row, $col, $string) {
-    $len = strlen($string);
-    $s = pack('ssssss', 0x204, 8 + $len, $row, $col, 0x0, $len);
-    return $s . $string;
 }

@@ -1,10 +1,10 @@
 <?php
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Routines to support installing and enabling the module.
  */
 
+// Pick up the definitions for custom EBMS fields, loaded as globals
 module_load_include('inc', 'ebms', 'includes/ebms.fields');
 
 function ebms_install() {
@@ -12,159 +12,27 @@ function ebms_install() {
 }
 
 function ebms_enable() {
+
+    // Done once here for all _ebms_install... functions
+    node_types_rebuild();
+
+    // Create custom event fields
     _ebms_install_add_event_fields();
 
+    // Create categories and attach custom event fields to them
     _ebms_install_create_recent_activity();
+
+    // Create custom user fields
+    _ebms_install_add_user_fields();
 }
-$GLOBALS['recent_activity_types'] = array(
-    'activity_new_articles' => '{
-            "name" : "activity_new_articles",
-            "description" : "New Articles",
-            "argument_keys" : [],
-            "argument" : [],
-            "category" : "message_type",
-            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
-            "language" : "",
-            "arguments" : null,
-            "message_text" : { "und" : [
-                {
-                  "value" : "New [message:field_boards] articles posted.  [message:timestamp:custom:m\/d\/Y]",
-                  "format" : "plain_text",
-                  "safe_value" : "\u003Cp\u003ENew [message:field_boards] articles posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
-                }
-              ]
-            }
-          }',
-    'activity_new_event' => '{
-            "name" : "activity_new_event",
-            "description" : "New Event",
-            "argument_keys" : [],
-            "argument" : [],
-            "category" : "message_type",
-            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
-            "language" : "",
-            "arguments" : null,
-            "message_text" : { "und" : [
-                {
-                  "value" : "New event [message:field_title] posted.  [message:timestamp:custom:m\/d\/Y]",
-                  "format" : "plain_text",
-                  "safe_value" : "\u003Cp\u003ENew event [message:field_title] posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
-                }
-              ]
-            }
-          }',
-    'activity_cancelled_event' => '{
-            "name" : "activity_cancelled_event",
-            "description" : "Cancelled Event",
-            "argument_keys" : [],
-            "argument" : [],
-            "category" : "message_type",
-            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
-            "language" : "",
-            "arguments" : null,
-            "message_text" : { "und" : [
-                {
-                  "value" : "Event [message:field_title] cancelled.  [message:timestamp:custom:m\/d\/Y]",
-                  "format" : "plain_text",
-                  "safe_value" : "\u003Cp\u003EEvent [message:field_title] cancelled.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
-                }
-              ]
-            }
-          }',
-    'activity_changed_event' => '{
-            "name" : "activity_changed_event",
-            "description" : "Changed Event",
-            "argument_keys" : [],
-            "argument" : [],
-            "category" : "message_type",
-            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
-            "language" : "",
-            "arguments" : null,
-            "message_text" : { "und" : [
-                {
-                  "value" : "[message:field_title] time updated.  [message:timestamp:custom:m\/d\/Y]",
-                  "format" : "plain_text",
-                  "safe_value" : "\u003Cp\u003ENew event [message:field_title] posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
-                }
-              ]
-            }
-          }',
-    'activity_agenda_published' => '{
-        "name" : "activity_agenda_published",
-        "description" : "Agenda Published",
-        "argument_keys" : [],
-        "argument" : [],
-        "category" : "message_type",
-        "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
-        "language" : "",
-        "arguments" : null,
-        "message_text" : { "und" : [
-            {
-              "value" : "Agenda published for [message:field_title]. [message:timestamp:custom:m\/d\/Y]",
-              "format" : "plain_text",
-              "safe_value" : "\u003Cp\u003EAgenda published for [message:field_title]. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
-            }
-          ]
-        }
-    }',
-    'activity_event_type' => '{
-        "name" : "activity_event_type",
-        "description" : "Event Type Changed",
-        "argument_keys" : [],
-        "argument" : [],
-        "category" : "message_type",
-        "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
-        "language" : "",
-        "arguments" : null,
-        "message_text" : { "und" : [
-            {
-              "value" : "[message:field_title] changed to [message:field_event_type].  [message:timestamp:custom:m\/d\/Y]",
-              "format" : "plain_text",
-              "safe_value" : "\u003Cp\u003E[message:field_title] changed to [message:field_event_type].  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
-            }
-          ]
-        }
-    }',
-    'activity_new_packet' =>'{
-            "name" : "activity_new_packet",
-            "description" : "New Packet",
-            "argument_keys" : [],
-            "argument" : [],
-            "category" : "message_type",
-            "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
-            "language" : "",
-            "arguments" : null,
-            "message_text" : { "und" : [
-                {
-                  "value" : "[message:field_title] literature posted.  [message:timestamp:custom:m\/d\/Y]",
-                  "format" : "plain_text",
-                  "safe_value" : "\u003Cp\u003E[message:field_title] literature posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
-                }
-              ]
-            }
-        }',
-    'activity_new_summary' => '{
-        "name" : "activity_new_summary",
-        "description" : "New Summary",
-        "argument_keys" : [],
-        "argument" : [],
-        "category" : "message_type",
-        "data" : { "purge" : { "override" : 0, "enabled" : 0, "quota" : "", "days" : "" } },
-        "language" : "",
-        "arguments" : null,
-        "message_text" : { "und" : [
-            {
-              "value" : "[message:user:name] posted [message:field_title].  [message:timestamp:custom:m\/d\/Y]",
-              "format" : "plain_text",
-              "safe_value" : "\u003Cp\u003E[message:user:name] posted [message:field_title].  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
-            }
-          ]
-        }
-    }',
-);
 
 $GLOBALS['ebms_editor_config_string'] = 'a:20:{s:7:"default";i:1;s:11:"user_choose";i:0;s:11:"show_toggle";i:1;s:5:"theme";s:8:"advanced";s:8:"language";s:2:"en";s:7:"buttons";a:2:{s:7:"default";a:21:{s:4:"Bold";i:1;s:6:"Italic";i:1;s:9:"Underline";i:1;s:12:"BulletedList";i:1;s:12:"NumberedList";i:1;s:4:"Undo";i:1;s:4:"Redo";i:1;s:4:"Link";i:1;s:6:"Unlink";i:1;s:5:"Image";i:1;s:10:"Blockquote";i:1;s:3:"Cut";i:1;s:4:"Copy";i:1;s:5:"Paste";i:1;s:9:"PasteText";i:1;s:13:"PasteFromWord";i:1;s:10:"ShowBlocks";i:1;s:12:"RemoveFormat";i:1;s:9:"SelectAll";i:1;s:12:"SpellChecker";i:1;s:5:"Scayt";i:1;}s:11:"drupal_path";a:1:{s:4:"Link";i:1;}}s:11:"toolbar_loc";s:3:"top";s:13:"toolbar_align";s:4:"left";s:8:"path_loc";s:6:"bottom";s:8:"resizing";i:1;s:11:"verify_html";i:1;s:12:"preformatted";i:0;s:22:"convert_fonts_to_spans";i:1;s:17:"remove_linebreaks";i:1;s:23:"apply_source_formatting";i:0;s:27:"paste_auto_cleanup_on_paste";i:0;s:13:"block_formats";s:32:"p,address,pre,h2,h3,h4,h5,h6,div";s:11:"css_setting";s:5:"theme";s:8:"css_path";s:0:"";s:11:"css_classes";s:0:"";}';
 
+/**
+ * Load the definitions of the message types used for the Recent Activity
+ * boxes on the home page. For those message types which already exist,
+ * update their definitions. Create new message type entities for the others.
+ */
 function _ebms_install_create_recent_activity() {
 
     // create the 'recent activity' category type
@@ -174,45 +42,51 @@ function _ebms_install_create_recent_activity() {
         $category->save();
     }
 
-    // check for each message type and import if missing
-    global $recent_activity_types;
-    foreach ($recent_activity_types as $id => $export) {
-        $type = message_type_load($id);
-        if (!$type) {
-            $type = entity_import('message_type', $export);
-            $type->save();
+    require 'includes/ebms.message_types.inc';
+    foreach ($pdq_ebms_recent_activity_message_types as $name => $code) {
+        $message_type = entity_import('message_type', $code);
+        $from_db = message_type_load($name);
+        if ($from_db) {
+            $message_type->id = $from_db->id;
+            $message_type->is_new = false;
+            db_update('message_type')
+                ->fields(array('module' => 'ebms'))
+                ->condition('id', $from_db->id)
+                ->execute();
         }
+        $message_type->module = 'ebms';
+        $message_type->status = ENTITY_IN_CODE;
+        $message_type->save();
     }
 
     global $ebms_entity_fields;
     _ebms_enable_fields($ebms_entity_fields);
-
-
-
-    return;
-
-    // example of creating a message and adding field data
-    $message = message_create('activity_new_articles');
-    $message->save();
-
-    $wrapper = entity_metadata_wrapper('message', $message);
-    $wrapper->field_boards->set(array(1, 2));
-    $wrapper->save();
-
-    $message = message_load($message->mid);
 }
 
+/**
+ * Create custom event fields.
+ */
 function _ebms_install_add_event_fields() {
+    // Defined in includes/ebms.fields.inc
     global $ebms_node_fields;
 
-    node_types_rebuild();
     _ebms_enable_fields($ebms_node_fields);
+}
+
+/**
+ * Create custom user fields.
+ */
+function _ebms_install_add_user_fields() {
+    // Defined in includes/ebms.fields.inc
+    global $ebms_user_fields;
+
+    _ebms_enable_fields($ebms_user_fields);
 }
 
 /**
  *
  * @param type $fields
- * @return boolean 
+ * @return boolean
  */
 function _ebms_enable_fields($fields) {
     try {
@@ -245,7 +119,7 @@ function _ebms_enable_fields($fields) {
 /**
  *
  * @param type $field
- * @return type 
+ * @return type
  */
 function _ebms_field_info($field = array()) {
 
@@ -294,7 +168,7 @@ function _ebms_field_info($field = array()) {
  *
  * @param type $field
  * @param type $bundle
- * @return type 
+ * @return type
  */
 function _ebms_instance_info($field = array(), $bundle = FALSE) {
 
@@ -354,7 +228,7 @@ function ebms_enable_test() {
 
 function _ebms_configure_editor() {
     global $ebms_editor_config_string;
-    
+
     $key = array(
         'format' => 'filtered_html',
     );

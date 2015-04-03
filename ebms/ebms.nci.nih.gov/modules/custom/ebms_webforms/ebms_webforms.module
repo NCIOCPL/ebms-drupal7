@@ -34,18 +34,52 @@ function ebms_webforms_menu_alter(&$items) {
     $items[$report_menu]['access arguments'] = array($permission);
 }
 
+function pdq_ebms_empty_travel_field($values) {
+    foreach ($values as $value) {
+        if (!empty($value['expense']) || !empty($value['mileage']))
+            return false;
+    }
+    return true;
+}
+
 /**
  * Implements hook_webform_submission_render_alter for critical TIR
  * 2408, in which Robin asks that the email notification for a web
  * form submission show the name and date for the event instead of
  * the event's ID.
+ *
+ * OCEEBMS-116: Victoria wants more blank lines in the email message,
+ * so we're adding an extra new line to the values for the Meeting
+ * and the Type of Travel fields. Unfortunately, this pushes the
+ * values for these fields onto a separate line from the label (the
+ * webforms module appears to have decided that if we want a newline
+ * at the end of the value we want one at the beginning, too). Best
+ * we can do.
  */
 function ebms_webforms_webform_submission_render_alter(&$renderable) {
     if (!empty($renderable['meeting'])) {
         $meeting_id = $renderable['meeting']['#value'][0];
         if ($meeting_id) {
             $display = _ebms_webform_meeting_display($meeting_id);
-            $renderable['meeting']['#value'][0] = $display;
+            $renderable['meeting']['#value'][0] = trim($display) . "\n";
+        }
+    }
+    if (!empty($renderable['type_of_travel'])) {
+        foreach ($renderable['type_of_travel']['#options'] as $k => $v)
+            $renderable['type_of_travel']['#options'][$k] = "$v\n";
+    }
+    foreach (element_children($renderable) as $key) {
+        //textfields
+        if ($renderable[$key]['#value'] == '')
+            unset($renderable[$key]);
+        //select lists, checkboxes, etc.
+        elseif ($key == 'transportation' || $key == 'parking_and_tolls') {
+            if (pdq_ebms_empty_travel_field($renderable[$key]['#value']))
+                unset($renderable[$key]);
+        }
+        elseif (is_array($renderable[$key]['#value'])) {
+            if (empty($renderable[$key]['#value']) || empty($renderable[$key]['#value'][0]))
+                unset($renderable[$key]);
         }
     }
 }
@@ -147,14 +181,14 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
 
 // Validation added for JIRA ticket OCEEBMS-6 (TIR 2374).
 function ebms_webforms_form_validate($form, &$form_state) {
-    pdq_ebms_debug('WEBFORMS VALIDATION', $form_state['values']);
     if (isset($form_state['values']['submitted']['check_in'])) {
         $check_in = $form_state['values']['submitted']['check_in'];
         $check_out = $form_state['values']['submitted']['check_out'];
-        $in = Ebms\Util::date_field_to_timestamp($check_in);
-        $out = Ebms\Util::date_field_to_timestamp($check_out);
-        if ($in > $out)
-            form_set_error('check_out', 'Check-out cannont be earlier than check-in.');
+        $in = Ebms\Util::fill_in_date($check_in);
+        $out = Ebms\Util::fill_in_date($check_out);
+        if ($out > '1901' && $in > $out)
+            form_set_error('check_out',
+                'Check-out cannont be earlier than check-in.');
     }
 }
 
@@ -234,11 +268,10 @@ function ebms_webforms_form_validate($form, &$form_state) {
              }
              //default
              else {
-                 //hard code $ into preview fields for now...
-                 $subitem = $key == 'amount' ? '$' : '';
-                 $subitem .= $sub_item;
-                 $output[] = $subitem;
-
+                 if ($key == 'amount' && ctype_digit(substr($sub_item, 0, 1)))
+                     $output[] = '$' . $sub_item;
+                 else
+                     $output[] = $sub_item;
              }
 
          }
@@ -253,10 +286,18 @@ function ebms_webforms_form_validate($form, &$form_state) {
                  // branch on type
                  $claim = '';
                  if($ebms_travel_field['type'] == 'private') {
-                     $claim = $ebms_travel_field['mileage'] . ' mi.';
+                     $claim = trim($ebms_travel_field['mileage']);
+                     if (empty($claim))
+                         continue;
+                     if (ctype_digit(substr($claim, -1)))
+                         $claim .= ' miles';
                  }
                  else {
-                     $claim = '$' . $ebms_travel_field['expense'];
+                     $claim = trim($ebms_travel_field['expense']);
+                     if (empty($claim))
+                         continue;
+                     if (ctype_digit(substr($claim, 0, 1)))
+                         $claim = '$' . $claim;
                  }
                  $output[] = $select_fields[$key][$ebms_travel_field['type']] .' - '. implode('/',$ebms_travel_field['date']) . " - $claim";
              }
@@ -801,11 +842,13 @@ function webform_ebms_travel_display_format($value) {
 
 
 /**
-* Format the output of data for this component.
+ * Format the output of data for this component.
  *
  * @TODO:
  * 1) Make the delimiter and output order of this widget configurable.
-*/
+ *
+ * This function controls what goes to the travel specialist via email.
+ */
 function theme_webform_display_ebms_travel($variables) {
     $element = $variables['element'];
     $component = $element['#webform_component'];
@@ -826,17 +869,26 @@ function theme_webform_display_ebms_travel($variables) {
         // branch on type
         $claim = '';
         if ($value_pair['type'] == 'private') {
-            $claim = $value_pair['mileage'] . ' mi.';
+            $claim = trim($value_pair['mileage']);
+            if (empty($claim))
+                continue;
+            if (ctype_digit(substr($claim, -1)))
+                $claim .= ' miles';
         } else {
-            $claim = '$' . $value_pair['expense'];
+            $claim = trim($value_pair['expense']);
+            if (empty($claim))
+                continue;
+            if (ctype_digit(substr($claim, 0, 1)))
+                $claim = '$' . $claim;
         }
 
         $items[] = $options[$value_pair['type']] .' - '. implode('/',$value_pair['date']) . " - $claim";
     }
 
-
-    $value = implode('<br />', $items);
-    return $value !== '' ? $value : ' ';
+    // Victoria wants empty lines around the individual expenses.
+    if (empty($items))
+        return '';
+    return "\n" . implode("\n\n", $items) . "\n";
 }
 /**
 * Return the result of a component value for display in a table.
@@ -859,16 +911,24 @@ function _webform_table_ebms_travel($component, $value) {
         // branch on type
         $claim = '';
         if ($value_pair['type'] == 'private') {
-            $claim = $value_pair['mileage'] . ' mi.';
+            $claim = trim($value_pair['mileage']);
+            if (empty($claim))
+                continue;
+            if (ctype_digit(substr($claim, -1)))
+                $claim .= ' miles';
         } else {
-            $claim = '$' . $value_pair['expense'];
+            $claim = trim($value_pair['expense']);
+            if (empty($claim))
+                continue;
+            if (ctype_digit(substr($claim, 0, 1)))
+                $claim = '$' . $claim;
         }
 
         $items[] = $options[$value_pair['type']] .' - '. implode('/',$value_pair['date']) . " - $claim";
     }
 
 
-    $value = implode('<br />', $items);
+    $value = implode('<br>', $items);
     return $value !== '' ? $value : ' ';
 }
 /**
@@ -908,8 +968,8 @@ function _ebms_webforms_report_params() {
         $params = array(
             'board' => 0,
             'meeting' => 0,
-            'start-date' => '',
-            'end-date' => '',
+            'date-start' => array('date' => ''),
+            'date-end' => array('date' => ''),
             'node' => $node_id,
         );
     return $params;
@@ -932,6 +992,11 @@ function _ebms_webforms_unix_timestamp($string) {
 
 /**
  * See webform_results_table() in webform.report.inc
+ *
+ * This is the function that controls the travel reports.
+ * For formatting of the email notifications to NCI staff when
+ * a travel request is submitted, see the hook implementation
+ * theme_webform_display_ebms_travel() above.
  *
  * @param type $node
  * @param type $pager_count
@@ -1009,19 +1074,50 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
     if ($params['meeting'])
         $query->condition('d.data', $params['meeting']);
     elseif ($params['board']) {
-        $query->join('field_data_field_boards', 'b',
-            'b.entity_id = d.data');
-        $query->condition('b.deleted', 0);
-        $query->condition('b.field_boards_value', $params['board']);
-        $query->condition('b.bundle', 'ebms_event');
-        $query->condition('b.entity_type', 'node');
+
+        // New requirement 2014-08-04 (OCEEBMS-199): include subgroups and ad-hoc
+        // groups when filtering hotel request report by board.
+        $board_id = (int)$params['board'];
+        if ($isHotelRequest) {
+            $query->leftJoin('field_data_field_boards', 'b', 'b.deleted = 0 AND ' .
+                             'b.entity_id = d.data AND b.bundle = \'ebms_event\' AND ' .
+                             'b.entity_type = \'node\' AND ' .
+                             'b.field_boards_value = ' . $board_id);
+            $query->leftJoin('field_data_field_subgroups', 'sg',
+            'sg.entity_id = d.data AND sg.deleted = 0 AND ' .
+            'sg.bundle = \'ebms_event\' and sg.entity_type = \'node\'');
+            $query->leftJoin('ebms_subgroup', 'sgb',
+                             'sgb.sg_id = sg.field_subgroups_value AND ' .
+                             'sgb.board_id = ' . $board_id);
+            $query->leftJoin('field_data_field_ad_hoc_groups', 'ahg',
+            'ahg.entity_id = d.data AND ahg.deleted = 0 AND ' .
+            'ahg.bundle = \'ebms_event\' and ahg.entity_type = \'node\'');
+            $query->leftJoin('ebms_ad_hoc_group_board', 'ahgb',
+                             'ahgb.group_id = ahg.field_ad_hoc_groups_value AND ' .
+                             'ahgb.board_id = ' . $board_id);
+            $query->condition(
+                db_or()
+                ->isNotNull('b.entity_id')
+                ->isNotNull('sgb.sg_id')
+                ->isNotNull('ahgb.group_id')
+            );
+        }
+        else {
+            $query->join('field_data_field_boards', 'b',
+                         'b.entity_id = d.data');
+            $query->condition('b.deleted', 0);
+            $query->condition('b.field_boards_value', $params['board']);
+            $query->condition('b.bundle', 'ebms_event');
+            $query->condition('b.entity_type', 'node');
+        }
     }
-    if ($params['start-date']) {
-        $start_date = _ebms_webforms_unix_timestamp($params['start-date']);
+    if ($params['date-start']['date']) {
+        $start_date = $params['date-start']['date'];
+        $start_date = _ebms_webforms_unix_timestamp($start_date);
         $query->condition('s.submitted', $start_date, '>=');
     }
-    if ($params['end-date']) {
-        $end_date = $params['end-date'] . ' 23:59:59';
+    if ($params['date-end']['date']) {
+        $end_date = $params['date-end']['date'] . ' 23:59:59';
         $end_date = _ebms_webforms_unix_timestamp($end_date);
         $query->condition('s.submitted', $end_date, '<=');
     }
@@ -1035,6 +1131,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
             array('data' => 'Submitted', 'field' => 's.submitted'),
             array('data' => 'User', 'field' => 'u.name'),
             array('data' => 'Meeting', 'field' => 'meeting_with_date'),
+            'Type of Travel',
             'Transportation', 'Parking and Tolls', 'Hotel', 'Amount',
             'Meals and Incidentals', 'Honorarium',
             'Reimbursement', 'Comments',
@@ -1143,7 +1240,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
     drupal_set_breadcrumb(array(
         l('Reports', 'reports'),
         l('Board Management Reports', 'reports/board'),
-        drupal_get_title() . 'S',
+        drupal_get_title() . 's',
     ));
 
     // Set the top navigation to be Reports
@@ -1158,7 +1255,7 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
     // Add the title and add the -right class
     $output .= '<div id="webform-table-right">';
-    $output .= '<h2>'.$node->title.'S ('.$total_count.')</h2>';
+    $output .= '<h2>'.$node->title.'s ('.$total_count.')</h2>';
 
     // Hotel report now needs filtering (OCEEBMS-47).  Build the form which
     // lets the user specify which requests should appear in the report.
@@ -1224,9 +1321,38 @@ function _ebms_webforms_report_meetings($board_id, $webform_id) {
     $expression = 'FROM_UNIXTIME(f.field_datespan_value, \'%Y-%m-%d\')';
     $query->addExpression($expression, 'meeting_date');
     if ($board_id) {
-        $query->join('field_data_field_boards', 'b',
-                     'b.entity_id = n.nid and b.entity_type = \'node\'');
-        $query->condition('b.field_boards_value', $board_id);
+        $url = url('node/' . $webform_id);
+        $isHotelRequest = $url == '/travel/hotel-request';
+        if ($isHotelRequest) {
+            $query->leftJoin('field_data_field_boards', 'b',
+                'b.deleted = 0 AND ' .
+                'b.entity_id = d.data AND b.bundle = \'ebms_event\' AND ' .
+                'b.entity_type = \'node\' AND ' .
+                'b.field_boards_value = ' . $board_id);
+            $query->leftJoin('field_data_field_subgroups', 'sg',
+                'sg.entity_id = d.data AND sg.deleted = 0 AND ' .
+                'sg.bundle = \'ebms_event\' and sg.entity_type = \'node\'');
+            $query->leftJoin('ebms_subgroup', 'sgb',
+                'sgb.sg_id = sg.field_subgroups_value AND ' .
+                'sgb.board_id = ' . $board_id);
+            $query->leftJoin('field_data_field_ad_hoc_groups', 'ahg',
+                'ahg.entity_id = d.data AND ahg.deleted = 0 AND ' .
+                'ahg.bundle = \'ebms_event\' and ahg.entity_type = \'node\'');
+            $query->leftJoin('ebms_ad_hoc_group_board', 'ahgb',
+                'ahgb.group_id = ahg.field_ad_hoc_groups_value AND ' .
+                'ahgb.board_id = ' . $board_id);
+            $query->condition(
+                db_or()
+                ->isNotNull('b.entity_id')
+                ->isNotNull('sgb.sg_id')
+                ->isNotNull('ahgb.group_id')
+            );
+        }
+        else {
+            $query->join('field_data_field_boards', 'b',
+                'b.entity_id = n.nid and b.entity_type = \'node\'');
+            $query->condition('b.field_boards_value', $board_id);
+        }
     }
     $query->distinct();
     $results = $query->execute();
@@ -1237,7 +1363,19 @@ function _ebms_webforms_report_meetings($board_id, $webform_id) {
     }
     return array(0 => '') + $meetings;
 }
-
+/*
+        if ($isHotelRequest) {
+        }
+        else {
+            $query->join('field_data_field_boards', 'b',
+                         'b.entity_id = d.data');
+            $query->condition('b.deleted', 0);
+            $query->condition('b.field_boards_value', $params['board']);
+            $query->condition('b.bundle', 'ebms_event');
+            $query->condition('b.entity_type', 'node');
+        }
+    }
+*/
 /**
  * Drupal form API callback which generates the form used to control which
  * requests are to be displayed on the report of hotel reservation requests.
@@ -1268,6 +1406,9 @@ function ebms_webforms_report_form($form, &$form_state, $params, $report) {
     if (isset($form_state['values'])) {
         $board_id = $form_state['values']['board'];
     }
+    if (empty($board_id))
+        $board_id = Ebms\Util::get_custom_user_field_value(
+            'dft_editorial_board');
     $meetings = _ebms_webforms_report_meetings($board_id, $params['node']);
     if ($meeting_id && !array_key_exists($meeting_id, $meetings))
         $meeting_id = $form_state['values']['meeting'] = 0;
@@ -1304,40 +1445,17 @@ function ebms_webforms_report_form($form, &$form_state, $params, $report) {
                 '#attributes' => array('class' => array('fixed-width')),
             ),
         ),
-        'date-requested-line' => array(
-            '#type' => 'container',
-            '#attributes' => array('class' => array('date-with-range')),
-            'date-pair' => array(
-                '#type' => 'container',
-                '#attributes' => array('class' => array('date-pair')),
-                'start-date' => array(
-                    '#type' => 'date_popup',
-                    '#date_year_range' => '-2:+1',
-                    '#date_format' => 'Y-m-d',
-                    '#default_value' => $params['start-date'],
-                    '#date_label_position' => 'within',
-                    '#attributes' =>
-                    array('title' =>
-                          'Start date (defaults to no starting date)'),
-                ),
-                'separator' => array(
-                    '#markup' => '<span class="date-range-sep">&mdash;</span>',
-                ),
-                'end-date' => array(
-                    '#type' => 'date_popup',
-                    '#date_year_range' => '-2:+1',
-                    '#date_format' => 'Y-m-d',
-                    '#default_value' => $params['end-date'],
-                    '#date_label_position' => 'within',
-                    '#attributes' =>
-                    array('title' => 'End date (defaults to no ending date)'),
-                ),
-            ),
-            'date-requested-label' => array(
-                '#type' => 'markup',
-                '#markup' => '<div class="date-label">Date Requested</div>',
-            ),
+        'date-requested-line' =>
+        Ebms\Util::date_range_field('DATE REQUESTED', 'date',
+                                    $params['date-start']['date'],
+                                    $params['date-end']['date'], '-2:+1'),
+        /*
+        'remember' => array(
+            '#type' => 'checkbox',
+            '#title' => 'Remember Board',
+            '#attributes' => array('class' => array('fixed-width')),
         ),
+        */
         'submit' => array(
             '#type' => 'submit',
             '#value' => 'Submit',
@@ -1363,6 +1481,14 @@ function ebms_webforms_report_form($form, &$form_state, $params, $report) {
 function ebms_webforms_report_form_submit($form, &$form_state) {
     $values = $form_state['values'];
     $report = $values['report'];
+    if (!empty($values['remember'])) {
+        global $user;
+        $value = $values['board'];
+        if (!$value)
+            $value = null;
+        $opts = array('dft_editorial_board' => $value);
+        Ebms\Util::set_custom_user_field_values($opts, $user->uid);
+    }
     $request_id = EbmsReports::save_report_request($values, $report);
     $node_id = $values['node'];
     $url = "node/$node_id/webform-results/table/$request_id";

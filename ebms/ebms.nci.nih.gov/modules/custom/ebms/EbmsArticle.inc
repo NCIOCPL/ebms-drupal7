@@ -44,6 +44,7 @@ interface EbmsArticleStates {
     const OnAgenda = 'OnAgenda';
     const FinalBoardDecision = 'FinalBoardDecision';
     const OnHold = 'OnHold';
+    const FullReviewHold = 'FullReviewHold';
 }
 
 validateArticleStates();
@@ -69,6 +70,7 @@ function validateArticleStates() {
         EbmsArticleStates::OnAgenda,
         EbmsArticleStates::FinalBoardDecision,
         EbmsArticleStates::OnHold,
+        EbmsArticleStates::FullReviewHold,
     );
 
     $currStates = db_select('ebms_article_state_type', 't')

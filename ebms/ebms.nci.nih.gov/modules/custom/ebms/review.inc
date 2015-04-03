@@ -424,7 +424,7 @@ class EbmsReview {
         // Filter criteria are in the database, get them
         $filters = array();
         if ($search_id > 0)
-            $filters = get_filter_criteria($search_id);
+            $filters = pdq_ebms_get_filter_criteria($search_id);
 
         if (count($filters)) {
             // Topics checkboxes
@@ -446,10 +446,14 @@ class EbmsReview {
                 $query->condition('p.packet_title',
                                    $filters['packet_title_text'], 'LIKE');
             // Packet creation date limits
-            if (isset($filters['start-date']))
-                $query->condition('p.created_at', $filters['start-date'], '>=');
-            if (isset($filters['end-date']))
-                $query->condition('p.created_at', $filters['end-date'], '<=');
+            if (isset($filters['date-start']['date']))
+                $query->condition('p.created_at',
+                                  $filters['date-start']['date'], '>=');
+            if (isset($filters['date-end']['date'])) {
+                $date = Ebms\Util::fill_in_date($filters['date-end']['date'],
+                                                true);
+                $query->condition('p.created_at', $date, '<=');
+            }
 
             // Archived and legacy system packets.  These are interrelated
             $active   = $filters['pkt_scope']['Active'] ? True : False;
@@ -507,7 +511,7 @@ class EbmsReview {
      */
     public static function apply_manager_packet_filter_search($form,
                                                               $search_id=0) {
-        $filters = get_filter_criteria($search_id);
+        $filters = pdq_ebms_get_filter_criteria($search_id);
         if (count($filters) == 0) {
             // Nothing to do
             return $form;
@@ -532,13 +536,13 @@ class EbmsReview {
         }
 
         // Date limits
-        if (isset($filters['start-date'])) {
-            $form['date-limits']['date-pair']['start-date']['#default_value'] =
-                    $filters['start-date'];
+        if (!empty($filters['date-start']['date'])) {
+            $form['date-limits']['date-pair']['date-start']['#default_value'] =
+                Ebms\Util::fill_in_date($filters['date-start']['date']);
         }
-        if (isset($filters['end-date'])) {
-            $form['date-limits']['date-pair']['end-date']['#default_value'] =
-                    $filters['end-date'];
+        if (!empty($filters['date-end']['date'])) {
+            $form['date-limits']['date-pair']['date-end']['#default_value'] =
+                Ebms\Util::fill_in_date($filters['date-end']['date'], true);
         }
 
         // Scope checkboxes
@@ -617,11 +621,21 @@ class EbmsReview {
         );
         $left_nav = $this->build_left_nav('Reviewed Packets');
         $url = EbmsReview::$url . '/reviews';
-        if (count($this->user->boards) > 1)
+        if (count($this->user->boards) > 1) {
+            $board_opts = array('query' => array('pager' => 'off'));
+            if (!empty($opts['query']['boards']))
+                $board_opts['query']['boards'] = $opts['query']['boards'];
             $left_nav['board filter box'] =
-                $this->board_filter_box($opts, $url);
+                $this->board_filter_box($board_opts, $url);
+        }
+        $form = drupal_get_form('ebms_reviewed_packets_filter_form', $opts);
         return array(
             'left-nav' => $left_nav,
+            'filter' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'main-right-panel'),
+                'form' => $form,
+            ),
             'packets' => $this->reviewed_packet_list($opts),
         );
     }
@@ -718,31 +732,104 @@ class EbmsReview {
         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
         $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
         $query->join('ebms_article_review', 'r', 'r.packet_id = p.packet_id');
-        $query->fields('p', array('packet_id', 'packet_title'));
+        $query->fields('p', array('packet_id', 'packet_title', 'last_seen'));
+        $query->fields('b', array('board_manager'));
         $query->addExpression('MAX(r.when_posted)', 'updated');
         $query->condition('b.board_id', $boards, 'IN');
         $query->condition('p.active_status', 'A');
         $query->orderByHeader($headers);
         $query->groupBy('p.packet_id');
+        if (!empty($opts['query']['filter'])) {
+            $filter_id = $opts['query']['filter'];
+            $filter = pdq_ebms_get_filter_criteria($filter_id);
+            $topics = array();
+            foreach ($filter['topics'] as $id => $val) {
+                if ($val)
+                    $topics[] = $id;
+            }
+            switch (count($topics)) {
+            case 0:
+                break;
+            case 1:
+                $query->condition('p.topic_id', $topics[0]);
+                break;
+            default:
+                $query->condition('p.topic_id', $topics, 'IN');
+            }
+
+            // Get review start and end dates.
+            $ds = $de = '';
+            if (!empty($filter['date-start']['date']))
+                $ds = Ebms\Util::fill_in_date($filter['date-start']['date']);
+            if (!empty($filter['date-end']['date']))
+                $de = Ebms\Util::fill_in_date($filter['date-end']['date'], 1);
+
+            $filtering_by_reviewer = false;
+            foreach ($filter['reviewers'] as $id => $val) {
+                if ($val) {
+                    $alias = "r$id";
+                    $subquery = db_select('ebms_article_review', $alias)
+                        ->fields($alias, array('review_id'))
+                        ->where("$alias.packet_id = p.packet_id")
+                        ->condition("$alias.reviewer_id", $id);
+                    if ($ds)
+                        $subquery->condition("$alias.when_posted", $ds, '>=');
+                    if ($de)
+                        $subquery->condition("$alias.when_posted", $de, '<=');
+                    $query->exists($subquery);
+                    $filtering_by_reviewer = true;
+                }
+            }
+            if (!empty($filter['packet_title_text'])) {
+                $pattern = $filter['packet_title_text'];
+                $query->condition('p.packet_title', $pattern, 'LIKE');
+            }
+            if (!$filtering_by_reviewer && ($ds || $de)) {
+                $subquery = db_select('ebms_article_review', 'd')
+                    ->fields('d', array('review_id'))
+                    ->where('d.packet_id = p.packet_id');
+                if ($ds)
+                    $subquery->condition('d.when_posted', $ds, '>=');
+                if ($de)
+                    $subquery->condition('d.when_posted', $de, '<=');
+                $query->exists($subquery);
+            }
+        }
         $packets = $query->execute();
 
         // Assemble the rows for the table.
         $rows = array();
         $opts = array('query' => drupal_get_query_parameters());
         foreach ($packets as $p) {
+            $last_seen = $p->last_seen;
             $title = str_replace(' [Legacy]', '', $p->packet_title);
             $title .= " [Packet #{$p->packet_id}]";
             $query = db_select('users', 'u');
-            $query->fields('u', array('name'));
+            $query->fields('u', array('name', 'uid'));
             $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
             $query->condition('r.packet_id', $p->packet_id);
             $query->distinct();
             $query->orderBy('u.name');
             $results = $query->execute();
             $reviewers = array();
-            foreach ($results as $result)
-                $reviewers[] = '<div>' . htmlspecialchars($result->name) .
-                '</div>';
+
+            foreach ($results as $result) {
+
+                // 2014-08-01 (OCEEBMS-184): show count of unseen reviews.
+                $reviewers[] = '<div>' . htmlspecialchars($result->name);
+                if ($this->user->uid == $p->board_manager) {
+                    $query = db_select('ebms_article_review', 'r')
+                        ->condition('r.packet_id', $p->packet_id)
+                        ->condition('r.reviewer_id', $result->uid);
+                    if ($last_seen)
+                        $query->condition('r.when_posted', $last_seen, '>');
+                    $count = $query->countQuery()->execute()->fetchField();
+                    if ($count)
+                        $reviewers[] = " <span class='new'>$count new</span>";
+                }
+                $reviewers[] = '</div>';
+            }
+
             $url = EbmsReview::$url . '/reviews/' . $p->packet_id;
             $link = l($title, $url);
             $data = array(
@@ -776,7 +863,7 @@ class EbmsReview {
         $attrs = array('attributes' => $button_class);
         $table = array(
             '#type' => 'container',
-            '#attributes' => array('id' => 'main-right-panel'),
+            '#attributes' => array('id' => 'reviewed-packet-list'),
             'title' => array(
                 '#type' => 'markup',
                 '#markup' => '<h2>Reviewed Packets</h2>',
@@ -812,7 +899,10 @@ class EbmsReview {
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
         $title = htmlspecialchars($article->ArticleTitle);
-        $title = l($title, 'citations/full/' . $article_id);
+        $opts = array();
+        if (!$narrow)
+            $opts['attributes']['target'] = '_blank';
+        $title = l($title, 'citations/full/' . $article_id, $opts);
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
@@ -976,15 +1066,15 @@ class EbmsReview {
         $query = db_select('ebms_packet_article', 'p');
         $query = $query->extend('TableSort');
         $query->join('ebms_article', 'a', 'a.article_id = p.article_id');
-        $query->join('ebms_article_review', 'r',
+        $query->leftJoin('ebms_article_review', 'r',
             "r.article_id = a.article_id AND r.packet_id = $packet_id");
-        $query->join('ebms_review_disposition', 'd',
-            'd.review_id = r.review_id');
+        //$query->leftJoin('ebms_review_disposition', 'd',
+        //    'd.review_id = r.review_id');
         $query->leftJoin('file_managed', 'f', 'f.fid = a.full_text_id');
         $query->fields('a', array('article_id', 'article_title', 'source_id'));
         $query->fields('p', array('archived'));
         $query->fields('f', array('uri'));
-        $query->addExpression('MAX(r.when_posted)', 'updated');
+        $query->addExpression("MAX(IFNULL(r.when_posted, ''))", 'updated');
         $query->condition('p.packet_id', $packet_id);
         if (!$sa)
             $query->isNull('p.archived');
@@ -1093,10 +1183,13 @@ class EbmsReview {
             $a_url = EbmsReview::$url . '/reviews/' . $packet_id . '/' .
                 $article_id;
             $links .= ' | ' . l('Show Details', $a_url) . '</div>';
+            $updated = '';
+            if ($article->updated)
+                $updated = date("m/d/Y", strtotime($article->updated));
             $data = array(
                 $citation . $links,
                 implode('<br />', $reviewers),
-                date("m/d/Y", strtotime($article->updated)),
+                $updated,
                 array(
                     'data' => $checkbox,
                     'class' => array('col-4'),
@@ -1110,15 +1203,26 @@ class EbmsReview {
 
         // Remember when the board manager last looked at this packet (but
         // only if it's one she created herself).
-        db_update('ebms_packet')
-            ->fields(array('last_seen' => $now))
-            ->condition('packet_id', $packet_id)
-            ->condition('created_by', $this->user->uid)
-            ->execute();
+        // 2014-08-08 (OCEEBMS-184): Robin changed her mind. She now wants
+        // us to remember when the manager for the packet's board say
+        // the reviews, not when the packet creator saw them.
+        $query = db_select('ebms_board', 'b');
+        $query->fields('b', array('board_manager'));
+        $query->join('ebms_topic', 't', 't.board_id = b.board_id');
+        $query->join('ebms_packet', 'p', 'p.topic_id = t.topic_id');
+        $query->condition('p.packet_id', $packet_id);
+        $board_manager = $query->execute()->fetchField();
+        if ($board_manager == $this->user->uid)
+            db_update('ebms_packet')
+                ->fields(array('last_seen' => $now))
+                ->condition('packet_id', $packet_id)
+                ->execute();
 
         // Put together and return the render array for the table.
-        $button_class = array('class' => array('button'));
-        $attrs = array('attributes' => $button_class);
+        $attrs = array(
+            'attributes' => array('class' => array('button')),
+            'query' => array('packet' => $packet_id),
+        );
         $report_button = l('Create Report', 'reports/lit-review', $attrs);
         $main_url = EbmsReview::$url;
         $del_func = 'javascript:ebmsscript.delete_packet';
@@ -2021,11 +2125,9 @@ class EbmsReview {
         $query->orderByHeader($headers);
         $q = '' . $query;
         $results = $query->execute();
-        pdq_ebms_debug('FYI QUERY', array($q, $uid, $two_years_ago, $results));
 
         // Create the rows for the table of packets.
         foreach ($results as $result) {
-            pdq_ebms_debug('FYI RESULT', $result);
             $count = db_select('ebms_packet_article', 'a')
                 ->condition('a.packet_id', $result->packet_id)
                 ->countQuery()
@@ -2096,7 +2198,7 @@ class EbmsReview {
     }
 
     private function show_other_reviews() {
-        //pdq_ebms_debug('OTHER REVIEWS', $this);
+
         // Set the bread crumbs.
         $options = array('query' => $this->query_parms());
         unset($options['query']['article']);
@@ -2964,7 +3066,10 @@ class EbmsReview {
         }
         else
             $citation[] = '[No authors listed]';
-        $citation[] = htmlspecialchars($article->ArticleTitle);
+        $title_opts = array('attributes' => array('target' => '_blank'));
+        $url = "citations/full/$article_id";
+        $title = l($article->ArticleTitle, $url, $title_opts);
+        $citation[] = $title; //htmlspecialchars($article->ArticleTitle);
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $citation[] = htmlspecialchars($ta);
         $year = $article->Journal->JournalIssue->PubDate->Year;
@@ -2976,7 +3081,12 @@ class EbmsReview {
         // If we have the full text, provide a link to it.
         if ($uri) {
             $url = file_create_url($uri);
-            $attrs = array('attributes' => array('target' => '_blank'));
+            $attrs = array(
+                'attributes' => array(
+                    'target' => '_blank',
+                    'class' => 'full-text-link',
+                ),
+            );
             $link = l('DOWNLOAD FULL TEXT', $url, $attrs);
             $citation .= " &nbsp; $link";
         }
@@ -2992,33 +3102,38 @@ class EbmsReview {
      * to handle nested correlated queries.
      * TIR 2266: only include topics with eligible articles have
      * full text in the system.
+     * OCEEBMS-202 (2014-08-01): include article counts for each topic.
      */
     public static function topics_for_board($board_id, $state_id) {
         $query = "
-SELECT DISTINCT t.topic_id, t.topic_name
-           FROM ebms_topic t
-           JOIN ebms_article_state s
-             ON t.topic_id = s.topic_id
-           JOIN ebms_article a
-             ON a.article_id = s.article_id
-          WHERE s.active_status = 'A'
-            AND s.current = 'Y'
-            AND s.state_id = $state_id
-            AND t.board_id = $board_id
-            AND a.full_text_id IS NOT NULL
-            AND s.article_id NOT IN
-   (SELECT DISTINCT article_id
-               FROM ebms_packet_article
-              WHERE drop_flag = 0
-                AND packet_id IN
-       (SELECT packet_id
-          FROM ebms_packet
-         WHERE topic_id = s.topic_id))
-       ORDER BY t.topic_name";
+  SELECT t.topic_id, t.topic_name, COUNT(DISTINCT a.article_id) AS articles
+    FROM ebms_topic t
+    JOIN ebms_article_state s
+      ON t.topic_id = s.topic_id
+    JOIN ebms_article a
+      ON a.article_id = s.article_id
+   WHERE s.active_status = 'A'
+     AND s.current = 'Y'
+     AND s.state_id = $state_id
+     AND t.board_id = $board_id
+     AND a.full_text_id IS NOT NULL
+     AND s.article_id NOT IN (
+         SELECT DISTINCT article_id
+                    FROM ebms_packet_article
+                   WHERE drop_flag = 0
+                     AND packet_id IN (
+                         SELECT packet_id
+                           FROM ebms_packet
+                          WHERE topic_id = s.topic_id))
+GROUP BY t.topic_id, t.topic_name
+ORDER BY t.topic_name";
         $results = db_query($query);
         $topics = array();
-        foreach ($results as $result)
-            $topics[$result->topic_id] = $result->topic_name;
+        foreach ($results as $result) {
+            $name = $result->topic_name;
+            $articles = $result->articles;
+            $topics[$result->topic_id] = "$name ($articles)";
+        }
         return $topics;
     }
 
@@ -3032,9 +3147,24 @@ SELECT DISTINCT t.topic_id, t.topic_name
      * review"; now we must check to verify that the full text
      * is actually present (and that the user wasn't fibbing
      * when she said the article had passed full text review).
+     *
+     * @param int $topic_id
+     *   The topic for which articles that passed review are selected.
+     * @param int $state_id
+     *   Only articles with this ebms_article_state_id are selected.
+     *   Probably always 'Passed full text review'.
+     * @param string $sort_by
+     *   Order the results by this.  Valid values: 'Author', 'Journal Title'.
+     * @param int $packet_id
+     *   Only select articles NOT in this packet.
+     *   0 = There is no packet 0, so packet_id==0 excludes nothing.
+     *   See also $query->union() below
+     *
+     * @return
+     *   Array of article_id => brief citation for each selected article.
      */
     public static function articles_for_topic(
-        $topic_id, $state_id, $packet_id=0
+        $topic_id, $state_id, $sort_by, $packet_id=0
     ) {
         if (!$topic_id)
             return array();
@@ -3054,6 +3184,7 @@ SELECT DISTINCT t.topic_id, t.topic_name
         $query->condition('s.current', 'Y');
         $query->condition('s.article_id', $subquery, 'NOT IN');
         $query->join('ebms_article', 'ea', 'ea.article_id = s.article_id');
+
         $query->isNotNull('ea.full_text_id');
         $query->distinct();
         if ($packet_id) {
@@ -3063,6 +3194,8 @@ SELECT DISTINCT t.topic_id, t.topic_name
                 ->condition('pa.drop_flag', 0);
             $query->union($union);
         }
+        if ($sort_by == 'Journal Title')
+            $query->orderBy('ea.jrnl_title');
         if (false)
             dpq($query);
         $results = $query->execute();
@@ -3071,7 +3204,9 @@ SELECT DISTINCT t.topic_id, t.topic_name
             $id = $result->article_id;
             $articles[$id] = EbmsReview::brief_citation($id);
         }
-        natsort($articles);
+        // Real sort is complicated, but brief citation has author at front
+        if ($sort_by == 'Author')
+            natsort($articles);
         return $articles;
     }
 
@@ -3908,6 +4043,94 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
 }
 
 /**
+ * What is the sort order for the display of articles in packet creation?
+ *
+ * @param array $form_state
+ *   Access to current form submit values.
+ *
+ * @return string
+ *   One of the legal values
+ */
+function _get_packet_create_article_sort_key($form_state) {
+
+    // Set default value for sort key
+    if (!empty($form_state['values']['sort-by'])) {
+        $sort_by = $form_state['values']['sort-by'];
+
+        // If user asked for this to be the default, set it
+        if (!empty($form_state['values']['save-as-default'])) {
+            $items = array('dft_packet_article_sort_key' => $sort_by);
+            Ebms\Util::set_custom_user_field_values($items);
+        }
+    }
+    else if (!empty($form_state['input']['sort-by'])) {
+        $sort_by = $form_state['input']['sort-by'];
+    }
+    else {
+        $sort_by = Ebms\Util::get_custom_user_field_value(
+                              'dft_packet_article_sort_key');
+        if (!$sort_by)
+            $sort_by = 'Author';
+    }
+
+    return $sort_by;
+}
+
+/**
+ * Create the "display options" field to allow a user to specify how
+ * to sort articles for display, and to save the specification as the
+ * default from now on.
+ *
+ * @param array $form_state
+ *   Allows access to current settings of the sort-by value.
+ *
+ * @return
+ *   Drupal render array for the fieldset with display options
+ */
+function _build_article_display_options($form_state) {
+
+    $form = array(
+        '#type' => 'fieldset',
+        '#title' => 'Display options',
+        '#collapsible' => true,
+        '#collapsed' => true,
+        // '#attributes' => array('class' => array('clearfix')),
+        'sort-by' => array(
+            '#type' => 'select',
+            '#title' => 'SORT BY',
+            '#title_display' => 'after',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#options' => drupal_map_assoc(
+                array(
+                    'Author',
+                    'Journal Title',
+                )
+            ),
+            '#default_value' =>
+                    _get_packet_create_article_sort_key($form_state),
+            '#ajax' => array(
+                'callback' => 'pdq_ebms_packet_topic_ajax',
+                'wrapper' => 'topic-specific-fields',
+            ),
+        ),
+        // This form element can change the sort order and store the new
+        //  order as the default, but it only takes effect when a topic is
+        //  checked again - either now or by re-entering from the top.
+        'save-as-default' => array(
+            '#type' => 'checkbox',
+            '#title' => t('SAVE AS DEFAULT'),
+            'checked' => '',
+            '#ajax' => array(
+                'callback' => '_pkt_art_disp_opts_ajax',
+                'wrapper' => 'edit-disp-opt',
+            ),
+        ),
+    );
+
+    return $form;
+}
+
+/**
  * Create the form used by a board manager to create a new literature
  * review packet.  We show the parts of the form incrementally, as
  * lower portions depend on the selections made in the upper portions.
@@ -3928,7 +4151,8 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
     else {
 
         // See if the board and topic have already been selected.
-        $board_id = $topic_id = $current_topic = 0;
+        $board_id = Ebms\Util::get_user_default_board(0);
+        $topic_id = $current_topic = 0;
         if (!empty($form_state['values']['board']))
             $board_id = $form_state['values']['board'];
         if (!empty($form_state['values']['topic']))
@@ -3978,7 +4202,9 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         $selected_reviewers = array();
 
     // Set up the fields which depend on having a topic selected.
+    $need_disp_opts = true;
     if ($topic_id) {
+        $need_disp_opts = false;
 
         // Find out which reviewers are already selected.
         if (isset($form_state['values'])) {
@@ -4023,13 +4249,17 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         // Make sure the checkboxes are in the right order.
         natsort($reviewers);
 
+        // Get sort order for articles
+        $sort_by = _get_packet_create_article_sort_key($form_state);
+
         // Take care of the rest of the fields.
         $articles_title = 'Articles';
         $summaries_title = 'Summary Documents (Optional)';
         $reviewers_title = 'Reviewers';
         $all_reviewers_class = 'all-reviewers-visible';
+
         $articles = EbmsReview::articles_for_topic($topic_id, $state_id,
-                    $packet_id);
+                    $sort_by, $packet_id);
         $summaries = EbmsReview::summaries_for_topic($topic_id, $packet_id);
         $articles_desc =
             'Selected articles will be included in the packet.  ' .
@@ -4060,7 +4290,6 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
     }
     else {
 
-        // Don't have a topic yet; collapse dependent fields.
         $all_reviewers_class = 'all-reviewers-hidden';
         $articles_title = 'Articles';
         $summaries_title = 'Summary Documents (Optional)';
@@ -4084,6 +4313,8 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         '#value' => $packet_id,
     );
     $articles_field = array(
+        '#prefix' => '<div id="packet-article-block">',
+        '#suffix' => '</div>',
         '#type' => 'checkboxes',
         '#title' => $articles_title,
         '#description' => $articles_desc,
@@ -4168,6 +4399,7 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
             '#title' => 'Board',
             '#description' => 'You may select only one board.',
             '#options' => Ebms\Util::boards(),
+            '#default_value' => $board_id,
             '#ajax' => array(
                 'callback' => 'pdq_ebms_packet_board_ajax',
                 'wrapper' => $bsf,
@@ -4190,6 +4422,7 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
                 'wrapper' => $tsf,
             ),
         );
+
         $form[$bsf][$tsf] = array(
             '#prefix' => "<div id='$tsf'>",
             '#suffix' => '</div>',
@@ -4200,8 +4433,26 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         );
         if ($topic_id) {
             $name = '';
-            if (array_key_exists($topic_id, $topics))
-                $name = $topics[$topic_id];
+            $topic_name = db_select('ebms_topic', 't')
+                ->fields('t', array('topic_name'))
+                ->condition('t.topic_id', $topic_id)
+                ->execute()
+                ->fetchField();
+
+            if ($topic_name) {
+
+                // OCEEBMS-202 (2014-08-01): add cycle to default packet name.
+                //$cycle_id = Ebms\Util::get_default_cycle();
+                //$cycle_name = Ebms\Util::get_cycle_name($cycle_id);
+                // Robin changed her mind (2014-08-20) use the current month,
+                // not the current cycle name.
+                $now = date('F Y');
+                $name = "$topic_name ($now)";
+            }
+            // All of these blocks are displayed when a topic is selected
+            //  and all change if and when the topic changes
+            $form[$bsf][$tsf]['disp-opt'] =
+                    _build_article_display_options($form_state);
             $form[$bsf][$tsf]['articles'] = $articles_field;
             $form[$bsf][$tsf]['summaries'] = $summaries_field;
             $form[$bsf][$tsf]['reviewers-div'] = $reviewers_div;
@@ -4393,7 +4644,7 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
             ->execute();
     }
 
-    // XXX DEBUGGING FOR SRIDHAR.
+// XXX DEBUGGING FOR QA TEAM
 //     $status = db_select('ebms_packet', 'p')
 //         ->fields('p', array('active_status'))
 //         ->condition('p.packet_id', $packet_id)
@@ -4402,6 +4653,13 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
 //     pdq_ebms_debug('PACKET EDIT', array(
 //         'FORM VALUES' => $form_state['values'],
 //         'PACKET STATUS' => $status));
+}
+
+/**
+ * Save the article display sort option as the new default.
+ */
+function _pkt_art_disp_opts_ajax($form, &$form_state) {
+    _get_packet_create_article_sort_key($form_state);
 }
 
 /**
@@ -4501,37 +4759,9 @@ function pdq_ebms_manager_packets_filter_form (
         '#title' => 'Packet Name: ',
         '#title_display' => 'before',
     );
-    $form['date-limits'] = array(
-        '#type' => 'container',
-        '#attributes' => array('class' => array('date-with-range')),
-        'date-pair' => array(
-            '#type' => 'container',
-            'start-date' => array(
-                '#type' => 'date_popup',
-                '#title' => 'Start date:',
-                '#date_year_range' => '2002:+0',
-                '#date_format' => 'Y-m-d',
-                // This next attribute suppresses the unwanted extra 'Date'
-                // label.
-                '#date_label_position' => '',
-                '#attributes' => array(
-                    'title' =>
-                    'Packet creation date (defaults to no start date)',
-                ),
-            ),
-            'end-date' => array(
-                '#type' => 'date_popup',
-                '#title' => 'End date:',
-                '#date_year_range' => '2002:+0',
-                '#date_format' => 'Y-m-d',
-                '#date_label_position' => '',
-                '#attributes' => array(
-                    'title' =>
-                    'Packet creation date (defaults to no end date)',
-                ),
-            ),
-        ),
-    );
+    $date_fields = Ebms\Util::date_range_field('Packet Creation Date:', 'date',
+                                               '', '', ':+0', false);
+    $form['date-limits'] = $date_fields;
     $scope_opts = array('Active', 'Archived', 'Legacy');
     $form['pkt_scope'] = array(
         '#type' => 'checkboxes',
@@ -4778,7 +5008,7 @@ function _get_query_string(SelectQueryInterface $query) {
  * @return                  Array of search key=>values.
  *                          Empty array if none.
  */
-function get_filter_criteria($search_id) {
+function pdq_ebms_get_filter_criteria($search_id) {
 
     $fltr_json = null;
     try {
@@ -4797,4 +5027,143 @@ function get_filter_criteria($search_id) {
         return json_decode($fltr_json, true);
     else
         return array();
+}
+
+/**
+ * Throttle the display of packets for which reviews have been submitted.
+ * Added for JIRA ticket OCEEBMS-182.
+ */
+function ebms_reviewed_packets_filter_form($form_id, $form_state, $opts) {
+
+    // Make sure the current user is connected with at least one board.
+    $board_ids = EbmsReview::get_board_ids();
+    if (count($board_ids) < 1)
+        return array();
+
+    // Get a list of all the board members for those boards.
+    $reviewers = array();
+    foreach ($board_ids as $board_id)
+        $reviewers += EbmsReview::board_members($board_id);
+    natcasesort($reviewers);
+
+    // Get a list of all of the topics for those boards.
+    $topics = db_select('ebms_topic', 't')
+        ->fields('t', array('topic_id', 'topic_name'))
+        ->condition('t.board_id', $board_ids, 'IN')
+        ->orderBy('t.topic_name')
+        ->execute()
+        ->fetchAllKeyed();
+
+    // Initialize the default form values to empty.
+    $topic_defaults = array();
+    $title = $start_date = $end_date = '';
+    $reviewer_defaults = array();
+
+    // If we're handling a filter request, adjust the default values.
+    if (!empty($opts['query']['filter'])) {
+        $filter_id = $opts['query']['filter'];
+        $filter = pdq_ebms_get_filter_criteria($filter_id);
+        foreach ($filter['topics'] as $id => $val) {
+            if ($val && array_key_exists($id, $topics))
+                $topic_defaults[] = $id;
+        }
+        foreach ($filter['reviewers'] as $id => $val) {
+            if ($val && array_key_exists($id, $reviewers))
+                $reviewer_defaults[] = $id;
+        }
+        $title = $filter['packet_title_text'];
+        $start_date = $filter['date-start']['date'];
+        $end_date = $filter['date-end']['date'];
+        if ($start_date)
+            $start_date = Ebms\Util::fill_in_date($start_date);
+        if ($end_date)
+            $end_date = Ebms\Util::fill_in_date($end_date, true);
+    }
+
+    // Build and return the Drupal render array for the filtering form.
+    $date_fields = Ebms\Util::date_range_field('Review Date:', 'date',
+                                               $start_date, $end_date,
+                                               ':+0', false);
+    return array(
+        '#id' =>'reviewed-packets-filter-form',
+        'title' => array(
+            '#type' => 'markup',
+            '#markup' => '<h3>Filter Packet Selection</h3>',
+        ),
+        'topic_box' => array(
+            '#type' => 'fieldset',
+            '#title' => 'Summary topics',
+            '#collapsible' => true,
+            '#collapsed' => true,
+            'topics' => array(
+                '#type' => 'checkboxes',
+                '#options' => $topics,
+                '#default_value' => $topic_defaults,
+            ),
+        ),
+        'reviewer_box' => array(
+            '#type' => 'fieldset',
+            '#title' => 'Reviewers',
+            '#collapsible' => true,
+            '#collapsed' => true,
+            'reviewers' => array(
+                '#type' => 'checkboxes',
+                '#options' => $reviewers,
+                '#default_value' => $reviewer_defaults,
+            ),
+        ),
+        'packet_title_text' => array(
+            '#type' => 'textfield',
+            '#size' => 40,
+            '#title' => 'Packet Name: ',
+            '#title_display' => 'before',
+            '#default_value' => $title,
+        ),
+        'date-limits' => $date_fields,
+        'buttons' => array(
+            '#type' => 'container',
+            '#attributes' => array('class' => array('button-wrapper')),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Filter',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Reset',
+            ),
+        ),
+    );
+}
+
+/**
+ * Submit function gathers the info into a JSON string and inserts it in
+ * the database.  Then re-invokes the top level function with the row ID
+ * of the row in ebms_search containing the filter criteria.
+ */
+function ebms_reviewed_packets_filter_form_submit($form, &$form_state) {
+
+    global $user;
+
+    // Start fresh with no filtering if the user clicks the 'Reset' button.
+    if (trim($form_state['values']['op']) == 'Reset')
+        drupal_goto(EbmsReview::$url . '/reviews');
+
+    // Save the filter options so we can use them to find the right packets.
+    $filter_spec = drupal_json_encode($form_state['values']);
+    $parms       = drupal_get_query_parameters();
+    $now         = db_query('SELECT NOW()')->fetchField();
+    $uid         = $user->uid;
+    $fields      = array(
+        'when_searched' => $now,
+        'searched_by'   => $uid,
+        'search_spec'   => $filter_spec
+    );
+    $filter_id = db_insert('ebms_search')->fields($fields)->execute();
+
+    // Rebuild the reviewed packets page with the new filter options.
+    $opts = array('query' => array('filter' => $filter_id));
+    $opts['query']['pager'] = 'off';
+    if (!empty($parms['boards']))
+        $opts['query']['boards'] = $parms['boards'];
+    drupal_goto(EbmsReview::$url . "/reviews", $opts);
 }

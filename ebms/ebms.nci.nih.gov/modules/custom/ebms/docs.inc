@@ -344,6 +344,9 @@ function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
     else {
         $title = 'Post Document';
         $boards_default = $tags_default = $topics_default = array();
+        $user_board_dft = Ebms\Util::get_user_default_board(null);
+        if ($user_board_dft)
+            $boards_default[] = $user_board_dft;
         $desc_default = '';
     }
 

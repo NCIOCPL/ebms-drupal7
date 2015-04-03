@@ -3,6 +3,7 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_core_journal;
 DROP TABLE IF EXISTS ebms_article_topic;
 DROP TABLE IF EXISTS ebms_import_request;
 DROP TABLE IF EXISTS ebms_publish_queue_flag;
@@ -129,10 +130,12 @@ CREATE TABLE ebms_doc
  * loe_guidelines optional foreign key into ebms_doc for board's LOE guidelines
  */
   CREATE TABLE ebms_board
-     (board_id INTEGER      NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    board_name VARCHAR(255) NOT NULL UNIQUE,
-loe_guidelines INTEGER          NULL,
-   FOREIGN KEY (loe_guidelines) REFERENCES ebms_doc (doc_id))
+     (board_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    board_name VARCHAR(255)     NOT NULL UNIQUE,
+ board_manager INTEGER UNSIGNED NOT NULL,
+loe_guidelines INTEGER              NULL,
+   FOREIGN KEY (loe_guidelines) REFERENCES ebms_doc (doc_id)),
+   FOREIGN KEY (board_manager)  REFERENCES users (uid))
         ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
@@ -665,6 +668,27 @@ CREATE TABLE ebms_not_list (
         ON ebms_not_list(board_id, source, source_jrnl_id);
 
 /*
+ * This is sort of the opposite of the 'not' list. These are the
+ * journals that have a high percentage of relevant, high quality
+ * articles about cancer. Users can narrow search results or some
+ * queues to articles published in these journals.
+ *
+ *  source          Name of a source related to source_jrnl_id, normally
+ *                   'Pubmed'.
+ *  source_jrnl_id  The unique id for this journal assigned by the source.
+ *                   Using source + source_jrnl_id is more robust than 
+ *                   using the title because titles can change.
+ *                   There's no EBMS authority file for this.  The IDs are
+ *                   maintained by the source, i.e. NLM.
+ */
+CREATE TABLE ebms_core_journal (
+    source          VARCHAR(32) NOT NULL,
+    source_jrnl_id  VARCHAR(32) NOT NULL,
+    PRIMARY KEY (source, source_jrnl_id)
+)
+    ENGINE = InnoDB DEFAULT CHARSET=utf8;
+
+/*
  * ebms_import_disposition
  * 
  * Control table for import_action.disposition.  This is a static set
@@ -815,7 +839,7 @@ CREATE TABLE ebms_import_action (
  */
 CREATE TABLE ebms_article_state_type (
     state_id            INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    state_text_id       VARCHAR(32) NULL UNIQUE,
+    state_text_id       VARCHAR(32) NOT NULL UNIQUE,
     state_name          VARCHAR(64) NOT NULL UNIQUE,
     description         VARCHAR(2048) NOT NULL,
     completed           ENUM('Y', 'N') NOT NULL DEFAULT 'N',
@@ -921,8 +945,14 @@ CREATE TABLE ebms_article_state_type (
     INSERT ebms_article_state_type 
         (state_text_id, state_name, description, sequence, completed)
         VALUES ('OnHold', 'On Hold',
-        'New board manager action added for request in ticket OCEEBMS-82.',
+        'Article has been reviewed but should not yet be eligible for '
+        'inclusion on meeting agendas.',
         70, 'N');
+    INSERT ebms_article_state_type 
+        (state_text_id, state_name, description, sequence, completed)
+        VALUES ('FullReviewHold', 'Held After Full Text Review',
+        'Article should not yet be eligible for inclusion in review packets.',
+        60, 'N');
 
 
 /*

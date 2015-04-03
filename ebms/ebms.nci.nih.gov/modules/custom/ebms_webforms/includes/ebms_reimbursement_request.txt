@@ -1,5 +1,5 @@
 $webform = array (
-  'nid' => '3',
+  'nid' => '2',
   'confirmation' => '',
   'confirmation_format' => NULL,
   'redirect_url' => '<confirmation>',
@@ -15,26 +15,66 @@ $webform = array (
   'total_submit_limit' => '-1',
   'total_submit_interval' => '-1',
   'record_exists' => true,
-  'roles' => 
+  'roles' =>
   array (
     0 => '1',
     1 => '2',
   ),
-  'emails' => 
+  'emails' =>
   array (
-  ),
-  'components' => 
-  array (
-    1 => 
+    1 =>
     array (
-      'nid' => 3,
+      'nid' => '2',
+      'eid' => '1',
+      'email' => '***REMOVED***',
+      'subject' => 'EBMS Reimbursement Request',
+      'from_name' => 'default',
+      'from_address' => 'default',
+      'template' => 'Submitted on [submission:date:long]
+Submitted by user: [submission:user]
+[submission:values]
+
+The results of this submission may be viewed at:
+[submission:url]',
+      'excluded_components' =>
+      array (
+      ),
+      'html' => '0',
+      'attachments' => '0',
+    ),
+    2 =>
+    array (
+      'nid' => '2',
+      'eid' => '2',
+      'email' => '14',
+      'subject' => 'Your Reimbursement Request',
+      'from_name' => 'default',
+      'from_address' => 'default',
+      'template' => 'Here are the details of the reimbursement request you just submitted:
+
+Submitted on [submission:date:long]
+Submitted by: [submission:user]
+Submitted values are:
+[submission:values]',
+      'excluded_components' =>
+      array (
+      ),
+      'html' => '0',
+      'attachments' => '0',
+    ),
+  ),
+  'components' =>
+  array (
+    1 =>
+    array (
+      'nid' => 2,
       'cid' => '1',
       'pid' => '0',
       'form_key' => 'meeting',
       'name' => 'Meeting',
       'type' => 'select',
       'value' => '',
-      'extra' => 
+      'extra' =>
       array (
         'items' => '0|N/A',
         'multiple' => 0,
@@ -52,94 +92,67 @@ $webform = array (
       'weight' => '0',
       'page_num' => 1,
     ),
-    2 => 
+    12 =>
     array (
-      'nid' => 3,
-      'cid' => '2',
+      'nid' => 2,
+      'cid' => '12',
       'pid' => '0',
-      'form_key' => 'transportation',
-      'name' => 'Transportation',
-      'type' => 'ebms_travel',
+      'form_key' => 'arrival_date',
+      'name' => 'Arrival Date',
+      'type' => 'date',
       'value' => '',
-      'extra' => 
+      'extra' =>
       array (
-        'items' => 'taxi|Taxi
-metro|Metro
-shuttle|Shuttle
-private|Privately Owned Vehicle',
-        'date_description' => 'Please select the date in which this expense occured.',
-        'select_description' => 'Please select an option from the list above.',
-        'text_description' => 'Please enter the cost of the expense.',
-        'text_prefix' => 'Please enter the cost of the expense.',
+        'timezone' => 'site',
         'title_display' => 'before',
         'private' => 0,
-        'unique' => 0,
-        'maxlength' => '250',
-        'size' => '',
-        'disabled' => 0,
-        0 => 'text_prefix',
-        1 => '',
-        'attributes' => 
-        array (
-        ),
-        'choices' => '10',
-        'num_trans' => '1',
-        'options_source' => '',
+        'datepicker' => 1,
+        'year_textfield' => 0,
+        'start_date' => '-2 years',
+        'end_date' => '+1 years',
+        'description' => '',
       ),
-      'mandatory' => '0',
+      'mandatory' => '1',
       'weight' => '1',
       'page_num' => 1,
     ),
-    3 => 
+    13 =>
     array (
-      'nid' => 3,
-      'cid' => '3',
+      'nid' => 2,
+      'cid' => '13',
       'pid' => '0',
-      'form_key' => 'parking_and_tolls',
-      'name' => 'Parking and Tolls',
-      'type' => 'ebms_travel',
+      'form_key' => 'departure_date',
+      'name' => 'Departure Date',
+      'type' => 'date',
       'value' => '',
-      'extra' => 
+      'extra' =>
       array (
-        'items' => 'airport|Airport Parking
-hotel|Hotel Parking
-toll|Toll',
-        'date_description' => 'Please select the date in which this expense occured.',
-        'select_description' => 'Please select an option from the list above.',
-        'text_description' => 'Please enter the cost of the expense.',
-        'text_prefix' => '$',
+        'timezone' => 'site',
         'title_display' => 'before',
         'private' => 0,
-        'unique' => 0,
-        'maxlength' => '250',
-        'size' => '',
-        'disabled' => 0,
-        0 => 'text_prefix',
-        1 => '',
-        'attributes' => 
-        array (
-        ),
-        'choices' => '10',
-        'num_trans' => '1',
-        'options_source' => '',
+        'datepicker' => 1,
+        'year_textfield' => 0,
+        'start_date' => '-2 years',
+        'end_date' => '+1 years',
+        'description' => '',
       ),
-      'mandatory' => '0',
+      'mandatory' => '1',
       'weight' => '2',
       'page_num' => 1,
     ),
-    4 => 
+    16 =>
     array (
-      'nid' => 3,
-      'cid' => '4',
+      'nid' => 2,
+      'cid' => '16',
       'pid' => '0',
-      'form_key' => 'hotel',
-      'name' => 'Hotel',
+      'form_key' => 'type_of_travel',
+      'name' => 'Type of Travel',
       'type' => 'select',
       'value' => '',
-      'extra' => 
+      'extra' =>
       array (
-        'items' => 'nci_paid|NCI Paid for my Hotel
-i_paid|I paid for my Hotel',
+        'items' => 'drove|I drove to this meeting (local travel)
+did_not_drive|I traveled by plane or train to this meeting (long distance travel)',
         'multiple' => 0,
         'title_display' => 'before',
         'private' => 0,
@@ -151,20 +164,124 @@ i_paid|I paid for my Hotel',
         'custom_keys' => false,
         'options_source' => '',
       ),
-      'mandatory' => '0',
+      'mandatory' => '1',
       'weight' => '3',
       'page_num' => 1,
     ),
-    11 => 
+    2 =>
     array (
-      'nid' => 3,
-      'cid' => '11',
+      'nid' => 2,
+      'cid' => '2',
+      'pid' => '0',
+      'form_key' => 'transportation',
+      'name' => 'Transportation Expenses',
+      'type' => 'ebms_travel',
+      'value' => '',
+      'extra' =>
+      array (
+        'items' => 'taxi|Taxi
+metro|Metro
+shuttle|Shuttle
+private|Privately Owned Vehicle',
+        'date_description' => 'Please select the date on which this expense occurred.',
+        'select_description' => 'Please select an option from the list above.',
+        'text_description' => 'Please enter the cost of the expense. Please submit a receipt for any expense over $75.00.',
+        'text_prefix' => 'Please enter the cost of the expense.',
+        'title_display' => 'before',
+        'private' => 0,
+        'unique' => 0,
+        'maxlength' => '250',
+        'size' => '',
+        'disabled' => 0,
+        0 => 'text_prefix',
+        1 => '',
+        'attributes' =>
+        array (
+        ),
+        'choices' => '10',
+        'num_trans' => '1',
+        'options_source' => '',
+      ),
+      'mandatory' => '0',
+      'weight' => '4',
+      'page_num' => 1,
+    ),
+    3 =>
+    array (
+      'nid' => 2,
+      'cid' => '3',
+      'pid' => '0',
+      'form_key' => 'parking_and_tolls',
+      'name' => 'Parking and Toll Expenses',
+      'type' => 'ebms_travel',
+      'value' => '',
+      'extra' =>
+      array (
+        'items' => 'airport|Airport Parking
+hotel|Hotel Parking
+toll|Toll',
+        'date_description' => 'Please select the date on which this expense occurred.',
+        'select_description' => 'Please select an option from the list above.',
+        'text_description' => 'Please enter the cost of the expense. Please submit a receipt for any expense over $75.00.',
+        'text_prefix' => 'Please enter the cost of the expense. Please submit a receipt for any expense over $75.00.',
+        'title_display' => 'before',
+        'private' => 0,
+        'unique' => 0,
+        'maxlength' => '250',
+        'size' => '',
+        'disabled' => 0,
+        0 => 'text_prefix',
+        1 => '',
+        'attributes' =>
+        array (
+        ),
+        'choices' => '10',
+        'num_trans' => '1',
+        'options_source' => '',
+      ),
+      'mandatory' => '0',
+      'weight' => '5',
+      'page_num' => 1,
+    ),
+    4 =>
+    array (
+      'nid' => 2,
+      'cid' => '4',
+      'pid' => '0',
+      'form_key' => 'hotel',
+      'name' => 'Hotel',
+      'type' => 'select',
+      'value' => '',
+      'extra' =>
+      array (
+        'items' => 'nci_paid|NCI paid for my hotel
+i_paid|I paid for my hotel
+no_hotel|I did not stay in a hotel',
+        'multiple' => 0,
+        'title_display' => 'before',
+        'private' => 0,
+        'aslist' => 0,
+        'optrand' => 0,
+        'other_option' => NULL,
+        'other_text' => 'Other...',
+        'description' => '',
+        'custom_keys' => false,
+        'options_source' => '',
+      ),
+      'mandatory' => '1',
+      'weight' => '6',
+      'page_num' => 1,
+    ),
+    5 =>
+    array (
+      'nid' => 2,
+      'cid' => '5',
       'pid' => '0',
       'form_key' => 'amount',
       'name' => 'Amount',
       'type' => 'textfield',
       'value' => '',
-      'extra' => 
+      'extra' =>
       array (
         'title_display' => 'before',
         'private' => 0,
@@ -175,117 +292,83 @@ i_paid|I paid for my Hotel',
         'maxlength' => '',
         'field_suffix' => '',
         'description' => '',
-        'attributes' => 
+        'attributes' =>
         array (
         ),
-      ),
-      'mandatory' => '0',
-      'weight' => '4',
-      'page_num' => 1,
-    ),
-    5 => 
-    array (
-      'nid' => 3,
-      'cid' => '5',
-      'pid' => '0',
-      'form_key' => 'receipts',
-      'name' => 'Receipts',
-      'type' => 'file',
-      'value' => '',
-      'extra' => 
-      array (
-        'description' => 'Please only upload zip or pdf type files (2MB max).',
-        'scheme' => 'public',
-        'directory' => 'reimbursement-receipts',
-        'title_display' => 'before',
-        'private' => 0,
-        'progress_indicator' => 'throbber',
-        'filtering' => 
-        array (
-          'size' => '2 MB',
-          'types' => 
-          array (
-            0 => 'pdf',
-            1 => 'zip',
-          ),
-          'addextensions' => '',
-        ),
-        'description' => '',
-        'attributes' => 
-        array (
-        ),
-      ),
-      'mandatory' => '0',
-      'weight' => '5',
-      'page_num' => 1,
-    ),
-    6 => 
-    array (
-      'nid' => 3,
-      'cid' => '6',
-      'pid' => '0',
-      'form_key' => 'meals_and_incidentals',
-      'name' => 'Meals and Incidentals',
-      'type' => 'select',
-      'value' => '',
-      'extra' => 
-      array (
-        'items' => 'per_diem|Per Diem Requested
-per_diem_declined|Per Diem Declined',
-        'multiple' => 0,
-        'title_display' => 'before',
-        'private' => 0,
-        'aslist' => 0,
-        'optrand' => 0,
-        'other_option' => NULL,
-        'other_text' => 'Other...',
-        'description' => '',
-        'custom_keys' => false,
-        'options_source' => '',
-      ),
-      'mandatory' => '0',
-      'weight' => '6',
-      'page_num' => 1,
-    ),
-    7 => 
-    array (
-      'nid' => 3,
-      'cid' => '7',
-      'pid' => '0',
-      'form_key' => 'honorarium',
-      'name' => 'Honorarium',
-      'type' => 'select',
-      'value' => '',
-      'extra' => 
-      array (
-        'items' => 'honorarium|Honorarium Requested
-honorarium_declined|Honorarium Declined',
-        'multiple' => 0,
-        'title_display' => 'before',
-        'private' => 0,
-        'aslist' => 0,
-        'optrand' => 0,
-        'other_option' => NULL,
-        'other_text' => 'Other...',
-        'description' => '',
-        'custom_keys' => false,
-        'options_source' => '',
       ),
       'mandatory' => '0',
       'weight' => '7',
       'page_num' => 1,
     ),
-    8 => 
+    7 =>
     array (
-      'nid' => 3,
+      'nid' => 2,
+      'cid' => '7',
+      'pid' => '0',
+      'form_key' => 'meals_and_incidentals',
+      'name' => 'Meals and Incidentals',
+      'type' => 'select',
+      'value' => '',
+      'extra' =>
+      array (
+        'description' => 'If your office is located more than 50 miles from our building, you may request a per diem. We will calculate the amount based on your travel time.',
+        'items' => 'per_diem|Per diem requested
+per_diem_declined|Per diem declined
+per_diem_ineligible|I am not eligible for a per diem',
+        'multiple' => 0,
+        'title_display' => 'before',
+        'private' => 0,
+        'aslist' => 0,
+        'optrand' => 0,
+        'other_option' => NULL,
+        'other_text' => 'Other...',
+        'custom_keys' => false,
+        'options_source' => '',
+      ),
+      'mandatory' => '1',
+      'weight' => '8',
+      'page_num' => 1,
+    ),
+    8 =>
+    array (
+      'nid' => 2,
       'cid' => '8',
+      'pid' => '0',
+      'form_key' => 'honorarium',
+      'name' => 'Honorarium',
+      'type' => 'select',
+      'value' => '',
+      'extra' =>
+      array (
+        'items' => 'honorarium|Honorarium requested
+honorarium_declined|Honorarium declined',
+        'multiple' => 0,
+        'title_display' => 'before',
+        'private' => 0,
+        'aslist' => 0,
+        'optrand' => 0,
+        'other_option' => NULL,
+        'other_text' => 'Other...',
+        'description' => '',
+        'custom_keys' => false,
+        'options_source' => '',
+      ),
+      'mandatory' => '1',
+      'weight' => '9',
+      'page_num' => 1,
+    ),
+    9 =>
+    array (
+      'nid' => 2,
+      'cid' => '9',
       'pid' => '0',
       'form_key' => 'reimbursement',
       'name' => 'Reimbursement',
       'type' => 'select',
       'value' => '',
-      'extra' => 
+      'extra' =>
       array (
+        'description' => 'Please indicate whether you would like your reimbursement check to be sent to the work or home address we have on file.',
         'items' => 'work|Work
 home|Home
 other|Other',
@@ -296,24 +379,51 @@ other|Other',
         'optrand' => 0,
         'other_option' => NULL,
         'other_text' => 'Other...',
-        'description' => '',
         'custom_keys' => false,
         'options_source' => '',
       ),
-      'mandatory' => '0',
-      'weight' => '8',
+      'mandatory' => '1',
+      'weight' => '10',
       'page_num' => 1,
     ),
-    9 => 
+    15 =>
     array (
-      'nid' => 3,
-      'cid' => '9',
+      'nid' => 2,
+      'cid' => '15',
+      'pid' => '0',
+      'form_key' => 'total_amount_requested',
+      'name' => 'Total Amount Requested',
+      'type' => 'textfield',
+      'value' => '',
+      'extra' =>
+      array (
+        'description' => 'Please enter the total amount you are requesting, including reimbursement for all expenses and your honorarium. If you are requesting reimbursement for mileage and/or per diem, we will calculate the total(s) and add that amount to your reimbursement request.',
+        'title_display' => 'before',
+        'private' => 0,
+        'disabled' => 0,
+        'unique' => 0,
+        'width' => '',
+        'maxlength' => '',
+        'field_prefix' => '',
+        'field_suffix' => '',
+        'attributes' =>
+        array (
+        ),
+      ),
+      'mandatory' => '0',
+      'weight' => '11',
+      'page_num' => 1,
+    ),
+    10 =>
+    array (
+      'nid' => 2,
+      'cid' => '10',
       'pid' => '0',
       'form_key' => 'comments',
       'name' => 'Comments',
       'type' => 'textarea',
       'value' => '',
-      'extra' => 
+      'extra' =>
       array (
         'title_display' => 0,
         'private' => 0,
@@ -322,24 +432,24 @@ other|Other',
         'cols' => '',
         'rows' => '',
         'description' => '',
-        'attributes' => 
+        'attributes' =>
         array (
         ),
       ),
       'mandatory' => '0',
-      'weight' => '9',
+      'weight' => '12',
       'page_num' => 1,
     ),
-    10 => 
+    11 =>
     array (
-      'nid' => 3,
-      'cid' => '10',
+      'nid' => 2,
+      'cid' => '11',
       'pid' => '0',
       'form_key' => 'certify',
       'name' => 'Certify',
       'type' => 'select',
       'value' => '',
-      'extra' => 
+      'extra' =>
       array (
         'items' => 'certify|I certify that the above information is true and correct to the best of my knowledge.*',
         'multiple' => 0,
@@ -354,11 +464,36 @@ other|Other',
         'options_source' => '',
       ),
       'mandatory' => '1',
-      'weight' => '10',
+      'weight' => '13',
+      'page_num' => 1,
+    ),
+    14 =>
+    array (
+      'nid' => 2,
+      'cid' => '14',
+      'pid' => '0',
+      'form_key' => 'confirmation_email',
+      'name' => 'Confirmation Email',
+      'type' => 'email',
+      'value' => '',
+      'extra' =>
+      array (
+        'description' => 'Enter your email address here if you would like confirmation of your request.',
+        'title_display' => 'before',
+        'private' => 0,
+        'disabled' => 0,
+        'unique' => 0,
+        'width' => '',
+        'attributes' =>
+        array (
+        ),
+      ),
+      'mandatory' => '0',
+      'weight' => '14',
       'page_num' => 1,
     ),
   ),
-  'conditionals' => 
+  'conditionals' =>
   array (
   ),
 );
