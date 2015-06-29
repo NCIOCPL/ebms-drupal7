@@ -55,9 +55,9 @@ Drupal.webform.datepicker = function(context) {
       maxDate: endDate,
       onSelect: function(dateText, inst) {
         var date = dateText.split('-');
-        $webformDatepicker.find('select.year, input.year').val(+date[0]);
-        $webformDatepicker.find('select.month').val(+date[1]);
-        $webformDatepicker.find('select.day').val(+date[2]);
+        $webformDatepicker.find('select.year, input.year').val(+date[0]).trigger('change');
+        $webformDatepicker.find('select.month').val(+date[1]).trigger('change');
+        $webformDatepicker.find('select.day').val(+date[2]).trigger('change');
       },
       beforeShow: function(input, inst) {
         // Get the select list values.
@@ -90,17 +90,18 @@ Drupal.webform.datepicker = function(context) {
 
 Drupal.webform.conditional = function(context) {
   // Add the bindings to each webform on the page.
-  $.each(Drupal.settings.webform.conditionals, function(formId, settings) {
-    var $form = $('#' + formId + ':not(.webform-conditional-processed)');
-    if ($form.length) {
-      $form.addClass('webform-conditional-processed');
-      $form.bind('change', { 'settings': settings }, Drupal.webform.conditionalCheck);
+  $.each(Drupal.settings.webform.conditionals, function(formKey, settings) {
+    var $form = $('.' + formKey + ':not(.webform-conditional-processed)');
+    $form.each(function(index, currentForm) {
+      var $currentForm = $(currentForm);
+      $currentForm.addClass('webform-conditional-processed');
+      $currentForm.bind('change', { 'settings': settings }, Drupal.webform.conditionalCheck);
 
       // Trigger all the elements that cause conditionals on this form.
-      $.each(Drupal.settings.webform.conditionals[formId]['sourceMap'], function(elementId) {
-        $('#' + elementId).find('input,select,textarea').filter(':first').trigger('change');
+      $.each(Drupal.settings.webform.conditionals[formKey]['ruleGroups'], function(rgid_key, rule_group) {
+        Drupal.webform.doCondition($form, settings, rgid_key);
       });
-    }
+    })
   });
 };
 
@@ -110,59 +111,73 @@ Drupal.webform.conditional = function(context) {
  * This event is bound to the entire form, not individual fields.
  */
 Drupal.webform.conditionalCheck = function(e) {
-  var $triggerElement = $(e.target).parents('.webform-component:first');
-  var triggerElementId = $triggerElement.attr('id');
+  var $triggerElement = $(e.target).closest('.webform-component');
+  var $form = $triggerElement.closest('form');
+  var triggerElementKey = $triggerElement.attr('class').match(/webform-component--[^ ]+/)[0];
   var settings = e.data.settings;
-
-  if (settings.sourceMap[triggerElementId]) {
-    $.each(settings.sourceMap[triggerElementId], function(n, rgid) {
-      var ruleGroup = settings.ruleGroups[rgid];
-
-      // Perform the comparison callback and build the results for this group.
-      var conditionalResult = true;
-      var conditionalResults = [];
-      $.each(ruleGroup['rules'], function(m, rule) {
-        var elementId = rule['source'];
-        var element = document.getElementById(elementId);
-        var existingValue = settings.values[elementId] ? settings.values[elementId] : null;
-        conditionalResults.push(window['Drupal']['webform'][rule.callback](element, existingValue, rule['value'] ));
-      });
-
-      // Filter out false values.
-      var filteredResults = [];
-      for (var i = 0; i < conditionalResults.length; i++) {
-        if (conditionalResults[i]) {
-          filteredResults.push(conditionalResults[i]);
-        }
-      }
-
-      // Calculate the and/or result.
-      if (ruleGroup['andor'] === 'or') {
-        conditionalResult = filteredResults.length > 0;
-      }
-      else {
-        conditionalResult = filteredResults.length === conditionalResults.length;
-      }
-
-      // Flip the result of the action is to hide.
-      if (ruleGroup['action'] == 'hide') {
-        showComponent = !conditionalResult;
-      }
-      else {
-        showComponent = conditionalResult;
-      }
-
-      if (showComponent) {
-        $('#' + ruleGroup['target']).find('input.webform-conditional-disabled').removeAttr('disabled').removeClass('webform-conditional-disabled').end().show();
-      }
-      else {
-        $('#' + ruleGroup['target']).find('input:not(:disabled)').attr('disabled', true).addClass('webform-conditional-disabled').end().hide();
-      }
-
+  if (settings.sourceMap[triggerElementKey]) {
+    $.each(settings.ruleGroups, function(rgid_key, rule_group) {
+      Drupal.webform.doCondition($form, settings, rgid_key);
     });
   }
-
 };
+
+/**
+ * Processes one condition.
+ */
+Drupal.webform.doCondition = function($form, settings, rgid_key) {
+  var ruleGroup = settings.ruleGroups[rgid_key];
+
+  // Perform the comparison callback and build the results for this group.
+  var conditionalResult = true;
+  var conditionalResults = [];
+  $.each(ruleGroup['rules'], function(m, rule) {
+    var elementKey = rule['source'];
+    var element = $form.find('.' + elementKey)[0];
+    var existingValue = settings.values[elementKey] ? settings.values[elementKey] : null;
+    conditionalResults.push(window['Drupal']['webform'][rule.callback](element, existingValue, rule['value'] ));
+  });
+
+  // Filter out false values.
+  var filteredResults = [];
+  for (var i = 0; i < conditionalResults.length; i++) {
+    if (conditionalResults[i]) {
+      filteredResults.push(conditionalResults[i]);
+    }
+  }
+
+  // Calculate the and/or result.
+  if (ruleGroup['andor'] === 'or') {
+    conditionalResult = filteredResults.length > 0;
+  }
+  else {
+    conditionalResult = filteredResults.length === conditionalResults.length;
+  }
+
+  // Flip the result of the action is to hide.
+  var showComponent;
+  if (ruleGroup['action'] == 'hide') {
+    showComponent = !conditionalResult;
+  }
+  else {
+    showComponent = conditionalResult;
+  }
+
+  var $target = $form.find('.' + ruleGroup['target']);
+  var $targetElements;
+  if (showComponent != Drupal.webform.isVisible($target)) {
+    if (showComponent) {
+      $targetElements = $target.find('.webform-conditional-disabled').removeClass('webform-conditional-disabled');
+      $.fn.prop ? $targetElements.prop('disabled', false) : $targetElements.removeAttr('disabled');
+      $target.show();
+    }
+    else {
+      $targetElements = $target.find(':input').addClass('webform-conditional-disabled');
+      $.fn.prop ? $targetElements.prop('disabled', true) : $targetElements.attr('disabled', true);
+      $target.hide();
+    }
+  }
+}
 
 Drupal.webform.conditionalOperatorStringEqual = function(element, existingValue, ruleValue) {
   var returnValue = false;
@@ -247,15 +262,7 @@ Drupal.webform.conditionalOperatorStringEmpty = function(element, existingValue,
 };
 
 Drupal.webform.conditionalOperatorStringNotEmpty = function(element, existingValue, ruleValue) {
-  var currentValue = Drupal.webform.stringValue(element, existingValue);
-  var empty = false;
-  $.each(currentValue, function(n, value) {
-    if (value === '') {
-      empty = true;
-      return false; // break.
-    }
-  });
-  return !empty;
+  return !Drupal.webform.conditionalOperatorStringEmpty(element, existingValue, ruleValue);
 };
 
 Drupal.webform.conditionalOperatorNumericEqual = function(element, existingValue, ruleValue) {
@@ -285,7 +292,7 @@ Drupal.webform.conditionalOperatorNumericLessThan = function(element, existingVa
 };
 
 Drupal.webform.conditionalOperatorDateEqual = function(element, existingValue, ruleValue) {
-  var currentValue = Drupal.webform.timeValue(element, existingValue);
+  var currentValue = Drupal.webform.dateValue(element, existingValue);
   return currentValue === ruleValue;
 };
 
@@ -317,35 +324,53 @@ Drupal.webform.conditionalOperatorTimeAfter = function(element, existingValue, r
 };
 
 /**
+ * Utility to return current visibility. Uses actual visibility, except for
+ * hidden components which use the applied disabled class.
+ */
+Drupal.webform.isVisible = function($element) {
+  return $element.hasClass('webform-component-hidden')
+            ? !$element.find('input').first().hasClass('webform-conditional-disabled')
+            : $element.is(':visible');
+}
+
+/**
  * Utility function to get a string value from a select/radios/text/etc. field.
  */
 Drupal.webform.stringValue = function(element, existingValue) {
   var value = [];
-
   if (element) {
-    // Simple textfields.
-    $(element).find('input:not([type=checkbox],[type=radio]),textarea').each(function() {
-      value.push(this.value);
-    });
-
-    // Checkboxes and radios.
-    if (!value.length) {
-      $(element).find('input:checked').each(function() {
+    var $element = $(element);
+    if (Drupal.webform.isVisible($element)) {
+      // Checkboxes and radios.
+      $element.find('input[type=checkbox]:checked,input[type=radio]:checked').each(function() {
         value.push(this.value);
       });
-    }
-    // Select lists.
-    if (!value.length) {
-      var selectValue = $(element).find('select').val();
-      if (selectValue) {
-        value.push(selectValue);
+      // Select lists.
+      if (!value.length) {
+        var selectValue = $element.find('select').val();
+        if (selectValue) {
+          value.push(selectValue);
+        }
+      }
+      // Simple text fields. This check is done last so that the select list in
+      // select-or-other fields comes before the "other" text field.
+      if (!value.length) {
+        $element.find('input:not([type=checkbox],[type=radio]),textarea').each(function() {
+          value.push(this.value);
+        });
       }
     }
   }
-  else if (existingValue) {
-    value = existingValue;
+  else {
+    switch ($.type(existingValue)) {
+      case 'array':
+        value = existingValue;
+        break;
+      case 'string':
+        value.push(existingValue);
+        break;
+    }
   }
-
   return value;
 };
 
@@ -353,45 +378,73 @@ Drupal.webform.stringValue = function(element, existingValue) {
  * Utility function to calculate a millisecond timestamp from a time field.
  */
 Drupal.webform.dateValue = function(element, existingValue) {
+  var value = false;
   if (element) {
-    var day = $(element).find('[name*=day]').val();
-    var month = $(element).find('[name*=month]').val();
-    var year = $(element).find('[name*=year]').val();
-    // Months are 0 indexed in JavaScript.
-    if (month) {
-      month--;
+    var $element = $(element);
+    if ($element.is(':visible')) {
+      var day = $element.find('[name*=day]').val();
+      var month = $element.find('[name*=month]').val();
+      var year = $element.find('[name*=year]').val();
+      // Months are 0 indexed in JavaScript.
+      if (month) {
+        month--;
+      }
+      if (year !== '' && month !== '' && day !== '') {
+        value = Date.UTC(year, month, day) / 1000;
+      }
     }
-    return (year !== '' && month !== '' && day !== '') ? Date.UTC(year, month, day) : false;
   }
   else {
-    var existingValue = existingValue.length ? existingValue[0].split('-') : existingValue;
-    return existingValue.length ? Date.UTC(existingValue[0], existingValue[1], existingValue[2]) : false;
+    if ($.type(existingValue) === 'array' && existingValue.length) {
+      existingValue = existingValue[0];
+    }
+    if ($.type(existingValue) === 'string') {
+      existingValue = existingValue.split('-');
+    }
+    if (existingValue.length === 3) {
+      value = Date.UTC(existingValue[0], existingValue[1], existingValue[2]) / 1000;
+    }
   }
+  return value;
 };
 
 /**
  * Utility function to calculate a millisecond timestamp from a time field.
  */
 Drupal.webform.timeValue = function(element, existingValue) {
+  var value = false;
   if (element) {
-    var hour = $(element).find('[name*=hour]').val();
-    var minute = $(element).find('[name*=minute]').val();
-    var ampm = $(element).find('[name*=ampm]:checked').val();
+    var $element = $(element);
+    if ($element.is(':visible')) {
+      var hour = $element.find('[name*=hour]').val();
+      var minute = $element.find('[name*=minute]').val();
+      var ampm = $element.find('[name*=ampm]:checked').val();
 
-    // Convert to integers if set.
-    hour = (hour === '') ? hour : parseInt(hour);
-    minute = (minute === '') ? minute : parseInt(minute);
+      // Convert to integers if set.
+      hour = (hour === '') ? hour : parseInt(hour);
+      minute = (minute === '') ? minute : parseInt(minute);
 
-    if (hour !== '') {
-      hour = (hour < 12 && ampm == 'pm') ? hour + 12 : hour;
-      hour = (hour === 12 && ampm == 'am') ? 0 : hour;
+      if (hour !== '') {
+        hour = (hour < 12 && ampm == 'pm') ? hour + 12 : hour;
+        hour = (hour === 12 && ampm == 'am') ? 0 : hour;
+      }
+      if (hour !== '' && minute !== '') {
+        value = Date.UTC(1970, 0, 1, hour, minute) / 1000;
+      }
     }
-    return (hour !== '' && minute !== '') ? Date.UTC(1970, 0, 1, hour, minute) : false;
   }
   else {
-    var existingValue = existingValue.length ? existingValue[0].split(':') : existingValue;
-    return existingValue.length ? Date.UTC(1970, 0, 1, existingValue[0], existingValue[1]) : false;
+    if ($.type(existingValue) === 'array' && existingValue.length) {
+      existingValue = existingValue[0];
+    }
+    if ($.type(existingValue) === 'string') {
+      existingValue = existingValue.split(':');
+    }
+    if (existingValue.length >= 2) {
+      value = Date.UTC(1970, 0, 1, existingValue[0], existingValue[1]) / 1000;
+    }
   }
+  return value;
 };
 
 })(jQuery);

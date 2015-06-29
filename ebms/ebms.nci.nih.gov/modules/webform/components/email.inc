@@ -15,15 +15,17 @@ function _webform_defaults_email() {
     'pid' => 0,
     'weight' => 0,
     'value' => '',
-    'mandatory' => 0,
+    'required' => 0,
     'extra' => array(
       'width' => '',
       'unique' => 0,
       'disabled' => 0,
       'title_display' => 0,
       'description' => '',
+      'placeholder' => '',
       'attributes' => array(),
       'private' => FALSE,
+      'analysis' => FALSE,
     ),
   );
 }
@@ -52,7 +54,7 @@ function _webform_edit_email($component) {
     '#type' => 'textfield',
     '#title' => t('Default value'),
     '#default_value' => $component['value'],
-    '#description' => t('The default value of the field.') . theme('webform_token_help'),
+    '#description' => t('The default value of the field.') . ' ' . theme('webform_token_help'),
     '#size' => 60,
     '#maxlength' => 127,
     '#weight' => 0,
@@ -76,6 +78,13 @@ function _webform_edit_email($component) {
     '#size' => 5,
     '#maxlength' => 10,
     '#parents' => array('extra', 'width'),
+  );
+  $form['display']['placeholder'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Placeholder'),
+    '#default_value' => $component['extra']['placeholder'],
+    '#description' => t('The placeholder will be shown in the field until the user starts entering a value.') . ' ' . t('Often used for example values, such as "john@example.com".'),
+    '#parents' => array('extra', 'placeholder'),
   );
   $form['display']['disabled'] = array(
     '#type' => 'checkbox',
@@ -116,12 +125,12 @@ function _webform_render_email($component, $value = NULL, $filter = TRUE) {
 
   $element = array(
     '#type' => 'webform_email',
-    '#title' => $filter ? _webform_filter_xss($component['name']) : $component['name'],
+    '#title' => $filter ? webform_filter_xss($component['name']) : $component['name'],
     '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
-    '#default_value' => $filter ? _webform_filter_values($component['value'], $node) : $component['value'],
-    '#required' => $component['mandatory'],
+    '#default_value' => $filter ? webform_replace_tokens($component['value'], $node) : $component['value'],
+    '#required' => $component['required'],
     '#weight' => $component['weight'],
-    '#description' => $filter ? _webform_filter_descriptions($component['extra']['description'], $node) : $component['extra']['description'],
+    '#description' => $filter ? webform_filter_descriptions($component['extra']['description'], $node) : $component['extra']['description'],
     '#attributes' => $component['extra']['attributes'],
     '#element_validate'  => array('_webform_validate_email'),
     '#theme_wrappers' => array('webform_element'),
@@ -138,6 +147,10 @@ function _webform_render_email($component, $value = NULL, $filter = TRUE) {
 
   if (isset($value[0])) {
     $element['#default_value'] = $value[0];
+  }
+
+  if ($component['extra']['placeholder']) {
+    $element['#attributes']['placeholder'] = $component['extra']['placeholder'];
   }
 
   if ($component['extra']['disabled']) {
@@ -208,6 +221,7 @@ function _webform_validate_email($form_element, &$form_state) {
 function _webform_display_email($component, $value, $format = 'html') {
   return array(
     '#title' => $component['name'],
+    '#title_display' => $component['extra']['title_display'] ? $component['extra']['title_display'] : 'before',
     '#weight' => $component['weight'],
     '#theme' => 'webform_display_email',
     '#theme_wrappers' => $format == 'html' ? array('webform_element') : array('webform_element_text'),
@@ -254,8 +268,14 @@ function _webform_analysis_email($component, $sids = array()) {
 
   $rows[0] = array(t('Left Blank'), ($submissions - $nonblanks));
   $rows[1] = array(t('User entered value'), $nonblanks);
-  $rows[2] = array(t('Average submission length in words (ex blanks)'), ($nonblanks != 0 ? number_format($wordcount/$nonblanks, 2) : '0'));
-  return $rows;
+
+  $other[0] = array(t('Average submission length in words (ex blanks)'), ($nonblanks != 0 ? number_format($wordcount/$nonblanks, 2) : '0'));
+
+  return array(
+    'table_rows' => $rows,
+    'other_data' => $other,
+  );
+
 }
 
 /**
@@ -273,7 +293,7 @@ function _webform_csv_headers_email($component, $export_options) {
   $header = array();
   $header[0] = '';
   $header[1] = '';
-  $header[2] = $component['name'];
+  $header[2] = $export_options['header_keys'] ? $component['form_key'] : $component['name'];
   return $header;
 }
 

@@ -31,6 +31,14 @@ function webform_conditionals_form($form, &$form_state, $node) {
     }
   }
 
+  // Check the current topological sort order for the conditionals and report any errors,
+  // but only for actual form submissions and not for ajax-related form builds, such as
+  // adding or removing a condtion or conditional group.
+  if (empty($form_state['triggering_element']['#ajax'])) {
+    $node->webform['conditionals'] = $conditionals;
+    webform_get_conditional_sorter($node)->reportErrors($conditionals);
+  }
+
   $form['#tree'] = TRUE;
   $form['#node'] = $node;
 
@@ -46,13 +54,19 @@ function webform_conditionals_form($form, &$form_state, $node) {
   $form_state['conditional_count'] = isset($form_state['conditional_count']) ? $form_state['conditional_count'] : 1;
   $form_state['conditional_count'] = count($conditionals) > $form_state['conditional_count'] ? count($conditionals) : $form_state['conditional_count'];
 
-  $source_list = webform_component_list($node, 'conditional', TRUE, TRUE);
-  $target_list = webform_component_list($node, TRUE);
+  $source_list = webform_component_list($node, 'conditional', 'path', TRUE);
+  $target_list = webform_component_list($node, TRUE, 'path', TRUE);
   $delta = $form_state['conditional_count'];
   $weight = -$delta - 1;
+  $index = 0;
   foreach ($conditionals as $rgid => $conditional_group) {
     $weight = $conditional_group['weight'];
     $form['conditionals'][$rgid] = array(
+      '#theme' => 'webform_conditional_group_row',
+      '#even_odd' => ++$index % 2 ? 'odd' : 'even',
+      '#weight' => $weight,
+    );
+    $form['conditionals'][$rgid]['conditional'] = array(
       '#type' => 'webform_conditional',
       '#default_value' => $conditional_group,
       '#nid' => $node->nid,
@@ -62,7 +76,7 @@ function webform_conditionals_form($form, &$form_state, $node) {
         'show' => t('show'),
       ),
       '#targets' => $target_list,
-      '#weight' => $weight,
+      '#parents' => array('conditionals', $rgid),
     );
     $form['conditionals'][$rgid]['weight'] = array(
       '#type' => 'weight',
@@ -89,7 +103,6 @@ function webform_conditionals_form($form, &$form_state, $node) {
       'progress' => 'none',
       'effect' => 'fade',
       'callback' => 'webform_conditionals_ajax',
-      'wrapper' => 'webform-conditionals-ajax',
     ),
   );
 
@@ -100,9 +113,15 @@ function webform_conditionals_form($form, &$form_state, $node) {
   $form['actions']['submit'] = array(
     '#type' => 'submit',
     '#value' => t('Save conditions'),
+    '#validate' => array('webform_conditionals_form_validate'),
     '#submit' => array('webform_conditionals_form_submit'),
   );
 
+  // Estimate if the form is too long for PHP max_input_vars and detect whether a previous submission was truncated.
+  // The estimate will be accurate because the form elements for this page are well known. Ajax use of this
+  // page will not generate user-visible errors, so a preflight may be the only indication to the user that
+  // the page is too long.
+  webform_input_vars_check($form, $form_state, 'conditionals', '');
   return $form;
 }
 
@@ -117,19 +136,50 @@ function webform_conditionals_form_add($form, &$form_state) {
     $weight = max($weight, $conditional['weight']);
   }
 
-  $conditional['weight'] = $weight + 1;
-  $conditional['rules'][0] = array(
-    'source' => NULL,
-    'operator' => NULL,
-    'value' => NULL,
-  );
-  $conditional['action'] = 'hide';
-  $conditional['target'] = NULL;
-  $conditional['andor'] = 'and';
-
   // Add the conditional to form state and rebuild the form.
-  $form_state['values']['conditionals'][] = $conditional;
+  $form_state['values']['conditionals'][] = array(
+    'rules' => array(
+      array(
+        'source' => NULL,
+        'operator' => NULL,
+        'value' => NULL,
+      ),
+    ),
+    'andor' => 'and',
+    'action' => 'hide',
+    'target' => NULL,
+    'weight' => $weight + 1,
+  );
   $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Validate handler for webform_conditionals_form().
+ *
+ * Prohibit the source and target of a conditional rule from being the same.
+ */
+function webform_conditionals_form_validate($form, &$form_state) {
+  // Skip validation unless this is saving the form.
+  $button_key = end($form_state['triggering_element']['#array_parents']);
+  if ($button_key !== 'submit') {
+    return;
+  }
+
+  $components = $form['#node']->webform['components'];
+  foreach ($form_state['complete form']['conditionals'] as $conditional_key => $element) {
+    if (substr($conditional_key, 0, 1) !== '#' && $conditional_key !== 'new') {
+      $conditional = $element['conditional'];
+      foreach ($conditional['rules'] as $rule_key => $rule) {
+        if (substr($rule_key, 0, 1) !== '#' && $rule['source']['#value'] === $conditional['target']['#value']) {
+          form_set_error('conditionals][' . $conditional_key . '][rules][' . $rule_key . '][source', t('The subject of the conditional cannot be the same as the component that is shown or hidden (%target).', array('%target' => $components[$conditional['target']['#value']]['name'])));
+        }
+      }
+    }
+  }
+
+  // Form validation will not rebuild the form, so we need to ensure
+  // necessary JavaScript will still exist.
+  _webform_conditional_expand_value_forms($form['#node']);
 }
 
 /**
@@ -142,6 +192,7 @@ function webform_conditionals_form_submit($form, &$form_state) {
   unset($form_state['values']['conditionals']['new']);
 
   $conditionals = array();
+  $targets = array();
 
   // Fill in missing properties for each value so that it can save properly.
   // TODO: Remove hard-coded source and target type.
@@ -152,6 +203,7 @@ function webform_conditionals_form_submit($form, &$form_state) {
       $conditional['rules'][$rid]['source_type'] = 'component';
     }
     $conditionals[$rgid] = $conditional;
+    $targets[$conditional['target']] = TRUE;
   }
 
   $node->webform['conditionals'] = $conditionals;
@@ -167,7 +219,10 @@ function webform_conditionals_ajax($form, $form_state) {
   $new_rgid = max($rgids);
   $form['conditionals'][$new_rgid]['#ajax_added'] = TRUE;
 
-  return drupal_render($form['conditionals']);
+  $commands = array('#type' => 'ajax');
+  $commands['#commands'][] = ajax_command_before('.webform-conditional-new-row', drupal_render($form['conditionals'][$new_rgid]));
+  $commands['#commands'][] = ajax_command_restripe('#webform-conditionals-table');
+  return $commands;
 }
 
 /**
@@ -179,43 +234,54 @@ function theme_webform_conditional_groups($variables) {
   drupal_add_js('Drupal.theme.prototype.tableDragChangedMarker = function() { return ""; }', 'inline');
   drupal_add_js('Drupal.theme.prototype.tableDragChangedWarning = function() { return "<span>&nbsp;</span>"; }', 'inline');
 
-  $header = array();
-  $rows = array();
-
+  $output = '<table id="webform-conditionals-table"><tbody>';
   $element_children = element_children($element, TRUE);
   $element_count = count($element_children);
-  foreach ($element_children as $key) {
-    $row = array();
+  foreach ($element_children as $index => $key) {
     if ($key === 'new') {
       $data = '';
       if ($element_count === 1) {
         $data = t('There are no conditional actions on this form.') . ' ';
       }
+      $even_odd = ($index + 1) % 2 ? 'odd' : 'even';
+      $element[$key]['weight']['#attributes']['class'] = array('webform-conditional-weight');
       $data = '<div class="webform-conditional-new">' . $data . t('Add a new condition: ') . drupal_render($element[$key]['new']) . '</div>';
+      $output .= '<tr class="webform-conditional-new-row ' . $even_odd . '">';
+      $output .= '<td>' . $data . '</td>';
+      $output .= '<td>' . drupal_render($element[$key]['weight']) . '</td>';
+      $output .= '</tr>';
     }
     else {
-      $data = drupal_render($element[$key]);
+      $output .= drupal_render($element[$key]);
     }
-    $row[] = array(
-      'data' => $data,
-    );
-    $element[$key]['weight']['#attributes']['class'] = array('webform-conditional-weight');
-    $row[] = array(
-      'data' => drupal_render($element[$key]['weight']),
-    );
-    $classes = ($key === 'new') ? array() : array('draggable');
-    if (!empty($element[$key]['#ajax_added'])) {
-      $classes[] = 'ajax-new-content';
-    }
-    $rows[] = array(
-      'class' => $classes,
-      'data' => $row,
-    );
+  }
+  $output .= '</tbody></table>';
+  $output .= drupal_render_children($element);
+
+  return $output;
+}
+
+/**
+ * Theme an individual conditional row of webform_conditionals_form().
+ */
+function theme_webform_conditional_group_row($variables) {
+  $element = $variables['element'];
+
+  $element['weight']['#attributes']['class'] = array('webform-conditional-weight');
+  $weight = drupal_render($element['weight']);
+  $classes = array('draggable');
+  if (!empty($element['#even_odd'])) {
+    $classes[] = $element['#even_odd'];
+  }
+  if (!empty($element['#ajax_added'])) {
+    $classes[] = 'ajax-new-content';
   }
 
   $output = '';
-  $output .= theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'webform-conditionals-table'), 'sticky' => FALSE));
-  $output .= drupal_render_children($element);
+  $output .= '<tr class="' . implode(' ', $classes) . '">';
+  $output .= '<td>' . drupal_render_children($element) . '</td>';
+  $output .= '<td>' . $weight . '</td>';
+  $output .= '</tr>';
 
   return $output;
 }
@@ -224,9 +290,6 @@ function theme_webform_conditional_groups($variables) {
  * Form API #process function to expand a webform conditional element.
  */
 function _webform_conditional_expand($element) {
-  $node = node_load($element['#nid']);
-  _webform_conditional_expand_value_forms($node);
-
   $element['#tree'] = TRUE;
   $element['#default_value'] += array(
     'andor' => 'and',
@@ -265,6 +328,7 @@ function _webform_conditional_expand($element) {
         'progress' => 'none',
         'callback' => 'webform_conditional_element_ajax',
         'wrapper' => $wrapper_id,
+        'event' => 'click',
       ),
     );
     $element['rules'][$rid]['add'] = array(
@@ -277,6 +341,7 @@ function _webform_conditional_expand($element) {
         'progress' => 'none',
         'callback' => 'webform_conditional_element_ajax',
         'wrapper' => $wrapper_id,
+        'event' => 'click',
       ),
     );
 
@@ -446,7 +511,7 @@ function webform_conditional_element_ajax($form, $form_state) {
     $element = $element[$key];
   }
 
-  return drupal_render($element);
+  return drupal_render($element['conditional']);
 }
 
 /**
@@ -649,6 +714,18 @@ function _webform_conditional_operator_info() {
     'js comparison callback' => 'conditionalOperatorStringNotEqual',
     'form callback' => 'webform_conditional_form_select',
   );
+  $operators['select']['empty'] = array(
+    'label' => t('is empty'),
+    'comparison callback' => 'webform_conditional_operator_string_empty',
+    'js comparison callback' => 'conditionalOperatorStringEmpty',
+    'form callback' => FALSE, // No value form at all.
+  );
+  $operators['select']['not_empty'] = array(
+    'label' => t('is not empty'),
+    'comparison callback' => 'webform_conditional_operator_string_not_empty',
+    'js comparison callback' => 'conditionalOperatorStringNotEmpty',
+    'form callback' => FALSE, // No value form at all.
+  );
 
   // Date operators:
   $operators['date']['equal'] = array(
@@ -707,6 +784,7 @@ function _webform_conditional_operator_info() {
  * for the condition.
  */
 function webform_conditional_form_select($node) {
+  static $count = 0;
   $forms = array();
   webform_component_include('select');
   foreach ($node->webform['components'] as $cid => $component) {
@@ -719,13 +797,14 @@ function webform_conditional_form_select($node) {
         '#size' => NULL,
         '#attributes' => array(),
         '#id' => NULL,
-        '#name' => NULL,
+        '#name' => 'webform-conditional-select-' . $cid . '-' . $count,
         '#options' => $options,
         '#parents' => array(),
       );
       $forms[$cid] = drupal_render($element);
     }
   }
+  $count++;
   return $forms;
 }
 
@@ -733,12 +812,14 @@ function webform_conditional_form_select($node) {
  * Form callback for date conditional fields.
  */
 function webform_conditional_form_date($node) {
+  static $count = 0;
   $element = array(
     '#title' => NULL,
     '#title_display' => 'none',
     '#size' => 24,
     '#attributes' => array('placeholder' => t('@format or valid date', array('@format' => webform_date_format('short')))),
     '#type' => 'textfield',
+    '#name' => 'webform-conditional-date-' . $count++,
   );
   return drupal_render($element);
 }
@@ -747,12 +828,14 @@ function webform_conditional_form_date($node) {
  * Form callback for time conditional fields.
  */
 function webform_conditional_form_time($node) {
+  static $count = 0;
   $element = array(
     '#title' => NULL,
     '#title_display' => 'none',
     '#size' => 24,
     '#attributes' => array('placeholder' => t('HH:MMam or valid time')),
     '#type' => 'textfield',
+    '#name' => 'webform-conditional-time-' . $count++,
   );
   return drupal_render($element);
 }
@@ -810,49 +893,69 @@ function webform_conditional_delete($node, $conditional) {
  * settings. We remove unnecessary data structures and provide a "source map"
  * so that JavaScript can quickly determine if it needs to check rules when a
  * field on the page has been modified.
+ *
+ * @param object $node
+ *   The loaded node object, containing the webform.
+ * @param array $submission_data
+ *   The cid-indexed array of existing submission values to be included for
+ *   sources outside of the current page.
+ * @param integer $page_num
+ *   The number of the page for which javascript settings should be generated.
+ * @return array
+ *   Array of settings to be send to the browser as javascript settings.
  */
-function webform_conditional_prepare_javascript($node, $submission_data) {
+function webform_conditional_prepare_javascript($node, $submission_data, $page_num) {
   $settings = array(
     'ruleGroups' => array(),
     'sourceMap' => array(),
     'values' => array(),
   );
   $operators = webform_conditional_operators();
-  foreach ($node->webform['conditionals'] as $conditional) {
+  $conditionals = $node->webform['conditionals'];
+  $components = $node->webform['components'];
+  $topological_order = webform_get_conditional_sorter($node)->getOrder();
+  foreach ($topological_order[$page_num] as $conditional_spec) {
+    $conditional = $conditionals[$conditional_spec['rgid']];
+    $rgid_key = 'rgid_' . $conditional['rgid'];
     // Assemble the main conditional group settings.
     if ($conditional['target_type'] == 'component') {
-      $target_component = $node->webform['components'][$conditional['target']];
+      $target_component = $components[$conditional['target']];
       $target_parents = webform_component_parent_keys($node, $target_component);
-      $target_id = 'webform-component-' . str_replace('_', '-', implode('--', $target_parents));
-      $settings['ruleGroups'][$conditional['rgid']]['target'] = $target_id;
-      $settings['ruleGroups'][$conditional['rgid']]['andor'] = $conditional['andor'];
-      $settings['ruleGroups'][$conditional['rgid']]['action'] = $conditional['action'];
+      $settings['ruleGroups'][$rgid_key] = array(
+        'target' => 'webform-component--' . str_replace('_', '-', implode('--', $target_parents)),
+        'andor' => $conditional['andor'],
+        'action' => $conditional['action'],
+      );
     }
     // Add on the list of rules to the conditional group.
     foreach ($conditional['rules'] as $rule) {
       if ($rule['source_type'] == 'component') {
-        $source_component = $node->webform['components'][$rule['source']];
+        $source_component = $components[$rule['source']];
         $source_parents = webform_component_parent_keys($node, $source_component);
-        $source_id = 'webform-component-' . str_replace('_', '-', implode('--', $source_parents));
+        $source_id = 'webform-component--' . str_replace('_', '-', implode('--', $source_parents));
+        $rid_key = 'rid_' . $rule['rid'];
 
         // If this source has a value set, add that as a setting.
+        // NULL or array(NULL) should be sent as an empty array to simplify the jQuery.
         if (isset($submission_data[$source_component['cid']])) {
           $source_value = $submission_data[$source_component['cid']];
-          $settings['values'][$source_id] = is_array($source_value) ? $source_value : array($source_value);
+          $source_value = is_array($source_value) ? $source_value : array($source_value);
+          $settings['values'][$source_id] = $source_value === array(NULL) ? array() : $source_value;
         }
 
         $conditional_type = webform_component_property($source_component['type'], 'conditional_type');
         $operator_info = $operators[$conditional_type][$rule['operator']];
-        $rule_settings = array();
-        $rule_settings['source'] = $source_id;
-        $rule_settings['value'] = $rule['value'];
-        $rule_settings['callback'] = $operator_info['js comparison callback'];
+        $rule_settings = array(
+          'source' => $source_id,
+          'value' => $rule['value'],
+          'callback' => $operator_info['js comparison callback'],
+        );
         if (isset($operator_info['comparison prepare js'])) {
           $callback = $operator_info['comparison prepare js'];
           $rule_settings['value'] = $callback($rule['value']);
         }
-        $settings['ruleGroups'][$conditional['rgid']]['rules'][$rule['rid']] = $rule_settings;
-        $settings['sourceMap'][$source_id][$conditional['rgid']] = $conditional['rgid'];
+        $settings['ruleGroups'][$rgid_key]['rules'][$rid_key] = $rule_settings;
+        $settings['sourceMap'][$source_id][$rgid_key] = $rgid_key;
       }
     }
   }
@@ -869,7 +972,7 @@ function webform_conditional_prepare_date_js($rule_value) {
   // slightly stale by the time the comparison executes. Timestamps are in
   // milliseconds, as to match JavaScript's Date.toString() method.
   $date = webform_strtodate('c', $rule_value, 'UTC');
-  return (int) (webform_strtotime($date) . '000');
+  return webform_strtotime($date);
 }
 
 /**
@@ -878,7 +981,7 @@ function webform_conditional_prepare_date_js($rule_value) {
 function webform_conditional_prepare_time_js($rule_value) {
   $date = webform_conditional_prepare_date_js($rule_value);
   $today = webform_strtodate('c', 'today', 'UTC');
-  $today = (int) (webform_strtotime($today) . '000');
+  $today = webform_strtotime($today);
   return $date - $today;
 }
 
@@ -900,15 +1003,7 @@ function webform_conditional_operator_string_equal($input_values, $rule_value) {
  * Conditional callback for string comparisons.
  */
 function webform_conditional_operator_string_not_equal($input_values, $rule_value) {
-  $found = FALSE;
-  foreach ($input_values as $value) {
-    // Checkbox values come in as 0 integers for unchecked boxes.
-    $value = ($value === 0) ? '' : $value;
-    if (strcasecmp($value, $rule_value) === 0) {
-      $found = TRUE;
-    }
-  }
-  return !$found;
+  return !webform_conditional_operator_string_equal($input_values, $rule_value);
 }
 
 /**
@@ -927,13 +1022,7 @@ function webform_conditional_operator_string_contains($input_values, $rule_value
  * Conditional callback for string comparisons.
  */
 function webform_conditional_operator_string_does_not_contain($input_values, $rule_value) {
-  $found = FALSE;
-  foreach ($input_values as $value) {
-    if (stripos($value, $rule_value) !== FALSE) {
-      $found = TRUE;
-    }
-  }
-  return !$found;
+  return !webform_conditional_operator_string_contains($input_values, $rule_value);
 }
 
 /**
@@ -964,59 +1053,49 @@ function webform_conditional_operator_string_ends_with($input_values, $rule_valu
  * Conditional callback for checking for empty fields.
  */
 function webform_conditional_operator_string_empty($input_values, $rule_value) {
+  $empty = TRUE;
   foreach ($input_values as $value) {
-    if ($value !== '' || $value !== NULL) {
-      return FALSE;
+    if ($value !== '' && $value !== NULL && $value !== 0) {
+      $empty = FALSE;
+      break;
     }
   }
-  return TRUE;
+  return $empty;
 }
 
 /**
  * Conditional callback for checking for empty fields.
  */
 function webform_conditional_operator_string_not_empty($input_values, $rule_value) {
-  $empty = FALSE;
-  foreach ($input_values as $value) {
-    if ($value === '' || $value === NULL) {
-      $empty = TRUE;
-    }
-  }
-  return !$empty;
+  return !webform_conditional_operator_string_empty($input_values, $rule_value);
 }
 
 /**
  * Conditional callback for numeric comparisons.
  */
 function webform_conditional_operator_numeric_equal($input_values, $rule_value) {
-  // See float comparison: http://php.net/manual/en/language.types.float.php
-  $epsilon = 0.000001;
-  // An empty string does not match any number.
-  return $input_values[0] === '' ? FALSE : (abs((float)$input_values[0] - (float)$rule_value) < $epsilon);
+  return empty($input_values) ? FALSE : webform_compare_floats($input_values[0], $rule_value) === 0;
 }
 
 /**
  * Conditional callback for numeric comparisons.
  */
 function webform_conditional_operator_numeric_not_equal($input_values, $rule_value) {
-  // See float comparison: http://php.net/manual/en/language.types.float.php
-  $epsilon = 0.000001;
-  // An empty string does not match any number.
-  return $input_values[0] === '' ? TRUE : (abs((float)$input_values[0] - (float)$rule_value) >= $epsilon);
+  return !webform_conditional_operator_numeric_equal($input_values, $rule_value);
 }
 
 /**
  * Conditional callback for numeric comparisons.
  */
 function webform_conditional_operator_numeric_greater_than($input_values, $rule_value) {
-  return (float)$input_values[0] > (float)$rule_value;
+  return empty($input_values) ? FALSE : webform_compare_floats($input_values[0], $rule_value) > 0;
 }
 
 /**
  * Conditional callback for numeric comparisons.
  */
 function webform_conditional_operator_numeric_less_than($input_values, $rule_value) {
-  return (float)$input_values[0] < (float)$rule_value;
+  return empty($input_values) ? FALSE : webform_compare_floats($input_values[0], $rule_value) < 0;
 }
 
 /**
@@ -1024,7 +1103,7 @@ function webform_conditional_operator_numeric_less_than($input_values, $rule_val
  */
 function webform_conditional_operator_datetime_equal($input_values, $rule_value) {
   $input_values = webform_conditional_value_datetime($input_values);
-  return webform_strtotime($input_values[0]) === webform_strtotime($rule_value);
+  return empty($input_values) ? FALSE : webform_strtotime($input_values[0]) === webform_strtotime($rule_value);
 }
 
 /**
@@ -1032,7 +1111,7 @@ function webform_conditional_operator_datetime_equal($input_values, $rule_value)
  */
 function webform_conditional_operator_datetime_after($input_values, $rule_value) {
   $input_values = webform_conditional_value_datetime($input_values);
-  return webform_strtotime($input_values[0]) > webform_strtotime($rule_value);
+  return empty($input_values) ? FALSE : webform_strtotime($input_values[0]) > webform_strtotime($rule_value);
 }
 
 /**
@@ -1040,7 +1119,7 @@ function webform_conditional_operator_datetime_after($input_values, $rule_value)
  */
 function webform_conditional_operator_datetime_before($input_values, $rule_value) {
   $input_values = webform_conditional_value_datetime($input_values);
-  return webform_strtotime($input_values[0]) < webform_strtotime($rule_value);
+  return empty($input_values) ? FALSE : webform_strtotime($input_values[0]) < webform_strtotime($rule_value);
 }
 
 /**

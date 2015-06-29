@@ -28,8 +28,8 @@ class webform_handler_filter_submission_data extends views_handler_filter_string
     );
     $operators['<'] = array(
       'title' => t('Less than'),
-      'short' => t('>'),
-      'method' => 'op_greater_than',
+      'short' => t('<'),
+      'method' => 'op_less_than',
       'values' => 1,
     );
 
@@ -46,7 +46,7 @@ class webform_handler_filter_submission_data extends views_handler_filter_string
     if ($which === 'title') {
       $nid = $this->view->relationship[$this->options['relationship']]->options['webform_nid'];
       $cid = $this->view->relationship[$this->options['relationship']]->options['webform_cid'];
-  
+
       if ($nid && $node = $node = node_load($nid)) {
         $component = $node->webform['components'][$cid];
         if (webform_component_feature($component['type'], 'views_range')) {
@@ -78,7 +78,7 @@ class webform_handler_filter_submission_data extends views_handler_filter_string
    */
   function value_form(&$form, &$form_state) {
     // TODO: Adjust the exposed filter form based on component form.
-    return parent::value_form(&$form, &$form_state);
+    return parent::value_form($form, $form_state);
   }
 
   function op_greater_than($field) {
