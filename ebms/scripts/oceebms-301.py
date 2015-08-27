@@ -132,17 +132,18 @@ class Board:
         for journal_id in control.journal_ids:
             title = control.journals[journal_id]
             journal = journals.get(journal_id, empty)
-            if journal_id in self.not_list:
-                row = not_listed_row
-                sheet = not_listed
-            else:
-                row = other_row
-                sheet = other
-            journal.report(sheet, row, title)
-            if journal_id in self.not_list:
-                not_listed_row += 1
-            else:
-                other_row += 1
+            if journal.num_articles:
+                if journal_id in self.not_list:
+                    row = not_listed_row
+                    sheet = not_listed
+                else:
+                    row = other_row
+                    sheet = other
+                journal.report(sheet, row, title)
+                if journal_id in self.not_list:
+                    not_listed_row += 1
+                else:
+                    other_row += 1
         sys.stderr.write("board %s reported\n" % self.name)
     def __cmp__(self, other):
         "Make the boards sortable by board name"
