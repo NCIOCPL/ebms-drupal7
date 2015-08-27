@@ -3,7 +3,7 @@
 #----------------------------------------------------------------------
 # $Id$
 #
-
+#
 # We would like to determine the primary reasons Board members provide
 # for excluding articles from PDQ. With this information, we may pare
 # down the list of exclusion reasons currently offered in the
@@ -21,18 +21,8 @@
 #
 #----------------------------------------------------------------------
 import MySQLdb
-import os
 import xlwt
-import sys
-import datetime
 
-"""
-ebms_review_rejection_reason review_id, value_id
-ebms_article_review review_id, packet_id
-ebms_packet packet_id, topic_id
-ebms_topic topic_id, board_id
-ebms_board board_id, board_name
-"""
 class Reason:
     def __init__(self, name):
         self.name = name
