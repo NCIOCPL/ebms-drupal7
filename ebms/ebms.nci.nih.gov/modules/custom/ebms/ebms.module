@@ -1058,6 +1058,11 @@ function ebms_page_build(&$page) {
  * Implementation of hook_init().
  */
 function ebms_init() {
+
+    // For now, back out E_STRICT reporting level introduced by PHP upgrade.
+    // See https://tracker.nci.nih.gov/browse/OCEDRUPAL-420.
+    error_reporting(error_reporting() & ~E_STRICT);
+
     if (isset($_SERVER['HTTP_USER_AGENT']) &&
         (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false))
         drupal_add_http_header('X-UA-Compatible', 'IE=edge,chrome=1');
