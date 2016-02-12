@@ -152,12 +152,11 @@ div.messages.error {
 
 /* BANNER */
 #banner {
-    background-color: #f2f1f1;
-    background-image: url("../images/nci-banner-bg.gif");
-    background-repeat: repeat-x;
-    height: 39px;
+    background-color: #2a72a5;
+    height: 77px;
 }
-#banner img { margin: 0; float: none; }
+/* #banner img { margin: 0; float: none; } */
+#banner img { margin: 0 0 0 12px; float: none; }
 #banner div.section div { line-height: 40px; color: white; }
 #banner a:hover { color: white; text-decoration: none; }
 
@@ -643,15 +642,19 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
 }
 #user-login { width: 375px; float: left; }
 #ssopanel {
-    float: left; border-left: 1px #2d2c28 solid; padding-left: 25px;
-    margin-top: 20px; margin-bottom: 40px; padding-bottom: 50px;
+    position: relative;
+    float: left; padding-left: 25px;
+    margin-top: 20px; margin-bottom: 10px; padding-bottom: 10px;
 }
 #ssopanel p {
-    font-size: 13px; font-weight: bold; margin-top: 50px; color: #a90101;
+    font-size: 13px; font-weight: bold; margin-top: 20px; color: #a90101;
 }
-#ssopanel a { margin-left: 110px; }
+#ssopanel a {
+    margin-top: 0px;
+    margin-left: 195px;
+}
 #nci-login-instructions {
-    clear: both; width: 900px; border: 1px black solid; margin-left: 10px;
+    clear: both; width: 600px; border: 1px black solid; margin-left: 10px;
     border-radius: 7px;
 }
 #nci-login-instructions p a { text-decoration: underline; color: #a90101; }
