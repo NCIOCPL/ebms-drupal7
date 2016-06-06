@@ -54,11 +54,9 @@ class EbmsReports {
         $this->request_id = Ebms\Util::validate_int($request_id, 'reports');
     }
 
-    /*
-     * Routes the report request to the appropriate form.  Also handles
-     * routing of URLs which are intended for a higher-level Reports
-     * landing page.  For the documents report, handles any additional
-     * actions embedded in the URL's request parameters.
+    /**
+     * Version of the "articles without responses" report tailored for
+     * board members (OCEEBMS-207).
      */
     private function awr_member() {
         $report = articles_without_responses_report($this->request_id, true);
@@ -88,6 +86,13 @@ class EbmsReports {
         drupal_send_headers();
         print $html;
     }
+
+    /*
+     * Routes the report request to the appropriate form.  Also handles
+     * routing of URLs which are intended for a higher-level Reports
+     * landing page.  For the documents report, handles any additional
+     * actions embedded in the URL's request parameters.
+     */
     public function run() {
 
         $parms = drupal_get_query_parameters();
@@ -107,6 +112,9 @@ class EbmsReports {
             case 'citation-followup':
             case 'boards-and-topics':
                 return $this->not_yet_implemented();
+            case 'missing-from-nlm':
+                return drupal_get_form('pdq_ebms_missing_from_nlm',
+                                       $this->request_id);
             case 'responses-by-reviewer':
                 return drupal_get_form('pdq_ebms_responses_by_reviewer',
                                        $this->request_id);
@@ -115,6 +123,9 @@ class EbmsReports {
                                        $this->request_id);
             case 'membership':
                 return drupal_get_form('pdq_ebms_membership_report_form',
+                                       $this->request_id);
+            case 'login-attempts':
+                return drupal_get_form('pdq_ebms_login_attempts_form',
                                        $this->request_id);
             case 'cites-status':
                 return drupal_get_form('pdq_ebms_cites_by_status_form',
@@ -128,6 +139,7 @@ class EbmsReports {
                 return drupal_get_form('pdq_ebms_import_reports_form',
                     $this->request_id);
             case 'documents':
+                // archive code here obsoleted by OCEEBMS-292?
                 if (isset($parms['archive'])) {
                     $doc_id = Ebms\Util::validate_int($parms['archive'],
                               EbmsReports::$url . '/documents');
@@ -428,6 +440,10 @@ class EbmsReports {
                         ),
                         array('Board Membership', 'reports/membership'),
                         array(
+                            'Board Member Login Attempts',
+                            'reports/login-attempts'
+                        ),
+                        array(
                             'Board Member Activity Report',
                             'reports/board-members-last-login',
                         ),
@@ -459,6 +475,7 @@ class EbmsReports {
                         ),
                         array('Not List', 'reports/not-list'),
                         array('Yes List', 'reports/yes-list'),
+                        array('Invalid Pubmed IDs', 'reports/missing-from-nlm'),
                     ),
                 ),
             ),
@@ -1241,6 +1258,9 @@ class EbmsReports {
      * Builds up the Drupal render array for a report on documents
      * posted to the EBMS.
      *
+     * OCEEBMS-292: the table now has to be built up by hand as
+     * raw markup, because we need to intersperse more form fields.
+     *
      *  @param  int  $request_id   Primary key into the EBMS table
      *                             holding the parameters for the
      *                             report request.
@@ -1250,23 +1270,30 @@ class EbmsReports {
      */
     public static function docs($request_id) {
 
+        // This is the render array we'll return to be inserted into
+        // the report form, using the Drupal Form API.
+        $table = array();
+
         // Collect the report parameters.
-        $board = $tag = $keyword = $inhouse = $member = $archived =
+        $board = $tag = $inhouse = $member = $archived =
             $range = $uploader_board = null;
         $start = $end = Ebms\Util::empty_date();
+        $sort = 'f.filename';
         if ($request_id) {
             $params = EbmsReports::fetch_report_request($request_id);
             $board = $params['board'];
             $tag = $params['tag'];
-            $keyword = $params['keyword'];
             $inhouse = $params['inhouse'];
             $member = $params['member'];
             $uploader_board = $params['uploader-board'];
             $archived = $params['archived'];
             $start = $params['upload-start']['date'];
             $end = $params['upload-end']['date'];
+            $sort = $params['sort'];
             $range = $start || $end;
         }
+        if (!$sort)
+            $sort = 'f.filename';
 
         // Find out whether we're paging the results.
         $pager_limit = 10;
@@ -1276,39 +1303,8 @@ class EbmsReports {
             if ($parms['pager'] == 'off')
                 $pager = false;
 
-        // Create the table column headers, specifying the column which
-        // can be used for sorting.
-        $headers = array(
-            array(
-                'data' => 'File Name',
-                'field' => 'f.filename',
-                'class' => array('col-1'),
-            ),
-            array(
-                'data' => 'Uploaded By',
-                'class' => array('col-2'),
-            ),
-            array(
-                'data' => 'Boards',
-                'class' => array('col-3'),
-            ),
-            array(
-                'data' => 'Tags',
-                'class' => array('col-4'),
-            ),
-            array(
-                'data' => 'Date Uploaded',
-                'class' => array('col-5'),
-            ),
-            array(
-                'data' => 'Actions',
-                'class' => array('col-6'),
-            ),
-        );
-
         // Construct the query for the report.
         $query = db_select('ebms_doc', 'd');
-        $query = $query->extend('TableSort');
         if ($pager)
             $query = $query->extend('PagerDefault')->limit($pager_limit);
         $query->join('file_managed', 'f', 'f.fid = d.file_id');
@@ -1348,7 +1344,7 @@ class EbmsReports {
             $query->condition('u.uid', $inhouse);
         if ($member)
             $query->condition('u.uid', $member);
-        $query->orderByHeader($headers);
+        $query->orderBy($sort);
         $count_query = $query->countQuery();
         $total = $count_query->execute()->fetchField();
 
@@ -1358,7 +1354,6 @@ class EbmsReports {
         if ($request_id)
             $main_url .= "/$request_id";
         $edit_parms = drupal_get_query_parameters();
-        $archive_parms = drupal_get_query_parameters();
 
         // Build the array of table rows.
         $docs = $query->execute();
@@ -1371,12 +1366,6 @@ class EbmsReports {
             // Robin decided she didn't like the original requirement
             // for this link.  See TIR 2450.
             $links = l('EDIT', 'docs/edit/' . $d->doc_id);
-            if (!$d->drop_flag) {
-                $archive_parms['archive'] = $d->doc_id;
-                $archive_link = l('ARCHIVE', $main_url,
-                                array('query' => $archive_parms));
-                $links .= " $divider $archive_link";
-            }
             $bquery = db_select('ebms_board', 'b');
             $bquery->join('ebms_doc_board', 'd', 'd.board_id = b.board_id');
             $bquery->condition('d.doc_id', $d->doc_id);
@@ -1398,52 +1387,72 @@ class EbmsReports {
                 $tags[] = $result->tag_name;
             $tags = implode('; ', $tags);
             $file_url = file_create_url($d->uri);
-            $data = array(
-                array(
-                    'data' => l($d->filename, $file_url, $target),
-                    'class' => array('col-1'),
+            $file_link = l($d->filename, $file_url, $target);
+            $rows[$d->doc_id] = array(
+                '#prefix' => '<tr>
+ <td class="col-1">',
+                '#suffix' => ' ' . $file_link . '</td>
+ <td class="col-2">' . htmlspecialchars($d->name) . '</td>
+ <td class="col-3">' . htmlspecialchars($boards) . '</td>
+ <td class="col-4">' . htmlspecialchars($tags) . '</td>
+ <td class="col-5">' . date('m/d/Y', strtotime($d->when_posted)) . '</td>
+ <td class="col-6">' . $links . '</td>
+</tr>',
+                'bulk-archive-' . $d->doc_id => array(
+                    '#type' => 'checkbox',
+                    '#title' => "\xc2\xa0",
                 ),
-                array(
-                    'data' => htmlspecialchars($d->name),
-                    'class' => array('col-2'),
-                ),
-                array(
-                    'data' => htmlspecialchars($boards),
-                    'class' => array('col-3'),
-                ),
-                array(
-                    'data' => htmlspecialchars($tags),
-                    'class' => array('col-4'),
-                ),
-                array(
-                    'data' => date('m/d/Y', strtotime($d->when_posted)),
-                    'class' => array('col-5'),
-                ),
-                array(
-                    'data' => $links,
-                    'class' => array('col-6'),
-                ),
-            );
-            $rows[] = array(
-                'data' => $data,
-                'no_striping' => true,
             );
         }
 
         // Assemble the table.
-        $id = 'doc-report-title';
+        $title = array(
+            '#markup' => "<h2 id='doc-report-title'>Documents ($total)</h2>",
+        );
         $table = array(
-            'title' => array(
-                '#type' => 'markup',
-                '#markup' => "<h2 id='$id'>Documents ($total)</h2>",
-            ),
-            'table' => array(
-                '#attributes' => array('id' => 'doc-report'),
-                '#theme' => 'table',
-                '#rows' => $rows,
-                '#header' => $headers,
+            'title' => $title,
+            'archive' => array(
+                '#type' => 'submit',
+                '#value' => 'Archive',
+                '#attributes' => array('title' => 'Archive checked documents'),
+                '#suffix' =>
+                '<p id="archive-instructions">' .
+                '<em>Click VIEW ALL before selecting documents to archive.</em></p>',
             ),
         );
+        if ($pager)
+            $table['pager-top'] = array('#theme' => 'pager');
+        elseif ($total > $pager_limit) {
+            unset($parms['pager']);
+            $opts = array('query' => $parms);
+            $url = EbmsReports::$url . '/documents';
+            if ($request_id)
+                $url .= '/' . $request_id;
+            $link = l('VIEW PAGES', $url, $opts);
+            $table['pager-top'] = array(
+                '#type' => 'markup',
+                '#markup' => "<div id='pager-view-pages'>$link</div>",
+            );
+        }
+        $table['head'] = array('#markup' =>
+'<table id="doc-report" class="sticky-enabled">
+ <thead>
+  <tr>
+   <th class="col-1">File Name</th>
+   <th class="col-2">Uploaded By</th>
+   <th class="col-3">Boards</th>
+   <th class="col-4">Tags</th>
+   <th class="col-5">Date Uploaded</th>
+   <th class="col-6">Actions</th>
+  </tr>
+ </thead>
+ <tbody>
+');
+        $table['rows'] = $rows;
+        $table['tail'] = array('#markup' =>
+' </tbody>
+</table>
+');
         if ($pager)
             $table['pager'] = array('#theme' => 'pager');
         elseif ($total > $pager_limit) {
@@ -1458,6 +1467,11 @@ class EbmsReports {
                 '#markup' => "<div id='pager-view-pages'>$link</div>",
             );
         }
+        $table['archive-bottom'] = array(
+            '#type' => 'submit',
+            '#value' => 'Archive',
+            '#attributes' => array('title' => 'Archive checked documents'),
+        );
         return $table;
     }
 
@@ -2411,7 +2425,7 @@ class EbmsReports {
         $rows = array();
 
         // We construct the list of eligible meetings first.
-        $query = new EbmsEventQuery();
+        $query = new Ebms\EventQuery();
         $query->restrict_by_date($params);
         $query->restrict_by_type($params['meeting-type']);
         $results = $query->execute();
@@ -2575,7 +2589,7 @@ class EbmsReports {
         if ($have_date || $params['meeting-type']) {
             $restrict_by_meeting = true;
             $on_agenda_decision = Ebms\Util::state_id_from_text_id('OnAgenda');
-            $query = new EbmsEventQuery();
+            $query = new Ebms\EventQuery();
             $query->restrict_by_date($params);
             $query->restrict_by_type($params['meeting-type']);
             $meeting_results = $query->execute();
@@ -3237,77 +3251,136 @@ class EbmsReports {
         return '<div class="meta"><span class="label">Date Range:</span> ' .
             $s . ' - ' . $e . '</div>';
     }
-}
-
-/**
- * Extension of the core Drupal EntityFieldQuery class.  Used for
- * filtering meeting events by date and/or type.  By default the
- * query represented by the object will find all nodes with type
- * ebms_event, but there are methods for narrowing down the results.
- */
-class EbmsEventQuery extends EntityFieldQuery {
 
     /**
-     * Set some defaults for the query object.
+     * Get the list of Pubmed IDs in the EBMS. Be default, we just want
+     * the trials which have not been rejected for all associated topics,
+     * but if false is passed for the $active parameter, we check all
+     * of the Pubmed IDs.
+     *
+     * 2016-02-03: Robin changed her mind, and now wants more restrictions
+     * for the set of "active" articles.
+     * https://tracker.nci.nih.gov/browse/OCEEBMS-270#comment-530146
      */
-    public function __construct() {
-        $this->entityCondition('entity_type', 'node')
-            ->propertyCondition('status', 1)
-            ->entityCondition('bundle', 'ebms_event');
+    static function pmids_in_ebms($active_only=true) {
+        $query = "SELECT CONVERT(source_id, UNSIGNED INTEGER) AS pmid
+  FROM {ebms_article}
+ WHERE source = 'Pubmed'";
+        if ($active_only)
+            $query .= "
+   AND article_id IN (
+         SELECT DISTINCT s.article_id
+           FROM {ebms_article_state} s
+           JOIN ebms_article_state_type t
+             ON s.state_id = t.state_id
+LEFT OUTER JOIN {ebms_article_board_decision} d
+             ON d.article_state_id = s.article_state_id
+LEFT OUTER JOIN {ebms_article_board_decision_value} v
+             ON v.value_id = d.decision_value_id
+          WHERE t.state_text_id NOT IN ('RejectJournalTitle',
+                                        'RejectInitReview','RejectBMReview',
+                                        'RejectFullReview', 'FullEnd')
+            AND s.current = 'Y'
+            AND (v.value_name IS NULL OR v.value_name <> 'Not cited')
+   )";
+        $query .= "
+ ORDER BY 1";
+        return db_query($query)->fetchCol();
     }
 
     /**
-     * If the user has asked to filter meetings by date, apply the
-     * appropriate field condition.  It is acceptable for the user
-     * to have specified more general components of the date (for
-     * example, a year and month without a day, or just a year) but
-     * not the other way around (can't have a day without both a
-     * month and year specified, for example).  The form validation
-     * routine will have enforced this assumption.
-     *
-     *  @param  array   $date   Structured array representing the
-     *                          filtering options for this request
-     *
-     *  @return                 True iff query restricted
+     * Check a batch of PMIDs to see which ones NLM still has.
      */
-    public function restrict_by_date($params) {
-        $start = $params['date-start']['date'];
-        $end = $params['date-end']['date'];
-        if ($start || $end) {
-            $range = array(
-                strtotime(Ebms\Util::fill_in_date($start)),
-                strtotime(Ebms\Util::fill_in_date($end, true)),
-            );
-            $field = 'field_datespan';
-            $this->fieldCondition($field, 'value', $range, 'BETWEEN');
-            return true;
+    static function slice_still_at_nlm($pmids) {
+        $max = count($pmids);
+        $default = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+        $base = variable_get('pubmed_esearch_url', $default);
+        $parms = "db=pubmed&retmax=$max&term=" . implode(',', $pmids) . '[UID]';
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $base);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $parms);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        $results = curl_exec($ch);
+        curl_close($ch);
+
+        // Check for problems.
+        $error = array();
+        if (preg_match('#<ERROR>(.*)</ERROR>#Us', $results, $error))
+            throw new \Exception('PMID ERROR: ' . $error[1]);
+        if (!preg_match('#<IdList#', $results))
+            throw new \Exception('PMID FAILURE: ' . $results);
+
+
+        // Extract the PMIDs into an array.
+        $pattern = '#<Id>(\d+)</Id>#';
+        $offset = 0;
+        $pmids = array();
+        while (true) {
+            $matches = array();
+            $found = preg_match($pattern, $results, $matches,
+                     PREG_OFFSET_CAPTURE, $offset);
+            if ($found == 1) {
+                $pmids[] = trim($matches[1][0]);
+                $offset = $matches[1][1] + strlen($matches[1][0]);
+            }
+            else
+                break;
         }
-        return false;
+        return $pmids;
     }
 
     /**
-     * If the user wants to filter meetings by whether they were board-
-     * specific or subgroup-specific, apply the appropriate conditions
-     * by detecting whether a board (or subgroup) has been specified
-     * for the event.  There is an event type field in the event node,
-     * but it's used for something else (designating whether a meeting
-     * is face-to-face, or teleconferenced).
-     *
-     * 2013-03-11 (TIR 2446): use the new event_category field,
-     * instead of checking for boards or subgroups linked to the
-     * event.  Note that this may result in contradictory results
-     * (if the user selects an event category value which conflicts
-     * with the type of group (board or subgroup) linked to the
-     * event.
-     *
-     *  @param  string  $type    If a type has been specified, it will
-     *                           be "board" or "subgroup."
-     *
-     *  @return                 None
+     * Find out which of the Pubmed IDs NLM admits to still having.
+     * Do this in batches to reduce the chances of running out of
+     * memory, pausing briefly between requests to avoid throttling
+     * at NLM.
      */
-    public function restrict_by_type($type) {
-        if ($type)
-            $this->fieldCondition('field_event_category', 'value', $type, '=');
+    static function still_at_nlm($pmids, $batch_size, $sleep) {
+        $offset = 0;
+        $verified = array();
+        while ($offset < count($pmids)) {
+            $slice = array_slice($pmids, $offset, $batch_size);
+            $at_nlm = EbmsReports::slice_still_at_nlm($slice);
+            $verified = array_merge($verified, $at_nlm);
+            $offset += $batch_size;
+            if ($sleep > 0)
+                sleep($sleep);
+        }
+        return $verified;
+    }
+
+    /**
+     * Find out which EBMS articles fetched from Pubmed have been
+     * lost by NLM.
+     *
+     *  @param  boolean  $active_only  if true (the default) only
+     *                                 check articles which have at
+     *                                 least one topic which has not
+     *                                 been rejected
+     *  @param  int      $batch_size   how many PMIDs should we check
+     *                                 in a single request (to avoid
+     *                                 exhausting available memory)?
+     *                                 default is 10000
+     *  @param  int      $sleep_secs   how long (in seconds) should
+     *                                 we delay between requests
+     *                                 (we don't want NLM to cut us
+     *                                 off because we're flooding
+     *                                 their server)
+     *  @return object                 object containing two properties:
+     *                   checked       the number of articles checked
+     *                   missing       the list of PMIDs lost
+     */
+    public static function lost_by_nlm($active_only=true,
+                                       $batch_size=10000,
+                                       $sleep_secs=2) {
+        $pmids = EbmsReports::pmids_in_ebms($active_only);
+        $confirmed = EbmsReports::still_at_nlm($pmids, $batch_size,
+                                              $sleep_secs);
+        $report = new stdClass();
+        $report->checked = count($pmids);
+        $report->missing = array_diff($pmids, $confirmed);
+        return $report;
     }
 }
 
@@ -3779,11 +3852,16 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
         )
     );
 
+    // See https://tracker.nci.nih.gov/browse/OCEEBMS-292.
+    if (isset($form_state['confirm_archive']))
+        return pdq_ebms_doc_archive($form, $form_state, $request_id);
+
     // Initialize defaults for the form field's values.
-    $board = \Ebms\Util::get_user_default_board(0);
+    $board = 0; // \Ebms\Util::get_user_default_board(0); OCEEBMS-294
     $tag = $inhouse = $member = $uploader_board = 0;
-    $keyword = $start = $end = '';
+    $start = $end = '';
     $archived = false;
+    $sort = 'f.filename';
 
     // Check for overrides of the defaults by request parameters
     // stored in the database.
@@ -3791,7 +3869,6 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
         $params = EbmsReports::fetch_report_request($request_id);
         $board = $params['board'];
         $tag = $params['tag'];
-        $keyword = $params['keyword'];
         $inhouse = $params['inhouse'];
         $member = $params['member'];
         $uploader_board = $params['uploader-board'];
@@ -3802,6 +3879,7 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
             $start = Ebms\Util::fill_in_date($start);
         if ($end)
             $end = Ebms\Util::fill_in_date($end);
+        $sort = $params['sort'];
     }
 
     // Build picklist arrays for boards, tags, roles, etc.
@@ -3847,6 +3925,10 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
                                             'Documents');
     $date_field = Ebms\Util::date_range_field('Date Uploaded', 'upload',
                                               $start, $end);
+    $form['request-id'] = array(
+        '#type' => 'hidden',
+        '#value' => $request_id,
+    );
     $form['top'] = array(
         '#type' => 'container',
         '#attributes' => array('id' => 'documents-top'),
@@ -3872,13 +3954,6 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
                 '#title_display' => 'after',
                 '#options' => $tags,
                 '#default_value' => $tag,
-                '#attributes' => array('class' => array('fixed-width')),
-            ),
-            'keyword' => array(
-                '#type' => 'textfield',
-                '#title' => 'Keyword',
-                '#title_display' => 'after',
-                '#default_value' => $keyword,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
             'inhouse' => array(
@@ -3911,6 +3986,18 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
                 '#title' => 'ARCHIVED',
                 '#default_value' => $archived,
             ),
+            'sort' => array(
+                '#type' => 'select',
+                '#title' => 'Order By',
+                '#title_display' => 'after',
+                '#options' => array(
+                    'f.filename' => 'File Name',
+                    'u.name' => 'Uploaded By',
+                    'd.when_posted' => 'Date Uploaded',
+                ),
+                '#default_value' => $sort,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
             'buttons' => array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'report-buttons'),
@@ -3933,6 +4020,37 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
 }
 
 /**
+ * Make sure at least one document has been selected for archiving.
+ * Part of OCEEBMS-292.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_documents_report_form_validate($form, &$form_state) {
+    if ($form_state['triggering_element']['#value'] == t('Archive')) {
+        $docs_to_confirm = array();
+        $prefix = 'bulk-archive-';
+        $len = strlen($prefix);
+        foreach ($form_state['values'] as $key => $value) {
+            if (substr($key, 0, $len) == $prefix) {
+                if ($value)
+                    $docs_to_confirm[] = substr($key, $len);
+            }
+        }
+        if (empty($docs_to_confirm))
+            form_set_error('', 'No documents selected for archiving.');
+        else
+            $form_state['docs-to-confirm'] = $docs_to_confirm;
+    }
+}
+
+/**
  * If the user clicks the "Reset" button, clear the form by routing
  * back to the URL for the import reports.  Otherwise store the report
  * request parameters in the database and send the user to the URL
@@ -3948,11 +4066,140 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
  *  @return     none
  */
 function pdq_ebms_documents_report_form_submit($form, &$form_state) {
+
+    // OCEEBMS-292: support bulk archiving of documents.
+    if (!empty($form_state['values']['archive_ids']))
+        return pdq_ebms_doc_archive_submit($form, $form_state);
+    if ($form_state['triggering_element']['#value'] == t('Archive')) {
+        $form_state['rebuild'] = true;
+        $form_state['confirm_archive'] = true;
+        return;
+    }
+
     if ($form_state['values']['op'] == 'Reset')
         drupal_goto('reports/documents');
+    if ($form_state['values']['op'] != 'Filter')
+        return;
     $values = $form_state['values'];
     $request_id = EbmsReports::save_report_request($values, 'Documents');
     drupal_goto('reports/documents/' . $request_id);
+}
+
+/**
+ * Put up a confirmation page asking if the user really wants to
+ * archive the selected documents.
+ * See https://tracker.nci.nih.gov/browse/OCEEBMS-292.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_doc_archive($form, &$form_state, $report_id) {
+    $form['archive_ids'] = array(
+        '#type' => 'value',
+        '#value' => $form_state['docs-to-confirm'],
+    );
+    $form['report_id'] = array(
+        '#type' => 'value',
+        '#value' => $report_id,
+    );
+    $query = db_select('ebms_doc', 'd');
+    $query->join('file_managed', 'f', 'f.fid = d.file_id');
+    $query->condition('d.doc_id', $form_state['docs-to-confirm'], 'IN');
+    $query->fields('f', array('filename', 'uri'));
+    $query->orderBy('f.filename');
+    $results = $query->execute();
+    $docs = array();
+    foreach ($results as $result)
+        $docs[] = htmlspecialchars($result->filename);
+    $these = count($docs) == 1 ? 'this document' : 'these documents';
+    $form['info'] = array(
+        '#markup' => theme_item_list(
+            array(
+                'items' => $docs,
+                'title' => "Do you want to archive $these?",
+                'type' => 'ul',
+                'attributes' => array('id' => 'docs-to-archive'),
+            )
+        ),
+    );
+
+    // Assemble the confirmation form.
+    $path = 'reports/documents';
+    if ($report_id)
+        $path .= "/$report_id";
+    $path = array(
+        'path' => $path,
+        'query' => array(
+            'pager' => 'off',
+            'items_per_page' => 'All',
+        ),
+    );
+    return confirm_form(
+        $form,
+        'Archive selected documents?',
+        $path,
+        '<p><em>This action cannot be undone.</em></p>'
+    );
+}
+
+/**
+ * Set the drop_flag column for the rows in the ebms_doc table
+ * corresponding to the documents marked for archiving.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_doc_archive_submit($form, &$form_state) {
+    $count = $first_id = 0;
+    $bail_url = EbmsReports::$url . '/documents';
+    foreach ($form_state['values']['archive_ids'] as $doc_id) {
+        $int_id = Ebms\Util::validate_int($doc_id, $bail_url);
+        db_update('ebms_doc')
+            ->fields(array('drop_flag' => 1))
+            ->condition('doc_id', $int_id)
+            ->execute();
+        $count++;
+        if (!$first_id)
+            $first_id = $doc_id;
+    }
+    if ($count == 1) {
+        $query = db_select('ebms_doc', 'd');
+        $query->join('file_managed', 'f', 'f.fid = d.file_id');
+        $query->condition('d.doc_id', $first_id);
+        $query->fields('f', array('filename', 'uri'));
+        $name = $query->execute()->fetchField();
+        drupal_set_message(htmlspecialchars($name) . ' archived.');
+    }
+    else
+        drupal_set_message("$count documents archived.");
+    $target = 'reports/documents';
+    if (!empty($form_state['values']['report_id']))
+        $target .= '/' . $form_state['values']['report_id'];
+    drupal_goto(
+        $target,
+        array(
+            'query' => array(
+                'pager' => 'off',
+                'items_per_page' => 'All',
+            ),
+        )
+    );
 }
 
 /**
@@ -4095,6 +4342,626 @@ function pdq_ebms_membership_report_form_submit($form, &$form_state) {
     $values = $form_state['values'];
     $request_id = EbmsReports::save_report_request($values, 'Membership');
     drupal_goto('reports/membership/' . $request_id);
+}
+
+/**
+ * Drupal form API callback which generates the form for the
+ * report on member login attempts.  Used to help identify board
+ * members having login problems.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_login_attempts_form($form, &$form_state, $request_id=0) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Board Management Reports', 'reports/login-attempts'),
+            'Board Member Login Attempts',
+        )
+    );
+
+    // Get some data from previous submission of the form, if any
+    // Initialize defaults for the form field's values.
+    $start = $end = '';
+    $show_details = 'none';
+
+    // If user pressed Submit button, his parameters are saved in the DB
+    // with a request_id and this form re-invoked.  Execute the request.
+    if ($request_id) {
+        $values = EbmsReports::fetch_report_request($request_id);
+        $start = $values['date-start']['date'];
+        $end = $values['date-end']['date'];
+        $show_details = $values['show-details'];
+        if ($start)
+            $start = Ebms\Util::fill_in_date($start);
+        if ($end)
+            $end = Ebms\Util::fill_in_date($end, true);
+    }
+    else {
+        // Find the minimum and maximum dates
+        $qry = db_select('watchdog', 'w');
+        $qry->addExpression('min(w.timestamp)', 'mindatetime');
+        $qry->addExpression('max(w.timestamp)', 'maxdatetime');
+        $result = $qry->execute()->fetchAll();
+
+        // Create defaults.  Max is one day (86400 seconds)
+        //  more than current date
+        if (!$start)
+            $start = date('Y-m-d', $result[0]->mindatetime);
+        if (!$end)
+            // Adjust end to one day after first second of day
+            $end = date('Y-m-d', $result[0]->maxdatetime);
+            //$end = date('Y-m-d', intval($result[0]->maxdatetime/86400)+86400);
+    }
+
+    // Assemble the login-attempts report form
+    $form = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'report-form'),
+        'title' => array('#markup' =>
+            '<h2>Board Member Login Attempts</h2>'),
+        'date' => Ebms\Util::date_range_field(
+                            'Login attempt dates (inclusive)', 'date',
+                                                   $start, $end, '', false),
+        'show-details' => array(
+            '#type' => 'radios',
+            '#title' => 'Report options',
+            '#options' => array(
+                'none' => 'Statistics Only',
+                'failed' =>
+        'Board Members With Failed Login Attempts (Excludes NIH Board Members)',
+                'all' =>
+        'All Board Member Login Attempts (Includes NIH Board Members)',
+            ),
+            '#default_value' => $show_details,
+        ),
+        'reset' => array(
+            '#type' => 'submit',
+            '#value' => 'Reset',
+            ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+    );
+
+    // If request_id passed, user already pressed submit on previous go-round
+    // Call the function to build the report and append it to the form.
+    if ($request_id) {
+        $form = pdq_ebms_login_attempts_build_report($form, $start, $end,
+                                                     $show_details);
+    }
+
+    // Assemble the page where the form lives, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Board Management',
+                                            'Login Attempts');
+    $page['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'cites-by-status-report-top'),
+        'left-nav' => $left_nav,
+        'report-form' => $form,
+    );
+
+    return $page;
+}
+
+/**
+ * Validation routine for the login-attempts form submission
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return none
+ */
+function pdq_ebms_login_attempts_form_validate($form, &$form_state) {
+
+    $values = $form_state['values'];
+
+    // Validate dates
+    $startStr = $values['date-start']['date'];
+    if (!$startStr) {
+        form_set_error('date-start', 'Starting date is required');
+        return;
+    }
+    $endStr = $values['date-end']['date'];
+    if (!$endStr) {
+        form_set_error('date-end', 'Ending date is required');
+        return;
+    }
+
+    // Avoid simple user error
+    if ($endStr < $startStr) {
+        form_set_error('date-start','Start date must be on or before end date');
+        return;
+    }
+}
+
+/**
+ * Helper class for producing the login_attempts report.
+ *
+ * Each object represents one user (Board Member as of this writing)
+ * or one time period (months as of this writing.)
+ *
+ * The user or time identifier is maintained outside the object
+ * and the object is externally associated with the identifier.
+ */
+class LoginAttempts {
+    public
+        $uid,           // User unique ID, not available for all logins
+        $name,          // User name
+        $successCount,  // Number of successful logins
+        $lastSuccess,   // Timestamp of last success
+        $failureCount,  // Number of login failures
+        $lastFailure;   // Timestamp
+
+    /**
+     * Constructor.
+     *
+     * Pass:
+     *  @param string  $name    User name, required
+     *  @param int     $uid     May be null if user logged in w/wrong name
+     */
+    public function __construct($name, $uid=NULL) {
+
+        $this->name         = $name;
+        $this->uid          = $uid;
+        $this->successCount = 0;
+        $this->lastSuccess  = 0;
+        $this->failureCount = 0;
+        $this->lastFailure  = 0;
+    }
+
+    /**
+     * Add another datapoint for this object.
+     *
+     * Pass:
+     *  @param boolean $success     True = record success, else failure.
+     *  @param int     $timestamp   UNIX timestamp.
+     */
+    public function update($success, $timestamp) {
+        if ($success) {
+            $this->successCount++;
+            if ($lastSuccess > $this->timestamp)
+                $this->lastSuccess = $timestamp;
+        }
+        else {
+            $this->failureCount++;
+            if ($lastFailure > $this->timestamp)
+                $this->lastFailure = $timestamp;
+        }
+    }
+
+    /**
+     * Utility function to find name and id from watchdog list.
+     *
+     *  @param string $vars         Watchdog "variables" column
+     *  @param string $varName      JSON variable name to find, e.g., '%user'
+     *  @param boolean $roleName    Only search for this user role, e.g.
+     *                              'board member'
+     *
+     *  @return stdClass object
+     *    ->name                User name, from users table if found there
+     *    ->uid                 uid from users table, if found there
+     *
+     *    If name not found, returns passed name + Null uid.
+     */
+    const WRONG_USER_TYPE = 'WrongUserType';
+
+    static function loginNameConvert($vars, $varName,
+                                     $roleName='board member',
+                                     $authModule='nci_edir') {
+
+        // Dig the name out of the watchdog variables
+        // This works because we know the structure of the message col
+        //   contains '%user' for failed login attempts
+        $struct  = unserialize($vars);
+        $chkName = $struct[$varName];
+
+        $obj = new stdClass;
+
+        // Get uid and canonical name, if possible
+        $qry = db_select('users', 'u')
+            ->fields('u', array('uid', 'name'))
+            ->condition('u.name', $chkName);
+
+        $row = $qry->execute()->fetchObject();
+
+        // No hit
+        if (!$row) {
+            $obj->name = $chkName;
+            $obj->uid  = NULL;
+            return $obj;
+        }
+        else {
+            // Got one hit.  Two users with one name are not allowed in Drupal
+            //  return canonical name and uid
+            $obj->name = $row->name;
+            $obj->uid  = $row->uid;
+
+            // Remove hit if wrong role or auth module
+            if ($roleName || $authModule) {
+
+                $qry = db_select('users', 'u')
+                     ->fields('u', array('uid'))
+                     ->condition('u.uid', $obj->uid);
+
+                // Limit to specific role
+                if ($roleName) {
+                    $qry->join('users_roles', 'ur', 'u.uid = ur.uid');
+                    $qry->join('role', 'r', 'ur.rid = r.rid');
+                    $qry->condition('r.name', $roleName);
+                }
+
+                if ($authModule) {
+                    $qry->join('authmap', 'am', 'u.uid = am.uid');
+                    $qry->condition('am.module', $authModule);
+                }
+
+                $result = $qry->execute()->rowCount();
+
+                if ($result == 0)
+                    $obj->name = LoginAttempts::WRONG_USER_TYPE;
+            }
+        }
+        return $obj;
+    }
+}
+
+/**
+ * Like all other report submit functions:
+ *   If:   "Reset" button, go back to repaint form.
+ *   Else: Save the parameters and re-invoke form with passed parms
+ *         to build and append the report.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return none
+ */
+function pdq_ebms_login_attempts_form_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/login-attempts');
+    if ($form_state['values']['op'] == 'Submit') {
+        $values = $form_state['values'];
+        $request_id = EbmsReports::save_report_request($values,
+                                                       'Literature Reviews');
+        drupal_goto('reports/login-attempts/' . $request_id);
+    }
+}
+
+/**
+ * Build the login attempts report(s).  There may or may not be a "details"
+ * report included.
+ *
+ *  @param array $form      Structured array containing the
+ *                            elements and properties of the form.
+ *  @param int $start       UNIX timestamp for earliest date of report.
+ *  @param int $end         UNIX timestamp for latest date of report.
+ *  @param string $details  What details to include.  See form.
+ *
+ *  @return                 Updated form including the report(s).
+ */
+function pdq_ebms_login_attempts_build_report($form, $startDt, $endDt,
+                                              $details) {
+
+    // Conversions to UNIX timestamps
+    $start = strtotime($startDt);
+    $end   = strtotime($endDt);
+
+    // -------------------
+    // Gather information
+    // -------------------
+
+    // Total board members
+    $qry = db_select('users', 'u');
+    $qry->join('users_roles', 'ur', 'u.uid = ur.uid');
+    $qry->join('role', 'r', 'ur.rid = r.rid');
+    $qry->condition('r.name', 'board member');
+    $qry->condition('u.status', 1);
+    $bmCount = $qry->countQuery()->execute()->fetchField();
+
+    // Board member edir users
+    $qry = db_select('users', 'u');
+    $qry->join('users_roles', 'ur', 'u.uid = ur.uid');
+    $qry->join('authmap', 'a', 'u.uid = a.uid');
+    $qry->join('role', 'r', 'ur.rid = r.rid');
+    $qry->fields('users', array('uid'));
+    $qry->condition('r.name', 'board member');
+    $qry->condition('a.module', 'nci_edir');
+    $qry->condition('u.status', 1);
+    $qry->condition('a.module', 'nci_edir');
+    $qry->condition('u.status', 1);
+    $bmEdirCount = $qry->countQuery()->execute()->fetchField();
+
+    // Assemble all report elements here
+    //   $report = array of reports
+    //     $report['status']  = Table of current counts of relevant user info.
+    //     $report['monthly'] = Table of successes and failures by month.
+    //     $report['details'] = Table of info by user.
+    // At the end, we return the info with:
+    //   $form['report'] = $report
+    $report = array();
+
+    // -------------------
+    // Current counts report
+    // -------------------
+    $report['status'] = array(
+        'title' => array('#markup' =>
+            '<br /><h3>Current board member and login info</h3>'),
+        'table' => array(
+            '#theme' => 'table',
+            '#header' => array('Board Members', 'Board Member EDIR users'),
+
+            '#rows'   => array(array($bmCount, $bmEdirCount)),
+        ),
+    );
+
+    // -------------------
+    // Monthly report
+    // -------------------
+
+    $monthRows = array();
+    $successTotal     = 0;
+    $failBdMbrTotal   = 0;
+    $failUnknownTotal = 0;
+
+    // Find the start and end of the first month.
+    // $thisMonth may be earlier than $start.
+    // That's intentional, need first of the month to find boundaries.
+    $thisMonth  = strtotime(date('Y-m-d', $start));
+    $beginMonth = strtotime(date('Y-m-01', $start));
+    $nextMonth  = strtotime('+1 month', $beginMonth);
+
+    // Select data for each month
+    while (true) {
+        if ($nextMonth > $end)
+            $nextMonth = $end;
+
+        $successCount = db_query("
+            SELECT COUNT(*)
+              FROM watchdog w
+              JOIN users_roles ur
+                ON ur.uid = w.uid
+              JOIN role r
+                ON r.rid = ur.rid
+              JOIN authmap am
+                ON am.uid = w.uid
+             WHERE w.timestamp >= :this
+               AND w.timestamp < :next
+               AND w.message = 'Session opened for %name.'
+               AND r.name = 'board member'
+               AND am.module = 'nci_edir'",
+            array(':this'=>$thisMonth, ':next'=>$nextMonth))->fetchField();
+
+        // Failure count is harder.  We only want board members using edir,
+        //  but if the login didn't succeed, there's no link to the user
+        //  record and no easy way to tell who the user is.
+        // We'll do it the hard way, matching each person by name
+        $results = db_query("
+            SELECT variables, COUNT(*) AS cnt
+              FROM watchdog
+             WHERE message = 'Login attempt failed for %user.'
+               AND timestamp BETWEEN :start AND :end
+             GROUP BY variables",
+               array(':start'=>$thisMonth, ':end'=>$nextMonth))->fetchAll();
+
+        // For each failure group, try to find a uid and check his role
+        $failBdMbrCount   = 0;
+        $failUnknownCount = 0;
+        foreach ($results as $row) {
+            $usrInfo = LoginAttempts::loginNameConvert($row->variables,
+                                    '%user', 'board member', 'nci_edir');
+            // Don't include users known not to be board members or edir users
+            if ($usrInfo->name == LoginAttempts::WRONG_USER_TYPE)
+                continue;
+
+            // Anything missing that filter is either a board member, or
+            //  an unmatched name
+            if ($usrInfo->uid) {
+                $failBdMbrCount += $row->cnt;
+                $failBdMbrTotal += $row->cnt;
+            }
+            else {
+                $failUnknownCount += $row->cnt;
+                $failUnknownTotal += $row->cnt;
+            }
+        }
+        $successTotal += $successCount;
+
+        // Add row for the month to the report
+        $row = array(date('Y M', $thisMonth), $successCount,
+                    $failBdMbrCount, $failUnknownCount);
+        $monthRows[] = $row;
+
+        // Next month
+        if ($nextMonth >= $end)
+            break;
+        $thisMonth = $nextMonth;
+        $nextMonth = strtotime('+1 month', $thisMonth);
+    }
+    // Add totals
+    $monthRows[] = array('<b>TOTALS</b>',
+                        "<b>$successTotal</b>",
+                        "<b>$failBdMbrTotal</b>",
+                        "<b>$failUnknownTotal</b>");
+
+    $report['monthly'] = array(
+        'title' => array('#markup' =>
+            '<br /><h3>Monthly login attempt breakdown</h3>'),
+        'table' => array(
+            '#theme' => 'table',
+            '#header' => array('Month', 'Successes',
+                               'Failed Members', 'Failed Unknown'),
+            '#rows'   => $monthRows,
+        ),
+    );
+
+    // Are we done?
+    if ($details == 'none') {
+        $form['report'] = $report;
+        return $form;
+    }
+
+    // -------------------
+    // Detail report
+    // -------------------
+
+    // Accumulate data here
+    $successes = 0;
+    $failures  = 0;
+
+    // Get all login failures in our timeframe
+    $results = db_query("
+            SELECT variables, COUNT(*) AS cnt, max(timestamp) AS maxts
+              FROM watchdog
+             WHERE message = 'Login attempt failed for %user.'
+               AND timestamp BETWEEN :start AND :end
+             GROUP BY variables
+             ORDER BY timestamp",
+               array(':start'=>$start, ':end'=>$end))->fetchAll();
+
+    // An array of of LoginAttempts objects, keyed by user name
+    $loginAttempts = array();
+
+    // An index into that array by user ID, for those for which we know it
+    $loginAttemptsByUid = array();
+
+    // Parse the results and fill array and its index
+    foreach ($results as $row) {
+        $usrInfo = LoginAttempts::loginNameConvert($row->variables, '%user',
+                                                   'board member', 'nci_edir');
+
+        // Don't include people known not to be board members or edir users
+        if ($usrInfo->name == LoginAttempts::WRONG_USER_TYPE)
+            continue;
+
+        // Create an object for it
+        $lat = new LoginAttempts($usrInfo->name, $usrInfo->uid);
+        $lat->failureCount = $row->cnt;
+        $lat->lastFailure  = $row->maxts;
+
+        // Save it by the user name.  Can't use uid because failed login
+        //  attempts cannot always identify a uid.
+        $loginAttempts[$usrInfo->name] = $lat;
+
+        if ($lat->uid)
+            $loginAttemptsByUid[$lat->uid] = $lat->name;
+
+        // Cumulate
+        $failures += $lat->failureCount;
+    }
+
+    $results = db_query("
+        SELECT w.uid, u.name, COUNT(*) AS cnt, max(w.timestamp) AS maxts
+          FROM watchdog w
+          JOIN users u
+            ON w.uid = u.uid
+          JOIN users_roles ur
+            ON w.uid = ur.uid
+          JOIN role r
+            ON ur.rid = r.rid
+         WHERE w.message = 'Session opened for %name.'
+           AND w.timestamp BETWEEN :start AND :end
+           AND r.name = 'board member'
+         GROUP BY w.uid",
+           array(':start'=>$start, ':end'=>$end))->fetchAll();
+
+    foreach ($results as $row) {
+
+        // Update the matching object, if there is one
+        if (array_key_exists($row->uid, $loginAttemptsByUid)) {
+            $lat = $loginAttempts[$loginAttemptsByUid[$row->uid]];
+        }
+        // If only processing failures and no matching object, forget row
+        elseif ($details == 'failed') {
+            continue;
+        }
+        // Else processing all member logins, create row for one w/no failure
+        else {
+            $lat = new LoginAttempts($row->name, $row->uid);
+        }
+
+        $lat->successCount = $row->cnt;
+        $lat->lastSuccess  = $row->maxts;
+
+        // Cumulate
+        $successes += $lat->successCount;
+
+        // Insert or replace object in the array
+        $loginAttempts[$lat->name] = $lat;
+    }
+
+    // Sort rows by name, case insensitive
+    // Uses method that works without requiring PHP 5.4
+    uksort($loginAttempts, 'strcasecmp');
+
+    $detailRows = array();
+    foreach ($loginAttempts as $lat) {
+
+        // Differentiate known board members from unknown names
+        if ($lat->uid)
+            $lat->name .= '*';
+
+        // If no date available, ensure empty cell
+        if ($lat->lastSuccess > 0)
+            $lastSuccess = date('M d, Y', $lat->lastSuccess);
+        else
+            $lastSuccess = '';
+        if ($lat->lastFailure > 0)
+            $lastFailure = date('M d, Y', $lat->lastFailure);
+        else
+            $lastFailure = '';
+
+        // Create a row for this user
+        $row = array($lat->name,
+                $lat->successCount, $lastSuccess,
+                $lat->failureCount, $lastFailure);
+
+        // Append it to our list
+        $detailRows[] = $row;
+    }
+
+    // Add the counts
+    $detailRows[] = array('<b>TOTALS</b>',
+                          "<b>$successes</b>", '',
+                          "<b>$failures</b>", '');
+
+    // Add the details to the report
+    $report['details'] = array(
+        'title' => array('#markup' =>
+            '<br /><h3>Detailed login attempt breakdown</h3>'),
+        'table' => array(
+            '#theme' => 'table',
+            '#header' => array('Member Name*', 'Successes', 'Last Success',
+                               'Failures', 'Last Failure'),
+            '#rows'   => $detailRows,
+        ),
+    );
+
+    $form['report'] = $report;
+    return $form;
 }
 
 /**
@@ -4650,9 +5517,9 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     $meeting_types = array(0 => ' ') + $info['settings']['allowed_values'];
     $statuses = array(
         0 => '',
-        'reviewer decision' => 'Reviewer Decision',
+        'reviewer decision' => 'Abstract Decision',
         'full text retrieved' => 'Full Text Retrieved',
-        'committee decision' => 'Literature Surveillance Committee Decision',
+        'committee decision' => 'Full-Text Decision',
         'assigned for review' => 'Assigned For Review',
         'board member responses' => 'Board Member Responses',
         'board manager action' => 'Board Manager Action',
@@ -5567,6 +6434,17 @@ function articles_without_responses_report($request_id, $member_version=false) {
         if ($count > 0)
             continue;
 
+        // Filter out FYI articles (OCEEBMS-338).
+        $query = db_select('ebms_article_state', 's')
+            ->condition('s.article_id', $result->article_id)
+            ->condition('s.topic_id', $result->topic_id)
+            ->condition('s.active_status', 'A');
+        $query->join('ebms_article_state_type', 't', 't.state_id = s.state_id');
+        $query->condition('t.state_text_id', 'FYI');
+        $count = $query->countQuery()->execute()->fetchField();
+        if ($count > 0)
+            continue;
+
         // Collect the list of reviewers assigned to the article.
         $query = db_select('users', 'u')->fields('u', array('name'));
         $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
@@ -5644,8 +6522,8 @@ function pdq_ebms_board_members_last_login() {
     foreach ($results as $result) {
         $last_login = $result->login ? $result->last : '';
         $board = $result->board;
-        if ($board == 'Cancer Complementary and Alternative Medicine')
-            $board = 'Cancer CAM';
+        if ($board == 'Integrative, Alternative, and Complementary Therapies')
+            $board = 'IACT';
         elseif ($board == 'ZZZ')
             $board = 'NO BOARDS';
         $name = $result->name;
@@ -5701,4 +6579,140 @@ function pdq_ebms_board_members_last_login() {
     drupal_add_http_header('Content-transfer-encoding', 'binary');
     $writer->save('php://output');
     exit(0);
+}
+
+function pdq_ebms_missing_from_nlm($form, &$form_state, $request_id) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Citation Management Reports', 'reports/cite'),
+            'Invalid Pubmed IDs',
+        )
+    );
+
+    // Initialize defaults for the form field's values.
+    $check_all = false;
+    $batch = 10000;
+    $delay = 2;
+
+    // Pull request parameters from the database if appropriate.
+    if ($request_id) {
+        $values = EbmsReports::fetch_report_request($request_id);
+        $check_all = $values['check-all'];
+        $batch = $values['batch-size'];
+        $delay = $values['delay'];
+    }
+
+    // Assemble the request form.
+    $form = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'report-form'),
+        'title' => array('#markup' => '<h2>Invalid Pubmed IDs</h2>'),
+        'check-all' => array(
+            '#title' => 'Check All PMIDs?',
+            '#description' => 'Default is to only check active articles.' .
+            ' (Checking all IDs takes a very long time, and may time out.)',
+            '#type' => 'checkbox',
+            '#default_value' => $check_all,
+        ),
+        'batch-size' => array(
+            '#title' => 'Batch Size',
+            '#description' => 'How many IDs to check at one time.',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#default_value' => $batch,
+            '#type' => 'textfield',
+        ),
+        'delay' => array(
+            '#title' => 'Delay',
+            '#description' => 'Number of seconds to wait between requests.',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#default_value' => $delay,
+            '#type' => 'textfield',
+        ),
+        'buttons' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'report-buttons'),
+            'reset' => array(
+                '#type' => 'submit',
+                '#value' => 'Reset',
+            ),
+            'filter' => array(
+                '#type' => 'submit',
+                '#value' => 'Filter',
+            ),
+        ),
+    );
+
+    // Assemble the page where the form lives, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
+                                            'Invalid Pubmed IDs');
+    $page['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'invalid-pubmed-ids-report-top'),
+        'left-nav' => $left_nav,
+        'report-form' => $form,
+    );
+
+    // If we have a submitted report request, add the report under the form.
+    if ($request_id) {
+        try {
+            $report = EbmsReports::lost_by_nlm(!$check_all, $batch, $delay);
+        }
+        catch (Exception $e) {
+            watchdog_exception('reports', $e);
+            drupal_set_message('Unable to retrieve PMID statuses from NLM.',
+                'error');
+            return $page;
+        }
+        $checked = $report->checked;
+        $missing = $report->missing;
+        $count = count($missing);
+        if ($check_all)
+            $checked = "Checked All $checked IDs";
+        else
+            $checked = "Checked $checked Active Articles";
+        $title = "$count Invalid PMIDs ($checked)";
+        $id = 'missing-pmids-title';
+        $pmids = array();
+        foreach ($missing as $pmid) {
+            $ebms_id = db_select('ebms_article', 'a')
+                ->fields('a', array('article_id'))
+                ->condition('source', 'Pubmed')
+                ->condition('source_id', $pmid)
+                ->execute()
+                ->fetchField();
+            if ($ebms_id) {
+                $link = l("EBMS ID $ebms_id", "citations/full/$ebms_id");
+                $pmids[] = "$pmid ($link)";
+            }
+            else
+                $pmids[] = $pmid;
+        }
+        $page['report'] = array(
+            'title' => array(
+                '#markup' =>
+                '<h2 style="clear: both; position: relative" ' .
+                "id='$id'>$title</h2>",
+            ),
+            'list' => array(
+                '#attributes' => array('id' => 'missing-pmids-report'),
+                '#theme' => 'item_list',
+                '#items' => $pmids,
+            ),
+        );
+    }
+    return $page;
+}
+
+function pdq_ebms_missing_from_nlm_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/missing-from-nlm');
+    $values = $form_state['values'];
+    $report = 'Invalid Pubmed IDs';
+    $request_id = EbmsReports::save_report_request($values, $report);
+    drupal_goto('reports/missing-from-nlm/' . $request_id);
 }

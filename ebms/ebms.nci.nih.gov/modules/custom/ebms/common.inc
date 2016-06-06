@@ -315,6 +315,8 @@ class Menu {
             $children[] = new Menu('Manage Documents', 'docs');
         }
         $children[] = new Menu('Manage Summary Topics', 'admin/topics');
+        $children[] = new Menu('Manage Summary Topic Groups',
+                      'admin/topic-groups');
         if ($role != 'librarian') {
             $children[] = new Menu('Manage Groups', 'groups');
             $children[] = new Menu('Print Packets', 'print-packets/run');
@@ -428,9 +430,8 @@ class Menu {
         $menu = new Menu(
             'Travel', 'travel', array(
                 new Menu('Directions', 'travel/directions'),
-                new Menu('Local Travel', 'travel/local-travel'),
-                new Menu('Long Distance Travel',
-                    'travel/long-distance-travel'),
+                new Menu('Policies and Procedures',
+                    'travel/policies-and-procedures'),
                 new Menu('Hotel Request', 'travel/hotel-request'),
                 new Menu('Reimbursement Request',
                     'travel/reimbursement-request'),
@@ -664,6 +665,84 @@ class Journal {
             $journals[$pmid] = new Journal($pmid, $title, $brief);
         }
         return $journals;
+    }
+}
+
+/**
+ * Extension of the core Drupal EntityFieldQuery class.  Used for
+ * filtering meeting events by date and/or type.  By default the
+ * query represented by the object will find all nodes with type
+ * ebms_event, but there are methods for narrowing down the results.
+ *
+ * NOTE: Only those meetings established in the EBMS, not the old
+ *       CMS have the meeting nodes and board type and date fields
+ *       needed for restrict_by_date() and restrict_by_type() to work.
+ *       Earlier meeting events will not be found, much less filtered,
+ *       by methods in this class.
+ */
+class EventQuery extends \EntityFieldQuery {
+
+    /**
+     * Set some defaults for the query object.
+     */
+    public function __construct() {
+        $this->entityCondition('entity_type', 'node')
+            ->propertyCondition('status', 1)
+            ->entityCondition('bundle', 'ebms_event');
+    }
+
+    /**
+     * If the user has asked to filter meetings by date, apply the
+     * appropriate field condition.  It is acceptable for the user
+     * to have specified more general components of the date (for
+     * example, a year and month without a day, or just a year) but
+     * not the other way around (can't have a day without both a
+     * month and year specified, for example).  The form validation
+     * routine will have enforced this assumption.
+     *
+     *  @param  array   $date   Structured array representing the
+     *                          filtering options for this request
+     *
+     *  @return                 True iff query restricted
+     */
+    public function restrict_by_date($params) {
+        $start = $params['date-start']['date'];
+        $end = $params['date-end']['date'];
+        if ($start || $end) {
+            $range = array(
+                strtotime(Util::fill_in_date($start)),
+                strtotime(Util::fill_in_date($end, true)),
+            );
+            $field = 'field_datespan';
+            $this->fieldCondition($field, 'value', $range, 'BETWEEN');
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * If the user wants to filter meetings by whether they were board-
+     * specific or subgroup-specific, apply the appropriate conditions
+     * by detecting whether a board (or subgroup) has been specified
+     * for the event.  There is an event type field in the event node,
+     * but it's used for something else (designating whether a meeting
+     * is face-to-face, or teleconferenced).
+     *
+     * 2013-03-11 (TIR 2446): use the new event_category field,
+     * instead of checking for boards or subgroups linked to the
+     * event.  Note that this may result in contradictory results
+     * (if the user selects an event category value which conflicts
+     * with the type of group (board or subgroup) linked to the
+     * event.
+     *
+     *  @param  string  $type    If a type has been specified, it will
+     *                           be "board" or "subgroup."
+     *
+     *  @return                 None
+     */
+    public function restrict_by_type($type) {
+        if ($type)
+            $this->fieldCondition('field_event_category', 'value', $type, '=');
     }
 }
 
@@ -1182,7 +1261,7 @@ class Util {
      *
      * @param int $board_id the new articles' board id
      */
-    public static function activityArticlesPublished($board_id){
+    public static function activityArticlesPublished($board_id) {
             $message = message_create('activity_new_articles');
             $message->save();
 
@@ -1191,7 +1270,8 @@ class Util {
             $wrapper->save();
     }
 
-    public static function activityEventPublished(\EntityDrupalWrapper &$nodeWrapper) {
+    public static function activityEventPublished($nodeWrapper) {
+
         if ($nodeWrapper->type->value() != 'ebms_event' ||
             !$nodeWrapper->status->value())
             return;
@@ -1206,7 +1286,8 @@ class Util {
         $wrapper->save();
     }
 
-    public static function activityEventCancelled(\EntityDrupalWrapper &$nodeWrapper) {
+    public static function activityEventCancelled($nodeWrapper) {
+
         if ($nodeWrapper->type->value() != 'ebms_event' ||
             !$nodeWrapper->status->value())
             return;
@@ -1222,7 +1303,8 @@ class Util {
     }
 
 
-    public static function activityEventChanged(\EntityDrupalWrapper &$nodeWrapper) {
+    public static function activityEventChanged($nodeWrapper) {
+
         if ($nodeWrapper->type->value() != 'ebms_event' ||
             !$nodeWrapper->status->value())
             return;
@@ -1237,7 +1319,8 @@ class Util {
         $wrapper->save();
     }
 
-    public static function activityAgendaPublished(\EntityDrupalWrapper &$nodeWrapper) {
+    public static function activityAgendaPublished($nodeWrapper) {
+
         if ($nodeWrapper->type->value() != 'ebms_event' ||
             !$nodeWrapper->status->value())
             return;
@@ -1252,7 +1335,8 @@ class Util {
         $wrapper->save();
     }
 
-    public static function activityEventType(\EntityDrupalWrapper &$nodeWrapper) {
+    public static function activityEventType($nodeWrapper) {
+
         if ($nodeWrapper->type->value() != 'ebms_event' ||
             !$nodeWrapper->status->value())
             return;
@@ -1273,13 +1357,14 @@ class Util {
         $wrapper->save();
     }
 
-    public static function activityPacketCreated($name, $reviewers){
+    public static function activityPacketCreated($name, $reviewers, $packet_id) {
             $message = message_create('activity_new_packet');
             $message->save();
 
             $wrapper = entity_metadata_wrapper('message', $message);
             $wrapper->field_title->set($name);
             $wrapper->field_individuals->set($reviewers);
+            $wrapper->field_packet_id->set($packet_id);
             $wrapper->save();
     }
 
@@ -1291,6 +1376,7 @@ class Util {
             'title' => null,
             'account' => null,
             'board' => null,
+            'url' => null,
             'topics' => array(),
         );
 
@@ -1298,6 +1384,7 @@ class Util {
         $account = $args['account'];
         $board = $args['board'];
         $topics = $args['topics'];
+        $url = substr(parse_url($args['url'], PHP_URL_PATH), 1); // OCEEBMS-296
 
         // check input arguments
         // reject if no title, or no board and no valid topics
@@ -1311,7 +1398,6 @@ class Util {
         // dig through any topics for board as well
         foreach ($topics as $topic){
             $topicBoard = \Ebms\getTopicBoard($topic);
-
             $boards[$topicBoard] = $topicBoard;
         }
 
@@ -1335,12 +1421,12 @@ class Util {
         $wrapper = entity_metadata_wrapper('message', $message);
         $wrapper->field_title->set($title);
         $wrapper->field_individuals->set($individuals);
+        $wrapper->field_summary_url->set($url); // OCEEBMS-296
         $wrapper->save();
     }
 
-    public static function wrapEventMetadata(\EntityDrupalWrapper $nodeWrapper,
-        \EntityDrupalWrapper $msgWrapper)
-    {
+    public static function wrapEventMetadata($nodeWrapper, $msgWrapper) {
+
         // retrieve title
         $msgWrapper->field_title->set($nodeWrapper->title->value());
 
@@ -1364,8 +1450,11 @@ class Util {
 
         // collect inhouse staff, board members, and individuals data
         $node_individuals = $nodeWrapper->field_individuals->value();
-        if($node_individuals)
+        if ($node_individuals)
             $msgWrapper->field_individuals->set($node_individuals);
+
+        // Plug in the event ID (OCEEBMS-296).
+        $msgWrapper->field_event_id->set($nodeWrapper->get("nid")->value());
     }
 
     /**
@@ -2319,6 +2408,31 @@ class Util {
 
         // No resolution needed (or maybe not possible)
         return $usr;
+    }
+
+    /**
+     * Location where packet print jobs are put.
+     *
+     *  @param int $print_job_id
+     *    If supplied, return a fully qualified filename incorporating job id
+     *    but not the ".tar" which is added by the tar procedure.
+     *
+     *    Else just return the directory name where print tar files go.
+     *
+     *  @return string
+     *    Directory or filename.
+     */
+    public static function get_packet_print_path($print_job_id=null) {
+
+        $base_path = '/tmp/ebms/PrintJobs';
+        if (!is_null($print_job_id)) {
+            // File name
+            // Note: Don't test job_id range.  It's probably a string
+            return (sprintf("$base_path/PrintJob%05d", $print_job_id));
+        }
+
+        // Directory name
+        return $base_path;
     }
 }
 

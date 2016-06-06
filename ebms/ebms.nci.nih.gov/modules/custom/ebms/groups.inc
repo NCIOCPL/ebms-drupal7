@@ -101,6 +101,9 @@ class EbmsGroups {
         db_delete('ebms_ad_hoc_group_member')
             ->condition('group_id', $this->group_id)
             ->execute();
+        db_delete('ebms_ad_hoc_group_board')
+            ->condition('group_id', $this->group_id)
+            ->execute();
         db_delete('ebms_ad_hoc_group')
             ->condition('group_id', $this->group_id)
             ->execute();

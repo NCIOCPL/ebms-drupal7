@@ -22,7 +22,7 @@ function pdq_ebms_roster() {
         'supportive-care' => 'Supportive and Palliative Care',
         'screening-prevention' => 'Screening and Prevention',
         'cancer-genetics' => 'Cancer Genetics',
-        'cancer-cam' => 'Cancer Complementary and Alternative Medicine',
+        'iact' => 'Integrative, Alternative, and Complementary Therapies',
     );
     foreach ($boards as $link => $name)
         $links[$link] = array(

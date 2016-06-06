@@ -350,17 +350,20 @@ function calendar_node_form_alter(&$form, &$form_state) {
     // Date module ignores #datepicker_options when the type is date_combo
     // (see https://www.drupal.org/node/2324567). So we have to sneak in
     // a patch to the options on the run.
+    // Be careful to set the option only once per field (OCEEBMS-336).
     $js = '
 jQuery(function() {
     var start = jQuery("#edit-field-datespan-und-0-value-datepicker-popup-0");
     var end = jQuery("#edit-field-datespan-und-0-value2-datepicker-popup-0");
     start.focus(function() {
-        jQuery(this).datepicker("option", "changeMonth", false)
-                    .datepicker("option", "changeYear", false);
+        if (jQuery(this).datepicker("option", "changeMonth"))
+            jQuery(this).datepicker("option", "changeMonth", false)
+                        .datepicker("option", "changeYear", false);
     });
     end.focus(function() {
-        jQuery(this).datepicker("option", "changeMonth", false)
-                    .datepicker("option", "changeYear", false);
+        if (jQuery(this).datepicker("option", "changeMonth"))
+            jQuery(this).datepicker("option", "changeMonth", false)
+                        .datepicker("option", "changeYear", false);
     });
 });';
     drupal_add_js($js, 'inline');

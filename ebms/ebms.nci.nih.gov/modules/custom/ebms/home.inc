@@ -206,7 +206,6 @@ class EbmsHomePage {
         $nada = '<p>No recent meeting activity</p>';
         $view = views_get_view('recent_activity');
         $content = $view ? $view->preview('meeting_activity_block') : $nada;
-        //pdq_ebms_debug('MEETING ACTIVITY', array($view, $content));
         return $this->activity_box2($id, $title, $img, $content);
         return array(
             '#markup' => "<h3>Recent Activity</h3>" . $display,
@@ -243,7 +242,6 @@ class EbmsHomePage {
         $nada = '<p>No recent document activity</p>';
         $view = views_get_view('recent_activity');
         $content = $view ? $view->preview('document_activity_block') : $nada;
-        //pdq_ebms_debug('MEETING ACTIVITY', array($view, $content));
         return $this->activity_box2($id, $title, $img, $content);
         $items = array();
         switch ($this->role) {
@@ -417,8 +415,8 @@ class EbmsHomePage {
             array('Supportive and Palliative Care', 'supportive-care-board'),
             array('Screening and Prevention', 'screening-prevention-board'),
             array('Cancer Genetics', 'cancer-genetics-board'),
-            array('Cancer Complementary and Alternative Medicine',
-                'cancer-cam-board'),
+            array('Integrative, Alternative, and Complementary Therapies',
+                   'iact-board'),
         );
         foreach ($boards as $board)
             $items[] = l($board[0], $base . $board[1], $attrs);

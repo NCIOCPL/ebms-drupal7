@@ -86,16 +86,24 @@ div.review-board input { margin-left: 10px; margin-right: 10px; }
 #member-review div.links { margin-left: 12px; }
 h3.pkt-rvwr-files { margin-top: 40px; border-bottom: solid 1px #696559; }
 #member-packet #reviewer-uploads td { padding-left: 5px; width: auto; }
-#pdq-ebms-edit-packet-form #packet-article-block label { width: 650px; }
-#pdq-ebms-edit-packet-form #packet-article-block a {
+#pdq-ebms-edit-packet-form .packet-article-block label { width: 650px; }
+#pdq-ebms-edit-packet-form .packet-article-block a {
     float: left; border: solid 1px #696559; border-radius: 7px; padding: 7px;
 }
-#pdq-ebms-edit-packet-form #packet-article-block label a {
+#pdq-ebms-edit-packet-form .packet-article-block label a {
     float: none; border: none; padding: 0;
 }
-#pdq-ebms-edit-packet-form #packet-article-block a:hover {
+#pdq-ebms-edit-packet-form .packet-article-block a:hover {
     border-color: #a90101; color: #a90101; text-decoration: none;
 }
+
+/* OCEEBMS-161 */
+#pdq-ebms-edit-packet-form .topic-group {
+    margin-top: 30px; margin-left: -12px; font-weight: bold;
+}
+
+/* OCEEBMS-335 */
+#member-packet h3 { color: #696559; }
 
 /* ************ For filter forms at top ************* */
 #reviewed-packets-filter-form .container-inline-date .date-padding,
@@ -141,3 +149,9 @@ p.archived-review-header { border: 1px solid black; font-style: italic; }
 #reviewed-packets-filter-form .button-wrapper { margin-top: 30px; }
 #reviewed-packets-filter-form #edit-date-limits { margin-bottom: 15px; }
 #reviewed-packet-list { clear: both; }
+
+/* OCEEBMS-350 */
+#reviewed-packet-list .starred-packet,
+#reviewed-packet-list .unstarred-packet { font-size: 16pt; cursor: pointer; }
+#reviewed-packet-list .starred-packet { color: #74a5d7; }
+#reviewed-packet-list .unstarred-packet { color: #c1c1c1; }

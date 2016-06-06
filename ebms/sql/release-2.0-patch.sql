@@ -1,5 +1,3 @@
-USE oce_ebms;
-
 UPDATE ebms_review_rejection_value
    SET value_pos = 16
  WHERE value_id = 15;

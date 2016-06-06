@@ -103,6 +103,11 @@ form#search-db-form .form-item.form-type-checkbox:not(#foo) label {
     align: right; margin-top: 0; font-weight: normal;
 }
 
+/* OCEEBMS-295 */
+#search-db-form .form-item.form-item-author-pos label.label-508 {
+    font-weight: normal; margin-top: -1px;
+}
+
 /* Clears for the request form. */
 #search-db-form > div > div,
 #search-db-form fieldset,
@@ -168,6 +173,11 @@ form .form-radios .form-type-radio,
 
 /* Align save-as-default with other widgets */
 .form-item-save-as-default {
+    padding-left: 460px;
+}
+
+/* OCEEBMS-209 */
+#search-db-form .checkbox-line.board-member-line {
     padding-left: 460px;
 }
 

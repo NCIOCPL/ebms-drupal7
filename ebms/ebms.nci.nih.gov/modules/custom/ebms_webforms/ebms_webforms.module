@@ -77,8 +77,11 @@ function ebms_webforms_webform_submission_render_alter(&$renderable) {
             if (pdq_ebms_empty_travel_field($renderable[$key]['#value']))
                 unset($renderable[$key]);
         }
+        // Added check for date fields - OCEEBMS-256
         elseif (is_array($renderable[$key]['#value'])) {
-            if (empty($renderable[$key]['#value']) || empty($renderable[$key]['#value'][0]))
+            if (empty($renderable[$key]['#value']) ||
+                empty($renderable[$key]['#value'][0]) &&
+                empty($renderable[$key]['#value']['year']))
                 unset($renderable[$key]);
         }
     }
@@ -1128,10 +1131,11 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
     // Override the $header variable set above.
     if ($isReimbursementRequest)
         $header = array(
-            array('data' => 'Submitted', 'field' => 's.submitted'),
+            array('data' => 'Submitted', 'field' => 's.submitted',
+                  'sort' => 'desc'), // sort added by OCEEBMS-327
             array('data' => 'User', 'field' => 'u.name'),
             array('data' => 'Meeting', 'field' => 'meeting_with_date'),
-            'Type of Travel',
+            // 'Type of Travel', removed by OCEEBMS-327
             'Transportation', 'Parking and Tolls', 'Hotel', 'Amount',
             'Meals and Incidentals', 'Honorarium',
             'Reimbursement', 'Comments',
@@ -1157,9 +1161,13 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
     $query = $query->extend('TableSort');
     $query->orderByHeader($header);
     $query->fields('s', array('sid'));
-    if ($pager_count) {
-        $query = $query->extend('PagerDefault');
-        $query->limit($pager_count);
+
+    // Fix pager's broken VIEW ALL (OCEEBMS-254)
+    if (!isset($_GET['pager']) || $_GET['pager'] != 'off') {
+        if ($pager_count) {
+            $query = $query->extend('PagerDefault');
+            $query->limit($pager_count);
+        }
     }
 
     // Collect the submission IDs we want in the right order.
@@ -1187,7 +1195,8 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
         $cell[] = format_date($submission->submitted, 'custom', $format);
         $cell[] = theme('username', array('account' => $submission));
-
+        if (count($rows) == 0)
+            pdq_ebms_debug('WEBFORM COMPONENTS', $node->webform['components']);
         // Generate a cell for each component.
         foreach ($node->webform['components'] as $component) {
 

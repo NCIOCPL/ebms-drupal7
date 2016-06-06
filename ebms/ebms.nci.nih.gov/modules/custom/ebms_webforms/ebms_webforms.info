@@ -10,6 +10,6 @@ dependencies[] = ebms_forums
 files[] = ebms_webforms.module
 
 
-version = "7.x-1.01"
+version = "7.x-3.2"
 core = "7.x"
 

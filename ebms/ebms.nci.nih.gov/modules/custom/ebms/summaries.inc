@@ -188,22 +188,15 @@ class EbmsSummaries {
         }
 
         // Assemble and return the render array for the page.
-        // The query parameter "se" controls which sections of the
-        // subpage (s) are expanded (e): each section is represented
-        // in the value of the parameter by a single character:
-        //   c - Cancer.gov summaries section
-        //   n - Section for documents uploaded by NCI
-        //   m - Section for documents uploaded by board Members
-        $expanded = isset($this->parms['se']) ? $this->parms['se'] : '';
         $url = "$url/page/$this->board_id/$this->subpage_id";
         return array(
             'header' => array(
                 '#type' => 'markup',
                 '#markup' => "<h2 class='low-key'>$page_name</h2>",
             ),
-            'summaries' => $this->cg_summaries($url, $expanded),
-            'nci-docs' => $this->nci_docs($url, $expanded),
-            'member-docs' => $this->member_docs($url, $expanded),
+            'summaries' => $this->cg_summaries($url),
+            'nci-docs' => $this->nci_docs($url),
+            'member-docs' => $this->member_docs($url),
         );
     }
 
@@ -214,47 +207,14 @@ class EbmsSummaries {
      *   Passed:
      *
      *     $url       how we get back to this sub-page
-     *
-     *     $expanded  string containing one letter for each section
-     *                of the sub-page which has been expanded:
-     *                'c' for cancer.gov summaries; 'n' for
-     *                summary documents posted by NCI; or 'm'
-     *                for documents returned by board members.
      */
-    private function cg_summaries($url, $expanded) {
+    private function cg_summaries($url) {
 
         // Local convenience variables.
         $admin = $this->role == 'admin';
         $parms = $this->parms;
 
-        // If the section is collapsed, just show its title, with a link
-        // to expand it.
-        if (strpos($expanded, 'c') === false) {
-            $parms['se'] = $expanded . 'c';
-            $options = array('query' => $parms, 'html' => true);
-            $label = $this->collapsed('Cancer.gov Summaries');
-            $link = l($label, $url, $options);
-            return array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'id' => 'cg-summaries-block',
-                    'class' => array('collapsed', 'clearfix'),
-                ),
-                'section' => array(
-                    '#prefix' => '<div class="float-left">',
-                    '#suffix' => '</div>',
-                    '#type' => 'markup',
-                    '#markup' => "<h3 class='collapsed'>$link</h3>",
-                ),
-            );
-        }
-
-        // If we get here, the section is expanded.  Create the beginning
-        // of the render array for the block.
-        $parms['se'] = str_replace('c', '', $expanded);
-        $options = array('query' => $parms, 'html' => true);
-        $label = $this->expanded('Cancer.gov Summaries');
-        $link = l($label, $url, $options);
+        // Create the beginning of the render array for the block.
         $block = array(
             'wrapper' => array(
                 '#type' => 'container',
@@ -269,7 +229,7 @@ class EbmsSummaries {
                     ),
                     'heading' => array(
                         '#type' => 'markup',
-                        '#markup' => "<h3 class='expanded'>$link</h3>",
+                        '#markup' => '<h3>Cancer.gov Summaries</h3>',
                     ),
                 ),
             ),
@@ -352,48 +312,15 @@ class EbmsSummaries {
      *   Passed:
      *
      *     $url       how we get back to this sub-page
-     *
-     *     $expanded  string containing one letter for each section
-     *                of the sub-page which has been expanded:
-     *                'c' for cancer.gov summaries; 'n' for
-     *                summary documents posted by NCI; or 'm'
-     *                for documents returned by board members.
      */
-    private function nci_docs($url, $expanded) {
+    private function nci_docs($url) {
 
         // Local convenience variables.
         $admin = $this->role == 'admin';
         $parms = $this->parms;
 
-        // If the section is collapsed, just show its title, with a link
-        // to expand it.
-        if (strpos($expanded, 'n') === false) {
-            $parms['se'] = $expanded . 'n';
-            $options = array('query' => $parms, 'html' => true);
-            $label = $this->collapsed('Documents Posted By NCI');
-            $link = l($label, $url, $options);
-            return array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'id' => 'nci-docs-block',
-                    'class' => array('collapsed', 'clearfix'),
-                ),
-                'section' => array(
-                    '#prefix' => '<div class="float-left">',
-                    '#suffix' => '</div>',
-                    '#type' => 'markup',
-                    '#markup' => "<h3 class='collapsed'>$link</h3>",
-                ),
-            );
-        }
-
-        // If we get here, the section is expanded.  Create the beginning
-        // of the render array for the block.  We use two wrappers: one
-        // to control spacing, one to wrap floats.
-        $parms['se'] = str_replace('n', '', $expanded);
-        $options = array('query' => $parms, 'html' => true);
-        $label = $this->expanded('Documents Posted By NCI');
-        $link = l($label, $url, $options);
+        // Create the beginning of the render array for the block.  We
+        // use two wrappers: one to control spacing, one to wrap floats.
         $block = array(
             'outer' => array(
                 '#type' => 'container',
@@ -414,7 +341,7 @@ class EbmsSummaries {
                         ),
                         'heading' => array(
                             '#type' => 'markup',
-                            '#markup' => "<h3 class='expanded'>$link</h3>",
+                            '#markup' => "<h3>Documents Posted By NCI</h3>",
                         ),
                     ),
                 ),
@@ -467,46 +394,13 @@ class EbmsSummaries {
      *   Passed:
      *
      *     $url       how we get back to this sub-page
-     *
-     *     $expanded  string containing one letter for each section
-     *                of the sub-page which has been expanded:
-     *                'c' for cancer.gov summaries; 'n' for
-     *                summary documents posted by NCI; or 'm'
-     *                for documents returned by board members.
      */
-    private function member_docs($url, $expanded) {
+    private function member_docs($url) {
 
-        // If the section is collapsed, just show its title, with a link
-        // to expand it.
-        if (strpos($expanded, 'm') === false) {
-            $parms = $this->parms;
-            $parms['se'] = $expanded . 'm';
-            $options = array('query' => $parms, 'html' => true);
-            $label = $this->collapsed('Documents Posted by Board Members');
-            $link = l($label, $url, $options);
-            return array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'id' => 'member-docs-block',
-                    'class' => array('collapsed', 'clearfix'),
-                ),
-                'section' => array(
-                    '#prefix' => '<div class="float-left">',
-                    '#suffix' => '</div>',
-                    '#type' => 'markup',
-                    '#markup' => "<h3 class='collapsed'>$link</h3>",
-                ),
-            );
-        }
-
-        // If we get here, the section is expanded.  Create the beginning
-        // of the render array for the block.  We use two wrappers: one
-        // to control spacing, one to wrap floats.
+        // Create the beginning of the render array for the block.  We use
+        // two wrappers: one to control spacing, one to wrap floats.
         $admin = $this->role == 'admin';
-        $parms['se'] = str_replace('m', '', $expanded);
-        $options = array('query' => $parms, 'html' => true);
-        $label = $this->expanded('Documents Posted By Board Members');
-        $link = l($label, $url, $options);
+        $label = 'Documents Posted By Board Members';
         $block = array(
             'outer' => array(
                 '#type' => 'container',
@@ -527,7 +421,7 @@ class EbmsSummaries {
                         ),
                         'heading' => array(
                             '#type' => 'markup',
-                            '#markup' => "<h3 class='expanded'>$link</h3>",
+                            '#markup' => "<h3>$label</h3>",
                         ),
                     ),
                 ),
@@ -702,7 +596,6 @@ class EbmsSummaries {
                 $parms = $this->parms;
                 $action = $doc->archived ? 'revive' : 'archive';
                 $parms[$action] = $code . '-' . $doc->doc_id;
-                pdq_ebms_debug('ARCHIVE BUTTON', array($code, $parms));
                 $href = url($url, array('query' => $parms));
                 $type = 'type="checkbox"';
                 $onclick = 'onclick=\'location.href="' . $href . '"\'';
@@ -732,19 +625,23 @@ class EbmsSummaries {
     }
 
     /**
-     * Show a menu of boards of which the user is a member.  Each board
-     * has a link to show that board's Summaries page with the "Summaries"
-     * section expanded, as well as a link to show the board's Summaries
-     * page with the "Supporting Documents" section expanded.
+     * Show a menu of boards of which the user is a member.
      */
     private function show_boards() {
 
         // Override the default Drupal breadcrumb system.
         drupal_set_breadcrumb(array('Summaries'));
 
+        // Prepare for links to board-specific summary pages.
+        $base = EbmsSummaries::$url . '/board/';
+
         // Make sure the user is associated with at least one board.
         if (count($this->user->boards) < 1)
             return '<p>Current user has no boards.</p>';
+
+        // Skip this page if there's only one board (OCEEBMS-309).
+        if (count($this->user->boards) == 1)
+            drupal_goto($base . $this->user->boards[0]);
 
         // Get the list of all the boards to which this user belongs.
         $results = db_select('ebms_board', 'b')
@@ -754,35 +651,13 @@ class EbmsSummaries {
             ->execute();
 
         // Loop through the results of the query, adding the links to
-        // jump to the page for a specific board, possibly with one
-        // of the sections expanded.
-        $base = EbmsSummaries::$url . '/board/';
+        // jump to the page for a specific board.
         $boards = array();
         foreach ($results as $b) {
             $url = "$base$b->board_id";
             $options = array('html' => true, 'query' => array());
-            $board_name = htmlspecialchars($b->board_name);
-            $board_link = l($board_name, $url, $options);
-            $options['query']['be'] = 's';
-            $label = $this->collapsed('Summaries');
-            $s_link = l($label, $url, $options);
-            $options['query']['be'] = 'd';
-            $label = $this->collapsed('Supporting Documents');
-            $d_link = l($label, $url, $options);
-            $boards[$b->board_id] = array(
-                'board-link' => array(
-                    '#type' => 'markup',
-                    '#markup' => "<h2 class='low-key'>$board_link</h2>",
-                ),
-                'expand summaries' => array(
-                    '#type' => 'markup',
-                    '#markup' => "<h3 class='h3-first collapsed'>$s_link</h3>",
-                ),
-                'expand supporting docs' => array(
-                    '#type' => 'markup',
-                    '#markup' => "<h3 class='h3-last collapsed'>$d_link</h3>",
-                ),
-            );
+            $board_name = htmlspecialchars(strtoupper($b->board_name));
+            $boards[] = l($board_name, $url, $options);
         }
 
         // Assemble the render array for the page and return it.
@@ -795,6 +670,8 @@ class EbmsSummaries {
                 'view summaries with recent changes from other Board ' .
                 'members. You may also post other documents related to ' .
                 'the summaries.</p>';
+        $instructions .= '<p>Select a board-specific summaries page.</p>';
+        $instructions = '<p><em>Select a board.</em></p>';
         return array(
             'page' => array(
                 '#type' => 'container',
@@ -802,7 +679,11 @@ class EbmsSummaries {
                 'heading' => array(
                     '#markup' => '<h2>Manage Summaries</h2>' . $instructions
                 ),
-                'boards' => $boards,
+                'boards' => array(
+                    '#theme' => 'item_list',
+                    '#items' => $boards,
+                    '#attributes' => array('class' => array('no-bullets')),
+                ),
             ),
         );
     }
@@ -811,8 +692,7 @@ class EbmsSummaries {
      * Displays a page for a single board of which the user is a member,
      * with a section showing a menu of subpages for that board's
      * summaries, and a section listing supporting documents related
-     * to all the summaries for this board.  Both sections are
-     * collapsible (and are collapsed by default).
+     * to all the summaries for this board.
      */
     private function show_board() {
 
@@ -868,6 +748,17 @@ class EbmsSummaries {
             unset($this->parms['revive']);
         }
 
+        // If the user is a board member, explain the page.
+        $instructions = '';
+        if ($this->role == 'member')
+            $instructions = '<p style="font-style: italic">Access the pages ' .
+                'below to view the current ' .
+                'summaries on Cancer.gov, view and download Word versions ' .
+                'of the summaries, post summaries with your changes, and ' .
+                'view summaries with recent changes from other Board ' .
+                'members. You may also post other documents related to ' .
+                'the summaries.</p>';
+
         // Assemble the parts of the page.
         return array(
             'page' => array(
@@ -875,7 +766,8 @@ class EbmsSummaries {
                 '#attributes' => array('id' => 'summaries'),
                 'heading' => array(
                     '#type' => 'markup',
-                    '#markup' => "<h2 class='low-key'>$board_name</h2>",
+                    '#markup' => "<h2 class='low-key'>$board_name</h2>" .
+                    $instructions,
                 ),
                 'subpages' => $this->subpage_menu(),
                 'supporting docs' => $this->supporting_docs(),
@@ -885,44 +777,12 @@ class EbmsSummaries {
 
     /**
      * Assembles the menu of summaries subpages for a given board.
-     * The menu will be collapsed by default.
      *
-     *  @return  array     Drupal render array for the (possibly
-     *                     collapsed) list of links to subpages
-     *                     for a single board
+     *  @return  array     Drupal render array for the list of
+     *                     links to subpages for a single board
      */
     private function subpage_menu() {
 
-        // The 'be' parameter in the query request conveys which
-        // sections of the Board (b) page are Expanded (e).  If
-        // the parameter's value contains the letter 's' anywhere
-        // then the menu of Subpages is expanded.  By default
-        // it won't be, and we'll just show the header for the
-        // Subpages section collapsed, with a link to expand it.
-        $query = $this->parms;
-        $expanded = isset($query['be']) ? $query['be'] : '';
-        if (strpos($expanded, 's') === false) {
-            $url = EbmsSummaries::$url . '/board/' . $this->board_id;
-            $query['be'] = $expanded . 's';
-            $options = array('query' => $query, 'html' => true);
-            $label = $this->collapsed('Summaries');
-            $link = l($label, $url, $options);
-            return array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'id' => 'subpage-menu-block',
-                    'class' => array('collapsed', 'clearfix'),
-                ),
-                'section' => array(
-                    '#prefix' => '<div class="float-left">',
-                    '#suffix' => '</div>',
-                    '#type' => 'markup',
-                    '#markup' => "<h3 class='collapsed'>$link</h3>",
-                ),
-            );
-        }
-
-        // If we get here, the Subpage menu section has been expanded.
         // Find all of the summary subpages created for this board and
         // create a list of links to those pages.
         // 2013-01-13 (TIR 2173): add links for editing and archiving
@@ -966,8 +826,6 @@ class EbmsSummaries {
                     '"><img title="Delete" src="' . $del_icon . '" /></a>';
                 $action_links = '<span class="sp-action-links">' .
                     $del_link .
-                    //l("<img title='Delete' src='$del_icon' />", $board_url,
-                    //    $del_opts) .
                     l("<img title='Edit' src='$edit_icon' />", $board_url,
                         $edit_opts) .
                     '</span>';
@@ -976,10 +834,6 @@ class EbmsSummaries {
                 $action_links = '';
             $pages[] = $action_links . $link;
         }
-        $query['be'] = str_replace('s', '', $expanded);
-        $options = array('query' => $query, 'html' => true);
-        $label = $this->expanded('Summaries');
-        $link = l($label, $board_url, $options);
 
         // Put together the Drupal render array for the list of links
         // to summary subpages.
@@ -997,7 +851,7 @@ class EbmsSummaries {
                     ),
                     'heading' => array(
                         '#type' => 'markup',
-                        '#markup' => "<h3 class='expanded'>$link</h3>",
+                        '#markup' => "<h3>Summaries</h3>",
                     ),
                     'links' => array(
                         '#theme' => 'item_list',
@@ -1039,52 +893,15 @@ class EbmsSummaries {
     /**
      * Assembles the list of supporting documents uploaded for a particular
      * board.  These are documents which are not specific to any of the
-     * board's summary subpages.  The list will be collapsed by default.
+     * board's summary subpages.
      *
-     *  @return  array     Drupal render array for the (possibly
-     *                     collapsed) list of links to supporting
-     *                     documents for a single board
+     *  @return  array     Drupal render array for the list of links to
+     *                     supporting documents for a single board
      */
     private function supporting_docs() {
 
-        // The 'be' parameter in the query request conveys which
-        // sections of the Board (b) page are Expanded (e).  If
-        // the parameter's value contains the letter 'd' anywhere
-        // then the list of supporting documents is expanded.  By
-        // default it won't be, and we'll just show the header for
-        // the Supporting Documents  section collapsed, with a link
-        // to expand it.
-        $parms = $this->parms;
-        $expanded = isset($parms['be']) ? $parms['be'] : '';
-        $url = EbmsSummaries::$url . '/board/' . $this->board_id;
-        if (strpos($expanded, 'd') === false) {
-            $parms['be'] = $expanded . 'd';
-            $options = array('query' => $parms, 'html' => true);
-            $label = $this->collapsed('Supporting Documents');
-            $link = l($label, $url, $options);
-            return array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'id' => 'supporting-docs-block',
-                    'class' => array('float-clear', 'collapsed'),
-                ),
-                'section' => array(
-                    '#prefix' => '<div class="float-left">',
-                    '#suffix' => '</div>',
-                    '#type' => 'markup',
-                    '#markup' => "<h3 class='collapsed'>$link</h3>",
-                ),
-            );
-        }
-
-        // If we get here, the Supporting Documents section has been
-        // expanded.  Assemble a table showing those documents.  We
-        // start with a header line which has the title of the section
-        // as a link for collapsing the section.
-        $parms['be'] = str_replace('d', '', $expanded);
-        $options = array('query' => $parms, 'html' => true);
-        $label = $this->expanded('Supporting Documents');
-        $link = l($label, $url, $options);
+        // Assemble a table showing those documents.  We start with
+        // a header line which has the title of the section.
         $block = array(
             'wrapper' => array(
                 '#type' => 'container',
@@ -1099,7 +916,7 @@ class EbmsSummaries {
                     ),
                     'heading' => array(
                         '#type' => 'markup',
-                        '#markup' => "<h3 class='expanded'>$link</h3>",
+                        '#markup' => "<h3>Supporting Documents</h3>",
                     ),
                 ),
             ),
@@ -1163,8 +980,9 @@ class EbmsSummaries {
         // see supporting documents which have been archived, and
         // to control which supporting documents are archived.
         if ($admin) {
-            $sa_parm = isset($parms['sa']) ? $parms['sa'] : '';
+            $url = EbmsSummaries::$url . '/board/' . $this->board_id;
             $parms = $this->parms;
+            $sa_parm = isset($parms['sa']) ? $parms['sa'] : '';
             if (strpos($sa_parm, 's') === false) {
                 $parms['sa'] = $sa_parm . 's';
                 $title = 'Show Archived Documents';
@@ -1326,13 +1144,6 @@ class EbmsSummaries {
         foreach ($results as $doc)
             $picklist[] = $doc;
         return $picklist;
-    }
-
-    private static function collapsed($title) {
-        return "<span>$title</span> &nbsp; +";
-    }
-    private static function expanded($title) {
-        return "<span>$title</span> &nbsp; &ndash;";
     }
 }
 
@@ -1635,7 +1446,6 @@ function pdq_ebms_edit_summary_page_form_submit($form, &$form_state) {
         db_delete('ebms_summary_page_topic')
             ->condition('page_id', $page_id)
             ->execute();
-        //pdq_ebms_debug('EDITED SUMMARY PAGE', array($page_id, 
         foreach ($topics as $topic) {
             db_insert('ebms_summary_page_topic')
                 ->fields(
@@ -2047,12 +1857,23 @@ function pdq_ebms_nci_doc_form_submit($form, &$form_state) {
             )
         )
         ->execute();
-    
-    // notify of new summary
+
+    // Add notification for new summary.
     $description = $form['doc']['#options'][$doc_id];
-    \Ebms\Util::activityNewSummary(array(
-        'title' => $description, 'board' => $board));
-        
+    $query = db_select('file_managed', 'f');
+    $query->join('ebms_doc', 'd', 'd.file_id = f.fid');
+    $query->condition('d.doc_id', $doc_id);
+    $query->fields('f', array('uri'));
+    $uri = $query->execute()->fetchField();
+    $url = file_create_url($uri);
+    \Ebms\Util::activityNewSummary(array
+        (
+            'title' => $description,
+            'board' => $board,
+            'url' => $url,
+        )
+    );
+
     $parms = drupal_json_decode($form_state['values']['query-parms']);
     $options = array('query' => $parms);
     $url = EbmsSummaries::$url;
@@ -2313,9 +2134,21 @@ function pdq_ebms_member_doc_form_submit($form, &$form_state) {
                 )
             )
             ->execute();
-        
-        // notify of new summary
-        \Ebms\Util::activityNewSummary(array('title' => $filename, 'board' => $board));
+
+        // Add notification for new summary.
+        $uri = db_select('file_managed', 'f')
+            ->fields('f', array('uri'))
+            ->condition('f.fid', $file->fid)
+            ->execute()
+            ->fetchField();
+        $url = file_create_url($uri);
+        \Ebms\Util::activityNewSummary(
+            array(
+                'title' => $filename,
+                'board' => $board,
+                'url' => $url,
+            )
+        );
         drupal_set_message("Posted document $filename.");
     }
     else
@@ -2330,7 +2163,7 @@ function pdq_ebms_member_doc_form_submit($form, &$form_state) {
  * Validation function to ensure that a document was selected for a file
  * upload field (Drupal's validation of required file upload fields is
  * broken).
-
+ *
  *  @param  array   $element      Structured array containing the
  *                                information about the current form
  *                                elements (ignored by this callback)

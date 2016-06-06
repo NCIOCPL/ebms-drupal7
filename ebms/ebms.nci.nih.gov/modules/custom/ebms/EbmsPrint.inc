@@ -7,11 +7,6 @@ namespace Ebms;
 require_once('EbmsArticle.inc');
 require_once('fpdf/fpdf.php');
 
-// Constants for locating system dependent paths
-define ('SERVER_BASE_PATH',     100);
-define ('SERVER_SAVE_PATH',     101);
-define ('SERVER_FILES_PATH',    102);
-
 // The only Drupal file_managed files "scheme" we support
 define ('FILES_SCHEME',     'public://');
 define ('FILES_SCHEME_LEN', strlen(FILES_SCHEME));
@@ -40,51 +35,13 @@ define ('RTM', chr(174));
 $print_job_errmsgs = array();
 
 /**
- * This function was built when I was working outside of Drupal, using
- * the PDO database API.  I could replace this with calls to drupal_realpath(),
- * and may do that, but that's deprecated and I'd like a better way to do it.
- *
- * They're all defined here in order to simplify moving the program to
- * another computer.  This could be migrated to the database for the future,
- * but I don't know if it's any easier to maintain it there across
- * platforms.
- *
- *  @param int $whichPath   One of the SERVER...PATH constants.
- *  @param int $jobId       Used in constructing one of the paths.
- *
- *  @return string          The requested path.
- *
- *  @throws \Exception if unknown constant passed.
- */
-function getServerPath($whichPath, $jobId=null) {
-
-    switch ($whichPath) {
-        case SERVER_FILES_PATH:
-            return Util::get_public_files_path();
-
-        case SERVER_BASE_PATH:
-            // Same on all systems (so far)
-            return '/tmp/ebms/PrintJobs';
-
-        case SERVER_SAVE_PATH:
-            if (is_null($jobId))
-                throw new \Exception('getServerPath: missing requried jobId');
-
-            $baseDir = getServerPath(SERVER_BASE_PATH);
-            return (sprintf("$baseDir/PrintJob%05d", $jobId));
-
-        throw new \Exception("getServerPath: unknown path id=$whichPath");
-    }
-}
-
-/**
  * Get the path to files matching a particular Drupal "uri scheme".
  * Expand this if we ever need other schemes besides "public".
  */
 function getFilesPath($scheme) {
     // Path to our Drupal site's directory for public managed files.
     if (substr($scheme, 0, FILES_SCHEME_LEN) == FILES_SCHEME)
-        return getServerPath(SERVER_FILES_PATH);
+        return Util::get_public_files_path();
 
     throw new \Exception(
      "EbmsPrint.inc.getFilesPath: scheme '$scheme' not currently recognized");
@@ -323,8 +280,8 @@ function createPrintJob() {
     $pj->update();
 
     // Define server pathnames
-    $pj->serverBasePath = getServerPath(SERVER_BASE_PATH);
-    $pj->serverSavePath = getServerPath(SERVER_SAVE_PATH, $pj->print_job_id);
+    $pj->serverBasePath = Util::get_packet_print_path();
+    $pj->serverSavePath = Util::get_packet_print_path($pj->print_job_id);
 
     // Create them - recurses downward as needed to build the tree
     $pj->createServerDirPath($pj->serverSavePath);
@@ -1249,13 +1206,13 @@ class EbmsPrintJob {
 
         // Article IDs
         $idStr = '';
-        if ($artObj == 'Pubmed')
+        if ($artObj->getSource() == 'Pubmed')
             $idStr = "PMID: " . $artObj->getSourceId();
-        $idStr .= "  EBMS ID: $articleId";
+        $idStr .= "      EBMS ID: $articleId";
 
         // Title info
-        $articleTitle = $artObj->getArticleTitle();
-        $brfCitation  = $artObj->getBrfCite();
+        $articleTitle = utf8_decode($artObj->getArticleTitle());
+        $brfCitation  = utf8_decode($artObj->getBrfCite());
 
         // Up to three authors, combined into a single string
         $authors = $artObj->getAuthors(3);
@@ -1273,6 +1230,7 @@ class EbmsPrintJob {
                     $authorStr .= ' ';
                     $authorStr .= $authObj->initials;
                 }
+                $authorStr = utf8_decode($authorStr);
                 ++$authorCnt;
             }
         }

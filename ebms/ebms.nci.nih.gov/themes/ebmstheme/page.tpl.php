@@ -70,6 +70,7 @@ $images = Ebms\IMAGES_DIR;
 $js = Ebms\JS_DIR;
 $user_name = $user_photo = '';
 $menu_class = 'anon';
+$content = render($page['content']);
 if ($logged_in) {
     if ($user->uid == 1)
         $menu_class = 'manager admin';
@@ -81,6 +82,17 @@ if ($logged_in) {
         $menu_class = 'icrdb-manager';
     else
         $menu_class = 'manager';
+
+    /* Make "About PDQ" page user-editable (OCEEBMS-235) */
+    if ($title == "About PDQ\xc2\xae") {
+        $menu_class .= ' about-pdq';
+        $title = "About PDQ<sup>\xc2\xae</sup>";
+        $breadcrumb = '<h2 class="element-invisible">You are here</h2>' .
+            '<div class="breadcrumb">About</div>';
+        $content = str_replace("About PDQ\xc2\xae",
+                   "About PDQ<sup>\xc2\xae</sup>", $content);
+    }
+
     $user_name = htmlspecialchars($user->name);
     if ($user->picture)
         $uri = Ebms\Util::get_file_uri($user->picture);
@@ -135,15 +147,15 @@ if ($logged_in) {
         <!-- Banner strip with approved NCI logo -->
         <div id="banner">
           <div class="section clearfix">
-            <img src="<?php print $images ?>/nciminibannermaster_960.gif"
+            <img src="<?php print $images ?>/oceebms-317.png"
                  alt="National Cancer Institute" usemap="#bannermap" />
             <map id="bannermap" name="bannermap">
-              <area href="http://www.cancer.gov" shape="rect"
-                    coords="10,5,268,33" alt="NCI" />
               <area href="http://www.nih.gov" shape="rect"
-                    coords="684,18,844,27" alt="NIH" />
+                    coords="2,15,50,60" alt="NIH" />
               <area href="http://www.cancer.gov" shape="rect"
-                    coords="855,18,950,30" alt="NCI" />
+                    coords="75,15,300,25" alt="NCI" />
+              <area href="<?php print $front_page; ?>" shape="rect"
+                    coords="75,30,225,60" alt="EBMS" />
             </map>
           </div>
         </div> <!-- /#banner -->
@@ -242,7 +254,7 @@ if ($logged_in) {
 <?php print render($action_links); ?>
                 </ul>
 <?php } /* if action links */ ?>
-<?php print render($page['content']); ?>
+<?php print $content; ?>
 <?php print $feed_icons; ?>
               </div>
             </div> <!-- /#content -->

@@ -13,9 +13,9 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "New [message:field_boards] articles posted.  [message:timestamp:custom:m\/d\/Y]",
-          "format" : "plain_text",
-          "safe_value" : "\u003Cp\u003ENew [message:field_boards] articles posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "value" : "\u003Cp\u003E\u003Ca href=\u0022\/citations\u0022\u003ENew [message:field_boards] articles posted.\u003C\/a\u003E  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003E\u003Ca href=\u0022\/citations\u0022\u003ENew [message:field_boards] articles posted.\u003C\/a\u003E  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }
@@ -31,9 +31,9 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "New event [message:field_title] posted.  [message:timestamp:custom:m\/d\/Y]",
-          "format" : "plain_text",
-          "safe_value" : "\u003Cp\u003ENew event [message:field_title] posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "value" : "\u003Cp\u003ENew event \u003Ca href=\u0022\/event\/[message:field_event_id]\u0022\u003E[message:field_title]\u003C\/a\u003E posted. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003ENew event \u003Ca href=\u0022\/event\/[message:field_event_id]\u0022\u003E[message:field_title]\u003C\/a\u003E posted. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }
@@ -49,9 +49,9 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "[message:field_title] time updated.  [message:timestamp:custom:m\/d\/Y]",
-          "format" : "plain_text",
-          "safe_value" : "\u003Cp\u003E[message:field_title] time updated.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "value" : "\u003Cp\u003E\u003Ca href=\u0022\/event\/[message:field_event_id]\u0022\u003E[message:field_title]\u003C\/a\u003E date or time updated. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003E\u003Ca href=\u0022\/event\/[message:field_event_id]\u0022\u003E[message:field_title]\u003C\/a\u003E date or time updated. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }
@@ -67,9 +67,9 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "Event [message:field_title] cancelled.  [message:timestamp:custom:m\/d\/Y]",
+          "value" : "[message:field_title] cancelled.  [message:timestamp:custom:m\/d\/Y]",
           "format" : "plain_text",
-          "safe_value" : "\u003Cp\u003EEvent [message:field_title] cancelled.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "safe_value" : "\u003Cp\u003E[message:field_title] cancelled.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }
@@ -85,9 +85,9 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "Agenda published for [message:field_title]. [message:timestamp:custom:m\/d\/Y]",
-          "format" : "plain_text",
-          "safe_value" : "\u003Cp\u003EAgenda published for [message:field_title]. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "value" : "\u003Cp\u003EAgenda published for \u003Ca href=\u0022\/event\/[message:field_event_id]\u0022\u003E[message:field_title]\u003C\/a\u003E. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003EAgenda published for \u003Ca href=\u0022\/event\/[message:field_event_id]\u0022\u003E[message:field_title]\u003C\/a\u003E. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }
@@ -103,9 +103,9 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "[message:field_title] changed to [message:field_event_type].  [message:timestamp:custom:m\/d\/Y]",
-          "format" : "plain_text",
-          "safe_value" : "\u003Cp\u003E[message:field_title] changed to [message:field_event_type].  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "value" : "\u003Cp\u003E\u003Ca href=\u0022\/event\/[message:field_event_id]\u0022\u003E[message:field_title]\u003C\/a\u003E changed to [message:field_event_type]. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003E\u003Ca href=\u0022\/event\/[message:field_event_id]\u0022\u003E[message:field_title]\u003C\/a\u003E changed to [message:field_event_type]. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }
@@ -121,9 +121,9 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "[message:field_title] literature posted.  [message:timestamp:custom:m\/d\/Y]",
-          "format" : "plain_text",
-          "safe_value" : "\u003Cp\u003E[message:field_title] literature posted.  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "value" : "\u003Cp\u003E\u003Ca href=\u0022\/packet\/[message:field_packet_id]\u0022\u003E[message:field_title] literature posted.\u003C\/a\u003E [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003E\u003Ca href=\u0022\/packet\/[message:field_packet_id]\u0022\u003E[message:field_title] literature posted.\u003C\/a\u003E [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }
@@ -139,11 +139,11 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "[message:user:name] posted [message:field_title].  [message:timestamp:custom:m\/d\/Y]",
-          "format" : "plain_text",
-          "safe_value" : "\u003Cp\u003E[message:user:name] posted [message:field_title].  [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "value" : "\u003Cp\u003E[message:user:name] posted \u003Ca href=\u0022\/[message:field_summary_url]\u0022\u003E[message:field_title]\u003C\/a\u003E. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
+          "format" : "filtered_html",
+          "safe_value" : "\u003Cp\u003E[message:user:name] posted \u003Ca href=\u0022\/[message:field_summary_url]\u0022\u003E[message:field_title]\u003C\/a\u003E. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }
-  }',
+  }'
 );

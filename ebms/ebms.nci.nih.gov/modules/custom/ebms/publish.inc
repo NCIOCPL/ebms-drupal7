@@ -53,6 +53,7 @@ class EbmsPublish {
                 'cycle' => 0,
                 'board' => 0,
                 'topic' => 0,
+                'sort' => 'author',
             );
             global $user;
             $now = strftime("%Y-%m-%d %H:%M:%S");
@@ -66,15 +67,12 @@ class EbmsPublish {
                     )
                 )
                 ->execute();
-            pdq_ebms_debug('CREATING NEW PUBLISH QUEUE',
-                array($filter_parms, $json, $queue_id));
             drupal_goto(EbmsPublish::$url . '/' . $queue_id);
         }
 
         // Collect the state information for this request.
         $this->queue_id = $queue_id;
         $this->parms = drupal_get_query_parameters();
-        pdq_ebms_debug('PUBLISH CONSTRUCTOR PARMS', $this->parms);
         $this->boards = Ebms\Util::boards();
         $this->topics = array();
         $results = db_select('ebms_topic', 't')
@@ -89,8 +87,6 @@ class EbmsPublish {
             ->execute()
             ->fetchField();
         $this->filter_parms = drupal_json_decode($json);
-        pdq_ebms_debug('PUBLISH QUEUE CONSTRUCTOR',
-            array($this->filter_parms, $json, $queue_id));
     }
 
     /*
@@ -209,7 +205,7 @@ class EbmsPublish {
             ),
             array(
                 'data' => 'Citations',
-                'field' => 'a.last_name',
+                // 'field' => 'a.last_name', removed by OCEEBMS-259
                 'class' => array('col-2'),
             ),
             array(
@@ -230,7 +226,7 @@ class EbmsPublish {
         $query = db_select('ebms_article_state', 's');
 
         // Sorting is by surname of the first author.
-        $query = $query->extend('TableSort');
+        // $query = $query->extend('TableSort');
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'a',
@@ -250,7 +246,23 @@ class EbmsPublish {
             $query->condition('s.board_id', $this->filter_parms['board']);
         if ($this->filter_parms['topic'])
             $query->condition('s.topic_id', $this->filter_parms['topic']);
-        $query->orderByHeader($headers);
+        // $query->orderByHeader($headers);
+        switch ($this->filter_parms['sort']) {
+            case 'core-journals':
+                $query->join('ebms_article', 'ea',
+                    'ea.article_id = s.article_id');
+                $query->leftJoin('ebms_core_journal', 'cj',
+                    'cj.source = ea.source AND ' .
+                    'cj.source_jrnl_id = ea.source_jrnl_id');
+                $query->addExpression('ISNULL(cj.source_jrnl_id)', 'core');
+                $query->orderBy('core');
+                $query->orderBy('ea.jrnl_title');
+                break;
+            case 'author':
+            default:
+                $query->orderBy('a.last_name');
+                break;
+        }
 
         // Find out how many articles match query (not just for this page).
         $counter = $query->countQuery();
@@ -605,6 +617,15 @@ function pdq_ebms_publish_filter_form($form, &$form_state, $control) {
             '#options' => $topics,
             '#default_value' => $control->filter_parms['topic'],
         ),
+        'sort' => array(
+            '#type' => 'select',
+            '#title' => 'Sort Order',
+            '#options' => array(
+                'author' => 'By First Author\'s Surname',
+                'core-journals' => 'By Journal Title, Core Journals First',
+            ),
+            '#default_value' => $control->filter_parms['sort'],
+        ),
         'reset' => array(
             '#type' => 'submit',
             '#value' => 'Reset',
@@ -631,7 +652,6 @@ function pdq_ebms_publish_filter_reset() {
  * form.
  */
 function pdq_ebms_publish_filter_form_submit($form, &$form_state) {
-    pdq_ebms_debug('PUBLISH FORM SUBMIT', $form_state['values']);
     if ($form_state['values']['op'] == 'Reset') {
         drupal_goto(EbmsPublish::$url);
         return;
@@ -642,6 +662,7 @@ function pdq_ebms_publish_filter_form_submit($form, &$form_state) {
         'cycle' => $form_state['values']['cycle'],
         'board' => $form_state['values']['board'],
         'topic' => $form_state['values']['topic'],
+        'sort' => $form_state['values']['sort'],
     );
     $json = drupal_json_encode($filter_parms);
     $queue_id = db_insert('ebms_publish_queue')
@@ -653,8 +674,6 @@ function pdq_ebms_publish_filter_form_submit($form, &$form_state) {
             )
         )
         ->execute();
-    pdq_ebms_debug("PUBLISH FILTER FORM SUBMIT", array($filter_parms, $json,
-        $queue_id));
     drupal_goto(EbmsPublish::$url . '/' . $queue_id);
 }
 
@@ -674,7 +693,6 @@ function pdq_ebms_publish_checkbox_ajax() {
     $action = Ebms\Util::get_request_value('action');
     $queue_id = Ebms\Util::get_request_value('queue_id');
     $article_state_id = Ebms\Util::get_request_value('article_state_id');
-    pdq_ebms_debug('PUBLISH CHECKBOX AJAX', $_GET);
     switch ($action) {
         case 'clear-all':
             db_delete('ebms_publish_queue_flag')

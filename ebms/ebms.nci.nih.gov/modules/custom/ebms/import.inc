@@ -113,7 +113,9 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     // Start off with defaults appropriate for a new form.
     // Replace tags with single "special search" checkbox (TIR 2422).
     $board = $topic = $cycle = $not_list = $test_mode = $fast_track =
-        $special_search = $disposition = $past_meeting = $future_meeting = 0;
+        $special_search = $disposition = $past_meeting = $future_meeting =
+        $core_journals_search = 0;
+
     //$selected_tags = array();
     $pmid = $comments = $placement = $ft_comments = '';
 
@@ -132,6 +134,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $cycle = $params['cycle'];
         //$selected_tags = $params['tags'];
         $special_search = $params['special-search'];
+        $core_journals_search = $params['core-journals-search'];
         $pmid = $params['pmid'];
         $comments = $params['comments'];
         $not_list = $params['not-list'];
@@ -224,6 +227,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     $nl_tip = "Don't reject articles on the board's NOT list.";
     $tm_tip = 'See what a job would do without actually doing it.';
     $ft_tip = 'Advance the imported articles to a later state.';
+    $cj_tip = 'Check when articles are from core journals.';
     $ss_tip = "Tag the articles in this batch\n" .
         'so they can be easily found later.';
     $form = array(
@@ -253,133 +257,141 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
                 '#prefix' => '<div id="topic">',
                 '#suffix' => '</div>',
             ),
-            'cycle' => array(
-                '#type' => 'select',
-                '#title' => 'REVIEW CYCLE *',
-                '#options' => $review_cycles,
-                '#default_value' => $cycle,
-            ),
-            'pmid' => array(
-                '#type' => 'textfield',
-                '#default_value' => $pmid,
-                '#title' => 'PUB MED IDS',
-            ),
-            'comments' => array(
-                '#type' => 'textfield',
-                '#default_value' => $comments,
-                '#title' => 'COMMENTS',
-            ),
-            'not-list' => array(
-                '#type' => 'checkbox',
-                '#title' => 'NOT LIST',
-                '#prefix' => "<div class='checkbox-line' title=\"$nl_tip\">",
-                '#suffix' => '</div>',
-                '#default_value' => $not_list,
-            ),
-            'test-mode' => array(
-                '#type' => 'checkbox',
-                '#title' => 'TEST MODE',
-                '#prefix' => "<div class='checkbox-line' title=\"$tm_tip\">",
-                '#suffix' => '</div>',
-                '#default_value' => $test_mode,
-            ),
-            'fast-track' => array(
-                '#type' => 'checkbox',
-                '#title' => 'FAST TRACK',
-                '#prefix' => "<div class='checkbox-line' title=\"$ft_tip\">",
-                '#suffix' => '</div>',
-                '#default_value' => $fast_track,
-            ),
-            'special-search' => array(
-                '#type' => 'checkbox',
-                '#title' => 'SPECIAL SEARCH',
-                '#prefix' => "<div class='checkbox-line' title=\"$ss_tip\">",
-                '#suffix' => '</div>',
-                '#default_value' => $special_search,
-            ),
+        ),
+        'cycle' => array(
+            '#type' => 'select',
+            '#title' => 'REVIEW CYCLE *',
+            '#options' => $review_cycles,
+            '#default_value' => $cycle,
+        ),
+        'pmid' => array(
+            '#type' => 'textfield',
+            '#default_value' => $pmid,
+            '#title' => 'PUB MED IDS',
+        ),
+        'comments' => array(
+            '#type' => 'textfield',
+            '#default_value' => $comments,
+            '#title' => 'IMPORT COMMENTS',
+        ),
+        'not-list' => array(
+            '#type' => 'checkbox',
+            '#title' => 'OVERRIDE NOT LIST',
+            '#prefix' => "<div class='checkbox-line' title=\"$nl_tip\">",
+            '#suffix' => '</div>',
+            '#default_value' => $not_list,
+        ),
+        'test-mode' => array(
+            '#type' => 'checkbox',
+            '#title' => 'TEST MODE',
+            '#prefix' => "<div class='checkbox-line' title=\"$tm_tip\">",
+            '#suffix' => '</div>',
+            '#default_value' => $test_mode,
+        ),
+        'fast-track' => array(
+            '#type' => 'checkbox',
+            '#title' => 'FAST TRACK',
+            '#prefix' => "<div class='checkbox-line' title=\"$ft_tip\">",
+            '#suffix' => '</div>',
+            '#default_value' => $fast_track,
+        ),
+        'special-search' => array(
+            '#type' => 'checkbox',
+            '#title' => 'SPECIAL SEARCH',
+            '#prefix' => "<div class='checkbox-line' title=\"$ss_tip\">",
+            '#suffix' => '</div>',
+            '#default_value' => $special_search,
+        ),
+        'core-journals-search' => array(
+            '#type' => 'checkbox',
+            '#title' => 'CORE JOURNALS',
+            '#prefix' => "<div class='checkbox-line' title=\"$cj_tip\">",
+            '#suffix' => '</div>',
+            '#default_value' => $core_journals_search,
+        ),
 
-            // XXX I wasn't given a list of states to include here, so I picked
-            //     the ones which seemed most appropriate.  Users may wish to
-            //     have others added before we go into production.
-            // 2012-12-26 (Bob): Robin has told us which state are to be used;
-            //                   see TIR 2206.
-            // 2013-11-13 (Bob): Things have become much more complicated.
-            //                   more states, with lots more magic fields
-            //                   popping in and out dynamically.  See
-            //                   JIRA ticket OCEEBMS-58 (cloned from TIR
-            //                   2437).
-            'placement' => array(
-                '#type' => 'select',
-                '#title' => 'PLACEMENT LEVEL *',
-                '#options' => array(
-                    '' => ' ',
-                    'PassedBMReview' => 'Passed abstract review',
-                    'PassedFullReview' => 'Passed full text review',
-                    'OnAgenda' => 'On Agenda',
-                    'FinalBoardDecision' => 'Editorial Board decision',
-                ),
-                '#default_value' => $placement,
-                '#states' => array(
-                    'visible' => array(
-                        '#edit-fast-track' => array(
-                            'checked' => true
-                        ),
+        // XXX I wasn't given a list of states to include here, so I picked
+        //     the ones which seemed most appropriate.  Users may wish to
+        //     have others added before we go into production.
+        // 2012-12-26 (Bob): Robin has told us which state are to be used;
+        //                   see TIR 2206.
+        // 2013-11-13 (Bob): Things have become much more complicated.
+        //                   more states, with lots more magic fields
+        //                   popping in and out dynamically.  See
+        //                   JIRA ticket OCEEBMS-58 (cloned from TIR
+        //                   2437).
+        'placement' => array(
+            '#type' => 'select',
+            '#title' => 'PLACEMENT LEVEL *',
+            '#options' => array(
+                '' => ' ',
+                'Published' => 'Published',
+                'PassedBMReview' => 'Passed abstract review',
+                'PassedFullReview' => 'Passed full text review',
+                'OnAgenda' => 'On agenda',
+                'FinalBoardDecision' => 'Editorial Board decision',
+            ),
+            '#default_value' => $placement,
+            '#states' => array(
+                'visible' => array(
+                    '#edit-fast-track' => array(
+                        'checked' => true
                     ),
                 ),
             ),
-            'disposition' => array(
+        ),
+        'disposition' => array(
+            '#type' => 'select',
+            '#title' => 'DISPOSITION *',
+            '#options' => $dispositions,
+            '#default_value' => $disposition,
+            '#states' => array(
+                'visible' => array(
+                    ':input[name="placement"]' => array(
+                        'value' => 'FinalBoardDecision',
+                    ),
+                ),
+            ),
+        ),
+        'agenda-meeting' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'meeting-fields'),
+            'future-meeting' => array(
                 '#type' => 'select',
-                '#title' => 'DISPOSITION *',
-                '#options' => $dispositions,
-                '#default_value' => $disposition,
+                '#title' => 'FUTURE MEETING',
+                '#options' => $future_meetings,
+                '#default_value' => $future_meeting,
                 '#states' => array(
                     'visible' => array(
                         ':input[name="placement"]' => array(
-                            'value' => 'FinalBoardDecision',
+                            'value' => 'OnAgenda',
                         ),
                     ),
                 ),
             ),
-            'agenda-meeting' => array(
-                '#type' => 'container',
-                '#attributes' => array('id' => 'meeting-fields'),
-                'future-meeting' => array(
-                    '#type' => 'select',
-                    '#title' => 'FUTURE MEETING',
-                    '#options' => $future_meetings,
-                    '#default_value' => $future_meeting,
-                    '#states' => array(
-                        'visible' => array(
-                            ':input[name="placement"]' => array(
-                                'value' => 'OnAgenda',
-                            ),
-                        ),
-                    ),
-                ),
-                'past-meeting' => array(
-                    '#type' => 'select',
-                    '#title' => 'PAST MEETING',
-                    '#options' => $past_meetings,
-                    '#default_value' => $past_meeting,
-                    '#states' => array(
-                        'visible' => array(
-                            ':input[name="placement"]' => array(
-                                'value' => 'OnAgenda',
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-            'members' => array(
-                '#type' => 'checkboxes',
-                '#title' => 'BOARD MEMBERS',
-                '#options' => $members,
-                '#default_value' => $selected_members,
+            'past-meeting' => array(
+                '#type' => 'select',
+                '#title' => 'PAST MEETING',
+                '#options' => $past_meetings,
+                '#default_value' => $past_meeting,
                 '#states' => array(
                     'visible' => array(
                         ':input[name="placement"]' => array(
-                            'value' => 'XXXOnAgenda', // Disabled for now
+                            'value' => 'OnAgenda',
                         ),
+                    ),
+                ),
+            ),
+        ),
+        'members' => array(
+            '#type' => 'checkboxes',
+            '#title' => 'BOARD MEMBERS',
+            '#options' => $members,
+            '#default_value' => $selected_members,
+            '#states' => array(
+                'visible' => array(
+                    ':input[name="placement"]' => array(
+                        'value' => 'XXXOnAgenda', // Disabled for now
                     ),
                 ),
             ),
@@ -560,7 +572,6 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
     elseif ($form_state['values']['pmid']) {
         $pmids = preg_split('/[\s,]+/', $form_state['values']['pmid'], null,
                  PREG_SPLIT_NO_EMPTY);
-        //pdq_ebms_debug('PMIDS', $pmids);
         foreach ($pmids as $pmid) {
             if (!preg_match('/^\d{1,8}$/', $pmid)) {
                 form_set_error('pmid', 'Invalid Pubmed ID format.');
@@ -598,12 +609,12 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $test = $values['test-mode'] ? true : false;
     $mode = $test ? 'test' : 'live';
     $import_type = $fast_track ? 'F' : 'R';
+    $core_journals = !empty($values['core-journals-search']);
 
     // Invoke the article import API.
     try {
         $batch = Ebms\importArticlesFromNLM($mode, $pmids, $topic, $cycle,
                  $comments, $use_not_list, $import_type);
-        //pdq_ebms_debug('IMPORT BATCH INFO', $batch);
     }
     catch (\Exception $e) {
         drupal_set_message($e);
@@ -635,6 +646,15 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                 // Do this for dups, too (OCEEBMS-13).
                 foreach ($duplicate as $article_id)
                     Ebms\addArticleTag('i_specialsearch', $article_id, $topic);
+            }
+
+            // OCEEBMS-281 & OCEEBMS-340
+            if ($core_journals) {
+                foreach ($review_ready as $id) {
+                    Ebms\addArticleTag('i_core_journals', $id, $topic);
+                    Ebms\setArticleState($id, 'Published', $topic, $board,
+                        'Published as part of import from core journals');
+                }
             }
 
             // If the user checked the "Fast Track" option, add the new state.
@@ -836,9 +856,6 @@ function pdq_ebms_refresh_xml_form_submit($form, &$form_state) {
     if (is_null($changed))
         return;
 
-    pdq_ebms_debug('REFRESHING XML FROM NLM',
-        array('candidates' => count($pmids), 'changed' => count($changed)));
-
     // Ask NLM for fresh documents for these PMIDs.
     if (!empty($changed)) {
         $batch = Ebms\importArticlesFromNLM('live', $changed, null, null,
@@ -847,7 +864,6 @@ function pdq_ebms_refresh_xml_form_submit($form, &$form_state) {
     }
     else
         $count = 0;
-    pdq_ebms_debug('REFRESH COUNT', $count);
 
     // Record our check of these articles.
     $updated = db_update('ebms_article')
@@ -855,7 +871,6 @@ function pdq_ebms_refresh_xml_form_submit($form, &$form_state) {
         ->condition('source', 'Pubmed')
         ->condition('source_id', $pmids, 'IN')
         ->execute();
-    pdq_ebms_debug('DATA CHECKED', $updated);
 
     // Tell the user what we've done.
     $checked = count($pmids);
@@ -877,8 +892,6 @@ function pdq_ebms_refresh_xml_form_submit($form, &$form_state) {
     $finish = microtime(true);
     $elapsed = $finish - $start;
     $performance = sprintf("%.3f seconds", $elapsed);
-    pdq_ebms_debug('REFRESH STATS',
-        array($checked, $pending, $performance));
     drupal_set_message("$stats ($performance).");
 }
 
@@ -910,22 +923,14 @@ function pdq_ebms_refresh_xml($source, $max=null) {
         print "0";
         exit(0);
     }
-    //pdq_ebms_debug('REFRESH XML TOTAL', $total);
     $fields = array('source_id', 'import_date', 'update_date', 'data_mod');
     $articles = $query->fields('a', $fields)->orderBy('a.data_mod')->execute();
     foreach ($articles as $art) {
         $checked[] = $art->source_id;
-        //if ($art->update_date && $art->update_date > $art->data_mod)
-        //    continue;
-        //if ($art->import_date > $art->data_mod)
-        //    continue;
         $pmids[] = $art->source_id;
         if (count($pmids) >= $max_to_refresh)
             break;
     }
-
-    //pdq_ebms_debug('REFRESHING XML FROM NLM',
-    //    array('checked' => count($checked), 'pmids' => count($pmids)));
 
     // Ask NLM for fresh documents for these PMIDs.
     if (!empty($pmids)) {
@@ -939,7 +944,6 @@ function pdq_ebms_refresh_xml($source, $max=null) {
     }
     else
         $count = 0;
-    //pdq_ebms_debug('XML REPLACED', $count);
 
     // Record our check of these articles.  Skip any articles with errors.
     $errors = array();
@@ -958,16 +962,9 @@ function pdq_ebms_refresh_xml($source, $max=null) {
         ->condition('source', 'Pubmed')
         ->condition('source_id', $checked, 'IN')
         ->execute();
-    //pdq_ebms_debug('DATA CHECKED', $updated);
 
     // Tell the user what we've done.
     $remaining = $total - count($checked);
-    //$finish = microtime(true);
-    //$elapsed = $finish - $start;
-    //$performance = sprintf("%.3f seconds", $elapsed);
-    //pdq_ebms_debug('REFRESH WRAPUP', array($remaining, $performance));
-
-    // Tell the caller how many articles are still to be checked.
     print $remaining;
     exit(0);
 }

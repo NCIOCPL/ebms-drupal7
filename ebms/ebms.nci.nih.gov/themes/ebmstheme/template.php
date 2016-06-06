@@ -105,12 +105,15 @@ function ebmstheme_pager($variables) {
     );
 
     // Add a link for turning paging off.
-    $query = pager_get_query_parameters();
-    $query['pager'] = 'off';
-    $query['items_per_page'] = 'All';
-    $url = url($_GET['q'], array('query' => $query));
-    $items[] = "<a href='$url'>VIEW ALL</a>";
-    $items[] = '|';
+    $resource = $_GET['q'];
+    if ($resource != 'citations') {
+        $query = pager_get_query_parameters();
+        $query['pager'] = 'off';
+        $query['items_per_page'] = 'All';
+        $url = url($_GET['q'], array('query' => $query));
+        $items[] = "<a href='$url'>VIEW ALL</a>";
+        $items[] = '|';
+    }
     $items[] = 'Page';
 
     // Add link to jump to the front for search results (TIR 2304/OCEEBMS-68).
@@ -415,10 +418,6 @@ function ebmstheme_radios($variables) {
     // Added by Lauren for 508 compliance
     $required = !empty($variables['element']['#required']) ? theme('form_required_marker', array('element' => $variables['element'])) : '';
     $element = $variables['element'];
-    $description = '';
-    if (!empty($element['#description']))
-        $description = '<div class="description">' . $element['#description'] .
-            "</div>\n";
     $attributes = array();
     if (isset($element['#id'])) {
         $attributes['id'] = $element['#id'];
@@ -433,6 +432,15 @@ function ebmstheme_radios($variables) {
         $attributes['title'] = $element['#attributes']['title'];
     }
     $description = array_key_exists('#description', $element) ? $element['#description'] : NULL;
+
+    // Don't fully understand all of the intricacies of positioning the
+    // field descriptions, but the radio button sets on webforms were
+    // getting the same description displayed twice: once above the
+    // radio buttons, and once below. This may not be the most elegant
+    // solution, but it works.
+    // See https://tracker.nci.nih.gov/browse/OCEEBMS-329.
+    if (array_key_exists('#webform_component', $element))
+        $description = null;
 
     return '<fieldset ' . drupal_attributes($attributes) . '>
             <legend class="radios-508" for="' . $attributes['id'] . '">'

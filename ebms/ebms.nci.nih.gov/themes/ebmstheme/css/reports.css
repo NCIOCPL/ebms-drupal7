@@ -174,3 +174,27 @@ form .form-item.form-type-checkbox:not(#foo) label.form-item-archived {
 
 #pdq-ebms-articles-without-responses .date-label,
 #pdq-ebms-responses-by-reviewer .date-label { margin-left: 0; }
+
+/* OCEEBMS-292 */
+form #doc-report { margin-top: 15px; }
+form #doc-report .form-type-checkbox:not(#foo) {
+    display: inline; margin: 0;
+}
+form #doc-report .form-type-checkbox:not(#foo) label {
+    padding: 0 15px; margin-left: -33px; top: -5px;
+}
+#pdq-ebms-documents-report-form #edit-archive-bottom,
+#pdq-ebms-documents-report-form #edit-archive { margin: 10px; }
+#pdq-ebms-documents-report-form #edit-submit,
+#pdq-ebms-documents-report-form a#edit-cancel,
+#pdq-ebms-documents-report-form #edit-archive,
+#pdq-ebms-documents-report-form #edit-archive-bottom {
+    padding: 10px 12px; font-size: 16px;
+}
+#pdq-ebms-documents-report-form a#edit-cancel {
+    text-decoration: none; padding: 12px; margin-left: 20px;
+}
+#pdq-ebms-documents-report-form #archive-instructions { margin: 10px 0; }
+#pdq-ebms-documents-report-form #docs-to-archive { margin-left: 20px; }
+    font-size: 16px;
+}

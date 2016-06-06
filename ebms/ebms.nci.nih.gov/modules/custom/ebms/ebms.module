@@ -193,6 +193,14 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // LINK TO RELATED ARTICLES (OCEEBMS-349)
+        'citations/link' => array(
+            'page callback' => 'pdq_ebms_link_related_article',
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+
         // XXX ADD CITATIONS (IS THIS STILL USED???)
         'citations/add' => array(
             'page callback' => 'pdq_ebms_citations',
@@ -284,6 +292,14 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // AJAX CALLBACK FOR TOGGLING A PACKET'S STAR
+        'packet-star' => array(
+            'page callback' => 'pdq_ebms_packet_star',
+            'file' => 'review.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+
         // SUMMARIES
         'summaries' => array(
             'page callback' => 'pdq_ebms_summaries',
@@ -296,14 +312,6 @@ function ebms_menu() {
         'forum' => array(
             'page callback' => 'pdq_ebms_forum',
             'file' => 'forum.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // ABOUT
-        'about' => array(
-            'page callback' => 'pdq_ebms_about',
-            'file' => 'about.inc',
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
@@ -343,7 +351,7 @@ function ebms_menu() {
         // PRINTING PACKETS
         'print-packets' => array(
             'page callback' => 'pdq_ebms_print_packets',
-            'page_arguments' => array(1),
+            'page_arguments' => array(2),
             'file' => 'print.inc',
             'access arguments' => array('administer'),
             'type' => MENU_CALLBACK,
@@ -363,6 +371,23 @@ function ebms_menu() {
             'page callback' => 'pdq_ebms_groups',
             'file' => 'groups.inc',
             'access arguments' => array('administer'),
+            'type' => MENU_CALLBACK,
+        ),
+
+        // LINK FROM HOME-PAGE EVENT NOTIFICATION TO EVENT (OCEEBMS-296)
+        'event' => array(
+            'page callback' => 'pdq_ebms_event_link',
+            'page_arguments' => array(1),
+            'access callback' => 'user_is_logged_in',
+            'type' => MENU_CALLBACK,
+        ),
+
+        // LINK FROM HOME-PAGE LITERATURE NOTIFICATION TO PACKET PAGE
+        // OCEEBMS-296
+        'packet' => array(
+            'page callback' => 'pdq_ebms_packet_link',
+            'page_arguments' => array(1),
+            'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
 
@@ -404,6 +429,14 @@ function ebms_menu() {
             'file' => 'topics.inc',
         ),
 
+        // MANAGE EBMS TOPIC GROUPS
+        'admin/topic-groups' => array(
+            'title' => 'EBMS Topic Groups',
+            'page callback' => 'pdq_ebms_topic_groups',
+            'access arguments' => array('administer'),
+            'file' => 'topics.inc',
+        ),
+
         // MANAGE EBMS SUBGROUPS
         'admin/subgroups' => array(
             'title' => 'EBMS Subgroups',
@@ -418,6 +451,14 @@ function ebms_menu() {
             'page callback' => 'pdq_ebms_boards',
             'access arguments' => array('administer'),
             'file' => 'subgroups.inc',
+        ),
+
+        // MANAGE RELATED ARTICLE LINK TYPES
+        'admin/article-link-types' => array(
+            'title' => 'Article Link Types',
+            'page callback' => 'pdq_ebms_article_link_types',
+            'access arguments' => array('administer'),
+            'file' => 'citations.inc',
         ),
 
         // TESTING FOR ALAN
@@ -1036,6 +1077,8 @@ function ebms_page_build(&$page) {
             '#theme' => 'ebms_menu_item_list',
             '#items' => $items,
     );
+
+    return;
 }
 
 /**
@@ -1050,7 +1093,7 @@ function ebms_init() {
 
     // For now, back out E_STRICT reporting level introduced by PHP upgrade.
     // See https://tracker.nci.nih.gov/browse/OCEDRUPAL-420.
-    error_reporting(error_reporting() & ~E_STRICT);
+    error_reporting(error_reporting() & ~(E_STRICT | E_WARNING));
 
     if (isset($_SERVER['HTTP_USER_AGENT']) &&
         (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false))
@@ -1065,13 +1108,14 @@ function ebms_init() {
             'ebms-accounts',
             'log-tail',
         );
-        if (in_array($exploded[0], $ok))
+        if (in_array($exploded[0], $ok)) {
             return;
+        }
     }
     global $user;
 
     // Pages (urls) that are allowed if user is not yet logged in
-    $allowed = array('login', 'user', 'password', 
+    $allowed = array('login', 'user', 'password',
                      'account-email-status', 'ssologin');
     if (!user_is_logged_in() && !in_array($_GET['q'], $allowed)) {
         if (!function_exists('drush_main'))
@@ -1119,6 +1163,8 @@ function ebms_init() {
         // between the global user and any other loaded user)
         ebms_user_load(array($user->uid => $user));
     }
+
+    return;
 }
 
 /**
@@ -1191,6 +1237,8 @@ function ebms_user_load($users) {
         ->execute();
     foreach ($results as $record)
             $users[$record->user_id]->password_changed = $record->password_changed;
+
+    return;
 }
 
 /**
@@ -1219,39 +1267,86 @@ function pdq_ebms_refresh_journals() {
 /**
  * List/set Drupal variables. Ignores complex values.
  */
-function pdq_ebms_vars($name='', $value='') {
+function pdq_ebms_vars($action='', $name='') {
     $base_url = 'admin/vars';
-    if ($name) {
-        $val = variable_get($name);
-        if (is_array($val))
-            drupal_set_message("Variable $name is an array", 'error');
-        else {
-            if (is_int($val) || is_null($val) && ctype_digit($value))
-                $value = (int)$value;
-            variable_set($name, $value);
-        }
-        drupal_goto($base_url);
+    $skip = array('drupal_private_key', 'ldap_servers_encrypt_key');
+    switch ($action) {
+        case 'edit':
+            if (in_array($name, $skip)) {
+                drupal_set_message("$name not editable", 'error');
+                break;
+            }
+            return drupal_get_form('pdq_ebms_vars_form', $name);
+        case 'add':
+            return drupal_get_form('pdq_ebms_vars_form');
     }
     $rows = array();
     $names = db_select('variable', 'v')->fields('v', array('name'))
         ->orderBy('v.name')
         ->execute()->fetchCol();
-    $skip = array('drupal_private_key', 'ldap_servers_encrypt_key');
     foreach ($names as $name) {
         if (!in_array($name, $skip)) {
             $val = variable_get($name);
-            if (!is_array($val))
-                $rows[] = array($name, $val);
+            if (!is_array($val)) {
+                $url = "$base_url/edit/$name";
+                $link = l($name, $url);
+                $rows[] = array($link, $val);
+            }
         }
     }
+    $attrs = array('attributes' => array('class' => 'button'));
+    $button = l('Add New Variable', "$base_url/add", $attrs);
     return array(
-        'title' => array('#markup' => '<h2>Variables</h2>'),
+        'title' => array('#markup' => '<h2>Variables</h2>' . $button),
         'table' => array(
             '#theme' => 'table',
             '#rows' => $rows,
             '#header' => array('Name', 'Value'),
         ),
     );
+}
+
+function pdq_ebms_vars_form($form, &$form_state, $name='') {
+    $val = '';
+    if ($name) {
+        $val = variable_get($name);
+        if (is_array($val))
+            $val = 'THE CURRENT VALUE OF THIS VARIABLE IS AN ARRAY. ' .
+                'MODIFY WITH CAUTION!';
+    }
+    return array(
+        'name' => array(
+            '#type' => 'textfield',
+            '#disabled' => !empty($name),
+            '#default_value' => $name,
+            '#required' => true,
+        ),
+        'value' => array(
+            '#type' => 'textfield',
+            '#default_value' => $val,
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+        'cancel' => array(
+            '#type' => 'submit',
+            '#value' => 'Cancel',
+        ),
+    );
+}
+
+function pdq_ebms_vars_form_submit($form, &$form_state) {
+    $values = $form_state['values'];
+    if ($form_state['values']['op'] == 'Submit') {
+        $name = $values['name'];
+        $value = $values['value'];
+        $val = variable_get($name);
+        if (is_int($val) || is_null($val) && ctype_digit($value))
+                $value = (int)$value;
+        variable_set($name, $value);
+    }
+    drupal_goto('admin/vars');
 }
 
 /**
@@ -1358,14 +1453,16 @@ function pdq_ebms_core_journals($action='show', $jrnl_id='', $source='Pubmed') {
  *  @param  any     $what   Arbitrary value, possibly an object or
  *                          structured array, to be dumped as part
  *                          of the log entry in human-readable format
+ *  @param  string  $fname  Optional name of output file.  Enables different
+ *                          users to separate out their own debug data when
+ *                          desired.
  */
-function pdq_ebms_debug($where, $what) {
+function pdq_ebms_debug($where, $what, $fname='/tmp/ebms.debug') {
     if (Ebms\DEV || Ebms\QA) {
         $now = date('c');
-        file_put_contents(
-            '/tmp/ebms.debug', "$now $where\n" . print_r($what, TRUE) . "\n",
-            FILE_APPEND);
-        drupal_chmod('/tmp/ebms.debug', 0644);
+        file_put_contents($fname,
+                "$now $where\n" . print_r($what, TRUE) . "\n", FILE_APPEND);
+        drupal_chmod($fname, 0664);
     }
 }
 
@@ -1400,6 +1497,8 @@ function ebms_views_query_alter(&$view, &$query) {
             _calendar_query_alter($view, $query);
             break;
     }
+
+    return;
 }
 
 function ebms_form_node_form_alter(&$form, &$form_state, $form_id) {
@@ -1426,8 +1525,9 @@ function ebms_form_node_form_alter(&$form, &$form_state, $form_id) {
             '#markup' => $url,
             '#weight' => 30,
         );
-
     }
+
+    return;
 }
 
 /**
@@ -1511,15 +1611,48 @@ function ebms_individuals_allowed_values_callback($field) {
 }
 
 /**
+ * Implementation of hook_node_insert. Add notification messages for new
+ * events. See OCEEBMS-296. Add the notifications for new events here
+ * instead of in the node_presave hook, because we need the node ID, and
+ * the presave hook doesn't have it (because it doesn't exist when that
+ * hook is invoked).
+ */
+function ebms_node_insert($node) {
+
+    if ($node->type == 'ebms_event' && $node->status) {
+
+        // This gets passed to the methods which create the notification
+        // messages.
+        $nodeWrapper = entity_metadata_wrapper('node', $node);
+
+        // if the node is published, notify the user.
+        $event_status = $nodeWrapper->field_event_status->value();
+        if ($event_status == 'scheduled')
+            \Ebms\Util::activityEventPublished($nodeWrapper);
+
+        // if the agenda is published, add a notification for that, too.
+        if ($nodeWrapper->field_agenda_status->value() == 1)
+            \Ebms\Util::activityAgendaPublished($nodeWrapper);
+    }
+
+    return;
+}
+
+/**
  * Implementation of hook_node_presave.  Triggers appropriate recent activity
  * messages based on changes to event nodes.
+ *
+ * OCEEBMS-296: add event_id so we can link from the notification to
+ * the page for the event. Leave the work for the node_insert hook for
+ * new events, because we won't have the node ID until then.
  *
  * @param node $node the node about to be saved
  */
 function ebms_node_presave($node) {
+
     // if a published ebms_event (don't generate any activity from unpublished
     // nodes)
-    if ($node->type == 'ebms_event' && $node->status) {
+    if ($node->type == 'ebms_event' && $node->status && !$node->is_new) {
 
         $nodeWrapper = entity_metadata_wrapper('node', $node);
         $originalWrapper = FALSE;
@@ -1530,34 +1663,27 @@ function ebms_node_presave($node) {
         $original_status = null;
         $original_agenda_status = null;
         $original_event_type = null;
-        if(isset($node->original)){
+        if (isset($node->original)) {
             $originalWrapper = entity_metadata_wrapper('node', $node->original);
-
             $original_status = $originalWrapper->field_event_status->value();
             $original_agenda_status = $originalWrapper->field_agenda_status->value();
             $original_event_type = $originalWrapper->field_event_type->value();
         }
 
-        // if the node is published and either is new or was previously
-        // unpublished
-        if ($event_status == 'scheduled' &&
-            ($node->is_new ||
-                $original_status == 'cancelled')) {
+        // if the node is published and was previously unpublished
+        if ($event_status == 'scheduled' && $original_status == 'cancelled') {
             // note the publish activity
             \Ebms\Util::activityEventPublished($nodeWrapper);
         }
 
-        // vice versa, if the node is not new and was previously published
-        else if ($event_status == 'cancelled' &&
-            !$node->is_new &&
-            $original_status == 'scheduled') {
+        // vice versa, if the node was previously published
+        else if ($event_status == 'cancelled' && $original_status == 'scheduled') {
             // note the unpublish activity
             \Ebms\Util::activityEventCancelled($nodeWrapper);
         }
 
-        // if the node is not new and the time has changed
-        if (!$node->is_new && $event_status == 'scheduled' &&
-            $original_status == 'scheduled') {
+        // if the event's time has changed
+        if ($event_status == 'scheduled' && $original_status == 'scheduled') {
             // compare the two dates
             $origDate = field_get_items('node', $node->original,
                 'field_datespan');
@@ -1569,12 +1695,9 @@ function ebms_node_presave($node) {
                 \Ebms\Util::activityEventChanged($nodeWrapper);
         }
 
-        // if the agenda is published and the event is
-        // new or the agenda was not previously published
+        // if the agenda is published and was not previously published
         $curr_agenda_status = $nodeWrapper->field_agenda_status->value();
-
-        if($curr_agenda_status == 1 &&
-            ($node->is_new || $original_agenda_status == 0)) {
+        if ($curr_agenda_status == 1 && $original_agenda_status == 0) {
             // note the agenda publish activity
             \Ebms\Util::activityAgendaPublished($nodeWrapper);
         }
@@ -1582,14 +1705,14 @@ function ebms_node_presave($node) {
         // if the previous type exists and the current and past event types
         // don't match
         $curr_event_type = $nodeWrapper->field_event_type->value();
-        if($original_event_type && $curr_event_type != $original_event_type) {
+        if ($original_event_type && $curr_event_type != $original_event_type) {
             // note the type changed activity
             \Ebms\Util::activityEventType($nodeWrapper);
 
         }
-
-
     }
+
+    return;
 }
 
 function ebms_date_formats() {
@@ -1621,8 +1744,9 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
 
     //If the user is UID 1 or an EBMS administrator, there is no filtering of
     //events
-    if (user_access("administer ebms"))
+    if (user_access("administer ebms")) {
         return;
+    }
 
     //Initialize an OR conditional for selects
     $or_conditions = db_or();
@@ -1673,6 +1797,8 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
         'IN'); //Note the use of array here.  IN must have an array
 
     $query->condition($or_conditions);
+
+    return;
 }
 
  function ebms_calendar_event_validate($form, &$form_state) {
@@ -1693,6 +1819,8 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
     if ($startDate != $endDate)
         form_set_error('field_datespan',
             'Please ensure that the event is scheduled for a single day only.');
+
+    return;
 }
 
 function ebms_redirect_handler($form, &$form_state) {
@@ -1707,6 +1835,8 @@ function ebms_redirect_handler($form, &$form_state) {
             $form_state['redirect'] = '/';
         }
     }
+
+    return;
 }
 
 function ebms_date_combo_process_alter(&$element, &$form_state, $context){
@@ -1790,6 +1920,8 @@ function ebms_ckeditor_link_types_alter(&$types) {
         'type' => 'ebms_file',
         'module' => 'ebms',
     ));
+
+    return;
 }
 
 /**
@@ -1819,6 +1951,8 @@ function ebms_wysiwyg_editor_settings_alter(&$settings, $context) {
             array('linkit'),
         );
     }
+
+    return;
 }
 
 /**
@@ -1922,6 +2056,8 @@ function pdq_ebms_get_source_ids($source) {
     exit(0);
 }
 function pdq_ebms_log_tail() {
+    if (!user_access('access site reports'))
+        drupal_goto('home');
     try {
         $p = $_GET['p']; // path
         $s = $_GET['s']; // start
@@ -2018,6 +2154,8 @@ function ebms_date_popup_process_alter(&$element) {
     }
     else
         $element['#element_validate'] = array('pdq_ebms_date_validate');
+
+    return;
 }
 
 /**
@@ -2053,6 +2191,8 @@ function pdq_ebms_date_validate($element, &$form_state, $form) {
     }
     elseif ($m && !$y)
         form_error($element, 'Month cannot be specified without year');
+
+    return;
 }
 
 /*
@@ -2091,4 +2231,55 @@ function pdq_ebms_dump_message_types() {
     drupal_add_http_header('Content-type', 'text/plain');
     echo $output;
     exit(0);
+}
+
+/**
+ * This is an awkward solution to the problem posed by OCEEBMS-296.
+ * We've been asked to modify the event notifications on the home page
+ * to link to the events to which the notifications refer, but the
+ * notification messages are frozen at the time the event was created
+ * (or modified), so for a while we'll have messages which don't have an
+ * an event ID. The display of the notification is controlled in a very
+ * roundabout way by the messages module, using placeholders for the
+ * message fields. For the old notifications, that module will be
+ * displaying links which have /event/ as the href, without any event ID.
+ * If we had used /node/[message:event_id] in the display string for the
+ * event messages, the old notifications would have linked to the most
+ * recent content node on the site (as far as I can tell), which would
+ * have been not so helpful. Hence this kludge.
+ */
+function pdq_ebms_event_link($event_id=null) {
+    if ($event_id && is_numeric($event_id))
+        drupal_goto("node/$event_id");
+    else
+        drupal_goto("calendar");
+}
+
+/**
+ * Route a link from a "Literature Activity" home page notification to
+ * the appropriate packet page. We can't know when the notification is
+ * created where the packet's page is going to be when the notification
+ * is displayed, because that changes over time based on the state of
+ * the packet. So we have to figure it out on the fly.
+ * See https://tracker.nci.nih.gov/browse/OCEEBMS-296.
+ */
+function pdq_ebms_packet_link($packet_id=null) {
+    global $user;
+    if ($packet_id && is_numeric($packet_id)) {
+        require_once 'review.inc';
+        $query = db_select('ebms_packet_reviewer', 'r')
+            ->condition('r.packet_id', $packet_id)
+            ->condition('r.reviewer_id', $user->uid);
+        $count = $query->countQuery()->execute()->fetchField();
+        if ($count == 0)
+            drupal_goto("review/fyi/$packet_id");
+        elseif (EbmsReview::packet_fully_completed($packet_id))
+            drupal_goto("review/completed/$packet_id");
+        else
+            drupal_goto('review',
+                array('query' => array('packet' => $packet_id)));
+    }
+    else
+        drupal_goto('review');
+
 }

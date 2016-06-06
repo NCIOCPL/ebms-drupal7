@@ -4,8 +4,6 @@
 
 namespace Ebms;
 
-// require_once('logw.inc'); // XXX DEBUG
-
 /**
  * Call this function to create and return a Drupal db_select
  * query object that retrieves article_ids matching a search.
@@ -25,7 +23,7 @@ function getSearchQuery($json) {
     //  circuit tests that are already done as side effects of earlier
     //  filters.
     // Do not change the order of filters without considering this issue.
-    $srch->srchIds();
+    $srch->srchIDs();
     $srch->srchStates();
     $srch->srchTopicsBoards();
     $srch->srchAuthors();
@@ -41,6 +39,7 @@ function getSearchQuery($json) {
     $srch->srchTags();
     $srch->srchInputDate();
     $srch->srchModifiedDate();
+    $srch->srchOnAgenda();
     $srch->srchDecision();
 
     // Sort them
@@ -178,6 +177,14 @@ class EbmsSearch {
                 $this->stateMap[$this->spec['committee-decision']];
         if ($this->spec['fyi-citation'])
             $this->laterStates[] = $this->fyi;
+
+        // If any "OnAgenda" criteria are specified, ebms_article_state
+        //  rows must also match the OnAgenda article state
+        if ($this->spec['meeting-category'] ||
+            $this->spec['meeting-start']['date'] ||
+            $this->spec['meeting-end']['date']) {
+            $this->laterStates[] = $this->stateMap['OnAgenda'];
+        }
     }
 
     /**
@@ -186,12 +193,14 @@ class EbmsSearch {
     function srchIDs() {
 
         // Ignore conflicts.  We may change that someday.
-        if ($this->spec['pmid']) {
+        $pmid = trim($this->spec['pmid']);
+        $ebms_id = trim($this->spec['cms-id']);
+        if ($pmid) {
             $this->qry->condition('art.source', 'Pubmed');
-            $this->qry->condition('art.source_id', $this->spec['pmid']);
+            $this->qry->condition('art.source_id', $pmid);
         }
-        if ($this->spec['cms-id'])
-            $this->qry->condition('art.article_id', $this->spec['cms-id']);
+        if ($ebms_id)
+            $this->qry->condition('art.article_id', $ebms_id);
     }
 
     /**
@@ -492,8 +501,23 @@ class EbmsSearch {
                 $authAlias = "auth$count";
 
                 // Join the tables
-                $this->qry->join('ebms_article_author_cite', $citeAlias,
-                                 "$citeAlias.article_id = art.article_id");
+                $on = "$citeAlias.article_id = art.article_id";
+
+                // OCEEBMS-295
+                if (!empty($this->spec['author-pos'])) {
+                    switch ($this->spec['author-pos']) {
+                        case 'first':
+                            $on .= " AND $citeAlias.cite_order = 1";
+                            break;
+                        case 'last':
+                            $on .= " AND $citeAlias.cite_order = (
+                                SELECT MAX(cite_order)
+                                  FROM ebms_article_author_cite
+                                 WHERE article_id = $citeAlias.article_id)";
+                            break;
+                    }
+                }
+                $this->qry->join('ebms_article_author_cite', $citeAlias, $on);
                 $this->qry->join('ebms_article_author', $authAlias,
                                 "$authAlias.author_id = $citeAlias.author_id");
 
@@ -511,6 +535,7 @@ class EbmsSearch {
                     else
                         $this->qry->condition("$authAlias.initials", $inits);
                 }
+
                 // Ready for next author, if any
                 ++$count;
             }
@@ -1042,6 +1067,62 @@ class EbmsSearch {
                 else
                     $qry->condition($boardDateField, $this->boards[0], '=');
             }
+        }
+    }
+
+    /**
+     * Filter search results to only those that are listed as on an agenda
+     * for a meeting matching specified dates and meeting type.
+     *
+     * If no meeting type or dates are specified, no filtering is done.  A
+     * user must specify at least one of those parameters to invoke OnAgenda
+     * filtering.
+     *
+     * This is one of the more complicated filters.
+     */
+    function srchOnAgenda() {
+
+        // Any one of the following means article must have OnAgenda state
+        $meet_type  = $this->spec['meeting-category'];
+        $meet_start = $this->spec['meeting-start']['date'];
+        $meet_end   = $this->spec['meeting-end']['date'];
+
+        if ($meet_type || $meet_start || $meet_end) {
+
+            // Create a parameter list to construct an EventQuery object
+            $params = array();
+            $params['date-start']['date'] = $meet_start;
+            $params['date-end']['date']   = $meet_end;
+
+            // Construct the object
+            $meetEventQry = new \Ebms\EventQuery();
+
+            // We already know at least one of these obtains
+            if ($meet_type)
+                $meetEventQry->restrict_by_type($meet_type);
+            if ($meet_start || $meet_end)
+                $meetEventQry->restrict_by_date($params);
+
+            // Execute the search query to get node ids for all meeting events
+            $results = $meetEventQry->execute();
+            $meeting_nids = array();
+
+            // IN condition blows up if there are no meeting_nids
+            // Prevent that by installing an impossible value
+            if (isset($results['node']))
+                $meeting_nids = array_keys($results['node']);
+            else
+                $meeting_nids[] = -1;
+
+            // Get all the article_state_ids from the table that correlates
+            //  meeting node ids with article_state_ids
+            $this->qry->join('ebms_article_state', 'meet_state',
+                             "meet_state.article_id = art.article_id");
+
+            $this->qry->join('ebms_agenda_meeting', 'agenda',
+                "agenda.article_state_id = meet_state.article_state_id");
+
+            $this->qry->condition("agenda.nid", $meeting_nids, 'IN');
         }
     }
 

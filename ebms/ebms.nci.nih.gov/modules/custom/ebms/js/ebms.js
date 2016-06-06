@@ -327,7 +327,7 @@ ebmsscript.setup_filenote_monitoring = function() {
         jQuery("#charcount").css("color", "#2d2c28");
         jQuery("#filenotes").css("border-color", "#2d2c28");
     });
-    jQuery("#filenotes").focus(function() { 
+    jQuery("#filenotes").focus(function() {
         jQuery("#charcount").css("color", "#a90101");
         jQuery("#filenotes").css("border-color", "#a90101");
     });
@@ -657,7 +657,7 @@ ebmsscript.init_summaries_page = function() {
         //);
         ebmsscript.clear_file_upload_form();
         ebmsscript.register_file_upload_form_event_handlers();
-    }        
+    }
 };
 
 ebmsscript.register_file_upload_form_event_handlers = function() {
@@ -750,7 +750,7 @@ ebmsscript.new_cg_summary_submit = function() {
     }
     jQuery("#pdq-ebms-new-cg-summary-form").submit();
     return true;
-}    
+}
 ebmsscript.post_summary_nd_submit = function() {
     if (ebmsscript.picklist_value_selected("edit-doc")) {
         jQuery("#pdq-ebms-post-summary-sd-form").submit();
@@ -839,7 +839,7 @@ ebmsscript.init_docs_page = function() {
             autoOpen: false,
             modal: true,
             buttons: {
-                "Yes, Delete": function() {
+                "Yes, Archive": function() {
                     jQuery(this).dialog("close");
                     window.location.href = ebmsscript.doc_delete_url;
                 },
@@ -989,6 +989,17 @@ ebmsscript.init = function() {
         jQuery(this).hide();
     });
 }
+
+/**
+ * When the user clicks the star for a packet, toggle its state.
+ * See https://tracker.nci.nih.gov/browse/OCEEBMS-350.
+ */
+ebmsscript.flip_packet_star = function(packet_id, on_off) {
+    var url = "/packet-star/" + packet_id + "/" + on_off;
+    jQuery("#packet-star-" + packet_id).load(url);
+
+}
+
 /**
  * Initialization housekeeping which can only be performed after we're
  * sure the document has been loaded.

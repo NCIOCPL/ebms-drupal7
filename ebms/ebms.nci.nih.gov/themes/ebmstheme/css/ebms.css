@@ -129,6 +129,7 @@ ul.no-bullets li { margin-left: 12px; margin-bottom: 12px; }
 #login-image-wrapper,
 #main-wrapper,
 #footer div.section,
+.about-pdq .content .node, /* OCEEBMS-235 */
 #message-wrapper {
     margin-left: auto; margin-right: auto; width: 960px;
 }
@@ -155,7 +156,6 @@ div.messages.error {
     background-color: #2a72a5;
     height: 77px;
 }
-/* #banner img { margin: 0; float: none; } */
 #banner img { margin: 0 0 0 12px; float: none; }
 #banner div.section div { line-height: 40px; color: white; }
 #banner a:hover { color: white; text-decoration: none; }
@@ -1747,3 +1747,16 @@ div.view-recent-activity div.view-filters { display: none; }
       this is how to do it:
 div.cke_dialog_ui_input_text #autocomplete { max-height: 250px; }
 */
+
+/* Make "About PDQ" page editable by users (OCEEBMS-235) */
+.about-pdq #about-img { float: right; width: 360px; margin-left: 20px; }
+.about-pdq #boards-title {
+    clear: both; border-bottom: 1px #696559 solid;
+    font-size: 20px; font-weight: bold;
+}
+.about-pdq .node-page h2 { border-bottom: none; }
+.about-pdq .board-name { margin: 35px 0 0; font-weight: bold; }
+.no-underscore { text-decoration: none; }
+
+/* OCEEBMS-232 */
+span.fyi { color: red; font-weight: bold; font-size: 1.2em; }

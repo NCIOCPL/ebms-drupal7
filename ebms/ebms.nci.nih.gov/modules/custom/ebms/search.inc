@@ -135,6 +135,41 @@ class EbmsSearch {
     }
 
     /**
+     * Create a version of the search results page which can be
+     * pasted into a Word document for distribution to board members.
+     * See https://tracker.nci.nih.gov/browse/OCEEBMS-209.
+     */
+    function show_board_member_version($query, $count) {
+        $results = $query->execute();
+        $page = array();
+        $pos = 1;
+        $now = strftime('%Y-%m-%d %H:%M');
+        print '<html>
+ <head>
+  <meta charset="utf-8">
+  <title>EBMS Search Results</title>
+  <style>
+body {
+    width: 1024px; margin: 20px auto;
+    font-family: Arial, sans-serif;
+}
+  </style>
+ </head>
+ <body>
+  <h1>EBMS Search Results (' . $count . ')</h1>
+  <h2>' . $now . '</h2>
+';
+        foreach ($results as $result) {
+            $article = $this->list_article($result->article_id, $pos++, true);
+            print "  <p>$article</p>\n";
+        }
+        print ' </body>
+</html>
+';
+        exit(0);
+    }
+
+    /**
      * Ask the search API to find out which articles match the user's
      * search criteria, and display the results.
      */
@@ -146,9 +181,16 @@ class EbmsSearch {
         $spec = drupal_json_decode($json);
         $query = Ebms\getSearchQuery($json);
 
-        // Figure out whether we're going to need paging.
+        // Get result count.
         $counter = $query->countQuery();
         $count = $counter->execute()->fetchField();
+
+        // OCEEBMS-209
+        if (!empty($spec['board-member']) && $count)
+            $this->show_board_member_version($query, $count);
+
+
+        // Figure out whether we're going to need paging.
         $per_page = $spec['items-per-page'];
         $pager = true;
         $show_pages_link = '';
@@ -224,27 +266,17 @@ class EbmsSearch {
     /**
      * Assemble the markup for a single article in the search results set.
      *
-     *  @param  int     $article_id  Primary key into the ebms_article table
-     *  @param  int     $position    Integer showing where the article fits
-     *                               in the result set; displayed to the left
-     *                               the article.
+     *  @param  int     $article_id   Primary key into the ebms_article table
+     *  @param  int     $position     Integer showing where the article fits
+     *                                in the result set; displayed to the left
+     *                                the article.
+     *  @param  boolean $board_member Create special version for board
+     *                                member search results display.
      *
      * XXX May want to replace some of the parsing code below when Alan's
      *     API for getting citation elements is in place.
      */
-    function list_article($article_id, $position) {
-
-        // Get the cached state ID for 'Ready for Initial Review'.
-        $cached = &drupal_static(__FUNCTION__);
-        if (!isset($cached)) {
-            $state_id = db_select('ebms_article_state_type', 't')
-                ->condition('t.state_text_id', 'ReadyInitReview')
-                ->fields('t', array('state_id'))
-                ->execute()
-                ->fetchField();
-            $cached = array('ready_for_initial_review' => $state_id);
-        }
-        $ready_for_initial_review = $cached['ready_for_initial_review'];
+    function list_article($article_id, $position, $board_member=false) {
 
         // Pull NLM's XML document for the article from the database
         $xml = db_select('ebms_article', 'a')
@@ -297,7 +329,6 @@ class EbmsSearch {
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
         $query->condition('s.article_id', $article_id);
         $query->condition('s.active_status', 'A');
-        //$query->condition('s.state_id', $ready_for_initial_review);
         $query->fields('t', array('topic_name'));
         $query->distinct();
         $query->orderBy('t.topic_name');
@@ -307,26 +338,33 @@ class EbmsSearch {
             $topics[] = htmlspecialchars($result->topic_name);
         $topics = implode('; ', $topics);
 
-        // Create the links we'll need.
-        $full_url = 'citations/full/' . $article_id;
-        $full_opts = array('query' => array('search' => $this->search_id));
-        $title_opts = array(
-            'query' => array('search' => $this->search_id),
-            'attributes' => array(
-                'class' => array('article-title'),
-            )
-        );
-        $title_link = l($title, $full_url, $title_opts);
+        // Simplified version for board members (OCEEBMS-209).
+        if ($board_member)
+            $pieces = array(
+                "[$position] ",
+                implode('; ', $authors) . '<br>',
+                '<i>' . htmlspecialchars($title) . '</i>',
+            );
 
-        // Assemble the markup pieces into an array.
-        $pieces = array(
-            '<span class="article-number">' . $position . '</span>',
-            '<span class="article-citation">',
-            implode('; ', $authors) . '<br />',
-            $title_link,
-            '<br />',
-            $ta, ' ', $vol,
-        );
+        // Create the links we'll need.
+        else {
+            $full_url = 'citations/full/' . $article_id;
+            $full_opts = array('query' => array('search' => $this->search_id));
+            $title_opts = array(
+                'query' => array('search' => $this->search_id),
+                'attributes' => array(
+                    'class' => array('article-title'),
+                )
+            );
+            $title_link = l($title, $full_url, $title_opts);
+            $pieces = array(
+                '<span class="article-number">' . $position . '</span>',
+                '<span class="article-citation">',
+                implode('; ', $authors) . '<br />',
+                $title_link,
+            );
+        }
+        $pieces[] = "<br>$ta $vol";
         if ($issue)
             $pieces[] = "($issue)";
         if ($pgn)
@@ -338,7 +376,10 @@ class EbmsSearch {
             $pieces[] = " &nbsp; Legacy CMS ID: $legacy_id";
         if ($topics)
             $pieces[] = "<br />Topics: $topics";
-        $pieces[] = '<br /><br />';
+
+        $pieces[] = '<br />';
+        if (!$board_member)
+            $pieces[] = '<br />';
         $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
             $pmid . '" target="_blank">VIEW ABSTRACT</a>';
         $ft_uri = Ebms\Util::get_ft_uri($article_id);
@@ -348,7 +389,10 @@ class EbmsSearch {
             $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $target);
             $pieces[] = ' &nbsp;|&nbsp; ' . $ft_link;
         }
-        $pieces[] = '</span></br /><br />&nbsp;';
+
+        // OCEEBMS-209.
+        if (!$board_member)
+            $pieces[] = '</span></br /><br />&nbsp;';
 
         // Collapse and return the markup.
         return implode($pieces);
@@ -369,6 +413,7 @@ class EbmsSearchSpec {
         $pmid = '',
         $cms_id = '',
         $author = '',
+        $author_pos = 'Any',
         $title = '',
         $journal = '',
         $comments = '',
@@ -389,6 +434,9 @@ class EbmsSearchSpec {
         $summary_topics_added = 0,
         $reviewer = 0,
         $response = 0,
+        $meeting_category = '',
+        $meeting_start = '',
+        $meeting_end = '',
         $decision = 0,
         $tag = 0,
         $comment_added_start = '',
@@ -401,7 +449,8 @@ class EbmsSearchSpec {
         $modified_end = '',
         $sort_by = 'CMS ID#',
         $format = 'Brief',
-        $items_per_page = 10;
+        $items_per_page = 10,
+        $board_member = false;
 
     /**
      * Override the default search parameter values if a search ID
@@ -440,6 +489,9 @@ class EbmsSearchSpec {
             $this->review_cycle = $spec['review-cycle'];
             $this->reviewer = $spec['reviewer'];
             $this->response = $spec['response'];
+            $this->meeting_category = $spec['meeting-category'];
+            $this->meeting_start = $spec['meeting-start']['date'];
+            $this->meeting_end = $spec['meeting-end']['date'];
             $this->decision = $spec['decision'];
             $this->tag = $spec['tag'];
             $this->comment_added_start = $spec['comment-added-start']['date'];
@@ -453,6 +505,12 @@ class EbmsSearchSpec {
             $this->sort_by = $spec['sort-by'];
             //$this->format = $spec['format'];
             $this->items_per_page = $spec['items-per-page'];
+            if ($this->meeting_start)
+                $this->meeting_start =
+                    Ebms\Util::fill_in_date($this->meeting_start);
+            if ($this->meeting_end)
+                $this->meeting_end =
+                    Ebms\Util::fill_in_date($this->meeting_end, true);
             if ($this->comment_added_start)
                 $this->comment_added_start =
                     Ebms\Util::fill_in_date($this->comment_added_start);
@@ -477,6 +535,10 @@ class EbmsSearchSpec {
             if ($this->modified_end)
                 $this->modified_end =
                     Ebms\Util::fill_in_date($this->modified_end, true);
+            if (!empty($spec['board-member']))
+                $this->board_member = true;
+            if (!empty($spec['author-pos']))
+                $this->author_pos = $spec['author-pos'];
         }
     }
 }
@@ -525,7 +587,8 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
             'comments', 'publication-year', 'review-cycle',
             'reviewer', 'response', 'decision', 'tag',
             'fyi-citation', 'nci-reviewer-decision',
-            'committee-decision', 'full-text-retrieved',
+            'committee-decision', 'meeting-category',
+            'full-text-retrieved',
             // 'core-journals', XXX not implemeted yet
             'summary-topics-added',
             'only-unpublished', 'only-rejected', 'only-not-listed',
@@ -539,7 +602,8 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
     }
 
     // Check the date fields.
-    $date_fields = array('comment-added', 'tag-added', 'input', 'modified');
+    $date_fields = array('meeting', 'comment-added', 'tag-added',
+                         'input', 'modified');
     $message = 'Start date cannot be earlier than end date.';
     foreach ($date_fields as $date_field) {
         $start_name ="$date_field-start";
@@ -721,6 +785,12 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
     foreach ($results as $result)
         $review_cycles[$result->cycle_id] = $result->cycle_name;
 
+    // Build picklist for meeting types, e.g., 'Board', 'Subgroup'
+    // Space value ' ' means any meeting type, or no meeting criteria
+    // Adapted from reports.inc
+    $info = field_info_field('field_event_category');
+    $meeting_types = array(0 => ' ') + $info['settings']['allowed_values'];
+
     // Assemble the pieces for the search request form.
     return array(
         '#id' => 'search-db-form',
@@ -805,6 +875,18 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#attributes' => array('class' => array('fixed-width')),
                 '#default_value' => $defaults->author,
             ),
+            // OCEEBMS-295
+            'author-pos' => array(
+                '#type' => 'select',
+                '#title' => 'AUTHOR POSITION',
+                '#attributes' => array('class' => array('fixed-width')),
+                '#options' => array(
+                    'any' => 'Any',
+                    'first' => 'First',
+                    'last' => 'Last'
+                ),
+                '#default_value' => $defaults->author_pos,
+            ),
             'title' => array(
                 '#type' => 'textfield',
                 '#title' => 'TITLE',
@@ -869,7 +951,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             ),
             'nci-reviewer-decision' => array(
                 '#type' => 'radios',
-                '#title' => 'NCI REVIEWER DECISION',
+                '#title' => 'ABSTRACT DECISION',
                 '#options' => array(
                     'RejectBMReview' => 'NO',
                     'PassedBMReview' => 'YES',
@@ -893,7 +975,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             ),
             'committee-decision' => array(
                 '#type' => 'radios',
-                '#title' => 'COMMITTEE DECISION',
+                '#title' => 'FULL-TEXT DECISION',
                 '#options' => array(
                     'RejectFullReview' => 'NO',
                     'PassedFullReview' => 'YES',
@@ -919,6 +1001,18 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#options' => $responses,
                 '#default_value' => $defaults->response,
             ),
+            'meeting-category' => array(
+                '#type' => 'select',
+                '#title' => 'MEETING CATEGORY',
+                '#title_display' => 'after',
+                '#options' => $meeting_types,
+                '#default_value' => $defaults->meeting_category,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'meeting-dates' =>
+                Ebms\Util::date_range_field('MEETING DATE', 'meeting',
+                                            $defaults->meeting_start,
+                                            $defaults->meeting_end),
             'decision' => array(
                 '#type' => 'select',
                 '#title' => 'EDITORIAL BOARD DECISION',
@@ -972,7 +1066,7 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
             '#collapsed' => true,
             '#attributes' => array('class' => array('clearfix')),
             'input' =>
-            Ebms\Util::date_range_field('Input Date', 'input',
+            Ebms\Util::date_range_field('Import Date', 'input',
                                         $defaults->input_start,
                                         $defaults->input_end),
             'modified' =>
@@ -1087,6 +1181,15 @@ function pdq_ebms_search_db_form($form, &$form_state, $search_id) {
                 '#type' => 'checkbox',
                 '#title' => t('SAVE AS DEFAULT'),
                 'checked' => '',
+            ),
+
+            // OCEEBMS-209
+            'board-member' => array(
+                '#type' => 'checkbox',
+                '#title' => t('BOARD MEMBER VERSION'),
+                '#prefix' => '<div class="checkbox-line board-member-line">',
+                '#suffix' => '</div>',
+                'checked' => $defaults->board_member,
             ),
         ),
 

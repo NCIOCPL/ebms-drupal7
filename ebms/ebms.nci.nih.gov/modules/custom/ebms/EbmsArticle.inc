@@ -174,6 +174,49 @@ class EbmsArticleAuthor {
 }
 
 /**
+ * Relationship with another EBMS article.
+ */
+class EbmsRelatedArticle {
+
+    /**
+     * Constructor
+     *
+     *  @param int    $relationship_id    Unique ID of relationship
+     *  @param int    $article_id         Unique ID of related article
+     *  @param string $relationship_type  E.g., 'Duplicate'
+     *  @param string $comment            Optional notes about relationship
+     *  @param string $source_id          Typically Pubmed ID
+     */
+    function __construct($rid, $aid, $type, $comment, $dir) {
+        $this->relationship_id   = $rid;
+        $this->article_id        = $aid;
+        $this->relationship_type = $type;
+        $this->comment           = $comment;
+        $this->direction         = $dir;
+        $this->source_id         = db_select('ebms_article', 'a')
+            ->fields('a', array('source_id'))
+            ->condition('a.article_id', $aid)
+            ->execute()
+            ->fetchField();
+        if ($this->source_id == false)
+            $this->source_id = null;
+    }
+}
+
+/**
+ * Unfortunately, PHP doesn't have an equivalent for Python's __cmp__()
+ * method, so we have to do it with a regular function.
+ */
+function _compare_ebms_related_articles($a1, $a2) {
+    if ($a1->relationship_type == $a2->relationship_type) {
+        if ($a1->source_id == $a2->source_id)
+            return 0;
+        return ($a1->source_id < $a2->source_id) ? -1 : 1;
+    }
+    return ($a1->relationship_type < $a2->relationship_type) ? -1 : 1;
+}
+
+/**
  * One journal article record.
  */
 class EbmsArticle {
@@ -204,7 +247,8 @@ class EbmsArticle {
       // Used only if error occurred with this object
       // The errors are strings in an array
       // Else null
-      $errorMsgs;
+      $errorMsgs,
+      $related_articles;
 
     /**
      * Construct an object using either data from the database identified
@@ -293,67 +337,105 @@ class EbmsArticle {
 
         // Load the object from the row
         // Other parts will come from elsewhere
-        $this->article_id     = $row->article_id;
-        $this->source         = $row->source;
-        $this->source_id      = $row->source_id;
-        $this->source_jrnl_id = $row->source_jrnl_id;
-        $this->source_status  = $row->source_status;
-        $this->article_title  = $row->article_title;
-        $this->jrnl_title     = $row->jrnl_title;
-        $this->brf_jrnl_title = $row->brf_jrnl_title;
-        $this->import_date    = $row->import_date;
-        $this->imported_by    = $row->imported_by;
-        $this->update_date    = $row->update_date;
-        $this->abstract       = $row->abstract;
-        $this->published_date = $row->published_date;
-        $this->brf_citation   = $row->brf_citation;
-        $this->authors        = $this->getAuthors();
-        $this->source_data    = $row->source_data;
-        $this->full_text_id   = $row->full_text_id;
-        $this->errorMsgs      = null;
+        $this->article_id       = $row->article_id;
+        $this->source           = $row->source;
+        $this->source_id        = $row->source_id;
+        $this->source_jrnl_id   = $row->source_jrnl_id;
+        $this->source_status    = $row->source_status;
+        $this->article_title    = $row->article_title;
+        $this->jrnl_title       = $row->jrnl_title;
+        $this->brf_jrnl_title   = $row->brf_jrnl_title;
+        $this->import_date      = $row->import_date;
+        $this->imported_by      = $row->imported_by;
+        $this->update_date      = $row->update_date;
+        $this->abstract         = $row->abstract;
+        $this->published_date   = $row->published_date;
+        $this->brf_citation     = $row->brf_citation;
+        $this->authors          = $this->getAuthors();
+        $this->source_data      = $row->source_data;
+        $this->full_text_id     = $row->full_text_id;
+        $this->errorMsgs        = null;
+        $this->related_articles = $this->getRelatedArticles();
     }
 
     /**
      * Clear all values from an EbmsArticle object.
      */
     public function clear() {
-        $this->article_id     = null;
-        $this->source         = null;
-        $this->source_id      = null;
-        $this->source_jrnl_id = null;
-        $this->source_status  = null;
-        $this->article_title  = null;
-        $this->jrnl_title     = null;
-        $this->brf_jrnl_title = null;
-        $this->import_date    = null;
-        $this->imported_by    = null;
-        $this->update_date    = null;
-        $this->abstract       = null;
-        $this->published_date = null;
-        $this->brf_citation   = null;
-        $this->authors        = null;
-        $this->source_data    = null;
-        $this->full_text_id   = null;
-        $this->errorMsgs      = null;
+        $this->article_id       = null;
+        $this->source           = null;
+        $this->source_id        = null;
+        $this->source_jrnl_id   = null;
+        $this->source_status    = null;
+        $this->article_title    = null;
+        $this->jrnl_title       = null;
+        $this->brf_jrnl_title   = null;
+        $this->import_date      = null;
+        $this->imported_by      = null;
+        $this->update_date      = null;
+        $this->abstract         = null;
+        $this->published_date   = null;
+        $this->brf_citation     = null;
+        $this->authors          = null;
+        $this->source_data      = null;
+        $this->full_text_id     = null;
+        $this->errorMsgs        = null;
+        $this->related_articles = null;
     }
 
     /**
      * Simple getters get data that was loaded from the ebms_article row.
      */
-    public function getId()           { return $this->article_id; }
-    public function getSource()       { return $this->source; }
-    public function getSourceId()     { return $this->source_id; }
-    public function getSourceJrnlId() { return $this->source_jrnl_id; }
-    public function getSourceStatus() { return $this->source_status; }
-    public function getArticleTitle() { return $this->article_title; }
-    public function getJrnlTitle()    { return $this->jrnl_title; }
-    public function getBrfJrnlTitle() { return $this->brf_jrnl_title; }
-    public function getBrfCite()      { return $this->brf_citation; }
-    public function getAbstract()     { return $this->abstract; }
-    public function getPubDate()      { return $this->published_date; }
-    public function getImportDate()   { return $this->import_date; }
-    public function getImportedBy()   { return $this->imported_by; }
-    public function getUpdateDate()   { return $this->update_date; }
+    public function getId()              { return $this->article_id; }
+    public function getSource()          { return $this->source; }
+    public function getSourceId()        { return $this->source_id; }
+    public function getSourceJrnlId()    { return $this->source_jrnl_id; }
+    public function getSourceStatus()    { return $this->source_status; }
+    public function getArticleTitle()    { return $this->article_title; }
+    public function getJrnlTitle()       { return $this->jrnl_title; }
+    public function getBrfJrnlTitle()    { return $this->brf_jrnl_title; }
+    public function getBrfCite()         { return $this->brf_citation; }
+    public function getAbstract()        { return $this->abstract; }
+    public function getPubDate()         { return $this->published_date; }
+    public function getImportDate()      { return $this->import_date; }
+    public function getImportedBy()      { return $this->imported_by; }
+    public function getUpdateDate()      { return $this->update_date; }
+
+    /**
+     * Retrieve list of related articles. Use cache if available.
+     * Include relationships from and to this article.
+     */
+    public function getRelatedArticles() {
+        if (!isset($this->related_articles)) {
+            $or = db_or()
+                ->condition('r.from_id', $this->article_id)
+                ->condition('r.to_id', $this->article_id);
+            $fields = array('relationship_id', 'from_id', 'to_id', 'comment');
+            $query = db_select('ebms_related_article', 'r')
+                ->fields('r', $fields)
+                ->isNull('r.inactivated')
+                ->condition($or);
+            $query->join('ebms_article_relation_type', 't',
+                't.type_id = r.type_id');
+            $query->fields('t', array('type_name'));
+            $results = $query->execute();
+            $related_articles = array();
+            foreach ($results as $result) {
+                if ($result->from_id == $this->article_id)
+                    $related_articles[] = new EbmsRelatedArticle(
+                        $result->relationship_id, $result->to_id,
+                        $result->type_name, $result->comment, 'to');
+                else
+                    $related_articles[] = new EbmsRelatedArticle(
+                        $result->relationship_id, $result->from_id,
+                        $result->type_name, $result->comment, 'from');
+            }
+            $callback = 'EBMS\_compare_ebms_related_articles';
+            $rc = usort($related_articles, $callback);
+            $this->related_articles = $related_articles;
+        }
+        return $this->related_articles;
+    }
 
     /**
      * Complex method of getting brief citation.
@@ -2522,7 +2604,7 @@ function getArticlePacketIds($article_id, $topic_id = NULL, $find_all = false,
  *
  * @param int $packet_id        The id of the packet of interest.
  *
- * @return mixed $packet_info   An associative array of packet information.
+ * @return mixed $packet_info   A standard object with packet info & reviewers
  */
 function getPacketInfo($packet_id) {
     $info = db_select('ebms_packet', 'p')->condition('p.packet_id', $packet_id)
@@ -2552,11 +2634,17 @@ function getPacketInfo($packet_id) {
  * @param bool $active      returns only active or inactive reponses, in
  *                          conjunction with $fetch_all == false
  *
+ * @param bool $include_dropped returns packets that have been dropped from the
+ *                              article
+ *
  * @return mixed $reponses  an array of DB records containing pertinent info.
  */
-function getBoardMemberResponses($article_id, $topic_id, $fetch_all = false, $active = true) {
+function getBoardMemberResponses($article_id, $topic_id, $fetch_all=false,
+    $active=true, $include_dropped=false) {
+
     // first, retrieve the packet ids for the article and topic
-    $packetIds = getArticlePacketIds($article_id, $topic_id, $fetch_all, $active);
+    $packetIds = getArticlePacketIds($article_id, $topic_id, $fetch_all,
+                 $active, $include_dropped);
 
     if(empty($packetIds))
         return array();

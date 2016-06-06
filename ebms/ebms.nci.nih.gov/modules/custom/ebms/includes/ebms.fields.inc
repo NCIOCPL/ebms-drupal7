@@ -326,6 +326,54 @@ $GLOBALS['ebms_entity_fields'] = array(
             'activity_new_summary',
         ),
     ),
+    array(
+        'label' => t('Event ID'),
+        'entity_type' => 'message',
+        'description' => t('Primary key used for creating links to events'),
+        'field_name' => 'field_event_id',
+        'required' => false,
+        'type' => 'number_integer',
+        'cardinality' => '1',
+        'widget' => array(
+            'weight' => '-1',
+        ),
+        'bundles' => array(
+            'activity_new_event',
+            'activity_cancelled_event',
+            'activity_changed_event',
+            'activity_agenda_published',
+            'activity_event_type',
+        ),
+    ),
+    array(
+        'label' => t('Packet ID'),
+        'entity_type' => 'message',
+        'description' => t('Primary key used for creating links to EBMS review packets'),
+        'field_name' => 'field_packet_id',
+        'required' => true,
+        'type' => 'number_integer',
+        'cardinality' => '1',
+        'widget' => array(
+            'weight' => '-1',
+        ),
+        'bundles' => array('activity_new_packet'),
+    ),
+    array(
+        'label' => t('Summary URL'),
+        'entity_type' => 'message',
+        'description' => t('Link to summary document'),
+        'field_name' => 'field_summary_url',
+        'required' => true,
+        'type' => 'text',
+        'cardinality' => '1',
+        'widget' => array(
+            'weight' => '-1',
+        ),
+        'settings' => array(
+            'max_length' => '255',
+        ),
+        'bundles' => array('activity_new_summary'),
+    ),
 );
 
 foreach ($GLOBALS['ebms_node_fields'] as $field) {

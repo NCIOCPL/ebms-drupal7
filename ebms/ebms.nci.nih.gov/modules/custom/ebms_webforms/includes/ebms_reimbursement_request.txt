@@ -26,7 +26,7 @@ $webform = array (
     array (
       'nid' => '2',
       'eid' => '1',
-      'email' => '***REMOVED***',
+      'email' => '***REMOVED***,iris.zavala@nih.gov',
       'subject' => 'EBMS Reimbursement Request',
       'from_name' => 'default',
       'from_address' => 'default',
@@ -183,10 +183,10 @@ did_not_drive|I traveled by plane or train to this meeting (long distance travel
 metro|Metro
 shuttle|Shuttle
 private|Privately Owned Vehicle',
-        'date_description' => 'Please select the date on which this expense occurred.',
-        'select_description' => 'Please select an option from the list above.',
-        'text_description' => 'Please enter the cost of the expense. Please submit a receipt for any expense over $75.00.',
-        'text_prefix' => 'Please enter the cost of the expense.',
+        'date_description' => 'Select the date on which this expense occurred.',
+        'select_description' => 'Select an option from the list above.',
+        'text_description' => 'Enter the cost of the expense. Submit a receipt for any expense over $75.00.',
+        'text_prefix' => 'Enter the cost of the expense.',
         'title_display' => 'before',
         'private' => 0,
         'unique' => 0,
@@ -220,10 +220,10 @@ private|Privately Owned Vehicle',
         'items' => 'airport|Airport Parking
 hotel|Hotel Parking
 toll|Toll',
-        'date_description' => 'Please select the date on which this expense occurred.',
-        'select_description' => 'Please select an option from the list above.',
-        'text_description' => 'Please enter the cost of the expense. Please submit a receipt for any expense over $75.00.',
-        'text_prefix' => 'Please enter the cost of the expense. Please submit a receipt for any expense over $75.00.',
+        'date_description' => 'Select the date on which this expense occurred.',
+        'select_description' => 'Select an option from the list above.',
+        'text_description' => 'Enter the cost of the expense. Submit a receipt for any expense over $75.00.',
+        'text_prefix' => 'Enter the cost of the expense. Submit a receipt for any expense over $75.00.',
         'title_display' => 'before',
         'private' => 0,
         'unique' => 0,
@@ -311,7 +311,7 @@ no_hotel|I did not stay in a hotel',
       'value' => '',
       'extra' =>
       array (
-        'description' => 'If your office is located more than 50 miles from our building, you may request a per diem. We will calculate the amount based on your travel time.',
+        'description' => 'Board members who live less than 50 miles from our building are not eligible to receive a per diem.',
         'items' => 'per_diem|Per diem requested
 per_diem_declined|Per diem declined
 per_diem_ineligible|I am not eligible for a per diem',
@@ -368,7 +368,7 @@ honorarium_declined|Honorarium declined',
       'value' => '',
       'extra' =>
       array (
-        'description' => 'Please indicate whether you would like your reimbursement check to be sent to the work or home address we have on file.',
+        'description' => 'Indicate whether you would like your reimbursement check to be sent to the work or home address we have on file.',
         'items' => 'work|Work
 home|Home
 other|Other',
@@ -397,7 +397,7 @@ other|Other',
       'value' => '',
       'extra' =>
       array (
-        'description' => 'Please enter the total amount you are requesting, including reimbursement for all expenses and your honorarium. If you are requesting reimbursement for mileage and/or per diem, we will calculate the total(s) and add that amount to your reimbursement request.',
+        'description' => 'You may enter the total amount you are requesting, including reimbursement for all expenses and your honorarium, or you may leave this field blank. We will calculate your mileage and per diem amount (if requested) and add that to your reimbursement.',
         'title_display' => 'before',
         'private' => 0,
         'disabled' => 0,

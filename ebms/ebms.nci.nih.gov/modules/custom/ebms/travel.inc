@@ -91,43 +91,4 @@ function template_preprocess_ebms_hotel_form(&$variables) {
 #    pdq_ebms_debug('preprocess', $variables);
 }
 
-function xebms_preprocess(&$vars, $hook) {
-    // pdq_ebms_debug('preprocess', array($vars, $hook));
-    switch ($hook) {
-        case 'ebms_hotel_form':
-            $vars['form']['choice']['#description'] =
-                t('Where ya gonna snooze?');
-            $vars['hotel_form_content'] = array();
-            $hotel_form_hidden = array();
-            foreach (element_children($vars['form']) as $key) {
-                $type = $vars['form'][$key]['#type'];
-                if ($type == 'hidden' || $type == 'token') {
-                    $hotel_form_hidden[] =
-                        drupal_render($vars['form'][$key]);
-                }
-                else {
-                    $result = array();
-                    if (array_key_exists('#title', $vars['form'][$key])) {
-                        $title = $vars['form'][$key]['#title'];
-                        $result[] = "<h3>$title</h3>";
-                        $vars['form'][$key]['#title'] = '';
-                    }
-                    if (array_key_exists('#description', $vars['form'][$key])) {
-                        $desc = $vars['form'][$key]['#description'];
-                        $result[] = "<h4>$desc</h4>";
-                        $vars['form'][$key]['#description'] = '';
-                    }
-                    $result[] = drupal_render($vars['form'][$key]);
-                    $vars['hotel_form_content'][$key] = implode($result);
-                }
-            }
-            $vars['hotel_form_content']['hidden'] =
-                implode($hotel_form_hidden);
-            $vars['hotel_form'] =
-                implode($vars['hotel_form_content']);
-            #$vars['myform'] = print_r($vars['form'], true);
-            #    $vars['hotel_form_content'] = array(1, 2, 3, 4);
-            pdq_ebms_debug('preprocess', $vars);
-    }
-}
 */

@@ -11,9 +11,18 @@
 
 require_once('EbmsArticle.inc');
 require_once('EbmsPrint.inc');
-// require_once('logw.inc');
 
-function pdq_ebms_print_packets($action=null) {
+// Regex to find print job number embedded in a 'PrintJob*' file name
+define('JOBPAT', '/.*PrintJob[A-Za-z]*(?P<jobnum>[0-9]{5})\.*/');
+
+/**
+ * Entry point for printing packets.
+ * This is called by the ebms_menu() router.
+ *
+ *  @param string $action   One of the possible pages to generate.
+ *  @param string $job_id   Job number for view/download, as a string.
+ */
+function pdq_ebms_print_packets($action=null, $job_id=null) {
 
     // Second permissions check
     global $user;
@@ -28,10 +37,16 @@ function pdq_ebms_print_packets($action=null) {
         case 'run':
             return drupal_get_form('pdq_ebms_prtpkts_run_form');
         case 'view':
-            return drupal_get_form('pdq_ebms_prtpkts_view_form');
+            // return drupal_get_form('pdq_ebms_prtpkts_view_form');
+            // XXX EXPERIMENTAL
+            return drupal_get_form('pdq_ebms_prtpkts_list_form');
+        case 'download':
+            // No return from this one, downloads data and exits
+            downloadPrintResults($job_id);
         case 'mbrs':
             return drupal_get_form('pdq_ebms_prtpkts_mbrs_form');
     }
+
     return '<i>No action selected</i>';
 }
 
@@ -254,16 +269,16 @@ function pdq_ebms_prtpkts_run_form_submit($form, &$form_state) {
         // There's only one possibility left.  Should have been validated okay.
         if (is_null($oldJobId)) {
             throw new Exception (
-                "Fatal Error: Print validation should have checked for packet," .
-                " member, board, or old job ID.  But none of those found.");
+              "Fatal Error: Print validation should have checked for packet," .
+              " member, board, or old job ID.  But none of those found.");
         }
         // Find the job type
         $jobType = db_query(
-          'SELECT print_job_type_id FROM {ebms_print_job} WHERE print_job_id=:jobId',
+      'SELECT print_job_type_id FROM {ebms_print_job} WHERE print_job_id=:jobId',
           array(':jobId' => $oldJobId))->fetchField();
         if (!$jobType) {
             throw new Exception (
-                "Fatal Error: Print found no job type for old job ID=$oldJobId");
+              "Fatal Error: Print found no job type for old job ID=$oldJobId");
         }
     }
 
@@ -312,86 +327,129 @@ function pdq_ebms_prtpkts_run_form_submit($form, &$form_state) {
  ***********************************************/
 
 /**
- * Form to request download of printouts
+ * Create an associative array of extant print jobs, i.e., print job
+ * tar or html files that are still in the file system.  Files deleted
+ * from /tmp are not here.
+ *
+ * These are used to hyperlink jobs that can be re-retrieved.
+ *
+ *   key = job number as a string
+ *   val = fully qualified filename
+ *  example:
+ *   '123' => '/tmp/PrintJobs/PrintJob00123.tar'
+ *
+ * Note: the values are not used at this time.  They may be useful for
+ *       debugging.
+ *
+ * @return  associative array
  */
-function pdq_ebms_prtpkts_view_form() {
+function get_extant_jobfile_names() {
+
+    $jobFiles = array();
+    $basePath = Ebms\Util::get_packet_print_path();
+    foreach (glob($basePath . '/PrintJob*') as $fname) {
+
+        // Extract the job number as a string, without leading zeroes
+        $jobNum = 0;
+        if (preg_match(JOBPAT, $fname, $matches)) {
+            $jobNum = ltrim($matches['jobnum'], '0');
+        }
+
+        // Store it in the array
+        $jobFiles[$jobNum] = $fname;
+    }
+    return $jobFiles;
+}
+
+/**
+ * Build a query to retrieve previous print jobs.
+ *
+ */
+function _get_print_job_list_query() {
+
+    // Fetch the data
+    $qry = db_select('ebms_print_job', 'job');
+    $qry->leftjoin('ebms_board', 'board', 'job.board_id = board.board_id');
+    $qry->leftjoin('users', 'user', 'job.board_member_id = user.uid');
+    $qry->fields('job', array('print_job_id', 'print_job_type_id', 'mode',
+                 'print_dt', 'packet_start_dt', 'packet_end_dt',
+                 'packet_id', 'status', 'comment'));
+    $qry->fields('user', array('name'));
+    $qry->fields('board', array('board_name'));
+
+    // This is a paged query, unless the user clicked VIEW ALL (pager='off')
+    if (Ebms\Util::get_request_value('pager') != 'off')
+        $qry = $qry->extend('PagerDefault')->limit(25);
+
+    // Sort in reverse order by job ID
+    $qry->orderBy('job.print_job_id', 'DESC');
+
+    // he query
+    return $qry;
+}
+
+/**
+ * Form to display previous print jobs.
+ *
+ *  @return render array for the form
+ */
+function pdq_ebms_prtpkts_list_form() {
 
     drupal_set_breadcrumb(
         array(l('Home', 'home'), 'View Packet Printing Jobs')
     );
 
-    $form = array();
-    $form['title'] = array(
-        '#type' => 'markup',
-        '#markup' => '<h2>Download Printing Outputs</h2>'
-    );
+    // Get data from the print
+    $qry = _get_print_job_list_query();
+    $rows = $qry->execute();
 
-    $jobRows = getPrintJobData();
-    $header = array('Job', 'Type', 'Date', 'Start', 'End', 'Board',
-                    'Member', 'Packet', 'Mode', 'Status', 'Comment');
-    $tblRows = array();
-    foreach ($jobRows as $row) {
-        $tblRows[] = array($row->print_job_id, $row->print_job_type_id,
+    // Get array of job_id => filename for job outputs not yet cleaned out
+    $still_got_it = get_extant_jobfile_names();
+
+    // Put them in an array of rows
+    $tbl_rows = array();
+    foreach ($rows as $row) {
+
+        // If the job output still exists, hyperlink the job number
+        $job_id_str = $row->print_job_id;
+        if (array_key_exists($job_id_str, $still_got_it)) {
+            // $job_id_str = l($job_id_str, $still_got_it[$job_id_str]);
+            $job_id_str = l($job_id_str.'*',
+                            "/print-packets/download/$job_id_str");
+        }
+
+        // Build the columns
+        $tblRows[] = array($job_id_str, $row->print_job_type_id,
                $row->print_dt, $row->packet_start_dt, $row->packet_end_dt,
                $row->board_name, $row->name, $row->packet_id,
                $row->mode, $row->status, $row->comment);
     }
 
-    $form['jobTbl'] = array(
+    $header = array('Job', 'Type', 'Date', 'Start', 'End', 'Board',
+                    'Member', 'Packet', 'Mode', 'Status', 'Comment');
+
+    $table = array();
+
+    $table['title'] = array(
+        '#type' => 'markup',
+        '#markup' => '<h2>View Print Job History</h2>' .
+                     'If a Job ID is starred (e.g. 123*), '.
+                     'click it to download the file.',
+
+    );
+
+    $table['table'] = array(
         '#theme' => 'table',
-        '#caption' => 'Print Jobs',
+        // '#theme' => 'pager',
+        // '#caption' => 'Print Jobs',
         '#header' => $header,
         '#rows' => $tblRows,
     );
 
-    $form['jobId'] = array(
-        '#type' => 'textfield',
-        '#size' => 8,
-        '#title' => 'Job ID',
-        '#description' => 'Enter a job number to download the output for ' .
-            'the job.',
-        '#required' => false
-    );
+    // Pager theme is required
+    $table['pager'] = array('#theme'=>'pager');
 
-    addSubmitButtonToForm($form);
-
-    return $form;
-}
-
-/**
- * Validate display of print job results
- */
-function pdq_ebms_prtpkts_view_form_validate($form, $form_state) {
-
-    // Ensure that any requested job ID exists
-    $jobId = $form_state['values']['jobId'];
-
-    if ($jobId) {
-        // Check job
-        $status = db_query(
-            'SELECT status FROM {ebms_print_job} WHERE print_job_id = :jobId',
-            array(':jobId' => $jobId))->fetchField();
-
-        if (!$status)
-            form_set_error('jobId',
-                "Print job $jobId not found");
-        if ($status != 'success')
-            form_set_error('jobId',
-                "Job $jobId is marked as '$status', no output is available");
-    }
-}
-
-/**
- * Retrieve old print job results.
- */
-function pdq_ebms_prtpkts_view_form_submit($form, $form_state) {
-
-    $jobId = $form_state['values']['jobId'];
-
-    if ($jobId) {
-        // Sends data directly to browser, no return from here
-        downloadPrintResults($jobId);
-    }
+    return $table;
 }
 
 
@@ -557,7 +615,7 @@ function addBoardIdToForm(&$form, $desc) {
 }
 
 /**
- * Add a selection list of board memberss to a form
+ * Add a selection list of board members to a form
  *
  *  @param array reference $form   Add the elements to this form.
  *  @param string $desc            Description of input element.
@@ -752,7 +810,8 @@ function downloadPrintResults($jobId) {
     }
     else {
         // Validation has checked for bad job ID or status != success
-        // Other possibility is that sysadmin or cron removed it
+        // Other possibilities are that sysadmin or cron removed it
+        //  or user twiddled the jobId
         drupal_set_message(
             "Sorry, the output for job $jobId is gone from the server.");
 

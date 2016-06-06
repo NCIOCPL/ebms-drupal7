@@ -105,14 +105,14 @@ namespace Ebms {
                 new EbmsTopicDecisions($index++, 'Publishing',
                     '_format_topic_publishing', array(EbmsArticleStates::Published));
             self::$NCIREVIEWER =
-                new EbmsTopicDecisions($index++, 'NCI Reviewer Decision', null,
+                new EbmsTopicDecisions($index++, 'Abstract Decision', null,
                     array(EbmsArticleStates::PassedBMReview),
                     array(EbmsArticleStates::RejectBMReview));
             self::$FULLTEXT =
                 new EbmsTopicDecisions($index++, 'Full Text Retrieved', null);
             self::$SURVEILLANCE =
                 new EbmsTopicDecisions($index++,
-                    'Literature Surveillance Committee Decision', null,
+                    'Full-Text Decision', null,
                     array(EbmsArticleStates::PassedFullReview),
                     array(EbmsArticleStates::RejectFullReview),
                     array(EbmsArticleStates::FYI),
@@ -341,6 +341,20 @@ namespace {
             '#suffix' => "</div>",
         );
 
+        // Display related articles, if any (OCEEBMS-349).
+        $related = $article->getRelatedArticles();
+        if (!empty($related)) {
+            $related_articles_block = array(
+                'heading' => array(
+                    '#markup' =>
+                    '<div class="citation-subheader">RELATED CITATION(S)</div>'
+                ),
+            );
+            foreach ($related as $r)
+                $related_articles_block[$r->relationship_id] =
+                _display_article_relationship($r, $articleId);
+            $form['related-articles'] = $related_articles_block;
+        }
         $citations_inc_display_phase = DISPLAY_PHASE::REVIEW_CYCLE;
         // build array of currently active citation tags ever assigned, in date order
         $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');
@@ -563,6 +577,11 @@ namespace {
 
         if ($fileUrl)
             $links[] = array('Download Full Text', $fileUrl, $target);
+
+        // Add action for linking related citations (OCEEBMS-349).
+        $link_url = "citations/link/add/$articleId";
+        $link_opt = array('query' => drupal_get_query_parameters());
+        $links[] = array('Link Related Citation', $link_url, $link_opt);
 
         $items = array();
         foreach ($links as $link) {
@@ -1548,16 +1567,31 @@ namespace {
         return $form;
     }
 
+    /**
+     * Renders the block showing review packets assembled for board members
+     * to assess article and decide whether the article should result in
+     * modifications to any of the PDQ summaries. Invoked by _format_topic()
+     * above as part of the page to display all of the information about a
+     * single article (the so-called "Full Citation" page).
+     *
+     * @param int $articleId   primary key for the ebms_article table
+     * @param int $topicId     primary key for the ebms_topic table
+     *
+     * @return array           Drupal render array to be plugged into
+     *                         the form for the page (using the Drupal
+     *                         FAPI)
+     */
     function _format_topic_assigned_for_review_decision($articleId, $topicId) {
         $form = array();
 
-        // grab the current and past packet ids
-        $packetIds = Ebms\getArticlePacketIds($articleId, $topicId);
-        $pastIds = Ebms\getArticlePacketIds($articleId, $topicId, false, false,
-            true);
+        // Include all packets, even those which are currently inactive,
+        // and even if this article was dropped from the packet.
+        // See https://tracker.nci.nih.gov/browse/OCEEBMS-271.
+        $packetIds = Ebms\getArticlePacketIds($articleId, $topicId,
+                                              true, false, true);
 
-        // if no packets of either kind, done
-        if (empty($packetIds) && empty($pastIds))
+        // If the article is not in any packets, we're done.
+        if (empty($packetIds))
             return $form;
 
         // enclose the element
@@ -1565,31 +1599,29 @@ namespace {
         $form['#suffix'] = '</div>';
 
         // add the header
-        $form['header'] = array('#markup' => "<div class='citation-subheader'>Assigned For Review</div>");
+        $header = '<div class="citation-subheader">Assigned For Review</div>';
+        $form['header'] = array('#markup' => $header);
         $form['header']['#prefix'] = '<div class="full-citation-indent">';
         $form['header']['#suffix'] = '</div>';
 
-        if (!empty($packetIds)) {
-            $form['current_decisions']['blocks'] = _format_packet_ids($packetIds);
-        }
-
-        if (!empty($pastIds)) {
-            $form['past_blocks'] = array(
-                '#type' => 'fieldset',
-                '#title' => t('Past Decisions'),
-                '#collapsible' => TRUE,
-                '#collapsed' => TRUE,
-                'tags' => _format_packet_ids($pastIds),
-                '#attributes' => array(
-                    'class' => array('full-citation-past-items'),
-                ),
-            );
-        }
+        $blocks = _format_packet_ids($articleId, $packetIds);
+        $form['current_decisions']['blocks'] = $blocks;
 
         return $form;
     }
 
-    function _format_packet_ids($packetIds) {
+    /**
+     * Shows each of the packets to which the article was ever assigned (even
+     * if the article was subsequently dropped from the packet). Used for the
+     * "Full Citation" page.
+     *
+     * @param int $articleId      primary key for the ebms_article table
+     * @param array $packetIds    list of primary keys into the ebms_packet
+     *                            table
+     *
+     * @return array              elements for the Drupal form API
+     */
+    function _format_packet_ids($articleId, $packetIds) {
         $form = array();
 
         $packetInfos = array();
@@ -1605,7 +1637,7 @@ namespace {
         // build each packet block
         $packetBlocks = array();
         foreach ($packetInfos as $packetInfo) {
-            $packetBlocks[] = _format_packet_info($packetInfo);
+            $packetBlocks[] = _format_packet_info($articleId, $packetInfo);
         }
 
         $form = $packetBlocks;
@@ -1616,9 +1648,28 @@ namespace {
         return $form;
     }
 
-    function _format_packet_info($packetInfo) {
+    /**
+     * Creates Drupal FAPI render array for one of the packets to which
+     * this article is (or was) assigned, along with any board member
+     * reviews for that packet. Part of the "Full Citation" page logic.
+     *
+     * @param int $articleId      primary key for the ebms_article table
+     * @param object $packetInfo  object containing details about the
+     *                            specific EBMS packet being displayed
+     *
+     * @return array              elements for the Drupal FAPI
+     */
+    function _format_packet_info($articleId, $packetInfo) {
 
         $form = array();
+
+        // Find out if the article is still in the packet.
+        $drop_flag = db_select('ebms_packet_article', 'a')
+            ->condition('a.article_id', $articleId)
+            ->condition('a.packet_id', $packetInfo->packet_id)
+            ->fields('a', array('drop_flag'))
+            ->execute()
+            ->fetchField();
 
         // format contributor row
         $uid = $packetInfo->created_by;
@@ -1639,6 +1690,13 @@ namespace {
 
         $img = _build_decision_icon_tag('pass');
 
+        $extra = array();
+        if ($packetInfo->active_status != 'A')
+            $extra[] = 'archived packet';
+        if ($drop_flag)
+            $extra[] = 'article no longer in packet';
+        if (!empty($extra))
+            $title .= ' <em>(' . implode('; ', $extra) . ')</em>';
         $form['decision'] = array("#markup" => "<div>$img$date - $account->name</div>");
         $form['filename'] = array("#markup" => "<div>PACKET TITLE: $title</div>");
         $form['reviewers'] = array("#markup" => "<div>REVIEWERS: $nameList</div>");
@@ -1649,22 +1707,38 @@ namespace {
         return $form;
     }
 
+    /**
+     * Displays the board member decisions about what impact this
+     * article should have on PDQ summaries, if any. Part of the code
+     * which displays full information about a single article.
+     *
+     * @param int $articleId   primary key for the ebms_article table
+     * @param int $topicId     primary key for the ebms_topic table
+     *
+     * @return array           Drupal render array to be plugged into
+     *                         the form for the page (using the Drupal
+     *                         FAPI)
+     */
     function _format_topic_board_member_responses($articleId, $topicId) {
         $form = array();
 
-        $responses = Ebms\getBoardMemberResponses($articleId, $topicId);
-        $pastResponses = Ebms\getBoardMemberResponses($articleId, $topicId,
-            false, false);
-
-        if (empty($responses) && empty($pastResponses)) {
+        // Show all reviews, including those for packets which are no
+        // longer active, as well as reviews for packets from which
+        // this article was subsequently dropped.
+        // See https://tracker.nci.nih.gov/browse/OCEEBMS-271.
+        $responses = Ebms\getBoardMemberResponses($articleId, $topicId,
+                                                  true, false, true);
+        if (empty($responses))
             return $form;
-        }
 
         $form['#prefix'] = '<div class="full-citation-element">';
         $form['#suffix'] = '</div>';
 
         // add the header
-        $form['header'] = array('#markup' => "<div class='citation-subheader full-citation-indent'>Board Member Responses</div>");
+        $classes = 'citation-subheader full-citation-indent';
+        $form['header'] = array(
+            '#markup' => "<div class='$classes'>Board Member Responses</div>"
+        );
 
         // build each packet block
         $responseBlocks = array();
@@ -1675,28 +1749,6 @@ namespace {
         if (!empty($responseBlocks)) {
             $form['current_decisions']['blocks'] = $responseBlocks;
         }
-
-        // build out past responses if any
-        if (empty($pastResponses)) {
-            return $form;
-        }
-
-        // build each packet block
-        $pastBlocks = array();
-        foreach ($pastResponses as $response) {
-            $pastBlocks[] = _format_board_member_response($response);
-        }
-
-        $form['past_blocks'] = array(
-            '#type' => 'fieldset',
-            '#title' => t('Past Decisions'),
-            '#collapsible' => TRUE,
-            '#collapsed' => TRUE,
-            'tags' => $pastBlocks,
-            '#attributes' => array(
-                'class' => array('full-citation-past-items'),
-            ),
-        );
 
         return $form;
     }
@@ -1995,6 +2047,13 @@ namespace {
                         '#title' => t('Comment'),
                         '#prefix' => '<div class="full-citation-element">',
                         '#suffix' => '</div>',
+                        '#states' => array(
+                            'visible' => array(
+                                ":input[name='fulltext_check_$hash']" => array(
+                                    'checked' => true
+                                ),
+                            ),
+                        ),
                     );
 
                     break;
@@ -2041,8 +2100,9 @@ namespace {
 
                     require_once('review.inc');
 
+                    // OCEEBMS-271: get ALL the packets
                     $packetIds = Ebms\getArticlePacketIds($article_id,
-                                 $topic_id, true);
+                                 $topic_id, true, false, true);
 
                     if (empty($packetIds))
                         break;
@@ -2195,6 +2255,7 @@ namespace {
                         $rejectValues = db_select('ebms_review_rejection_value',
                                 'v')
                             ->fields('v')
+                            ->condition('v.active_status', 'A')
                             ->orderBy('v.value_pos')
                             ->execute()
                             ->fetchAllKeyed();
@@ -2594,7 +2655,7 @@ namespace {
 
         try {
             Ebms\setArticleState($articleId, $state, $topicId, null, $comment);
-            drupal_set_message("Added NCI Reviewer decision to article $articleId");
+            drupal_set_message("Added abstract decision to article $articleId");
         } catch (Exception $e) {
             watchdog_exception('citations', $e);
             drupal_set_message('Could not save the NCI Initial Reviewer decision.',
@@ -2697,10 +2758,10 @@ namespace {
 
         try {
             Ebms\setArticleState($articleId, $state, $topicId, null, $comment);
-            drupal_set_message("Added Literature Surveillance Committee decision to article $articleId");
+            drupal_set_message("Added Full-Text decision to article $articleId");
         } catch (Exception $e) {
             watchdog_exception('citations', $e);
-            drupal_set_message('Could not save the Literature Surveillance Committee decision.',
+            drupal_set_message('Could not save the Full-Text decision.',
                 'error');
         }
     }
@@ -4466,15 +4527,16 @@ namespace {
         }
 
         // If items per page not entered by the user, check defaults
+        // OCEEBMS-255: don't allow suppression of paging: chokes server
         if (empty($per_page)) {
 
             // User saved default, converting to int if needed
             $per_page = Ebms\Util::get_custom_user_field_value(
                         'dft_cite_review_items_per_page');
             if ($per_page == 0)
-                $per_page = 'all';
+                $per_page = 10;
         }
-        if (empty($per_page)) {
+        if (!is_numeric($per_page)) {
             // Program set default
             $per_page = 10;
         }
@@ -4653,8 +4715,7 @@ namespace {
                 ->execute()
                 ->fetchField();
 
-            if ($per_page != 'all')
-                $sortQuery = $sortQuery->extend('Ebms\EbmsPager')->limit($per_page);
+            $sortQuery = $sortQuery->extend('Ebms\EbmsPager')->limit($per_page);
 
             $result = $sortQuery->execute();
         } catch (Exception $e) {
@@ -4807,13 +4868,7 @@ namespace {
             $page = $parms['page'];
         }
 
-        // Fix for bug OCEEBMS-36.
-        if ($per_page == 'all') {
-            $page = 0;
-            $rows_per_page = 10000;
-        }
-        else
-            $rows_per_page = $per_page;
+        $rows_per_page = $per_page;
 
         $first_row = ($page * $rows_per_page) + 1;
 
@@ -4825,11 +4880,21 @@ namespace {
 
             // retrieve the topics and related boards
             $curr_topics_query = db_select('ebms_article_state', 's');
+
+            // OCEEBMS-300
+            if ($is_librarian)
+                $curr_topics_query->condition('s.current', 'Y');
+            else {
+                $p = \Ebms\EbmsArticleStates::Published;
+                $s = Ebms\getStateTypebyTextId($p)->sequence;
+                $curr_topics_query->join('ebms_article_state_type', 'st',
+                    'st.state_id = s.state_id');
+                $curr_topics_query->condition('st.sequence', $s, '>=');
+            }
+
             $curr_topics_query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
             $curr_topics = $curr_topics_query->condition('t.active_status', 'A')
                 ->condition('s.article_id', $articleId)
-                ->condition('s.current', 'Y')
-                //->condition('s.state_id', $state->state_id)
                 ->fields('s', array('topic_id', 'state_id'))
                 ->execute()
                 ->fetchAllKeyed();
@@ -5353,7 +5418,8 @@ namespace {
                         // else, proceed with showing or hiding
                         else if ((!isset($topic->curr_state) ||
                             $topic->curr_state == $state->state_id) && (
-                            user_access('administer ebms') ||
+                                // Suppressed: see https://tracker.nci.nih.gov/browse/OCEEBMS-280
+                                // user_access('administer ebms') ||
                             $is_librarian ||
                             in_array($currBoard, $user->boards) ||
                             in_array($currTopic, $user->topics))) {
@@ -5518,10 +5584,9 @@ namespace {
 
     function _citation_queue_results_ajax($form, &$form_state) {
         if ($form_state['input']['save_as_default']) {
-            // "all" items per page is converted to integer 0
             $per_page = $form_state['input']['per_page'];
-            if ($per_page == 'all')
-                $per_page = 0;
+            if (!is_numeric($per_page))
+                $per_page = 10;
 
             // Save current citation review display options as new defaults
             $dispOpts = array(
@@ -5877,6 +5942,8 @@ namespace {
 
         if (isset($form_state['values']['per_page']))
             $per_page = $form_state['values']['per_page'];
+        if (!is_numeric($per_page))
+            $per_page = 10;
 
         // if all_journals is set, then a right-join needs to be performed
         // in order to include all journals, not just those on not-list.
@@ -5893,8 +5960,7 @@ namespace {
             $query->condition('nl.board_id', $board);
         }
 
-        if ($per_page != 'all')
-            $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
+        $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
 
         // add the other filter fields
         if ($brief_title)
@@ -6782,7 +6848,6 @@ namespace {
      *   If passed, sets the default sort value for the form.
      * @param mixed $currentPerPage
      *   If passed, sets the default items per page.
-     *   May be a number (10) or a string ('all').
      * @param string $currentFormat
      *   If passed, sets the default format, 'brief' or 'abstract'
      *
@@ -6832,7 +6897,8 @@ namespace {
                 'title' => t("Title"),
                 'journal' => t("Journal"),
             );
-            if (in_array('board manager', $user->roles))
+            // removed by OCEEBMS-259:
+            // if (in_array('board manager', $user->roles))
                 $sortOptions['core_journal'] = 'Journal (Core Journals First)';
             $sortOptions['publication_date'] = t("Publication Date");
             $form['sort_by'] = array(
@@ -6868,7 +6934,7 @@ namespace {
             10 => 10,
             25 => 25,
             50 => 50,
-            'all' => t("View All"),
+            100 => 100,
         );
 
         // $default_per_page set in the loop that creates variables named
@@ -6916,5 +6982,448 @@ namespace {
         }
 
         return $form;
+    }
+
+    function pdq_ebms_article_link_types($action=null, $type_id=0) {
+        $form_name = 'pdq_ebms_article_link_type_form';
+        switch ($action) {
+            case 'add':
+                return drupal_get_form($form_name);
+            case 'edit':
+                return drupal_get_form($form_name, $type_id);
+        }
+        $types = db_select('ebms_article_relation_type', 't')
+            ->fields('t')
+            ->orderBy('t.type_name')
+            ->execute();
+        $rows = array();
+        $icon = Ebms\EDIT_INACTIVE;
+        foreach ($types as $type) {
+            $tid = $type->type_id;
+            $name = htmlspecialchars($type->type_name);
+            $status = $type->active_status == 'A' ? 'Active' : 'Inactive';
+            $desc = htmlspecialchars($type->type_desc);
+            $url = url("admin/article-link-types/edit/$tid");
+            $link = "<a href='$url' title='Edit'><img src='$icon'></a>";
+            $rows[] = array(
+                array(
+                    'class' => array('edit-type'),
+                    'data' => $link,
+                ),
+                array(
+                    'class' => array('type-name'),
+                    'data' => $name,
+                ),
+                array(
+                    'class' => array('type-status'),
+                    'data' => $status,
+                ),
+                array(
+                    'class' => array('type-desc'),
+                    'data' => $desc,
+                ),
+            );
+        }
+        $headers = array('', 'Name', 'Status', 'Description');
+        $button_class = array('class' => array('button'));
+        $attrs = array('attributes' => $button_class);
+        drupal_add_css('#article-link-types tr th:first-child,
+#article-link-types tr td:first-child { width: 20px; padding-right: 0; }',
+            array('type' => 'inline'));
+        return array(
+            'new-link' => array(
+                '#markup' => l('Add New Link Type',
+                                'admin/article-link-types/add', $attrs) .
+                '<br /><br />',
+            ),
+            'table' => array(
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+                '#attributes' => array('id' => 'article-link-types'),
+            ),
+        );
+    }
+    function pdq_ebms_article_link_type_form($form, &$form_state, $id=0) {
+        $name = $description = '';
+        $status = 'A';
+        if ($id) {
+            $type = db_select('ebms_article_relation_type', 't')
+                ->fields('t')
+                ->condition('t.type_id', $id)
+                ->execute()
+                ->fetch();
+            $name = $type->type_name;
+            $status = $type->active_status;
+            $description = $type->type_desc;
+            drupal_set_title('Edit Link Type');
+        }
+        else
+            drupal_set_title('Add New Link Type');
+        return array(
+            'tid' => array(
+                '#type' => 'hidden',
+                '#value' => $id,
+            ),
+            'name' => array(
+                '#title' => 'Relationship Type Name',
+                '#type' => 'textfield',
+                '#default_value' => $name,
+                '#required' => true,
+                '#description' =>
+                'Displayed on full citation page; must be unique.'
+            ),
+            'status' => array(
+                '#title' => 'Relationship Type Status',
+                '#type' => 'radios',
+                '#default_value' => $status,
+                '#options' => array(
+                    'A' => 'Active',
+                    'I' => 'Inactive',
+                ),
+                '#required' => true,
+                '#description' =>
+                'Inactive types will not be available on the linking form',
+            ),
+            'desc' => array(
+                '#title' => 'Description',
+                '#type' => 'textarea',
+                '#default_value' => $description,
+                '#description' =>
+                'Displayed on the link editing form, but not the ' .
+                'full citation page',
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#limit_validation_errors' => array(),
+                '#submit' => 'pdq_ebms_article_link_type_form_submit',
+            ),
+        );
+    }
+    function pdq_ebms_article_link_type_form_validate($form, &$form_state) {
+        $values = $form_state['values'];
+        $tid = 0;
+        $name = $values['name'];
+        if (!empty($values['tid']))
+            $tid = $values['tid'];
+        $count = db_select('ebms_article_relation_type', 't')
+            ->condition('t.type_name', $name)
+            ->condition('t.type_id', $tid, '<>')
+            ->countQuery()
+            ->execute()
+            ->fetchField();
+        if (!empty($count))
+            form_set_error('name', 'Relationship type name already exists');
+    }
+    function pdq_ebms_article_link_type_form_submit($form, &$form_state) {
+        $values = $form_state['values'];
+        $tid = $values['tid'];
+        $name = htmlspecialchars($values['name']);
+        $table = 'ebms_article_relation_type';
+        $fields = array(
+            'type_name' => $values['name'],
+            'active_status' => $values['status'],
+            'type_desc' => $values['desc'],
+        );
+        if ($tid) {
+            db_update($table)
+                ->fields($fields)
+                ->condition('type_id', $tid)
+                ->execute();
+            $action = 'modified';
+        }
+        else {
+            db_insert($table)->fields($fields)->execute();
+            $action = 'created';
+        }
+        drupal_set_message("Relationship type '$name' $action.");
+        drupal_goto('admin/article-link-types');
+    }
+    function pdq_ebms_link_related_article($action, $id=0, $id2=0) {
+        if ($action == 'delete') {
+            global $user;
+            $now = strftime("%Y-%m-%d %H:%M:%S");
+            db_update('ebms_related_article')
+                ->fields(
+                    array(
+                        'inactivated_by' => $user->uid,
+                        'inactivated' => $now,
+                    )
+                )
+                ->condition('relationship_id', $id)
+                ->execute();
+            $opts = array('query' => drupal_get_query_parameters());
+            $url = "citations/full/$id2";
+            drupal_goto($url, $opts);
+        }
+        $name = 'pdq_ebms_article_relationship_form';
+        return drupal_get_form($name, $action, $id, $id2);
+    }
+    function pdq_ebms_article_relationship_form(
+        $form, &$form_state, $action, $id, $id2
+    ) {
+        $from_id = $to_id = $comment = '';
+        $relationship_id = $relationship_type = null;
+        switch ($action) {
+            case 'add':
+                $title = 'Link Related Article';
+                $form_state['viewed-article'] = $from_id = $id;
+                if (!$from_id) {
+                    drupal_set_message('No linking article specified.',
+                        'error');
+                    drupal_goto('citations');
+                }
+                break;
+            case 'edit':
+                $title = 'Edit Article Relationship';
+                $relationship_id = $id;
+                $form_state['viewed-article'] = $id2;
+                if (!$relationship_id) {
+                    drupal_set_message('Malformed request', 'error');
+                    drupal_goto('citations');
+                }
+                $results = db_select('ebms_related_article', 'a')
+                    ->fields('a',
+                        array('from_id', 'to_id', 'type_id', 'comment'))
+                    ->condition('a.relationship_id', $relationship_id)
+                    ->isNull('a.inactivated')
+                    ->execute();
+                foreach ($results as $result) {
+                    $from_id = $result->from_id;
+                    $to_id = $result->to_id;
+                    $comment = $result->comment;
+                    $relationship_type = $result->type_id;
+                }
+                if (!$from_id) {
+                    drupal_set_message('Relationship deleted', 'error');
+                    drupal_goto('citations');
+                }
+                break;
+            default:
+                drupal_set_message('Missing or unsupported action', 'error');
+                drupal_goto('citations');
+        }
+        drupal_set_breadcrumb(
+            array(
+                l('Citation Management', 'citations'),
+                l('Full Citation', "citations/full/$from_id", array(
+                        'query' => drupal_get_query_parameters()
+                    )
+                ),
+                $title,
+            )
+        );
+        if (empty($form_state['query-parms']))
+            $form_state['query-parms'] = drupal_get_query_parameters();
+        $query = db_select('ebms_article_relation_type', 't')
+            ->fields('t', array('type_id', 'type_name', 'type_desc'))
+            ->condition('t.active_status', 'A')
+            ->orderBy('t.type_name');
+        $results = $query->execute();
+        $type_options = array();
+        foreach ($results as $result) {
+            $name = htmlspecialchars(strtoupper($result->type_name));
+            $desc = htmlspecialchars($result->type_desc);
+            $type_options[$result->type_id] = "$name. <em>$desc</em>";
+        }
+        $form = array(
+            'title' => array(
+                '#markup' => "<h2>$title</h2>",
+            ),
+            'relationship_id' => array(
+                '#type' => 'hidden',
+                '#value' => $relationship_id,
+            ),
+            'from_id' => array(
+                '#type' => 'hidden',
+                '#value' => $from_id,
+            ),
+            'to_id' => array(
+                '#type' => 'textfield',
+                '#title' => 'Related Article ID',
+                '#default_value' => $to_id,
+                '#required' => true,
+                '#description' => 'EBMS ID of related article',
+            ),
+            'rel-type' => array(
+                '#type' => 'radios',
+                '#title' => 'Relationship Type',
+                '#required' => true,
+                '#description' => 'Identify the nature of the relationship',
+                '#options' => $type_options,
+                '#default_value' => $relationship_type,
+            ),
+            'comment' => array(
+                '#type' => 'textarea',
+                '#title' => 'Comments',
+                '#description' => 'Optional notes about the relationship',
+                '#default_value' => $comment,
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#limit_validation_errors' => array(),
+                '#submit' => 'pdq_ebms_article_relationship_form_submit',
+            ),
+        );
+        return $form;
+    }
+
+    function pdq_ebms_article_relationship_form_validate($form, &$form_state) {
+        $article_id = $form_state['viewed-article'];
+        $values = $form_state['values'];
+        if (empty($values['from_id'])) {
+            form_set_error('from_id', 'Tampering detected');
+            return;
+        }
+        $from_id = $values['from_id'];
+        if (!Ebms\Util::validate_int($from_id)) {
+            form_set_error('from_id', 'Tampering detected');
+            return;
+        }
+        if (!empty($values['op']) && $values['op'] == 'Cancel') {
+            if (empty($form_state['query-parms']))
+                $opts = array();
+            else
+                $opts = array('query' => $form_state['query-parms']);
+            $url = "citations/full/$article_id";
+            drupal_goto($url, $opts);
+        }
+        if (empty($values['to_id']))
+            form_set_error('to_id', 'Missing EBMS ID for related article.');
+        else {
+            $to_id = trim($values['to_id']);
+            if (!Ebms\Util::validate_int($to_id))
+                form_set_error('to_id', 'EBMS ID must be an integer.');
+            elseif ($from_id == $to_id)
+                form_set_error('to_id', 'Cannot link article to itself.');
+            else {
+                $results = db_select('ebms_article', 'a')
+                    ->fields('a', array('article_title'))
+                    ->condition('a.article_id', $to_id)
+                    ->execute();
+                $title = null;
+                foreach ($results as $result)
+                    $title = $result->article_title;
+                if (empty($title))
+                    form_set_error('to_id', "Cannot find EBMS $to_id.");
+                else {
+                    $form_state['linked-article-title'] = $title;
+                    $form_state['linked-article-id'] = $to_id;
+                    $form_state['linking-article-id'] = $from_id;
+                }
+            }
+        }
+        if (empty($values['rel-type']))
+            form_set_error('rel-type', 'You must select a relationship type.');
+        else {
+            $type_id = $values['rel-type'];
+            $count = db_select('ebms_article_relation_type', 't')
+                ->condition('t.active_status', 'A')
+                ->condition('t.type_id', $type_id)
+                ->countQuery()
+                ->execute()
+                ->fetchField();
+            if (!$count)
+                form_set_error('rel-type', 'Invalid relationship type.');
+            else
+                $form_state['relationship-type-id'] = $type_id;
+        }
+    }
+    function pdq_ebms_article_relationship_form_submit($form, &$form_state) {
+        $article_id = $form_state['viewed-article'];
+        $values = $form_state['values'];
+        if (!empty($values['op']) && $values['op'] == 'Submit') {
+            $fields = array(
+                'from_id' => $form_state['linking-article-id'],
+                'to_id' => $form_state['linked-article-id'],
+                'type_id' => $form_state['relationship-type-id'],
+                'comment' => $values['comment'],
+            );
+            $rid = $values['relationship_id'];
+            $title = htmlspecialchars($form_state['linked-article-title']);
+            if ($rid) {
+                db_update('ebms_related_article')
+                    ->fields($fields)
+                    ->condition('relationship_id', $rid)
+                    ->execute();
+                drupal_set_message("Relationship with '$title' updated.");
+            }
+            else {
+                global $user;
+                $now = strftime("%Y-%m-%d %H:%M:%S");
+                $fields['created_by'] = $user->uid;
+                $fields['created'] = $now;
+                db_insert('ebms_related_article')
+                    ->fields($fields)
+                    ->execute();
+                drupal_set_message("Relationship with '$title' created.");
+            }
+        }
+        if (empty($form_state['query-parms']))
+            $opts = array();
+        else
+            $opts = array('query' => $form_state['query-parms']);
+        $url = "citations/full/$article_id";
+        drupal_goto($url, $opts);
+    }
+    function _display_article_relationship($relationship, $article_id) {
+        $rid = $relationship->relationship_id;
+        $opts = array('query' => drupal_get_query_parameters());
+        $url = url("citations/link/edit/$rid/$article_id", $opts);
+        $type = strtoupper(htmlspecialchars($relationship->relationship_type));
+        $pm_id = $relationship->source_id;
+        $pm_attrs = array(
+            'attributes' => array(
+                'target' => '_blank',
+                'title' => 'Pubmed ID',
+            ),
+        );
+        $pm_url = "http://www.ncbi.nlm.nih.gov/pubmed/$pm_id";
+        $pm_link = l($pm_id, $pm_url, $pm_attrs);
+        $ebms_id = $relationship->article_id;
+        $ebms_url = "citations/full/$ebms_id";
+        $ebms_attrs = array('attributes' => array('title' => 'EBMS ID'));
+        $ebms_link = l($ebms_id, $ebms_url, $ebms_attrs);
+        $edit_icon = Ebms\EDIT_INACTIVE;
+        $del_icon = Ebms\DELETE_ICON;
+        $request_uri = request_uri();
+        $pos = strpos($request_uri, 'citations/full/');
+        if ($pos === false)
+            $tail = "$article_id";
+        else
+            $tail = substr($request_uri, $pos + strlen('citations/full/'));
+        $del = "delArticleLink(\"/citations/link/delete/$rid/$tail\")";
+        $html = array();
+        $html[] = '<div class="article-relationship">';
+        $eclass = 'edit-relationship-link';
+        $dclass = 'del-relationship-link';
+        $html[] = "<a href='#' title='Drop relationship' class='$dclass' ";
+        $html[] = "onclick='$del'>";
+        $html[] = "<img src='$del_icon'></a>";
+        $html[] = "<a href='$url' title='Edit relationship' class='$eclass'>";
+        $html[] = "<img src='$edit_icon'></a>";
+        $html[] = "<div>$type: $pm_link ($ebms_link)";
+        if ($relationship->comment) {
+            $comment = htmlspecialchars($relationship->comment);
+            $html[] = "<br>COMMENT: $comment";
+        }
+        $html[] = '</div></div>';
+        $html[] = '<div id="confirm-link-deletion" style="display: none"' .
+                  ' title="Drop article relationship?">' .
+            '<p><span class="ui-icon ui-icon-alert" style="float:left; ' .
+            'margin:0 7px 20px 0;"></span>Relationship link will be ' .
+            'permanently deleted and cannot be recovered. Are you sure?' .
+            '</p></div>';
+        return array('#markup' => implode('', $html));
     }
 }

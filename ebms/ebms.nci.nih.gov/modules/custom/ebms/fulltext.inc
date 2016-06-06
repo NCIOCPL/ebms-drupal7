@@ -124,7 +124,6 @@ class EbmsFullText {
 function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
 
     // Build the picklists for PDQ boards and review cycles.
-    pdq_ebms_debug('FULLTEXT FORM STATE', $form_state);
     $board = $cycle = $topic = 0;
     $errors = array();
     if (isset($form_state['values'])) {
@@ -132,7 +131,6 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
         $board = $values['board'];
         $cycle = $values['cycle'];
         $topic = $values['topic'];
-        pdq_ebms_debug('fulltext form', array($values, $topic));
     }
     elseif ($request_id) {
         $json = db_select('ebms_search', 's')

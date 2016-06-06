@@ -146,7 +146,7 @@ class EbmsDocs {
             $del_name = htmlspecialchars($d->filename);
             $del_name = str_replace("'", "\\'", $del_name);
             $del_url = "$del_func('$del_url','$del_name');";
-            $del_link = '<a href="' . $del_url . '">DELETE</a>';
+            $del_link = '<a href="' . $del_url . '">ARCHIVE</a>';
             $data = array(
                 htmlspecialchars($d->filename),
                 htmlspecialchars($d->name),
@@ -178,7 +178,7 @@ class EbmsDocs {
                 '#type' => 'container',
                 '#attributes' => array(
                     'id' => 'confirm-doc-delete',
-                    'title' => 'Are you sure you want to delete?',
+                    'title' => 'Are you sure you want to archive?',
                 ),
                 'confirm-message' => array(
                     '#type' => 'markup',
@@ -303,6 +303,12 @@ class EbmsDoc {
  */
 function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
 
+    // Come back to the Document report page, if that's where
+    // we came from (OCEEBMS-331).
+    $referer = $_SERVER['HTTP_REFERER'];
+    if (preg_match('#reports/documents#', $referer))
+        $form_state['come-back-here'] = $referer;
+
     // Start out with values appropriate for a newly posted document.
     $checked_boards = array();
     $checked_tags = array();
@@ -360,7 +366,6 @@ function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
 
     // Don't lose what the user has already selected.
     if (isset($form_state['values'])) {
-        //pdq_ebms_debug('DOC FORM WITH VALUES', $form_state['values']);
         foreach ($form_state['values']['boards'] as $id => $val)
             if ($val)
                 $checked_boards[] = $val;
@@ -371,7 +376,6 @@ function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
     }
     else {
         $query_parms = drupal_json_encode($control->parms);
-        // pdq_ebms_debug('DOC FORM NO VALUES', $form_state);
     }
 
     // Begin form assembly using common fields.
@@ -482,7 +486,6 @@ function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
             '#options' => $topics,
             '#default_value' => $topics_default,
         );
-        //pdq_ebms_debug('AJAX TOPICS', $topics);
     }
     else
         unset($form[$bsf][$tsf]['topics']);
@@ -494,7 +497,6 @@ function pdq_ebms_post_doc_form($form, &$form_state, $control, $doc_id=0) {
  * form which can change if the Boards field changes.
  */
 function pdq_ebms_doc_board_ajax($form, $form_state) {
-    //pdq_ebms_debug('DOC BOARD AJAX', array($form, $form_state));
     return $form['board-specific-fields'];
 }
 
@@ -503,7 +505,6 @@ function pdq_ebms_doc_board_ajax($form, $form_state) {
  * form which can change if the Tags field changes.
  */
 function pdq_ebms_doc_tag_ajax($form, $form_state) {
-    //pdq_ebms_debug('DOC TAG AJAX', array($form, $form_state));
     $subform = $form['board-specific-fields']['tag-specific-fields'];
     return $subform;
 }
@@ -714,6 +715,9 @@ function pdq_ebms_post_doc_form_submit($form, &$form_state) {
     }
 
     // Re-route processing to the page showing the posted documents.
+    // 2016-01-11 (OCEEBMS-331): not always!
+    if (!empty($form_state['come-back-here']))
+        drupal_goto($form_state['come-back-here']);
     $parms = drupal_json_decode($values['query-parms']);
     drupal_goto(EbmsDocs::$url, array('query' => $parms));
 }

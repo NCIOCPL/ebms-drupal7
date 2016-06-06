@@ -2,7 +2,7 @@
 name = EBMS
 description = Customization for Electronic Board Member Site (EBMS)
 core = 7.x
-version = "1.0"
+version = "7.x-3.2"
 package = EBMS
 
 dependencies[]=block
