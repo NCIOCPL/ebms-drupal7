@@ -5079,6 +5079,7 @@ function pdq_ebms_doc_edit_form_validate($form, &$form_state) {
     $extension = strtolower(array_pop($pieces));
 
     // More stringent checking for summary documents.
+    $word_xml = 'vnd.openxmlformats-officedocument.wordprocessingml.document';
     if ($is_summary) {
         $acceptable = array(
             'pdf' => 'application/pdf',
@@ -5092,6 +5093,11 @@ function pdq_ebms_doc_edit_form_validate($form, &$form_state) {
             return;
         }
         $mime_type = Ebms\Util::get_mime_type($path);
+
+        // Workaround for shifting MS word mime types (OCEEBMS-383).
+        if ($mime_type == "application/$word_xml")
+            $mime_type = 'application/msword';
+
         $expected = $acceptable[$extension];
         if ($mime_type != $expected) {
             $filename = htmlspecialchars($filename);

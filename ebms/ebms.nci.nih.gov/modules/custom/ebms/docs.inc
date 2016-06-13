@@ -539,7 +539,6 @@ function pdq_ebms_post_doc_form_validate($form, &$form_state) {
     }
 
     // Find out what kind of file we're dealing with.
-    $word_xml = 'vnd.openxmlformats-officedocument.wordprocessingml.document';
     if ($values['doc']) {
         $field_name = 'tags';
         $doc_id = Ebms\Util::validate_int($values['doc'], EbmsDocs::$url);
@@ -553,8 +552,6 @@ function pdq_ebms_post_doc_form_validate($form, &$form_state) {
             $filename = $result->filename;
             $mime_type = $result->filemime;
         }
-        if ($mime_type == "application/$word_xml")
-            $mime_type = 'application/msword';
     }
     else {
         $field_name = 'filepath';
@@ -607,6 +604,11 @@ function pdq_ebms_post_doc_form_validate($form, &$form_state) {
         form_set_error($field_name, "$what must be one of $ext.");
         return;
     }
+
+    // Workaround for shifting MS word mime types (OCEEBMS-383).
+    $word_xml = 'vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if ($mime_type == "application/$word_xml")
+        $mime_type = 'application/msword';
 
     // Another hoop to jump through if it's a summary document.
     if ($is_summary) {
