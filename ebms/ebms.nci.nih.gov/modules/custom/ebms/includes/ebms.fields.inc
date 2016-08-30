@@ -377,7 +377,9 @@ $GLOBALS['ebms_entity_fields'] = array(
 );
 
 foreach ($GLOBALS['ebms_node_fields'] as $field) {
+
     switch ($field['field_name']) {
+
         case 'field_boards':
         case 'field_subgroups':
         case 'field_ad_hoc_groups':
@@ -394,19 +396,26 @@ foreach ($GLOBALS['ebms_node_fields'] as $field) {
                 'activity_new_packet',
                 'activity_new_summary',
             );
-
             $GLOBALS['ebms_entity_fields'][] = $messageField;
-
             break;
+
         case 'field_event_type':
             $messageField = $field;
             $messageField['entity_type'] = 'message';
             $messageField['bundles'] = array(
                 'activity_event_type',
             );
-
             $GLOBALS['ebms_entity_fields'][] = $messageField;
+            break;
 
+        case 'field_notes':
+            $messageField = $field;
+            $messageField['entity_type'] = 'message';
+            $messageField['bundles'] = array(
+                'activity_new_summary',
+            );
+            $messageField['settings']['text_processing'] = 0;
+            $GLOBALS['ebms_entity_fields'][] = $messageField;
             break;
     }
 }

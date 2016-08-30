@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 /**
  * @file
  *
@@ -1101,7 +1099,6 @@ class EbmsReview {
 
         // Build up the sequence of table rows.
         $rows = array();
-        $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
         $target = array('attributes' => array('target' => '_blank'));
         foreach ($articles as $article) {
 
@@ -1124,6 +1121,22 @@ class EbmsReview {
             $query->distinct();
             $results = $query->execute();
             $reviewers = array();
+
+            // Add related articles and board manager comment (OCEEBMS-381).
+            $related = EbmsReview::get_related_articles($article_id);
+            if ($related)
+                $citation .= "<br>$related";
+            $topic_id = db_select('ebms_packet', 'p')
+                ->fields('p', array('topic_id'))
+                ->condition('p.packet_id', $packet_id)
+                ->execute()
+                ->fetchField();
+            $comment = EbmsReview::get_article_topic_comment($article_id,
+                                                             $topic_id);
+            if ($comment) {
+                $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
+                $citation .= "<br>$comment</span><br>";
+            }
 
             // Loop through the list of reviewers who have already reviewed
             // this article.
@@ -1179,9 +1192,9 @@ class EbmsReview {
             $onclick = 'onclick=\'location.href="' . $href . '"\'';
             $checked = $article->archived ? ' checked="checked"' : '';
             $checkbox = "<input $type $onclick$checked />";
-            $pm_link = $pubmed . $article->source_id;
+            $pm_url = Ebms\Util::pubmed_url($article->source_id);
             $links = '<div class="links">' .
-                l('View Abstract', $pm_link, $target);
+                l('View Abstract', $pm_url, $target);
             if ($article->uri) {
                 $f_url = file_create_url($article->uri);
                 $links .= ' | ' . l('Download Full Text', $f_url, $target);
@@ -1408,14 +1421,13 @@ class EbmsReview {
         }
 
         // Assemble the render array for the page.
-        $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
         $target = array('attributes' => array('target' => '_blank'));
         $pmid = db_select('ebms_article', 'a')
             ->fields('a', array('source_id'))
             ->condition('a.article_id', $this->article_id)
             ->execute()
             ->fetchField();
-        $pm_url = $pubmed . $pmid;
+        $pm_url = Ebms\Util::pubmed_url($pmid);
         $download_full_text = array();
         $ft_query = db_select('ebms_article', 'a');
         $ft_query->join('file_managed', 'f', 'f.fid = a.full_text_id');
@@ -1489,11 +1501,12 @@ class EbmsReview {
 
         // Get the basic information for the packet.
         $packet_info = db_select('ebms_packet', 'p')
-            ->fields('p', array('packet_title'))
+            ->fields('p', array('packet_title', 'topic_id'))
             ->condition('p.packet_id', $this->packet_id)
             ->execute()
             ->fetch();
         $title = htmlspecialchars($packet_info->packet_title);
+        $topic_id = $packet_info->topic_id;
 
         // Override the default breadcrumbs.
         drupal_set_breadcrumb(
@@ -1554,7 +1567,7 @@ class EbmsReview {
         global $user;
         foreach ($articles as $article) {
             $article_id = $article->article_id;
-            $citation = EbmsReview::show_citation($article_id, 3, true);
+            $citation = EbmsReview::show_citation($article_id, $topic_id, 3, true);
             $block = array();
             $block['citation'] = array(
                 '#markup' => '<p>' . $citation . '</p>',
@@ -1727,12 +1740,13 @@ class EbmsReview {
     private function member_fyi_packet() {
 
         // Get the basic information for the packet.
-        $packet_title = db_select('ebms_packet', 'p')
-            ->fields('p', array('packet_title'))
+        $packet = db_select('ebms_packet', 'p')
+            ->fields('p', array('packet_title', 'topic_id'))
             ->condition('p.packet_id', $this->packet_id)
             ->execute()
-            ->fetchField();
-        $title = htmlspecialchars($packet_title);
+            ->fetch();
+        $title = htmlspecialchars($packet->packet_title);
+        $topic_id = $packet->topic_id;
 
         // Override the default breadcrumbs.
         drupal_set_breadcrumb(
@@ -1793,7 +1807,7 @@ class EbmsReview {
         global $user;
         foreach ($articles as $article) {
             $article_id = $article->article_id;
-            $citation = EbmsReview::show_citation($article_id, 3, true);
+            $citation = EbmsReview::show_citation($article_id, $topic_id, 3, true);
             $block = array();
             $block['citation'] = array(
                 '#markup' => '<p>' . $citation . '</p>',
@@ -2497,12 +2511,17 @@ class EbmsReview {
             'packet-title' => array(
                 '#type' => 'markup',
                 '#markup' => "<h2>{$this->packet_title} $header_suffix</h2>" .
-                '<p><em>Click on the summary document to open it on your ' .
-                'computer. Review articles. If needed, make changes to ' .
-                'the summary using Track Changes and save it to your ' .
-                'computer. Then, upload the document with your changes ' .
-                'using the Post Document button found in the Reviewer ' .
-                'Uploads section below.</em></p>',
+                '<br><h3>Instructions</h3>' .
+                '<ol style="font-style: italic">' .
+                '<li>Click on the summary document to open it on your ' .
+                'computer so that it is ready for you to make changes.</li>' .
+                '<li>Review articles.</li>' .
+                '<li>If needed, make changes to the summary using Track ' .
+                'Changes and save it to your computer, adding your initials ' .
+                'to the filename.</li>' .
+                '<li>Upload the document with your changes ' .
+                'using the POST DOCUMENT button found in the Reviewer ' .
+                'Uploads section below.</li></ol><br>',
             ),
         );
 
@@ -2557,7 +2576,6 @@ class EbmsReview {
 
         // Standard pieces we'll need for the link out to NLM.
         $target = array('attributes' => array('target' => '_blank'));
-        $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
 
         // Options for links.
         $options = array('html' => true, 'query' => $this->query_parms());
@@ -2583,7 +2601,8 @@ class EbmsReview {
             $is_fyi =EbmsReview::is_fyi($article->article_id, $topic_id);
             $options['query']['article'] = $article->article_id;
             $pm_id = $article->source_id;
-            $pm_link = l('view abstract', $pubmed . $pm_id, $target);
+            $pm_url = Ebms\Util::pubmed_url($pm_id);
+            $pm_link = l('view abstract', $pm_url, $target);
             $links = '<div class="links">' . $pm_link;
 
             // Add the link for viewing the full text if we have it.
@@ -2611,7 +2630,7 @@ class EbmsReview {
                 }
             }
             $links .= '</div>';
-            $citation = EbmsReview::show_citation($article->article_id, 3);
+            $citation = EbmsReview::show_citation($article->article_id, $topic_id, 3);
             if ($is_fyi)
                 $c2 = '<span class="fyi">FYI</span>';
             elseif ($article->when_posted) {
@@ -2805,7 +2824,7 @@ class EbmsReview {
             ->condition('a.article_id', $article_id)
             ->execute()
             ->fetchField();
-        return 'http://www.ncbi.nlm.nih.gov/pubmed/' . $source_id;
+        return Ebms\Util::pubmed_url($source_id);
     }
 
     /**
@@ -3035,6 +3054,81 @@ class EbmsReview {
         return $parms;
     }
 
+    private static function get_related_articles($article_id, $link_ebms_id=false) {
+        // Add links to related articles.
+        $query = db_select('ebms_related_article', 'a')
+            ->fields('a', array('from_id', 'to_id'))
+            ->condition(db_or()
+                ->condition('a.from_id', $article_id)
+                ->condition('a.to_id', $article_id))
+            ->isNull('a.inactivated');
+        $results = $query->execute();
+        $related_ids = array();
+        foreach ($results as $result) {
+            $related_id = 0;
+            if ($result->from_id != $article_id)
+                $related_id = $result->from_id;
+            elseif ($result->to_id != $article_id)
+                $related_id = $result->to_id;
+            if ($related_id && !in_array($related_id, $related_ids))
+                $related_ids[] = $related_id;
+        }
+        sort($related_ids);
+        $related_articles = '';
+        foreach ($related_ids as $related_id) {
+            $article = EbmsReview::format_related_article($related_id, $link_ebms_id);
+            if ($article)
+                $related_articles .= " $article";
+        }
+        return $related_articles;
+    }
+
+    private static function format_related_article($id, $link_ebms_id=false) {
+        $results = db_select('ebms_article', 'a')
+            ->fields('a', array('source_data'))
+            ->condition('a.article_id', $id)
+            ->execute();
+        foreach ($results as $result) {
+            $display = array();
+            $doc = new \SimpleXMLElement($result->source_data);
+            if ($doc->MedlineCitation->Article->AuthorList->Author) {
+                foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
+                    if ($a->LastName)
+                        $display[] = htmlspecialchars($a->LastName);
+                    break;
+                }
+            }
+            else
+                $display[] = '[No authors listed]';
+            $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+            $display[] = htmlspecialchars($ta);
+            $article = $doc->MedlineCitation->Article;
+            $year = $article->Journal->JournalIssue->PubDate->Year;
+            if ($year)
+                $display[] = $year;
+            $pmid = $doc->MedlineCitation->PMID;
+            $url = Ebms\Util::pubmed_url($pmid);
+            $link = "<a href='$url' target='_blank'>$pmid</a>";
+            $display[] = "PMID $link";
+            if ($link_ebms_id)
+                $display[] = " (<a href='/citations/full/$id'>$id</a>)";
+            $display = implode(' ', $display);
+            return "[RELATED CITATION: $display]";
+        }
+        return '';
+    }
+
+    private static function get_article_topic_comment($article_id, $topic_id) {
+        $results = db_select('ebms_article_topic_comment', 'c')
+            ->fields('c', array('comment'))
+            ->condition('c.article_id', $article_id)
+            ->condition('c.topic_id', $topic_id)
+            ->execute();
+        foreach ($results as $result)
+            if ($result->comment)
+                return htmlspecialchars($result->comment);
+        return '';
+    }
     /**
      * Display very brief citation for an article, consisting only of the
      * first author's surname, the journal's brief title, the year date,
@@ -3046,8 +3140,11 @@ class EbmsReview {
      * display (see TIR 2260).  She now wants the title of the article
      * included, as well as a link to the full text of the article, if
      * available.
+     *
+     * 2016-06-29 (OCEEBMS-381): include related articles and board
+     * manager comments.
      */
-    private static function brief_citation($article_id) {
+    private static function brief_citation($article_id, $topic_id) {
 
         // Fetch the information we need from the database.
         $query = db_select('ebms_article', 'a');
@@ -3082,6 +3179,15 @@ class EbmsReview {
             $citation[] = $year;
         $citation[] = $doc->MedlineCitation->PMID;
         $citation = implode('; ', $citation);
+
+        // Add related articles and board manager comments (OCEEBMS-381).
+        $citation .= EbmsReview::get_related_articles($article_id, true);
+        $comment = EbmsReview::get_article_topic_comment($article_id,
+                                                         $topic_id);
+        if ($comment) {
+            $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
+            $citation .= "<br>$comment</span><br>";
+        }
 
         // If we have the full text, provide a link to it.
         if ($uri) {
@@ -3160,6 +3266,9 @@ ORDER BY t.topic_name";
      *
      * 2016-01-12 (OCEEBMS-232): include FYI articles.
      *
+     * 2016-06-29 (OCEEBMS-381): include related articles and board
+     * manager comments.
+     *
      * @param int $topic_id
      *   The topic for which articles that passed review are selected.
      * @param int $state_id
@@ -3224,7 +3333,7 @@ ORDER BY t.topic_name";
         $articles = array();
         foreach ($results as $result) {
             $id = $result->article_id;
-            $articles[$id] = EbmsReview::brief_citation($id);
+            $articles[$id] = EbmsReview::brief_citation($id, $topic_id);
         }
         // Real sort is complicated, but brief citation has author at front
         if ($sort_by == 'Author')
@@ -3346,7 +3455,7 @@ ORDER BY t.topic_name";
      * page has slightly different requirements for how the citations
      * are to be formatted.
      */
-    public static function show_citation($article_id, $max_authors=99999,
+    public static function show_citation($article_id, $topic_id, $max_authors=99999,
                                          $include_links=false) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
@@ -3404,10 +3513,24 @@ ORDER BY t.topic_name";
         }
         $pmid = $doc->MedlineCitation->PMID;
         $pieces[] = "PMID: $pmid";
+
+        // Add related articles and board manager comments if present (OCEEBMS-381).
+        $related_articles = EbmsReview::get_related_articles($article_id);
+        if ($related_articles)
+            $pieces[] = "<br>$related_articles";
+        $comment = EbmsReview::get_article_topic_comment($article_id,
+                                                         $topic_id);
+        if ($comment) {
+            $pieces[] = '<br><br><span class="bmc">BOARD MANAGER COMMENT';
+            $pieces[] = "<br>$comment</span><br>";
+        }
+
         if ($include_links) {
-            $pieces[] = '<br><br>';
-            $pieces[] = '<a href="http://www.ncbi.nlm.nih.gov/pubmed/' .
-                $pmid . '" target="_blank">VIEW ABSTRACT</a>';
+            if (!$comment)
+                $pieces[] = '<br>';
+            $pieces[] = '<br>';
+            $url = Ebms\Util::pubmed_url($pmid);
+            $pieces[] = "<a href='$url' target='_blank'>VIEW ABSTRACT</a>";
             $ft_uri = Ebms\Util::get_ft_uri($article_id);
             if ($ft_uri) {
                 $ft_url = file_create_url($ft_uri);
@@ -3661,13 +3784,20 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         $loeSuffix = "$link</div>";
     }
 
+    // Get the topic ID.
+    $topic_id = db_select('ebms_packet', 'p')
+        ->condition('p.packet_id', $review->packet_id)
+        ->fields('p', array('topic_id'))
+        ->execute()
+        ->fetchField();
+
     // Assemble the rest of the values needed for the form.
     $article_id = $review->article_id;
     $title = htmlspecialchars($review->packet_title);
     $attrs = array('attributes' => array('target' => '_blank'));
     $pm_url = EbmsReview::pubmed_url($article_id);
     $links = '<div class="links">' . l('VIEW ABSTRACT', $pm_url, $attrs);
-    $cite = EbmsReview::show_citation($article_id);
+    $cite = EbmsReview::show_citation($article_id, $topic_id);
 
     // Add a link for viewing the article's full text (if we have it).
     $query = db_select('file_managed', 'f');
@@ -4092,6 +4222,7 @@ function pdq_ebms_save_reviewer_file($form, &$form_state) {
             'account' => $account,
             'title' => $filename,
             'url' => $url,
+            'note' => $filenotes,
             'topics' => array($packetInfo->topic_id)));
 
         // Tell the user that we succeeded.

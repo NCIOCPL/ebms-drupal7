@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 namespace Ebms;
 
 require_once('EbmsArticle.inc');
@@ -181,7 +179,7 @@ class PubmedInterface {
 
 
         // Construct a URL to fetch
-        $base = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
+        $base = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
 
         // Fixed parameters for request
         $parms = 'db=pubmed&rettype=medline&retmode=xml&id=';
@@ -226,6 +224,8 @@ class PubmedInterface {
             curl_setopt($ch, CURLOPT_URL, $base);
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $parmStr);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 
             // This one puts the return in $results instead of stdout
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);

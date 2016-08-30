@@ -1,196 +1,58 @@
 <?php
 
-// $Id$
-namespace Ebms {
-    require_once('EbmsArticle.inc');
-
-    $GLOBALS['decision_value_map'] = array(
-        'initial_review' => array('pass', 'reject', 'comment'),
-        'published' => array('select', 'comment', 'state'),
-        'nci_reviewer' => array('pass', 'reject', 'comment'),
-        'fulltext' => array('file', 'check', 'comment'),
-        'surveillance' => array('pass', 'reject', 'fyi', 'hold', 'comment'),
-        'member_responses' => array('packet', 'reviewer', 'select', 'reject',
-            'loe', 'comment'),
-        'manager_actions' => array('select', 'comment'),
-        'on_agenda' => array('future', 'past', 'comment'),
-        'board_decision' => array('select', 'discussed', 'members', 'comment'),
-    );
-
-    // These names are transformed into variable names by a double indirection
-    // in the two (!) loops that begin with:
-    //   $cachedKeys = drupal_map_assoc($citation_cached_value_keys)
-    // Clever eh?  Try finding one of them using a debugger!
-    $GLOBALS['citation_cached_value_keys'] = array(
-        'board_select',
-        'topic_select',
-        'cycle_select',
-        'tag_select',
-        'title_pattern_field',
-        'journal_id_field',
-        'abstract_review_check',
-        'fulltext_review_check',
-        'onhold_review_check',
-        'sort_by',
-        'format',
-        'per_page',
-    );
-
-    /**
-     * Class encapsulating information and methods used in decisions (i.e.,
-     * state assignments) that can be made about an article.
-     *
-     * This is general information pertaining to any article, allowing the
-     * program to locate information about any state encountered in the state
-     * history of an article.  The information includes information about the
-     * states themselves, and also some information specific to how we format
-     * the state data for display (e.g., $this->title, $this->formatter).
-     *
-     * The class is initialized and instances created once during a run, and
-     * not updated after initialization.
-     */
-    class EbmsTopicDecisions {
-        static $INITIALREVIEW = null;
-        static $READYINITIAL = null;
-        static $PUBLISHED = null;
-        static $NCIREVIEWER = null;
-        static $FULLTEXT = null;
-        static $SURVEILLANCE = null;
-        static $ASSIGNEDFORREVIEW = null;
-        static $BOARDMEMBERRESPONSES = null;
-        static $BOARDMANAGERACTIONS = null;
-        static $ONAGENDA = null;
-        static $EDITORIALBOARD = null;
-        private $index;
-        private $title;
-        private $sequence;
-        private $formatter;
-        private $pass_states;
-        private $reject_states;
-        private $fyi_states;
-        private $hold_states;
-        static $currentIndex = 0;
-
-        public function __construct($index, $title, $formatter=null,
-                                    $pass_states=array(), $reject_states=array(),
-                                    $fyi_states=array(), $hold_states=array()) {
-            $this->index = $index;
-            $this->title = $title;
-
-            $this->formatter = $formatter;
-            $this->pass_states = $pass_states;
-            $this->reject_states = $reject_states;
-            $this->fyi_states = $fyi_states;
-            $this->hold_states = $hold_states;
-
-            // if any pass states exist, use them to populate the sequence
-            $state = reset($pass_states);
-            if ($state) {
-                $this->sequence = getStateTypeSequence($state);
-            }
-        }
-
-        public static function init() {
-            $index = 1;
-            self::$READYINITIAL =
-                new EbmsTopicDecisions($index++,
-                    'Ready for Initial Review', null,
-                    array(EbmsArticleStates::ReadyInitReview));
-            self::$INITIALREVIEW =
-                new EbmsTopicDecisions($index++,
-                    'Medical Librarian Initial Review', null,
-                    array(EbmsArticleStates::PassedInitReview),
-                    array(EbmsArticleStates::RejectInitReview));
-            self::$PUBLISHED =
-                new EbmsTopicDecisions($index++, 'Publishing',
-                    '_format_topic_publishing', array(EbmsArticleStates::Published));
-            self::$NCIREVIEWER =
-                new EbmsTopicDecisions($index++, 'Abstract Decision', null,
-                    array(EbmsArticleStates::PassedBMReview),
-                    array(EbmsArticleStates::RejectBMReview));
-            self::$FULLTEXT =
-                new EbmsTopicDecisions($index++, 'Full Text Retrieved', null);
-            self::$SURVEILLANCE =
-                new EbmsTopicDecisions($index++,
-                    'Full-Text Decision', null,
-                    array(EbmsArticleStates::PassedFullReview),
-                    array(EbmsArticleStates::RejectFullReview),
-                    array(EbmsArticleStates::FYI),
-                    array(EbmsArticleStates::FullReviewHold));
-            self::$ASSIGNEDFORREVIEW =
-                new EbmsTopicDecisions($index++, 'Assigned For Review');
-            self::$BOARDMEMBERRESPONSES =
-                new EbmsTopicDecisions($index++, 'Board Member Responses');
-            self::$BOARDMANAGERACTIONS =
-                new EbmsTopicDecisions($index++, 'Board Manager Action(s)',
-                    '_format_topic_board_manager_actions',
-                    array(
-                        EbmsArticleStates::NotForAgenda,
-                        EbmsArticleStates::AgendaNoPaprChg,
-                        EbmsArticleStates::AgendaFutureChg,
-                        EbmsArticleStates::AgendaBoardDiscuss,
-                        EbmsArticleStates::AgendaWrkGrpDiscuss,
-                        EbmsArticleStates::FullEnd,
-                        EbmsArticleStates::OnHold,));
-            self::$ONAGENDA =
-                new EbmsTopicDecisions($index++, 'On Agenda',
-                    '_format_topic_on_agenda_decision',
-                    array(EbmsArticleStates::OnAgenda));
-            self::$EDITORIALBOARD =
-                new EbmsTopicDecisions($index++, 'Editorial Board Decision',
-                    '_format_topic_editorial_board_decision',
-                    array(EbmsArticleStates::FinalBoardDecision));
-        }
-
-        public function index() {
-            return $this->index;
-        }
-
-        public function title() {
-            return $this->title;
-        }
-
-        public function sequence() {
-            return $this->sequence;
-        }
-
-        public function formatter() {
-            return $this->formatter;
-        }
-
-        public function pass_states() {
-            return $this->pass_states;
-        }
-
-        public function reject_states() {
-            return $this->reject_states;
-        }
-
-        public function fyi_states() {
-            return $this->fyi_states;
-        }
-
-        public function hold_states() {
-            return $this->hold_states;
-        }
-
-        public function find_state($text_id) {
-            if (in_array($text_id, $this->pass_states())) {
-                return 'pass';
-            } else if (in_array($text_id, $this->reject_states())) {
-                return 'reject';
-            } else if (in_array($text_id, $this->fyi_states())) {
-                return 'fyi';
-            } else if (in_array($text_id, $this->hold_states())) {
-                return 'hold';
-            }
-
-            return null;
-        }
-    }
-
-    EbmsTopicDecisions::init();
-}
+/**
+ * Here be dragons!
+ *
+ * This file is longer and more complicated than it should be, and there is
+ * a task in the backlog to address this problem (OCEEBMS-79). In the meantime
+ * here is an overview of where to start looking if you're new to the project.
+ *
+ * The entry point for the functionality in this file is the function
+ * pdq_ebms_citations(), immediately below. This function handles three
+ * different pages:
+ *
+ *  'full' - displays all the information for a single article (referred to
+ *           as 'citation' here), with heavy dependence on AJAX and on
+ *           embedded form handling to support editing the information
+ *           in place; this is the most complicated page in the whole
+ *           system; uses pdq_ebms_full_citation to build the page's
+ *           form
+ *
+ *  'review' - uses pdq_ebms_citation_queue to build the queue of articles
+ *           to be reviewed by the current user to determine whether which
+ *           of the articles should proceed to the next stage; some roles
+ *           have more than one queue for each user, and the queues can
+ *           be filtered to restrict the portion displayed by various
+ *           criteria
+ *
+ *  'not-list' - uses pdq_ebms_citation_not_list to build the form for
+ *           managing the lists of journals which have historically
+ *           published articles which are not useful for the PDQ
+ *           boards; the import process dead-ends such articles by
+ *           default (preventing them from entering the review
+ *           process), though this can be overridden; each board
+ *           has its own list of such journals
+ *
+ * The rest of the file is broken up into four sections, marked by large
+ * banner comments identifying them. The first three sections contain
+ * support for each of the three pages described above. The last
+ * section contains common support code used by multiple pages,
+ * includnig a class at the bottom used to keep track of each of the
+ * 'states' (a.k.a. 'decisions') in which an article/topic combination
+ * can exist.
+ *
+ * The project schedule for the original development did not provide
+ * adequate time for documenting the code as the team worked. We have
+ * been filling in the gaps as we went along, but the work is not
+ * complete. If you come across a function or method or code fragment
+ * which is doing something which is not obvious, and you do the work
+ * to understand its behavior, please take the time to document what
+ * you've learned (or correct existing documentation which is misleading
+ * or inadequate), following the model for the functions and methods
+ * which have already been properly documented. Your colleagues will
+ * appreciate it (as you will yourself, when you come back to the
+ * code later).
+ */
 
 namespace {
 
@@ -375,7 +237,9 @@ namespace {
             if (count($button_array['form']))
                 $form['button_form'] = $button_array['form'];
             else
-                $form['placeholder'] = array('#markup' => '<div class="full-citation-element">&nbsp;</div>');
+                $form['placeholder'] = array(
+                    '#markup' => '<div class="full-citation-element">&nbsp;</div>'
+                );
         }
         else {
             $form['article_tags'] = $tag_array;
@@ -481,7 +345,9 @@ namespace {
 
         if (isset($topic_tags[$targetTopicId])) {
             //add header
-            $form['article_tag_header'] = array('#markup' => '<div class="citation-subheader">Tag(s)</div>');
+            $form['article_tag_header'] = array(
+                '#markup' => '<div class="citation-subheader">Tag(s)</div>'
+            );
             $form['article_tag_header']['#prefix'] = '<div class="full-citation-indent">';
             $form['article_tag_header']['#suffix'] = '</div>';
 
@@ -569,11 +435,10 @@ namespace {
 
         // build abstract link
         $target = array('attributes' => array('target' => '_blank'));
-        $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
         $pm_id = $article->getSourceId();
-        $pm_link = $pubmed . $pm_id;
+        $pm_url = Ebms\Util::pubmed_url($pm_id);
 
-        $links[] = array('View Abstract', $pm_link, $target);
+        $links[] = array('View Abstract', $pm_url, $target);
 
         if ($fileUrl)
             $links[] = array('Download Full Text', $fileUrl, $target);
@@ -582,6 +447,18 @@ namespace {
         $link_url = "citations/link/add/$articleId";
         $link_opt = array('query' => drupal_get_query_parameters());
         $links[] = array('Link Related Citation', $link_url, $link_opt);
+
+        // Add link for adding a board manager topic-specific comment (OCEEBMS-375).
+        $query = db_select('ebms_article_topic', 't');
+        $query->leftJoin('ebms_article_topic_comment', 'c',
+            'c.article_id = t.article_id AND c.topic_id = t.topic_id');
+        $query->condition('t.article_id', $articleId);
+        $query->isNull('c.article_id');
+        $count = $query->countQuery()->execute()->fetchField();
+        if ($count > 0) {
+            $link_url = "citations/comment/add/$articleId";
+            $links[] = array('Add Board Manager Comment', $link_url, $link_opt);
+        }
 
         $items = array();
         foreach ($links as $link) {
@@ -673,8 +550,8 @@ namespace {
         $board_topic_states = array();
         foreach ($history as $status) {
             if ($status->board_name && $status->topic_name) {
-                $board_topic_states[$status->board_name][$status->topic_name][$status->type_sequence][$status->active_status][]
-                    = $status;
+                $board_topic_states[$status->board_name][$status->topic_name]
+                    [$status->type_sequence][$status->active_status][] = $status;
             }
         }
 
@@ -689,7 +566,10 @@ namespace {
             $article->getId());
         if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
             $form['boards_header']['button'] = $button_array['button'];
-        $form['boards_header']['title'] = array("#markup" => '<div class="citation-subheader full-citation-indent full-citation-element">Editorial Board(s)</div>');
+        $form['boards_header']['title'] = array(
+            "#markup" => '<div class="citation-subheader full-citation-indent ' .
+                         'full-citation-element">Editorial Board(s)</div>'
+        );
         if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
             $form['boards_header']['form'] = $button_array['form'];
 
@@ -719,6 +599,18 @@ namespace {
             if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
                 $form[$board_name]['form'] = $button_array['form'];
         }
+
+        // Add the block for the confirmation dialog for deleting manager comments.
+        // Do this here, because we can only have one of these, no matter how many
+        // topics with manager comments there are in the article.
+        $form['manager comment deletion confirmation dialog'] = array(
+            '#markup' => "
+<div id='confirm-manager-comment-deletion' style='display: none' title='Delete Comment?'>
+ <p>
+  <span class='ui-icon ui-icon-alert' style='float:left; margin:0 7px 20px 0;'></span>
+  Comment will be permanently deleted and cannot be recovered. Are you sure?</p>
+</div>"
+        );
 
         return $form;
     }
@@ -848,6 +740,9 @@ namespace {
             $decisions['topic_nci_surveillance_decision'] = _wrap_decision($form_state,
                 $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
 
+            $comment = _format_board_manager_comment($articleId, $topicId);
+            $decisions['board_manager_comment'] = $comment;
+
             $decision = _format_topic_assigned_for_review_decision($articleId,
                 $topicId);
             $decisions['topic_assigned_for_review_decision'] =
@@ -901,11 +796,42 @@ namespace {
             $dec_button_arr = _build_add_decision_button($form_state,
                 $articleId, $topicId, $empty_decisions, true);
             $form['add_decisions'] = $dec_button_arr['button'];
-            $form['add_decisions_label'] = array('#markup' => '<div class="full-citation-element full-citation-indent">ADD NEW DECISION</div>');
+            $form['add_decisions_label'] = array(
+                '#markup' => '<div class="full-citation-element ' .
+                             'full-citation-indent">ADD NEW DECISION</div>');
             $form['add_decisions_form'] = $dec_button_arr['form'];
         }
 
         return $form;
+    }
+
+    function _format_board_manager_comment($article_id, $topic_id) {
+        $comment_info = db_select('ebms_article_topic_comment', 'c')
+            ->fields('c', array('comment_id', 'comment'))
+            ->condition('c.article_id', $article_id)
+            ->condition('c.topic_id', $topic_id)
+            ->execute()->fetch();
+        if (empty($comment_info))
+            return '';
+        $comment_id = $comment_info->comment_id;
+        $comment = htmlspecialchars($comment_info->comment);
+        $opts = array('query' => drupal_get_query_parameters());
+        $url = url("citations/comment/edit/$comment_id", $opts);
+        $edit_icon = Ebms\EDIT_INACTIVE;
+        $del_icon = Ebms\DELETE_ICON;
+        $del = "delManagerComment(\"/citations/comment/delete/$comment_id\")";
+        return array(
+                    '#markup' => "
+<div class='full-citation-element board-manager-comment'>
+ <span title='Delete comment' class='del-comment' onclick='$del'>
+  <img src='$del_icon'>
+ </span>
+ <a href='$url' title='Edit comment' class='edit-comment'>
+  <img src='$edit_icon'>
+ </a>
+ <div class='citation-subheader full-citation-indent'>Board Manager Comment</div>
+ <div class='full-citation-indent'>COMMENT: $comment</div>
+</div>");
     }
 
     /**
@@ -4464,11 +4390,10 @@ namespace {
 
         // build pubmed direct link
         $target = array('attributes' => array('target' => '_blank'));
-        $pubmed = 'http://www.ncbi.nlm.nih.gov/pubmed/';
         $pm_id = $article->getSourceId();
-        $pm_link = $pubmed . $pm_id;
+        $pm_url = Ebms\Util::pubmed_url($pm_id);
 
-        $item = l(t('VIEW ABSTRACT ON PUBMED'), $pm_link, $target);
+        $item = l(t('VIEW ABSTRACT ON PUBMED'), $pm_url, $target);
 
         $form['pubmed_link']['#markup'] = "<div>$item</div>";
 
@@ -6349,7 +6274,7 @@ namespace {
 
             // Add link to PubMed ID (TIR 2492).
             $target = array('attributes' => array('target' => '_blank'));
-            $url = "http://www.ncbi.nlm.nih.gov/pubmed/$pmid";
+            $url = Ebms\Util::pubmed_url($pmid);
             $link = l($pmid, $url, $target);
             $pmid = "PMID: $link";
         }
@@ -7144,6 +7069,181 @@ namespace {
         drupal_set_message("Relationship type '$name' $action.");
         drupal_goto('admin/article-link-types');
     }
+
+    function pdq_ebms_board_manager_comment($action, $id) {
+        if ($action == 'delete') {
+            $table = 'ebms_article_topic_comment';
+            $article_id = db_select($table, 'c')
+                ->fields('c', array('article_id'))
+                ->condition('c.comment_id', $id)
+                ->execute()
+                ->fetchField();
+            db_delete($table)
+                ->condition('comment_id', $id)
+                ->execute();
+            $opts = array('query' => drupal_get_query_parameters());
+            $url = "citations/full/$article_id";
+            drupal_goto($url, $opts);
+        }
+        $name = 'pdq_ebms_board_manager_comment_form';
+        return drupal_get_form($name, $action, $id);
+    }
+
+    function pdq_ebms_board_manager_comment_form($form, &$form_state, $action, $id) {
+
+        $article_id = $topic_id = $comment = $comment_id = '';
+        $table = 'ebms_article_topic_comment';
+
+        switch ($action) {
+            case 'add':
+                $title = 'Add Board Manager Comment';
+                $article_id = $id;
+                $query = db_select('ebms_article_topic', 't');
+                $query->join('ebms_topic', 'topic', 'topic.topic_id = t.topic_id');
+                $query->leftJoin($table, 'c',
+                    'c.article_id = t.article_id AND c.topic_id = t.topic_id');
+                $query->condition('t.article_id', $article_id);
+                $query->isNull('c.article_id');
+                $query->fields('topic', array('topic_id', 'topic_name'));
+                $query->orderBy('topic.topic_name');
+                $results = $query->execute();
+                $topics = array();
+                foreach ($results as $result)
+                    $topics[$result->topic_id] = $result->topic_name;
+                $topic = array(
+                    '#type' => 'select',
+                    '#title' => 'Topic',
+                    '#options' => $topics,
+                );
+                break;
+            case 'edit':
+                $comment_id = $id;
+                $query = db_select($table, 'c');
+                $query->join('ebms_topic', 't', 't.topic_id = c.topic_id');
+                $query->condition('c.comment_id', $id);
+                $query->fields('c', array('article_id', 'comment'));
+                $query->fields('t', array('topic_id', 'topic_name'));
+                $info = $query->execute()->fetch();
+                $article_id = $info->article_id;
+                $comment = $info->comment;
+                $topic_id = $info->topic_id;
+                $topic_name = htmlspecialchars($info->topic_name);
+                $title = "Edit Comment For $topic_name";
+                $topic = array(
+                    '#type' => 'hidden',
+                    '#value' => $topic_id,
+                );
+                break;
+            default:
+                drupal_set_message('Missing or unsupported action', 'error');
+                drupal_goto('citations');
+        }
+        drupal_set_breadcrumb(
+            array(
+                l('Citation Management', 'citations'),
+                l('Full Citation', "citations/full/$article_id",
+                    array(
+                        'query' => drupal_get_query_parameters()
+                    )
+                ),
+                $title,
+            )
+        );
+        if (empty($form_state['query-parms']))
+            $form_state['query-parms'] = drupal_get_query_parameters();
+        $form = array(
+            'title' => array(
+                '#markup' => "<h2>$title</h2>" .
+                '<p style="font-style: italic; color: #a90101; font-weight: bold">' .
+                'This comment will be shown to Board members in their literature ' .
+                'packets.</p>'
+            ),
+            'comment_id' => array(
+                '#type' => 'hidden',
+                '#value' => $comment_id,
+            ),
+            'article_id' => array(
+                '#type' => 'hidden',
+                '#value' => $article_id,
+            ),
+            'topic' => $topic,
+            'comment' => array(
+                '#type' => 'textarea',
+                '#title' => 'Comment',
+                '#description' =>
+                'Board manager comment for this article/topic combination',
+                '#default_value' => $comment,
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#limit_validation_errors' => array(),
+                '#submit' => 'pdq_ebms_board_manager_comment_form_submit',
+            ),
+        );
+        return $form;
+    }
+
+    function pdq_ebms_board_manager_comment_form_validate($form, &$form_state) {
+        if (empty($form_state['values']))
+            return;
+        $values = $form_state['values'];
+        if (!empty($values['op']) && $values['op'] == 'Cancel') {
+            if (empty($form_state['query-parms']))
+                $opts = array();
+            else
+                $opts = array('query' => $form_state['query-parms']);
+            $article_id = $values['article_id'];
+            $url = "citations/full/$article_id";
+            drupal_goto($url, $opts);
+        }
+        if (empty(trim($values['comment'])))
+            form_set_error('comment', 'Comment field is required');
+        if (!$values['topic'])
+            form_set_error('topic', 'Topic is required');
+    }
+
+    function pdq_ebms_board_manager_comment_form_submit($form, &$form_state) {
+        $values = $form_state['values'];
+        $article_id = $values['article_id'];
+        if (!empty($values['op']) && $values['op'] == 'Submit') {
+            global $user;
+            $now = strftime("%Y-%m-%d %H:%M:%S");
+            $table = 'ebms_article_topic_comment';
+            $comment_id = $values['comment_id'];
+            $topic = db_select('ebms_topic', 't')
+                ->fields('t', array('topic_name'))
+                ->condition('t.topic_id', $values['topic'])
+                ->execute()->fetchField();
+            $fields = array('comment' => $values['comment']);
+            if ($comment_id) {
+                $fields['modified'] = $now;
+                $fields['modified_by'] = $user->uid;
+                db_update($table)->fields($fields)
+                    ->condition('comment_id', $comment_id)->execute();
+                drupal_set_message("Comment for '$topic' updated.");
+            }
+            else {
+                $fields['article_id'] = $article_id;
+                $fields['topic_id'] = $values['topic'];
+                $fields['created_by'] = $user->uid;
+                $fields['created'] = $now;
+                db_insert($table)->fields($fields)->execute();
+                drupal_set_message("Comment for '$topic' created.");
+            }
+        }
+        if (empty($form_state['query-parms']))
+            $opts = array();
+        else
+            $opts = array('query' => $form_state['query-parms']);
+        $url = "citations/full/$article_id";
+        drupal_goto($url, $opts);
+    }
+
     function pdq_ebms_link_related_article($action, $id=0, $id2=0) {
         if ($action == 'delete') {
             global $user;
@@ -7164,6 +7264,7 @@ namespace {
         $name = 'pdq_ebms_article_relationship_form';
         return drupal_get_form($name, $action, $id, $id2);
     }
+
     function pdq_ebms_article_relationship_form(
         $form, &$form_state, $action, $id, $id2
     ) {
@@ -7339,6 +7440,7 @@ namespace {
                 $form_state['relationship-type-id'] = $type_id;
         }
     }
+
     function pdq_ebms_article_relationship_form_submit($form, &$form_state) {
         $article_id = $form_state['viewed-article'];
         $values = $form_state['values'];
@@ -7376,6 +7478,7 @@ namespace {
         $url = "citations/full/$article_id";
         drupal_goto($url, $opts);
     }
+
     function _display_article_relationship($relationship, $article_id) {
         $rid = $relationship->relationship_id;
         $opts = array('query' => drupal_get_query_parameters());
@@ -7388,7 +7491,7 @@ namespace {
                 'title' => 'Pubmed ID',
             ),
         );
-        $pm_url = "http://www.ncbi.nlm.nih.gov/pubmed/$pm_id";
+        $pm_url = Ebms\Util::pubmed_url($pm_id);
         $pm_link = l($pm_id, $pm_url, $pm_attrs);
         $ebms_id = $relationship->article_id;
         $ebms_url = "citations/full/$ebms_id";
@@ -7407,9 +7510,9 @@ namespace {
         $html[] = '<div class="article-relationship">';
         $eclass = 'edit-relationship-link';
         $dclass = 'del-relationship-link';
-        $html[] = "<a href='#' title='Drop relationship' class='$dclass' ";
+        $html[] = "<span title='Drop relationship' class='$dclass' ";
         $html[] = "onclick='$del'>";
-        $html[] = "<img src='$del_icon'></a>";
+        $html[] = "<img src='$del_icon'></span>";
         $html[] = "<a href='$url' title='Edit relationship' class='$eclass'>";
         $html[] = "<img src='$edit_icon'></a>";
         $html[] = "<div>$type: $pm_link ($ebms_link)";
@@ -7426,4 +7529,198 @@ namespace {
             '</p></div>';
         return array('#markup' => implode('', $html));
     }
+}
+
+namespace Ebms {
+    require_once('EbmsArticle.inc');
+
+    $GLOBALS['decision_value_map'] = array(
+        'initial_review' => array('pass', 'reject', 'comment'),
+        'published' => array('select', 'comment', 'state'),
+        'nci_reviewer' => array('pass', 'reject', 'comment'),
+        'fulltext' => array('file', 'check', 'comment'),
+        'surveillance' => array('pass', 'reject', 'fyi', 'hold', 'comment'),
+        'member_responses' => array('packet', 'reviewer', 'select', 'reject',
+            'loe', 'comment'),
+        'manager_actions' => array('select', 'comment'),
+        'on_agenda' => array('future', 'past', 'comment'),
+        'board_decision' => array('select', 'discussed', 'members', 'comment'),
+    );
+
+    // These names are transformed into variable names by a double indirection
+    // in the two (!) loops that begin with:
+    //   $cachedKeys = drupal_map_assoc($citation_cached_value_keys)
+    // Clever eh?  Try finding one of them using a debugger!
+    $GLOBALS['citation_cached_value_keys'] = array(
+        'board_select',
+        'topic_select',
+        'cycle_select',
+        'tag_select',
+        'title_pattern_field',
+        'journal_id_field',
+        'abstract_review_check',
+        'fulltext_review_check',
+        'onhold_review_check',
+        'sort_by',
+        'format',
+        'per_page',
+    );
+
+    /**
+     * Class encapsulating information and methods used in decisions (i.e.,
+     * state assignments) that can be made about an article.
+     *
+     * This is general information pertaining to any article, allowing the
+     * program to locate information about any state encountered in the state
+     * history of an article.  The information includes information about the
+     * states themselves, and also some information specific to how we format
+     * the state data for display (e.g., $this->title, $this->formatter).
+     *
+     * The class is initialized and instances created once during a run, and
+     * not updated after initialization.
+     */
+    class EbmsTopicDecisions {
+        static $INITIALREVIEW = null;
+        static $READYINITIAL = null;
+        static $PUBLISHED = null;
+        static $NCIREVIEWER = null;
+        static $FULLTEXT = null;
+        static $SURVEILLANCE = null;
+        static $BOARDMANAGERCOMMENT = null;
+        static $ASSIGNEDFORREVIEW = null;
+        static $BOARDMEMBERRESPONSES = null;
+        static $BOARDMANAGERACTIONS = null;
+        static $ONAGENDA = null;
+        static $EDITORIALBOARD = null;
+        private $index;
+        private $title;
+        private $sequence;
+        private $formatter;
+        private $pass_states;
+        private $reject_states;
+        private $fyi_states;
+        private $hold_states;
+        static $currentIndex = 0;
+
+        public function __construct($index, $title, $formatter=null,
+                                    $pass_states=array(), $reject_states=array(),
+                                    $fyi_states=array(), $hold_states=array()) {
+            $this->index = $index;
+            $this->title = $title;
+
+            $this->formatter = $formatter;
+            $this->pass_states = $pass_states;
+            $this->reject_states = $reject_states;
+            $this->fyi_states = $fyi_states;
+            $this->hold_states = $hold_states;
+
+            // if any pass states exist, use them to populate the sequence
+            $state = reset($pass_states);
+            if ($state) {
+                $this->sequence = getStateTypeSequence($state);
+            }
+        }
+
+        public static function init() {
+            $index = 1;
+            self::$READYINITIAL =
+                new EbmsTopicDecisions($index++,
+                    'Ready for Initial Review', null,
+                    array(EbmsArticleStates::ReadyInitReview));
+            self::$INITIALREVIEW =
+                new EbmsTopicDecisions($index++,
+                    'Medical Librarian Initial Review', null,
+                    array(EbmsArticleStates::PassedInitReview),
+                    array(EbmsArticleStates::RejectInitReview));
+            self::$PUBLISHED =
+                new EbmsTopicDecisions($index++, 'Publishing',
+                    '_format_topic_publishing', array(EbmsArticleStates::Published));
+            self::$NCIREVIEWER =
+                new EbmsTopicDecisions($index++, 'Abstract Decision', null,
+                    array(EbmsArticleStates::PassedBMReview),
+                    array(EbmsArticleStates::RejectBMReview));
+            self::$FULLTEXT =
+                new EbmsTopicDecisions($index++, 'Full Text Retrieved', null);
+            self::$SURVEILLANCE =
+                new EbmsTopicDecisions($index++,
+                    'Full-Text Decision', null,
+                    array(EbmsArticleStates::PassedFullReview),
+                    array(EbmsArticleStates::RejectFullReview),
+                    array(EbmsArticleStates::FYI),
+                    array(EbmsArticleStates::FullReviewHold));
+            self::$BOARDMANAGERCOMMENT =
+                new EbmsTopicDecisions($index++, 'Board Manager Comment');
+            self::$ASSIGNEDFORREVIEW =
+                new EbmsTopicDecisions($index++, 'Assigned For Review');
+            self::$BOARDMEMBERRESPONSES =
+                new EbmsTopicDecisions($index++, 'Board Member Responses');
+            self::$BOARDMANAGERACTIONS =
+                new EbmsTopicDecisions($index++, 'Board Manager Action(s)',
+                    '_format_topic_board_manager_actions',
+                    array(
+                        EbmsArticleStates::NotForAgenda,
+                        EbmsArticleStates::AgendaNoPaprChg,
+                        EbmsArticleStates::AgendaFutureChg,
+                        EbmsArticleStates::AgendaBoardDiscuss,
+                        EbmsArticleStates::AgendaWrkGrpDiscuss,
+                        EbmsArticleStates::FullEnd,
+                        EbmsArticleStates::OnHold,));
+            self::$ONAGENDA =
+                new EbmsTopicDecisions($index++, 'On Agenda',
+                    '_format_topic_on_agenda_decision',
+                    array(EbmsArticleStates::OnAgenda));
+            self::$EDITORIALBOARD =
+                new EbmsTopicDecisions($index++, 'Editorial Board Decision',
+                    '_format_topic_editorial_board_decision',
+                    array(EbmsArticleStates::FinalBoardDecision));
+        }
+
+        public function index() {
+            return $this->index;
+        }
+
+        public function title() {
+            return $this->title;
+        }
+
+        public function sequence() {
+            return $this->sequence;
+        }
+
+        public function formatter() {
+            return $this->formatter;
+        }
+
+        public function pass_states() {
+            return $this->pass_states;
+        }
+
+        public function reject_states() {
+            return $this->reject_states;
+        }
+
+        public function fyi_states() {
+            return $this->fyi_states;
+        }
+
+        public function hold_states() {
+            return $this->hold_states;
+        }
+
+        public function find_state($text_id) {
+            if (in_array($text_id, $this->pass_states())) {
+                return 'pass';
+            } else if (in_array($text_id, $this->reject_states())) {
+                return 'reject';
+            } else if (in_array($text_id, $this->fyi_states())) {
+                return 'fyi';
+            } else if (in_array($text_id, $this->hold_states())) {
+                return 'hold';
+            }
+
+            return null;
+        }
+    }
+
+    EbmsTopicDecisions::init();
 }

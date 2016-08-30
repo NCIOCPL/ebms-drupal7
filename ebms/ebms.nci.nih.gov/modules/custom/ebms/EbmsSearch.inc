@@ -1,7 +1,5 @@
 <?PHP
 
-// $Id$
-
 namespace Ebms;
 
 /**
@@ -146,13 +144,13 @@ class EbmsSearch {
         // for "Include Unpublished Articles" we don't exclude anything
         // in the early filtering step.  In that case we leave the
         // earlyStates array empty.
-        if ($this->spec['unpublished'])
+        if (!empty($this->spec['unpublished']))
             $this->earlyStates = array();
         else {
             $this->earlyStates = array($this->stateMap['Published']);
-            if ($this->spec['not-listed'])
+            if (!empty($this->spec['not-listed']))
                 $this->earlyStates[] = $this->stateMap['RejectJournalTitle'];
-            if ($this->spec['rejected'])
+            if (!empty($this->spec['rejected']))
                 $this->earlyStates[] = $this->stateMap['RejectInitReview'];
         }
 
@@ -169,20 +167,22 @@ class EbmsSearch {
         // first two fields here, so we don't have to know what
         // those values are.
         $this->laterStates = array();
-        if ($this->spec['nci-reviewer-decision'])
+        if (!empty($this->spec['nci-reviewer-decision']))
             $this->laterStates[] =
                 $this->stateMap[$this->spec['nci-reviewer-decision']];
-        if ($this->spec['committee-decision'])
+        if (!empty($this->spec['committee-decision']))
             $this->laterStates[] =
                 $this->stateMap[$this->spec['committee-decision']];
-        if ($this->spec['fyi-citation'])
+        if (!empty($this->spec['fyi-citation']))
             $this->laterStates[] = $this->fyi;
 
         // If any "OnAgenda" criteria are specified, ebms_article_state
         //  rows must also match the OnAgenda article state
-        if ($this->spec['meeting-category'] ||
-            $this->spec['meeting-start']['date'] ||
-            $this->spec['meeting-end']['date']) {
+        if (!empty($this->spec['meeting-category']) ||
+            !empty($this->spec['meeting-start']) &&
+            !empty($this->spec['meeting-start']['date']) ||
+            !empty($this->spec['meeting-end']) &&
+            !empty($this->spec['meeting-end']['date'])) {
             $this->laterStates[] = $this->stateMap['OnAgenda'];
         }
     }
@@ -194,7 +194,9 @@ class EbmsSearch {
 
         // Ignore conflicts.  We may change that someday.
         $pmid = trim($this->spec['pmid']);
-        $ebms_id = trim($this->spec['cms-id']);
+        $ebms_id = '';
+        if (!empty($this->spec['cms-id']))
+            $ebms_id = trim($this->spec['cms-id']);
         if ($pmid) {
             $this->qry->condition('art.source', 'Pubmed');
             $this->qry->condition('art.source_id', $pmid);
@@ -377,6 +379,7 @@ class EbmsSearch {
      *  @return  string     Alias for the joined state table
      */
     function addStateJoin($states, $state_filter) {
+
         $alias = 'state_alias_' . $this->delta;
         $this->qry->join('ebms_article_state', $alias,
             "$alias.article_id = art.article_id");
@@ -385,8 +388,8 @@ class EbmsSearch {
             $this->qry->condition("$alias.current", 'Y');
         elseif ($state_filter == 'active')
             $this->qry->condition("$alias.active_status", 'A');
-        $cycle_id = $this->spec['review-cycle'];
-        if ($cycle_id) {
+        if (!empty($this->spec['review-cycle'])) {
+            $cycle_id = $this->spec['review-cycle'];
             $cycle_alias = 'cycle_alias_' . $this->delta;
             $this->qry->join('ebms_article_topic', $cycle_alias,
                 "$cycle_alias.article_id = $alias.article_id AND " .
@@ -425,7 +428,7 @@ class EbmsSearch {
     function srchTopicsBoards() {
 
         // Make sure this hasn't been taken care of already.
-        if (!$this->stateFilters && !$this->spec['review-cycle']) {
+        if (!$this->stateFilters && empty($this->spec['review-cycle'])) {
 
             // Check topics first.
             if (!empty($this->topics)) {
@@ -591,54 +594,60 @@ class EbmsSearch {
      */
     function srchComments() {
 
-        $comment = $this->spec['comments'];
+        // Board members don't have access to these fields.
+        if (empty($this->spec['is-board-member'])) {
 
-        // See if user wants to search for comment-added date
-        $dateStart = $this->spec['comment-added-start']['date'];
-        $dateEnd = $this->spec['comment-added-end']['date'];
+            $comment = $this->spec['comments'];
 
-        // But if we're searching any mod date, don't need to repeat here
-        if ($this->spec['modified-start']['date'] ||
-            $this->spec['modified-end']['date'])
-            $dateStart = $dateEnd = '';
+            // See if user wants to search for comment-added date
+            $dateStart = $this->spec['comment-added-start']['date'];
+            $dateEnd = $this->spec['comment-added-end']['date'];
 
-        // If we have either of them, we need to join states and comments
-        // This could be optimized if modified-start also, but it's not
-        //  worth the trouble.  It should be a rare search.
-        if ($comment || $dateStart || $dateEnd) {
-            $this->qry->join('ebms_article_state', 'comstate',
-                     'comstate.article_id = art.article_id');
-            $this->qry->join('ebms_article_state_comment', 'statecom',
-                     'statecom.article_state_id = comstate.article_state_id');
+            // But if we're searching any mod date, don't need to repeat here
+            if ($this->spec['modified-start']['date'] ||
+                $this->spec['modified-end']['date'])
+                $dateStart = $dateEnd = '';
 
-            // Search comments
-            if ($comment) {
-                $op = '=';
-                if ($this->chkWildCards($comment))
-                    $op = 'LIKE';
-                $this->qry->condition('statecom.comment', $comment, $op);
-            }
+            // If we have either of them, we need to join states and comments
+            // This could be optimized if modified-start also, but it's not
+            //  worth the trouble.  It should be a rare search.
+            if ($comment || $dateStart || $dateEnd) {
+                $this->qry->join('ebms_article_state', 'comstate',
+                    'comstate.article_id = art.article_id');
+                $this->qry->join('ebms_article_state_comment', 'statecom',
+                    'statecom.article_state_id = comstate.article_state_id');
 
-            // Search comment dates
-            if ($dateStart || $dateEnd) {
-                $range = $this->chkDates($dateStart, $dateEnd);
-
-                // If we found a valid range
-                if ($range) {
-                    if ($range[0])
-                        $this->qry->condition('statecom.comment_dt',
-                                              $range[0], '>=');
-                    if ($range[1])
-                        $this->qry->condition('statecom.comment_dt',
-                                              $range[1], '<=');
+                // Search comments
+                if ($comment) {
+                    $op = '=';
+                    if ($this->chkWildCards($comment))
+                        $op = 'LIKE';
+                    $this->qry->condition('statecom.comment', $comment, $op);
                 }
-            }
 
-            // Standard qualifications
-            if (!empty($this->topics))
-              $this->qry->condition("comstate.topic_id", $this->topics, 'IN');
-            else if (!empty($this->boards))
-              $this->qry->condition("comstate.board_id", $this->boards, 'IN');
+                // Search comment dates
+                if ($dateStart || $dateEnd) {
+                    $range = $this->chkDates($dateStart, $dateEnd);
+
+                    // If we found a valid range
+                    if ($range) {
+                        if ($range[0])
+                            $this->qry->condition('statecom.comment_dt',
+                                $range[0], '>=');
+                        if ($range[1])
+                            $this->qry->condition('statecom.comment_dt',
+                                $range[1], '<=');
+                    }
+                }
+
+                // Standard qualifications
+                if (!empty($this->topics))
+                    $this->qry->condition("comstate.topic_id", $this->topics,
+                        'IN');
+                else if (!empty($this->boards))
+                    $this->qry->condition("comstate.board_id", $this->boards,
+                        'IN');
+            }
         }
     }
 
@@ -647,41 +656,48 @@ class EbmsSearch {
      */
     function srchTags() {
 
-        $tagId     = $this->spec['tag'];
-        $dateStart = $this->spec['tag-added-start']['date'];
-        $dateEnd   = $this->spec['tag-added-end']['date'];
+        // Board members don't have access to these fields.
+        if (empty($this->spec['is-board-member'])) {
 
-        // If we have any of these, we need to join tags
-        if ($tagId || $dateStart || $dateEnd) {
 
-            // Look in the table of active tags
-            $this->qry->join('ebms_article_tag', 'tag',
-                     'tag.article_id = art.article_id');
-            $this->qry->condition('tag.active_status', 'A');
+            $tagId     = $this->spec['tag'];
+            $dateStart = $this->spec['tag-added-start']['date'];
+            $dateEnd   = $this->spec['tag-added-end']['date'];
 
-            // Looking for a specific tag?
-            if ($tagId)
-                $this->qry->condition('tag.tag_id', $tagId);
+            // If we have any of these, we need to join tags
+            if ($tagId || $dateStart || $dateEnd) {
 
-            // Looking for a date range?
-            // Do it whether or not we're looking for a specific tag
-            if ($dateStart || $dateEnd) {
+                // Look in the table of active tags
+                $this->qry->join('ebms_article_tag', 'tag',
+                    'tag.article_id = art.article_id');
+                $this->qry->condition('tag.active_status', 'A');
 
-                // Search for tags within the modified range
-                $range = $this->chkDates($dateStart, $dateEnd);
+                // Looking for a specific tag?
+                if ($tagId)
+                    $this->qry->condition('tag.tag_id', $tagId);
 
-                // If we found a valid range
-                if ($range) {
-                    if ($range[0])
-                        $this->qry->condition('tag.tag_dt', $range[0], '>=');
-                    if ($range[1])
-                        $this->qry->condition('tag.tag_dt', $range[1], '<=');
+                // Looking for a date range?
+                // Do it whether or not we're looking for a specific tag
+                if ($dateStart || $dateEnd) {
+
+                    // Search for tags within the modified range
+                    $range = $this->chkDates($dateStart, $dateEnd);
+
+                    // If we found a valid range
+                    if ($range) {
+                        if ($range[0])
+                            $this->qry->condition('tag.tag_dt', $range[0],
+                                '>=');
+                        if ($range[1])
+                            $this->qry->condition('tag.tag_dt', $range[1],
+                                '<=');
+                    }
                 }
-            }
 
-            // Tags can have topics, but not boards
-            if (!empty($this->topics))
-              $this->qry->condition("tag.topic_id", $this->topics, 'IN');
+                // Tags can have topics, but not boards
+                if (!empty($this->topics))
+                    $this->qry->condition("tag.topic_id", $this->topics, 'IN');
+            }
         }
     }
 
@@ -696,18 +712,22 @@ class EbmsSearch {
             else
                 $this->qry->condition('art.jrnl_title', $jrnlTitle);
         }
-        switch ($this->spec['core-journals']) {
-        case 'yes':
-            $this->qry->join('ebms_core_journal', 'core',
-                             'core.source = art.source AND ' .
-                             'core.source_jrnl_id = art.source_jrnl_id');
-            break;
-        case 'no':
-            $this->qry->leftJoin('ebms_core_journal', 'core',
-                                 'core.source = art.source AND ' .
-                                 'core.source_jrnl_id = art.source_jrnl_id');
-            $this->qry->isNull('core.source_jrnl_id');
-            break;
+
+        // Board members don't have access to the core-journals field.
+        if (empty($this->spec['is-board-member'])) {
+            switch ($this->spec['core-journals']) {
+                case 'yes':
+                    $this->qry->join('ebms_core_journal', 'core',
+                        'core.source = art.source AND ' .
+                        'core.source_jrnl_id = art.source_jrnl_id');
+                    break;
+                case 'no':
+                    $this->qry->leftJoin('ebms_core_journal', 'core',
+                        'core.source = art.source AND ' .
+                        'core.source_jrnl_id = art.source_jrnl_id');
+                    $this->qry->isNull('core.source_jrnl_id');
+                    break;
+            }
         }
     }
 
@@ -775,18 +795,22 @@ class EbmsSearch {
      */
     function srchImportActions() {
 
-        $topAdded = $this->spec['summary-topics-added'];
+        // Board members don't have access to this field.
+        if (empty($this->spec['is-board-member'])) {
 
-        if ($topAdded) {
+            $topAdded = $this->spec['summary-topics-added'];
 
-            // We need the import action and disposition tables
-            $this->qry->join('ebms_import_action', 'impact',
-                         'impact.article_id = art.article_id');
-            $this->qry->join('ebms_import_disposition', 'impdisp',
-                         'impdisp.disposition_id = impact.disposition_id');
+            if ($topAdded) {
 
-            // Narrow down to the specific import action we want.
-            $this->qry->condition('impdisp.text_id', 'topicAdded');
+                // We need the import action and disposition tables
+                $this->qry->join('ebms_import_action', 'impact',
+                    'impact.article_id = art.article_id');
+                $this->qry->join('ebms_import_disposition', 'impdisp',
+                    'impdisp.disposition_id = impact.disposition_id');
+
+                // Narrow down to the specific import action we want.
+                $this->qry->condition('impdisp.text_id', 'topicAdded');
+            }
         }
     }
 
@@ -796,6 +820,10 @@ class EbmsSearch {
      * created for just this purpose.
      */
     function srchCycle() {
+
+        // Board members don't have access to these fields.
+        if (!empty($this->spec['is-board-member']))
+            return;
 
         // If we filtered by states, this has already been taken care of.
         if ($this->stateFilters)
@@ -891,30 +919,34 @@ class EbmsSearch {
                 )
        */
 
-        $memberId = $this->spec['reviewer'];
-        if ($memberId > 0) {
-            // Subquery to include articles dropped from packets if a response
-            //  was already received
-            $subqry = db_select('ebms_article_review', 'artrevw');
-            $subqry->fields('artrevw', array('article_id'));
-            $subqry->condition('artrevw.article_id', 'pcktart.article_id');
-            $subqry->condition('artrevw.packet_id', 'pcktart.packet_id');
-            $subqry->condition('artrevw.reviewer_id', $memberId);
+        // Board members don't have access to this field.
+        if (empty($this->spec['is-board-member'])) {
 
-            // Articles in packets assigned to this reviewer
-            $this->qry->join('ebms_packet_article', 'pcktart',
-                             'pcktart.article_id = art.article_id');
-            $this->qry->join('ebms_packet_reviewer', 'pcktrvr',
-                             'pcktrvr.packet_id = pcktart.packet_id');
-            $this->qry->condition('pcktrvr.reviewer_id', $memberId);
+            $memberId = $this->spec['reviewer'];
+            if ($memberId > 0) {
+                // Subquery to include articles dropped from packets if a
+                //  response was already received
+                $subqry = db_select('ebms_article_review', 'artrevw');
+                $subqry->fields('artrevw', array('article_id'));
+                $subqry->condition('artrevw.article_id', 'pcktart.article_id');
+                $subqry->condition('artrevw.packet_id', 'pcktart.packet_id');
+                $subqry->condition('artrevw.reviewer_id', $memberId);
 
-            // But not if article was dropped from packet and was not used
-            $this->qry->condition('pcktart.drop_flag', 0);
-            $this->qry->condition(
-                db_or()
+                // Articles in packets assigned to this reviewer
+                $this->qry->join('ebms_packet_article', 'pcktart',
+                    'pcktart.article_id = art.article_id');
+                $this->qry->join('ebms_packet_reviewer', 'pcktrvr',
+                    'pcktrvr.packet_id = pcktart.packet_id');
+                $this->qry->condition('pcktrvr.reviewer_id', $memberId);
+
+                // But not if article was dropped from packet and was not used
+                $this->qry->condition('pcktart.drop_flag', 0);
+                $this->qry->condition(
+                    db_or()
                     ->condition('pcktart.drop_flag', 0)
                     ->exists($subqry)
-            );
+                );
+            }
         }
     }
 
@@ -929,13 +961,18 @@ class EbmsSearch {
      * Only one response can be selected for one search.
      */
     function srchReviewerResponse() {
-        $response = $this->spec['response'];
-        if ($response) {
-            $this->qry->join('ebms_article_review', 'artrev',
-                             'artrev.article_id = art.article_id');
-            $this->qry->join('ebms_review_disposition', 'revdisp',
-                             'revdisp.review_id = artrev.review_id');
-            $this->qry->condition('revdisp.value_id', $response);
+
+        // Board members don't have access to this field.
+        if (empty($this->spec['is-board-member'])) {
+
+            $response = $this->spec['response'];
+            if ($response) {
+                $this->qry->join('ebms_article_review', 'artrev',
+                    'artrev.article_id = art.article_id');
+                $this->qry->join('ebms_review_disposition', 'revdisp',
+                    'revdisp.review_id = artrev.review_id');
+                $this->qry->condition('revdisp.value_id', $response);
+            }
         }
     }
 
@@ -944,17 +981,23 @@ class EbmsSearch {
      */
     function srchInputDate() {
 
-        $dateStart = $this->spec['input-start']['date'];
-        $dateEnd = $this->spec['input-end']['date'];
-        if ($dateStart || $dateEnd) {
-            $range = $this->chkDates($dateStart, $dateEnd);
+        // Board members don't have access to these fields.
+        if (empty($this->spec['is-board-member'])) {
 
-            if ($range) {
-                // We already specified the article table
-                if ($range[0])
-                    $this->qry->condition('art.import_date', $range[0], '>=');
-                if ($range[1])
-                    $this->qry->condition('art.import_date', $range[1], '<=');
+            $dateStart = $this->spec['input-start']['date'];
+            $dateEnd = $this->spec['input-end']['date'];
+            if ($dateStart || $dateEnd) {
+                $range = $this->chkDates($dateStart, $dateEnd);
+
+                if ($range) {
+                    // We already specified the article table
+                    if ($range[0])
+                        $this->qry->condition('art.import_date',
+                            $range[0], '>=');
+                    if ($range[1])
+                        $this->qry->condition('art.import_date',
+                            $range[1], '<=');
+                }
             }
         }
     }
@@ -971,6 +1014,10 @@ class EbmsSearch {
      *       But, we can change it if needed.
      */
     function srchModifiedDate() {
+
+        // Board members don't have access to these fields.
+        if (!empty($this->spec['is-board-member']))
+            return;
 
         $dateStart = $this->spec['modified-start']['date'];
         $dateEnd = $this->spec['modified-end']['date'];
@@ -1082,6 +1129,10 @@ class EbmsSearch {
      */
     function srchOnAgenda() {
 
+        // Board members don't have access to these fields.
+        if (!empty($this->spec['is-board-member']))
+            return;
+
         // Any one of the following means article must have OnAgenda state
         $meet_type  = $this->spec['meeting-category'];
         $meet_start = $this->spec['meeting-start']['date'];
@@ -1133,7 +1184,7 @@ class EbmsSearch {
     function srchDecision() {
 
         // Don't do anything unless the user specified a decision.
-        if ($this->spec['decision']) {
+        if (!empty($this->spec['decision'])) {
 
             // Join with the state table.
             $this->qry->join('ebms_article_state', 'decision_state',
@@ -1204,7 +1255,7 @@ class EbmsSearch {
         $sortField = $this->spec['sort-by'];
 
         switch ($sortField) {
-            case 'PM ID#':
+            case 'PMID':
                 // This could go awry with non-Pubmed data, but it won't
                 //  do serious harm
                 $this->qry->orderBy('CAST(art.source_id AS UNSIGNED)', 'DESC');

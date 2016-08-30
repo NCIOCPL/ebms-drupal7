@@ -1,4 +1,3 @@
-; $Id$
 name = PDQ® Boards
 description = Custom theme for PDQ® Board Member web site.
 core = 7.x

@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 // Show all errors
 error_reporting(-1);
 $conf['error_level'] = 2;

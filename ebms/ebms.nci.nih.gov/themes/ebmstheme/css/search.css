@@ -99,7 +99,7 @@ form#search-db-form .form-item.form-type-checkbox:not(#foo) label {
 .yes-no-boxes fieldset.radios-508 legend { padding: 0; margin-left: 10px; }
 
 /* More 508 changes, causing additional problems. */
-#search-db-form fieldset.radios-508 legend { 
+#search-db-form fieldset.radios-508 legend {
     align: right; margin-top: 0; font-weight: normal;
 }
 
@@ -191,7 +191,7 @@ form .use-range-checkbox .form-item.form-type-checkbox:not(#foo) label {
     padding-left: 5px;
 }
 form .form-type-radios .form-item.form-type-radio:not(#foo) label,
-form .yes-no-boxes .form-item.form-type-radio:not(#foo) label 
+form .yes-no-boxes .form-item.form-type-radio:not(#foo) label
 /*fieldset.radios-508 label*/ {
     padding-left: 12px;
 }
@@ -205,7 +205,7 @@ form .right-boxes .form-item.form-type-radio:not(#foo) label {
 /* First of a set of inline radios is flush left. */
 form .left-radios .form-type-radios .form-radios .form-item.form-type-radio:not(#foo):first-child label,
 form .right-boxes .form-item.form-type-radio:first-child:not(#foo) label {
-    padding-left: 0;     
+    padding-left: 0;
 }
 
 /* Right padding for the checkboxes/radio buttons. */
@@ -224,16 +224,25 @@ fieldset.radios-508 label {
 #search-results div#articles-div { clear: both; }
 #search-results div#articles-div.extra-top-margin { margin-top: 60px; }
 #search-results div.item-list ul#article-list li {
-    list-style-type: none; margin-left: 10px; 
+    list-style-type: none; margin-left: 10px;
 }
 #search-results span.article-number {
     float: left; width: 50px; font-size: 24px; text-align: right;
     padding-right: 10px;
 }
 #search-results span.article-citation {
-    float: left; width: 630px; font-size: 13px; padding-bottom: 30px; 
+    float: left; width: 630px; font-size: 13px; padding-bottom: 30px;
 }
 #search-results span.article-citation * { font-size: 13px; }
 #search-results a.article-title { font-style: italic; }
 #search-results .article-citation a:hover { text-decoration: underline; }
 #search-results div.float-left { margin-top: 10px; margin-left: 10px; }
+
+/* Special formatting for board member's search form (OCEEBMS-370) */
+#page.member #search-db-form {
+    margin-left: 175px;
+    float: none;
+}
+#page.member #search-results { width: 960px; }
+#page.member #search-results li { clear: both; }
+#page.member #search-results span.article-citation { width: 860px; }

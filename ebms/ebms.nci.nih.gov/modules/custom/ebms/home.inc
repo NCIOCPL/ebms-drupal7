@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 /**
  * @file
  *
@@ -21,6 +19,7 @@ function pdq_ebms_home() {
     $page = new EbmsHomePage();
     return $page->build();
 }
+
 /**
  * Wrapper for logic to build the home pages for the different roles.
  * Keeps our functions out of the global namespace with less ugly
@@ -109,17 +108,11 @@ class EbmsHomePage {
      */
     private function activity_panels() {
         switch ($this->role) {
-            case 'member':
-                return array(
-                    'literature' => $this->literature_activity(),
-                    'meetings' => $this->meeting_activity(),
-                );
             case 'librarian':
                 return array(
                     'librarian' => $this->librarian_activity(),
-                    //'literature' => $this->literature_activity(),
-                    //'documents' => $this->document_activity(),
                 );
+            case 'member':
             case 'admin':
             default:
                 return array(
@@ -138,10 +131,7 @@ class EbmsHomePage {
         $id = 'literature-activity';
         $items = array();
         $more = '';
-        if ($this->role != 'admin')
-            $img = Ebms\IMAGES_DIR . '/literature-activity-2-panel.jpg';
-        else
-            $img = Ebms\IMAGES_DIR . '/literature-activity-3-panel.jpg';
+        $img = Ebms\IMAGES_DIR . '/literature-activity-3-panel.jpg';
         $nada = '<p>No recent literature activity</p>';
         $view = views_get_view('recent_activity');
         $content = $view ? $view->preview('literature_activity_block') : $nada;
@@ -197,10 +187,7 @@ class EbmsHomePage {
      * Assemble Drupal reneder array for Meeting Activity panel.
      */
     private function meeting_activity() {
-        if ($this->role != 'admin')
-            $img = Ebms\IMAGES_DIR . '/meeting-activity-2-panel.jpg';
-        else
-            $img = Ebms\IMAGES_DIR . '/meeting-activity-3-panel.jpg';
+        $img = Ebms\IMAGES_DIR . '/meeting-activity-3-panel.jpg';
         $id = 'meeting-activity';
         $title = 'Meeting Activity';
         $nada = '<p>No recent meeting activity</p>';
@@ -232,37 +219,37 @@ class EbmsHomePage {
      * Assemble Drupal reneder array for Document Activity panel.
      */
     private function document_activity() {
-        if ($this->role != 'admin')
-            $img = Ebms\IMAGES_DIR . '/document-activity-2-panel.jpg';
-        else
-            $img = Ebms\IMAGES_DIR . '/document-activity-3-panel.jpg';
+        $img = Ebms\IMAGES_DIR . '/document-activity-3-panel.jpg';
         $more = l('more', 'document-activity');
         $id = 'document-activity';
         $title = 'Document Activity';
         $nada = '<p>No recent document activity</p>';
         $view = views_get_view('recent_activity');
         $content = $view ? $view->preview('document_activity_block') : $nada;
+        $regex = '|<p[^>]*[\'"]new_summary_message-(\d+)|';
+        $callback = array('EbmsHomePage', 'add_note_icon');
+        $content = preg_replace_callback($regex, $callback, $content);
+        //pdq_ebms_debug('DOCUMENT XACTIVITY', $content);
         return $this->activity_box2($id, $title, $img, $content);
-        $items = array();
-        switch ($this->role) {
-            case 'admin':
-            default:
-                $items = array(
-                    'Mary Daly posted Genetics of Breast and Ovarian Cancer ' .
-                    '4_28_14 - TBM edits + MD edits. 06/20/2014',
-                    'Test Board Member posted Genetics of Breast and ' .
-                    'Ovarian Cancer 4_28_14 - TBM edits + MD edits. ' .
-                    '06/20/2014',
-                    'Test Board Member posted Genetics of Breast and ' .
-                    'Ovarian Cancer 4_28_14 - TBM edits + MD edits. ' .
-                    '06/20/2014',
-                    'Test Board Member posted Genetics of Breast and ' .
-                    'Ovarian Cancer 4_28_14 - TBM edits + MD edits. ' .
-                    '06/20/2014',
-                );
-                break;
+    }
+
+    /**
+     * Callback for inserting a note icon where appropriate (OCEEBMS-369).
+     */
+    public static function add_note_icon($matches) {
+        $img = '';
+        pdq_ebms_debug('ADD NOTE ICONXXX', $matches);
+        $note = db_select('field_data_field_notes', 'n')
+            ->fields('n', array('field_notes_value'))
+            ->condition('n.entity_id', $matches[1])
+            ->execute()
+            ->fetchField();
+        if ($note) {
+            $note = htmlspecialchars($note, ENT_QUOTES);
+            $url = Ebms\IMAGES_DIR . '/note.ico';
+            $img = "<img class='note-icon' title='$note' src='$url'>";
         }
-        return $this->activity_box($id, $title, $img, $items, $more);
+        return $img . $matches[0];
     }
 
     /**

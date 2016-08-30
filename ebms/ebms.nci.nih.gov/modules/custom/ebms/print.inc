@@ -1,7 +1,5 @@
 <?php
 
-// $Id: forum.inc 10623 2012-09-20 12:08:10Z bkline $
-
 /**
  * @file
  *

@@ -161,7 +161,6 @@ function repositionModal(){
 }
 
 function delArticleLink(url) {
-    //alert('we are here');
     jQuery("#confirm-link-deletion").dialog({
         resizable: false,
         height: 200,
@@ -177,8 +176,23 @@ function delArticleLink(url) {
             }
         }
     });
-    //if (confirm("Are you sure you want to remove this relationship " +
-    //            "going to '" + req_uri + "'?")) {
-    //    window.location(req_uri);
-    //}
+}
+
+function delManagerComment(url) {
+    jQuery("#confirm-manager-comment-deletion").dialog({
+        resizable: false,
+        height: 200,
+        width: 400,
+        modal: true,
+        buttons: {
+            "Delete Comment": function() {
+                location.href = url;
+                jQuery(this).dialog("close");
+            },
+            "Cancel": function() {
+                jQuery(this).dialog("close");
+            }
+        }
+    });
+    return false;
 }

@@ -1,8 +1,6 @@
 <?php
 
 /**
- * $Id$
- *
  * Common classes, functions, etc., for the EBMS system.  This file is
  * included by ebms.module, it will always be present (you don't need
  * to include it yourself).
@@ -65,8 +63,11 @@ define('Ebms\FYI_ACTIVE', IMAGES_DIR . '/EBMS_FlagFYI_Icon_Active.png');
 define('Ebms\FYI_INACTIVE', IMAGES_DIR . '/EBMS_FlagFYI_Icon_Inactive.png');
 define('Ebms\CB_CHECKED', IMAGES_DIR . '/checkbox-checked.png');
 define('Ebms\CB_UNCHECKED', IMAGES_DIR . '/checkbox-unchecked.png');
+define ('Ebms\NOTE_ICON', IMAGES_DIR . '/note.ico');
 
 define('Ebms\DOC_TYPES', 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg');
+
+define('Ebms\PUBMED_URL', 'https://www.ncbi.nlm.nih.gov/pubmed');
 
 /**
  * Initial implementation of discussion forums has one general forum
@@ -282,7 +283,7 @@ class Menu {
                     Menu::summaries($role),
                     Menu::calendar($role),
                     Menu::travel($role),
-                    Menu::forums($user),
+                    Menu::forums(),
                 );
                 break;
             case 'librarian':
@@ -295,11 +296,12 @@ class Menu {
                 break;
             case 'member':
                 self::$menus = array(
+                    Menu::search(),
                     Menu::literature($role),
                     Menu::summaries($role),
                     Menu::calendar($role),
                     Menu::travel($role),
-                    Menu::forums($user),
+                    Menu::forums(),
                 );
         }
     }
@@ -445,9 +447,18 @@ class Menu {
      * Build the EBMS menu information for the Discussion forum
      * pages.
      */
-    public static function forums($user) {
+    public static function forums() {
         // The forums menu should just go to the main page.
         return new Menu('Forums', 'forum', array());
+    }
+
+    /**
+     * Build the EBMS menu information for the board member search
+     * page (unlike other users, board members have search as a
+     * top-level menu choice).
+     */
+    public static function search() {
+        return new Menu('Search@@BR@@Citations', 'citations/search', array());
     }
 }
 
@@ -602,6 +613,8 @@ class Journal {
         curl_setopt($ch, CURLOPT_FRESH_CONNECT, true);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         $results = curl_exec($ch);
         curl_close($ch);
 
@@ -1369,12 +1382,17 @@ class Util {
     }
 
     public static function activityNewSummary(array $args = array()) {
+
+        global $user;
+
+        // Leave if there's nothing to do.
         if (empty($args) || !is_array($args)) return;
 
         // provide placeholder arguments
         $args += array(
             'title' => null,
-            'account' => null,
+            'account' => $user,
+            'note' => null,
             'board' => null,
             'url' => null,
             'topics' => array(),
@@ -1384,6 +1402,7 @@ class Util {
         $account = $args['account'];
         $board = $args['board'];
         $topics = $args['topics'];
+        $note = $args['note'];
         $url = substr(parse_url($args['url'], PHP_URL_PATH), 1); // OCEEBMS-296
 
         // check input arguments
@@ -1401,20 +1420,18 @@ class Util {
             $boards[$topicBoard] = $topicBoard;
         }
 
-        $individuals = array_keys(
-            Util::get_active_users(
-                array(
-                    'board manager',
-                    'icrdb manager',
-                    'admin assistant'
-                ),
-                $boards
-            )
-        );
+        // OCEEBMS-368: add board members for the boards, but only
+        // if the summary has been posted by a board member, not a
+        // board manager.
+        $roles = array('board manager', 'icrdb manager', 'admin assistant');
+        if (in_array('board member', $account->roles) && !empty($boards))
+            $roles[] = 'board member';
+        $individuals = array_keys(Util::get_active_users($roles, $boards));
 
         // abort if no users available to see notification
         if (empty($individuals)) return;
 
+        // Create the message.
         $message = message_create('activity_new_summary', array(), $account);
         $message->save();
 
@@ -1422,6 +1439,7 @@ class Util {
         $wrapper->field_title->set($title);
         $wrapper->field_individuals->set($individuals);
         $wrapper->field_summary_url->set($url); // OCEEBMS-296
+        $wrapper->field_notes->set($note); // OCEEBMS-369
         $wrapper->save();
     }
 
@@ -2061,7 +2079,7 @@ class Util {
                 $table[] = '<tr>';
             }
             ++$counter;
-            $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $pmid;
+            $url = \Ebms\Util::pubmed_url($pmid);
             $pmlink = l($pmid, $url, $options);
             $fclink = '';
             if ($ebmsid) {
@@ -2433,6 +2451,19 @@ class Util {
 
         // Directory name
         return $base_path;
+    }
+
+    /**
+     * Create PubMed URL for a given article.
+     *
+     *  @param string $pmid
+     *      Unique ID of the article in PubMed
+     *
+     *  @return string
+     *      HTTPS URL for the article on NLM's web site
+     */
+    public static function pubmed_url($pmid) {
+        return \Ebms\PUBMED_URL . "/$pmid";
     }
 }
 

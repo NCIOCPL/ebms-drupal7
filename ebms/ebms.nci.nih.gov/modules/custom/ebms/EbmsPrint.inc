@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 namespace Ebms;
 
 require_once('EbmsArticle.inc');

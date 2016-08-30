@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 /**
  *
  * @file
@@ -180,7 +178,7 @@ function ebms_menu() {
         'citations/search' => array(
             'page callback' => 'pdq_ebms_search',
             'file' => 'search.inc',
-            'access arguments' => array('manage citations'),
+            'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
 
@@ -201,6 +199,14 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // ARTICLE/TOPIC-SPECIFIC BOARD MANAGER COMMENTS (OCEEBMS-375)
+        'citations/comment' => array(
+            'page callback' => 'pdq_ebms_board_manager_comment',
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+
         // XXX ADD CITATIONS (IS THIS STILL USED???)
         'citations/add' => array(
             'page callback' => 'pdq_ebms_citations',
@@ -210,13 +216,7 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        // SYSTEM HELP
-        'help' => array(
-            'page callback' => 'pdq_ebms_help',
-            'file' => 'help.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
+        // CITATIONS HELP
         'citations/help' => array(
             'page callback' => 'pdq_ebms_citations',
             'page arguments' => array(1),
@@ -635,11 +635,14 @@ function pdq_ebms_login() {
             $nih_login_link .
             '</div>
 <div id="nci-login-instructions">
- <p>You will need either a Google account or an NIH account to log into this
- system.</p>
+ <p>You need either a Google account or an NIH account to log into this system.</p>
  <p>Click GO TO LOGIN PAGE above to login to the system.  On the login page,
- select "HHS Login" if you have an NIH account and "Social Login/Open ID" if
+ select "HHS Login" if you have an NIH account or "Social Login/Open ID" if
  you have a Google account.</p>
+ <p>If you need to log out of your currently active Google account in order
+ to use the account associated with the EBMS, use
+ <a href="https://mail.google.com/mail/logout?hl=en" target="_blank">this
+ link</a>.
  <p>If you are a new user or have any problems logging in, please contact your
  PDQ Board manager.</p>
 </div>',
@@ -1935,6 +1938,7 @@ function ebms_wysiwyg_editor_settings_alter(&$settings, $context) {
     if ($context['profile']->editor == 'ckeditor') {
         $settings['customConfig'] = base_path() .
             drupal_get_path('module', 'ebms') . '/js/ckeditor.config.js';
+        return;
         $settings['toolbar'] = array(
             array('Bold', 'Italic', 'Underline', 'Superscript', 'Subscript'),
             array('JustifyLeft', 'JustifyCenter', 'JustifyRight'),

@@ -289,10 +289,12 @@ tr.extra-abstract-space { height: 75px; xborder-bottom: 1px solid black; }
     color: #a90101; font-weight: bold; font-style: italic;
 }
 
-/* JIRA::OCEEBMS-349 */
+/* JIRA::OCEEBMS-349, JIRA::OCEEBMS-381 */
 .article-relationship { margin: 10px 0 15px; }
 .article-relationship .edit-relationship-link { float: left; width: 30px; }
+.board-manager-comment .edit-comment { float: left; }
 .article-relationship div { display: inline-block; }
-.article-relationship .del-relationship-link {
+.article-relationship .del-relationship-link,
+.board-manager-comment .del-comment {
     float: left; width: 10px; padding-right: 10px;
 }

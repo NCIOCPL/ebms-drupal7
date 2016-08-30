@@ -1,5 +1,3 @@
-/* $Id$ */
-
 /* GENERAL SETTINGS */
 body,
 h2 > *,
@@ -210,31 +208,28 @@ div.messages.error {
 #logout-link { top: 105px; }
 
 /* NAVIGATION */
+/* Nav styling cleanup as part of OCEEBMS-370, using flexbox for menu spacing */
 #nav { border-top: solid #696559 1px; border-bottom: solid #696559 1px; }
 #nav { margin-bottom: 20px; }
 #nav * { margin: 0; padding: 0; }
-#nav div.section { margin: 0 auto; height: 43px; }
-#nav div.section { width: 1013px; }
-#nav.manager div.section { width: 975px; padding-left: 11.5px; }
-#nav.manager.admin div.section { width: 975px; padding-left: 10px; }
+#nav div.section { margin: 0 auto; height: 43px; width: 960px; }
 #ebms-menu, .ebms-submenu { list-style-type: none; }
-#ebms-menu, #ebms-menu li { float: left; }
+#ebms-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    list-style-type: none;
+    padding: 0 10px;
+}
 #ebms-menu li, #ebms-menu a { position: relative; }
 #ebms-menu > li > .firefox-bug-63895 > a { text-decoration: none; }
 
 #ebms-menu > li > .firefox-bug-63895 > a {
-    font-size: 17px; text-transform: uppercase; xline-height: 19px;
-    xpadding-top: 12px; xpadding-bottom: 12px;
+    font-size: 17px; text-transform: uppercase;
 }
 #ebms-menu > li.active > .firefox-bug-63895 > a { color: #a90101; }
 
-/* New for JIRA::OCEEBMS-169 */
-ul#ebms-menu.sf-menu {
-    width: 976px;
-    list-style-type: none;
-    padding: 0;
-    margin-left: -8;
-}
 ul#ebms-menu.sf-menu > li { padding: 0; }
 ul#ebms-menu.sf-menu > li .firefox-bug-63895 {
     padding: 0;
@@ -245,16 +240,6 @@ ul#ebms-menu.sf-menu > li .firefox-bug-63895 {
 }
 ul#ebms-menu.sf-menu > li li { text-align: left; }
 ul#ebms-menu.sf-menu > li li a { padding-left: 10px; }
-ul#ebms-menu.sf-menu.menu-items-1 > li > .firefox-bug-63895 { width: 976px; }
-ul#ebms-menu.sf-menu.menu-items-2 > li > .firefox-bug-63895 { width: 488px; }
-ul#ebms-menu.sf-menu.menu-items-3 > li > .firefox-bug-63895 { width: 325px; }
-ul#ebms-menu.sf-menu.menu-items-4 > li > .firefox-bug-63895 { width: 244px; }
-ul#ebms-menu.sf-menu.menu-items-5 > li > .firefox-bug-63895 { width: 195px; }
-ul#ebms-menu.sf-menu.menu-items-6 > li > .firefox-bug-63895 { width: 163px; }
-ul#ebms-menu.sf-menu.menu-items-7 > li > .firefox-bug-63895 { width: 139px; }
-ul#ebms-menu.sf-menu.menu-items-8 > li > .firefox-bug-63895 { width: 122px; }
-ul#ebms-menu.sf-menu.menu-items-9 > li > .firefox-bug-63895 { width: 108px; }
-ul#ebms-menu.sf-menu.menu-items-10 > li > .firefox-bug-63895 { width: 98px; }
 
 /* SUBMENU STUFF */
 #ebms-menu li li a {
@@ -1005,7 +990,7 @@ body.front #next-meeting span { font-weight: bold; }
 /* SINGLE MEMBER PACKET */
 #member-packet .item-list ul { list-style-type: none; margin: 0 }
 #member-packet .item-list ul li { margin-left: 0; padding-left: 12px; }
-#member-packet #summary-links { padding-bottom: 19px; }
+#member-packet #summary-links { padding-bottom: 25px; }
 #member-packet #articles {
     width: 100%; margin-left: 11px; margin-right: 11px;
 }
@@ -1760,3 +1745,10 @@ div.cke_dialog_ui_input_text #autocomplete { max-height: 250px; }
 
 /* OCEEBMS-232 */
 span.fyi { color: red; font-weight: bold; font-size: 1.2em; }
+
+/* OCEEBMS-369 */
+img.note-icon { float: right; padding-left: 2px; padding-right: 2px; }
+
+/* OCEEBMS-374 */
+.help_page .content .node { width: 960px; }
+.help_page .content h3 { margin-top: 50px; }

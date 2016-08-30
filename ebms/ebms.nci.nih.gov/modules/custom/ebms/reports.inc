@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 /**
  * @file
  *
@@ -363,7 +361,7 @@ class EbmsReports {
             $pieces[] = ": $pgn";
         if ($year)
             $pieces[] = ", $year";
-        $pmurl = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $pmid;
+        $pmurl = Ebms\Util::pubmed_url($pmid);
         $pmopts = array('attributes' => array('target' => '_blank'));
         $pieces[] = '.<br />PMID: ' . l($pmid, $pmurl, $pmopts);
         return implode($pieces);
@@ -969,7 +967,7 @@ class EbmsReports {
         $query->orderBy('t.topic_name');
 
         // Prep for links to NLM's PubMed.
-        $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
+        $pubmed_base = 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
             'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
         $new_tab = array('attributes' => array('target' => '_blank'));
 
@@ -1110,7 +1108,7 @@ class EbmsReports {
         $query->orderBy('a.article_id');
 
         // Prep for links to NLM's PubMed.
-        $pubmed_base = 'http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
+        $pubmed_base = 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
             'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
         $new_tab = array('attributes' => array('target' => '_blank'));
 
@@ -3293,7 +3291,7 @@ LEFT OUTER JOIN {ebms_article_board_decision_value} v
      */
     static function slice_still_at_nlm($pmids) {
         $max = count($pmids);
-        $default = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+        $default = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
         $base = variable_get('pubmed_esearch_url', $default);
         $parms = "db=pubmed&retmax=$max&term=" . implode(',', $pmids) . '[UID]';
         $ch = curl_init();
@@ -3301,6 +3299,8 @@ LEFT OUTER JOIN {ebms_article_board_decision_value} v
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $parms);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         $results = curl_exec($ch);
         curl_close($ch);
 

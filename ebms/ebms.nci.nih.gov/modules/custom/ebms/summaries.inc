@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 /**
  * @file
  *
@@ -1871,6 +1869,7 @@ function pdq_ebms_nci_doc_form_submit($form, &$form_state) {
             'title' => $description,
             'board' => $board,
             'url' => $url,
+            'note' => $notes,
         )
     );
 
@@ -2147,6 +2146,7 @@ function pdq_ebms_member_doc_form_submit($form, &$form_state) {
                 'title' => $filename,
                 'board' => $board,
                 'url' => $url,
+                'note' => $filenotes,
             )
         );
         drupal_set_message("Posted document $filename.");

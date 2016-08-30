@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 /**
  * @file
  *
@@ -759,7 +757,7 @@ function pdq_ebms_ask_nlm_which_have_changed($since, $pmids) {
 
     // Construct a URL to fetch.
     $retmax = count($pmids);
-    $base = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
+    $base = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi';
     $parms = "db=pubmed&retmax=$retmax&term=($since" .
         '[MDAT]:3000[MDAT])+AND+' . implode(',', $pmids) . '[UID]';
     $url = "$base?$parms";
@@ -771,6 +769,8 @@ function pdq_ebms_ask_nlm_which_have_changed($since, $pmids) {
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $parms);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     $results = curl_exec($ch);
     curl_close($ch);
 

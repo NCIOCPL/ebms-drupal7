@@ -1,8 +1,6 @@
 <?php
 
 /**
- * $Id$
- *
  * Support routines for customizing the calendar views.
  *
  * Don't bother looking here for the code that creates the page for a

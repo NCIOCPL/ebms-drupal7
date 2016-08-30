@@ -2057,6 +2057,40 @@ article_state_id INTEGER NOT NULL,
           ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
+ * Comment provided by a board manager for a particular article/topic
+ * combination. Currently, the requirements call for having at most
+ * one such comment for each article/topic combination, so there is
+ * a uniqueness constraint on (article_id, topic_id). But we're
+ * prepared for a change to that requirement in the future, by not
+ * making those two columns be the primary key, and instead having
+ * a generated primary key integer. See OCEEBMS-375).
+ *
+ * comment_id         automatically generated primary key
+ * article_id         foreign key into the ebms_article table
+ * topic_id           foreign key into the ebms_topic table
+ * created_by         foreign key into the users table
+ * created            date/time the comment was created
+ * comment            data for which the table really exists
+ * modified_by        foreign key into the users table (optional)
+ * modified           date/time the comment was modified (optional)
+ */
+CREATE TABLE ebms_article_topic_comment
+ (comment_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  article_id INTEGER          NOT NULL,
+    topic_id INTEGER          NOT NULL,
+  created_by INTEGER UNSIGNED NOT NULL,
+     created DATETIME         NOT NULL,
+     comment TEXT             NOT NULL,
+ modified_by INTEGER UNSIGNED     NULL,
+    modified DATETIME             NULL,
+  UNIQUE KEY (article_id, topic_id),
+ FOREIGN KEY (article_id)       REFERENCES ebms_article (article_id),
+ FOREIGN KEY (topic_id)         REFERENCES ebms_topic (topic_id),
+ FOREIGN KEY (created_by)       REFERENCES users (uid),
+ FOREIGN KEY (modified_by)      REFERENCES users (uid))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
  * Describes the nature of a relationship between two articles.
  *
  * type_id        automatically generated primary key

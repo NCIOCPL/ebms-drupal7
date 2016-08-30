@@ -71,6 +71,7 @@ $js = Ebms\JS_DIR;
 $user_name = $user_photo = '';
 $menu_class = 'anon';
 $content = render($page['content']);
+$main_wrapper_class = 'other_page';
 if ($logged_in) {
     if ($user->uid == 1)
         $menu_class = 'manager admin';
@@ -91,6 +92,17 @@ if ($logged_in) {
             '<div class="breadcrumb">About</div>';
         $content = str_replace("About PDQ\xc2\xae",
                    "About PDQ<sup>\xc2\xae</sup>", $content);
+    }
+
+    /* Make help page style controllable. */
+    switch (strtoupper($title)) {
+        case 'EBMS HELP':
+        case '<EM>EDIT BASIC PAGE</EM> EBMS HELP':
+            $main_wrapper_class = 'help_page';
+            $breadcrumb = '<h2 class="element-invisible">You are here</h2>' .
+                '<div class="breadcrumb"><a href="/home">Home</a> ' .
+                '&gt; EBMS Help</div>';
+            break;
     }
 
     $user_name = htmlspecialchars($user->name);
@@ -174,7 +186,7 @@ if ($logged_in) {
 <?php if ($logged_in) { ?>
             <div id="help-and-about-links">
               <?php print l('About PDQ', 'about') ?> &nbsp;|&nbsp;
-              <?php print l('Help', 'help') ?>
+              <?php print l('EBMS Help', 'help') ?>
             </div>
             <div id="user-profile">
 <?php if ($photo) { ?>
@@ -229,7 +241,7 @@ if ($logged_in) {
         </div>
 <?php } /* if messages */ ?>
         <!-- Payload for the page, possibly divided into multiple columns -->
-        <div id="main-wrapper">
+        <div id="main-wrapper" class="<?php print $main_wrapper_class; ?>">
           <div id="main" class="clearfix">
 <?php if (true || $logged_in) { ?>
             <div id="content" class="column">

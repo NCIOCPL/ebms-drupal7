@@ -1,7 +1,5 @@
 <?php
 
-// $Id$
-
 /**
  * @file
  *
@@ -97,7 +95,7 @@ class EbmsFullText {
         $pieces[] = ' &nbsp; EBMS ID: ' . $article_id;
 
         // Link to NLM's abstract for the article.
-        $url = 'http://www.ncbi.nlm.nih.gov/pubmed/' . $pmid;
+        $url = Ebms\Util::pubmed_url($pmid);
         $target = array('attributes' => array('target' => '_blank'));
         $pieces[] = '<br /><br />' . l('VIEW ABSTRACT', $url, $target);
         return implode($pieces);
