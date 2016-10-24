@@ -461,28 +461,6 @@ function ebms_menu() {
             'file' => 'citations.inc',
         ),
 
-        // TESTING FOR ALAN
-        'alantest' => array(
-            'title' => 'Article API Testing',
-            'page callback' => 'pdq_ebms_alantest',
-            'file' => 'alan.inc',
-            'access callback' => true,
-            'theme callback' => 'pdq_ebms_tester_theme',
-            //'menu_name' => 'main-menu',
-            //'weight' => 20,
-        ),
-
-        // TESTING FOR ALAN
-        'admin/apitest' => array(
-            'title' => 'AlanTest',
-            'page callback' => 'pdq_ebms_alantest',
-            'file' => 'alan.inc',
-            'access callback' => true,
-            'theme callback' => 'pdq_ebms_tester_theme',
-            //'menu_name' => 'main-menu',
-            //'weight' => 20,
-        ),
-
         // TESTING FOR DAN
         'admin/ebms/enable' => array(
             'title' => 'EBMS Enable',
@@ -600,6 +578,26 @@ function ebms_menu() {
             'title' => 'Drupal Variables',
             'page callback' => 'pdq_ebms_vars',
             'access arguments' => array('administer ebms'),
+        ),
+        'admin/df' => array(
+            'title' => 'Disk Free',
+            'page callback' => 'pdq_ebms_df',
+            'access callback' => true,
+        ),
+        'admin/show-pubmed-results-files' => array(
+            'title' => 'Show Pubmed Results Files',
+            'page callback' => 'pdq_ebms_show_pubmed_results',
+            'access callback' => true,
+        ),
+        'admin/clear-pubmed-results-files' => array(
+            'title' => 'Clean Up Pubmed Results Files',
+            'page callback' => 'pdq_ebms_clear_pubmed_results',
+            'access callback' => true,
+        ),
+        'admin/truncate-debug-log' => array(
+            'title' => 'Truncate Debug Log',
+            'page callback' => 'pdq_ebms_truncate_debug_log',
+            'access callback' => true,
         ),
     );
 }
@@ -1110,6 +1108,9 @@ function ebms_init() {
             'refresh-xml',
             'ebms-accounts',
             'log-tail',
+            'df',
+            'clear-pubmed-results-files',
+            'truncate-debug-log'
         );
         if (in_array($exploded[0], $ok)) {
             return;
@@ -1134,40 +1135,9 @@ function ebms_init() {
     // Going for the side effect of bringing the cycle table up to date.
     $default_cycle = Ebms\Util::get_default_cycle();
 
-    if ($user->uid) {
-
-        // $user->ebms_boards
-        $result = db_select('ebms_board_member', 'm')
-            ->fields('m', array('board_id'))
-            ->condition('m.user_id', $user->uid)
-            ->execute();
-        $user->ebms_boards = array();
-        foreach ($result as $record) $user->ebms_boards[] = $record->board_id;
-
-        // $user->ebms_subgroups
-        $result = db_select('ebms_subgroup_member', 'm')
-            ->fields('m', array('sg_id'))
-            ->condition('m.user_id', $user->uid)
-            ->execute();
-        $user->ebms_subgroups = array();
-        foreach ($result as $record) $user->ebms_subgroups[] = $record->sg_id;
-
-        // $user->ebms_ad_hoc_groups
-        $result = db_select('ebms_ad_hoc_group_member', 'm')
-            ->fields('m', array('group_id'))
-            ->condition('m.user_id', $user->uid)
-            ->execute();
-        $user->ebms_ad_hoc_groups = array();
-        foreach ($result as $record)
-                $user->ebms_ad_hoc_groups[] = $record->group_id;
-
-        // populate with the same values as any loaded user
-        // (should ultimately only perform this to unify the fields
-        // between the global user and any other loaded user)
+    // Add EBMS-specific information to the $user object.
+    if ($user->uid)
         ebms_user_load(array($user->uid => $user));
-    }
-
-    return;
 }
 
 /**
@@ -1179,12 +1149,11 @@ function ebms_init() {
 function ebms_user_load($users) {
     foreach ($users as $uid => $user) {
         $users[$uid]->password_changed = null;
-        $results = db_select('ebms_board_member', 'm')
+        $boards = db_select('ebms_board_member', 'm')
             ->fields('m', array('board_id'))
             ->condition('m.user_id', $uid)
-            ->execute();
-        $boards = array();
-        foreach ($results as $result) $boards[] = $result->board_id;
+            ->execute()
+            ->fetchCol();
         $users[$uid]->boards = $boards;
 
         $topics = db_select('ebms_topic', 't')
@@ -1222,26 +1191,22 @@ function ebms_user_load($users) {
             $sgMemberQuery->union($sgBoardQuery)
                 ->distinct();
         }
-
         $users[$uid]->subgroups = $sgMemberQuery->execute()->fetchCol();
 
-        $ahgresults = db_select('ebms_ad_hoc_group_member', 'm')
+        $adhocgroups = db_select('ebms_ad_hoc_group_member', 'm')
             ->fields('m', array('group_id'))
             ->condition('m.user_id', $uid)
-            ->execute();
-        $adhocgroups = array();
-        foreach ($ahgresults as $ahgresult)
-                $adhocgroups[] = $ahgresult->group_id;
+            ->execute()
+            ->fetchCol();
         $users[$uid]->adhocgroups = $adhocgroups;
     }
+
     $results = db_select('ebms_user', 'u')
         ->fields('u', array('user_id', 'password_changed'))
         ->condition('u.user_id', array_keys($users), 'IN')
         ->execute();
-    foreach ($results as $record)
-            $users[$record->user_id]->password_changed = $record->password_changed;
-
-    return;
+    foreach ($results as $r)
+        $users[$r->user_id]->password_changed = $r->password_changed;
 }
 
 /**
@@ -1606,7 +1571,7 @@ function ebms_individuals_allowed_values_callback($field) {
         foreach ($users as $key => $user) {
             $userOptions[$key] = $user->name;
         }
-
+        natcasesort($userOptions);
         return $userOptions;
     }
 
@@ -1936,6 +1901,7 @@ function ebms_ckeditor_link_types_alter(&$types) {
  */
 function ebms_wysiwyg_editor_settings_alter(&$settings, $context) {
     if ($context['profile']->editor == 'ckeditor') {
+        $settings['height'] = 300;
         $settings['customConfig'] = base_path() .
             drupal_get_path('module', 'ebms') . '/js/ckeditor.config.js';
         return;
@@ -2209,6 +2175,121 @@ function ebms_default_message_type() {
         $types[$name] = entity_import('message_type', $export);
     }
     return $types;
+}
+
+/*
+ * Show pubmed-results files.
+ */
+function pdq_ebms_show_pubmed_results($id=0) {
+    if ($id) {
+        drupal_add_http_header('Content-type', 'text/plain');
+        $results = db_select('ebms_pubmed_results', 'r')
+            ->fields('r', array('results_file'))
+            ->condition('results_id', $id)
+            ->execute()
+            ->fetchField();
+        echo $results;
+        exit(0);
+    }
+    $results = db_query('
+SELECT results_id, when_submitted, LENGTH(results_file) AS len
+  FROM ebms_pubmed_results
+ ORDER BY when_submitted DESC')->fetchAll();
+    $items = array();
+    foreach ($results as $r) {
+        $label = $r->when_submitted . ' (' . $r->len . ' bytes)';
+        $link = l($label, 'admin/show-pubmed-results-files/' . $r->results_id);
+        $items[] = $link;
+    }
+    if (empty($items))
+        return '<p>Table empty.</p>';
+    return array(
+        '#items' => $items,
+        '#theme' => 'item_list',
+    );
+}
+
+/*
+ * Clean up older pubmed-results files from /tmp.
+ * OCEEBMS-313.
+ */
+function pdq_ebms_clear_pubmed_results($cutoff='') {
+    drupal_add_http_header('Content-type', 'text/plain');
+    if (!$cutoff) {
+        $now = new DateTime();
+        $then = $now->sub(new DateInterval('P1M'));
+        $cutoff = $then->format('Y-m-d');
+    }
+    $pattern = '/^2\d\d\d(-\d\d(-\d\d( \d\d:\d\d(:\d\d)?)?)?)?$/';
+    if (!preg_match($pattern, $cutoff)) {
+        echo "invalid cutoff $cutoff ";
+        echo "(expected YYYY[-MM[-DD [HH:MM[:SS]]]])\n";
+    }
+    else {
+        echo "using cutoff $cutoff\n";
+        $result = db_delete('ebms_pubmed_results')
+            ->condition('when_submitted', $cutoff, '<')
+            ->execute();
+        echo "dropped $result rows\n";
+    }
+    exit(0);
+}
+
+/*
+ * Truncate the debug log.
+ * OCEEBMS-313.
+ */
+function pdq_ebms_truncate_debug_log($maxsize=10*1024.0*1024.0) {
+    drupal_add_http_header('Content-type', 'text/plain');
+    $size = filesize('/tmp/ebms.debug');
+    if ($size > $maxsize * 1.0) {
+        $fh = fopen('/tmp/ebms.debug', 'r+');
+        if (!$fh) {
+            echo "unable to open /tmp/ebms.debug for writing\n";
+            print_r(error_get_last());
+        }
+        else {
+            fseek($fh, -$maxsize, SEEK_END);
+            $drop = fgets($fh);
+            $offset = ftell($fh);
+            $chunk_size = 1024 * 1024;
+            for ($n = 0; $n < $maxsize; $n += $chunk_size) {
+                fseek($fh, $n + $offset);
+                $chunk = fread($fh, $chunk_size);
+                fseek($fh, $n);
+                fwrite($fh, $chunk);
+            }
+            $new_size = $maxsize - strlen($drop);
+            rewind($fh);
+            $ok = ftruncate($fh, $new_size);
+            fclose($fh);
+            if ($ok)
+                echo "/tmp/ebms.debug truncated to $new_size bytes\n";
+            else {
+                $error = error_get_last();
+                echo "unable to truncate /tmp/ebms.debug\n";
+                print_r($error);
+            }
+        }
+    }
+    else
+        echo "$size is already less than max of $maxsize\n";
+    exit(0);
+}
+
+/*
+ * Show how much disk space is free in the two file systems we use.
+ * OCEEBMS-313.
+ */
+function pdq_ebms_df() {
+    drupal_add_http_header('Content-type', 'text/plain');
+    $paths = array('/tmp', '/local');
+    foreach ($paths as $path) {
+        $bytes = disk_free_space($path);
+        $gb = round($bytes / (1024.0 * 1024.0 * 1024.0), 2);
+        echo "$path: $bytes ($gb GB)\n";
+    }
+    exit(0);
 }
 
 /*

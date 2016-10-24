@@ -257,9 +257,11 @@ class PubmedInterface {
 
             // HTTP request might succeed but NLM not like the request
             if ($this->ib->status == IMPORT_BATCH_SUCCESS) {
+                $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                 $err = checkNLMReturn($results);
                 if ($err) {
-                    $msg = "Request error returned by NLM: $err";
+                    $msg = 'Request error returned by NLM';
+                    $msg .= "(HTTP CODE $code): $err";
                     $this->ib->addGeneralError($msg, IMPORT_BATCH_FAILURE);
                 }
             }
@@ -909,6 +911,21 @@ function loadNotList ($boardId, $source='Pubmed') {
 function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
            $comment=null, $useNotList=true, $inputType=null, $userId=null) {
 
+    // Tell watchdog what we're doing (OCEEBMS-313)
+    $count = count($articleIds);
+    $log_entry = "importArticlesFromNLM($mode mode): $count IDs for topic " .
+        $topicId;
+    if ($cycleId)
+        $log_entry .= "; cycleId=$cycleId";
+    if ($comment)
+        $log_entry .= "; $comment";
+    $log_entry .= '; useNotList=' . ($useNotList ? 'true' : 'false');
+    if ($inputType)
+        $log_entry .= "; inputType=$inputType";
+    if ($userId)
+        $log_entry .= "; userId=$userId";
+    watchdog('ebms', $log_entry);
+
     // Max we'll fetch at once - good citzenship
     define('PUBMED_BATCH_SIZE', 100);
 
@@ -1002,8 +1019,9 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
             // This should never happen because Pubmed will de-dup requests,
             //  but belt and suspenders
             if ($inPmids[$pmid] > 1) {
-                watchdog("EbmsImport:importArticlesFromNLM",
-                         "$pmid returned twice in one search by NLM");
+                watchdog('ebms',
+                    '%pmid returned twice in one import search by NLM',
+                    array('%pmid' => $pmid), WATCHDOG_WARNING);
                 $ib->addArticle('error', $pmid, null,
                     "Article for $pmid returned more than once by Pubmed");
 
@@ -1014,10 +1032,6 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
             // Article has no discovered state yet
             $oldTopicState = null;
 
-
-            // XXX ISSUE: Do we want this?  Or should the user interface
-            //  just hyperlink pmids to Pubmed?
-            $brfCite = $rec->getBrfCite();
 
             // Search our database for the pubmed ID
             // Gets article_id or false
@@ -1174,14 +1188,14 @@ function checkNLMReturn($nlmData) {
 
         // If xml error found, we'll just use some of whatever text we found
         else {
-            return trim(substr($text, 0, 250));
+            return trim(substr($text, 0, 500));
         }
     }
 
     // Any successful request from NLM should be a PubmedArticleSet
     $found = preg_match(PUBMED_XML_START_PAT, $nlmData);
     if (!$found)
-        return trim(substr($nlmData, 0, 250));
+        return trim(substr($nlmData, 0, 500));
 
     return '';
 }
@@ -1264,6 +1278,17 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
     if ($parmCount != 1)
         throw new \Exception(
             "findPubmedIDs: Pass exactly one fileId, filename or string");
+
+    // Save what we got (OCEEBMS-313).
+    $now = date('Y-m-d G:i:s');
+    $fields = array(
+        'when_submitted' => $now,
+        'results_file' => $dataStr
+    );
+    $result = db_insert('ebms_pubmed_results')
+        ->fields($fields)
+        ->execute();
+    pdq_ebms_debug('DB INSERT', array($result, $now));
 
     // One way or the other we now have a string
     // If downloaded via browser it might have a Unicode Byte Order Mark

@@ -1172,7 +1172,7 @@ class Util {
      *   field_data_dft_editorial_board.dft_editorial_board_value.
      *      A custom field in the 'user' bundle.
      *      Settable in ebms.../admin/people, choose person, "edit".
-     *   First board found in $user->ebms_boards, established at login.
+     *   First board found in $user->boards, established at login.
      *   Null.
      *
      * @param mixed $dft
@@ -1197,8 +1197,8 @@ class Util {
 
         // Have we already loaded associated boards?
         if (!$dftBoard && !$uid) {
-            if (isset($user->ebms_boards))
-                $dftBoard = reset($user->ebms_boards);
+            if (isset($user->boards))
+                $dftBoard = reset($user->boards);
         }
 
         return $dftBoard;
@@ -2464,6 +2464,100 @@ class Util {
      */
     public static function pubmed_url($pmid) {
         return \Ebms\PUBMED_URL . "/$pmid";
+    }
+
+    /**
+     * Find all of the articles related to this one and create markup
+     * identifying each of them.  See OCEEBMS-358 and OCEEBMS-381.
+     *
+     *  @param int $article_id
+     *      Unique ID of the article for which we are seeking
+     *      related articles
+     *
+     *  @param bool $link_ebms_id
+     *      Whether to include links to the full citation pages
+     *      for the related articles (defaults to false)
+     *
+     *  @return string
+     *      HTML markup identifying related articles
+     */
+    public static function get_related_articles($article_id, $link_ebms_id=false) {
+        // Add links to related articles.
+        $query = db_select('ebms_related_article', 'a')
+            ->fields('a', array('from_id', 'to_id'))
+            ->condition(db_or()
+                ->condition('a.from_id', $article_id)
+                ->condition('a.to_id', $article_id))
+            ->isNull('a.inactivated');
+        $results = $query->execute();
+        $related_ids = array();
+        foreach ($results as $result) {
+            $related_id = 0;
+            if ($result->from_id != $article_id)
+                $related_id = $result->from_id;
+            elseif ($result->to_id != $article_id)
+                $related_id = $result->to_id;
+            if ($related_id && !in_array($related_id, $related_ids))
+                $related_ids[] = $related_id;
+        }
+        sort($related_ids);
+        $related_articles = '';
+        foreach ($related_ids as $related_id) {
+            $article = self::format_related_article($related_id,
+                                                    $link_ebms_id);
+            if ($article)
+                $related_articles .= " $article";
+        }
+        return $related_articles;
+    }
+
+    /**
+     * Create the markup identifying another article related to the
+     * primary article being displayed. See OCEEBMS-358 and OCEEBMS-381.
+     *
+     *  @param int $id
+     *      Unique ID of the related article to be identified
+     *
+     *  @param bool $link_ebms_id
+     *      Whether to include a link to the full citation page
+     *      for the related article
+     *
+     *  @return string
+     *      HTML markup identifying related article
+     */
+    private static function format_related_article($id, $link_ebms_id=false) {
+        $results = db_select('ebms_article', 'a')
+            ->fields('a', array('source_data'))
+            ->condition('a.article_id', $id)
+            ->execute();
+        foreach ($results as $result) {
+            $display = array();
+            $doc = new \SimpleXMLElement($result->source_data);
+            if ($doc->MedlineCitation->Article->AuthorList->Author) {
+                foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
+                    if ($a->LastName)
+                        $display[] = htmlspecialchars($a->LastName);
+                    break;
+                }
+            }
+            else
+                $display[] = '[No authors listed]';
+            $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+            $display[] = htmlspecialchars($ta);
+            $article = $doc->MedlineCitation->Article;
+            $year = $article->Journal->JournalIssue->PubDate->Year;
+            if ($year)
+                $display[] = $year;
+            $pmid = $doc->MedlineCitation->PMID;
+            $url = self::pubmed_url($pmid);
+            $link = "<a href='$url' target='_blank'>$pmid</a>";
+            $display[] = "PMID $link";
+            if ($link_ebms_id)
+                $display[] = " (<a href='/citations/full/$id'>$id</a>)";
+            $display = implode(' ', $display);
+            return "[RELATED CITATION: $display]";
+        }
+        return '';
     }
 }
 

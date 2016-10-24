@@ -3279,7 +3279,9 @@ LEFT OUTER JOIN {ebms_article_board_decision_value} v
                                         'RejectInitReview','RejectBMReview',
                                         'RejectFullReview', 'FullEnd')
             AND s.current = 'Y'
-            AND (v.value_name IS NULL OR v.value_name <> 'Not cited')
+            AND (v.value_name IS NULL OR
+                 v.value_name NOT IN ('Not cited', 'Cited (citation only)',
+                                      'Cited (legacy)', 'Text approved'))
    )";
         $query .= "
  ORDER BY 1";
@@ -6179,7 +6181,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
 
     // Initialize defaults for the form field's values.
     $board = \Ebms\Util::get_user_default_board(0);
-    $selected_topics = $selected_cycles = array();
+    $selected_topics = /* $selected_cycles = */ array();
     $order_by = 'author';
     $start = $end = '';
 
@@ -6188,7 +6190,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         $values = EbmsReports::fetch_report_request($request_id);
         $board = $values['board'];
         $selected_topics = $values['topics'];
-        $selected_cycles = $values['cycles'];
+        // $selected_cycles = $values['cycles'];
         $start = $values['date-start']['date'];
         $end = $values['date-end']['date'];
         if ($start)
@@ -6202,7 +6204,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     if (isset($form_state['values'])) {
         $board = $form_state['values']['board'];
         $selected_topics = $form_state['values']['topics'];
-        $selected_cycles = $form_state['values']['cycles'];
+        /* $selected_cycles = $form_state['values']['cycles']; */
     }
 
     // How tall should the picklists allowing multiple selections be?
@@ -6211,7 +6213,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     // Create the picklists.
     $topics = array();
     $boards = array(0 => ' ') + Ebms\Util::boards();
-    $cycles = Ebms\Util::cycles();
+    // $cycles = Ebms\Util::cycles();
 
     // If a board has been selected, populate the board-dependent picklists.
     if ($board) {
@@ -6257,6 +6259,8 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
         ),
+        // Suppress filtering this report by cycle (OCEEBMS-362)
+        /*
         'cycles' => array(
             '#type' => 'select',
             '#multiple' => true,
@@ -6266,6 +6270,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
             '#size' => $size,
             '#attributes' => array('class' => array('fixed-width')),
         ),
+        */
         'date' => Ebms\Util::date_range_field('Assigned Date', 'date',
                                               $start, $end, '', false),
         'order-by' => array(
@@ -6349,6 +6354,9 @@ function articles_without_responses_report($request_id, $member_version=false) {
     $query->fields('p', array('packet_id', 'created_at'));
     $query->fields('t', array('topic_id', 'topic_name'));
 
+    // Skip articles subsequently dropped from packet (OCEEBMS-357).
+    $query->condition('pa.drop_flag', 0);
+
     // Filter on topics, if any specified, otherwise by the board.
     if (count($values['topics']))
         $query->condition('p.topic_id', $values['topics'], 'IN');
@@ -6362,11 +6370,12 @@ function articles_without_responses_report($request_id, $member_version=false) {
     $query->isNull('r.review_id');
 
     // Filter by review cycle if any have been selected.
-    if (count($values['cycles'])) {
-        $query->join('ebms_article_topic', 'at',
-                'at.article_id = a.article_id AND at.topic_id = p.topic_id');
-        $query->condition('at.cycle_id', $values['cycles'], 'IN');
-    }
+    // Suppress cycle filtering (OCEEBMS-362).
+    //if (count($values['cycles'])) {
+    //    $query->join('ebms_article_topic', 'at',
+    //            'at.article_id = a.article_id AND at.topic_id = p.topic_id');
+    //    $query->condition('at.cycle_id', $values['cycles'], 'IN');
+    //}
 
     // Filter by date if asked to do so.
     if ($values['date-start']['date']) {

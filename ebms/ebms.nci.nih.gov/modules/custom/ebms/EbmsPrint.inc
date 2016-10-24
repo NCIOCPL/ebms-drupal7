@@ -1,5 +1,15 @@
 <?php
 
+/*
+ * Create printed packets for users who opt out of using the online
+ * system.
+ *
+ * To save other developers from some frustrated searching, you should
+ * be aware that what this code refers to as "response sheets" are called
+ * "cover sheets" by the users. You won't find the phrase "cover sheet"
+ * anywhere in this code, except in this comment. :-)
+ */
+
 namespace Ebms;
 
 require_once('EbmsArticle.inc');
@@ -1213,14 +1223,20 @@ class EbmsPrintJob {
         $brfCitation  = utf8_decode($artObj->getBrfCite());
 
         // Up to three authors, combined into a single string
-        $authors = $artObj->getAuthors(3);
+        // Add 'et al.' if more than three (OCEEBMS-339)
+        $authors = $artObj->getAuthors(4);
 
         $authorStr = '';
         $authorCnt = 0;
         if (!empty($authors)) {
             foreach ($authors as $authObj) {
-                if ($authorCnt > 0)
+                if ($authorCnt > 0) {
+                    if ($authorCnt >= 3) {
+                        $authorStr .= '; et al.';
+                        break;
+                    }
                     $authorStr .= '; ';
+                }
                 if ($authObj->collective_name)
                     $authorStr = $authObj->collective_name;
                 else {
@@ -1228,9 +1244,9 @@ class EbmsPrintJob {
                     $authorStr .= ' ';
                     $authorStr .= $authObj->initials;
                 }
-                $authorStr = utf8_decode($authorStr);
                 ++$authorCnt;
             }
+            $authorStr = utf8_decode($authorStr);
         }
         else
             $authorStr = '[No authors listed]';
@@ -1243,9 +1259,6 @@ class EbmsPrintJob {
         foreach ($topicList as $topObj)
             $topicNames[] = $topObj->topic_name;
         $topicString = implode(', ', $topicNames);
-
-        // PDF dynamic construction package
-        require_once('fpdf/fpdf.php');
 
         // Create a pdf object
         // Portrait mode, measure using points, page size US Letter
@@ -1431,7 +1444,7 @@ class EbmsPrintJob {
         $dispositions = array(
             'Warrants no changes to the summary (indicate reason[s] for exclusion on the back)',
             'Deserves citation in the summary (indicate placement in the summary document)',
-            'Merits revision of the text (indicate changes in the summary document',
+            'Merits revision of the text (indicate changes in the summary document)',
             'Merits discussion'
         );
 
@@ -1476,12 +1489,8 @@ class EbmsPrintJob {
             'Review/expert opinion/commentary (no new primary data)',
             'Inadequate study population (small number of patients; underpowered study; accrual target not met)',
             'Inadequate follow-up',
-            'Inappropriate interpretation of subgroup analyses',
-            'Inappropriate statistical analysis (incorrect tests; lack of intent-to-treat analysis)',
-            'Inappropriate study design',
+            'Inappropriate study design or analyses',
             'Missing/incomplete outcome data; major protocol deviations',
-            'Randomized trial with flawed or insufficiently described randomization process',
-            'Unvalidated outcome measure[s] used (e.g., unvalidated surrogate endpoint[s])',
             'Other (specify reason[s] below)'
         );
 

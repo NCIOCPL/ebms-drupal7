@@ -1744,7 +1744,7 @@ div.cke_dialog_ui_input_text #autocomplete { max-height: 250px; }
 .no-underscore { text-decoration: none; }
 
 /* OCEEBMS-232 */
-span.fyi { color: red; font-weight: bold; font-size: 1.2em; }
+span.fyi { color: #a90101; font-weight: bold; font-size: 1.2em; }
 
 /* OCEEBMS-369 */
 img.note-icon { float: right; padding-left: 2px; padding-right: 2px; }
@@ -1752,3 +1752,6 @@ img.note-icon { float: right; padding-left: 2px; padding-right: 2px; }
 /* OCEEBMS-374 */
 .help_page .content .node { width: 960px; }
 .help_page .content h3 { margin-top: 50px; }
+
+/* OCEEBMS-381, OCEEBMS-358 (board manager comment) */
+.bmc { color: #a90101; }

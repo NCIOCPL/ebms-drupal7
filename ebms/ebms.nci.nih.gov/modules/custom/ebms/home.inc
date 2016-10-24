@@ -238,7 +238,6 @@ class EbmsHomePage {
      */
     public static function add_note_icon($matches) {
         $img = '';
-        pdq_ebms_debug('ADD NOTE ICONXXX', $matches);
         $note = db_select('field_data_field_notes', 'n')
             ->fields('n', array('field_notes_value'))
             ->condition('n.entity_id', $matches[1])

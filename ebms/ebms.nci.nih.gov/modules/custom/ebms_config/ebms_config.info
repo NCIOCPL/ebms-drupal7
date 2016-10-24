@@ -1,7 +1,7 @@
 name = EBMS Site Configuration
 core = 7.x
 package = EBMS
-version = 7.x-1.1
+version = 7.x-1.2
 dependencies[] = ckeditor_link
 dependencies[] = features
 dependencies[] = filter

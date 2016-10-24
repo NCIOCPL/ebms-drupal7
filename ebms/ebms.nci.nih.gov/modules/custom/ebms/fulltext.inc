@@ -94,6 +94,11 @@ class EbmsFullText {
         $pieces[] = '.<br />PMID: ' . $pmid;
         $pieces[] = ' &nbsp; EBMS ID: ' . $article_id;
 
+        // Show related articles (OCEEBMS-358).
+        $related = Ebms\Util::get_related_articles($article_id);
+        if ($related)
+            $pieces[]= "<br>$related";
+
         // Link to NLM's abstract for the article.
         $url = Ebms\Util::pubmed_url($pmid);
         $target = array('attributes' => array('target' => '_blank'));

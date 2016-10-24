@@ -1123,7 +1123,7 @@ class EbmsReview {
             $reviewers = array();
 
             // Add related articles and board manager comment (OCEEBMS-381).
-            $related = EbmsReview::get_related_articles($article_id);
+            $related = Ebms\Util::get_related_articles($article_id);
             if ($related)
                 $citation .= "<br>$related";
             $topic_id = db_select('ebms_packet', 'p')
@@ -1177,11 +1177,15 @@ class EbmsReview {
 
             // Pick up any leftover board members who have not yet
             // done their review of the article.
-            while ($i < count($packet_reviewers))
+            $is_fyi = EbmsReview::is_fyi($article_id, $topic_id);
+            $fyi_span = '<span class="fyi" style="float: right">FYI</span>';
+            while ($i < count($packet_reviewers)) {
+                $fyi = ($i == 0 && $is_fyi) ? $fyi_span : '';
                 $reviewers[] = '<div class="reviewer">' .
                     '<span class="reviewer-name">' .
                     htmlspecialchars($packet_reviewers[$i++]) .
-                    '</span></div>';
+                    "</span>$fyi</div>";
+            }
 
             // Assemble the row.
             $article_opts = $opts;
@@ -2637,6 +2641,8 @@ class EbmsReview {
                 $when_posted = date('m/d/Y', strtotime($article->when_posted));
                 $c2 = "<i>reviewed<br />$when_posted</i>";
             }
+            elseif (EbmsReview::has_fbd($article->article_id, $topic_id))
+                $c2 = '<i>Reviewed by Editorial Board</i>';
             else
                 $c2 = l('Review', EbmsReview::$url, $options);
             $row = array(
@@ -3054,70 +3060,6 @@ class EbmsReview {
         return $parms;
     }
 
-    private static function get_related_articles($article_id, $link_ebms_id=false) {
-        // Add links to related articles.
-        $query = db_select('ebms_related_article', 'a')
-            ->fields('a', array('from_id', 'to_id'))
-            ->condition(db_or()
-                ->condition('a.from_id', $article_id)
-                ->condition('a.to_id', $article_id))
-            ->isNull('a.inactivated');
-        $results = $query->execute();
-        $related_ids = array();
-        foreach ($results as $result) {
-            $related_id = 0;
-            if ($result->from_id != $article_id)
-                $related_id = $result->from_id;
-            elseif ($result->to_id != $article_id)
-                $related_id = $result->to_id;
-            if ($related_id && !in_array($related_id, $related_ids))
-                $related_ids[] = $related_id;
-        }
-        sort($related_ids);
-        $related_articles = '';
-        foreach ($related_ids as $related_id) {
-            $article = EbmsReview::format_related_article($related_id, $link_ebms_id);
-            if ($article)
-                $related_articles .= " $article";
-        }
-        return $related_articles;
-    }
-
-    private static function format_related_article($id, $link_ebms_id=false) {
-        $results = db_select('ebms_article', 'a')
-            ->fields('a', array('source_data'))
-            ->condition('a.article_id', $id)
-            ->execute();
-        foreach ($results as $result) {
-            $display = array();
-            $doc = new \SimpleXMLElement($result->source_data);
-            if ($doc->MedlineCitation->Article->AuthorList->Author) {
-                foreach ($doc->MedlineCitation->Article->AuthorList->Author as $a) {
-                    if ($a->LastName)
-                        $display[] = htmlspecialchars($a->LastName);
-                    break;
-                }
-            }
-            else
-                $display[] = '[No authors listed]';
-            $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
-            $display[] = htmlspecialchars($ta);
-            $article = $doc->MedlineCitation->Article;
-            $year = $article->Journal->JournalIssue->PubDate->Year;
-            if ($year)
-                $display[] = $year;
-            $pmid = $doc->MedlineCitation->PMID;
-            $url = Ebms\Util::pubmed_url($pmid);
-            $link = "<a href='$url' target='_blank'>$pmid</a>";
-            $display[] = "PMID $link";
-            if ($link_ebms_id)
-                $display[] = " (<a href='/citations/full/$id'>$id</a>)";
-            $display = implode(' ', $display);
-            return "[RELATED CITATION: $display]";
-        }
-        return '';
-    }
-
     private static function get_article_topic_comment($article_id, $topic_id) {
         $results = db_select('ebms_article_topic_comment', 'c')
             ->fields('c', array('comment'))
@@ -3181,7 +3123,7 @@ class EbmsReview {
         $citation = implode('; ', $citation);
 
         // Add related articles and board manager comments (OCEEBMS-381).
-        $citation .= EbmsReview::get_related_articles($article_id, true);
+        $citation .= Ebms\Util::get_related_articles($article_id, true);
         $comment = EbmsReview::get_article_topic_comment($article_id,
                                                          $topic_id);
         if ($comment) {
@@ -3515,7 +3457,7 @@ ORDER BY t.topic_name";
         $pieces[] = "PMID: $pmid";
 
         // Add related articles and board manager comments if present (OCEEBMS-381).
-        $related_articles = EbmsReview::get_related_articles($article_id);
+        $related_articles = Ebms\Util::get_related_articles($article_id);
         if ($related_articles)
             $pieces[] = "<br>$related_articles";
         $comment = EbmsReview::get_article_topic_comment($article_id,
@@ -3594,8 +3536,9 @@ ORDER BY t.topic_name";
 
         $query = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
-            ->condition('t.board_id', $boards, 'IN')
             ->orderBy('t.topic_name');
+        if (!empty($boards))
+            $query->condition('t.board_id', $boards, 'IN');
 
         $results = $query->execute();
 
@@ -3652,6 +3595,22 @@ ORDER BY t.topic_name";
         $query->condition('s.current', 'Y');
         $state_id = $query->execute()->fetchField();
         return $state_id == EbmsReview::get_fyi_state_id();
+    }
+
+    /**
+     * Find out whether the current state for this article/topic
+     * combination is Final Board Decision.
+     */
+    public static function has_fbd($article_id, $topic_id) {
+        $fbd = Ebms\Util::state_id_from_text_id('FinalBoardDecision');
+        $query = db_select('ebms_article_state', 's');
+        $query->fields('s', array('state_id'));
+        $query->condition('s.topic_id', $topic_id);
+        $query->condition('s.article_id', $article_id);
+        $query->condition('s.active_status', 'A');
+        $query->condition('s.current', 'Y');
+        $state_id = $query->execute()->fetchField();
+        return $state_id == $fbd;
     }
 
     /**
@@ -3810,6 +3769,22 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         $ft_link = l('DOWNLOAD FULL TEXT', $ft_url, $attrs);
         $links .= " &nbsp; | &nbsp; $ft_link";
     }
+
+    // Add link to other reviews of this article (OCEEBMS-380)
+    $count = db_select('ebms_article_review', 'r')
+        ->condition('r.packet_id', $review->packet_id)
+        ->condition('r.article_id', $article_id)
+        ->condition('r.reviewer_id', $review->user->uid, '<>')
+        ->countQuery()
+        ->execute()
+        ->fetchField();
+    if ($count > 0) {
+        $other_opts['query'] = drupal_get_query_parameters();
+        $other_url = EbmsReview::$url . '/others';
+        $other_link = l('OTHER REVIEWS', $other_url, $other_opts);
+        $links .= " &nbsp; | &nbsp; $other_link";
+    }
+
     $links .= '</div>';
 
     // check for this page being used on behalf of another

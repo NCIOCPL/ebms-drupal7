@@ -392,12 +392,50 @@ class EbmsArticle {
     public function getArticleTitle()    { return $this->article_title; }
     public function getJrnlTitle()       { return $this->jrnl_title; }
     public function getBrfJrnlTitle()    { return $this->brf_jrnl_title; }
-    public function getBrfCite()         { return $this->brf_citation; }
+    //public function getBrfCite()         { return $this->brf_citation; }
     public function getAbstract()        { return $this->abstract; }
     public function getPubDate()         { return $this->published_date; }
     public function getImportDate()      { return $this->import_date; }
     public function getImportedBy()      { return $this->imported_by; }
     public function getUpdateDate()      { return $this->update_date; }
+
+    /**
+     * Modified getBrfCite() to deal with broken brief citations (a bug
+     * in the original code caused all of the values to lack the pagination
+     * component). So I'm going to replace all of the existing values for
+     * the brf_citation column of the ebms_article table with empty strings
+     * and re-build the brief citation from scratch for those articles.
+     * The newer articles will have the brief citation string built
+     * correctly. As it turns out, the packet printing software is the
+     * only component of the system that uses the cached brief citation,
+     * as the requirements for the citation display were all over the
+     * map throughout the rest of the system. That's what happens when
+     * you exclude the developers from the requirements gathering process. :-)
+     */
+    public function getBrfCite() {
+
+        // If not already constructed, do it here.
+        if (!$this->brf_citation) {
+            $source_xml = $this->getSourceData();
+
+            // Manage errors ourselves
+            libxml_use_internal_errors(true);
+
+            // Parse the xml
+            $root = simplexml_load_string($source_xml);
+            if (!$root) {
+                drupal_set_message('Unable to parse article XML', 'error');
+                return '';
+            }
+            $article = $root->MedlineCitation->Article;
+            if (!$article) {
+                drupal_set_message('Article XML not found', 'error');
+                return '';
+            }
+            $this->loadCite($article);
+        }
+        return $this->brf_citation;
+    }
 
     /**
      * Retrieve list of related articles. Use cache if available.
@@ -434,12 +472,6 @@ class EbmsArticle {
         }
         return $this->related_articles;
     }
-
-    /**
-     * Complex method of getting brief citation.
-     *
-     * XXX TO BE DONE XXX
-     */
 
     /**
      * Set the article_id.
@@ -783,7 +815,7 @@ class EbmsArticle {
         if ($issue) {
             $issue = '(' . $issue . ')';
         }
-        $pages = $article->Pagination->MedlinePGN;
+        $pages = trim($article->Pagination->MedlinePgn);
         if ($pages) {
             $pages = ';' . $pages;
         }
@@ -794,6 +826,7 @@ class EbmsArticle {
         // Save what we've got, transformed if necessary
         $this->published_date = $date;
         $this->brf_citation   = Util::indexify($cite,true,true,MAX_BRF_CITE);
+        pdq_ebms_debug('DA CITE', array($cite, $pages, $this->brf_citation));
     }
 
     /**

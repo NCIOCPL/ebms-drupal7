@@ -226,7 +226,7 @@ function _calendar_query_alter(&$view, &$query) {
     );
 
     //Add where condition
-    if($user->boards)
+    if (!empty($user->boards))
         $or_conditions->condition('field_data_field_boards.field_boards_value',
             $user->boards, 'IN');
     $nullConditions->isNull('field_data_field_boards.field_boards_value');
@@ -250,7 +250,7 @@ function _calendar_query_alter(&$view, &$query) {
     );
 
     //Add where condition
-    if($user->subgroups)
+    if (!empty($user->subgroups))
         $or_conditions->condition('field_data_field_subgroups.field_subgroups_value',
             $user->subgroups, 'IN');
     $nullConditions->isNull('field_data_field_subgroups.field_subgroups_value');
@@ -274,9 +274,9 @@ function _calendar_query_alter(&$view, &$query) {
     );
 
     //Add where condition
-    if($user->ebms_ad_hoc_groups)
+    if (!empty($user->adhocgroups))
         $or_conditions->condition('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value',
-            $user->ebms_ad_hoc_groups, 'IN');
+            $user->adhocgroups, 'IN');
     $nullConditions->isNull('field_data_field_ad_hoc_groups.field_ad_hoc_groups_value');
 
     //Individual Users:

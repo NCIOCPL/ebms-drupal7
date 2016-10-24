@@ -1,8 +1,11 @@
--- /* $Id$ */
+/*
+ * Custom database tables for the EBMS.
+ */
 
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_pubmed_results;
 DROP TABLE IF EXISTS ebms_related_article;
 DROP TABLE IF EXISTS ebms_article_relation_type;
 DROP TABLE IF EXISTS ebms_core_journal;
@@ -453,7 +456,7 @@ CREATE TABLE ebms_article (
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
       -- Searchable fields
-      CREATE INDEX ebms_article_source_id_index
+      CREATE UNIQUE INDEX ebms_article_source_id_index
              ON ebms_article(source, source_id);
       CREATE INDEX ebms_article_source_jrnl_id_index
              ON ebms_article(source, source_jrnl_id);
@@ -2099,7 +2102,7 @@ CREATE TABLE ebms_article_topic_comment
  * type_desc      optional description of the relationship type
  */
  CREATE TABLE ebms_article_relation_type
-     (type_id INTEGER         NOT NULL AUTO INCREMENT PRIMARY KEY,
+     (type_id INTEGER         NOT NULL AUTO_INCREMENT PRIMARY KEY,
     type_name VARCHAR(255)    NOT NULL UNIQUE,
 active_status ENUM ('A', 'I') NOT NULL DEFAULT 'A',
     type_desc TEXT                NULL)
@@ -2119,7 +2122,7 @@ active_status ENUM ('A', 'I') NOT NULL DEFAULT 'A',
  * inactivated        date/time the relationship was deleted (if ever)
  */
 CREATE TABLE ebms_related_article
-(relationship_id INTEGER          NOT NULL AUTO INCREMENT PRIMARY KEY,
+(relationship_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
          from_id INTEGER          NOT NULL,
            to_id INTEGER          NOT NULL,
          type_id INTEGER          NOT NULL,
@@ -2134,3 +2137,18 @@ FOREIGN KEY (type_id)        REFERENCES ebms_article_relation_type (type_id),
 FOREIGN KEY (created_by)     REFERENCES users (uid),
 FOREIGN KEY (inactivated_by) REFERENCES users (uid))
         ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Captures PubMed search results fed to the import process. We do this
+ * to facilitate troubleshooting when something goes wrong.
+ *
+ * results_id     automatically generated primary key
+ * when_submitted when the results file was submitted to an import request
+ * results_file   contents of the PubMed response to the search
+ */
+  CREATE TABLE ebms_pubmed_results
+   (results_id INTEGER    NOT NULL AUTO_INCREMENT PRIMARY KEY,
+when_submitted DATETIME   NOT NULL,
+  results_file MEDIUMBLOB NOT NULL)
+        ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE INDEX ebms_pubmed_results_date ON ebms_pubmed_results(when_submitted);

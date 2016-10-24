@@ -1,4 +1,4 @@
-# Script for deploying EBMS Release 3.2 to a tier
+# Script for deploying EBMS Release 3.3 to a tier
 
 echo Setting locations
 export SVN_EBMS33=https://ncisvn.nci.nih.gov/svn/oce_cdr/branches/ebms-3.3

@@ -37,7 +37,7 @@
  * banner comments identifying them. The first three sections contain
  * support for each of the three pages described above. The last
  * section contains common support code used by multiple pages,
- * includnig a class at the bottom used to keep track of each of the
+ * including a class at the bottom used to keep track of each of the
  * 'states' (a.k.a. 'decisions') in which an article/topic combination
  * can exist.
  *
@@ -6231,10 +6231,14 @@ namespace {
         $rawTitle = (string) $articleXML->ArticleTitle;
         if (!$long_form) {
             // create link-like submit element
+            // 2016-08-31: add #name property for OCEEBMS-387
+            //  (see Drupal bugs https://www.drupal.org/node/1342066
+            //   and https://www.drupal.org/node/852520)
             $title = array (
                 '#type' => 'submit',
                 '#value' => $rawTitle,
                 '#article_id' => $article_id,
+                '#name' => "full-citation-link-$article_id",
                 '#button_type' => 'full-citation-link',
                 '#submit' => array('_full_citation_redirect'),
             );
@@ -6278,6 +6282,7 @@ namespace {
             $link = l($pmid, $url, $target);
             $pmid = "PMID: $link";
         }
+
         $ebmsId = $article_id;
 
         $tAuthors = '';
@@ -6337,6 +6342,27 @@ namespace {
         }
 
         if (!$long_form) {
+
+            // Show related articles and board manager comments (OCEEBMS-358).
+            // Users never answered the question about whether topics should
+            // be ignored for comment display, so I've got the condition in
+            // the code below, but it's commented out (so topics are ignored
+            // for now).
+            $related = Ebms\Util::get_related_articles($article_id);
+            if ($related)
+                $pieces[]= "<div>$related</div>";
+            $results = db_select('ebms_article_topic_comment', 'c')
+                ->fields('c', array('comment'))
+                ->condition('c.article_id', $article_id)
+                //->condition('c.topic_id', $topic_id)
+                ->execute();
+            foreach ($results as $result)
+                if ($result->comment) {
+                    $comment = htmlspecialchars($result->comment);
+                    $pieces[] = '<br><div class="bmc">';
+                    $pieces[] = 'BOARD MANAGER COMMENT';
+                    $pieces[] = "<br>$comment</div><br>";
+                }
             if ($showAbstract) {
                 $pieces[] = _format_abstract($article);
             }

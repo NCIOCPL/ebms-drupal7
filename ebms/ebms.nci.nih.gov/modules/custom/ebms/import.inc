@@ -597,6 +597,14 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     // Extract the values entered by the user.
     $pmids = $form_state['article-ids'];
     $values =& $form_state['values'];
+
+    // Log the request so we can reproduce it if it fails (OCEEBMS-313).
+    $debug_info = array(
+        '$form_state[values]' => $values,
+        '$pmids' => $pmids
+    );
+    pdq_ebms_debug('IMPORT FORM SUBMIT', $debug_info);
+
     $board = $values['board'];
     $topic = $values['topic'];
     $cycle = $values['cycle'];

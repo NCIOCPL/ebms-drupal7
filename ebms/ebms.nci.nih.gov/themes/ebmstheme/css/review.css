@@ -155,6 +155,3 @@ p.archived-review-header { border: 1px solid black; font-style: italic; }
 #reviewed-packet-list .unstarred-packet { font-size: 16pt; cursor: pointer; }
 #reviewed-packet-list .starred-packet { color: #74a5d7; }
 #reviewed-packet-list .unstarred-packet { color: #c1c1c1; }
-
-/* OCEEBMS-381 */
-.bmc { color: #a90101; }

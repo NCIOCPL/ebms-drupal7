@@ -191,7 +191,19 @@ function ebms_webforms_form_validate($form, &$form_state) {
         $out = Ebms\Util::fill_in_date($check_out);
         if ($out > '1901' && $in > $out)
             form_set_error('check_out',
-                'Check-out cannont be earlier than check-in.');
+                'Check-out cannot be earlier than check-in.');
+    }
+
+    // Conditionally required nights_stayed field
+    // Explanation of weird first parameter for form_set_error call at
+    // http://drupal.stackexchange.com/questions/78471/form-set-error-field-not-highlited-red
+    if (isset($form_state['values']['submitted']['hotel'])) {
+        $hotel = $form_state['values']['submitted']['hotel'];
+        if (strpos($hotel, 'paid') !== false) {
+            if (empty($form_state['values']['submitted']['nights_stayed']))
+                form_set_error('submitted][nights_stayed',
+                    'Missing required Nights Stayed field.');
+        }
     }
 }
 
@@ -1136,8 +1148,8 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
             array('data' => 'User', 'field' => 'u.name'),
             array('data' => 'Meeting', 'field' => 'meeting_with_date'),
             // 'Type of Travel', removed by OCEEBMS-327
-            'Transportation', 'Parking and Tolls', 'Hotel', 'Amount',
-            'Meals and Incidentals', 'Honorarium',
+            'Transportation', 'Parking and Tolls', 'Hotel', 'Nights Stayed',
+            'Amount', 'Meals and Incidentals', 'Honorarium',
             'Reimbursement', 'Comments',
         );
     else
