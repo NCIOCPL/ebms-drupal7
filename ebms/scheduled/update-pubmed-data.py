@@ -2,8 +2,6 @@
 
 #----------------------------------------------------------------------
 #
-# $Id$
-#
 # Find out which Pubmed articles have been modified since we last
 # pulled down the XML from NLM, and refresh those documents.
 #
@@ -11,6 +9,8 @@
 #
 #----------------------------------------------------------------------
 import urllib2, sys, glob, datetime, time, re, smtplib
+import logging
+import os
 
 #----------------------------------------------------------------------
 # Ask the EBMS web application to give us a list of all of the
@@ -35,7 +35,9 @@ import urllib2, sys, glob, datetime, time, re, smtplib
 #----------------------------------------------------------------------
 def get_articles(host):
     url = "https://%s/get-source-ids/Pubmed" % host
+    logging.debug("url: %s", url)
     f = urllib2.urlopen(url)
+    logging.debug("response received from %s", host)
     pmids = {}
     latest_mod = "2011-01-01"
     if f.code == 200:
@@ -53,6 +55,7 @@ def get_articles(host):
     else:
         raise Exception("Failure fetching article information: HTTP code %s" %
                         f.code)
+    logging.info("received %d PMIDs; latest_mod=%s", len(pmids), latest_mod)
     return pmids, latest_mod
 
 #----------------------------------------------------------------------
@@ -72,12 +75,14 @@ def get_articles(host):
 #                           having been modified on the date specified
 #----------------------------------------------------------------------
 def get_mod_pmids(date, articles):
-    base = "http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    base = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     mod = []
     d = str(date).replace('-', '/')
     parms = "db=pubmed&retmax=50000000&term=%s[MDAT]" % d
     url = "%s?%s" % (base, parms)
+    logging.debug("opening %s", url)
     f = urllib2.urlopen(url)
+    logging.debug("response received from NLM")
     while True:
         line = f.readline()
         if not line:
@@ -96,6 +101,7 @@ def get_mod_pmids(date, articles):
                 latest, data_mod = articles[pmid]
                 if data_mod != date:
                     mod.append(pmid)
+    logging.info("%d modified articles found", len(mod))
     return mod
 
 #----------------------------------------------------------------------
@@ -118,8 +124,10 @@ def get_mod_pmids(date, articles):
 def update_mod_dates(host, articles, latest_mod, stop_date=None):
     BATCH_SIZE = 10000
     url = "https://%s/update-source-mod" % host
+    logging.debug("top of update_mod_dates(); url: %s", url)
     y, m, d = [int(p) for p in latest_mod.split("-")]
     first = date = datetime.date(y, m, d)
+    logging.debug("first date is %s", first)
     one_day = datetime.timedelta(1)
     if stop_date:
         y, m, d = [int(p) for p in stop_date.split("-")]
@@ -128,11 +136,11 @@ def update_mod_dates(host, articles, latest_mod, stop_date=None):
         one_week = datetime.timedelta(7)
         today = datetime.date.today()
         stop_date = today - one_week
+    logging.debug("stop_date is %s", stop_date)
     if first >= stop_date:
         return "The data_mod column is up to date (as of %s)" % first
     total = 0
     while date < stop_date:
-        sys.stderr.write("\r%s" % date)
         last = date
         mod_pmids = get_mod_pmids(date, articles)
         date += one_day
@@ -142,13 +150,16 @@ def update_mod_dates(host, articles, latest_mod, stop_date=None):
                 subset = "\t".join(mod_pmids[offset:offset+BATCH_SIZE])
                 offset += BATCH_SIZE
                 parms = "date=%s&source=Pubmed&ids=%s" % (date, subset)
+                logging.debug("calling url with parms %s", parms)
                 f = urllib2.urlopen(url, parms)
                 if f.code != 200:
                     msg = ("Failure updating data_mod column for %s (code %s)"
                            % (date, f.code))
+                    logging.error(msg)
                     return msg
+                logging.debug("code is OK")
             total += len(mod_pmids)
-    sys.stderr.write("\n")
+        time.sleep(5)
     return "Updated data_mod column in %d rows (%s--%s)" % (total, first, last)
 
 #----------------------------------------------------------------------
@@ -163,11 +174,9 @@ def refresh_xml(host):
         if f.code != 200:
             return "Failure refreshing XML (code %s)" % f.code
         remaining = int(f.read().strip())
-        sys.stderr.write("\r%d remaining" % remaining)
         if not remaining:
-            sys.stderr.write("\n")
             return "All modified XML has been refreshed."
-        
+
 #----------------------------------------------------------------------
 # Send an email report telling what happened during this run of the
 # program.
@@ -176,7 +185,7 @@ def refresh_xml(host):
 #
 #  @return                  nothing
 #----------------------------------------------------------------------
-def report(what):
+def report(what, host="EBMS host name not specified"):
     sender = "ebms@cancer.gov"
     recips = ['***REMOVED***']
     subject = "Update of XML from Pubmed"
@@ -187,10 +196,21 @@ To: %s
 Subject: %s
 
 %s
-""" % (sender, recip_list, subject, what)
+%s
+""" % (sender, recip_list, subject, host, what)
     server = smtplib.SMTP("MAILFWD.NIH.GOV")
     server.sendmail(sender, recips, message)
     server.quit()
+
+#----------------------------------------------------------------------
+# Determine whether we are on the development machine.
+#----------------------------------------------------------------------
+def is_dev(host):
+    normalized_host = host.lower()
+    for alias in ("***REMOVED***", "ebms-dev"):
+        if alias in normalized_host:
+            return True
+    return False
 
 #----------------------------------------------------------------------
 #
@@ -203,21 +223,37 @@ Subject: %s
 #
 #----------------------------------------------------------------------
 def main():
+    start = time.time()
+    if len(sys.argv) < 2:
+        cmd = sys.argv[0]
+        message = "command line argument for EBMS host name is required"
+        print "usage %s EBMS-HOST NAME [LAST-MOD-DATE [STOP-DATE]]" % cmd
+        report(message)
+        exit(1)
+    host = sys.argv[1]
+    log_fmt = "%(asctime)s [%(levelname)s] %(message)s"
+    log_file = os.path.expanduser("~/logs/update-pubmed-data.log")
+    log_level = is_dev(host) and logging.DEBUG or logging.INFO
+    logging.basicConfig(format=log_fmt, level=log_level, filename=log_file)
     try:
-        start = time.time()
-        host = sys.argv[1]
+        logging.info("job started for %s", host)
         articles, latest_mod = get_articles(host)
         stop = None
         if len(sys.argv) > 2:
             latest_mod = sys.argv[2]
+            logging.info("latest_mod given on command line as %s", latest_mod)
         if len(sys.argv) > 3:
             stop = sys.argv[3]
+            logging.info("stop date given on command line as %s", stop)
         mod_date_report = update_mod_dates(host, articles, latest_mod, stop)
         refresh_report = refresh_xml(host)
+        logging.info(refresh_report)
         elapsed = "Elapsed: %.3f seconds" % (time.time() - start)
-        report("%s\n%s\n%s" % (mod_date_report, refresh_report, elapsed))
+        report("%s\n%s\n%s" % (mod_date_report, refresh_report, elapsed), host)
+        logging.debug(elapsed)
     except Exception, e:
-        report("Failure: %s" % e)
+        logging.error("%s" % e)
+        report("Failure: %s" % e, host)
 
 if __name__ == "__main__":
     main()
