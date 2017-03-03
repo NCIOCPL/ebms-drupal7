@@ -773,6 +773,7 @@ function pdq_ebms_search_db_form(
     $first_date = $query->execute()->fetchField();
     $query = db_select('ebms_article', 'a');
     $query->addExpression('MAX(a.published_date)', 'last_date');
+    $query->condition('a.published_date', '9999', '<');
     $last_date = $query->execute()->fetchField();
     $first_year = substr($first_date, 0, 4);
     $last_year = substr($last_date, 0, 4);
