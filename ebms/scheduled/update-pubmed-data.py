@@ -130,7 +130,11 @@ def update_mod_dates(host, articles, latest_mod, stop_date=None):
     logging.debug("first date is %s", first)
     one_day = datetime.timedelta(1)
     if stop_date:
-        y, m, d = [int(p) for p in stop_date.split("-")]
+        try:
+            y, m, d = [int(p) for p in stop_date.split("-")]
+        except Exception, e:
+            print "stop_date", repr(stop_date), e
+            raise
         stop_date = datetime.date(y, m, d)
     else:
         one_week = datetime.timedelta(7)
@@ -173,7 +177,12 @@ def refresh_xml(host):
         f = urllib2.urlopen(url)
         if f.code != 200:
             return "Failure refreshing XML (code %s)" % f.code
-        remaining = int(f.read().strip())
+        response = f.read()
+        try:
+            remaining = int(response.strip())
+        except Exception, e:
+            print "remaining", repr(remaining), e
+            raise
         if not remaining:
             return "All modified XML has been refreshed."
 
@@ -254,6 +263,6 @@ def main():
     except Exception, e:
         logging.error("%s" % e)
         report("Failure: %s" % e, host)
-
+        raise
 if __name__ == "__main__":
     main()
