@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
 #----------------------------------------------------------------------
-# $Id$
-#
 # Report on journal article acceptance rates. Does a lot of in-memory
 # processing, so it helps to run this on a machine with plenty of RAM.
 # If this script is invoked with the name of a directory as the optional
@@ -12,6 +10,8 @@
 #
 # See Jira ticket OCEEBMS-301 for requirements.
 #----------------------------------------------------------------------
+import argparse
+import getpass
 import MySQLdb
 import os
 import xlwt
@@ -238,7 +238,7 @@ class Control:
         self.other.save(fp)
         fp.close()
 
-def fetch():
+def fetch(opts):
     """
     Collect the data from the database and store it to the file system.
     We do it this way so we can tweak the layout of the report by
@@ -251,15 +251,12 @@ def fetch():
         os.mkdir(where)
     except Exception, e:
         print "%s: %s" % (where, e)
-    host = "cbdb-p2001.nci.nih.gov"
-    port = 3661
-    db = "oce_ebms"
-    pw = "***REMOVED***"
-    user = "read_ebms"
-    conn = MySQLdb.connect(user=user, passwd=pw, db=db, host=host, port=port)
+    opts = vars(opts)
+    opts["passwd"] = getpass.getpass("password for %s: " % opts["user"])
+    conn = MySQLdb.connect(**opts)
     cursor = conn.cursor()
     cursor.execute("SET NAMES utf8")
-    cursor.execute("USE %s" % db)
+    cursor.execute("USE %s" % opts["db"])
     cursor.execute("SELECT board_id, board_name FROM ebms_board")
     fp = open("%s/boards" % where, "w")
     rows = cursor.fetchall()
@@ -355,10 +352,17 @@ SELECT article_state_id, decision_value_id
     return where
 
 def main():
-    if len(sys.argv) > 1:
-        path = sys.argv[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--host", default="***REMOVED***.nci.nih.gov")
+    parser.add_argument("--port", type=int, default=3661)
+    parser.add_argument("--db", default="oce_ebms")
+    parser.add_argument("--user", default="oce_ebms")
+    parser.add_argument("--path")
+    opts = parser.parse_args()
+    if opts.path:
+        path = opts.path
     else:
-        path = fetch()
+        path = fetch(opts)
     control = Control(path)
     control.report()
 if __name__ == "__main__":

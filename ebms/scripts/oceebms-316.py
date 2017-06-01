@@ -20,6 +20,8 @@
 #              that reason)
 #
 #----------------------------------------------------------------------
+import argparse
+import getpass
 import MySQLdb
 import xlwt
 
@@ -47,16 +49,17 @@ class Reason:
 class Control:
     "Loads up all of the data for the report"
     def __init__(self):
-        host = "cbdb-p2001.nci.nih.gov"
-        port = 3661
-        db = "oce_ebms"
-        pw = "***REMOVED***"
-        user = "read_ebms"
-        conn = MySQLdb.connect(user=user, passwd=pw, db=db, host=host,
-                               port=port)
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--host", default="***REMOVED***.nci.nih.gov")
+        parser.add_argument("--port", type=int, default=3661)
+        parser.add_argument("--db", default="oce_ebms")
+        parser.add_argument("--user", default="oce_ebms")
+        opts = vars(parser.parse_args())
+        opts["passwd"] = getpass.getpass("password for %s: " % opts["user"])
+        conn = MySQLdb.connect(**opts)
         cursor = conn.cursor()
         cursor.execute("SET NAMES utf8")
-        cursor.execute("USE %s" % db)
+        cursor.execute("USE %s" % opts["db"])
         cursor.execute("""\
 SELECT value_id, value_name
   FROM ebms_review_rejection_value""")
