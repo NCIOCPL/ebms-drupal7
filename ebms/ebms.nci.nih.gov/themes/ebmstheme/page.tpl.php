@@ -72,17 +72,28 @@ $user_name = $user_photo = '';
 $menu_class = 'anon';
 $content = render($page['content']);
 $main_wrapper_class = 'other_page';
+$search_box = '';
+$sb_markup = '<input id="pmid-search-box" value="Enter PMID" ' .
+    'title="Press ENTER to submit PMID search"> &nbsp;|&nbsp;';
 if ($logged_in) {
-    if ($user->uid == 1)
+    if ($user->uid == 1) {
+        $search_box = $sb_markup;
         $menu_class = 'manager admin';
-    elseif (in_array('medical librarian', $user->roles))
+    }
+    elseif (in_array('medical librarian', $user->roles)) {
         $menu_class = 'librarian';
+        $search_box = $sb_markup;
+    }
     elseif (in_array('board member', $user->roles))
         $menu_class = 'member';
-    elseif (in_array('icrdb manager', $user->roles))
+    elseif (in_array('icrdb manager', $user->roles)) {
         $menu_class = 'icrdb-manager';
-    else
+        $search_box = $sb_markup;
+    }
+    else {
         $menu_class = 'manager';
+        $search_box = $sb_markup;
+    }
 
     /* Make "About PDQ" page user-editable (OCEEBMS-235) */
     if ($title == "About PDQ\xc2\xae") {
@@ -98,10 +109,15 @@ if ($logged_in) {
     switch (strtoupper($title)) {
         case 'EBMS HELP':
         case '<EM>EDIT BASIC PAGE</EM> EBMS HELP':
-            $main_wrapper_class = 'help_page';
             $breadcrumb = '<h2 class="element-invisible">You are here</h2>' .
                 '<div class="breadcrumb"><a href="/home">Home</a> ' .
                 '&gt; EBMS Help</div>';
+            // fall through
+
+        /* Override style for internal user help page (OCEEBMS-407) */
+        case 'USER HELP':
+        case '<EM>EDIT BASIC PAGE</EM> USER HELP':
+            $main_wrapper_class = 'help_page';
             break;
     }
 
@@ -185,6 +201,7 @@ if ($logged_in) {
             </div> <!-- /#name-and-slogan -->
 <?php if ($logged_in) { ?>
             <div id="help-and-about-links">
+              <?php echo $search_box; ?>
               <?php print l('About PDQ', 'about') ?> &nbsp;|&nbsp;
               <?php print l('EBMS Help', 'help') ?>
             </div>

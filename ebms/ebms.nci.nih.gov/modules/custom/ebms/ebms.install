@@ -206,17 +206,12 @@ function _ebms_instance_info($field = array(), $bundle = FALSE) {
 }
 
 function ebms_enable_test() {
-    drupal_set_message('Cycling ebms + ebms_forums modules.');
+    drupal_set_message('Cycling ebms modules.');
     module_disable(array('ebms'));
-    $ret = module_enable(array('ebms_forums'));
-    if ($ret)
-        $ret = module_enable(array('ebms_webforms'));
-
-    if ($ret)
+    if (module_enable(array('ebms_webforms')))
         drupal_set_message('Module enabled!');
     else
         drupal_set_message('Enable failed, check dependencies.');
-
     return array();
 }
 ?>

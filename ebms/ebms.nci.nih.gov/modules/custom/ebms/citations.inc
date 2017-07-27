@@ -19,11 +19,10 @@
  *           form
  *
  *  'review' - uses pdq_ebms_citation_queue to build the queue of articles
- *           to be reviewed by the current user to determine whether which
- *           of the articles should proceed to the next stage; some roles
- *           have more than one queue for each user, and the queues can
- *           be filtered to restrict the portion displayed by various
- *           criteria
+ *           to be reviewed by the current user to determine which of the
+ *           articles should proceed to the next stage; some roles have
+ *           more than one queue for each user, and the queues can be
+ *           filtered to restrict the portion displayed by various criteria
  *
  *  'not-list' - uses pdq_ebms_citation_not_list to build the form for
  *           managing the lists of journals which have historically
@@ -2283,7 +2282,7 @@ namespace {
                         ->entityCondition('entity_type', 'node')
                         ->entityCondition('bundle', 'ebms_event')
                         ->propertyCondition('status', '1')
-                        ->fieldCondition('field_datespan', 'value2', time(), '<')
+                        ->fieldCondition('field_datespan', 'value', time(), '<=')
                         ->fieldOrderBy('field_datespan', 'value', 'DESC')
                         ->entityOrderBy('entity_id', 'DESC');
 

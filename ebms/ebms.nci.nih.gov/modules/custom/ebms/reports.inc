@@ -99,6 +99,9 @@ class EbmsReports {
         Ebms\Menu::$active = 'Reports';
         drupal_add_css(Ebms\CSS_DIR . '/reports.css');
         switch ($this->report) {
+            case 'recent-activity':
+                return drupal_get_form('pdq_ebms_recent_activity_form',
+                                       $this->request_id);
             case 'awr-member':
                 return $this->awr_member();
             case 'board-members-last-login':
@@ -107,7 +110,7 @@ class EbmsReports {
             case 'not-list':
             case 'yes-list':
             case 'no-responses':
-            case 'citation-followup':
+            //case 'citation-followup': OCEEBMS-414
             case 'boards-and-topics':
                 return $this->not_yet_implemented();
             case 'missing-from-nlm':
@@ -122,9 +125,10 @@ class EbmsReports {
             case 'membership':
                 return drupal_get_form('pdq_ebms_membership_report_form',
                                        $this->request_id);
-            case 'login-attempts':
+            /* removed by OCEEBMS-412 case 'login-attempts':
                 return drupal_get_form('pdq_ebms_login_attempts_form',
                                        $this->request_id);
+            */
             case 'cites-status':
                 return drupal_get_form('pdq_ebms_cites_by_status_form',
                                        $this->request_id);
@@ -184,10 +188,11 @@ class EbmsReports {
             'not-list' => array('Citation Management', 'Not List'),
             'yes-list' => array('Citation Management', 'Yes List'),
             'no-responses' => array('Citation Management', 'No Responses'),
+            /* removed by OCEEBMS-414
             'citation-followup' => array(
                 'Citation Management',
                 'Citation Follow-up'
-            ),
+            ), */
             'boards-and-topics' => array(
                 'Citation Management',
                 'Board and Topic Lists',
@@ -294,9 +299,14 @@ class EbmsReports {
      * Assemble the abstract display to be shown in the Citation column.
      * XXX To be rewritten when Alan has the API for getting the abstract
      *     elements ready.
+     *
+     * OCEEBMS-417: unfortunately, this is what happens when we get
+     * requirements piecemeal. The users have asked that we implement
+     * different formatting for the Articles Without Responses report.
      */
     static function format_citation($article_id, $counter=null,
-                                    $member_version=false) {
+        $member_version=false, $articles_without_responses_report=false
+    ) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
             ->condition('a.article_id', $article_id)
@@ -335,8 +345,7 @@ class EbmsReports {
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $ta = htmlspecialchars($ta);
         $pmid = $doc->MedlineCitation->PMID;
-        $full_url = 'citations/full/' . $article_id;
-        if ($member_version) {
+        if ($member_version || $articles_without_responses_report) {
             $uri = Ebms\Util::get_ft_uri($article_id);
             if ($uri)
                 $title = l($title, file_create_url($uri));
@@ -347,6 +356,7 @@ class EbmsReports {
                     'class' => array('article-title'),
                 )
             );
+            $full_url = 'citations/full/' . $article_id;
             $title = l($title, $full_url, $title_opts);
         }
         $pieces = array('<span class="article-citation">');
@@ -364,6 +374,10 @@ class EbmsReports {
         $pmurl = Ebms\Util::pubmed_url($pmid);
         $pmopts = array('attributes' => array('target' => '_blank'));
         $pieces[] = '.<br />PMID: ' . l($pmid, $pmurl, $pmopts);
+        if (!$member_version && $articles_without_responses_report) {
+            $link = l($article_id, "citations/full/$article_id");
+            $pieces[] = " &nbsp; EBMS ID: $link";
+        }
         return implode($pieces);
     }
 
@@ -418,7 +432,7 @@ class EbmsReports {
                     'reports/cite',
                     array(
                         array('Citation Reports', 'reports/citations'),
-                        array('Import Reports', 'reports/import'),
+                        array('Import Report', 'reports/import'),
                         array('Not List', 'reports/not-list'),
                         array('Yes List', 'reports/yes-list'),
                     ),
@@ -437,13 +451,19 @@ class EbmsReports {
                             $reimbursement_report_url,
                         ),
                         array('Board Membership', 'reports/membership'),
+                        /* removed by OCEEBMS-412
                         array(
                             'Board Member Login Attempts',
                             'reports/login-attempts'
                         ),
+                        */
                         array(
                             'Board Member Activity Report',
                             'reports/board-members-last-login',
+                        ),
+                        array(
+                            'Recent Activity Report',
+                            'reports/recent-activity',
                         ),
                     ),
                 ),
@@ -451,7 +471,7 @@ class EbmsReports {
                     'Citation Management',
                     'reports/cite',
                     array(
-                        array('Import Reports', 'reports/import'),
+                        array('Import Report', 'reports/import'),
                         array('Citation Reports', 'reports/citations'),
                         array('Citations By Status', 'reports/cites-status'),
                         array('Literature Reviews', 'reports/lit-review'),
@@ -463,10 +483,11 @@ class EbmsReports {
                             'Articles Without Responses',
                             'reports/articles-without-responses',
                         ),
+                        /* removed by OCEEBMS-414
                         array(
                             'Citation Follow-up',
                             'reports/citation-followup',
-                        ),
+                        ), */
                         array(
                             'Board and Topic Lists',
                             'reports/boards-and-topics',
@@ -1140,7 +1161,7 @@ class EbmsReports {
 
     /**
      * Display the list of import jobs matching the report criteria.
-     * This display is the interim display for the "Import Reports"
+     * This display is the interim display for the "Import Report"
      * page.
      *
      *  @param  int    $request_id  ID of request stored in DB
@@ -1212,7 +1233,7 @@ class EbmsReports {
             ),
             'title' => array(
                 '#type' => 'markup',
-                '#markup' => '<h2>Import Reports (' . count($items) . ')</h2>',
+                '#markup' => '<h2>Import Report (' . count($items) . ')</h2>',
             ),
             'reports' => array(
                 '#theme' => 'item_list',
@@ -1276,10 +1297,14 @@ class EbmsReports {
         $board = $tag = $inhouse = $member = $archived =
             $range = $uploader_board = null;
         $start = $end = Ebms\Util::empty_date();
+        $topics = array();
         $sort = 'f.filename';
         if ($request_id) {
             $params = EbmsReports::fetch_report_request($request_id);
             $board = $params['board'];
+            foreach ($params['topic'] as $id => $val)
+                if ($val)
+                    $topics[] = $id;
             $tag = $params['tag'];
             $inhouse = $params['inhouse'];
             $member = $params['member'];
@@ -1315,6 +1340,12 @@ class EbmsReports {
         if ($board) {
             $query->join('ebms_doc_board', 'b', 'b.doc_id = d.doc_id');
             $query->condition('b.board_id', $board);
+        }
+
+        // Added for OCEEBMS-302.
+        if (!empty($topics)) {
+            $query->join('ebms_doc_topic', 't', 't.doc_id = d.doc_id');
+            $query->condition('t.topic_id', $topics, 'IN');
         }
 
         // Added for TIR 2441.
@@ -2292,8 +2323,7 @@ class EbmsReports {
         if (!empty($params['disposition']))
             $query->condition('s.state_id', $params['disposition']);
         else
-            $query->condition('s.state_id',
-                array_keys($manager_actions), 'IN');
+            $query->condition('s.state_id', array_keys($manager_actions), 'IN');
         if (count($params['cycles']))
             $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->fields('s', array('article_id', 'article_state_id',
@@ -2584,6 +2614,7 @@ class EbmsReports {
         // linked to *that* row!  TIR 2446.
         $have_date = (!empty($params['date-start']['date']) ||
                       !empty($params['date-end']['date']));
+        $restrict_by_meeting = false;
         if ($have_date || $params['meeting-type']) {
             $restrict_by_meeting = true;
             $on_agenda_decision = Ebms\Util::state_id_from_text_id('OnAgenda');
@@ -2619,7 +2650,7 @@ class EbmsReports {
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
         $query->condition('s.state_id', $final_board_decision);
-        if ($params['disposition']) {
+        if (!empty($params['disposition'])) {
             $query->join('ebms_article_board_decision', 'd',
                 'd.article_state_id = s.article_state_id');
             $query->condition('d.decision_value_id', $params['disposition']);
@@ -3384,6 +3415,63 @@ LEFT OUTER JOIN {ebms_article_board_decision_value} v
         $report->missing = array_diff($pmids, $confirmed);
         return $report;
     }
+
+    /**
+     * Determine which boards are associated with this message.
+     *  @param message array   entity wrapper for message
+     *
+     * return          array   board IDs
+     */
+    public static function boards_for_message(\EntityDrupalWrapper $message) {
+        $ids = $message->field_boards->value();
+        $subgroup_ids = $message->field_subgroups->value();
+        if (!empty($subgroup_ids)) {
+            $query = db_select('ebms_subgroup', 's')
+                ->condition('s.sg_id', $subgroup_ids, 'IN')
+                ->fields('s', array('board_id'));
+            if (!empty($ids))
+                $query->condition('s.board_id', $ids, 'NOT IN');
+            $more_ids = $query->execute()->fetchCol();
+            if (!empty($more_ids))
+                $ids = array_merge($ids, $more_ids);
+        }
+        $group_ids = $message->field_ad_hoc_groups->value();
+        if (!empty($group_ids)) {
+            $query = db_select('ebms_ad_hoc_group_board', 'b')
+                ->condition('b.group_id', $group_ids, 'IN')
+                ->fields('b', array('board_id'));
+            if (!empty($ids))
+                $query->condition('b.board_id', $ids, 'NOT IN');
+            $more_ids = $query->execute()->fetchCol();
+            if (!empty($more_ids))
+                $ids = array_merge($ids, $more_ids);
+        }
+        return $ids;
+    }
+
+    /**
+     * Find out whether this is an in-person or WebEx event.
+     *  @param message array   entity wrapper for message
+     *
+     * return          string  "In person" or "WebEx"
+     */
+    public static function event_description(\EntityDrupalWrapper $wrapper) {
+        $event_id = $wrapper->field_event_id->value();
+        $events = entity_load('node', array($event_id));
+        foreach ($events as $event) {
+            $event_date = field_get_items('node', $event, 'field_datespan');
+            $event_type = field_get_items('node', $event, 'field_event_type');
+            $event_type = $event_type[0]['value'];
+            if ($event_type == 'remote')
+                $event_type = 'WebEx';
+            elseif ($event_type == 'in_person')
+                $event_type = 'In person';
+            $start_date = date('Y-m-d', $event_date[0]['value']);
+            $title = htmlspecialchars($event->title);
+            return "$title - $start_date - $event_type";
+        }
+        return 'EVENT NOT FOUND';
+    }
 }
 
 /**
@@ -3688,7 +3776,7 @@ function pdq_ebms_import_reports_form($form, &$form_state, $request_id=0) {
         array(
             l('Reports', 'reports'),
             l('Citation Management Reports', 'reports/citation'),
-            'Import Reports',
+            'Import Report',
         )
     );
 
@@ -3731,7 +3819,7 @@ function pdq_ebms_import_reports_form($form, &$form_state, $request_id=0) {
 
     // Begin the form structure, including the left nav penel.
     $left_nav = EbmsReports::build_left_nav('Citation Management',
-                                            'Import Reports');
+                                            'Import Report');
     $import_date = Ebms\Util::date_range_field('Import Date', 'import',
                                                $start, $end);
     $form['top'] = array(
@@ -3743,7 +3831,7 @@ function pdq_ebms_import_reports_form($form, &$form_state, $request_id=0) {
             '#attributes' => array('id' => 'report-form'),
             'title' => array(
                 '#type' => 'markup',
-                '#markup' => '<h2>Import Reports</h2>',
+                '#markup' => '<h2>Import Report</h2>',
             ),
             'board' => array(
                 '#type' => 'select',
@@ -3861,6 +3949,7 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
     // Initialize defaults for the form field's values.
     $board = 0; // \Ebms\Util::get_user_default_board(0); OCEEBMS-294
     $tag = $inhouse = $member = $uploader_board = 0;
+    $topic = array();
     $start = $end = '';
     $archived = false;
     $sort = 'f.filename';
@@ -3870,6 +3959,9 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
     if ($request_id) {
         $params = EbmsReports::fetch_report_request($request_id);
         $board = $params['board'];
+        foreach ($params['topic'] as $id => $val)
+            if ($val)
+                $topic[] = $id;
         $tag = $params['tag'];
         $inhouse = $params['inhouse'];
         $member = $params['member'];
@@ -3922,6 +4014,34 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
         else
             $inhouse_users[$result->uid] = $result->name;
 
+    // Get the values of interest for ajax callbacks.
+    if (isset($form_state['values'])) {
+        $board = $form_state['values']['board'];
+        $topic = $form_state['values']['topic'];
+    }
+
+    // Use the board choice to determine which topic checkboxes will be drawn.
+    $topics = array();
+    if ($board) {
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->condition('t.active_status', 'A')
+            ->orderBy('t.topic_name')
+            ->execute();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+
+        // Make sure we unselect any leftover topic selection which
+        // isn't valid with a change in the composition of the Summary
+        // Topic picklist.
+        $new_topic = array();
+        foreach ($topic as $t)
+            if (array_key_exists($t, $topics))
+                $new_topic[] = $t;
+        $topic = $form_state['values']['topic'] = $new_topic;
+    }
+
     // Begin the form structure, including the left nav penel.
     $left_nav = EbmsReports::build_left_nav('Board Management',
                                             'Documents');
@@ -3949,6 +4069,28 @@ function pdq_ebms_documents_report_form($form, &$form_state, $request_id) {
                 '#options' => $boards,
                 '#default_value' => $board,
                 '#attributes' => array('class' => array('fixed-width')),
+                '#ajax' => array(
+                    'callback' => 'pdq_ebms_report_ajax',
+                    'wrapper' => 'board-dependent',
+                ),
+            ),
+            'ajax fields' => array(
+                '#type' => 'fieldset',
+                '#attributes' => array(
+                    'id' => 'board-dependent',
+                    'class' => array('clearfix'),
+                ),
+                '#title' => 'SUMMARY TOPIC',
+                '#collapsible' => true,
+                '#collapsed' => count($topics) < 1,
+                'topic' => array(
+                    '#type' => 'checkboxes',
+                    '#title' => '',
+                    // '#title_display' => 'after',
+                    '#options' => $topics,
+                    '#default_value' => $topic,
+                    //'#attributes' => array('class' => array('fixed-width')),
+                ),
             ),
             'tag' => array(
                 '#type' => 'select',
@@ -4054,7 +4196,7 @@ function pdq_ebms_documents_report_form_validate($form, &$form_state) {
 
 /**
  * If the user clicks the "Reset" button, clear the form by routing
- * back to the URL for the import reports.  Otherwise store the report
+ * back to the URL for the import report.  Otherwise store the report
  * request parameters in the database and send the user to the URL
  * which knows where those parameters were stored.
  *
@@ -5548,7 +5690,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         ->execute();
     foreach ($results as $result)
         $review_dispositions[$result->value_id] = $result->value_name;
-    $board_decisions = array(0 => ' ');
+    $board_decisions = array(); // (0 => ' ');
     $results = db_select('ebms_article_board_decision_value', 'v')
         ->fields('v', array('value_id', 'value_name'))
         ->orderBy('v.value_name')
@@ -5576,7 +5718,8 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         $board = $form_state['values']['board'];
         $status = $form_state['values']['status'];
         $topic = $form_state['values']['topic'];
-        $disposition = $form_state['values']['disposition'];
+        if (!empty($form_state['values']['disposition']))
+            $disposition = $form_state['values']['disposition'];
     }
 
     // Use the board choice to fill the topic picklist with the topics
@@ -5607,7 +5750,9 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
 
     // Unselect any leftover Disposition selection which is no longer
     // valid after the Status select has changed.
-    if ($status == 'board manager action') {
+    // Remember which statuses accept multiple dispositions on the form.
+    $md_statuses = array('board manager action', 'editorial board decision');
+    if (in_array($status, $md_statuses)) {
         if (!is_array($disposition))
             $disposition = $form_state['values']['disposition'] = array();
     }
@@ -5685,7 +5830,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
             '#title_display' => 'after',
             '#options' => $dispositions,
             '#default_value' => $disposition,
-            '#multiple' => $status == 'board manager action',
+            '#multiple' => in_array($status, $md_statuses),
             '#attributes' => array(
                 'class' => array('fixed-width')
             ),
@@ -5761,11 +5906,13 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
  */
 function pdq_ebms_cites_by_status_form_validate($form, &$form_state) {
     $values = $form_state['values'];
-    if ($values['op'] == 'Submit') {
-        if (!$values['board'])
-            form_set_error('board', 'No board selected.');
-        if (!$values['status'])
-            form_set_error('status', 'No status selected.');
+    if (!empty($values['op'])) {
+        if ($values['op'] == 'Submit') {
+            if (!$values['board'])
+                form_set_error('board', 'No board selected.');
+            if (!$values['status'])
+                form_set_error('status', 'No status selected.');
+        }
     }
 }
 
@@ -6220,6 +6367,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
             ->condition('t.board_id', $board)
+            ->condition('t.active_status', 'A')
             ->orderBy('t.topic_name')
             ->execute();
         foreach ($results as $result)
@@ -6472,7 +6620,8 @@ function articles_without_responses_report($request_id, $member_version=false) {
 
         // Assemble the report row for this article/topic combo.
         $report->rows[] = array(
-            EbmsReports::format_citation($result->article_id, null, true),
+            EbmsReports::format_citation($result->article_id, null,
+                $member_version, true),
             htmlspecialchars($result->topic_name),
             implode($reviewer_break, $reviewers),
             date('Y-m-d', strtotime($result->created_at)),
@@ -6730,4 +6879,357 @@ function pdq_ebms_missing_from_nlm_submit($form, &$form_state) {
     $report = 'Invalid Pubmed IDs';
     $request_id = EbmsReports::save_report_request($values, $report);
     drupal_goto('reports/missing-from-nlm/' . $request_id);
+}
+
+function pdq_ebms_recent_activity_form($form, &$form_state, $request_id) {
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Board Management Reports', 'reports/board'),
+            'Recent Activity',
+        )
+    );
+    $start = $end = '';
+    $start = date('Y-m-d', strtotime('-1 year +1 day'));
+    $end = date('Y-m-d');
+    $boards = Ebms\Util::boards();
+    $board = \Ebms\Util::get_user_default_board(0);
+    $types = array(
+        'Literature',
+        'Document',
+        'Meeting'
+    );
+
+    // Assemble the request form.
+    $date_range = Ebms\Util::date_range_field('Date Range', 'date',
+                  $start, $end, '', false);
+    $date_range['#required'] = true;
+    $form = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'report-form'),
+        'title' => array('#markup' => '<h2>Recent Activity Report</h2>'),
+        'board' => array(
+            '#type' => 'checkboxes',
+            '#options' => $boards,
+            '#required' => true,
+            '#default_value' => array($board),
+            '#title' => 'Editorial Board',
+        ),
+        'type' => array(
+            '#type' => 'checkboxes',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#options' => drupal_map_assoc($types),
+            '#default_value' => array('Literature', 'Document'),
+            '#title' => 'Activity Type',
+            '#required' => true,
+        ),
+        'options' => array(
+            '#type' => 'checkboxes',
+            '#title' => 'Options',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#options' => array(
+                'group' => 'Group activity by type under each board',
+            ),
+        ),
+        $date_range,
+        'buttons' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'report-buttons'),
+            'reset' => array(
+                '#type' => 'submit',
+                '#value' => 'Reset',
+            ),
+            'filter' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+        ),
+    );
+
+    // Assemble the page where the form lives, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Board Management',
+                                            'Recent Activity');
+    $page['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'recent-activity-report-top'),
+        'left-nav' => $left_nav,
+        'report-form' => $form,
+    );
+
+    return $page;
+
+}
+
+/**
+ * Must have at least one board and one activity type, as well as
+ * a date range. The form definition takes care of everything but
+ * the date range.
+ *
+ * Requirements change: have to validate sort now, too.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_recent_activity_form_validate($form, &$form_state) {
+    $parts = array('start', 'end');
+    $values = $form_state['values'];
+    foreach ($parts as $part) {
+        if (empty($values["date-$part"]['date']))
+            form_set_error("date-$part", "Date  $part required");
+        elseif (!Ebms\Util::chkISOdate($values["date-$part"]['date']))
+            form_set_error("date-$part", "Malformed date $part");
+    }
+    $types = $values['type'];
+}
+
+/**
+ * If the user clicks the "Reset" button, clear the form by routing
+ * back to the URL for the report form.  Otherwise create the report
+ * directly (without the normal Drupal trimmings, so that it's easier
+ * to copy and paste into a word processor).
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_recent_activity_form_submit($form, &$form_state) {
+    $values = $form_state['values'];
+    if ($values['op'] == 'Reset')
+        drupal_goto('reports/recent-activity');
+    $start = strtotime($values['date-start']['date']);
+    $end = strtotime($values['date-end']['date'] . ' 23:59:59');
+    $boards = array();
+    $events = array();
+    foreach ($values['board'] as $key => $val)
+        if ($val) {
+            $boards[$val] = Ebms\Util::get_board_name($val);
+            $events[$val] = array();
+        }
+    $types = array();
+    $need_messages = false;
+    foreach ($values['type'] as $key => $val)
+        if ($val) {
+            $types[] = $val;
+            if ($val != 'Literature')
+                $need_messages = true;
+        }
+    if ($need_messages) {
+        $query = new EntityFieldQuery();
+        $query->entityCondition('entity_type', 'message')
+            ->propertyCondition('timestamp', $start, '>=')
+            ->propertyCondition('timestamp', $end, '<');
+        $results = $query->execute();
+        if (isset($results['message'])) {
+            $message_ids = array_keys($results['message']);
+            $messages = entity_load('message', $message_ids);
+        }
+    }
+    if (in_array('Literature', $types)) {
+        /* Robin changed her mind.
+           https://tracker.nci.nih.gov/browse/OCEEBMS-439#comment-626331
+        $query = db_select('ebms_packet', 'p');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->condition('t.board_id', array_keys($boards), 'IN');
+        $query->fields('p', array('created_at', 'packet_title'));
+        $query->fields('t', array('board_id', 'topic_name'));
+        $query->condition('p.created_at', date('Y-m-d', $start), '>=');
+        $query->condition('p.created_at', date('Y-m-d', $end), '<');
+        $results = $query->execute();
+        foreach ($results as $packet) {
+            $title = htmlspecialchars($packet->packet_title);
+            $datetime = $packet->created_at;
+            $date = substr($datetime, 0, 10);
+            $topic = $packet->topic_name;
+            $description = "<b>Packet created $date</b> ($title)";
+            $event = array($datetime, $description, 'Literature', $topic);
+            $events[$packet->board_id][] = $event;
+        }
+        */
+        $query = db_select('ebms_article_review', 'r');
+        $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->join('users', 'u', 'u.uid = r.reviewer_id');
+        $query->condition('t.board_id', array_keys($boards), 'IN');
+        $query->condition('r.when_posted', date('Y-m-d', $start), '>=');
+        $query->condition('r.when_posted', date('Y-m-d', $end), '<');
+        $query->fields('r', array('review_id', 'article_id', 'when_posted',
+                'comments', 'loe_info'));
+        $query->fields('t', array('board_id', 'topic_name'));
+        $query->fields('u', array('name'));
+        $query->fields('p', array('packet_title'));
+        $results = $query->execute();
+        foreach ($results as $review) {
+            $reviewer = htmlspecialchars($review->name);
+            $comments = htmlspecialchars($review->comments);
+            $loe = htmlspecialchars($review->loe_info);
+            $datetime = $review->when_posted;
+            $date = substr($datetime, 0, 10);
+            $topic = htmlspecialchars($review->topic_name);
+            $packet = htmlspecialchars($review->packet_title);
+            $query = db_select('ebms_review_disposition_value', 'v');
+            $query->join('ebms_review_disposition', 'd',
+                'd.value_id = v.value_id');
+            $query->condition('d.review_id', $review->review_id);
+            $query->orderBy('v.value_pos');
+            $query->fields('v', array('value_name'));
+            $options = $query->execute()->fetchCol();
+            $options = htmlspecialchars(implode('; ', $options));
+            $query = db_select('ebms_review_rejection_value', 'v');
+            $query->join('ebms_review_rejection_reason', 'r',
+                'r.value_id = v.value_id');
+            $query->condition('r.review_id', $review->review_id);
+            $query->orderBy('v.value_pos');
+            $query->fields('v', array('value_name'));
+            $reasons = $query->execute()->fetchCol();
+            $citation = EbmsReports::format_citation($review->article_id,
+                        null, true);
+            $description = "<b>Review posted $date</b> by $reviewer<br>" .
+                "[Packet: $packet]<br>" .
+                $citation . '<br>Disposition: ' . $options;
+            if (!empty($reasons)) {
+                $reasons = htmlspecialchars(implode('; ', $reasons));
+                $description .= "<br>Exclusion Reasons:  $reasons";
+            }
+            if (!empty($comments))
+                $description .= "<br>Comments: $comments";
+            if (!empty($loe))
+                $description .= "<br>LOE Info: $loe";
+            $event = array($datetime, $description, 'Literature', $topic);
+            $events[$review->board_id][] = $event;
+        }
+    }
+    if (in_array('Document', $types)) {
+        $actions = array('posted', 'returned');
+        foreach ($actions as $action) {
+            $query = db_select("ebms_summary_{$action}_doc", 's');
+            $query->join('ebms_doc', 'd', 'd.doc_id = s.doc_id');
+            $query->join('ebms_summary_page', 'p', 'p.page_id = s.page_id');
+            $query->join('file_managed', 'f', 'f.fid = d.file_id');
+            $query->join('users', 'u', 'u.uid = f.uid');
+            $query->condition('d.when_posted', date('Y-m-d', $start), '>=');
+            $query->condition('d.when_posted', date('Y-m-d H:i:s', $end), '<=');
+            $query->condition('p.board_id', array_keys($boards), 'IN');
+            $query->fields('p', array('board_id'));
+            $query->fields('u', array('name'));
+            $query->fields('f', array('fid', 'filename', 'uri'));
+            $query->fields('s', array('notes'));
+            $query->fields('d', array('when_posted'));
+            $results = $query->execute();
+            $attributes = array('attributes' => array('target' => '_blank'));
+            foreach ($results as $summary) {
+                $poster = htmlspecialchars($summary->name);
+                $filename = $summary->filename;
+                $date = $summary->when_posted;
+                $notes = htmlspecialchars($summary->notes);
+                $url = file_create_url($summary->uri);
+                $link = l($filename, $url, $attributes);
+                $event = "<b>Document posted $date</b> by $poster: $link";
+                if (!empty($notes))
+                    $event .= " ($notes)";
+                $event = array($date, $event, 'Document');
+                $events[$summary->board_id][] = $event;
+            }
+        }
+    }
+    if (in_array('Meeting', $types)) {
+        foreach ($messages as $mid => $message) {
+            $when = date('Y-m-d H:i:s', $message->timestamp);
+            $wrapper = entity_metadata_wrapper('message', $message);
+            $message_boards = EbmsReports::boards_for_message($wrapper);
+            $event = null;
+            switch ($message->type) {
+                case 'activity_new_event':
+                    $d = EbmsReports::event_description($wrapper);
+                    $event = "<b>Meeting added to calendar $when</b> ($d)";
+                    break;
+                case 'activity_event_type':
+                    $d = EbmsReports::event_description($wrapper);
+                    $event = "<b>Meeting type changed $when</b> ($d)";
+                    break;
+                case 'activity_changed_event':
+                    $d = EbmsReports::event_description($wrapper);
+                    $event = "<b>Meeting date/time changed $when</b> ($d)";
+                    break;
+                case 'activity_agenda_published':
+                    $d = EbmsReports::event_description($wrapper);
+                    $event = "<b>Meeting agenda published $when</b> ($d)";
+                    break;
+
+            }
+            if (!empty($event)) {
+                $event = array($when, $event, 'Meeting');
+                foreach ($message_boards as $board_id) {
+                    if (array_key_exists($board_id, $events))
+                        $events[$board_id][] = $event;
+                }
+            }
+        }
+    }
+    $body = array();
+    $body[] = '<h1>Recent Activity (' . date('Y-m-d', $start) . ' through ' .
+        date('Y-m-d', $end) . ')</h1>';
+    asort($boards);
+    foreach ($boards as $board_id => $board_name) {
+        $body[] = "<br><h2>Recent Activity for the $board_name Board</h2>";
+        $board_events = $events[$board_id];
+        usort($board_events,
+            function($a, $b) { return strcmp($b[0], $a[0]); });
+        if (!empty($values['options']['group'])) {
+            $type_events = array(
+                'Literature' => array(),
+                'Document' => array(),
+                'Meeting' => array()
+            );
+            foreach ($board_events as $event)
+                $type_events[$event[2]][] = $event;
+            foreach ($type_events as $type => $event_list) {
+                if (!empty($event_list)) {
+                    $body[] = "<br><h3>$type Activity</h3><hr>";
+                    foreach ($event_list as $event) {
+                        $description = $event[1];
+                        $body[] = "<p>$description</p>";
+                    }
+                }
+            }
+        }
+        else {
+            foreach ($board_events as $event) {
+                $description = $event[1];
+                $body[] = "<p>$description</p>";
+            }
+        }
+        if (empty($board_events))
+            $body[] = '<p>No activity to report for this board.</p>';
+    }
+    $css = Ebms\CSS_DIR . '/stripped-report.css';
+    $page = array(
+        'language' => 'en',
+        'head' => '<meta charset="utf-8">',
+        'title' => 'Recent Activity',
+        'scripts' => '',
+        'favicon' => '',
+        'css' => "<link rel='stylesheet' href='/$css'>",
+        'message' => array(),
+        'footer_scripts' => '',
+        'body' => implode("\n", $body),
+    );
+    $html = theme('stripped', array('page' => $page));
+    drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+    drupal_send_headers();
+    print $html;
+    drupal_exit();
 }

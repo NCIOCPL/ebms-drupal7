@@ -88,7 +88,7 @@ $administer = user_access('edit any webform content');
 if ($administer):
     drupal_add_js('(function ($) {
     $(document).ready(function() {
-        $("#edit-forum-icon").hover(function () {
+        $("#edit-webform-icon").hover(function () {
             $(this).children("a")
                    .children("img")
                    .attr("src", "/' . drupal_get_path('theme', 'ebmstheme') .
@@ -102,12 +102,12 @@ if ($administer):
     });
 })(jQuery);', 'inline');
 ?>
-    <span id="edit-forum-icon">
+    <span id="edit-webform-icon">
       <a href="<?php print url('node/'.$nid.'/edit'); ?>">
         <img src="/<?php
            print drupal_get_path('theme', 'ebmstheme');
            ?>/images/EBMS_Edit_Icon_Inactive.png"
-             alt="Edit This Forum Topic"/>
+             alt="Edit This Web Form"/>
       </a>
     </span>
 <?php endif;

@@ -953,6 +953,79 @@ class EbmsReview {
     }
 
     /**
+     * Find post-review status for an article (to be displayed
+     * on the reviewed packet page). OCEEBMS-405
+     */
+    private function get_latest_status($article_id, $topic_id, $fr_seq) {
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_article_state_type', 't', 't.state_id = s.state_id');
+        $query->fields('s', array('article_state_id'));
+        $query->fields('t', array('state_text_id', 'state_name'));
+        $query->condition('s.article_id', $article_id);
+        $query->condition('s.topic_id', $topic_id);
+        $query->condition('s.current', 'Y');
+        $query->condition('t.sequence', $fr_seq, '>');
+        $results = $query->execute();
+        foreach ($results as $result) {
+            switch ($result->state_text_id) {
+                case 'FinalBoardDecision':
+                    $query = db_select('ebms_article_board_decision', 'd');
+                    $query->join('ebms_article_board_decision_value', 'v',
+                        'v.value_id = d.decision_value_id');
+                    $query->condition('d.article_state_id',
+                        $result->article_state_id);
+                    $query->fields('v', array('value_name'));
+                    $query->orderBy('v.value_name');
+                    $decisions = implode('; ', $query->execute()->fetchCol());
+                    if (!$decisions === '')
+                        $decisions = 'NO DECISION RECORDED';
+                    $decisions = htmlspecialchars($decisions);
+                    return "Editorial Board Decision: $decisions";
+                case 'OnAgenda':
+                    $query = db_select('node', 'n');
+                    $query->join('ebms_agenda_meeting', 'm', 'm.nid = n.nid');
+                    $query->join('field_data_field_datespan', 'd',
+                        'd.entity_id = n.nid');
+                    $query->condition('m.article_state_id',
+                        $result->article_state_id);
+                    $query->fields('n', array('title'));
+                    $query->fields('d', array('field_datespan_value'));
+                    $rows = $query->execute();
+                    $meetings = array();
+                    foreach ($rows as $row) {
+                        $title = $row->title;
+                        $date = date('Y-m-d', $row->field_datespan_value);
+                        $meetings[] = "$title - $date";
+                    }
+                    $meetings = htmlspecialchars(implode('; ', $meetings));
+                    if (!$meetings === '')
+                        $meetings = 'NO MEETINGS RECORDED';
+                    return "On Agenda: $meetings";
+                default:
+                    $action = htmlspecialchars($result->state_name);
+                    return "Board Manager Action: $action";
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Assemble list of topic-specific tags for an article, to be
+     * displayed on the Reviewed Packet page.
+     */
+    private function get_topic_tags($article_id, $topic_id) {
+        $query = db_select('ebms_article_tag_type', 'n');
+        $query->join('ebms_article_tag', 't', 't.tag_id = n.tag_id');
+        $query->condition('t.article_id', $article_id);
+        $query->condition('t.topic_id', $topic_id);
+        $query->condition('t.active_status', 'A');
+        $query->orderBy('t.tag_dt');
+        $query->fields('n', array('tag_name'));
+        $tags = htmlspecialchars(implode('; ', $query->execute()->fetchCol()));
+        return $tags;
+    }
+
+    /**
      * The user (a board manager) has selected a specific packet from the
      * list of reviewed packets displayed on her Literature landing page.
      * Create a table showing each article in the packet, the reviewers
@@ -964,6 +1037,13 @@ class EbmsReview {
      * turn off that suppression.)
      */
     private function show_reviewed_packet($opts) {
+
+        // We'll need this for finding the latest article statuses.
+        $full_review_sequence = db_select('ebms_article_state_type', 't')
+            ->fields('t', array('sequence'))
+            ->condition('t.state_text_id', 'PassedFullReview')
+            ->execute()
+            ->fetchField();
 
         // We'll use this a lot.
         $packet_id = $this->packet_id;
@@ -1123,6 +1203,7 @@ class EbmsReview {
             $reviewers = array();
 
             // Add related articles and board manager comment (OCEEBMS-381).
+            // Also most recent status and topic-associated tags (OCEEBMS-405).
             $related = Ebms\Util::get_related_articles($article_id);
             if ($related)
                 $citation .= "<br>$related";
@@ -1131,12 +1212,20 @@ class EbmsReview {
                 ->condition('p.packet_id', $packet_id)
                 ->execute()
                 ->fetchField();
+            $topic_tags = EbmsReview::get_topic_tags($article_id, $topic_id);
+            if ($topic_tags)
+                $citation .= "<br>[ARTICLE TAG(S): $topic_tags]";
             $comment = EbmsReview::get_article_topic_comment($article_id,
                                                              $topic_id);
             if ($comment) {
                 $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
-                $citation .= "<br>$comment</span><br>";
+                $citation .= "<br>$comment</span>";
             }
+            $latest_status = EbmsReview::get_latest_status($article_id,
+                             $topic_id, $full_review_sequence);
+            if ($latest_status)
+                $citation .= '<br><br><span class="mrs">ARTICLE STATE<br>' .
+                    $latest_status . '</span>';
 
             // Loop through the list of reviewers who have already reviewed
             // this article.
@@ -1988,21 +2077,31 @@ class EbmsReview {
      *
      * More new requirements (2016-01-13 OCEEBMS-232): ignore FYI articles
      * when calculating whether a packet has been completed.
+     *
+     * Regard articles with states beyond FYI and siblings as "complete"
+     * (OCEEBMS-450).
      */
     public static function packet_fully_completed($packet_id) {
         global $user;
-        $fyi = EbmsReview::get_fyi_state_id();
+        $fyi = db_select('ebms_article_state_type', 't')
+            ->condition('t.state_text_id', 'FYI')
+            ->fields('t', array('state_id', 'sequence'))
+            ->execute()
+            ->fetch();
         $query = db_select('ebms_packet_article', 'a');
         $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
         $query->join('ebms_article_state', 's',
             's.article_id = a.article_id AND s.topic_id = p.topic_id');
+        $query->join('ebms_article_state_type', 'st',
+                     'st.state_id = s.state_id');
         $query->leftJoin('ebms_article_review', 'r',
             'r.article_id = a.article_id AND ' .
             'r.packet_id = a.packet_id AND ' .
             'r.reviewer_id = ' . $user->uid);
         $query->condition('a.packet_id', $packet_id);
         $query->condition('s.current', 'Y');
-        $query->condition('s.state_id', $fyi, '<>');
+        $query->condition('s.state_id', $fyi->state_id, '<>');
+        $query->condition('st.sequence', $fyi->sequence, '<=');
         $query->isNull('r.article_id');
         $count = $query->countQuery()->execute()->fetchField();
         return $count == 0;
@@ -2509,6 +2608,13 @@ class EbmsReview {
         }
 
         // Build the page content.
+        // List assigned reviewers (OCEEBMS-379).
+        $query = db_select('ebms_packet_reviewer', 'r');
+        $query->join('users', 'u', 'u.uid = r.reviewer_id');
+        $query->condition('r.packet_id', $this->packet_id);
+        $query->fields('u', array('name'));
+        $query->orderBy('u.name');
+        $reviewers = implode(', ', $query->execute()->fetchCol());
         $body = array(
             '#prefix' => "$body_prefix<div id='member-packet'>",
             '#suffix' => "</div>$body_suffix",
@@ -2519,13 +2625,16 @@ class EbmsReview {
                 '<ol style="font-style: italic">' .
                 '<li>Click on the summary document to open it on your ' .
                 'computer so that it is ready for you to make changes.</li>' .
-                '<li>Review articles.</li>' .
+                '<li>Review articles. Use the REJECT button to quickly ' .
+                'reject any articles that warrant no changes ' .
+                'to the summary.</li>' .
                 '<li>If needed, make changes to the summary using Track ' .
                 'Changes and save it to your computer, adding your initials ' .
                 'to the filename.</li>' .
                 '<li>Upload the document with your changes ' .
                 'using the POST DOCUMENT button found in the Reviewer ' .
-                'Uploads section below.</li></ol><br>',
+                'Uploads section below.</li></ol>' .
+                "<p>Assigned reviewers: $reviewers</p><br>",
             ),
         );
 
@@ -2574,9 +2683,17 @@ class EbmsReview {
      *
      * 2016-01-13 (OCEEBMS-232): show FYI articles separately, with
      * red "FYI" in place of "REVIEW" button.
+     * 2017-06-09 (OCEEBMS-438): no, don't show them separately.
+     *
+     * 2017-06-09 (OCEEBMS-438): add button for "quick no" decision.
      */
     private function show_packet_articles(&$page, $articles) {
 
+        // Add a popup for quick no ("exclude") decision.
+        ctools_include('ajax');
+        ctools_include('modal');
+        ctools_modal_add_js();
+        $exclude_url = 'review/nojs/quick_no';
 
         // Standard pieces we'll need for the link out to NLM.
         $target = array('attributes' => array('target' => '_blank'));
@@ -2584,6 +2701,8 @@ class EbmsReview {
         // Options for links.
         $options = array('html' => true, 'query' => $this->query_parms());
         $options['attributes']['class'] = array('button');
+        $ajax_opts = $options;
+        $ajax_opts['attributes']['class'][] = 'ctools-use-modal';
 
         // Separate set for viewing other board member reviews.
         $other_opts = array(
@@ -2593,9 +2712,9 @@ class EbmsReview {
 
         // Build the array of rows for the article table.
         // OCEEBMS-232: save FYI articles for last.
+        // OCEEBMS-436: requirement retracted.
         $rows = array();
         global $user;
-        $fyi_articles = array();
         $topic_id = db_select('ebms_packet', 'p')
             ->fields('p', array('topic_id'))
             ->condition('p.packet_id', $this->packet_id)
@@ -2634,7 +2753,8 @@ class EbmsReview {
                 }
             }
             $links .= '</div>';
-            $citation = EbmsReview::show_citation($article->article_id, $topic_id, 3);
+            $citation = EbmsReview::show_citation($article->article_id,
+                        $topic_id, 3);
             if ($is_fyi)
                 $c2 = '<span class="fyi">FYI</span>';
             elseif ($article->when_posted) {
@@ -2643,8 +2763,13 @@ class EbmsReview {
             }
             elseif (EbmsReview::has_fbd($article->article_id, $topic_id))
                 $c2 = '<i>Reviewed by Editorial Board</i>';
-            else
-                $c2 = l('Review', EbmsReview::$url, $options);
+            else {
+                $ajax_opts['query']['article'] = $article->article_id;
+                $c2 = '<span id="article-buttons-' . $article->article_id .
+                    '">' .
+                    l('Review', EbmsReview::$url, $options) . ' &nbsp; '.
+                    l('Reject', $exclude_url, $ajax_opts) . '</span>';
+            }
             $row = array(
                 'data' => array(
                     array(
@@ -2659,13 +2784,8 @@ class EbmsReview {
                 ),
                 'no_striping' => true,
             );
-            if ($is_fyi)
-                $fyi_articles[] = $row;
-            else
-                $rows[] = $row;
-        }
-        foreach ($fyi_articles as $row)
             $rows[] = $row;
+        }
 
         // Plug the "Articles" heading and table into the page.
         $page['articles'] = array(
@@ -2909,6 +3029,8 @@ class EbmsReview {
      * waiting review (either because the board member already has
      * reviewed the articles or they have been dropped from the
      * packet).
+     *
+     * OCEEBMS-436: put articles from core journals on top.
      */
     private function reviewer_articles() {
         $query = db_select('ebms_article', 'a');
@@ -2924,10 +3046,13 @@ class EbmsReview {
             'r.packet_id = p.packet_id AND ' .
             'r.reviewer_id = :uid', array(':uid' => $this->user->uid));
         $query->leftJoin('file_managed', 'f', 'f.fid = a.full_text_id');
+        $query->leftJoin('ebms_core_journal', 'c',
+            'c.source = j.source AND c.source_jrnl_id = j.source_jrnl_id');
         $query->fields('f', array('uri'));
         $query->fields('r', array('review_id', 'when_posted'));
         $query->fields('p', array('drop_flag'));
         $query->condition('p.packet_id', $this->packet_id);
+        $query->orderBy('c.source', 'DESC');
         $query->orderBy('j.jrnl_title');
         $query->orderBy('a.import_date', 'DESC');
         $result = $query->execute();
@@ -2978,8 +3103,10 @@ class EbmsReview {
                 $this->article_id = 0;
             }
         }
+        if (in_array('board member', $this->user->roles))
+            return true;
 
-        return true;
+        return user_access('manage citations');
     }
 
     /*
@@ -3359,9 +3486,16 @@ ORDER BY t.topic_name";
      * Fetch all of the packets assigned to the board member, in which
      * at least one active article is still waiting to be reviewed.
      * 2016-01-13 (OCEEBMS-232) ignore FYI articles.
+     *
+     * Regard articles with states beyond FYI and siblings as "complete"
+     * (OCEEBMS-450).
      */
     public static function reviewer_packets_by_id($user_id) {
-        $fyi = EbmsReview::get_fyi_state_id();
+        $fyi = db_select('ebms_article_state_type', 't')
+            ->condition('t.state_text_id', 'FYI')
+            ->fields('t', array('state_id', 'sequence'))
+            ->execute()
+            ->fetch();
         $query = db_select('ebms_packet', 'p');
         $query->fields('p', array('packet_id', 'packet_title'));
         $query->join('ebms_packet_reviewer', 'm', 'p.packet_id = m.packet_id');
@@ -3369,6 +3503,8 @@ ORDER BY t.topic_name";
         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
         $query->join('ebms_article_state', 's',
             's.article_id = a.article_id AND s.topic_id = t.topic_id');
+        $query->join('ebms_article_state_type', 'st',
+                     'st.state_id = s.state_id');
         $query->leftJoin('ebms_article_review', 'r',
             implode(' AND ',
                 array(
@@ -3383,10 +3519,12 @@ ORDER BY t.topic_name";
         $query->condition('a.drop_flag', 0);
         $query->isNull('r.article_id');
         $query->condition('s.current', 'Y');
-        $query->condition('s.state_id', $fyi, '<>');
+        $query->condition('s.state_id', $fyi->state_id, '<>');
+        $query->condition('st.sequence', $fyi->sequence, '<=');
         $query->distinct();
         $query->orderBy('p.created_at', 'DESC');
         $query->orderBy('t.topic_name');
+        //pdq_ebms_debug('REVIEWER PACKETS', "$query");
         return $query->execute();
     }
 
@@ -3397,7 +3535,8 @@ ORDER BY t.topic_name";
      * page has slightly different requirements for how the citations
      * are to be formatted.
      */
-    public static function show_citation($article_id, $topic_id, $max_authors=99999,
+    public static function show_citation($article_id, $topic_id,
+                                         $max_authors=99999,
                                          $include_links=false) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
@@ -3971,7 +4110,7 @@ function pdq_ebms_store_review($form, &$form_state) {
                 'article_id'  => $article_id,
                 'reviewer_id' => $account->uid,
                 'when_posted' => $now,
-                'comments'    => $comments.$comment_suffix,
+                'comments'    => trim($comments.$comment_suffix),
                 'loe_info'    => $loe,
             )
         )
@@ -4444,9 +4583,14 @@ function pdq_ebms_edit_packet_form($form, &$form_state, $packet_id=0) {
         $fyi_articles_desc = 'These articles will not be reviewed.';
         $summaries_desc = 'You may select more than one summary document.';
         $reviewers_desc =
-            'Selected reviewers will receive this packet to review.  ' .
-            'You may unselect these reviewers and/or ' .
-            'select additional Board members to review this packet.';
+            'The following reviewers are associated with this topic ' .
+            'in the EBMS. ' .
+            'Selected reviewers will receive this packet to review on ' .
+            'their Assigned Packets page. ' .
+            'Unselected reviewers who are associated with this topic ' .
+            'will be able to view the packet on their FYI Packets page. ' .
+            'You may also select additional Board members who are not ' .
+            'associated with this topic to review this packet.';
 
         // Are we editing an existing packet?
         if ($packet_id) {
@@ -4728,7 +4872,9 @@ function _group_ebms_topics($element) {
  */
 function pdq_ebms_edit_packet_form_validate($form, &$form_state) {
     $packet_id = $form_state['values']['packet'];
-    $name = trim($form_state['values']['name']);
+    $name = '';
+    if (!empty($form_state['values']['name']))
+        $name = trim($form_state['values']['name']);
     if (!$name)
         form_set_error('name', 'Packet must have a name.');
     if (!$packet_id) {
@@ -4972,10 +5118,12 @@ function pdq_ebms_packet_topic_ajax($form, $form_state) {
             $subform['articles'][$k]['#checked'] = $checked;
         }
     }
-    foreach ($subform['fyi-articles'] as $k => $v) {
-        if (isset($v['#type']) and $v['#type'] == 'checkbox') {
-            $checked = in_array($k, $checked_fyi_articles) ? 1 : 0;
-            $subform['fyi-articles'][$k]['#checked'] = $checked;
+    if (!empty($subform['fyi-articles'])) {
+        foreach ($subform['fyi-articles'] as $k => $v) {
+            if (isset($v['#type']) and $v['#type'] == 'checkbox') {
+                $checked = in_array($k, $checked_fyi_articles) ? 1 : 0;
+                $subform['fyi-articles'][$k]['#checked'] = $checked;
+            }
         }
     }
     foreach ($subform['reviewers-div']['reviewers'] as $k => $v) {
@@ -5493,4 +5641,208 @@ function pdq_ebms_packet_star($packet_id, $state) {
         ->execute();
     echo pdq_ebms_packet_star_span($packet_id, $starred);
     exit(0);
+}
+
+/**
+ * Ajax callback for the button on a reviewer's packet page to
+ * report that an article should not be included in any further
+ * consideration by the board. In the unlikely event that the
+ * user has disabled javascript, the form will be drawn on
+ * on a separate web page. Otherwise (the normal case) the
+ * form will appear in a popup hovering above the packet page.
+ * OCEEBMS-438.
+ */
+function pdq_ebms_modal_quick_no($js=false) {
+
+    // This is the form we're using, whether or not javascript is enabled.
+    $form = 'quick_no_form';
+
+    // If javascript is turned off, bring up a separate page for the form.
+    if (!$js)
+        return drupal_get_form($form);
+
+    // Requirements have changed, we need more information for the title bar.
+    $parms = drupal_get_query_parameters();
+    $article_id = $parms['article'];
+    $xml = db_select('ebms_article', 'a')
+        ->fields('a', array('source_data'))
+        ->condition('a.article_id', $article_id)
+        ->execute()
+        ->fetchField();
+    $doc = new \SimpleXMLElement($xml);
+    $citation = $doc->MedlineCitation;
+    $article = $citation->Article;
+    $year = $article->Journal->JournalIssue->PubDate->Year;
+    $author = '';
+    if (!empty($article->AuthorList->Author)) {
+        foreach ($article->AuthorList->Author as $a) {
+            $author = ' ' . htmlspecialchars($a->LastName);
+            break;
+        }
+    }
+    $journal = htmlspecialchars($citation->MedlineJournalInfo->MedlineTA);
+    $pmid = $citation->PMID;
+
+    // Bring in support for ctools' ajax and modal popups.
+    ctools_include('ajax');
+    ctools_include('modal');
+
+    // Set up the form state and wrap it for a modal popup form.
+    $title = "Rejecting article$author $journal $year PMID $pmid";
+    $form_state = array(
+        'ajax' => true,
+        'title' => $title,
+    );
+    $output = ctools_modal_form_wrapper($form, $form_state);
+
+    // If the form was submitted, close the dialog and update
+    // the packet page to replace the review buttons with
+    // "reviewed [today's date].
+    if (!empty($form_state['executed'])) {
+        $article_id = $form_state['values']['article'];
+        $span_id = "#article-buttons-$article_id";
+        $today = date('m/d/Y');
+        $html = "<i>reviewed<br>$today</i>";
+        $output = array(
+            ajax_command_html($span_id, $html),
+            ctools_modal_command_dismiss(),
+        );
+    }
+
+    // Otherwise we return the javascript for drawing the ajax form.
+    elseif (!empty($form_state['ajax_commands']))
+        $output = $form_state['ajax_commands'];
+    print ajax_render($output);
+    drupal_exit();
+}
+
+/**
+ * Assemble the fields for an abbreviated form to be used in a popup
+ * for quickly dispatching with an article which the reviewer believes
+ * should be excluded from further consideration by the board.
+ */
+function quick_no_form($form, &$form_state) {
+    $parms = drupal_get_query_parameters();
+    return array(
+        'packet' => array(
+            '#type' => 'hidden',
+            '#value' => $parms['packet'],
+        ),
+        'article' => array(
+            '#type' => 'hidden',
+            '#value' => $parms['article'],
+        ),
+        'reasons' => array(
+            '#type' => 'checkboxes',
+            '#title' =>
+            'Reason(s) for Exclusion From PDQ<sup>&reg;</sup> Summary',
+            '#description' =>
+            'Please indicate which of the reasons below led to your ' .
+            'decision to exclude the article. You may choose more than ' .
+            'one reason.',
+            '#options' => EbmsReview::reason_options(),
+            '#prefix' => '<div id="reasons-wrapper">',
+            '#suffix' => '</div>',
+        ),
+        'comments' => array(
+            '#type' => 'textarea',
+            '#resizable' => false,
+            '#title' => 'Comments',
+            '#description' =>
+            'If you have additional comments, please add them here.',
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'SUBMIT',
+            '#submit' => array('quick_no_form_submit'),
+            '#executes_submit_callback' => true,
+        ),
+        '#validate' => array('quick_no_form_validate'),
+    );
+}
+
+/**
+ * Verify that at least one reason for excluding the article is
+ * selected.
+ */
+function quick_no_form_validate($form, &$form_state) {
+
+    $reason_count = 0;
+    $reasons = $form_state['values']['reasons'];
+    foreach ($reasons as $id => $val)
+        if ($val)
+            $reason_count++;
+    if (!$reason_count)
+        form_set_error('reasons',
+            'At least one exclusion reason must be selected.');
+}
+
+/**
+ * Store the board member's feedback on this article.
+ */
+function quick_no_form_submit($form, &$form_state) {
+
+    // check for this page being used on behalf of another
+    global $user;
+    $comment_suffix = '';
+    $account = pdq_ebms_find_effective_user(false);
+    if ($account)
+        // append the name of the intended user and add the manager's left
+        // nav.  TIR 2409: don't use HTML markup to do this, since we're
+        // appending to raw user input.
+        $comment_suffix = ' (Recorded by ' . $user->name .
+            ' on behalf of ' . $account->name . '.)';
+    else
+        $account = $user;
+
+    $packet_id = $form_state['values']['packet'];
+    $article_id = $form_state['values']['article'];
+    $comments = $form_state['values']['comments'];
+    $now = strftime("%Y-%m-%d %H:%M:%S");
+    $review_id = db_insert('ebms_article_review')
+        ->fields(
+            array(
+                'packet_id'   => $packet_id,
+                'article_id'  => $article_id,
+                'reviewer_id' => $account->uid,
+                'when_posted' => $now,
+                'comments'    => trim($comments.$comment_suffix),
+                'loe_info'    => '',
+            )
+        )
+        ->execute();
+    pdq_ebms_debug('QUICK NO REVIEW ID', $review_id);
+    db_update('ebms_packet_article')
+        ->fields(array('archived' => null))
+        ->condition('article_id', $article_id)
+        ->condition('packet_id', $packet_id)
+        ->execute();
+
+    // Look up the ID of the disposition for rejecting the article
+    // (always in the first position).
+    $no_change_option = db_select('ebms_review_disposition_value', 'v')
+            ->fields('v', array('value_id'))
+            ->condition('v.value_pos', 1)
+            ->execute()
+            ->fetchField();
+    db_insert('ebms_review_disposition')
+        ->fields(
+            array(
+                'review_id' => $review_id,
+                'value_id' => $no_change_option,
+            )
+        )
+        ->execute();
+    foreach ($form_state['values']['reasons'] as $id => $val) {
+        if ($val) {
+            db_insert('ebms_review_rejection_reason')
+                ->fields(
+                    array(
+                        'review_id' => $review_id,
+                        'value_id' => $id,
+                    )
+                )
+                ->execute();
+        }
+    }
 }

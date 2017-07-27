@@ -139,9 +139,9 @@ $pdq_ebms_recent_activity_message_types = array(
     "arguments" : null,
     "message_text" : { "und" : [
         {
-          "value" : "\u003Cp class=\u0022new_summary_message-[message:mid]\u0022\u003E[message:user:name] posted \u003Ca href=\u0022\/[message:field_summary_url]\u0022\u003E[message:field_title]\u003C\/a\u003E. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
+          "value" : "\u003Cp class=\u0022new_summary_message-[message:mid]\u0022\u003E[message:user:name] posted \u003Ca href=\u0022\/[message:field_summary_url]\u0022\u003E[message:field_title]\u003C\/a\u003E [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E",
           "format" : "full_html",
-          "safe_value" : "\u003Cp class=\u0022new_summary_message-[message:mid]\u0022\u003E[message:user:name] posted \u003Ca href=\u0022\/[message:field_summary_url]\u0022\u003E[message:field_title]\u003C\/a\u003E. [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
+          "safe_value" : "\u003Cp class=\u0022new_summary_message-[message:mid]\u0022\u003E[message:user:name] posted \u003Ca href=\u0022\/[message:field_summary_url]\u0022\u003E[message:field_title]\u003C\/a\u003E [message:timestamp:custom:m\/d\/Y]\u003C\/p\u003E\n"
         }
       ]
     }

@@ -1,7 +1,7 @@
 name = EBMS
 description = Customization for Electronic Board Member Site (EBMS)
 core = 7.x
-version = "7.x-3.4"
+version = "7.x-3.5"
 package = EBMS
 
 dependencies[]=block
@@ -12,7 +12,6 @@ dependencies[]=field_sql_storage
 dependencies[]=field_ui
 dependencies[]=file
 dependencies[]=filter
-dependencies[]=forum
 dependencies[]=help
 dependencies[]=list
 dependencies[]=menu

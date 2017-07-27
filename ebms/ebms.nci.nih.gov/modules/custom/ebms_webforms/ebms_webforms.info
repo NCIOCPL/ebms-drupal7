@@ -1,15 +1,13 @@
-; $Id$
 name = EBMS Webforms Module
 description = Add ability to have dynamic webform fieldsets
 package = Webform
 
 dependencies[] = webform
 dependencies[] = ebms
-dependencies[] = ebms_forums
 
 files[] = ebms_webforms.module
 
 
-version = "7.x-3.2"
+version = "7.x-3.5"
 core = "7.x"
 

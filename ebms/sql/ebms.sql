@@ -1696,9 +1696,7 @@ CREATE TABLE ebms_reviewer_doc
  * message is sent to each of the designated recipients, and the
  * message is available for viewing within the system.  Replies to
  * these announcements (if any) take place outside the EBMS.
- * Board members cannot send these announcement messages, but
- * they have access to similar functionality in the system's
- * forum area.
+ * Board members cannot send these announcement messages.
  *
  * message_id     automatically generated primary key
  * sender_id      foreign key into Drupal's users table

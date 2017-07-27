@@ -2,6 +2,7 @@
 
 namespace Ebms;
 
+require_once('common.inc');
 // require_once('logw.inc');
 
 // Maximum author elements, truncate if necessary
@@ -132,8 +133,6 @@ class EbmsArticleAuthor {
 
     function __construct($aId, $collectName, $lastName, $foreName, $inits) {
 
-        // Translate any utf-8 characters using routine in this module
-        require_once('common.inc');
 
         $this->msg = null;
 
@@ -826,7 +825,6 @@ class EbmsArticle {
         // Save what we've got, transformed if necessary
         $this->published_date = $date;
         $this->brf_citation   = Util::indexify($cite,true,true,MAX_BRF_CITE);
-        pdq_ebms_debug('DA CITE', array($cite, $pages, $this->brf_citation));
     }
 
     /**
@@ -1017,18 +1015,19 @@ class EbmsArticle {
         // Here are the fields we'll store
         //   article_id, dates, and full_text_id handled separately
         //   for new and replace records
+        // Workaround for flaw in MySQL utf-8 support (OCEEBMS-434).
         $fields = array(
             'source'         => $this->source,
             'source_id'      => $this->source_id,
             'source_jrnl_id' => $this->source_jrnl_id,
             'source_status'  => $this->source_status,
-            'article_title'  => $this->article_title,
-            'jrnl_title'     => $this->jrnl_title,
-            'brf_jrnl_title' => $this->brf_jrnl_title,
-            'abstract'       => $this->abstract,
+            'article_title'  => Util::fix_utf8($this->article_title),
+            'jrnl_title'     => Util::fix_utf8($this->jrnl_title),
+            'brf_jrnl_title' => Util::fix_utf8($this->brf_jrnl_title),
+            'abstract'       => Util::fix_utf8($this->abstract),
             'published_date' => $this->published_date,
-            'brf_citation'   => $this->brf_citation,
-            'source_data'    => $this->source_data
+            'brf_citation'   => Util::fix_utf8($this->brf_citation),
+            'source_data'    => Util::fix_utf8($this->source_data)
         );
 
         // Wrap this in a transaction

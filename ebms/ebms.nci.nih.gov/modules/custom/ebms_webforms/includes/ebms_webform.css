@@ -68,3 +68,12 @@
 .date-field-widgets {
     width: 485px;
 }
+
+/* OCEEBMS-345 */
+div.form-item.webform-component--meals-and-incidentals,
+div.form-item.webform-component--honorarium,
+div.form-item.webform-component--reimbursement,
+div.form-item.webform-component--total-amount-requested,
+div.form-item.webform-component--comments {
+    margin-top: 45px;
+}

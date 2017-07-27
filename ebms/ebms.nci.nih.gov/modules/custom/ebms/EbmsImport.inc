@@ -14,13 +14,6 @@ define('Ebms\NLM_BAD_RESPONSE_PAT',
 // Regex for error inside an eFetchResponse
 define('Ebms\REC_ERR_PAT', '/<ERROR>(?P<errMsg>.*)<\/ERROR>/smuU');
 
-// Regex for parsing out Pubmed Articles
-define('Ebms\ART_PAT', '/<PubmedArticle>.*<\/PubmedArticle>/smuU');
-
-// Regex for parsing out errors embedded in Pubmed output
-// Looks like NLM didn't want to include error info in the data
-define('Ebms\ARTICLE_ERR_PAT', '/<!-- Error>(.*)<\/Error -->/smuU');
-
 // Max output for one line of Pubmed, should be waaay high
 define('Ebms\MAX_LINE', 100000);
 
@@ -312,6 +305,17 @@ class PubmedInterface {
      * Extract records from a serial Pubmed XML results file, convert them
      * to EbmsArticle objects, and make them available to the caller.
      *
+     * OCEEBMS-433: The regular expression patterns Alan was using
+     * to pull out the error and article information (straight XML
+     * parsing won't work because NLM embeds error information in
+     * comments) was broken when NLM started repeating affiliation
+     * information for all authors once per author. In the worst
+     * case, PMID 28448241 with 177 authors blew the article's XML
+     * document to twenty times as large as it needed to be, and
+     * the million and a half bytes in which that resulted blew the
+     * PHP default PCRE backtrack limit. I have replaced the regex
+     * approach with string scanning. (RMK 2017-05-02)
+     *
      *  @param string $serialXml    XML as downloaded from Pubmed.
      *  @param array  &$retRecs     Append EbmsArticle objects here.
      *  @param array  &$retErrors   Append error messages here.
@@ -326,63 +330,48 @@ class PubmedInterface {
                                  &$recCount, &$errCount) {
 
         // Extract all of the errors from the data
-        $offset = 0;
-        while (true) {
-            // Set or reset an array to receive match results
-            $matches = array();
-
-            // Search for next error
-            $found = preg_match(ARTICLE_ERR_PAT, $serialXml, $matches,
-                                PREG_OFFSET_CAPTURE, $offset);
-            if ($found == 1) {
-                // Extract error message and append to list
-                // The error message should have the passed PMID in it
-                $retErrors[] = $matches[1][0];
-                $errCount++;
-
-                // Point past this to look for next one
-                $offset = $matches[1][1] + strlen($matches[1][0]);
-            }
-            else {
-                // Nothing (more) found
+        list($open, $close) = ['<!-- Error>', '</Error -->'];
+        $start = strpos($serialXml, $open);
+        while ($start !== false) {
+            $start += strlen($open);
+            $end = strpos($serialXml, $close, $start);
+            if ($end === false)
                 break;
-            }
+            $errCount++;
+            $retErrors[] = substr($serialXml, $start, $end - $start);
+            $offset = strpos($serialXml, $close, $end);
         }
 
         // Extract all of the PubmedArticle records
-        $offset = 0;
-        while (true) {
-            $matches = array();
-            $found = preg_match(ART_PAT, $serialXml, $matches,
-                                PREG_OFFSET_CAPTURE, $offset);
-            if ($found == 1) {
-                $docXml = $matches[0][0];
-
-                // Create an EbmsArticle object for it
-                // Catches Exception if parser or xml error
-                try {
-                    $artObj = new EbmsArticle(null, $docXml, 'Pubmed');
-                }
-                catch (\Exception $e) {
-                    // Parse errors are serious, probably indicating
-                    //  corruption of the data stream
-                    $err = $e->getMessage();
-                    $msg = "Error parsing article XML: $msg";
-                    $this->ib->addGeneralError($msg, IMPORT_BATCH_FAILURE);
-
-                    // Don't continue
-                    return;
-                }
-                $offset = $matches[0][1] + strlen($docXml);
-
-                // Return it
-                $retRecs[] = $artObj;
-                $recCount++;
-            }
-            else {
-                // Nothing (more) found
+        list($open, $close) = ['<PubmedArticle>', '</PubmedArticle>'];
+        $start = strpos($serialXml, $open);
+        while ($start !== false) {
+            $end = strpos($serialXml, $close, $start);
+            if ($end === false)
                 break;
+            $end += strlen($close);
+            $docXml = substr($serialXml, $start, $end - $start);
+            $start = strpos($serialXml, $open, $end);
+
+            // Create an EbmsArticle object for it
+            // Catches Exception if parser or xml error
+            try {
+                $artObj = new EbmsArticle(null, $docXml, 'Pubmed');
             }
+            catch (\Exception $e) {
+                // Parse errors are serious, probably indicating
+                //  corruption of the data stream
+                $err = $e->getMessage();
+                $msg = "Error parsing article XML: $msg";
+                $this->ib->addGeneralError($msg, IMPORT_BATCH_FAILURE);
+
+                // Don't continue
+                return;
+            }
+
+            // Return it
+            $retRecs[] = $artObj;
+            $recCount++;
         }
     }
 }

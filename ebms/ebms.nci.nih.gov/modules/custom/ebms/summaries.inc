@@ -59,6 +59,9 @@ class EbmsSummaries {
      * members ("documents posted by board members").
      */
     public function run() {
+        if ($this->role === 'member')
+            if (!in_array('board member', $this->user->roles))
+                return MENU_ACCESS_DENIED;
         Ebms\Util::add_js();
         drupal_add_css(Ebms\CSS_DIR . '/summaries.css');
         Ebms\Menu::$active = 'Summaries';

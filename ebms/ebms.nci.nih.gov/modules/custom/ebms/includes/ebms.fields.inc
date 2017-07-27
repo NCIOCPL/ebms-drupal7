@@ -262,7 +262,14 @@ $GLOBALS['ebms_node_fields'] = array(
     array(
         'label' => t('Notes'),
         'entity_type' => 'node',
-        //'description' => t('Any related notes for the event.'),
+        'description' =>
+        'The notes section will display beneath the meeting agenda ' .
+        '(if there is one). All meeting participants will see the Notes ' .
+        'contents. The notes section does not need to be "published" ' .
+        'in order to be visible. ' .
+        'You may use this section to provide information such as the ' .
+        'address for the meeting, WebEx information, or other details ' .
+        'about the event.',
         'field_name' => 'field_notes',
         'required' => FALSE,
         'type' => 'text_long',

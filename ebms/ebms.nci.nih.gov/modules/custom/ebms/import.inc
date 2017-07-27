@@ -407,8 +407,8 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             ),
         ),
         'file' => array(
-            '#title' => 'File',
-            '#title_display' => 'invisible',
+            // Added 'title' for OCEEBMS-418.
+            '#title' => 'BATCH IMPORT ONLY',
             '#type' => 'file',
         ),
         // Tried to use a hidden field to trigger visibility of cancel

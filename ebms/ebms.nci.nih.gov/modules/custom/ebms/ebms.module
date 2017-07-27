@@ -130,7 +130,7 @@ function ebms_menu() {
         'home' => array(
             'page callback' => 'pdq_ebms_home',
             'file' => 'home.inc',
-            'access callback' => true,
+            'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
 
@@ -179,6 +179,14 @@ function ebms_menu() {
             'page callback' => 'pdq_ebms_search',
             'file' => 'search.inc',
             'access callback' => 'user_is_logged_in',
+            'type' => MENU_CALLBACK,
+        ),
+
+        // PMID SEARCH BOX (OCEEBMS-445)
+        'pmid-search' => array(
+            'page callback' => 'pdq_ebms_pmid_search',
+            'file' => 'search.inc',
+            'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
 
@@ -276,6 +284,15 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // MODAL FORM FOR QUICK NO BUTTON
+        'review/%ctools_js/quick_no' => array(
+            'page callback' => 'pdq_ebms_modal_quick_no',
+            'page arguments' => array(1, 3, 4),
+            'file' => 'review.inc',
+            'access callback' => 'user_is_logged_in',
+            'type' => MENU_CALLBACK,
+        ),
+
         // ASSIGNED PACKETS
         'review/assigned' => array(
             'page callback' => 'pdq_ebms_review',
@@ -304,14 +321,6 @@ function ebms_menu() {
         'summaries' => array(
             'page callback' => 'pdq_ebms_summaries',
             'file' => 'summaries.inc',
-            'access callback' => 'user_is_logged_in',
-            'type' => MENU_CALLBACK,
-        ),
-
-        // FORUMS
-        'forum' => array(
-            'page callback' => 'pdq_ebms_forum',
-            'file' => 'forum.inc',
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
@@ -599,6 +608,11 @@ function ebms_menu() {
             'page callback' => 'pdq_ebms_truncate_debug_log',
             'access callback' => true,
         ),
+        'admin/mark-unreviewed-articles' => array(
+            'title' => 'Mark Unreviewed Articles',
+            'page callback' => 'pdq_ebms_mark_unreviewed_articles',
+            'access callback' => true,
+        ),
     );
 }
 
@@ -650,6 +664,7 @@ function pdq_ebms_login() {
 }
 
 function ebms_form_alter(&$form, &$form_state, $form_id) {
+    //pdq_ebms_debug('FORM ALTER', $form);
     switch ($form_id) {
         case 'user_login':
             $url = 'https://iforgotmypassword.nih.gov/';
@@ -662,8 +677,26 @@ function ebms_form_alter(&$form, &$form_state, $form_id) {
             $form['actions']['submit']['#suffix'] = '</div>';
             break;
         case 'ebms_event_node_form':
+            // inline style because some users get a different theme.
             $form['actions']['submit']['#weight'] = 10;
             $form['actions']['preview']['#weight'] = 5;
+            $board_prefix = $ind_suffix = $status_prefix = '';
+            if (!empty($form['field_boards']['#prefix']))
+                $board_prefix = $form['field_boards']['#prefix'];
+            if (!empty($form['field_individuals']['#suffix']))
+                $board_prefix = $form['field_individuals']['#suffix'];
+            if (!empty($form['field_agenda_status']['#prefix']))
+                $board_prefix = $form['field_agenda_status']['#prefix'];
+            $form['field_boards']['#prefix'] =
+                '<fieldset style="padding-left: 15px;">' .
+                '<legend style="font-size: 1.2em;">&nbsp;Participants ' .
+                '(select at least one)<span style="color: red"> *' .
+                '&nbsp;</span></legend>' . $board_prefix;
+            $form['field_individuals']['#suffix'] =
+                "$ind_suffix</fieldset>";
+            $form['field_agenda_status']['#prefix'] =
+                '<style>#edit-field-agenda-status label ' .
+                '{ color: red; font-size: 1.2em; }</style>' . $status_prefix;
             break;
     }
 }
@@ -1099,6 +1132,10 @@ function ebms_init() {
     if (isset($_SERVER['HTTP_USER_AGENT']) &&
         (strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') !== false))
         drupal_add_http_header('X-UA-Compatible', 'IE=edge,chrome=1');
+    if (strpos($_GET['q'], 'admin/df') !== false) return;
+    if (strpos($_GET['q'], 'admin/clear-pubmed-results-files') !== false) return;
+    if (strpos($_GET['q'], 'admin/truncate-debug-log') !== false) return;
+    if (strpos($_GET['q'], 'admin/mark-unreviewed-articles') !== false) return;
     $exploded = explode('/', $_GET['q']);
     if ($exploded) {
         $ok = array(
@@ -1108,9 +1145,6 @@ function ebms_init() {
             'refresh-xml',
             'ebms-accounts',
             'log-tail',
-            'df',
-            'clear-pubmed-results-files',
-            'truncate-debug-log'
         );
         if (in_array($exploded[0], $ok)) {
             return;
@@ -1769,10 +1803,12 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
     return;
 }
 
- function ebms_calendar_event_validate($form, &$form_state) {
+function ebms_calendar_event_validate($form, &$form_state) {
+
     // retrieve value of each timestamp
-    $startValue = $form_state['values']['field_datespan']['und']['0']['value'];
-    $endValue = $form_state['values']['field_datespan']['und']['0']['value2'];
+    $values = $form_state['values'];
+    $startValue = $values['field_datespan']['und']['0']['value'];
+    $endValue = $values['field_datespan']['und']['0']['value2'];
 
     $startSplit = explode(' ', $startValue);
     $endSplit = explode(' ', $endValue);
@@ -1787,6 +1823,18 @@ function ebms_query_event_filter_alter(SelectQuery $query) {
     if ($startDate != $endDate)
         form_set_error('field_datespan',
             'Please ensure that the event is scheduled for a single day only.');
+
+    // OCEEBMS-420 require at least one participant value.
+    $names = array('boards', 'subgroups', 'ad_hoc_groups', 'individuals');
+    foreach ($names as $name) {
+        foreach ($values["field_$name"]['und'] as $i => $v) {
+            if (!empty($v['value']))
+                return;
+        }
+    }
+    form_set_error('field_boards',
+        'At least one participaticing entity must be selected');
+    pdq_ebms_debug('CALENDAR_EVENT_VALIDATE', $form_state['values']);
 
     return;
 }
@@ -1848,11 +1896,15 @@ function ebms_ckeditor_link_ebms_file_autocomplete($string) {
     $articles = $articleQuery->execute()
         ->fetchAllKeyed();
 
+    $prefix = 'public://';
+    $prefix_length = strlen($prefix);
+    $wrapper = file_stream_wrapper_get_instance_by_uri($prefix);
+    $files_dir = $wrapper->getDirectoryPath();
     foreach ($articles as $fileId => $desc) {
         $file = file_load($fileId);
-        $files_dir = file_stream_wrapper_get_instance_by_uri('public://')->getDirectoryPath();
-        $fileUri = "$files_dir/$file->filename";
-        $links[$fileUri] = $desc;
+        $filename = substr($file->uri, $prefix_length);
+        $url = "$files_dir/$filename";
+        $links[$url] = $desc;
     }
 
     $documents = db_select('ebms_doc', 'd')
@@ -1862,11 +1914,11 @@ function ebms_ckeditor_link_ebms_file_autocomplete($string) {
         ->execute()
         ->fetchAllKeyed();
 
-    foreach($documents as $fileId => $desc){
+    foreach ($documents as $fileId => $desc) {
         $file = file_load($fileId);
-        $files_dir = file_stream_wrapper_get_instance_by_uri('public://')->getDirectoryPath();
-        $fileUri = "$files_dir/$file->filename";
-        $links[$fileUri] = $desc;
+        $filename = substr($file->uri, $prefix_length);
+        $url = "$files_dir/$filename";
+        $links[$url] = $desc;
     }
     asort($links);
 
@@ -2210,7 +2262,7 @@ SELECT results_id, when_submitted, LENGTH(results_file) AS len
 }
 
 /*
- * Clean up older pubmed-results files from /tmp.
+ * Clean up older pubmed-results rows from database.
  * OCEEBMS-313.
  */
 function pdq_ebms_clear_pubmed_results($cutoff='') {
@@ -2289,6 +2341,92 @@ function pdq_ebms_df() {
         $gb = round($bytes / (1024.0 * 1024.0 * 1024.0), 2);
         echo "$path: $bytes ($gb GB)\n";
     }
+    exit(0);
+}
+
+/*
+ * Add the not_reviewed article tag to articles which have been waiting
+ * for review so long that we've given up.
+ * OCEEBMS-426.
+ */
+function pdq_ebms_mark_unreviewed_articles($cutoff='') {
+
+    global $user;
+
+    // Override the normal page output behavior.
+    drupal_add_http_header('Content-type', 'text/plain');
+
+    // Get the tag ID for not_reviewed.
+    $tag_id = db_select('ebms_article_tag_type', 't')
+        ->fields('t', array('tag_id'))
+        ->condition('t.text_id', 'not_reviewed')
+        ->execute()
+        ->fetchField();
+
+    // Find the articles which have been languishing.
+    $cutoff = $cutoff ? $cutoff : date('Y-m-d', strtotime('-2 year'));
+    $query = db_select('ebms_packet_article', 'a');
+    $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
+    $query->join('ebms_topic', 'tn', 'tn.topic_id = p.topic_id');
+    $query->join('ebms_article_state', 's',
+        's.article_id = a.article_id AND s.topic_id = p.topic_id');
+    $query->join('ebms_article_state_type', 't',
+        't.state_id = s.state_id');
+    $query->leftJoin('ebms_article_review', 'r',
+        implode(' AND ',
+            array(
+                'r.article_id = a.article_id',
+                'r.packet_id = a.packet_id',
+            )
+        )
+    );
+    $query->leftJoin('ebms_article_state', 'n',
+        implode(' AND ',
+            array(
+                'n.article_id = a.article_id',
+                'n.topic_id = p.topic_id',
+                "n.status_dt > '$cutoff'",
+            )
+        )
+    );
+    $query->leftJoin('ebms_article_tag', 'nr',
+        implode(' AND ',
+            array(
+                'nr.article_id = a.article_id',
+                'nr.topic_id = p.topic_id',
+                "nr.tag_id = $tag_id",
+            )
+        )
+    );
+    $query->fields('a', array('article_id'));
+    $query->fields('p', array('topic_id'));
+    $query->fields('tn', array('topic_name'));
+    $query->condition('p.active_status', 'A');
+    $query->condition('a.drop_flag', 0);
+    $query->condition('s.current', 'Y');
+    $query->condition('t.state_text_id', 'FYI', '<>');
+    $query->condition('p.created_at', $cutoff, '<');
+    $query->condition('p.created_at', Ebms\CONVERSION_DATE, '>');
+    $query->isNull('r.article_id');
+    $query->isNull('n.article_id');
+    $query->isNull('nr.article_id');
+    $query->distinct();
+    $results = $query->execute();
+    $count = 0;
+    $fields = array(
+        'tag_id' => $tag_id,
+        'user_id' => $user->uid,
+        'tag_dt' => date('Y-m-d H:i:s'),
+    );
+    foreach ($results as $result) {
+        $count++;
+        $fields['article_id'] = $result->article_id;
+        $fields['topic_id'] = $result->topic_id;
+        db_insert('ebms_article_tag')->fields($fields)->execute();
+        echo 'marked article ' . $result->article_id .
+            ' as unreviewed for topic ' . $result->topic_name . "\n";
+    }
+    echo "$count article/topics marked\n";
     exit(0);
 }
 

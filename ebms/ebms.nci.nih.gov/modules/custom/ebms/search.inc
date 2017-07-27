@@ -717,6 +717,11 @@ function pdq_ebms_search_db_form(
                 $defaults->items_per_page = VIEW_ALL;
             else
                 $defaults->items_per_page = $dft;
+
+        // Add PMID if quick search failed (OCEEBMS-445).
+        $parms = drupal_get_query_parameters();
+        if (!empty($parms['pmid']))
+            $defaults->pmid = $parms['pmid'];
     }
 
     // Find out which boards are already selected.
@@ -1322,4 +1327,27 @@ function pdq_ebms_fix_date($element) {
     array_unshift($element['month']['#options'], 'MONTH');
     array_unshift($element['day']['#options'], 'DAY');
     return $element;
+}
+
+/**
+ * Look up article's EBMS ID from its Pubmed ID and
+ * bring up the 'full citation' page for the article.
+ * If the PMID isn't found in the EBMS, bring up the
+ * search page instead, seeded with the PMID.
+ *
+ * OCEEBMS-445
+ */
+function pdq_ebms_pmid_search($pmid) {
+    $article_id = db_select('ebms_article', 'a')
+        ->condition('source', 'Pubmed')
+        ->condition('source_id', $pmid)
+        ->fields('a', array('article_id'))
+        ->execute()
+        ->fetchField();
+    if (empty($article_id)) {
+        $opts = array('query' => array('pmid' => $pmid));
+        drupal_goto(EbmsSearch::$url, $opts);
+    }
+    else
+        drupal_goto("citations/full/$article_id");
 }

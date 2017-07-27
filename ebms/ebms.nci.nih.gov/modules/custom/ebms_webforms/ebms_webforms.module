@@ -184,9 +184,14 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
 
 // Validation added for JIRA ticket OCEEBMS-6 (TIR 2374).
 function ebms_webforms_form_validate($form, &$form_state) {
-    if (isset($form_state['values']['submitted']['check_in'])) {
-        $check_in = $form_state['values']['submitted']['check_in'];
-        $check_out = $form_state['values']['submitted']['check_out'];
+
+    if (!isset($form_state['values']['submitted']))
+        return;
+    $submitted = $form_state['values']['submitted'];
+
+    if (isset($submitted['check_in'])) {
+        $check_in = $submitted['check_in'];
+        $check_out = $submitted['check_out'];
         $in = Ebms\Util::fill_in_date($check_in);
         $out = Ebms\Util::fill_in_date($check_out);
         if ($out > '1901' && $in > $out)
@@ -197,14 +202,63 @@ function ebms_webforms_form_validate($form, &$form_state) {
     // Conditionally required nights_stayed field
     // Explanation of weird first parameter for form_set_error call at
     // http://drupal.stackexchange.com/questions/78471/form-set-error-field-not-highlited-red
-    if (isset($form_state['values']['submitted']['hotel'])) {
-        $hotel = $form_state['values']['submitted']['hotel'];
+    if (isset($submitted['hotel'])) {
+        $hotel = $submitted['hotel'];
         if (strpos($hotel, 'paid') !== false) {
-            if (empty($form_state['values']['submitted']['nights_stayed']))
+            if (empty($submitted['nights_stayed']))
                 form_set_error('submitted][nights_stayed',
                     'Missing required Nights Stayed field.');
         }
     }
+
+    // Conditionally check components of each expense block (OCEEBMS-404).
+    $names = array('transportation', 'parking_and_tolls');
+    foreach ($names as $name) {
+        if (isset($submitted[$name])) {
+            foreach ($submitted[$name] as $key => $value) {
+                if (strpos($key, 'fieldset') !== false) {
+                    foreach ($value as $index => $block)
+                        _validate_expense($name, $key, $index, $block);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Make sure we have everything we need for an expense if we have
+ * either a date or an amount (dollars or miles).
+ */
+function _validate_expense($name, $key, $index, $block) {
+
+    // Make sure we have a type. Very unlikely that we won't.
+    //if (empty($block['type'])) {
+    //    form_set_error($name . '][' . $key . '][' . $index . '][type',
+    //        'Missing expense type');
+    //    return;
+    //}
+
+    // One of these assumptions will be proven false;
+    $date_complete = $date_empty = true;
+    $amount_name = $block['type'] === 'private' ? 'mileage' : 'expense';
+    $have_amount = !empty($block[$amount_name]);
+    $date_names = array('month', 'day', 'year');
+    foreach ($date_names as $date_name) {
+        if (empty($block['date'][$date_name]))
+            $date_complete = false;
+        else
+            $date_empty = false;
+    }
+    $location = 'submitted][' . $name . '][' . $key . '][' . $index;
+    if (!$date_empty) {
+        if (!$date_complete)
+            form_set_error($location . '][date', 'Incomplete expense date.');
+        elseif (!$have_amount)
+            form_set_error($location . "][$amount_name",
+                "Missing $amount_name amount");
+    }
+    elseif ($have_amount)
+        form_set_error($location . '][date', 'Missing expense date.');
 }
 
 /**
@@ -432,7 +486,7 @@ function _webform_defaults_ebms_travel() {
     'pid' => 0,
     'weight' => 0,
     'value' => '',
-    'mandatory' => TRUE,
+    'mandatory' => FALSE,
     'extra' => array(
         'items' => '',
         'size' => '',
@@ -1154,7 +1208,8 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
         );
     else
         $header = array(
-            array('data' => 'Submitted', 'field' => 's.submitted'),
+            array('data' => 'Submitted', 'field' => 's.submitted',
+                  'sort' => 'desc'), // sort added by OCEEBMS-421
             array('data' => 'User', 'field' => 'u.name'),
             array('data' => 'Meeting', 'field' => 'meeting_with_date'),
             'Check-In', 'Check-Out', 'Preferred Hotel', 'Comments',
@@ -1207,8 +1262,8 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
         $cell[] = format_date($submission->submitted, 'custom', $format);
         $cell[] = theme('username', array('account' => $submission));
-        if (count($rows) == 0)
-            pdq_ebms_debug('WEBFORM COMPONENTS', $node->webform['components']);
+        //if (count($rows) == 0)
+        //  pdq_ebms_debug('WEBFORM COMPONENTS', $node->webform['components']);
         // Generate a cell for each component.
         foreach ($node->webform['components'] as $component) {
 
@@ -1540,12 +1595,22 @@ function ebms_webforms_theme_registry_alter(&$theme_registry) {
     $theme_registry_copy = $theme_registry;       // munge on a copy
     _theme_process_registry($theme_registry_copy, 'phptemplate', 'theme_engine', 'ebmstheme', $mod_path);
     $theme_registry += array_diff_key($theme_registry_copy, $theme_registry);
-    $hooks = array('node', 'block',); // 'forums', 'forum_list', 'forum_topic_list', 'forum_icon', 'forum_submitted', 'forum_form');
+    $hooks = array('node', 'block',);
     foreach ($hooks as $h) {
 
-        _ebms_forums_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
+        _ebms_webforms_insert_after_first_element($theme_registry[$h]['theme paths'], $mod_path);
     }
 
+}
+
+/**
+ * Helper function for re-ordering arrays (needed by theme_registry_alter)
+ */
+function _ebms_webforms_insert_after_first_element(&$a, $element) {
+    if (is_array($a)) {
+        $first_element = array_shift($a);
+        array_unshift($a, $first_element, $element);
+    }
 }
 
 /**

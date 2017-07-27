@@ -459,7 +459,9 @@ class EbmsPrintFile {
                             //  Content depends on purpose and file contents
         $filesize,          // May help with predicting page count
         $filetype,          // 'pdf', 'word', 'text', 'html'
-        $numPages;          // Estimated page count
+        $numPages,          // Estimated page count
+        $fyi;               // True if the article's current state for topic
+                            // is FYI
 
     /**
      * Constructor sets empty fields
@@ -481,6 +483,7 @@ class EbmsPrintFile {
             $this->filesize      = $fromEps->filesize;
             $this->filetype      = $fromEps->filetype;
             $this->numPages      = $fromEps->numPages;
+            $this->fyi           = $fromEps->fyi;
         }
         // Else all values are null by default
     }
@@ -1079,6 +1082,15 @@ class EbmsPrintJob {
             ->condition('pktart.drop_flag', 0, '=')
             ->isNotNull('art.full_text_id');
 
+        // Need to know which articles are marked FYI (OCEEBMS-442)
+        $fyi_id = Util::state_id_from_text_id('FYI');
+        $qry->join('ebms_packet', 'p', 'p.packet_id = pktart.packet_id');
+        $qry->join('ebms_article_state', 's',
+                   's.topic_id = p.topic_id AND s.article_id = art.article_id');
+        $qry->condition('s.current', 'Y')
+            ->condition('s.active_status', 'A');
+        $qry->fields('s', array('state_id'));
+
         try {
             $rows = $qry->execute()->fetchAll();
         }
@@ -1116,6 +1128,7 @@ class EbmsPrintJob {
                                                     $epf->filesize);
             $epf->filetype      = $this->getFileType($epf->path,
                                                      $row->filemime);
+            $epf->fyi           = $row->state_id == $fyi_id;
 
             if (is_null($epf->filetype) || $epf->filetype != 'pdf') {
                 $this->reportError(
@@ -1132,7 +1145,7 @@ class EbmsPrintJob {
             //   this file and append its EbmsPrintFile object to our list
             // EbmsPrintFile will be created in all modes but actual
             //   response sheet is not created if it's just a report
-            if ($epf->boardMemberId) {
+            if ($epf->boardMemberId && !$epf->fyi) {
                 $respEpf = $this->createResponseSheet($epf, $packetPos,
                                           $packetMax, $packetTitle, $packetId);
                 $epfList[] = $respEpf;
@@ -1479,20 +1492,19 @@ class EbmsPrintJob {
         // Next page
         $pdf->AddPage();
 
-        // Reasons for exclusion
-        $reasons = array(
-            'Already cited in the PDQ summary',
-            'Not relevant to the PDQ summary topic',
-            'Findings not clinically important',
-            'Preliminary findings; need confirmation',
-            'Provides no new information/novel findings',
-            'Review/expert opinion/commentary (no new primary data)',
-            'Inadequate study population (small number of patients; underpowered study; accrual target not met)',
-            'Inadequate follow-up',
-            'Inappropriate study design or analyses',
-            'Missing/incomplete outcome data; major protocol deviations',
-            'Other (specify reason[s] below)'
-        );
+        // Reasons for exclusion (use db instead of hard-coding: OCEEBMS-446)
+        $results = db_select('ebms_review_rejection_value', 'v')
+            ->condition('active_status', 'A')
+            ->fields('v', array('value_name', 'extra_info'))
+            ->orderBy('v.value_pos')
+            ->execute();
+        $reasons = array();
+        foreach ($results as $r) {
+            $reason = $r->value_name;
+            if (!empty($r->extra_info))
+                $reason .= "( $r->extra_info)";
+            $reasons[] = $reason;
+        }
 
         // $pdf->Ln();
         // Copyright symbol after PDQ
@@ -1830,6 +1842,7 @@ EOS;
 
             // Info about each file
             foreach ($fileList as $epf) {
+                $fyi = $epf->fyi ? ' (FYI)' : '';
                 $fname = basename($epf->path);
                 if ($epf->purpose == 'response')
                     $classId = " class='respSheet'";
@@ -1837,7 +1850,7 @@ EOS;
                     $classId = '';
 
                 fwrite($fp,
-                    "<li$classId>$fname:</br> {$epf->description}</li>\n");
+                    "<li$classId>$fname:</br> {$epf->description}$fyi</li>\n");
             }
 
             // Trailer

@@ -70,98 +70,6 @@ define('Ebms\DOC_TYPES', 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg');
 define('Ebms\PUBMED_URL', 'https://www.ncbi.nlm.nih.gov/pubmed');
 
 /**
- * Initial implementation of discussion forums has one general forum
- * visible to all users, and one forum for each of the PDQ boards.
- * Later on we may add forums for at least some of the subgroups.
- * XXX The Discussions pages haven't been implemented yet.  This
- * initial work was done in order to build the main and sub menus
- * for the home page stories.
- *
- * Forums in the contributed Drupal "Forum" module are registered
- * using the Drupal taxonomy tables.  For now the code below relies
- * on the naming convention that the forums for the EBMS boards
- * are named by concatenating the name of the board (stored in
- * the board_name column of the ebms_board table) with the string
- * " Forum"; shouldn't be hard to change if this convention needs
- * to be altered.
- */
-class Forum {
-    public
-        $id,
-        $name,
-        $board,
-        $subgroup;
-    static $forums;
-
-    /**
-     * Object to store the Forum name and ID, as well as the
-     * board or subgroup which has access to it.  The name of
-     * the forum is passed to the constructor and the ID is
-     * pulled from the taxonomy_term_data database table.
-     * The $board or $subgroup parameter is passed as a hash
-     * with "id" and "name" members.
-     */
-    public function __construct($name, $board=null, $subgroup=null) {
-        $this->name = $name;
-        $this->board = $board;
-        $this->subgroup = $subgroup;
-        $this->id = db_select('taxonomy_term_data', 't')
-            ->fields('t', array('tid'))
-            ->condition('t.name', $name)
-            ->execute()
-            ->fetchField();
-    }
-
-    /**
-     * Build the static array of EBMS forums.  Right now that's one
-     * general discussion group open to everyone and one for each
-     * board.  Cache the array for future access during the life of
-     * the current request.
-     */
-    public static function init() {
-        $results = db_select('ebms_board', 'b')
-            ->fields('b', array('board_id', 'board_name'))
-            ->orderBy('b.board_name')
-            ->execute();
-        $forum_name = 'General Forum';
-        self::$forums[$forum_name] = new Forum($forum_name);
-        foreach ($results as $result) {
-            $forum_name = $result->board_name . ' Forum';
-            $board = array(
-                'id' => $result->board_id,
-                'name' => $result->board_name,
-            );
-            self::$forums[$forum_name] = new Forum($forum_name, $board);
-        }
-    }
-
-    /**
-     * Retrieve the static array of forums.  Build the array first if
-     * that hasn't been done already.
-     */
-    public static function forums() {
-        if (empty(self::$forums))
-            self::init();
-        return self::$forums;
-    }
-
-    /**
-     * Returns a Boolean indicating whether the forum represented by
-     * this object is accessble to the current user.
-     */
-    public function visible() {
-        global $user;
-        if (!user_is_logged_in())
-            return false;
-        if (isset($this->board))
-            return in_array($this->board['id'], $user->boards);
-        if (isset($this->subgroup))
-            return in_array($this->subgroup['id'], $user->subgroups);
-        return true;
-    }
-}
-
-/**
  * As a result of bugs in the Superfish menu module, poor documentation
  * of the Drupal Menu API, unreliable behavior of the Drupal menu
  * caching mechanism, and other factors (for example, Drupal did not
@@ -232,7 +140,8 @@ class Menu {
             $options['attributes']['title'] = $tip;
 
         // Default Reviewed Packets page to view all (JIRA::OCEEBMS-183).
-        if ($path == 'review/reviews')
+        // Ditto for Manage Documents page (JIRA::OCEEBMS-415).
+        if ($path == 'review/reviews' || $path == 'docs')
             $options['query']['pager'] = 'off';
 
         $link = l($label, $path, $options);
@@ -281,9 +190,8 @@ class Menu {
                     Menu::reports($role),
                     Menu::literature($role),
                     Menu::summaries($role),
-                    Menu::calendar($role),
                     Menu::travel($role),
-                    Menu::forums(),
+                    Menu::calendar($role),
                 );
                 break;
             case 'librarian':
@@ -299,9 +207,8 @@ class Menu {
                     Menu::search(),
                     Menu::literature($role),
                     Menu::summaries($role),
-                    Menu::calendar($role),
                     Menu::travel($role),
-                    Menu::forums(),
+                    Menu::calendar($role),
                 );
         }
     }
@@ -333,6 +240,8 @@ class Menu {
                           'admin/refresh-journals');
         if (in_array('site manager', $user->roles) || $user->uid == 1)
             $children[] = new Menu('Site Administration', 'admin');
+        if ($role != 'member')
+            $children[] = new Menu('User Help', 'user-help');
         return new Menu('Admin', $children[0]->path, $children);
     }
 
@@ -441,15 +350,6 @@ class Menu {
         );
 
         return $menu;
-    }
-
-    /**
-     * Build the EBMS menu information for the Discussion forum
-     * pages.
-     */
-    public static function forums() {
-        // The forums menu should just go to the main page.
-        return new Menu('Forums', 'forum', array());
     }
 
     /**
@@ -1054,6 +954,39 @@ class Util {
         return $text;
     }
 
+    /**
+     * Scrub utf8 string so that it will be accepted by MySQL's
+     * broken "utf8" charset (which chokes on 4-byte encodings).
+     * All code points between U+10000 and U+10FFFF are converted
+     * to &#xxxxxx; where xxxxxx represents the code point in
+     * decimal (between 65536 and 1114111). The first of the
+     * four bytes in the utf-8 encoding will be 11110xxx; the
+     * other three are 10xxxxxx, so the lower three bytes carry
+     * six bits each of the code point's value. OCEEBMS-434
+     *
+     * 262144 is 1 << 18
+     *   4096 is 1 << 12
+     *     64 is 1 << 6
+     *      1 is 1 << 0
+     */
+    public static function fix_utf8($utf8) {
+
+        // Handle the common (easy) case quickly.
+        if (!preg_match("/[\360-\367]/", $utf8))
+            return $utf8;
+
+        // This won't get hit often (we've had only one case so far).
+        return preg_replace_callback(
+            "/([\360-\367])([\200-\277])([\200-\277])([\200-\277])/",
+            function ($matches) {
+                return '&#' . (
+                    (ord($matches[1]) - 240) * 262144 +
+                    (ord($matches[2]) - 128) * 4096 +
+                    (ord($matches[3]) - 128) * 64 +
+                    (ord($matches[4]) - 128)) . ';';
+            },
+            $utf8);
+    }
 
     /**
      * Pulls a parameter from a request without letting in parameters

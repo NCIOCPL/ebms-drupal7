@@ -1,5 +1,3 @@
-// $Id$
-
 /**
  * Custom Javascript for EBMS.
  * Wrap everything in our own namespace.
@@ -11,6 +9,7 @@ ebmsscript = {};
  */
 ebmsscript.file_upload_textarea_open = false;
 ebmsscript.site_root = "";
+ebmsscript.base_url;
 ebmsscript.normal_field_css = { "color": "#2d2c28", "font-style": "normal" };
 ebmsscript.init_field_css = { "color": "#d3d3d3", "font-style": "italic" };
 
@@ -978,6 +977,8 @@ ebmsscript.clear_publish_box = function(queue_id, article_state_id) {
  * Common initialization we always want done.
  */
 ebmsscript.init = function() {
+    ebmsscript.base_url = window.location.protocol + "//"
+                        + window.location.host;
     var loc = window.location.href;
     if (/ebmsdev/.test(loc))
         ebmsscript.site_root = "/ebmsdev";
@@ -1001,6 +1002,44 @@ ebmsscript.flip_packet_star = function(packet_id, on_off) {
 }
 
 /**
+ * Set up the hooks for the PMID search box (OCEEBMS-445).
+ */
+ebmsscript.init_search_box = function() {
+    if (jQuery("#pmid-search-box").length == 1) {
+        jQuery(document).bind("keydown", function(e) {
+            //console.log(event.which+":"+event.shiftKey+":"+
+            //        event.ctrlKey+":"+event.metaKey+":"+
+            //        event.altKey);
+            // 80 is 'p'
+            if (e.which == 80 && e.shiftKey && e.altKey && e.ctrlKey)
+                jQuery("#pmid-search-box").focus();
+        });
+        jQuery("#pmid-search-box").focus(function() {
+            var field = jQuery("#pmid-search-box");
+            if (field.val() == "Enter PMID")
+                field.val("");
+        });
+        jQuery("#pmid-search-box").blur(function() {
+            var field = jQuery("#pmid-search-box");
+            if (!field.val())
+                field.val("Enter PMID");
+        });
+        jQuery("#pmid-search-box").keypress(function(e) {
+            var key = e.which;
+            if (key == 13) {
+                var field = jQuery("#pmid-search-box");
+                var pmid = field.val().trim();
+                if (/^[0-9]+$/.test(pmid)) {
+                    $url = ebmsscript.base_url + "/pmid-search/" + pmid;
+                    window.location.href = $url;
+                }
+                return false;
+            }
+        });
+    }
+}
+
+/**
  * Initialization housekeeping which can only be performed after we're
  * sure the document has been loaded.
  */
@@ -1015,4 +1054,5 @@ jQuery(function() {
     ebmsscript.init_summaries_page();
     ebmsscript.init_docs_page();
     ebmsscript.init_groups_page();
+    ebmsscript.init_search_box();
 });

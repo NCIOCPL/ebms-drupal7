@@ -194,25 +194,6 @@ class EbmsHomePage {
         $view = views_get_view('recent_activity');
         $content = $view ? $view->preview('meeting_activity_block') : $nada;
         return $this->activity_box2($id, $title, $img, $content);
-        return array(
-            '#markup' => "<h3>Recent Activity</h3>" . $display,
-            '#prefix' => "<div id='activity-enclosure' class='ebms-block'>",
-            '#suffix' => /*$this->block_bottom_img() .*/ "</div>",
-        );
-        $more = l('more', 'meeting-activity');
-        $items = array();
-        switch ($this->role) {
-            case 'member':
-            case 'admin':
-            default:
-                $items = array(
-                    'Genetics Board Meeting changed to Webex/Phone Conf ' .
-                    '06/20/2014',
-                    'Breast/Ovarian WB time updated 06/20/2014',
-                    'Agenda published for Breast/Ovarian WG 06/20/2014',
-                );
-        }
-        return $this->activity_box($id, $title, $img, $items, $more);
     }
 
     /**
@@ -283,20 +264,6 @@ class EbmsHomePage {
     private function librarian_activity() {
         $img = Ebms\IMAGES_DIR . '/librarian.jpg';
         return array('#markup' => "<img src='$img' alt=''>");
-        if ($this->role != 'admin')
-            $img = Ebms\IMAGES_DIR . '/literature-activity-2-panel.jpg';
-        else
-            $img = Ebms\IMAGES_DIR . '/literature-activity-3-panel.jpg';
-        $img = Ebms\IMAGES_DIR . '/member-activity-box.jpg';
-        $more = l('more', 'librarian-activity');
-        $id = 'libraian-activity';
-        $title = 'Librarian Activity';
-        $items = array();
-        $items = array(
-            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec suscipit dignissim elementum. Nulla nec dolor non velit suscipit convallis eget et ipsum. Pellentesque malesuada tempor interdum. Mauris venenatis justo nec velit gravida, eget vehicula quam lobortis. Nulla imperdiet risus id imperdiet malesuada. Cras imperdiet, eros sit amet dictum tincidunt, est diam interdum ligula, eu volutpat nulla augue at nunc. Vestibulum volutpat ipsum nisi, id tempus orci ultrices ac. Quisque a mi nec libero congue egestas. Fusce quis mollis nulla, eu tincidunt leo. Fusce porta mattis risus, in porta diam molestie suscipit. Donec egestas, neque ut interdum porttitor, lectus dui venenatis nisl, in mollis mauris lorem eget massa. Donec ultrices orci vel mi imperdiet viverra.',
-            'Vivamus tristique posuere leo, id mattis nulla venenatis vitae. Curabitur interdum et erat pharetra congue. Nam ac tortor libero. Ut dignissim arcu in facilisis fringilla. Maecenas eget libero ac metus adipiscing tempus et varius purus. Proin tincidunt ligula nulla, ut ultricies magna bibendum convallis. Suspendisse purus ligula, blandit ac venenatis nec, porta eget quam. Etiam et sem dolor. Praesent vulputate libero arcu, nec pellentesque dolor vestibulum nec.',
-        );
-        return $this->activity_box($id, $title, $img, $items, $more);
     }
 
     /**
@@ -315,31 +282,21 @@ class EbmsHomePage {
                 'calendar' => $this->calendar(),
                 //'admin tasks' => $this->admin(),
             );
-        $blocks = array(
-            'alerts' => $this->alerts(),
-            'next meeting' => $this->next_meeting(),
-            'calendar' => $this->calendar(),
-        );
+
+        // Don't show alert box for admin assistants (OCEEBMS-443).
+        $blocks = array();
+        if (!in_array('admin assistant', $this->user->roles))
+            $blocks['alerts'] = $this->alerts();
+        $blocks['next meeting'] = $this->next_meeting();
+        $blocks['calendar'] = $this->calendar();
         return $blocks;
     }
 
     /**
      * Create the home page box for displaying a list of recent
      * activities of interest to the current user.
-     * XXX Replace stub activities when the related portions of the
-     *     system have been implemented.
      */
     private function recent() {
-        /*
-        $events = array(
-            array('Genetics Board meeting time updated.', '02/01/12'),
-            array('New genetics articles posted.', '01/30/12'),
-            array('New event Genetics Board event posted.', '01/23/12'),
-        );
-        foreach ($events as $e)
-            $items[] = "{$e[0]} <span class='date nobreak'>{$e[1]}</span>";
-        return $this->list_block('Recent Activity', 'recent-activity', $items);
-        */
 
         $view = views_get_view('recent_activity');
 
@@ -358,8 +315,6 @@ class EbmsHomePage {
 
     /**
      * Create the box which contains links to administrative tasks.
-     * XXX Replace stub URLs when the related portions of the system
-     *     have been implemented.
      */
     private function admin() {
         global $user;
@@ -468,9 +423,8 @@ class EbmsHomePage {
 
     /**
      * Create the home page box showing counts of unread messages,
-     * unread forum postings, and (for board members) articles
-     * awaiting review or (for board managers) reviews which
-     * have not yet been read.
+     * and (for board members) articles awaiting review or (for
+     * board managers) reviews which have not yet been read.
      */
     private function alerts() {
 
@@ -482,10 +436,6 @@ class EbmsHomePage {
         // $total += $count = $this->get_message_count();
         // $items[] = EbmsHomePage::alert('messages', 'Messages', $count);
 
-        // XXX FORUM COUNT METHOD TO BE IMPLEMENTED (BY LAUREN?)
-        // $total += $count = $this->get_forum_count();
-        // $items[] = EbmsHomePage::alert('forum', 'Forum', $count);
-
         // Show unreviewed articles for board members, unseen reviews
         // for board managers.
         // TIR 2342 (from Ashleigh): don't show review count to Bonnie
@@ -494,12 +444,6 @@ class EbmsHomePage {
             $total += $count = $this->get_review_count();
             $page = $this->role == 'member' ? 'assigned' : 'reviews';
             $items[] = EbmsHomePage::alert("review/$page", 'Reviews', $count);
-        }
-        if (module_exists('ebms_forums')) {
-            $topic_ids = _ebms_forums_get_new_topics();
-            $count = count($topic_ids);
-            $url = $count ? "node/$topic_ids[0]" : 'forum';
-            $items[] = EbmsHomePage::alert($url, 'Forums', $count);
         }
 
         // OCEEBMS-168: alerts for hotel requests (board managers only)
@@ -570,12 +514,23 @@ class EbmsHomePage {
         //    1.  is the article in a packet assigned to this board member?
         //    2.  is the packet still active?
         //    3.  has the board member already posted a review for the article?
+        //    4.  is the article marked FYI for this topic?
+        //    5.  is the current state's seq# for this topic higher than 60?
+        // (#4 and #5 added by OCEEBMS-402)
         if ($this->role == 'member') {
+            $query = db_select('ebms_article_state_type', 't');
+            $query->condition('t.state_text_id', 'PassedFullReview');
+            $query->fields('t', array('sequence'));
+            $sequence = $query->execute()->fetchField();
             $query = db_select('ebms_packet_article', 'a');
             $query->fields('a', array('article_id'));
             $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
             $query->join('ebms_packet_reviewer', 'm',
                 'a.packet_id = m.packet_id');
+            $query->join('ebms_article_state', 's',
+                's.article_id = a.article_id AND s.topic_id = p.topic_id');
+            $query->join('ebms_article_state_type', 't',
+                't.state_id = s.state_id');
             $query->leftJoin('ebms_article_review', 'r',
                 implode(' AND ',
                     array(
@@ -588,6 +543,9 @@ class EbmsHomePage {
             $query->condition('m.reviewer_id', $this->user->uid);
             $query->condition('p.active_status', 'A');
             $query->condition('a.drop_flag', 0);
+            $query->condition('s.current', 'Y');
+            $query->condition('t.state_text_id', 'FYI', '<>');
+            $query->condition('t.sequence', $sequence, '<=');
             $query->isNull('r.article_id');
             $query->distinct();
             $query = $query->countQuery();

@@ -36,7 +36,21 @@ import os
 def get_articles(host):
     url = "https://%s/get-source-ids/Pubmed" % host
     logging.debug("url: %s", url)
-    f = urllib2.urlopen(url)
+    tries = 10
+    delay = 10
+    while True:
+        try:
+            f = urllib2.urlopen(url)
+            break
+        except Exception as e:
+            logging.error("%s: %s", url, e)
+            tries -= 1
+            if tries < 1:
+                logging.error("giving up after too many successful attempts")
+                raise
+            logging.info("%d tries left; waiting %d seconds", tries, delay)
+            time.sleep(delay)
+            delay += 10
     logging.debug("response received from %s", host)
     pmids = {}
     latest_mod = "2011-01-01"
@@ -239,7 +253,7 @@ def main():
         print "usage %s EBMS-HOST NAME [LAST-MOD-DATE [STOP-DATE]]" % cmd
         report(message)
         exit(1)
-    host = sys.argv[1]
+    host = "%s.nci.nih.gov" % sys.argv[1]
     log_fmt = "%(asctime)s [%(levelname)s] %(message)s"
     log_file = os.path.expanduser("~/logs/update-pubmed-data.log")
     log_level = is_dev(host) and logging.DEBUG or logging.INFO

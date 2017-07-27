@@ -1,7 +1,6 @@
 <?php
 
 /**
- * $Id$
  *
  * Find EBMS Pubmed records which have been dropped by NLM, and report them.
  *
@@ -20,8 +19,9 @@ function fail($why) {
  * Record what's happening.
  */
 function log_write($what) {
+    $path = '/home/drupal/logs/pubmed-drops.log';
     $now = date('c');
-    file_put_contents('/tmp/pubmed.log', "$now $what\n", FILE_APPEND);
+    @file_put_contents($path, "$now $what\n", FILE_APPEND);
     echo "$what\n";
 }
 
