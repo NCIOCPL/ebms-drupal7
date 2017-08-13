@@ -40,7 +40,7 @@ function send_report($checked, $missing, $elapsed) {
     $lines[] = '';
     $lines[] = "Processing time: $elapsed seconds";
     $message = implode("\r\n", $lines) . "\r\n";
-    $default_recips = '***REMOVED***';
+    $default_recips = variable_get('dev_notif_addr');
     $to = variable_get('pubmed_missing_article_report_recips', $default_recips);
     $headers = "From: ebms@nci.nih.gov\r\nTo: $to\r\n";
     $subject = 'PMIDs missing from NLM (' . php_uname('n') . ')';

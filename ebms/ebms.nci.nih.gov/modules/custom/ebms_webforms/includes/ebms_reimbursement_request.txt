@@ -26,7 +26,7 @@ $webform = array (
     array (
       'nid' => '2',
       'eid' => '1',
-      'email' => '***REMOVED***,iris.zavala@nih.gov',
+      'email' => variable_get('reimbursement_request_notif'),
       'subject' => 'EBMS Reimbursement Request',
       'from_name' => 'default',
       'from_address' => 'default',

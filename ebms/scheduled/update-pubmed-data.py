@@ -13,6 +13,21 @@ import logging
 import os
 
 #----------------------------------------------------------------------
+# Use drush to get the list of recipients, so we don't have to store
+# developers' email addresses in code.
+#----------------------------------------------------------------------
+def get_recips():
+    saved_dir = os.getcwd()
+    os.chdir("/local/drupal/sites/ebms.nci.nih.gov")
+    stream = os.popen("drush vget dev_notif_addr --exact")
+    output = stream.read().strip()
+    if output and output[0] in "'\"":
+        output = output[1:-1]
+    stream.close()
+    os.chdir(saved_dir)
+    return [address.strip() for address in output.split(",")]
+
+#----------------------------------------------------------------------
 # Ask the EBMS web application to give us a list of all of the
 # Pubmed articles in the ebms_article table.  Each article is
 # represented in the web application's response by a line containing
@@ -210,9 +225,9 @@ def refresh_xml(host):
 #----------------------------------------------------------------------
 def report(what, host="EBMS host name not specified"):
     sender = "ebms@cancer.gov"
-    recips = ['***REMOVED***']
+    recips = get_recips()
     subject = "Update of XML from Pubmed"
-    recip_list = ",\n  ".join(recips)
+    recip_list = ", ".join(recips)
     message = """\
 From: %s
 To: %s
@@ -224,6 +239,7 @@ Subject: %s
     server = smtplib.SMTP("MAILFWD.NIH.GOV")
     server.sendmail(sender, recips, message)
     server.quit()
+    logging.info("sent report to %r", recips)
 
 #----------------------------------------------------------------------
 # Determine whether we are on the development machine.
