@@ -1274,7 +1274,7 @@ void runCommand(
     DWORD rc = WaitForSingleObject(pi.hProcess, millisecs);
     if (rc == WAIT_TIMEOUT) {
         sprintf(buf, "Timeout after %d seconds.  Command=\n%s",
-                timeout, cmd);
+                timeout, cmd.c_str());
         fatal(buf);
     }
 
