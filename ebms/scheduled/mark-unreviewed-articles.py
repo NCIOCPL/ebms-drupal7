@@ -100,11 +100,7 @@ def is_dev(host):
     Determine whether we are on the development machine.
     """
 
-    normalized_host = host.lower()
-    for alias in ("***REMOVED***", "ebms-dev"):
-        if alias in normalized_host:
-            return True
-    return False
+    return "-dev" in host.lower()
 
 def main():
     """
