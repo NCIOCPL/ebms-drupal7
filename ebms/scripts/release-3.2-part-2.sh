@@ -10,7 +10,7 @@ fi
 echo Setting locations
 export WORKDIR=/tmp/ebms-3.2
 export ESEARCH=http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi
-export OCEEBMS270_RECIPS=***REMOVED***,***REMOVED***
+export OCEEBMS270_RECIPS=**REDACTED**
 if [ -d "/web/appdev/sites" ]
 then
     export SITEDIR=/web/appdev/sites/ebms.nci.nih.gov
