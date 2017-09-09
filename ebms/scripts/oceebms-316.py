@@ -48,7 +48,7 @@ class Control:
     "Loads up all of the data for the report"
     def __init__(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument("--host", default="***REMOVED***.nci.nih.gov")
+        parser.add_argument("--host", required=True)
         parser.add_argument("--port", type=int, default=3661)
         parser.add_argument("--db", default="oce_ebms")
         parser.add_argument("--user", default="oce_ebms")
