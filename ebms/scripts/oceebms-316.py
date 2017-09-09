@@ -1,8 +1,6 @@
 #!/usr/bin/python
 
 #----------------------------------------------------------------------
-# $Id$
-#
 #
 # We would like to determine the primary reasons Board members provide
 # for excluding articles from PDQ. With this information, we may pare

@@ -1,6 +1,4 @@
 /**
- * $Id$
- *
  * OCEEBMS-81: open linked documents from calendar events to a new tab.
  */
 CKEDITOR.on('dialogDefinition', function(e) {

@@ -1,4 +1,3 @@
-; $Id$
 name = EBMS Content Module
 description = Provides basic content pages/templates/navigation
 package = EBMS
