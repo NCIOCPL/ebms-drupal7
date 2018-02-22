@@ -19,7 +19,6 @@
  *   - request forms (e.g., hotel reservations, reimbursements)
  */
 require_once('common.inc');
-require_once('not_for_production.inc'); // XXX drop when we're done developing.
 
 module_load_include('inc', 'ebms', 'includes/ebms.nodes');
 
@@ -487,14 +486,6 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        // USED ONLY BY DEVELOPER.
-        'upload-files' => array(
-            'title' => 'Upload Files',
-            'page callback' => 'pdq_ebms_upload_files',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
         // PLACEHOLDER DURING DEVELOPMENT
         'stub' => array(
             'title' => 'Place Holder',
@@ -510,22 +501,6 @@ function ebms_menu() {
             'access callback' => true,
             'type' => MENU_CALLBACK,
             'file' => 'testform.inc',
-        ),
-
-        // CLEAR THEME CACHE
-        'clear-theme-cache' => array(
-            'title' => 'Clear Theme Cache',
-            'page callback' => 'pdq_ebms_clear_theme_cache',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
-        ),
-
-        // CLEAR ALL CACHES
-        'clear-all-caches' => array(
-            'title' => 'Clear Theme Cache',
-            'page callback' => 'pdq_ebms_clear_all_caches',
-            'access callback' => true,
-            'type' => MENU_CALLBACK,
         ),
 
         // SUPPORT FOR QA TEAM'S AUTOMATED TESTING
@@ -2506,3 +2481,5 @@ function pdq_ebms_packet_link($packet_id=null) {
         drupal_goto('review');
 
 }
+
+function pdq_ebms_tester_theme() { return 'apitest'; }

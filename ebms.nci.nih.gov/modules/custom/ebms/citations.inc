@@ -6373,7 +6373,7 @@ namespace {
                     "citations/nojs/view_abstract/$article_id", 'View Abstract',
                     'ctools-modal-tag-style');
 
-                $abstractLink = $link; //'<a href="/ebmsdev/stub">VIEW ABSTRACT</a> | ';
+                $abstractLink = $link;
             }
 
             // build full citation text url
