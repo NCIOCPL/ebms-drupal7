@@ -583,7 +583,15 @@ class EbmsHomePage {
 
         if ($view) {
             $display = $view->preview('block_next');
+            pdq_ebms_debug('next_meeting $view', array($view, $display));
         }
+        $saved_pattern = '/&ndash;\s*<span>\s*Saved\s*<\/span>/';
+        $published_pattern = '/&ndash;\s*<span>\s*Published\s*<\/span>/';
+        $published = '<br><span>(Agenda Posted)</span>';
+        $display = preg_replace($saved_pattern, '', $display);
+        pdq_ebms_debug('after replacing $saved_pattern', $display);
+        $display = preg_replace($published_pattern, $published, $display);
+        pdq_ebms_debug('after replacing $published_pattern', $display);
 
         return array(
             '#markup' => "<h3>Next Meeting</h3>" . $display,
