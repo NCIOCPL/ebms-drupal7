@@ -3491,9 +3491,10 @@ ORDER BY t.topic_name";
      * (OCEEBMS-450).
      */
     public static function reviewer_packets_by_id($user_id) {
-        $fyi = db_select('ebms_article_state_type', 't')
-            ->condition('t.state_text_id', 'FYI')
-            ->fields('t', array('state_id', 'sequence'))
+        $fyi = Ebms\Util::state_id_from_text_id('FYI');
+        $on_agenda_sequence = db_select('ebms_article_state_type', 't')
+            ->condition('t.state_text_id', 'OnAgenda')
+            ->fields('t', array('sequence'))
             ->execute()
             ->fetch();
         $query = db_select('ebms_packet', 'p');
@@ -3519,12 +3520,11 @@ ORDER BY t.topic_name";
         $query->condition('a.drop_flag', 0);
         $query->isNull('r.article_id');
         $query->condition('s.current', 'Y');
-        $query->condition('s.state_id', $fyi->state_id, '<>');
-        $query->condition('st.sequence', $fyi->sequence, '<=');
+        $query->condition('s.state_id', $fyi, '<>');
+        $query->condition('st.sequence', $on_agenda_sequence, '<=');
         $query->distinct();
         $query->orderBy('p.created_at', 'DESC');
         $query->orderBy('t.topic_name');
-        //pdq_ebms_debug('REVIEWER PACKETS', "$query");
         return $query->execute();
     }
 
