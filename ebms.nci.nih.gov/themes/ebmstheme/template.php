@@ -106,7 +106,8 @@ function ebmstheme_pager($variables) {
 
     // Add a link for turning paging off.
     $resource = $_GET['q'];
-    if ($resource != 'citations') {
+    $is_fulltext = strpos($resource, 'citations/fulltext') !== false;
+    if ($resource != 'citations' && !$is_fulltext) {
         $query = pager_get_query_parameters();
         $query['pager'] = 'off';
         $query['items_per_page'] = 'All';
@@ -117,7 +118,7 @@ function ebmstheme_pager($variables) {
     $items[] = 'Page';
 
     // Add link to jump to the front for search results (TIR 2304/OCEEBMS-68).
-    $is_search = strpos($_GET['q'], 'citations/search') !== false;
+    $is_search = strpos($resource, 'citations/search') !== false;
     if ($is_search && $li_first) {
         $items[] = array(
             'class' => array('pager-first'),
