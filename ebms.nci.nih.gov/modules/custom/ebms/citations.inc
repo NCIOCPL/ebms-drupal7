@@ -4614,20 +4614,25 @@ namespace {
                     break;
                 case 'title':
                     $sortQuery->orderBy('a.article_title');
+                    $sortQuery->orderBy('a.article_id');
                     break;
                 case 'journal':
                     $sortQuery->orderBy('a.jrnl_title');
                     $sortQuery->orderBy('a.brf_jrnl_title');
+                    $sortQuery->orderBy('a.article_id');
                     break;
                 case 'core_journal':
                     $sortQuery->orderBy('a.core');
                     $sortQuery->orderBy('a.jrnl_title');
+                    $sortQuery->orderBy('a.article_id');
                     break;
                 case 'publication_date':
                     $sortQuery->orderBy('a.published_date');
+                    $sortQuery->orderBy('a.article_id');
                     break;
                 case 'author':
                     _add_author_sort($sortQuery, $dir);
+                    $sortQuery->orderBy('a.article_id');
                     break;
             }
 
