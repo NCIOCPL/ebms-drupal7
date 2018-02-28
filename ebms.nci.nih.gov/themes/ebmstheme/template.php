@@ -107,7 +107,7 @@ function ebmstheme_pager($variables) {
     // Add a link for turning paging off.
     $resource = $_GET['q'];
     $is_fulltext = strpos($resource, 'citations/fulltext') !== false;
-    if ($resource != 'citations' && !$is_fulltext) {
+    if ($resource != 'citations') { # && !$is_fulltext) {
         $query = pager_get_query_parameters();
         $query['pager'] = 'off';
         $query['items_per_page'] = 'All';

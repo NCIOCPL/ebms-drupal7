@@ -131,8 +131,11 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     $errors = array();
     $parms = drupal_get_query_parameters();
     $page = 0;
+    $pager = true;
     if (isset($parms['page']))
         $page = $parms['page'];
+    if (isset($parms['pager']) && $parms['pager'] === 'off')
+        $pager = false;
     if (isset($form_state['values'])) {
         $values = $form_state['values'];
         $board = $values['board'];
@@ -266,10 +269,18 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     // Run the query and build an array of the article IDs.
     $per_page = 10;
     $pos = 1 + $page * $per_page;
-    $pager = false;
+    $show_pages_link = '';
     if ($count > $per_page) {
-        $query = $query->extend('PagerDefault')->limit($per_page);
-        $pager = true;
+        if ($pager)
+            $query = $query->extend('PagerDefault')->limit($per_page);
+        else {
+            unset($parms['query']['pager']);
+            $parms['attributes']['class'][] = 'show-pages';
+            $url = EbmsFullText::$url;
+            if ($request_id)
+                $url .= '/' . $request_id;
+            $show_pages_link = l('VIEW PAGES', $url, $parms);
+        }
     }
     $article_ids = array();
     $results = $query->execute();
@@ -290,16 +301,27 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     if ($n > 0) {
 
         // Put some general action buttons at the top of the queue.
-        if ($pager)
-            $form['bottom']['pager-top'] = array('#theme' => 'pager');
         $form['bottom']['page'] = array(
             '#type' => 'hidden',
             '#value' => $page
+        );
+        $form['bottom']['pager'] = array(
+            '#type' => 'hidden',
+            '#value' => $pager ? 'on' : 'off'
         );
         $form['bottom']['submit-1'] = array(
             '#type' => 'submit',
             '#value' => 'Submit',
         );
+        if ($count > $per_page) {
+            if ($pager)
+                $form['bottom']['pager-top'] = array('#theme' => 'pager');
+            else
+                $form['bottom']['pager-top'] = array(
+                    '#type' => 'markup',
+                    '#markup' => $show_pages_link
+                );
+        }
         $form['bottom']['articles'] = array(
             '#type' => 'container',
             '#attributes' => array('id' => 'fulltext-articles'),
@@ -362,8 +384,15 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
             );
             ++$counter;
         }
-        if ($pager)
-            $form['bottom']['pager-bottom'] = array('#theme' => 'pager');
+        if ($count > $per_page) {
+            if ($pager)
+                $form['bottom']['pager-bottom'] = array('#theme' => 'pager');
+            else
+                $form['bottom']['pager-bottom'] = array(
+                    '#type' => 'markup',
+                    '#markup' => $show_pages_link
+                );
+        }
     }
 
     // If there are no articles in the queue, say so.
@@ -434,6 +463,7 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
     $cycle = $values['cycle'];
     $topic = $values['topic'];
     $page = $values['page'];
+    $pager = $values['pager'];
     $request = array(
         'type' => 'fulltext queue',
         'board' => $board,
@@ -520,7 +550,9 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
         ->execute();
     $url = EbmsFullText::$url . '/' . $request_id;
     $opts = array();
-    if ($page)
+    if ($pager == 'off')
+        $opts['query'] = array('pager' => 'off');
+    elseif ($page)
         $opts['query'] = array('page' => $page);
     drupal_goto($url, $opts);
 }
