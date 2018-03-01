@@ -3496,7 +3496,7 @@ ORDER BY t.topic_name";
             ->condition('t.state_text_id', 'OnAgenda')
             ->fields('t', array('sequence'))
             ->execute()
-            ->fetch();
+            ->fetchField();
         $query = db_select('ebms_packet', 'p');
         $query->fields('p', array('packet_id', 'packet_title'));
         $query->join('ebms_packet_reviewer', 'm', 'p.packet_id = m.packet_id');
