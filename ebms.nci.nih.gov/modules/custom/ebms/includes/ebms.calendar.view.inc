@@ -596,6 +596,7 @@ $handler->display->display_options['row_plugin'] = 'fields';
 $handler->display->display_options['row_options']['inline'] = array(
   'title' => 'title',
   'field_event_type' => 'field_event_type',
+  'field_agenda_status' => 'field_agenda_status',
 );
 $handler->display->display_options['row_options']['separator'] = '&ndash;';
 $handler->display->display_options['defaults']['row_options'] = FALSE;
@@ -657,15 +658,16 @@ $handler->display->display_options['fields']['field_event_type']['field'] = 'fie
 $handler->display->display_options['fields']['field_event_type']['label'] = '';
 $handler->display->display_options['fields']['field_event_type']['element_label_colon'] = FALSE;
 $handler->display->display_options['fields']['field_event_type']['delta_offset'] = '0';
-/* Field: Content: Agenda */
-$handler->display->display_options['fields']['field_agenda']['id'] = 'field_agenda';
-$handler->display->display_options['fields']['field_agenda']['table'] = 'field_data_field_agenda';
-$handler->display->display_options['fields']['field_agenda']['field'] = 'field_agenda';
-$handler->display->display_options['fields']['field_agenda']['label'] = '';
-$handler->display->display_options['fields']['field_agenda']['alter']['alter_text'] = TRUE;
-$handler->display->display_options['fields']['field_agenda']['alter']['text'] = ' (Agenda Posted)';
-$handler->display->display_options['fields']['field_agenda']['element_label_colon'] = FALSE;
-$handler->display->display_options['fields']['field_agenda']['hide_empty'] = TRUE;
+/* Field: Content: Publish Agenda */
+$handler->display->display_options['fields']['field_agenda_status']['id'] = 'field_agenda_status';
+$handler->display->display_options['fields']['field_agenda_status']['table'] = 'field_data_field_agenda_status';
+$handler->display->display_options['fields']['field_agenda_status']['field'] = 'field_agenda_status';
+$handler->display->display_options['fields']['field_agenda_status']['label'] = '';
+$handler->display->display_options['fields']['field_agenda_status']['alter']['text'] = '<?php if (\\\'[field_xxx-value]\\\' == \\\'Published\\\') { print(\\\' On Agenda\\\'); } else print(\\\'\\\');  ?>';
+$handler->display->display_options['fields']['field_agenda_status']['alter']['strip_tags'] = TRUE;
+$handler->display->display_options['fields']['field_agenda_status']['element_type'] = '0';
+$handler->display->display_options['fields']['field_agenda_status']['element_label_colon'] = FALSE;
+$handler->display->display_options['fields']['field_agenda_status']['element_default_classes'] = FALSE;
 $handler->display->display_options['defaults']['filter_groups'] = FALSE;
 $handler->display->display_options['defaults']['filters'] = FALSE;
 /* Filter criterion: Content: Published */
