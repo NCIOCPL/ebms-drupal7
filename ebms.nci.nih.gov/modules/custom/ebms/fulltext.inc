@@ -129,6 +129,13 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     // Build the picklists for PDQ boards and review cycles.
     $board = $cycle = $topic = 0;
     $errors = array();
+    $parms = drupal_get_query_parameters();
+    $page = 0;
+    $pager = true;
+    if (isset($parms['page']))
+        $page = $parms['page'];
+    if (isset($parms['pager']) && $parms['pager'] === 'off')
+        $pager = false;
     if (isset($form_state['values'])) {
         $values = $form_state['values'];
         $board = $values['board'];
@@ -255,10 +262,26 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     $query->leftJoin('ebms_ft_unavailable', 'u',
         'u.article_id = a.article_id');
     $query->isNull('u.article_id');
-    $query->range(0, 100);
+    $counter = $query->countQuery();
+    $count = $counter->execute()->fetchField();
     $query->orderBy('s.status_dt');
 
     // Run the query and build an array of the article IDs.
+    $per_page = 10;
+    $pos = 1 + $page * $per_page;
+    $show_pages_link = '';
+    if ($count > $per_page) {
+        if ($pager)
+            $query = $query->extend('PagerDefault')->limit($per_page);
+        else {
+            unset($parms['query']['pager']);
+            $parms['attributes']['class'][] = 'show-pages';
+            $url = EbmsFullText::$url;
+            if ($request_id)
+                $url .= '/' . $request_id;
+            $show_pages_link = l('VIEW PAGES', $url, $parms);
+        }
+    }
     $article_ids = array();
     $results = $query->execute();
     foreach ($results as $result)
@@ -270,7 +293,7 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
         'title' => array(
             '#type' => 'markup',
             '#markup' =>
-            "<h2>Abstracts Requiring Full Text Retrieval ($n)</h2>",
+            "<h2>Abstracts Requiring Full Text Retrieval ($count)</h2>",
         ),
     );
 
@@ -278,10 +301,27 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     if ($n > 0) {
 
         // Put some general action buttons at the top of the queue.
+        $form['bottom']['page'] = array(
+            '#type' => 'hidden',
+            '#value' => $page
+        );
+        $form['bottom']['pager'] = array(
+            '#type' => 'hidden',
+            '#value' => $pager ? 'on' : 'off'
+        );
         $form['bottom']['submit-1'] = array(
             '#type' => 'submit',
             '#value' => 'Submit',
         );
+        if ($count > $per_page) {
+            if ($pager)
+                $form['bottom']['pager-top'] = array('#theme' => 'pager');
+            else
+                $form['bottom']['pager-top'] = array(
+                    '#type' => 'markup',
+                    '#markup' => $show_pages_link
+                );
+        }
         $form['bottom']['articles'] = array(
             '#type' => 'container',
             '#attributes' => array('id' => 'fulltext-articles'),
@@ -290,7 +330,7 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
             '#type' => 'submit',
             '#value' => 'Submit',
         );
-        $counter = 1;
+        $counter = $pos;
 
         // Assemble the list items.
         $items = array();
@@ -343,6 +383,15 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
                 ),
             );
             ++$counter;
+        }
+        if ($count > $per_page) {
+            if ($pager)
+                $form['bottom']['pager-bottom'] = array('#theme' => 'pager');
+            else
+                $form['bottom']['pager-bottom'] = array(
+                    '#type' => 'markup',
+                    '#markup' => $show_pages_link
+                );
         }
     }
 
@@ -413,6 +462,8 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
     $board = $values['board'];
     $cycle = $values['cycle'];
     $topic = $values['topic'];
+    $page = $values['page'];
+    $pager = $values['pager'];
     $request = array(
         'type' => 'fulltext queue',
         'board' => $board,
@@ -497,5 +548,11 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
             )
         )
         ->execute();
-    drupal_goto(EbmsFullText::$url . '/' . $request_id);
+    $url = EbmsFullText::$url . '/' . $request_id;
+    $opts = array();
+    if ($pager == 'off')
+        $opts['query'] = array('pager' => 'off');
+    elseif ($page)
+        $opts['query'] = array('page' => $page);
+    drupal_goto($url, $opts);
 }

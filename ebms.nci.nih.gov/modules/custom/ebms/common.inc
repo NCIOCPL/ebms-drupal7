@@ -1493,49 +1493,6 @@ class Util {
     }
 
     /**
-     * Creates the render array for the left nav panel for a librarian's
-     * Citations Management page.
-     *
-     *  @param string $active  Current action, highlighted by CSS
-     *  @param bool   $full    Include all actions?  Or just those
-     *                         marked 'always'?
-     *
-     *  @return                Render array for left nav panel
-     */
-    public static function build_librarian_left_nav($active=null,
-                                                    $full=true) {
-        $links = array(
-            array('Search Database', 'citations/search', 'always'),
-            array('Import Citations', 'citations/import', 'always'),
-            array('Find/Edit Citations', 'stub', 'full'),
-            array('Review Citations', 'stub', 'full'),
-            array('Publish Citations', 'citations/publish', 'always'),
-            array('Not List Maintenance', 'citations/not-list', 'always'),
-            array('Manage Journals', 'stub', 'full'),
-        );
-        $items = array();
-        foreach ($links as $link_info) {
-            list($label, $url, $when) = $link_info;
-            if ($full || $when == 'always') {
-                $link = l($label, $url);
-                $class = $label == $active ? 'active' : 'inactive';
-                $items[] = array(
-                    'data' => $link,
-                    'class' => array($class),
-                );
-            }
-        }
-        return array(
-            '#type' => 'container',
-            '#attributes' => array('id' => 'left-nav'),
-            'nav' => array(
-                '#theme' => 'item_list',
-                '#items' => $items,
-            ),
-        );
-    }
-
-    /**
      * Fetches display name for review cycle, given the cycle's ID.
      *
      *  @param int     $cycle_id  Primary key of row in cycle table
