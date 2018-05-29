@@ -19,10 +19,9 @@ import os
 def get_recips():
     saved_dir = os.getcwd()
     os.chdir("/local/drupal/sites/ebms.nci.nih.gov")
-    stream = os.popen("drush vget dev_notif_addr --exact")
+    cmd = "/usr/local/bin/drush vget --format=string --exact dev_notif_addr"
+    stream = os.popen(cmd)
     output = stream.read().strip()
-    if output and output[0] in "'\"":
-        output = output[1:-1]
     stream.close()
     os.chdir(saved_dir)
     return [address.strip() for address in output.split(",")]
@@ -225,7 +224,11 @@ def refresh_xml(host):
 #----------------------------------------------------------------------
 def report(what, host="EBMS host name not specified"):
     sender = "ebms@cancer.gov"
-    recips = get_recips()
+    try:
+        recips = get_recips()
+    except Exception as e:
+        logging.exception("fetching recipients")
+        return
     subject = "Update of XML from Pubmed"
     recip_list = ", ".join(recips)
     message = """\
@@ -236,10 +239,13 @@ Subject: %s
 %s
 %s
 """ % (sender, recip_list, subject, host, what)
-    server = smtplib.SMTP("MAILFWD.NIH.GOV")
-    server.sendmail(sender, recips, message)
-    server.quit()
-    logging.info("sent report to %r", recips)
+    try:
+        server = smtplib.SMTP("MAILFWD.NIH.GOV")
+        server.sendmail(sender, recips, message)
+        server.quit()
+        logging.info("sent report to %r", recips)
+    except Exception as e:
+        logging.exception("notifying recipients")
 
 #----------------------------------------------------------------------
 # Determine whether we are on the development machine.
