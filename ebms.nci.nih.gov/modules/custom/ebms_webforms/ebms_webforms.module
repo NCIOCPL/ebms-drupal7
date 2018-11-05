@@ -699,6 +699,21 @@ function _webform_render_ebms_travel($component, $value=NULL, $filter=TRUE) {
         '#start_date' => '-2 years',
         '#end_date' => '+1 years',
         '#process' => array('webform_expand_date'),
+
+        // The following two assignments are made to work around 'Undefined index' notices
+        // introduced by the upgrade of the webform module from 7.x-4.17 to 7.x-4.18.
+        // The release notes (https://www.drupal.org/project/webform/releases/7.x-4.18)
+        // don't provide any information about this breakage or how to avoid it. I'm
+        // adding these two lines based on the patch used to fix the bug reported in
+        // https://www.drupal.org/project/webform_matrix_component/issues/2508009 (the
+        // only ticket a Google search found for the symptoms we're getting, reporting
+        // a problem in another module using the webform module). There is no documentation
+        // for the call to webform_expand_date(), which is the function which is generating
+        // the error notices. This is another case of fixing a problem blindfolded, and is
+        // one of the many reasons Drupal 7 development is so unpleasant. OCEEBMS-488
+        '#reference_timestamp' => NULL,
+        '#exclude' => array(),
+
         '#timezone' => 'site',
         '#year_textfield' => 0,
         '#title' => 'Date of Expense',
