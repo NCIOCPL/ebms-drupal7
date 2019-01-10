@@ -2080,17 +2080,14 @@ class EbmsReview {
      *
      * Regard articles with states beyond FYI and siblings as "complete"
      * (OCEEBMS-450).
-     *
-     * Delay "completed" determination (OCEEBMS-468).
      */
     public static function packet_fully_completed($packet_id) {
         global $user;
-        $fyi = Ebms\Util::state_id_from_text_id('FYI');
-        $on_agenda_sequence = db_select('ebms_article_state_type', 't')
-            ->condition('t.state_text_id', 'OnAgenda')
-            ->fields('t', array('sequence'))
+        $fyi = db_select('ebms_article_state_type', 't')
+            ->condition('t.state_text_id', 'FYI')
+            ->fields('t', array('state_id', 'sequence'))
             ->execute()
-            ->fetchField();
+            ->fetch();
         $query = db_select('ebms_packet_article', 'a');
         $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
         $query->join('ebms_article_state', 's',
@@ -2103,8 +2100,8 @@ class EbmsReview {
             'r.reviewer_id = ' . $user->uid);
         $query->condition('a.packet_id', $packet_id);
         $query->condition('s.current', 'Y');
-        $query->condition('s.state_id', $fyi, '<>');
-        $query->condition('st.sequence', $on_agenda_sequence, '<=');
+        $query->condition('s.state_id', $fyi->state_id, '<>');
+        $query->condition('st.sequence', $fyi->sequence, '<=');
         $query->isNull('r.article_id');
         $count = $query->countQuery()->execute()->fetchField();
         return $count == 0;
@@ -3492,9 +3489,6 @@ ORDER BY t.topic_name";
      *
      * Regard articles with states beyond FYI and siblings as "complete"
      * (OCEEBMS-450).
-     *
-     * Change to previous change: keep articles that are in the
-     * OnAgenda state or below (except FYI): OCEEBMS-468.
      */
     public static function reviewer_packets_by_id($user_id) {
         $fyi = Ebms\Util::state_id_from_text_id('FYI');
@@ -3764,7 +3758,7 @@ ORDER BY t.topic_name";
      * the database multiple times during a single web request to get
      * the same value repeatedly.
      */
-    public function get_fyi_state_id() {
+    public static function get_fyi_state_id() {
         if (!EbmsReview::$fyi_state)
             EbmsReview::$fyi_state = Ebms\Util::state_id_from_text_id('FYI');
         return EbmsReview::$fyi_state;

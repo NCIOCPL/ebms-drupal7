@@ -12,8 +12,9 @@
 
 namespace Ebms;
 
+$pdfLib = libraries_get_path('fpdf');
+require_once $pdfLib . '/fpdf.php';
 require_once('EbmsArticle.inc');
-require_once('fpdf/fpdf.php');
 
 // The only Drupal file_managed files "scheme" we support
 define ('FILES_SCHEME',     'public://');

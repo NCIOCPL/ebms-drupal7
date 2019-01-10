@@ -99,29 +99,24 @@ namespace {
 
                 // Combine the two into a single render array
                 $result['full_citation_form'] = $form;
-
                 break;
+
             case 'not-list':
                 $crumbs[] = "Not List Maintenance";
                 $form = drupal_get_form('pdq_ebms_citation_not_list');
-
                 $result['left_nav'] = \Ebms\Util::build_left_nav('Not List Maintenance');
-
                 $result['not_list_form'] = $form;
-
                 break;
+
             case null:
             case 'review':
                 $crumbs[] = 'Review Citations';
-
                 $form = drupal_get_form('pdq_ebms_citation_queue', $is_librarian);
-
                 $result['left_nav'] = \Ebms\Util::build_left_nav('Review Citations');
-
                 $result['cite_queue_form'] = $form;
-
                 break;
         }
+        
         drupal_set_breadcrumb($crumbs);
         if ($result)
             return $result;
@@ -316,7 +311,6 @@ namespace {
                     break;
             }
         }
-
         return $form;
     }
 
@@ -800,7 +794,7 @@ namespace {
                              'full-citation-indent">ADD NEW DECISION</div>');
             $form['add_decisions_form'] = $dec_button_arr['form'];
         }
-
+        
         return $form;
     }
 
@@ -810,8 +804,9 @@ namespace {
             ->condition('c.article_id', $article_id)
             ->condition('c.topic_id', $topic_id)
             ->execute()->fetch();
-        if (empty($comment_info))
-            return '';
+        if (empty($comment_info)) {
+            return array();
+        } 
         $comment_id = $comment_info->comment_id;
         $comment = htmlspecialchars($comment_info->comment);
         $opts = array('query' => drupal_get_query_parameters());
@@ -1440,7 +1435,6 @@ namespace {
         // add the header
         $form['header'] = array("#markup" => "<div class='citation-subheader full-citation-indent'>Full Text Retrieved</div>");
 
-
         // if the id is null...
         if (!$fullTextId) {
             // check the full text unavailable table for this article id
@@ -1464,6 +1458,7 @@ namespace {
 
             $form['current_decisions']['decision'] = array("#markup" => "<div class='full-citation-indent'>$icon$date - $account->name</div>");
             $form['current_decisions']['comment'] = array('#markup' => "<div class='full-citation-indent'>COMMENTS: $comment</div>");
+            
             return $form;
         }
 
@@ -5606,7 +5601,7 @@ namespace {
      * import articles.
      */
     function pdq_ebms_citation_not_list($form, &$form_state) {
-
+        
         require_once('EbmsArticle.inc');
 
         //include js to redirect pager links
