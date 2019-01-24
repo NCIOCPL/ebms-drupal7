@@ -1834,7 +1834,7 @@ namespace {
         }
         else{
             // No buttons
-            $form['button'] = '';
+            $form['button'] = array();
             $form['form'] = array();
         }
 
