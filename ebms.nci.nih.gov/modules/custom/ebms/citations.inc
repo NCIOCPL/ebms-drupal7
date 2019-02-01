@@ -116,7 +116,7 @@ namespace {
                 $result['cite_queue_form'] = $form;
                 break;
         }
-        
+
         drupal_set_breadcrumb($crumbs);
         if ($result)
             return $result;
@@ -794,7 +794,7 @@ namespace {
                              'full-citation-indent">ADD NEW DECISION</div>');
             $form['add_decisions_form'] = $dec_button_arr['form'];
         }
-        
+
         return $form;
     }
 
@@ -806,7 +806,7 @@ namespace {
             ->execute()->fetch();
         if (empty($comment_info)) {
             return array();
-        } 
+        }
         $comment_id = $comment_info->comment_id;
         $comment = htmlspecialchars($comment_info->comment);
         $opts = array('query' => drupal_get_query_parameters());
@@ -1458,7 +1458,7 @@ namespace {
 
             $form['current_decisions']['decision'] = array("#markup" => "<div class='full-citation-indent'>$icon$date - $account->name</div>");
             $form['current_decisions']['comment'] = array('#markup' => "<div class='full-citation-indent'>COMMENTS: $comment</div>");
-            
+
             return $form;
         }
 
@@ -5601,7 +5601,7 @@ namespace {
      * import articles.
      */
     function pdq_ebms_citation_not_list($form, &$form_state) {
-        
+
         require_once('EbmsArticle.inc');
 
         //include js to redirect pager links
@@ -5875,8 +5875,8 @@ namespace {
         if ($all_journals) {
             $query->rightJoin('ebms_journal', 'j',
                 'j.source = nl.source
-				AND j.source_jrnl_id = nl.source_jrnl_id
-				AND nl.board_id = :board',
+                AND j.source_jrnl_id = nl.source_jrnl_id
+                AND nl.board_id = :board',
                 array(':board' => $board));
         } else {
             $query->join('ebms_journal', 'j',
@@ -6901,7 +6901,6 @@ namespace {
             $form['save_as_default'] = array(
                 '#type' => 'checkbox',
                 '#title' => t('Save as default'),
-                'checked' => '',
             );
         }
 
