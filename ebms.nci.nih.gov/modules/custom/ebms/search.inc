@@ -1257,7 +1257,6 @@ function pdq_ebms_search_db_form(
         $display_options['save-as-default'] = array(
             '#type' => 'checkbox',
             '#title' => t('SAVE AS DEFAULT'),
-            'checked' => '',
         );
 
         // OCEEBMS-209
@@ -1266,7 +1265,7 @@ function pdq_ebms_search_db_form(
             '#title' => t('BOARD MEMBER VERSION'),
             '#prefix' => '<div class="checkbox-line board-member-line">',
             '#suffix' => '</div>',
-            'checked' => $defaults->board_member,
+            '#checked' => $defaults->board_member,
         );
     }
 
