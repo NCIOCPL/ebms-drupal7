@@ -12,7 +12,7 @@
 #----------------------------------------------------------------------
 import argparse
 import getpass
-import MySQLdb
+import pymysql as MySQLdb
 import os
 import xlwt
 import sys
@@ -219,7 +219,7 @@ class Control:
             count += 1
             sys.stderr.write("\rloaded %d article states" % count)
         sys.stderr.write("\n")
-        self.journal_ids = self.journals.keys()
+        self.journal_ids = list(self.journals.keys())
         self.journal_ids.sort(lambda a,b: cmp(self.journals[a],
                                               self.journals[b]))
         sys.stderr.write("data loaded\n")
@@ -249,9 +249,10 @@ def fetch(opts):
     where = str(datetime.date.today()).replace("-", "")
     try:
         os.mkdir(where)
-    except Exception, e:
-        print "%s: %s" % (where, e)
+    except Exception as e:
+        print("%s: %s" % (where, e))
     opts = vars(opts)
+    del opts["path"]
     opts["passwd"] = getpass.getpass("password for %s: " % opts["user"])
     conn = MySQLdb.connect(**opts)
     cursor = conn.cursor()
