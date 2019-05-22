@@ -1,28 +1,31 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
-#----------------------------------------------------------------------
-# Report on journal article acceptance rates. Does a lot of in-memory
-# processing, so it helps to run this on a machine with plenty of RAM.
-# If this script is invoked with the name of a directory as the optional
-# command-line argument, it will read the data for the report from
-# the files in that directory instead of from the database (which takes
-# longer).
-#
-# See Jira ticket OCEEBMS-301 for requirements.
-#----------------------------------------------------------------------
+"""
+Report on journal article acceptance rates.
+
+Does a lot of in-memory processing, so it helps to run this on a
+machine with plenty of RAM.  If this script is invoked with the
+`--path` option, it will read the data for the report from the files
+in that directory captured on a previous run without that option.
+
+See Jira ticket OCEEBMS-301 for requirements.
+"""
+
 import argparse
-import getpass
-import pymysql as MySQLdb
-import os
-import xlwt
-import sys
 import datetime
+import getpass
+import os
+import sys
+import pymysql
+import xlwt
+
 
 class States:
     "Dictionary of article state values"
+
     def __init__(self, path):
-        self.values = {}
-        for line in open("%s/states" % path):
+        self.values = dict()
+        for line in open(f"{path}/states"):
             state_id, state_text_id = eval(line.strip())
             self.values[state_text_id] = state_id
         self.ABSTRACT_YES = self.values["PassedBMReview"]
@@ -30,34 +33,42 @@ class States:
         self.FULL_TEXT_YES = self.values["PassedFullReview"]
         self.FULL_TEXT_NO = self.values["RejectFullReview"]
         self.FINAL_DECISION = self.values["FinalBoardDecision"]
+
     def wanted(self):
         "These are the states represented by the report"
+
         return (self.ABSTRACT_YES, self.ABSTRACT_NO,
                 self.FULL_TEXT_YES, self.FULL_TEXT_NO,
                 self.FINAL_DECISION)
 
+
 class Counts:
     "Base class for counting occurrences of particular states"
+
     def __init__(self):
         self.abstract_yes = self.abstract_no = 0
         self.full_text_yes = self.full_text_no = 0
         self.ed_board_yes = self.ed_board_no = 0
+
 
 class Article(Counts):
     """
     Records the number of times we see a particular state for
     this article in connection with a single board.
     """
+
     def __init__(self, article_id):
         Counts.__init__(self)
         self.id = article_id
+
     def map_counts(self, counts):
         """
         No matter how many times we see a particular state for
         this article/board combination, it gets mapped to a
         single count when folding the values into the counts
-        for the aricle's journal.
+        for the article's journal.
         """
+
         counts.num_articles += 1
         if self.abstract_yes:
             counts.abstract_yes += 1
@@ -72,13 +83,17 @@ class Article(Counts):
         elif self.ed_board_no:
             counts.ed_board_no += 1
 
+
 class Journal(Counts):
     "Statistics for the articles in this journal considered by one board"
+
     def __init__(self):
         Counts.__init__(self)
         self.num_articles = 0
+
     def report(self, sheet, row, title):
         "Write the statistics to a single row in a spreadsheet"
+
         sheet.write(row, 0, title)
         sheet.write(row, 1, self.num_articles)
         sheet.write(row, 2, self.abstract_yes)
@@ -88,17 +103,21 @@ class Journal(Counts):
         sheet.write(row, 6, self.ed_board_yes)
         sheet.write(row, 7, self.ed_board_no)
 
+
 class Board:
     "One of these for each of the six PDQ boards"
+
     def __init__(self, id, name):
         self.id = id
         self.name = name
         self.not_list = set()
-        self.articles = {}
+        self.articles = dict()
+
     def add_sheet(self, book, header_style):
         "Create a spreadsheet in one of the two report workbooks"
+
         if "Complementary" in self.name:
-            name = "CAM"
+            name = "IACT"
         else:
             name = self.name
         sheet = book.add_sheet(name)
@@ -112,6 +131,7 @@ class Board:
         sheet.write(0, 6, "Ed Board Yes", header_style)
         sheet.write(0, 7, "Ed Board No", header_style)
         return sheet
+
     def report(self, control):
         """
         Create two spreadsheets, one of the statistical counts on the
@@ -119,8 +139,9 @@ class Board:
         journal when working on this board's queue" (the "not" list),
         and the other sheet for all the other journals.
         """
+
         empty = Journal()
-        journals = {}
+        journals = dict()
         for article_id in self.articles:
             journal_id = control.articles[article_id]
             if journal_id not in journals:
@@ -144,61 +165,60 @@ class Board:
                     not_listed_row += 1
                 else:
                     other_row += 1
-        sys.stderr.write("board %s reported\n" % self.name)
-    def __cmp__(self, other):
-        "Make the boards sortable by board name"
-        return cmp(self.name, other.name)
+        sys.stderr.write(f"board {self.name} reported\n")
+
 
 class Control:
     "Loads up all of the data for the report"
+
     def __init__(self, directory):
         self.directory = directory
         self.states = States(directory)
-        self.boards = {}
-        self.journals = {}
-        self.articles = {}
-        self.decision_values = {}
-        self.board_decisions = {}
-        for line in open("%s/boards" % directory):
+        self.boards = dict()
+        self.journals = dict()
+        self.articles = dict()
+        self.decision_values = dict()
+        self.board_decisions = dict()
+        for line in open(f"{directory}/boards"):
             board_id, name = eval(line.strip())
             self.boards[board_id] = Board(board_id, name)
-        sys.stderr.write("loaded %d boards\n" % len(self.boards))
+        sys.stderr.write(f"loaded {len(self.boards):d} boards\n")
         count = 0
-        for line in open("%s/not_list" % directory):
+        for line in open(f"{directory}/not_list"):
             journal_id, board_id = eval(line.strip())
             self.boards[board_id].not_list.add(journal_id)
             count += 1
-        sys.stderr.write("loaded %d not-list directives\n" % count)
-        for line in open("%s/journals" % directory):
+        sys.stderr.write(f"loaded {count:d} not-list directives\n")
+        for line in open(f"{directory}/journals"):
             journal_id, journal_title = eval(line.strip())
             self.journals[journal_id] = journal_title
-        sys.stderr.write("loaded %d journals\n" % len(self.journals))
-        for line in open("%s/articles" % directory):
+        sys.stderr.write(f"loaded {len(self.journals):d} journals\n")
+        for line in open(f"{directory}/articles"):
             article_id, journal_id = eval(line.strip())
             self.articles[article_id] = journal_id
-        sys.stderr.write("loaded %d articles\n" % len(self.articles))
+        sys.stderr.write(f"floaded {len(self.articles):d} articles\n")
         count = 0
-        for line in open("%s/article_boards" % directory):
+        for line in open(f"{directory}/article_boards"):
             article_id, board_id = eval(line.strip())
             self.boards[board_id].articles[article_id] = Article(article_id)
             count += 1
-        sys.stderr.write("loaded %d article/board combos\n" % count)
-        for line in open("%s/decision_values" % directory):
+        sys.stderr.write(f"loaded {count:d} article/board combos\n")
+        for line in open(f"{directory}/decision_values"):
             value_id, value_name = eval(line.strip())
             self.decision_values[value_id] = value_name
-        sys.stderr.write("loaded %d decision values\n" %
-                         len(self.decision_values))
+        msg = f"loaded {len(self.decision_values):d} decision values\n"
+        sys.stderr.write(msg)
         count = 0
-        for line in open("%s/board_decisions" % directory):
+        for line in open(f"{directory}/board_decisions"):
             article_state_id, decision_value_id = eval(line.strip())
             decision_value = self.decision_values.get(decision_value_id)
             if article_state_id not in self.board_decisions:
                 self.board_decisions[article_state_id] = set()
             self.board_decisions[article_state_id].add(decision_value)
             count += 1
-        sys.stderr.write("loaded %d board decisions\n" % count)
+        sys.stderr.write(f"loaded {count:d} board decisions\n")
         count = 0
-        for line in open("%s/article_states" % directory):
+        for line in open(f"{directory}/article_states"):
             art_state_id, article_id, state_id, board_id = eval(line.strip())
             article = self.boards[board_id].articles[article_id]
             if state_id == self.states.ABSTRACT_NO:
@@ -217,26 +237,26 @@ class Control:
                     else:
                         article.ed_board_yes += 1
             count += 1
-            sys.stderr.write("\rloaded %d article states" % count)
+            sys.stderr.write(f"\rloaded {count:d} article states")
         sys.stderr.write("\n")
         self.journal_ids = list(self.journals.keys())
-        self.journal_ids.sort(lambda a,b: cmp(self.journals[a],
-                                              self.journals[b]))
+        self.journal_ids.sort(key=lambda k: self.journals[k])
         sys.stderr.write("data loaded\n")
+
     def report(self):
         "Generate two workbooks for the report (see Board.report())"
+
         self.not_listed = xlwt.Workbook(encoding="UTF-8")
         self.other = xlwt.Workbook(encoding="UTF-8")
         style = "font: bold True; align: wrap True, vert centre, horiz centre"
         self.header_style = xlwt.easyxf(style)
-        for board in sorted(self.boards.values()):
+        for board in sorted(self.boards.values(), key=lambda b: b.name):
             board.report(self)
-        fp = open("%s/not_listed.xls" % self.directory, "wb")
-        self.not_listed.save(fp)
-        fp.close()
-        fp = open("%s/not_not_listed.xls" % self.directory, "wb")
-        self.other.save(fp)
-        fp.close()
+        with open(f"{self.directory}/not_listed.xls", "wb") as fp:
+            self.not_listed.save(fp)
+        with open(f"{self.directory}/not_not_listed.xls", "wb") as fp:
+            self.other.save(fp)
+
 
 def fetch(opts):
     """
@@ -246,125 +266,120 @@ def fetch(opts):
     object, without having to spend time talking to the database all
     over again (which is the lengthier part of the job by quite a bit).
     """
+
     where = str(datetime.date.today()).replace("-", "")
     try:
         os.mkdir(where)
     except Exception as e:
-        print("%s: %s" % (where, e))
-    opts = vars(opts)
-    del opts["path"]
-    opts["passwd"] = getpass.getpass("password for %s: " % opts["user"])
-    conn = MySQLdb.connect(**opts)
+        print(f"{where}: {e}")
+    opts["passwd"] = getpass.getpass(f"password for {opts['user']}: ")
+    conn = pymysql.connect(**opts)
     cursor = conn.cursor()
     cursor.execute("SET NAMES utf8")
-    cursor.execute("USE %s" % opts["db"])
+    cursor.execute(f"USE {opts['db']}")
     cursor.execute("SELECT board_id, board_name FROM ebms_board")
-    fp = open("%s/boards" % where, "w")
-    rows = cursor.fetchall()
-    for row in rows:
-        fp.write("%s\n" % repr(row))
-    fp.close()
-    sys.stderr.write("fetched %d boards\n" % len(rows))
+    with open(f"{where}/boards", "w") as fp:
+        rows = cursor.fetchall()
+        for row in rows:
+            fp.write(f"{row!r}\n")
+    sys.stderr.write(f"fetched {len(rows):d} boards\n")
     cursor.execute("""\
 SELECT source_jrnl_id, board_id
   FROM ebms_not_list
  WHERE start_date <= NOW()""")
     rows = cursor.fetchall()
-    fp = open("%s/not_list" % where, "w")
-    for row in rows:
-        fp.write("%s\n" % repr(row))
-    fp.close()
-    sys.stderr.write("fetched %d not-list rows\n" % len(rows))
+    with open(f"{where}/not_list", "w") as fp:
+        for row in rows:
+            fp.write(f"{row!r}\n")
+    sys.stderr.write(f"fetched {len(rows):d} not-list rows\n")
     cursor.execute("SELECT source_jrnl_id, jrnl_title from ebms_journal")
     rows = cursor.fetchall()
-    fp = open("%s/journals" % where, "w")
-    for row in rows:
-        fp.write("%s\n" % repr(row))
-    fp.close()
-    sys.stderr.write("fetched %d journals\n" % len(rows))
+    with open(f"{where}/journals", "w") as fp:
+        for row in rows:
+            fp.write(f"{row!r}\n")
+    sys.stderr.write(f"fetched {len(rows):d} journals\n")
     cursor.execute("SELECT article_id, source_jrnl_id FROM ebms_article")
-    fp = open("%s/articles" % where, "w")
-    count = 0
-    row = cursor.fetchone()
-    while row:
-        fp.write("%s\n" % repr(row))
+    with open(f"{where}/articles", "w") as fp:
+        count = 0
         row = cursor.fetchone()
-        count += 1
-    fp.close()
-    sys.stderr.write("fetched %d articles\n" % count)
+        while row:
+            fp.write(f"{row!r}\n")
+            row = cursor.fetchone()
+            count += 1
+    sys.stderr.write(f"fetched {count:d} articles\n")
     cursor.execute("""\
 SELECT state_id, state_text_id
   FROM ebms_article_state_type""")
-    fp = open("%s/states" % where, "w")
-    rows = cursor.fetchall()
-    for row in rows:
-        fp.write("%s\n" % repr(row))
-    fp.close()
-    sys.stderr.write("fetched %d states\n" % len(rows))
+    with open(f"{where}/states", "w") as fp:
+        rows = cursor.fetchall()
+        for row in rows:
+            fp.write(f"{row!r}\n")
+    sys.stderr.write(f"fetched {len(rows):d} states\n")
     states = States(where)
     cursor.execute("""\
 SELECT DISTINCT article_id, board_id
            FROM ebms_article_state
           WHERE active_status = 'A'""")
-    fp = open("%s/article_boards" % where, "w")
-    count = 0
-    row = cursor.fetchone()
-    while row:
-        fp.write("%s\n" % repr(row))
+    with open(f"{where}/article_boards", "w") as fp:
+        count = 0
         row = cursor.fetchone()
-        count += 1
-    fp.close()
-    sys.stderr.write("fetched %d article boards\n" % count)
-    cursor.execute("""\
+        while row:
+            fp.write(f"{row!r}\n")
+            row = cursor.fetchone()
+            count += 1
+    sys.stderr.write(f"fetched {count:d} article boards\n")
+    wanted = ",".join([str(w) for w in states.wanted()])
+    cursor.execute(f"""\
 SELECT article_state_id, article_id, state_id, board_id
   FROM ebms_article_state
  WHERE active_status = 'A'
-   AND state_id IN (%s)""" % ",".join([str(w) for w in states.wanted()]))
-    fp = open("%s/article_states" % where, "w")
-    row = cursor.fetchone()
-    count = 0
-    while row:
-        fp.write("%s\n" % repr(row))
+   AND state_id IN ({wanted})""")
+    with open(f"{where}/article_states", "w") as fp:
         row = cursor.fetchone()
-        count += 1
-    fp.close()
-    sys.stderr.write("fetched %d article states\n" % count)
+        count = 0
+        while row:
+            fp.write(f"{row!r}\n")
+            row = cursor.fetchone()
+            count += 1
+    sys.stderr.write(f"fetched {count:d} article states\n")
     cursor.execute("""\
 SELECT value_id, value_name
   FROM ebms_article_board_decision_value""")
     rows = cursor.fetchall()
-    fp = open("%s/decision_values" % where, "w")
-    for row in rows:
-        fp.write("%s\n" % repr(row))
-    fp.close()
-    sys.stderr.write("fetched %d decision values\n" % len(rows))
+    with open(f"{where}/decision_values", "w") as fp:
+        for row in rows:
+            fp.write(f"{row!r}\n")
+    sys.stderr.write(f"fetched {len(rows):d} decision values\n")
     cursor.execute("""\
 SELECT article_state_id, decision_value_id
   FROM ebms_article_board_decision""")
     row = cursor.fetchone()
     count = 0
-    fp = open("%s/board_decisions" % where, "w")
-    while row:
-        fp.write("%s\n" % repr(row))
-        row = cursor.fetchone()
-        count += 1
-    fp.close()
-    sys.stderr.write("fetched %d board decisions\n" % count)
+    with open(f"{where}/board_decisions", "w") as fp:
+        while row:
+            fp.write(f"{row!r}\n")
+            row = cursor.fetchone()
+            count += 1
+    sys.stderr.write(f"fetched {count:d} board decisions\n")
     return where
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", required=True)
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--host")
+    group.add_argument("--path")
     parser.add_argument("--port", type=int, default=3661)
     parser.add_argument("--db", default="oce_ebms")
     parser.add_argument("--user", default="oce_ebms")
-    parser.add_argument("--path")
     opts = parser.parse_args()
     if opts.path:
         path = opts.path
     else:
+        opts = vars(opts)
+        del opts["path"]
         path = fetch(opts)
     control = Control(path)
     control.report()
+
 if __name__ == "__main__":
     main()
