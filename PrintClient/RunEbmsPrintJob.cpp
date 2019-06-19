@@ -1,6 +1,4 @@
 /**********************************************************************
- * $Id$
- *
  * Process an EBMS print job
  *
  * This program runs on a user's workstation.  It takes output created
@@ -16,6 +14,9 @@
  *
  *                                              Alan Meyer
  *                                              April, 2013
+ *
+ * Build:
+ *   cl /EHsc RunEbmsPrintJob.cpp
  *********************************************************************/
 
 #include <windows.h>
