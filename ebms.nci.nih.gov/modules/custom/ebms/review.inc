@@ -902,7 +902,7 @@ class EbmsReview {
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = htmlspecialchars($article->ArticleTitle);
+        $title = htmlspecialchars(Ebms\Util::get_text($article->ArticleTitle));
         $opts = array();
         if (!$narrow)
             $opts['attributes']['target'] = '_blank';
@@ -3239,7 +3239,7 @@ class EbmsReview {
             $citation[] = '[No authors listed]';
         $title_opts = array('attributes' => array('target' => '_blank'));
         $url = "citations/full/$article_id";
-        $title = l($article->ArticleTitle, $url, $title_opts);
+        $title = l(Ebms\Util::get(text($article->ArticleTitle), $url, $title_opts);
         $citation[] = $title; //htmlspecialchars($article->ArticleTitle);
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $citation[] = htmlspecialchars($ta);
@@ -3546,7 +3546,7 @@ ORDER BY t.topic_name";
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = htmlspecialchars($article->ArticleTitle);
+        $title = htmlspecialchars(Ebms\Util::get_text($article->ArticleTitle));
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);

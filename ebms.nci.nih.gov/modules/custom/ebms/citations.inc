@@ -6227,7 +6227,7 @@ namespace {
         $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $title = array();
         $articleXML = $doc->MedlineCitation->Article;
-        $rawTitle = (string) $articleXML->ArticleTitle;
+        $rawTitle = Ebms\Util::get_text($articleXML->ArticleTitle);
         if (!$long_form) {
             // create link-like submit element
             // 2016-08-31: add #name property for OCEEBMS-387

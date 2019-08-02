@@ -931,6 +931,20 @@ class Util {
     }
 
     /**
+     * Get all of the text content of a node without the markup.
+     *
+     * @param object $node   DOMElement or SimpleXMLElement
+     *
+     * @return               Simple text string, without markup
+     */
+    public static function get_text($node) {
+        if (!is_a($node, 'DOMElement')) {
+            $node = dom_import_simplexml($node);
+        }
+        return $node->textContent;
+    }
+
+    /**
      * Create a version of a string specialized for indexing in one of
      * several ways:
      *

@@ -711,7 +711,7 @@ class EbmsArticle {
         $this->source_id      = (string) $mc->PMID;
         $this->source_jrnl_id = (string) $mc->MedlineJournalInfo->NlmUniqueID;
         $this->source_status  = (string) $mc['Status'];
-        $this->article_title  = Util::indexify((string) $article->ArticleTitle,
+        $this->article_title  = Util::indexify(Util::get_text($article->ArticleTitle),
                                     true, true, MAX_ART_TITLE);
         $this->jrnl_title     = Util::indexify((string) $journal->Title,
                                     true, true, MAX_JRNL_TITLE);

@@ -314,7 +314,7 @@ class EbmsReports {
             ->fetchField();
         $doc = new \SimpleXMLElement($xml);
         $article = $doc->MedlineCitation->Article;
-        $title = $article->ArticleTitle;
+        $title = Ebms\Util::get_text($article->ArticleTitle);
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
