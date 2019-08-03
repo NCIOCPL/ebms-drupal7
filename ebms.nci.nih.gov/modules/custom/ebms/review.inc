@@ -73,7 +73,7 @@ class EbmsReview {
     }
 
     /**
-     * Select the version of the page appropriate the user's role.
+     * Select the version of the page appropriate for the user's role.
      */
     public function run() {
         Ebms\Util::add_js();
@@ -1013,7 +1013,7 @@ class EbmsReview {
      * Assemble list of topic-specific tags for an article, to be
      * displayed on the Reviewed Packet page.
      */
-    private function get_topic_tags($article_id, $topic_id) {
+    private static function get_topic_tags($article_id, $topic_id) {
         $query = db_select('ebms_article_tag_type', 'n');
         $query->join('ebms_article_tag', 't', 't.tag_id = n.tag_id');
         $query->condition('t.article_id', $article_id);
@@ -1204,6 +1204,7 @@ class EbmsReview {
 
             // Add related articles and board manager comment (OCEEBMS-381).
             // Also most recent status and topic-associated tags (OCEEBMS-405).
+            // Also highlight high-priority article/topic combos (OCEEBMS-478).
             $related = Ebms\Util::get_related_articles($article_id);
             if ($related)
                 $citation .= "<br>$related";
@@ -1217,6 +1218,10 @@ class EbmsReview {
                 $citation .= "<br>[ARTICLE TAG(S): $topic_tags]";
             $comment = EbmsReview::get_article_topic_comment($article_id,
                                                              $topic_id);
+            if (strpos($topic_tags, 'High priority') !== false) {
+                $citation .= '<br><br><span class="hi-priority">';
+                $citation .= 'HIGH PRIORITY</span>';
+            }
             if ($comment) {
                 $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
                 $citation .= "<br>$comment</span>";
@@ -2721,7 +2726,7 @@ class EbmsReview {
             ->execute()
             ->fetchField();
         foreach ($articles as $article) {
-            $is_fyi =EbmsReview::is_fyi($article->article_id, $topic_id);
+            $is_fyi = EbmsReview::is_fyi($article->article_id, $topic_id);
             $options['query']['article'] = $article->article_id;
             $pm_id = $article->source_id;
             $pm_url = Ebms\Util::pubmed_url($pm_id);
@@ -3239,7 +3244,7 @@ class EbmsReview {
             $citation[] = '[No authors listed]';
         $title_opts = array('attributes' => array('target' => '_blank'));
         $url = "citations/full/$article_id";
-        $title = l(Ebms\Util::get(text($article->ArticleTitle), $url, $title_opts);
+        $title = l(Ebms\Util::get_text($article->ArticleTitle), $url, $title_opts);
         $citation[] = $title; //htmlspecialchars($article->ArticleTitle);
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $citation[] = htmlspecialchars($ta);
@@ -3249,10 +3254,17 @@ class EbmsReview {
         $citation[] = $doc->MedlineCitation->PMID;
         $citation = implode('; ', $citation);
 
+
         // Add related articles and board manager comments (OCEEBMS-381).
+        // Also flag high-priority article/topic combos (OCEEBMS-478).
         $citation .= Ebms\Util::get_related_articles($article_id, true);
+        $topic_tags = EbmsReview::get_topic_tags($article_id, $topic_id);
         $comment = EbmsReview::get_article_topic_comment($article_id,
                                                          $topic_id);
+        if (strpos($topic_tags, 'High priority') !== false) {
+            $citation .= '<br><br><span class="hi-priority">';
+            $citation .= 'HIGH PRIORITY</span>';
+        }
         if ($comment) {
             $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
             $citation .= "<br>$comment</span><br>";

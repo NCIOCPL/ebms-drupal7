@@ -1758,6 +1758,9 @@ img.note-icon { float: right; padding-left: 2px; padding-right: 2px; }
 /* OCEEBMS-381, OCEEBMS-358 (board manager comment) */
 .bmc { color: #a90101; }
 
+/* OCEEBMS-478 (high priority tag) */
+.hi-priority { color: #a90101; font-weight: bold; }
+
 /* OCEEBMS-435 (wordwrap) (text-overflow: ellipsis; doesn't work) */
 #document-activity a { word-break: break-all; display: inline-block; }
 
