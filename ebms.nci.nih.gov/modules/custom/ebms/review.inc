@@ -3608,9 +3608,15 @@ ORDER BY t.topic_name";
         $pieces[] = "PMID: $pmid";
 
         // Add related articles and board manager comments if present (OCEEBMS-381).
+        // Also, highlight high-priority article/topic combos (OCEEBMS-477).
         $related_articles = Ebms\Util::get_related_articles($article_id);
         if ($related_articles)
             $pieces[] = "<br>$related_articles";
+        $topic_tags = EbmsReview::get_topic_tags($article_id, $topic_id);
+        if (strpos($topic_tags, 'High priority') !== false) {
+            $pieces[] = '<br><br><span class="hi-priority">';
+            $pieces[] = 'HIGH PRIORITY</span>';
+        }
         $comment = EbmsReview::get_article_topic_comment($article_id,
                                                          $topic_id);
         if ($comment) {
