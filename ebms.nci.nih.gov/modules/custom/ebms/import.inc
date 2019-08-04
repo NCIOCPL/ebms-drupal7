@@ -112,7 +112,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     // Replace tags with single "special search" checkbox (TIR 2422).
     $board = $topic = $cycle = $not_list = $test_mode = $fast_track =
         $special_search = $disposition = $past_meeting = $future_meeting =
-        $core_journals_search = 0;
+        $core_journals_search = $hi_priority = 0;
 
     //$selected_tags = array();
     $pmid = $comments = $placement = $ft_comments = '';
@@ -133,6 +133,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         //$selected_tags = $params['tags'];
         $special_search = $params['special-search'];
         $core_journals_search = $params['core-journals-search'];
+        $hi_priority = $params['hi-priority'];
         $pmid = $params['pmid'];
         $comments = $params['comments'];
         $not_list = $params['not-list'];
@@ -226,6 +227,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     $tm_tip = 'See what a job would do without actually doing it.';
     $ft_tip = 'Advance the imported articles to a later state.';
     $cj_tip = 'Check when articles are from core journals.';
+    $hp_tip = 'Tag everything imported as high priority.';
     $ss_tip = "Tag the articles in this batch\n" .
         'so they can be easily found later.';
     $form = array(
@@ -306,6 +308,13 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#prefix' => "<div class='checkbox-line' title=\"$cj_tip\">",
             '#suffix' => '</div>',
             '#default_value' => $core_journals_search,
+        ),
+        'hi-priority' => array(
+            '#type' => 'checkbox',
+            '#title' => 'HIGH PRIORITY',
+            '#prefix' => "<div class='checkbox-line' title=\"$hp_tip\">",
+            '#suffix' => '</div>',
+            '#default_value' => $hi_priority,
         ),
 
         // XXX I wasn't given a list of states to include here, so I picked
@@ -616,6 +625,7 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $mode = $test ? 'test' : 'live';
     $import_type = $fast_track ? 'F' : 'R';
     $core_journals = !empty($values['core-journals-search']);
+    $hi_priority = !empty($values['hi-priority']);
 
     // Invoke the article import API.
     try {
@@ -652,6 +662,16 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                 // Do this for dups, too (OCEEBMS-13).
                 foreach ($duplicate as $article_id)
                     Ebms\addArticleTag('i_specialsearch', $article_id, $topic);
+            }
+
+            // Assign 'High priority' tag if so requested (OCEEBMS-472).
+            if ($hi_priority) {
+                foreach ($imported as $article_id)
+                    Ebms\addArticleTag('high_priority', $article_id, $topic);
+
+                // Do this for dups, too (OCEEBMS-13).
+                foreach ($duplicate as $article_id)
+                    Ebms\addArticleTag('high_priority', $article_id, $topic);
             }
 
             // OCEEBMS-281 & OCEEBMS-340
