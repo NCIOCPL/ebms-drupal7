@@ -305,7 +305,8 @@ class EbmsReports {
      * different formatting for the Articles Without Responses report.
      */
     static function format_citation($article_id, $counter=null,
-        $member_version=false, $articles_without_responses_report=false
+        $member_version=false, $articles_without_responses_report=false,
+        $topic_id=0
     ) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
@@ -377,6 +378,12 @@ class EbmsReports {
         if (!$member_version && $articles_without_responses_report) {
             $link = l($article_id, "citations/full/$article_id");
             $pieces[] = " &nbsp; EBMS ID: $link";
+        }
+        if ($articles_without_responses_report) {
+            $tags = Ebms\Util::get_topic_tags($article_id, $topic_id);
+            if (in_array('High priority', $tags)) {
+                $pieces[] = '<br><br><span class="hi-priority">HIGH PRIORITY</span>';
+            }
         }
         return implode($pieces);
     }
@@ -6331,6 +6338,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     $selected_topics = /* $selected_cycles = */ array();
     $order_by = 'author';
     $start = $end = '';
+    $hi_priority = false;
 
     // Pull request parameters from the database if appropriate.
     if ($request_id) {
@@ -6345,6 +6353,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         if ($end)
             $end = Ebms\Util::fill_in_date($end, true);
         $order_by = $values['order-by'];
+        $hi_priority = $values['options']['hi-priority'];
     }
 
     // Get the values of interest for ajax callbacks.
@@ -6421,6 +6430,15 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         */
         'date' => Ebms\Util::date_range_field('Assigned Date', 'date',
                                               $start, $end, '', false),
+        'options' => array(
+            '#type' => 'checkboxes',
+            '#title' => 'Options',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#options' => array(
+                'hi-priority' => 'Only High-Priority Article/Topics',
+            ),
+            '#default_value' => $hi_priority ? ['hi-priority'] : [],
+        ),
         'order-by' => array(
             '#type' => 'radios',
             '#title' => 'Order By',
@@ -6502,6 +6520,17 @@ function articles_without_responses_report($request_id, $member_version=false) {
     $query->fields('p', array('packet_id', 'created_at'));
     $query->fields('t', array('topic_id', 'topic_name'));
 
+    // Show only high-priority article/topics if so requested (OCEEBMS-476).
+    if (!empty($values['options']['hi-priority'])) {
+        $query->join('ebms_article_tag', 'eat',
+                     'eat.article_id = a.article_id AND ' .
+                     'eat.topic_id = t.topic_id');
+        $query->join('ebms_article_tag_type', 'eatt',
+                     'eatt.tag_id = eat.tag_id');
+        $query->condition('eat.active_status', 'A');
+        $query->condition('eatt.text_id', 'high_priority');
+    }
+
     // Skip articles subsequently dropped from packet (OCEEBMS-357).
     $query->condition('pa.drop_flag', 0);
 
@@ -6516,14 +6545,6 @@ function articles_without_responses_report($request_id, $member_version=false) {
                      'r.article_id = a.article_id AND ' .
                      'p.packet_id = r.packet_id');
     $query->isNull('r.review_id');
-
-    // Filter by review cycle if any have been selected.
-    // Suppress cycle filtering (OCEEBMS-362).
-    //if (count($values['cycles'])) {
-    //    $query->join('ebms_article_topic', 'at',
-    //            'at.article_id = a.article_id AND at.topic_id = p.topic_id');
-    //    $query->condition('at.cycle_id', $values['cycles'], 'IN');
-    //}
 
     // Filter by date if asked to do so.
     if ($values['date-start']['date']) {
@@ -6621,7 +6642,7 @@ function articles_without_responses_report($request_id, $member_version=false) {
         // Assemble the report row for this article/topic combo.
         $report->rows[] = array(
             EbmsReports::format_citation($result->article_id, null,
-                $member_version, true),
+                $member_version, true, $result->topic_id),
             htmlspecialchars($result->topic_name),
             implode($reviewer_break, $reviewers),
             date('Y-m-d', strtotime($result->created_at)),

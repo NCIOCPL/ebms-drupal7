@@ -1014,15 +1014,8 @@ class EbmsReview {
      * displayed on the Reviewed Packet page.
      */
     private static function get_topic_tags($article_id, $topic_id) {
-        $query = db_select('ebms_article_tag_type', 'n');
-        $query->join('ebms_article_tag', 't', 't.tag_id = n.tag_id');
-        $query->condition('t.article_id', $article_id);
-        $query->condition('t.topic_id', $topic_id);
-        $query->condition('t.active_status', 'A');
-        $query->orderBy('t.tag_dt');
-        $query->fields('n', array('tag_name'));
-        $tags = htmlspecialchars(implode('; ', $query->execute()->fetchCol()));
-        return $tags;
+        $tags = Ebms\Util::get_topic_tags($article_id, $topic_id);
+        return htmlspecialchars(implode('; ', $tags));
     }
 
     /**

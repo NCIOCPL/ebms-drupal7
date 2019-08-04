@@ -6,3 +6,4 @@ th:last-child, td:last-child { width: 9%; }
 th { text-align: left; }
 td { background-color: #eee; color: #2d2c28; vertical-align: top; }
 th:first-child, td:first-child { border-left: none; width: 50%; }
+.hi-priority { color: #a90101; font-weight: bold; }

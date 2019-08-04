@@ -2463,6 +2463,29 @@ class Util {
         }
         return '';
     }
+
+    /**
+     * Assemble the list of tags assigned to an article for a topic.
+     *
+     *  @param int $article_id
+     *      Unique ID of the article for which tags have been assigned
+     *
+     *  @param int $topic_id
+     *      Unique ID of the topic associated with the assignment
+     *
+     *  @return array
+     *       Sequence of tag display names
+     */
+    public static function get_topic_tags($article_id, $topic_id) {
+        $query = db_select('ebms_article_tag_type', 'n');
+        $query->join('ebms_article_tag', 't', 't.tag_id = n.tag_id');
+        $query->condition('t.article_id', $article_id);
+        $query->condition('t.topic_id', $topic_id);
+        $query->condition('t.active_status', 'A');
+        $query->orderBy('t.tag_dt');
+        $query->fields('n', array('tag_name'));
+        return $query->execute()->fetchCol();
+    }
 }
 
 class EbmsPager extends \PagerDefault {
