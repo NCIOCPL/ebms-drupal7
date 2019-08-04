@@ -115,7 +115,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $core_journals_search = $hi_priority = 0;
 
     //$selected_tags = array();
-    $pmid = $comments = $placement = $ft_comments = '';
+    $pmid = $comments = $placement = $ft_comments = $mgr_comment = '';
 
     // If this is a followup form to a previous import request, use
     // the values submitted for that request to seed the form (TIR 2194).
@@ -136,6 +136,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $hi_priority = $params['hi-priority'];
         $pmid = $params['pmid'];
         $comments = $params['comments'];
+        $mgr_comment = $params['mgr-comment'];
         $not_list = $params['not-list'];
         $test_mode = $params['test-mode'];
         $fast_track = $params['fast-track'];
@@ -273,6 +274,11 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#type' => 'textfield',
             '#default_value' => $comments,
             '#title' => 'IMPORT COMMENTS',
+        ),
+        'mgr-comment' => array(
+            '#type' => 'textfield',
+            '#default_value' => $mgr_comment,
+            '#title' => 'MANAGER COMMENTS',
         ),
         'not-list' => array(
             '#type' => 'checkbox',
@@ -618,6 +624,7 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     $topic = $values['topic'];
     $cycle = $values['cycle'];
     $comments = $values['comments'];
+    $mgr_comment = $values['mgr-comment'];
     $use_not_list = $values['not-list'] ? false : true;
     $fast_track = $values['fast-track'] ? true : false;
     $special_search = $values['special-search'] ? true : false;
@@ -668,8 +675,6 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
             if ($hi_priority) {
                 foreach ($imported as $article_id)
                     Ebms\addArticleTag('high_priority', $article_id, $topic);
-
-                // Do this for dups, too (OCEEBMS-13).
                 foreach ($duplicate as $article_id)
                     Ebms\addArticleTag('high_priority', $article_id, $topic);
             }
@@ -680,6 +685,27 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                     Ebms\addArticleTag('i_core_journals', $id, $topic);
                     Ebms\setArticleState($id, 'Published', $topic, $board,
                         'Published as part of import from core journals');
+                }
+            }
+
+            // Store the board manager comment if provided (OCEEBMS-472).
+            if (!empty($mgr_comment)) {
+                global $user;
+                $now = strftime("%Y-%m-%d %H:%M:%S");
+                $table = 'ebms_article_topic_comment';
+                $fields = array(
+                    'topic_id' => $topic,
+                    'comment' => $mgr_comment,
+                    'created_by' => $user->uid,
+                    'created' => $now,
+                );
+                foreach ($imported as $article_id) {
+                    $fields['article_id'] = $article_id;
+                    db_insert($table)->fields($fields)->execute();
+                }
+                foreach ($duplicate as $article_id) {
+                    $fields['article_id'] = $article_id;
+                    db_insert($table)->fields($fields)->execute();
                 }
             }
 
