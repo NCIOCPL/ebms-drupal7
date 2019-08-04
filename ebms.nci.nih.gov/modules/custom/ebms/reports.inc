@@ -306,7 +306,7 @@ class EbmsReports {
      */
     static function format_citation($article_id, $counter=null,
         $member_version=false, $articles_without_responses_report=false,
-        $topic_id=0
+        $topic_id=null
     ) {
         $xml = db_select('ebms_article', 'a')
             ->fields('a', array('source_data'))
@@ -379,7 +379,7 @@ class EbmsReports {
             $link = l($article_id, "citations/full/$article_id");
             $pieces[] = " &nbsp; EBMS ID: $link";
         }
-        if ($articles_without_responses_report) {
+        if (!empty($topic_id)) {
             $tags = Ebms\Util::get_topic_tags($article_id, $topic_id);
             if (in_array('High priority', $tags)) {
                 $pieces[] = '<br><br><span class="hi-priority">HIGH PRIORITY</span>';
@@ -2347,7 +2347,8 @@ class EbmsReports {
         foreach ($results as $result) {
             $article_id = $result->article_id;
             $topic_id = $result->topic_id;
-            $citation = EbmsReports::format_citation($article_id);
+            $citation = EbmsReports::format_citation($article_id, null,
+                                                     false, false, $topic_id);
             $row = array(
                 array(
                     'data' => ++$counter,
