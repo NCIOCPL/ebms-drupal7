@@ -452,10 +452,11 @@ class EbmsReview {
                 $query->condition('p.created_at', $date, '<=');
             }
 
-            // Archived and legacy system packets.  These are interrelated
-            $active   = $filters['pkt_scope']['Active'] ? True : False;
-            $archived = $filters['pkt_scope']['Archived'] ? True : False;
-            $legacy   = $filters['pkt_scope']['Legacy'] ? True : False;
+            // Archived and legacy system packets. These are interrelated
+            $active     = $filters['pkt_scope']['Active'] ? True : False;
+            $archived   = $filters['pkt_scope']['Archived'] ? True : False;
+            $legacy     = $filters['pkt_scope']['Legacy'] ? True : False;
+            $unreviewed = $filters['pkt_scope']['Unreviewed'] ? True : False;
 
             // If users turn off all the checkboxes, default to active
             if (!($active || $archived || $legacy))
@@ -480,6 +481,13 @@ class EbmsReview {
                 $query->condition(db_or()
                     ->condition('p.active_status', 'A')
                     ->condition('p.created_at', Ebms\CONVERSION_DATE, '<'));
+
+            // Unreviewed packets only? (OCEEBMS-470)
+            if ($unreviewed) {
+                $query->leftJoin('ebms_article_review', 'ear',
+                    'ear.packet_id = p.packet_id');
+                $query->isNull('ear.packet_id');
+            }
         }
 
         // No filters selected, default to just active docs
@@ -5209,11 +5217,11 @@ function pdq_ebms_manager_packets_filter_form (
     $date_fields = Ebms\Util::date_range_field('Packet Creation Date:', 'date',
                                                '', '', ':+0', false);
     $form['date-limits'] = $date_fields;
-    $scope_opts = array('Active', 'Archived', 'Legacy');
+    $scope_opts = array('Active', 'Archived', 'Legacy', 'Unreviewed');
     $form['pkt_scope'] = array(
         '#type' => 'checkboxes',
         '#options' => drupal_map_assoc($scope_opts),
-        '#default_value' => array('Active'),
+        '#default_value' => array('Active', 'Unreviewed'),
         '#title' => 'Include packets that are:',
     );
     $form['submit'] = array(
