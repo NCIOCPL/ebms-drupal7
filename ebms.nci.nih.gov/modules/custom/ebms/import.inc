@@ -426,6 +426,12 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#title' => 'BATCH IMPORT ONLY',
             '#type' => 'file',
         ),
+        // Added by OCEEBMS-472.
+        'full-text' => array(
+            '#title' => 'FULL TEXT',
+            '#type' => 'file',
+            '#upload_validators' => ['file_validate_extensions' => ['pdf']],
+        ),
         // Tried to use a hidden field to trigger visibility of cancel
         // and submit buttons, but Drupal's #states don't work on hidden
         // fields.  I was able to confirm that the Javascript I hooked in
@@ -596,6 +602,32 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
         form_set_error('pmid', 'You must either specify Pubmed IDs or ' .
             'upload a Pubmed search results file');
     $form_state['article-ids'] = $pmids;
+    $form_state['full-text-id'] = null;
+    if (!empty($_FILES['files']['name']['full-text'])) {
+        if (count($pmids) > 1)
+            form_set_error('full-text', 'Full-text PDF upload can only be ' .
+                'used for importing a single article');
+        else {
+            $name = $_FILES['files']['name']['full-text'];
+            $path = $_FILES['files']['tmp_name']['full-text'];
+            $extension_ok = Ebms\Util::has_valid_extension($name, 'pdf');
+            $mime_type = Ebms\Util::get_mime_type($path);
+            if (!$extension_ok || $mime_type !== 'application/pdf')
+                form_set_error('full-text', 'Full text must be a PDF file');
+            else {
+                $validators = ['file_validate_extensions' => ['pdf']];
+                $file = file_save_upload('full-text', $validators);
+                if ($file) {
+                    $file = file_move($file, 'public://');
+                    $file->status |= FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                    $form_state['full-text-id'] = $file->fid;
+                }
+                else
+                    form_set_error('full-text', "Unable to upload $name");
+            }
+        }
+    }
 }
 
 /**
@@ -611,6 +643,7 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
 
     // Extract the values entered by the user.
     $pmids = $form_state['article-ids'];
+    $full_text_id = $form_state['full-text-id'];
     $values =& $form_state['values'];
 
     // Log the request so we can reproduce it if it fails (OCEEBMS-313).
@@ -677,6 +710,22 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                     Ebms\addArticleTag('high_priority', $article_id, $topic);
                 foreach ($duplicate as $article_id)
                     Ebms\addArticleTag('high_priority', $article_id, $topic);
+            }
+
+            // Record the location of the full-text PDF file (OCEEBMS-472).
+            // Validation has already ensured that at most one article
+            // has been imported (duplicate or not).
+            if (!empty($full_text_id)) {
+                foreach ($imported as $article_id)
+                    db_update('ebms_article')
+                        ->fields(array('full_text_id' => $full_text_id))
+                        ->condition('article_id', $article_id)
+                        ->execute();
+                foreach ($duplicate as $article_id)
+                    db_update('ebms_article')
+                        ->fields(array('full_text_id' => $full_text_id))
+                        ->condition('article_id', $article_id)
+                        ->execute();
             }
 
             // OCEEBMS-281 & OCEEBMS-340

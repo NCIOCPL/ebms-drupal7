@@ -47,7 +47,9 @@ div.more-actions {
 #import-form .form-item.form-type-checkbox:not(#foo) label { margin: 0; }
 
 /* added for OCEEBMS-418 */
+#import-form div.form-item-files-full-text, /* OCEEBMS-472 */
 #import-form div.form-item-files-file { text-align: right; }
+#import-form span.form-item-files-full-text.label-508, /* OCEEBMS-472 */
 #import-form span.form-item-files-file.label-508 {
     display: inline; font-weight: normal;
 }
