@@ -2863,7 +2863,7 @@ class EbmsReports {
         $query->leftJoin('ebms_article_author', 'a',
             'a.author_id = c.author_id');
         $query->fields('r', array('article_id', 'review_id'));
-        $query->fields('p', array('created_at'));
+        $query->fields('p', array('created_at', 'topic_id'));
         $query->fields('u', array('name'));
         $query->condition('t.board_id', $board);
         if ($topic)
@@ -2889,9 +2889,22 @@ class EbmsReports {
         // information about those reviews that we can build the report
         // table.
         $results = $query->execute();
+        $high_priority = array();
+        $checked_tags = array();
         $articles = array();
         foreach ($results as $result) {
             $article_id = $result->article_id;
+            if (!in_array($article_id, $high_priority)) {
+                $topic_id = $result->topic_id;
+                $article_topic_key = "${article_id}_${topic_id}";
+                if (!in_array($article_topic_key, $checked_tags)) {
+                    $tags = Ebms\Util::get_topic_tags($article_id, $topic_id);
+                    if (in_array('High priority', $tags))
+                        $high_priority[] = $article_id;
+                    else
+                        $checked_tags[] = $article_topic_key;
+                }
+            }
             $review_id = $result->review_id;
             //$packet = date('Y/m', strtotime($result->created_at));
             //$packet = $result->cycle_name;
@@ -2924,6 +2937,10 @@ class EbmsReports {
         $rows = array();
         foreach ($articles as $article_id => $packets) {
             $citation = EbmsReports::format_citation($article_id);
+            if (in_array($article_id, $high_priority)) {
+                $citation .= '<br><br><span class="hi-priority">';
+                $citation .= 'HIGH PRIORITY</span>';
+            }
             $query = db_select('ebms_article_review', 'r');
             $article_rowspan = 0;
             ksort($packets);
