@@ -46,7 +46,7 @@ div.review-board input { margin-left: 10px; margin-right: 10px; }
 }
 #manager-packet-table div.links a:first-child { padding-left: 0; }
 #manager-packet-table div.links a:last-child { padding-right: 0; }
-#manager-packets-table span.new { font-weight: bold; color: #a90101; }/*red; }*/
+#manager-packets-table span.new { font-weight: bold; color: #a90101; }
 
 #left-nav ul.ebms_left_nav_block { border: none; }
 /* #left-nav ul.ebms_left_nav_block li { border-left: 1px #696559 solid; } */
@@ -164,3 +164,18 @@ body.page-review div.ctools-modal-content div.modal-header {
     background-color: #2a72a5;
     /* padding: 1em; */
 }
+
+/* OCEEBMS-471 */
+form #manager-packets-table .form-checkbox:not(#foo) {
+    position: initial;
+    opacity: 100;
+}
+form #manager-packets-table th .form-checkbox:not(#foo) { position: relative; }
+h1#packet-bulk-archive-confirm-title { color: #a90101; }
+#ebms-packet-bulk-archive-confirm .packet-bulk-archive-confirm-description {
+    color: #a90101;
+    font-style: italic;
+    font-weight: bold;
+    font-size: 13pt;
+}
+form#ebms-packet-bulk-archive-confirm li { font-size: 12pt; }

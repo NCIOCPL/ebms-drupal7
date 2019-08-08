@@ -487,6 +487,7 @@ fieldset .form-item,
     margin: 0 5px 25px 12px; height: 100px;
     border-radius: 7px; border: 1px solid #696559; padding: 5px;
 }
+#ebms-packet-bulk-archive-confirm #edit-actions a#edit-cancel,
 .form-submit, #edit-submit, .form-managed-file .form-submit {
     display: inline-block;
     padding: 14px; background-color: white; border-radius: 7px;
