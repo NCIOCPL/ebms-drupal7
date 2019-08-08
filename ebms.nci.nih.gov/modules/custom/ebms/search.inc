@@ -1344,8 +1344,13 @@ function pdq_ebms_pmid_search($pmid) {
         ->execute()
         ->fetchField();
     if (empty($article_id)) {
+        global $user;
+        $is_board_member = in_array('board member', $user->roles);
         $opts = array('query' => array('pmid' => $pmid));
-        drupal_goto(EbmsSearch::$url, $opts);
+        if ($is_board_member)
+            drupal_goto(EbmsSearch::$url, $opts);
+        else
+            drupal_goto('citations/import', $opts);
     }
     else
         drupal_goto("citations/full/$article_id");

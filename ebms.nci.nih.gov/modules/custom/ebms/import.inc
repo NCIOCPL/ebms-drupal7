@@ -144,6 +144,13 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $ft_comments = $params['ft-comments'];
         $disposition = $params['disposition'];
     }
+    else {
+
+        // Add PMID if quick search failed (OCEEBMS-445).
+        $parms = drupal_get_query_parameters();
+        if (!empty($parms['pmid']))
+            $pmid = $parms['pmid'];
+    }
 
     // If board not set, default it
     if (!$board)
