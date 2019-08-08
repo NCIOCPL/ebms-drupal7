@@ -185,9 +185,11 @@ class EbmsReports {
     private function not_yet_implemented() {
         $reports = array(
             'meeting-dates' => array('Board Management', 'Meeting Dates'),
+            /* removed by OCEEBMS-473
             'not-list' => array('Citation Management', 'Not List'),
             'yes-list' => array('Citation Management', 'Yes List'),
             'no-responses' => array('Citation Management', 'No Responses'),
+            */
             /* removed by OCEEBMS-414
             'citation-followup' => array(
                 'Citation Management',
@@ -440,8 +442,6 @@ class EbmsReports {
                     array(
                         array('Citation Reports', 'reports/citations'),
                         array('Import Report', 'reports/import'),
-                        array('Not List', 'reports/not-list'),
-                        array('Yes List', 'reports/yes-list'),
                     ),
                 ),
             ),
@@ -499,8 +499,6 @@ class EbmsReports {
                             'Board and Topic Lists',
                             'reports/boards-and-topics',
                         ),
-                        array('Not List', 'reports/not-list'),
-                        array('Yes List', 'reports/yes-list'),
                         array('Invalid Pubmed IDs', 'reports/missing-from-nlm'),
                     ),
                 ),
