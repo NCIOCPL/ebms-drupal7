@@ -1580,6 +1580,7 @@ class EbmsReports {
         $query->fields('u', array('name'));
         $query->orderByHeader($headers);
         $query->distinct();
+        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -1718,6 +1719,7 @@ class EbmsReports {
         $query->fields('s', $state_fields);
         $query->orderByHeader($headers);
         $query->distinct();
+        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -1861,6 +1863,7 @@ class EbmsReports {
 
         $query->orderByHeader($headers);
         $query->distinct();
+        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -1976,6 +1979,7 @@ class EbmsReports {
         $query->fields('p', array('packet_id', 'created_at'));
         $query->orderByHeader($headers);
         $query->distinct();
+        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and collect the results in an array
         // indexed by article, each element of the array containing
@@ -2138,6 +2142,7 @@ class EbmsReports {
         }
         $query->orderByHeader($headers);
         $query->distinct();
+        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and collect the results in an array
         // indexed by article, each element of the array containing
@@ -2299,13 +2304,15 @@ class EbmsReports {
         if (!empty($params['disposition']))
             $query->condition('s.state_id', $params['disposition']);
         else
-            $query->condition('s.state_id', array_keys($manager_actions), 'IN');
+            $query->condition('s.state_id',
+                              array_keys($manager_actions), 'IN');
         $query->fields('s', array('article_id', 'article_state_id',
                                   'state_id', 'status_dt'));
         $query->join('ebms_topic', 'tn', 'tn.topic_id = t.topic_id');
         $query->fields('tn', array('topic_name', 'topic_id'));
         $query->orderByHeader($headers);
         $query->distinct();
+        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -2464,6 +2471,7 @@ class EbmsReports {
             $query->fields('tn', array('topic_name'));
             $query->orderByHeader($headers);
             $query->distinct();
+            Ebms\Util::add_status_date_range_to_query($query, $params);
 
             // Execute the query and assemble the rows for the report table.
             $results = $query->execute();
@@ -2643,6 +2651,7 @@ class EbmsReports {
         }
         $query->orderByHeader($headers);
         $query->distinct();
+        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -5834,7 +5843,7 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     // 2019-08-08 (OCEEBMS-459): cycles replaced by status date range.
     $status_date_field = Ebms\Util::date_range_field('Status Date', 'sdate',
                          $status_date_start, $status_date_end);
-    $form['top']['report-form']['status-dep']['cycles'] = $status_date_field;
+    $form['top']['report-form']['status-dep']['sdate'] = $status_date_field;
 
     // The last two Status choices call for two additional fields,
     // related to board meetings.
