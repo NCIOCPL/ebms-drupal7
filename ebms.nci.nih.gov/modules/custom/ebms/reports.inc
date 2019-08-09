@@ -62,6 +62,8 @@ class EbmsReports {
         $table = array(
             'title' => array('#markup' => "<h1>$title</h1>"),
             'table' => array(
+                '#prefix' => '<div id="awr">',
+                '#suffix' => '</div>',
                 '#theme' => 'table',
                 '#rows' => $report->rows,
                 '#header' => $report->headers,
@@ -6640,13 +6642,14 @@ function articles_without_responses_report($request_id, $member_version=false) {
             $reviewers[] = htmlspecialchars($reviewer_result->name);
 
         // Assemble the report row for this article/topic combo.
-        $report->rows[] = array(
+        $data = array(
             EbmsReports::format_citation($result->article_id, null,
                 $member_version, true, $result->topic_id),
             htmlspecialchars($result->topic_name),
             implode($reviewer_break, $reviewers),
             date('Y-m-d', strtotime($result->created_at)),
         );
+        $report->rows[] = array('data' => $data, 'no_striping' => true);
     }
 
     // Snag a count of articles in the report.
