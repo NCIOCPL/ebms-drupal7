@@ -52,7 +52,7 @@ function getSearchQuery($json) {
 // $jspec = print_r($srch->spec, true);
 // logw("Full decoded json spec:\n$jspec\n");
 // logw("SQL for query:\n{$srch->qry}\n");
-
+// drupal_set_message('qry: ' . (string)$srch->qry);
 
     return $srch->qry;
 }
