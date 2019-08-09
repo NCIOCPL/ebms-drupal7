@@ -6093,7 +6093,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             $topics[$result->topic_id] = $result->topic_name;
         $query = db_select('users', 'u')
             ->fields('u', array('uid', 'name'));
-        $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
+        $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
         $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
         $query->condition('t.board_id', $board);
