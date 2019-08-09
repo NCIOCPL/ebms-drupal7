@@ -2794,7 +2794,7 @@ class EbmsReports {
                 'class' => array('col-1'),
             ),
             array(
-                'data' => 'CYCLE',
+                'data' => 'PACKET CREATED',
                 'class' => array('col-2'),
             ),
             array(
@@ -2804,6 +2804,10 @@ class EbmsReports {
             array(
                 'data' => 'COMMENTS',
                 'class' => array('col-4'),
+            ),
+            array(
+                'data' => 'EXCLUSION REASON',
+                'class' => array('col-5'),
             ),
         );
 
@@ -2880,7 +2884,8 @@ class EbmsReports {
             $review_id = $result->review_id;
             //$packet = date('Y/m', strtotime($result->created_at));
             //$packet = $result->cycle_name;
-            $packet = date('Y/m', strtotime($result->start_date));
+            // $packet = date('Y/m', strtotime($result->start_date));
+            $packet = date('Y-m-d', strtotime($result->created_at));
             $reviewer = $result->name;
             if (!array_key_exists($article_id, $articles))
                 $articles[$article_id] = array();
@@ -2913,7 +2918,6 @@ class EbmsReports {
                 $citation .= '<br><br><span class="hi-priority">';
                 $citation .= 'HIGH PRIORITY</span>';
             }
-            $query = db_select('ebms_article_review', 'r');
             $article_rowspan = 0;
             ksort($packets);
             $packet_rows = array();
@@ -2924,8 +2928,7 @@ class EbmsReports {
             // information about each review returned for the article
             // and packet combination.
             foreach ($packets as $packet => $reviews) {
-                list($year, $month) = explode('/', $packet);
-                $p = "$month/$year";
+                $p = $packet;
                 $packet_rows[$p] = array();
                 ksort($reviews);
                 foreach ($reviews as $reviewer => $review_id) {
@@ -2952,7 +2955,14 @@ class EbmsReports {
                             $ok = true;
                     }
                     $disp = $ok ? 'Y' : ($rejected ? 'N' : '');
-                    $packet_rows[$p][] = array($reviewer, $disp, $comments);
+                    $query = db_select('ebms_review_rejection_value', 'v');
+                    $query->join('ebms_review_rejection_reason', 'r',
+                                 'r.value_id = v.value_id');
+                    $query->fields('v', array('value_name'));
+                    $query->condition('r.review_id', $review_id);
+                    $reasons = $query->execute()->fetchCol();
+                    $packet_rows[$p][] = array($reviewer, $disp, $comments,
+                                               $reasons);
                     ++$article_rowspan;
                 }
             }
@@ -2970,7 +2980,7 @@ class EbmsReports {
                 // Create a row for each board member's review.
                 foreach ($reviews as $review) {
                     $row = array();
-                    list($reviewer, $disp, $comments) = $review;
+                    list($reviewer, $disp, $comments, $reasons) = $review;
                     if (!$have_abstract_row) {
                         $have_abstract_row = true;
                         $col = array(
@@ -2991,7 +3001,7 @@ class EbmsReports {
                     if (!$have_packet_row) {
                         $have_packet_row = true;
                         $col = array(
-                            'data' => $packet,
+                            'data' => str_replace('-', '&#8209;', $packet),
                             'class' => array('col-2'),
                         );
                         if (count($reviews) > 1)
@@ -3017,6 +3027,10 @@ class EbmsReports {
                         'data' => $comments,
                         'class' => array('col-4'),
                     );
+                    $row[] = array(
+                        'data' => implode('<br>', $reasons),
+                        'class' => array('col-5'),
+                    );
                     $rows[] = array(
                         'data' => $row,
                         'no_striping' => true,
@@ -3027,7 +3041,7 @@ class EbmsReports {
 
         // Assemble the table.
         $id = 'review-report-title';
-        $title = 'Literature Review Reports';
+        $title = 'Literature Review Report';
         $table = array(
             'title' => array(
                 '#type' => 'markup',
