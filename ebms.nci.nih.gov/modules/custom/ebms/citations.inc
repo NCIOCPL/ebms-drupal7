@@ -62,11 +62,14 @@ namespace {
      *
      * Entry point for all functions in this file.
      *
-     * @param string $action    What kind of form to build, default (null) = review form.
-     * @param int $article_id   What article to build, default (null) = not article specific.
+     * @param string $action
+     *   What kind of form to build, default (null) = review form.
+     * @param int $article_id
+     *   What article to build, default (null) = not article specific.
      *
-     * @return array $result    Render array for the main page content + side bar.
-     *                          MENU_NOT_FOUND if unable to determine type of page requested.
+     * @return array $result
+     *   Render array for the main page content + side bar.
+     *   MENU_NOT_FOUND if unable to determine type of page requested.
      */
     function pdq_ebms_citations($action = null, $article_id = null) {
 
@@ -81,7 +84,8 @@ namespace {
         Ebms\Menu::$active = 'Citation Management';
         drupal_set_title('Citation Management');
         $crumbs = array(
-            $action ? l('Citation Management', 'citations') : 'Citation Management'
+            $action ? l('Citation Management', 'citations')
+                    : 'Citation Management'
         );
         $result = null;
         switch ($action) {
@@ -93,9 +97,12 @@ namespace {
                 $form = drupal_get_form('pdq_ebms_full_citation', $article_id);
 
                 // Build the left nav components
-                $result['left_nav'] = \Ebms\Util::build_left_nav('Review Citations');
-                $result['left_nav']['actions'] = _build_full_citation_actions($article_id);
-                $result['left_nav']['icon_key'] = _build_full_citation_icon_key();
+                $result['left_nav'] =
+                    \Ebms\Util::build_left_nav('Review Citations');
+                $result['left_nav']['actions'] =
+                    _build_full_citation_actions($article_id);
+                $result['left_nav']['icon_key'] =
+                    _build_full_citation_icon_key();
 
                 // Combine the two into a single render array
                 $result['full_citation_form'] = $form;
@@ -104,15 +111,18 @@ namespace {
             case 'not-list':
                 $crumbs[] = "Not List Maintenance";
                 $form = drupal_get_form('pdq_ebms_citation_not_list');
-                $result['left_nav'] = \Ebms\Util::build_left_nav('Not List Maintenance');
+                $result['left_nav'] =
+                    \Ebms\Util::build_left_nav('Not List Maintenance');
                 $result['not_list_form'] = $form;
                 break;
 
             case null:
             case 'review':
                 $crumbs[] = 'Review Citations';
-                $form = drupal_get_form('pdq_ebms_citation_queue', $is_librarian);
-                $result['left_nav'] = \Ebms\Util::build_left_nav('Review Citations');
+                $form = drupal_get_form('pdq_ebms_citation_queue',
+                                        $is_librarian);
+                $result['left_nav'] =
+                    \Ebms\Util::build_left_nav('Review Citations');
                 $result['cite_queue_form'] = $form;
                 break;
         }
@@ -152,9 +162,9 @@ namespace {
     /**
      * Build the form for a full citation display for one article.
      *
-     * @param array $form           Standard drupal form render array
+     * @param array $form        Standard drupal form render array
      * @param array &$form_state
-     * @param int $articleId        Internal EBMS unique ID of one article citation.
+     * @param int $articleId     Internal EBMS unique ID of an article citation
      *
      * @return Updated $form render array.
      */
@@ -212,27 +222,30 @@ namespace {
             $form['related-articles'] = $related_articles_block;
         }
         $citations_inc_display_phase = DISPLAY_PHASE::REVIEW_CYCLE;
-        // build array of currently active citation tags ever assigned, in date order
+        // Build array of currently active citation tags ever assigned,
+        // in date order.
         $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');
 
-        // reverse order so most recent is first
+        // Reverse order so most recent is first.
         $tags = array_reverse($tags);
 
-        // build the render array of tags
+        // Build the render array of tags.
         $tag_array = _format_tags($form_state, $tags);
 
         // Remember whether we have active tags for article
         $no_tags = (empty($tag_array));
 
         // generate the add tag button (or placeholder if triggered)
-        $button_array = _build_add_tag_button($no_tags, $form_state, $articleId);
+        $button_array = _build_add_tag_button($no_tags, $form_state,
+                                              $articleId);
         $form['article_tag_add_button'] = $button_array['button'];
         if ($no_tags) {
             if (count($button_array['form']))
                 $form['button_form'] = $button_array['form'];
             else
                 $form['placeholder'] = array(
-                    '#markup' => '<div class="full-citation-element">&nbsp;</div>'
+                    '#markup' => '<div class="full-citation-element">' .
+                                 '&nbsp;</div>'
                 );
         }
         else {
@@ -258,25 +271,29 @@ namespace {
         $citations_inc_display_phase = DISPLAY_PHASE::IMPORT_PROCESS;
         $form['import_process'] = array(
             '#type' => 'fieldset',
-            '#title' => '<span class="citation-subheader">Import Process</span>',
+            '#title' => '<span class="citation-subheader">' .
+                        'Import Process</span>',
             'section' => _format_import($article, $importData),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element citation-subheader'>",
-            '#suffix' => "</div>",
+            '#prefix' => '<div class="full-citation-element ' .
+                         'citation-subheader">',
+            '#suffix' => '</div>',
         );
 
         // Render the initial_review info, i.e., first review at import time
         $citations_inc_display_phase = DISPLAY_PHASE::MED_LIB_INIT_REVIEW;
         $form['initial_review'] = array(
             '#type' => 'fieldset',
-            '#title' => '<span class="citation-subheader">Medical Librarian Initial Review</span>',
+            '#title' => '<span class="citation-subheader">' .
+                        'Medical Librarian Initial Review</span>',
             'section' => _format_boards($form_state, $article, $history, $tags,
                                         DISPLAY_PHASE::MED_LIB_INIT_REVIEW),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element citation-subheader'>",
-            '#suffix' => "</div>",
+            '#prefix' => '<div class="full-citation-element ' .
+                         'citation-subheader">',
+            '#suffix' => '</div>',
         );
 
         // Render the publishing history section
@@ -288,8 +305,9 @@ namespace {
                                         DISPLAY_PHASE::PUBLISHING),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element citation-subheader'>",
-            '#suffix' => "</div>",
+            '#prefix' => '<div class="full-citation-element ' .
+                         'citation-subheader">',
+            '#suffix' => '</div>',
         );
         $citations_inc_display_phase = DISPLAY_PHASE::NO_PHASE;
 
@@ -302,10 +320,9 @@ namespace {
                 // do not create a path that does not already exist
                 if (isset($path[$parent])) {
                     $path = &$path[$parent];
-
-                    if (isset($path['#type']) && $path['#type'] == 'fieldset') {
-                        $path['#collapsed'] = false;
-                    }
+                    if (isset($path['#type']))
+                        if ($path['#type'] === 'fieldset')
+                            $path['#collapsed'] = false;
                 }
                 else
                     break;
@@ -341,7 +358,8 @@ namespace {
             $form['article_tag_header'] = array(
                 '#markup' => '<div class="citation-subheader">Tag(s)</div>'
             );
-            $form['article_tag_header']['#prefix'] = '<div class="full-citation-indent">';
+            $form['article_tag_header']['#prefix'] =
+                '<div class="full-citation-indent">';
             $form['article_tag_header']['#suffix'] = '</div>';
 
             $tag = array_shift($topic_tags[$targetTopicId]);
@@ -441,7 +459,8 @@ namespace {
         $link_opt = array('query' => drupal_get_query_parameters());
         $links[] = array('Link Related Citation', $link_url, $link_opt);
 
-        // Add link for adding a board manager topic-specific comment (OCEEBMS-375).
+        // Add link for adding a board manager topic-specific comment
+        // (OCEEBMS-375).
         $query = db_select('ebms_article_topic', 't');
         $query->leftJoin('ebms_article_topic_comment', 'c',
             'c.article_id = t.article_id AND c.topic_id = t.topic_id');
@@ -450,7 +469,8 @@ namespace {
         $count = $query->countQuery()->execute()->fetchField();
         if ($count > 0) {
             $link_url = "citations/comment/add/$articleId";
-            $links[] = array('Add Board Manager Comment', $link_url, $link_opt);
+            $links[] = array('Add Board Manager Comment',
+                             $link_url, $link_opt);
         }
 
         $items = array();
@@ -544,7 +564,8 @@ namespace {
         foreach ($history as $status) {
             if ($status->board_name && $status->topic_name) {
                 $board_topic_states[$status->board_name][$status->topic_name]
-                    [$status->type_sequence][$status->active_status][] = $status;
+                    [$status->type_sequence]
+                    [$status->active_status][] = $status;
             }
         }
 
@@ -560,7 +581,8 @@ namespace {
         if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
             $form['boards_header']['button'] = $button_array['button'];
         $form['boards_header']['title'] = array(
-            "#markup" => '<div class="citation-subheader full-citation-indent ' .
+            "#markup" => '<div class="citation-subheader ' .
+                         'full-citation-indent ' .
                          'full-citation-element">Editorial Board(s)</div>'
         );
         if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
@@ -587,29 +609,31 @@ namespace {
                 '#suffix' => '</div>',
             );
             if (!$mode) {
-                $form[$board_name]['fieldset']['#attributes']['class'][] = 'full-citation-topic';
+                $form[$board_name]['fieldset']['#attributes']['class'][] =
+                    'full-citation-topic';
             }
             if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
                 $form[$board_name]['form'] = $button_array['form'];
         }
 
-        // Add the block for the confirmation dialog for deleting manager comments.
-        // Do this here, because we can only have one of these, no matter how many
-        // topics with manager comments there are in the article.
+        // Add the block for the confirmation dialog for deleting manager
+        // comments. Do this here, because we can only have one of these,
+        // no matter how many topics with manager comments there are in
+        // the article.
         $form['manager comment deletion confirmation dialog'] = array(
-            '#markup' => "
-<div id='confirm-manager-comment-deletion' style='display: none' title='Delete Comment?'>
- <p>
-  <span class='ui-icon ui-icon-alert' style='float:left; margin:0 7px 20px 0;'></span>
-  Comment will be permanently deleted and cannot be recovered. Are you sure?</p>
-</div>"
+            '#markup' => '<div id="confirm-manager-comment-deletion" ' .
+                         'style="display: none" title="Delete Comment?">' .
+                         '<p><span class="ui-icon ui-icon-alert" ' .
+                         'style="float:left; margin:0 7px 20px 0;"></span> ' .
+                         'Comment will be permanently deleted and cannot ' .
+                         'be recovered. Are you sure?</p></div>'
         );
 
         return $form;
     }
 
     /**
-     * Formats an array of topics and their related state histories for rendering.
+     * Format array of topics and their related state histories for rendering.
      * @param mixed $topics
      * @return mixed the formatted render array.
      */
@@ -634,14 +658,14 @@ namespace {
      * Formats a topic a single name and associated topic states for rendering.
      * Subroutine of _format_topics.
      *
-     * @param array &$form_state        Current drupal form state.
-     * @param object $article           Loaded EbmsArticle object for which we generate info.
-     * @param string $topicName         Human readable topic name.
+     * @param array &$form_state Current drupal form state.
+     * @param object $article    EbmsArticle object for which we generate info.
+     * @param string $topicName  Human readable topic name.
      * @param mixed $topic_sequences
      * @return mixed the formatted render array.
      */
-    function _format_topic(&$form_state, $article, $topicName, $topic_sequences,
-        $tags, $display_cycle, $mode) {
+    function _format_topic(&$form_state, $article, $topicName,
+        $topic_sequences, $tags, $display_cycle, $mode) {
         $form = array();
 
         $showButtons = true;
@@ -653,20 +677,20 @@ namespace {
             }
         }
 
-        // retrieve the relevant ids for this article and topic
-        // topic id should have error-checking, but originates from an error-checked
-        // method
+        // Retrieve the relevant ids for this article and topic.
+        // Topic id should have error-checking, but originates
+        // from an error-checked method.
         $articleId = $article->getId();
         $topicId = Ebms\getTopicIdByName($topicName);
 
         // generate the add tag button and render array of tags
         $tag_array = _format_tags($form_state, $tags, $topicId);
         $no_tags = empty($tag_array);
-        $button_array = _build_add_tag_button($no_tags, $form_state, $articleId,
-            $topicId);
+        $button_array = _build_add_tag_button($no_tags, $form_state,
+                                              $articleId, $topicId);
 
-        // split the button and potential form into separate areas based on the existence of
-        // tags
+        // Split the button and potential form into separate areas
+        // based on the existence of tags.
         $form['topic_header'] = _format_topic_header($topicName,
             $no_tags && $showButtons ? $button_array['button'] : array());
         if ($display_cycle) {
@@ -705,9 +729,10 @@ namespace {
             if (true) {
                 $decision = _format_topic_decision($decisionInfo,
                     $topic_sequences, $form_state, null, $showButtons);
-                $decisions['topic_initial_review_decision'] = _wrap_decision($form_state,
-                    $articleId, $topicId, $decision, $decisionInfo,
-                    $empty_decisions);
+                $decisions['topic_initial_review_decision'] =
+                    _wrap_decision($form_state,
+                                   $articleId, $topicId, $decision,
+                                   $decisionInfo, $empty_decisions);
             } else {
                 $decisions['topic_initial_review_decision'] =
                     _format_topic_decision($decisionInfo, $topic_sequences);
@@ -719,19 +744,22 @@ namespace {
             $decisionInfo = Ebms\EbmsTopicDecisions::$NCIREVIEWER;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
                 $form_state);
-            $decisions['topic_nci_reviewer_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_nci_reviewer_decision'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$FULLTEXT;
             $decision = _format_topic_full_text_decision($article);
-            $decisions['topic_full_text_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_full_text_decision'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$SURVEILLANCE;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
                 $form_state);
-            $decisions['topic_nci_surveillance_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_nci_surveillance_decision'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $comment = _format_board_manager_comment($articleId, $topicId);
             $decisions['board_manager_comment'] = $comment;
@@ -744,26 +772,30 @@ namespace {
             $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES;
             $decision = _format_topic_board_member_responses($articleId,
                 $topicId);
-            $decisions['topic_board_member_responses'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_board_member_responses'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-            $decisions['topic_board_manager_actions'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+                                               $form_state);
+            $decisions['topic_board_manager_actions'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$ONAGENDA;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
                 $form_state);
-            $decisions['topic_on_agenda'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_on_agenda'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$EDITORIALBOARD;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-            $decisions['topic_board_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+                                               $form_state);
+            $decisions['topic_board_decision'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $last_key = null;
             $last_array = null;
@@ -823,7 +855,8 @@ namespace {
  <a href='$url' title='Edit comment' class='edit-comment'>
   <img src='$edit_icon'>
  </a>
- <div class='citation-subheader full-citation-indent'>Board Manager Comment</div>
+ <div class='citation-subheader full-citation-indent'
+>Board Manager Comment</div>
  <div class='full-citation-indent'>COMMENT: $comment</div>
 </div>");
     }
@@ -860,16 +893,20 @@ namespace {
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png';
             // create add tag button
             $form['button'][$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' alt='Add Tag' src='$iconPath'>",
+                '#markup' => '<img class="full-citation-button ' .
+                             'image-button" alt="Add Tag" src="' .
+                             $iconPath . '">',
             );
 
             $formId = "add_tag_form_$hash";
             $form['form'][$formId] = _build_add_tag_form($articleId, $topicId);
-            $form['form'][$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+            $form['form'][$formId]['#prefix'] =
+                '<div class="full-citation-form full-citation-indent">';
             $form['form'][$formId]['#suffix'] = '</div>';
         } else if ($showButtons) {
             // grab icon for button
-            $iconPath = $noTags ? Ebms\TAG_INACTIVE : Ebms\ADD_DECISION_INACTIVE;
+            $iconPath = $noTags ? Ebms\TAG_INACTIVE
+                                : Ebms\ADD_DECISION_INACTIVE;
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png';
             // create add tag button
             $form['button'][$buttonId] = array(
@@ -920,14 +957,18 @@ namespace {
         $form['#suffix'] = '</div>';
 
         $date = _format_date($tag->dt);
-        $form['article_tag'] = array('#markup' => "<div class='full-citation-indent'>$tag->type_name - $date - $tag->user_name</div>");
+        $form['article_tag'] = array(
+            '#markup' => '<div class="full-citation-indent">' .
+                         "$tag->type_name - $date - $tag->user_name" .
+                         '</div>');
 
-        // if a form state is provided, indent the elements to provide space for
-        // the button
+        // If a form state is provided, indent the elements to provide
+        // space for the button.
         if ($form_state != null) {
             //drop in 'add comment' button
             $form['article_tag_comment_add_button'] =
-                _build_add_tag_comment_button($form_state, $tag->article_tag_id);
+                _build_add_tag_comment_button($form_state,
+                                              $tag->article_tag_id);
         }
 
         if ($tag->comments)
@@ -943,11 +984,11 @@ namespace {
      *
      * See also _build_decision_icon_tag(), _build_add_state_comment_button().
      *
-     * @param array &$form_state    Drupal form state to find if related form
-     *                              is triggered.
-     * @param int $articleTagId     Used in making a unique ID for the button.
+     * @param array &$form_state   Drupal form state to find if related form
+     *                             is triggered.
+     * @param int $articleTagId    Used in making a unique ID for the button.
      *
-     * @return                      Render array for icon and ajax invoked form.
+     * @return                     Render array for icon and ajax invoked form.
      */
     function _build_add_tag_comment_button(&$form_state, $articleTagId) {
         $form = array();
@@ -965,13 +1006,14 @@ namespace {
             // create add tag button
             $form[$buttonId] = array(
                 '#markup' =>
-                  "<img class='full-citation-button image-button' alt ='' src='$iconPath'>",
+     "<img class='full-citation-button image-button' alt ='' src='$iconPath'>",
             );
 
             // create add comment form
             $formId = "add_tag_comment_form_$hash";
             $form[$formId] = _build_add_tag_comment_form($articleTagId);
-            $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+            $form[$formId]['#prefix'] =
+                '<div class="full-citation-form full-citation-indent">';
             $form[$formId]['#suffix'] = '</div>';
         } else {
             // grab icon for button
@@ -997,8 +1039,6 @@ namespace {
                 ),
             );
         }
-
-
 
         return $form;
     }
@@ -1070,7 +1110,7 @@ namespace {
         Ebms\addTagComment($articleTagId, $comment);
     }
 
-    function _format_topic_board_manager_actions($status, &$form_state = null) {
+    function _format_topic_board_manager_actions($status, &$form_state=null) {
         $form = array();
 
         $date = _format_date($status->dt);
@@ -2626,7 +2666,8 @@ namespace {
                 $mime_type = Ebms\Util::get_mime_type($path);
                 if ($mime_type != 'application/pdf') {
                     drupal_set_message(htmlspecialchars($value) .
-                        ' is not a PDF file.', 'error');
+                        ' is not a PDF file or exceeds the limit of 20MB.',
+                        'error');
                     continue;
                 }
                 $file = file_save_upload($key, $validators);
@@ -2706,13 +2747,14 @@ namespace {
         if (empty($loe))
             $loe = null;
 
-        // retrieve current user and member names to populate comment annotation
+        // Retrieve current user and member names to populate comment
+        // annotation.
         global $user;
         $account = user_load($memberId);
 
         if ($account === FALSE) {
-            drupal_set_message(
-                "Could not load user $memberId - response not saved.", 'error');
+            $message = "Could not load user $memberId - response not saved.";
+            drupal_set_message($message, 'error');
             return;
         }
 
