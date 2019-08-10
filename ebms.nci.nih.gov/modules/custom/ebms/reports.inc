@@ -1552,6 +1552,8 @@ class EbmsReports {
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
         $query->fields('c2', array('cycle_name'));
         switch ($params['disposition']) {
@@ -1570,7 +1572,6 @@ class EbmsReports {
         $query->fields('u', array('name'));
         $query->orderByHeader($headers);
         $query->distinct();
-        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -1688,6 +1689,8 @@ class EbmsReports {
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
         $query->condition('s.current', 'Y');
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
         $query->fields('c2', array('cycle_name'));
         switch ($params['disposition']) {
@@ -1709,7 +1712,6 @@ class EbmsReports {
         $query->fields('s', $state_fields);
         $query->orderByHeader($headers);
         $query->distinct();
-        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -1844,6 +1846,8 @@ class EbmsReports {
             $headers[] = 'Review Cycle';
             $headers[] = 'Date Uploaded';
         }
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
         $query->fields('c2', array('cycle_name'));
         $query->leftJoin('ebms_article_author_cite', 'c',
@@ -1853,7 +1857,6 @@ class EbmsReports {
 
         $query->orderByHeader($headers);
         $query->distinct();
-        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -1953,6 +1956,8 @@ class EbmsReports {
         $query->fields('c2', array('cycle_name'));
         if ($params['topic'])
             $query->condition('s.topic_id', $params['topic']);
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->leftJoin('ebms_article_author_cite', 'c',
             'c.article_id = s.article_id AND c.cite_order = 1');
         $query->leftJoin('ebms_article_author', 'aa',
@@ -1969,7 +1974,6 @@ class EbmsReports {
         $query->fields('p', array('packet_id', 'created_at'));
         $query->orderByHeader($headers);
         $query->distinct();
-        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and collect the results in an array
         // indexed by article, each element of the array containing
@@ -2130,9 +2134,14 @@ class EbmsReports {
                 'd.review_id = r.review_id');
             $query->condition('d.value_id', $params['disposition']);
         }
+        $start = $params['date-start']['date'] ?? '';
+        $end = $params['date-end']['date'] ?? '';
+        if (!empty($start) || !empty($end)) {
+            $field = 'r.when_posted';
+            Ebms\Util::add_date_range_to_query($query, $start, $end, $field);
+        }
         $query->orderByHeader($headers);
         $query->distinct();
-        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and collect the results in an array
         // indexed by article, each element of the array containing
@@ -2160,8 +2169,7 @@ class EbmsReports {
                 $query = db_select('ebms_article_review', 'r');
                 $query->join('users', 'u', 'u.uid = r.reviewer_id');
                 $query->condition('r.review_id', $review_id);
-                $query->fields('r',
-                    array('when_posted', 'comments'));
+                $query->fields('r', array('when_posted', 'comments'));
                 $query->fields('u', array('name'));
                 $review_results = $query->execute();
                 foreach ($review_results as $r) {
@@ -2296,13 +2304,14 @@ class EbmsReports {
         else
             $query->condition('s.state_id',
                               array_keys($manager_actions), 'IN');
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->fields('s', array('article_id', 'article_state_id',
                                   'state_id', 'status_dt'));
         $query->join('ebms_topic', 'tn', 'tn.topic_id = t.topic_id');
         $query->fields('tn', array('topic_name', 'topic_id'));
         $query->orderByHeader($headers);
         $query->distinct();
-        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -2454,6 +2463,8 @@ class EbmsReports {
                 $query->condition('s.topic_id', $params['topic']);
             $query->condition('s.current', 'Y');
             $query->condition('s.state_id', $state_id);
+            if ($params['topic'])
+                $query->condition('s.topic_id', $params['topic']);
             $query->fields('s',
                 array('article_id', 'article_state_id', 'status_dt'));
             $query->fields('m', array('nid'));
@@ -2461,7 +2472,6 @@ class EbmsReports {
             $query->fields('tn', array('topic_name'));
             $query->orderByHeader($headers);
             $query->distinct();
-            Ebms\Util::add_status_date_range_to_query($query, $params);
 
             // Execute the query and assemble the rows for the report table.
             $results = $query->execute();
@@ -2626,6 +2636,8 @@ class EbmsReports {
                 'd.article_state_id = s.article_state_id');
             $query->condition('d.decision_value_id', $params['disposition']);
         }
+        if (count($params['cycles']))
+            $query->condition('t.cycle_id', $params['cycles'], 'IN');
         $query->fields('s',
             array('article_id', 'article_state_id', 'status_dt'));
         $query->join('ebms_cycle', 'c2', 'c2.cycle_id = t.cycle_id');
@@ -2641,7 +2653,6 @@ class EbmsReports {
         }
         $query->orderByHeader($headers);
         $query->distinct();
-        Ebms\Util::add_status_date_range_to_query($query, $params);
 
         // Execute the query and assemble the rows for the report table.
         $results = $query->execute();
@@ -5637,7 +5648,8 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     // Initialize defaults for the form field's values.
     $board = \Ebms\Util::get_user_default_board(0);
     $topic = $status = $meeting_type = $disposition = 0;
-    $date_start = $date_end = $status_date_start = $status_date_end = '';
+    $selected_cycles = array();
+    $date_start = $date_end = '';
 
     // Check for overrides of the defaults by request parameters
     // stored in the database.
@@ -5648,23 +5660,21 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
         $status = $values['status'];
         if (isset($values['disposition']))
             $disposition = $values['disposition'];
+        if (isset($values['cycles']))
+            $selected_cycles = $values['cycles'];
         if (isset($values['meeting-type']))
             $meeting_type = $values['meeting-type'];
         if (!empty($values['date-start']['date']))
             $date_start =
                 Ebms\Util::fill_in_date($values['date-start']['date']);
         if (!empty($values['date-end']['date']))
-            $date_end = Ebms\Util::fill_in_date($values['sdate-end']['date'],
-                                                true);
-        if (!empty($values['sdate-start']['date']))
-            $status_date_start =
-                Ebms\Util::fill_in_date($values['sdate-start']['date']);
-        if (!empty($values['sdate-end']['date']))
-            $status_date_end =
-                Ebms\Util::fill_in_date($values['sdate-end']['date'], true);
+            $date_end =
+                Ebms\Util::fill_in_date($values['date-end']['date'], true);
     }
 
-    // Create the picklists for boards, meeting types, and article states.
+    // Create the picklists for cycles, boards, meeting types,
+    // and article states.
+    $cycles = Ebms\Util::cycles();
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $info = field_info_field('field_event_category');
     $meeting_types = array(0 => ' ') + $info['settings']['allowed_values'];
@@ -5844,10 +5854,25 @@ function pdq_ebms_cites_by_status_form($form, &$form_state, $request_id) {
     // Status field, and the Drupal field states mechanism is broken,
     // so this field always gets redrawn by the ajax callback for
     // the change of Status.
-    // 2019-08-08 (OCEEBMS-459): cycles replaced by status date range.
-    $status_date_field = Ebms\Util::date_range_field('Status Date', 'sdate',
-                         $status_date_start, $status_date_end);
-    $form['top']['report-form']['status-dep']['sdate'] = $status_date_field;
+    // 2019-08-08 (OCEEBMS-459): cycles replaced by response date range
+    // for the Board Member Responses flavor of the report.
+    if (!strcmp($status, 'board member responses')) {
+        $date_field = Ebms\Util::date_range_field('Response Date', 'date',
+                                                  $date_start, $date_end);
+        $form['top']['report-form']['status-dep']['date'] = $date_field;
+    }
+    else {
+        $form['top']['report-form']['status-dep']['cycles'] = array(
+            '#type' => 'select',
+            '#multiple' => true,
+            '#size' => 6,
+            '#title' => 'Review Cycle(s)',
+            '#title_display' => 'after',
+            '#options' => $cycles,
+            '#default_value' => $selected_cycles,
+            '#attributes' => array('class' => array('fixed-width')),
+        );
+    }
 
     // The last two Status choices call for two additional fields,
     // related to board meetings.

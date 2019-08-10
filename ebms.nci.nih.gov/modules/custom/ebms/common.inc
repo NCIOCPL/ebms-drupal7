@@ -1727,21 +1727,6 @@ class Util {
         }
     }
 
-    public static function add_status_date_range_to_query(
-        &$query,
-        $params,
-        $field='s.status_dt'
-    ) {
-        $start = $end = '';
-        if (!empty($params['sdate-start']['date']))
-            $start = $params['sdate-start']['date'];
-        if (!empty($params['sdate-end']['date']))
-            $end = $params['sdate-end']['date'];
-        if (empty($start) && empty($end))
-            return false;
-        return self::add_date_range_to_query($query, $start, $end, $field);
-    }
-
     /**
      * Builds an array of options to be passed to the JQuery
      * datepicker package. By default these options just
