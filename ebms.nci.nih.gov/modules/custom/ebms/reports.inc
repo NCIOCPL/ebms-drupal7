@@ -110,9 +110,10 @@ class EbmsReports {
                 return pdq_ebms_board_members_last_login();
             case 'meeting-dates':
             case 'no-responses':
-            //case 'citation-followup': OCEEBMS-414
-            case 'boards-and-topics':
                 return $this->not_yet_implemented();
+            case 'boards-and-topics':
+                return drupal_get_form('pdq_ebms_board_topic_list',
+                                       $this->request_id);
             case 'missing-from-nlm':
                 return drupal_get_form('pdq_ebms_missing_from_nlm',
                                        $this->request_id);
@@ -125,10 +126,6 @@ class EbmsReports {
             case 'membership':
                 return drupal_get_form('pdq_ebms_membership_report_form',
                                        $this->request_id);
-            /* removed by OCEEBMS-412 case 'login-attempts':
-                return drupal_get_form('pdq_ebms_login_attempts_form',
-                                       $this->request_id);
-            */
             case 'cites-status':
                 return drupal_get_form('pdq_ebms_cites_by_status_form',
                                        $this->request_id);
@@ -195,10 +192,6 @@ class EbmsReports {
                 'Citation Management',
                 'Citation Follow-up'
             ), */
-            'boards-and-topics' => array(
-                'Citation Management',
-                'Board and Topic Lists',
-            ),
         );
         $report = $this->report;
         if (!array_key_exists($report, $reports)) {
@@ -491,11 +484,6 @@ class EbmsReports {
                             'Articles Without Responses',
                             'reports/articles-without-responses',
                         ),
-                        /* removed by OCEEBMS-414
-                        array(
-                            'Citation Follow-up',
-                            'reports/citation-followup',
-                        ), */
                         array(
                             'Board and Topic Lists',
                             'reports/boards-and-topics',
@@ -7256,4 +7244,266 @@ function pdq_ebms_recent_activity_form_submit($form, &$form_state) {
     drupal_send_headers();
     print $html;
     drupal_exit();
+}
+
+/**
+ * Drupal form API callback which generates the form for the
+ * report on topics to which board members have been assigned,
+ * with links to the pages for managing the topics.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_board_topic_list($form, &$form_state, $request_id=0) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
+    $report_title = 'Board and Topic Lists';
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Board Management Reports', 'reports/board'),
+            $report_title,
+        )
+    );
+
+    // Initialize defaults for the form field's values.
+    $board = \Ebms\Util::get_user_default_board(0);
+    $selected_topics = $selected_members = array();
+    $group_by = 'topic';
+
+    // Pull request parameters from the database if appropriate.
+    if ($request_id) {
+        $values = EbmsReports::fetch_report_request($request_id);
+        $board = $values['board'];
+        $selected_topics = $values['topics'];
+        $selected_members = $values['members'];
+        $group_by = $values['group-by'];
+    }
+
+    // Get the values of interest for ajax callbacks.
+    if (isset($form_state['values'])) {
+        $board = $form_state['values']['board'];
+        $selected_topics = $form_state['values']['topics'];
+        $selected_members = $form_state['values']['members'];
+    }
+
+    // How tall should the picklists allowing multiple selections be?
+    $size = 6;
+
+    // Create the picklists.
+    $topics = array();
+    $members = array();
+    $boards = array(0 => ' ') + Ebms\Util::boards();
+
+    // If a board has been selected, populate the board-dependent picklists.
+    if ($board) {
+
+        // Get the board's topics.
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->condition('t.active_status', 'A')
+            ->orderBy('t.topic_name')
+            ->execute();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+        foreach ($selected_topics as $key => $value)
+            if (!array_key_exists($value, $topics))
+                unset($selected_topics[$key]);
+
+        // Get the board's members.
+        $role = user_role_load_by_name('board member');
+        $query = db_select('users', 'u')
+            ->fields('u', array('uid', 'name'));
+        $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+        $query->join('users_roles', 'r', 'r.uid = u.uid');
+        $query->condition('m.board_id', $board);
+        $query->condition('u.status', 1);
+        $query->condition('r.rid', $role->rid);
+        $query->orderBy('u.name');
+        $query->distinct();
+        $results = $query->execute();
+        foreach ($results as $result)
+            $members[$result->uid] = htmlspecialchars($result->name);
+        foreach ($selected_members as $key => $value)
+            if (!array_key_exists($value, $members))
+                unset($selected_members[$key]);
+     }
+
+    // Assemble the request form.
+    $form = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'report-form'),
+        'title' => array('#markup' => "<h2>$report_title</h2>"),
+        'board' => array(
+            '#type' => 'select',
+            '#options' => $boards,
+            '#required' => true,
+            '#default_value' => $board,
+            '#title' => 'Editorial Board',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#ajax' => array(
+                'callback' => 'pdq_ebms_report_ajax',
+                'wrapper' => 'board-dependent',
+            ),
+        ),
+        'ajax fields' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'board-dependent'),
+            'topics' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $topics,
+                '#default_value' => $selected_topics,
+                '#title' => 'Topic(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+            'members' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $members,
+                '#default_value' => $selected_members,
+                '#title' => 'Member(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+        ),
+        'group-by' => array(
+            '#type' => 'radios',
+            '#title' => 'Group By',
+            '#options' => array(
+                'topic' => 'Topic',
+                'member' => 'Board Member',
+            ),
+            '#default_value' => $group_by,
+        ),
+        'reset' => array(
+            '#type' => 'submit',
+            '#value' => 'Reset',
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+    );
+
+    // Assemble the page where the form lives, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
+                                            $report_title);
+    $page['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'board-and-topics-report-top'),
+        'left-nav' => $left_nav,
+        'report-form' => $form,
+    );
+
+    // If we have a submitted report request, add the report under the form.
+    if ($request_id) {
+        $rows = array();
+        $values = EbmsReports::fetch_report_request($request_id);
+        $query = db_select('users', 'u');
+        $query->join('ebms_topic_reviewer', 'r', 'r.user_id = u.uid');
+        $query->join('ebms_topic', 't', 't.topic_id = r.topic_id');
+        $query->condition('t.board_id', $board);
+        $query->condition('u.status', 1);
+        $query->fields('t', array('topic_id', 'topic_name'));
+        $query->fields('u', array('name'));
+        if (!empty($selected_topics))
+            $query->condition('t.topic_id', $selected_topics, 'IN');
+        if (!empty($selected_members))
+            $query->condition('u.uid', $selected_members, 'IN');
+
+        // Use table structure for 'group by topic' option.
+        if ($group_by === 'topic') {
+            $headers = array('Topic', 'Board Members', 'Manage Summary Topic');
+            $query->orderBy('t.topic_name');
+            $query->orderBy('u.name');
+            $results = $query->execute();
+            $topic_members = array();
+            foreach ($results as $result) {
+                if (!array_key_exists($result->topic_id, $topic_members))
+                    $topic_members[$result->topic_id] = array(
+                        'name' => htmlspecialchars($result->topic_name),
+                        'members' => array(),
+                    );
+                $name = htmlspecialchars($result->name);
+                $topic_members[$result->topic_id]['members'][] = $name;
+            }
+            foreach ($topic_members as $topic_id => $topic_info) {
+                $row = array(
+                    htmlspecialchars($topic_info['name']),
+                    implode('<br>', $topic_info['members']),
+                    l('EDIT TOPIC', 'admin/topics/edit/' . $topic_id),
+                );
+                $rows[] = array(
+                    'data' => $row,
+                    'no_striping' => true,
+                );
+            }
+        }
+
+        // Use table structure for 'group by member' option.
+        else {
+            $headers = array('Board Member', 'Topics', 'Manage Summary Topic');
+            $query->orderBy('u.name');
+            $query->orderBy('t.topic_name');
+            $results = $query->execute();
+            foreach ($results as $result) {
+                $row = array(
+                    htmlspecialchars($result->name),
+                    htmlspecialchars($result->topic_name),
+                    l('EDIT TOPIC', 'admin/topics/edit/' . $result->topic_id),
+                );
+                $rows[] = array(
+                    'data' => $row,
+                    'no_striping' => true,
+                );
+            }
+        }
+        $page['report'] = array(
+            'title' => array('#markup' => "<h2>$report_title</h2>"),
+            'table' => array(
+                '#attributes' => array('id' => 'board-topic-list-report'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+        );
+    }
+    return $page;
+}
+
+/**
+ * Store the report request parameters in the database and send the user
+ * to the URL which knows where those parameters were stored.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_board_topic_list_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/boards-and-topics');
+    $values = $form_state['values'];
+    $report = 'Board and Topic Lists';
+    $request_id = EbmsReports::save_report_request($values, $report);
+    drupal_goto('reports/boards-and-topics/' . $request_id);
 }
