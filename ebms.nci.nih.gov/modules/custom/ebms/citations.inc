@@ -5896,7 +5896,7 @@ namespace {
      *    Modified $form.
      */
     function _not_list_results($form, &$form_state, $board, $brief_title,
-        $full_title, $id, $all_journals) {
+                               $full_title, $id, $all_journals) {
 
         // first, refresh the journal list
         require_once('common.inc');
@@ -5910,41 +5910,6 @@ namespace {
             $per_page = $form_state['values']['per_page'];
         if (!is_numeric($per_page))
             $per_page = 10;
-
-        // if all_journals is set, then a right-join needs to be performed
-        // in order to include all journals, not just those on not-list.
-        $query = db_select('ebms_not_list', 'nl');
-        if ($all_journals) {
-            $query->rightJoin('ebms_journal', 'j',
-                'j.source = nl.source
-                AND j.source_jrnl_id = nl.source_jrnl_id
-                AND nl.board_id = :board',
-                array(':board' => $board));
-        } else {
-            $query->join('ebms_journal', 'j',
-                'nl.source_jrnl_id = j.source_jrnl_id AND nl.source = j.source');
-            $query->condition('nl.board_id', $board);
-        }
-
-        $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
-
-        // add the other filter fields
-        if ($brief_title)
-            $query->condition('j.brf_jrnl_title', "%$brief_title%", 'LIKE');
-
-        if ($full_title)
-            $query->condition('j.jrnl_title', "%$full_title%", 'LIKE');
-
-        if ($id)
-            $query->condition('j.source_jrnl_id', "%$id%", 'LIKE');
-
-        $num_rows = $query->countQuery()->execute()->fetchField();
-
-        $query
-            ->fields('j',
-                array('brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'));
-
-        $query->addExpression('!ISNULL(nl.source_jrnl_id)', 'default_value');
 
         // set up header sorting
         $field = 'j.jrnl_title';
@@ -5960,8 +5925,11 @@ namespace {
             $form_state['header_sort']['#index'] = $index;
         }
 
+        $query = _not_list_query($board, $brief_title, $full_title, $id,
+                                 $all_journals);
+        $num_rows = $query->countQuery()->execute()->fetchField();
+        $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
         $query->orderBy($field, $dir);
-
         $result = $query->execute();
 
         $form += array(
@@ -5969,7 +5937,20 @@ namespace {
             '#suffix' => '</div>',
         );
 
-        $form['results-title']['#markup'] = "<h2>Not List Search Results <span class = 'results-count'>($num_rows)</span></h2>";
+        $url = "/citations/not-list-print-friendly?board=$board";
+        if ($brief_title)
+            $url .= '&brief_title=' . urlencode($brief_title);
+        if ($full_title)
+            $url .= '&full_title=' . urlencode($full_title);
+        if ($id)
+            $url .= '&journal_id=' . urlencode($id);
+        if ($all_journals)
+            $url .= '&all_journals=true';
+        $form['results-title']['#markup'] =
+            '<h2 id="not-list-report-title">Not List Search Results ' .
+            '<span class="results-count">' .
+            "($num_rows)</span><a href=\"$url\" target=\"_blank\">" .
+            'Printer-Friendly Version</a></h2>';
 
         $form['buttons'] = array(
             '#prefix' => '<div id="citation-buttons-div">',
@@ -5988,7 +5969,8 @@ namespace {
 
         $form['buttons']['display_options'] = array(
             '#type' => 'fieldset',
-            '#title' => '<span class="citation-subheader">Display Options</span>',
+            '#title' =>
+                '<span class="citation-subheader">Display Options</span>',
             'options' => _build_citation_sort_options($form_state, false),
             '#collapsible' => true,
             '#collapsed' => true,
@@ -6011,9 +5993,6 @@ namespace {
             '#prefix' => "<div class='citation-header'>",
             '#suffix' => '</div>',
         );
-
-        /* $form['table']['header'][]['#markup'] =
-          "<div class='citation-cell brief-title left-column'>Brief Journal Title</div>"; */
 
         $form['table']['header']['header-brief-title'] = array(
             '#type' => 'container',
@@ -6043,8 +6022,6 @@ namespace {
             ),
         );
 
-        /* $form['table']['header'][]['#markup'] =
-          "<div class='citation-cell full-title'>Full Journal Title</div>"; */
         $form['table']['header']['header-title'] = array(
             '#type' => 'container',
             'header-submit' => array(
@@ -6072,8 +6049,6 @@ namespace {
             ),
         );
 
-        /* $form['table']['header'][]['#markup'] =
-          "<div class='citation-cell id'>Journal ID</div>"; */
         $form['table']['header']['header-journal-id'] = array(
             '#type' => 'container',
             'header-submit' => array(
@@ -6122,28 +6097,31 @@ namespace {
             );
 
             $form['table']['rows'][$ix]['brief_title']['#markup'] =
-                "<div class='citation-cell brief-title left-column'>$record->brf_jrnl_title</div>";
+                '<div class="citation-cell brief-title left-column">' .
+                $record->brf_jrnl_title . '</div>';
             $form['table']['rows'][$ix]['full_title']['#markup'] =
-                "<div class='citation-cell full-title'>$record->jrnl_title</div>";
+                '<div class="citation-cell full-title">' .
+                $record->jrnl_title . '</div>';
             $form['table']['rows'][$ix]['journal_id']['#markup'] =
-                "<div class='citation-cell id'>$record->source_jrnl_id</div>";
+                '<div class="citation-cell id">' .
+                $record->source_jrnl_id . '</div>';
 
             $initial = $record->default_value;
-            $journal_hash = "$record->source|$record->source_jrnl_id|$board|$initial";
+            $journal_hash = "$record->source|$record->source_jrnl_id|" .
+                "$board|$initial";
             $default = $initial;
             if (isset($form_state['altered_states'][$journal_hash])) {
                 $default = $form_state['altered_states'][$journal_hash];
             }
 
-            $form['table']['rows'][$ix]["not_list_state_$journal_hash"] = array(
+            $form['table']['rows'][$ix]["not_list_state_$journal_hash"] = [
                 '#type' => 'checkbox',
                 '#title' => "&nbsp;",
                 '#default_value' => $default,
-                '#prefix' => "<div class='citation-cell not-check borderless'>",
+                '#prefix' => '<div class="citation-cell not-check ' .
+                             'borderless">',
                 '#suffix' => "</div>",
-                //'#return_value' => ,
-                //'#attributes' => array('name' => "search_row_${ix}_button"),
-            );
+            ];
 
             $ix++;
         }
@@ -6170,6 +6148,136 @@ namespace {
         return $form;
     }
 
+    /**
+     * Extract not-list query logic for common use.
+     *
+     *  @param int $board
+     *    primary key for the ebms_board table
+     *  @param string $brief
+     *    pattern for narrowing list of journals with brief titles
+     *    matching this substring (possibly with wildcards)
+     *  @param string $full
+     *    same thing, but for the journals' full titles
+     *  @param string $journal_id
+     *    ditto for journal IDs maintained by NLM
+     *  @param boolean $all
+     *    if TRUE, show all the journals connected with this board,
+     *    even those which aren't "not" listed
+     */
+    function _not_list_query($board, $brief, $full, $journal_id, $all) {
+
+        // If all_journals is set, then a right-join needs to be performed
+        // in order to include all journals, not just those on not-list.
+        $query = db_select('ebms_not_list', 'nl');
+        if ($all) {
+            $query->rightJoin('ebms_journal', 'j',
+                'j.source = nl.source
+                AND j.source_jrnl_id = nl.source_jrnl_id
+                AND nl.board_id = :board',
+                array(':board' => $board));
+        }
+        else {
+            $query->join('ebms_journal', 'j',
+                'nl.source_jrnl_id = j.source_jrnl_id
+                 AND nl.source = j.source');
+            $query->condition('nl.board_id', $board);
+        }
+
+        // add the other filter fields
+        if ($brief)
+            $query->condition('j.brf_jrnl_title', "%$brief%", 'LIKE');
+        if ($full)
+            $query->condition('j.jrnl_title', "%$full%", 'LIKE');
+        if ($journal_id)
+            $query->condition('j.source_jrnl_id', "%$journal_id%", 'LIKE');
+
+        $fields = ['brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'];
+        $query->fields('j', $fields);
+
+        $query->addExpression('!ISNULL(nl.source_jrnl_id)', 'default_value');
+        return $query;
+    }
+
+    /**
+     * Menu callback for a version of the "not list" page for printing
+     */
+    function _print_friendly_not_list() {
+        $parms = drupal_get_query_parameters();
+        $board = $parms['board'];
+        $brief = $parms['brief_title'] ?? '';
+        $full = $parms['full_title'] ?? '';
+        $id = $parms['journal_id'] ?? '';
+        $all = $parms['all_journals'] ?? '';
+        $query = _not_list_query($board, $brief, $full, $id, $all);
+        $query->orderBy('j.jrnl_title');
+        $num_rows = $query->countQuery()->execute()->fetchField();
+        $today = strftime('%Y-%m-%d');
+        $board_name = htmlspecialchars(Ebms\Util::get_board_name($board));
+        $title = "$board_name Journals ($num_rows)";
+        if (!$all)
+            $title = "\"Not-Listed\" $title";
+        echo "<!DOCTYPE html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<title>Not-Listed Journals</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    /* width: 1024px; margin: 20px auto; */
+}
+h1 {font-size: 16pt; }
+h2 { font-size: 14pt; }
+h3 { font-size: 12pt; }
+table { border-collapse: collapse; }
+td, th { border-bottom: 1px black solid; }
+.center { text-align: center; }
+</style>
+</head>
+<body>
+<h1>$title</h1>
+<h2>Report Date: $today</h2>
+";
+        if ($brief) {
+            echo "<h3>With brief title containing '";
+            echo htmlspecialchars($brief) . "'</h3>\n";
+        }
+        if ($full) {
+            echo "<h3>With full title containing '";
+            echo htmlspecialchars($full) . "'</h3>\n";
+        }
+        if ($id) {
+            echo "<h3>With journal ID containing '";
+            echo htmlspecialchars($journal_id) . "'</h3>\n";
+        }
+        echo "<table>
+<tr>
+<th>Brief Title</th>
+<th>Full Title</th>
+<th>Journal ID</th>
+";
+        if ($all)
+            echo "<th>\"Not\" Listed?</th>\n";
+        echo "</tr>\n";
+        $results = $query->execute();
+        foreach ($results as $result) {
+            $brief_title = htmlspecialchars($result->brf_jrnl_title);
+            $full_title = htmlspecialchars($result->jrnl_title);
+            $journal_id = htmlspecialchars($result->source_jrnl_id);
+            echo "<tr>\n";
+            echo "<td>$brief_title</td>\n";
+            echo "<td>$full_title</td>\n";
+            echo "<td>$journal_id</td>\n";
+            if ($all) {
+                $not_listed = $result->default_value ? 'Yes' :'No';
+                echo "<td class=\"center\">$not_listed</td>\n";
+            }
+            echo "<tr>\n";
+        }
+        echo "</table>\n</body>\n</html>\n";
+        exit(0);
+    }
+
     function _not_list_results_ajax($form, &$form_state) {
         return $form['citation-results'];
     }
@@ -6177,7 +6285,8 @@ namespace {
     /******************************** COMMON ***************************/
 
     /**
-     * Simple wrapper to include often-needed ctools and modal settings scripts.
+     * Simple wrapper to include often-needed ctools and modal settings
+     * scripts.
      */
     function _include_modal_scripts() {
         // add ctools includes and style for popups

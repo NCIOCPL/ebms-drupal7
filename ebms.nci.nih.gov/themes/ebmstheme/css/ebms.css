@@ -1053,11 +1053,14 @@ body.front #next-meeting span { font-weight: bold; }
 #member-review label h2 { margin-bottom: 2px; }
 
 /* MANAGER PACKETS */
+#not-list-report-title,
 #manager-packets-page-title { position: relative; }
+#not-list-report-title a,
 #manager-packets-page-title > a {
     display: block; position: absolute; right: 2px; top: -18px;
     border: solid 1px #696559; border-radius: 5px; padding: 10px;
 }
+#not-list-report-title a:hover,
 #manager-packets-page-title > a:hover { border: solid 1px #a90101; }
 #manager-packets-page-title > div {
     position: absolute; right: 150px; top: -18px; padding-top: 12px;
