@@ -234,7 +234,7 @@ class Menu {
             $children[] = new Menu('Manage Print Recipients',
                           'print-packets/mbrs');
         }
-        $children[] = new Menu('Not List Maintenance', 'citations/not-list');
+        $children[] = new Menu('Journal Maintenance', 'citations/not-list');
         if ($role == 'librarian')
             $children[] = new Menu('Refresh Journal List',
                           'admin/refresh-journals');
@@ -1477,7 +1477,7 @@ class Util {
         $links = array(
             array('Search Database', 'citations/search'),
             array('Import Citations', 'citations/import'),
-            array('Not List Maintenance', 'citations/not-list'),
+            array('Journal Maintenance', 'citations/not-list'),
         );
         if (in_array('medical librarian', $user->roles))
             $links[] = array('Publish Citations', 'citations/publish');

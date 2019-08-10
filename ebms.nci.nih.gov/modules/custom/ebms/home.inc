@@ -324,7 +324,7 @@ class EbmsHomePage {
                     l('Review Citations', 'citations'),
                     l('Search Database', 'citations/search'),
                     l('Import Citations', 'citations/import'),
-                    l('Not List Maintenance', 'citations/not-list'),
+                    l('Journal Maintenance', 'citations/not-list'),
                     l('Publish Citations', 'citations/publish'),
                 );
                 break;

@@ -109,10 +109,10 @@ namespace {
                 break;
 
             case 'not-list':
-                $crumbs[] = "Not List Maintenance";
+                $crumbs[] = "Journal Maintenance";
                 $form = drupal_get_form('pdq_ebms_citation_not_list');
                 $result['left_nav'] =
-                    \Ebms\Util::build_left_nav('Not List Maintenance');
+                    \Ebms\Util::build_left_nav('Journal Maintenance');
                 $result['not_list_form'] = $form;
                 break;
 
@@ -5641,6 +5641,8 @@ namespace {
      * Construct the form used in NOT list maintenance, i.e., maintaining
      * board specific lists of journals from which we will not, by default,
      * import articles.
+     * "Not List Maintenance" renamed 2019-08-10 to "Journal Maintenance"
+     * by ticket OCEEBMS-511.
      */
     function pdq_ebms_citation_not_list($form, &$form_state) {
 
@@ -5667,7 +5669,8 @@ namespace {
         $form['not-list']['#prefix'] = '<div id="citation-form-div">';
         $form['not-list']['#suffix'] = '</div>';
 
-        $form['not-list']['description']['#markup'] = '<h2>Not List Maintenance</h2>';
+        $form['not-list']['description']['#markup'] =
+            '<h2>Journal Maintenance</h2>';
         $form['not-list']['board_select'] = array(
             '#type' => 'select',
             '#title' => 'Editorial Board',
