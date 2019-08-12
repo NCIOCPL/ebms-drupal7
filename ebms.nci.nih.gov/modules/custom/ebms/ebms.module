@@ -185,7 +185,7 @@ function ebms_menu() {
         'pmid-search' => array(
             'page callback' => 'pdq_ebms_pmid_search',
             'file' => 'search.inc',
-            'access arguments' => array('manage citations'),
+            'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
 

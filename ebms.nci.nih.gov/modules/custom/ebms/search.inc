@@ -1335,23 +1335,45 @@ function pdq_ebms_fix_date($element) {
  * search page instead, seeded with the PMID.
  *
  * OCEEBMS-445
+ *
+ * 2019-08-12 (OCEEBMS-457): add quick PMID search for
+ * board members (show them the PDF if available).
  */
 function pdq_ebms_pmid_search($pmid) {
-    $article_id = db_select('ebms_article', 'a')
+    global $user;
+    $is_board_member = in_array('board member', $user->roles);
+    $not_found = array(
+        '#markup' => '<h2>Not Found</h2>' .
+        '<p>A PDF of this article is not available in the EBMS. ' .
+        'E-mail your Board manager to request a copy of this ' .
+        'article.',
+    );
+    $results = db_select('ebms_article', 'a')
         ->condition('source', 'Pubmed')
         ->condition('source_id', $pmid)
-        ->fields('a', array('article_id'))
-        ->execute()
-        ->fetchField();
-    if (empty($article_id)) {
-        global $user;
-        $is_board_member = in_array('board member', $user->roles);
-        $opts = array('query' => array('pmid' => $pmid));
-        if ($is_board_member)
-            drupal_goto(EbmsSearch::$url, $opts);
+        ->fields('a', array('article_id', 'full_text_id'))
+        ->execute();
+    foreach ($results as $result) {
+        $article_id = $result->article_id;
+        $full_text_id = $result->full_text_id;
+        if ($is_board_member) {
+            if (empty($full_text_id))
+                return $not_found;
+            else {
+                $uri = db_select('file_managed', 'f')
+                    ->condition('f.fid', $full_text_id)
+                    ->fields('f', array('uri'))
+                    ->execute()
+                    ->fetchField();
+                drupal_goto(file_create_url($uri));
+            }
+        }
         else
-            drupal_goto('citations/import', $opts);
+            drupal_goto("citations/full/$article_id");
     }
+    $opts = array('query' => array('pmid' => $pmid));
+    if ($is_board_member)
+        return $not_found;
     else
-        drupal_goto("citations/full/$article_id");
+        drupal_goto('citations/import', $opts);
 }
