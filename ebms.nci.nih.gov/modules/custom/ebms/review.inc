@@ -4054,19 +4054,24 @@ function pdq_ebms_store_review($form, &$form_state) {
         // append the name of the intended user and add the manager's left
         // nav.  TIR 2409: don't use HTML markup to do this, since we're
         // appending to raw user input.
-        $comment_suffix = " (Recorded by $user->name on behalf of $account->name.)";
+        // 2019-08-12 - overturned by OCEEBMS-451: store with markup.
+        $uname = $user->name;
+        $aname = $account->name;
+        $comment_suffix = "<i>Recorded by $uname on behalf of $aname</i>";
     }
     else
-    {
         $account = $user;
-    }
 
     $packet_id = $form_state['values']['packet'];
     $article_id = $form_state['values']['article'];
     //$expanded = $form_state['values']['expanded'];
     $sort_col = $form_state['values']['sortcol'];
     $sort_dir = $form_state['values']['sortdir'];
-    $comments = $form_state['values']['comments'];
+    $comments = trim($form_state['values']['comments']);
+    if (empty($comments))
+        $comments = $comment_suffix;
+    else
+        $comments .= "<br><br>$comment_suffix";
     $loe = $form_state['values']['loe'];
     $now = strftime("%Y-%m-%d %H:%M:%S");
     $review_id = db_insert('ebms_article_review')
@@ -4076,7 +4081,7 @@ function pdq_ebms_store_review($form, &$form_state) {
                 'article_id'  => $article_id,
                 'reviewer_id' => $account->uid,
                 'when_posted' => $now,
-                'comments'    => trim($comments.$comment_suffix),
+                'comments'    => $comments,
                 'loe_info'    => $loe,
             )
         )
@@ -5752,18 +5757,25 @@ function quick_no_form_submit($form, &$form_state) {
     global $user;
     $comment_suffix = '';
     $account = pdq_ebms_find_effective_user(false);
-    if ($account)
+    if ($account) {
         // append the name of the intended user and add the manager's left
         // nav.  TIR 2409: don't use HTML markup to do this, since we're
         // appending to raw user input.
-        $comment_suffix = ' (Recorded by ' . $user->name .
-            ' on behalf of ' . $account->name . '.)';
+        // 2019-08-12 - overturned by OCEEBMS-451: store with markup.
+        $uname = $user->name;
+        $aname = $account->name;
+        $comment_suffix = "<i>Recorded by $uname on behalf of $aname</i>";
+    }
     else
         $account = $user;
 
     $packet_id = $form_state['values']['packet'];
     $article_id = $form_state['values']['article'];
-    $comments = $form_state['values']['comments'];
+    $comments = trim($form_state['values']['comments']);
+    if (empty($comments))
+        $comments = $comment_suffix;
+    else
+        $comments .= "<br><br>$comment_suffix";
     $now = strftime("%Y-%m-%d %H:%M:%S");
     $review_id = db_insert('ebms_article_review')
         ->fields(
@@ -5772,7 +5784,7 @@ function quick_no_form_submit($form, &$form_state) {
                 'article_id'  => $article_id,
                 'reviewer_id' => $account->uid,
                 'when_posted' => $now,
-                'comments'    => trim($comments.$comment_suffix),
+                'comments'    => $comments,
                 'loe_info'    => '',
             )
         )
