@@ -71,6 +71,9 @@ cd $SITEDIR
 drush pmu -y ebms_forums
 rm -rf modules/custom/ebms_forums
 
+echo Disabling the broken ldap_servers module
+drush dis -y ldap_servers
+
 echo Disabling and re-enabling the site modules
 drush -y dis ebms ebms_content ebms_webforms
 drush -y en ebms ebms_content ebms_webforms
