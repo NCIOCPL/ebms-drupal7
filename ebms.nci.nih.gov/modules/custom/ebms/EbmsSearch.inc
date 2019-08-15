@@ -648,6 +648,26 @@ class EbmsSearch {
                     $this->qry->condition("comstate.board_id", $this->boards,
                         'IN');
             }
+
+            // Simpler treatment for board manager comments.
+            $comment = $this->spec['board-manager-comment'];
+            if (!empty($comment)) {
+                $this->qry->join('ebms_article_topic_comment', 'topiccom',
+                    'topiccom.article_id = art.article_id');
+                $op = '=';
+                if ($this->chkWildCards($comment))
+                    $op = 'LIKE';
+                $this->qry->condition('topiccom.comment', $comment, $op);
+                if (!empty($this->topics))
+                    $this->qry->condition('topiccom.topic_id', $this->topics,
+                        'IN');
+                else if (!empty($this->boards)) {
+                    $this->qry->join('ebms_topic', 'topiccom_topic',
+                        'topiccom_topic.topic_id = topiccom.topic_id');
+                    $this->qry->condition("topiccom_topic.board_id",
+                        $this->boards, 'IN');
+                }
+            }
         }
     }
 

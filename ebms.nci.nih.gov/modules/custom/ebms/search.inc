@@ -449,6 +449,7 @@ class EbmsSearchSpec {
         $title = '',
         $journal = '',
         $comments = '',
+        $board_manager_comment = '',
         $publication_year = 0,
         $publication_month = 0,
         $review_cycle = 0,
@@ -525,6 +526,7 @@ class EbmsSearchSpec {
                 $this->summary_topics_added = $spec['summary-topics-added'];
                 $this->cms_id = $spec['cms-id'];
                 $this->comments = $spec['comments'];
+                $this->board_manager_comment = $spec['board-manager-comment'];
                 $this->review_cycle = $spec['review-cycle'];
                 $this->reviewer = $spec['reviewer'];
                 $this->response = $spec['response'];
@@ -628,7 +630,7 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
             'reviewer', 'response', 'decision', 'tag',
             'fyi-citation', 'nci-reviewer-decision',
             'committee-decision', 'meeting-category',
-            'full-text-retrieved',
+            'full-text-retrieved', 'board-manager-comment',
             // 'core-journals', XXX not implemeted yet
             'summary-topics-added',
             'only-unpublished', 'only-rejected', 'only-not-listed',
@@ -1121,6 +1123,13 @@ function pdq_ebms_search_db_form(
                 '#prefix' => '<div class="yes-no-boxes clearfix">',
                 '#suffix' => '</div>',
                 '#default_value' => $defaults->core_journals,
+            ),
+            'board-manager-comment' => array(
+                '#type' => 'textfield',
+                '#title' => 'BOARD MANAGER COMMENT',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
+                '#default_value' => $defaults->board_manager_comment,
             ),
         );
 
