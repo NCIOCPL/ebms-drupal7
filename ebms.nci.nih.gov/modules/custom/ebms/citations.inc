@@ -5700,10 +5700,24 @@ namespace {
         $form['not-list']['all_journals_check'] = array(
             '#type' => 'checkbox',
             '#title' => 'All Journals',
-            '#prefix' => '<div class="citation-input-div">',
+            '#prefix' => '<div class="citation-input-div which-journals">',
             '#suffix' => '</div>',
+            '#default_value' => false,
         );
-
+        $form['not-list']['included_journals_check'] = array(
+            '#type' => 'checkbox',
+            '#title' => 'Included Journals',
+            '#prefix' => '<div class="citation-input-div which-journals">',
+            '#suffix' => '</div>',
+            '#default_value' => false,
+        );
+        $form['not-list']['excluded_journals_check'] = array(
+            '#type' => 'checkbox',
+            '#title' => 'Excluded Journals',
+            '#prefix' => '<div class="citation-input-div which-journals">',
+            '#suffix' => '</div>',
+            '#default_value' => true,
+        );
         $form['not-list']['reset_button'] = array(
             '#type' => 'submit',
             '#value' => 'Reset',
@@ -5724,10 +5738,13 @@ namespace {
             $brief_title = $form_state['values']['brief_title_field'];
             $full_title = $form_state['values']['full_title_field'];
             $id = $form_state['values']['journal_id_field'];
-            $all_journals = $form_state['values']['all_journals_check'];
-
+            $which_journals = "excluded";
+            if (!empty($form_state['values']['all_journals_check']))
+                $which_journals = "all";
+            elseif (!empty($form_state['values']['included_journals_check']))
+                $which_journals = "included";
             $form['citation-results'] = _not_list_results(array(), $form_state,
-                $board, $brief_title, $full_title, $id, $all_journals);
+                $board, $brief_title, $full_title, $id, $which_journals);
         }
 
         return $form;
@@ -5891,15 +5908,19 @@ namespace {
      *  @param string $id
      *    Only include journals for which the source (e.g. Pubmed) id contains
      *    this substring.
-     *  @param boolean $all_journals
-     *    True = include all journals in the results list that match the other
-     *    search criteria, whether or not they are on the "not list".
+     *  @param string $which_journals
+     *    'all' = include all journals in the results list that match the other
+     *            search criteria, whether or not they are on the "not list".
+     *    'included' = only journals which not on the "not list" and match
+     *                 the other search criteria
+     *    'excluded' = only journals which are on the "not list" and match
+     *                 the other search criteria
      *
      *  @return array
      *    Modified $form.
      */
     function _not_list_results($form, &$form_state, $board, $brief_title,
-                               $full_title, $id, $all_journals) {
+                               $full_title, $id, $which_journals) {
 
         // first, refresh the journal list
         require_once('common.inc');
@@ -5929,7 +5950,7 @@ namespace {
         }
 
         $query = _not_list_query($board, $brief_title, $full_title, $id,
-                                 $all_journals);
+                                 $which_journals);
         $num_rows = $query->countQuery()->execute()->fetchField();
         $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
         $query->orderBy($field, $dir);
@@ -5947,10 +5968,9 @@ namespace {
             $url .= '&full_title=' . urlencode($full_title);
         if ($id)
             $url .= '&journal_id=' . urlencode($id);
-        if ($all_journals)
-            $url .= '&all_journals=true';
+        $url .= "&which_journals=$which_journals";
         $form['results-title']['#markup'] =
-            '<h2 id="not-list-report-title">Not List Search Results ' .
+            '<h2 id="not-list-report-title">Journals ' .
             '<span class="results-count">' .
             "($num_rows)</span><a href=\"$url\" target=\"_blank\">" .
             'Printer-Friendly Version</a></h2>';
@@ -6109,10 +6129,11 @@ namespace {
                 '<div class="citation-cell id">' .
                 $record->source_jrnl_id . '</div>';
 
-            $initial = $record->default_value;
+            // Is the journal on the "not" list for this board?
+            $not_listed = !empty($record->board_id) ? true : false;
             $journal_hash = "$record->source|$record->source_jrnl_id|" .
-                "$board|$initial";
-            $default = $initial;
+                "$board|$not_listed";
+            $default = $not_listed;
             if (isset($form_state['altered_states'][$journal_hash])) {
                 $default = $form_state['altered_states'][$journal_hash];
             }
@@ -6163,27 +6184,28 @@ namespace {
      *    same thing, but for the journals' full titles
      *  @param string $journal_id
      *    ditto for journal IDs maintained by NLM
-     *  @param boolean $all
-     *    if TRUE, show all the journals connected with this board,
-     *    even those which aren't "not" listed
+     *  @param string $which
+     *    "all", "included", "excluded" (looking at whether the journals are
+     *    on the "not" list ("excluded")
      */
-    function _not_list_query($board, $brief, $full, $journal_id, $all) {
+    function _not_list_query($board, $brief, $full, $journal_id, $which) {
 
-        // If all_journals is set, then a right-join needs to be performed
-        // in order to include all journals, not just those on not-list.
-        $query = db_select('ebms_not_list', 'nl');
-        if ($all) {
-            $query->rightJoin('ebms_journal', 'j',
-                'j.source = nl.source
-                AND j.source_jrnl_id = nl.source_jrnl_id
-                AND nl.board_id = :board',
-                array(':board' => $board));
-        }
-        else {
-            $query->join('ebms_journal', 'j',
-                'nl.source_jrnl_id = j.source_jrnl_id
-                 AND nl.source = j.source');
-            $query->condition('nl.board_id', $board);
+        // Create the base query.
+        $join_conditions = implode(' AND ', [
+            'n.source = j.source',
+            'n.source_jrnl_id = j.source_jrnl_id',
+            'n.board_id = :board',
+        ]);
+        $values = [':board' => $board];
+        $query = db_select('ebms_journal', 'j');
+        $query->leftJoin('ebms_not_list', 'n', $join_conditions, $values);
+        switch ($which) {
+        case 'excluded':
+            $query->isNotNull('n.board_id');
+            break;
+        case 'included':
+            $query->isNull('n.board_id');
+            break;
         }
 
         // add the other filter fields
@@ -6194,10 +6216,14 @@ namespace {
         if ($journal_id)
             $query->condition('j.source_jrnl_id', "%$journal_id%", 'LIKE');
 
+        // Specify which columns need to be part of the results set.
+        // Include the board_id from the left join on the "not" list table,
+        // which is used as a flag: if the value for the board ID is not NULL,
+        // then the journal is on the "not" list for this board; otherwise
+        // it isn't.
         $fields = ['brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'];
         $query->fields('j', $fields);
-
-        $query->addExpression('!ISNULL(nl.source_jrnl_id)', 'default_value');
+        $query->fields('n', array('board_id'));
         return $query;
     }
 
@@ -6210,15 +6236,13 @@ namespace {
         $brief = $parms['brief_title'] ?? '';
         $full = $parms['full_title'] ?? '';
         $id = $parms['journal_id'] ?? '';
-        $all = $parms['all_journals'] ?? '';
-        $query = _not_list_query($board, $brief, $full, $id, $all);
+        $which = $parms['which_journals'] ?? 'all';
+        $query = _not_list_query($board, $brief, $full, $id, $which);
         $query->orderBy('j.jrnl_title');
         $num_rows = $query->countQuery()->execute()->fetchField();
         $today = strftime('%Y-%m-%d');
         $board_name = htmlspecialchars(Ebms\Util::get_board_name($board));
-        $title = "$board_name Journals ($num_rows)";
-        if (!$all)
-            $title = "\"Not-Listed\" $title";
+        $title = ucfirst($which) . " $board_name Journals ($num_rows)";
         echo "<!DOCTYPE html>
 <html>
 <head>
@@ -6259,7 +6283,7 @@ td, th { border-bottom: 1px black solid; }
 <th>Full Title</th>
 <th>Journal ID</th>
 ";
-        if ($all)
+        if ($which === 'all')
             echo "<th>\"Not\" Listed?</th>\n";
         echo "</tr>\n";
         $results = $query->execute();
@@ -6271,8 +6295,8 @@ td, th { border-bottom: 1px black solid; }
             echo "<td>$brief_title</td>\n";
             echo "<td>$full_title</td>\n";
             echo "<td>$journal_id</td>\n";
-            if ($all) {
-                $not_listed = $result->default_value ? 'Yes' :'No';
+            if ($which === 'all') {
+                $not_listed = !empty($result->board_id) ? 'Yes' :'No';
                 echo "<td class=\"center\">$not_listed</td>\n";
             }
             echo "<tr>\n";
