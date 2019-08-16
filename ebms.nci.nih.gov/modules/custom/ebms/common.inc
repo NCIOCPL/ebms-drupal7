@@ -223,6 +223,7 @@ class Menu {
             $children[] = new Menu('Upload Document', 'docs/post');
             $children[] = new Menu('Manage Documents', 'docs');
         }
+        $children[] = new Menu('Manage Internal Tags', 'admin/internal-tags');
         $children[] = new Menu('Manage Summary Topics', 'admin/topics');
         $children[] = new Menu('Manage Summary Topic Groups',
                       'admin/topic-groups');

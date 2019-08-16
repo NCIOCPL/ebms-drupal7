@@ -459,6 +459,14 @@ function ebms_menu() {
             'file' => 'subgroups.inc',
         ),
 
+        // MANAGE EBMS INTERNAL TAGS
+        'admin/internal-tags' => array(
+            'title' => 'EBMS Internal Tags',
+            'page callback' => 'pdq_ebms_internal_tags',
+            'access arguments' => array('administer'),
+            'file' => 'internal.inc',
+        ),
+
         // MANAGE EBMS BOARDS
         'admin/boards' => array(
             'title' => 'EBMS Boards',
