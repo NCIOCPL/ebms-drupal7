@@ -6,6 +6,15 @@
  * Interface for managing internal EBMS articles.  Added as part of work on
  * OCEEBMS-509.
  */
+
+/**
+ * Entry point for internal tag management.
+ *
+ *  @param  string   $action   one of 'view', 'edit', or 'add'
+ *  @param  int      $tag_id   optional integer for editing an existing tag
+ *
+ *  @return array    Drupal render or form array
+ */
 function pdq_ebms_internal_tags($action='view', $tag_id=0) {
     $form_id = 'pdq_ebms_internal_tag_form';
     switch ($action) {
@@ -47,10 +56,6 @@ function pdq_ebms_show_internal_tags() {
     $button_class = array('class' => array('button'));
     $attrs = array('attributes' => $button_class);
     return array(
-        'title' => array(
-            '#markup' =>
-                '<h2 id="internal-tags-title">EBMS Internal Tags</h2>',
-        ),
         'description' => array(
             '#markup' =>
                 '<p>' .
@@ -217,4 +222,122 @@ function pdq_ebms_internal_tag_form_submit($form, &$form_state) {
         drupal_set_message('Tag ' . htmlspecialchars($name) . ' saved.');
     }
     drupal_goto('admin/internal-tags');
+}
+
+/**
+ * Import internal articles.
+ *
+ * Implemented separately from the main import page, because the requirements
+ * for this type of import are so radically different (for example, these
+ * articles don't have a board topic, which is normally required, and we
+ * aren't putting anything in the state table).
+ *
+ * It was a tossup whether this should go here or in import.inc. It had to
+ * go somewhere, and import.inc was already plenty big.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   $form_state   Structured array containing the
+ *                                current values of the form, as well
+ *                                as other form state information
+ */
+function pdq_ebms_import_internal_articles() {
+    return array(
+        'left_nav' => Ebms\Util::build_left_nav('Internal Import'),
+        drupal_get_form('pdq_ebms_import_internal_articles_form'),
+    );
+}
+
+function pdq_ebms_import_internal_articles_form($form, &$form_state) {
+    $results = db_select('ebms_internal_tag', 't')
+        ->fields('t', array('tag_id', 'tag_name'))
+        ->condition('t.active_status', 'A')
+        ->execute();
+    $tags = array();
+    foreach ($results as $result)
+        $tags[$result->tag_id] = htmlspecialchars($result->tag_name);
+    return array(
+        '#id' => 'internal-import-form',
+        'title' => array('#markup' => '<h2>Import Internal Articles</h2>'),
+        'pmid' => array(
+            '#type' => 'textfield',
+            '#title' => 'PMID(s)',
+            '#required' => true,
+            '#description' => t('Separate multiple PMIDs with commas ' .
+                                'or spaces.'),
+        ),
+        'comment' => array(
+            '#type' => 'textfield',
+            '#title' => 'Comment',
+            '#description' => t('We don\'t yet know if the comment is ' .
+                                'associated with the article or the tag.'),
+        ),
+        'tag' => array(
+            '#type' => 'checkboxes',
+            '#title' => 'Tag(s)',
+            '#options' => $tags,
+            '#required' => true,
+            '#description' => t('Select one or more internal article tags. ' .
+                                'Additional tags can be added on the ' .
+                                '"Full Citation" page.'),
+        ),
+        'full-text' => array(
+            '#title' => 'Full Text PDF File',
+            '#type' => 'file',
+            '#upload_validators' => ['file_validate_extensions' => ['pdf']],
+            '#description' => t('Only allowed if a single article is ' .
+                                'being imported. Can also be added later ' .
+                                'from the "Full Citation" page.'),
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Import',
+        ),
+        'cancel' => array(
+            '#type' => 'submit',
+            '#value' => 'Clear',
+            // It's a little whacky, since Drupal already knows how
+            // to derive the submit callback's name from the name
+            // of the form, but if you don't explicitly set this
+            // property, the #limit_validation_errors property is
+            // ignored. Sound like a bug to you? You're not alone. :-)
+            '#submit' => 'pdq_ebms_import_internal_articles_form_submit',
+            '#limit_validation_errors' => array(),
+        ),
+    );
+}
+
+/**
+ * Ensure that the import request meets our criteria.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   $form_state   Structured array containing the
+ *                                current values of the form, as well
+ *                                as other form state information
+ */
+function pdq_ebms_import_internal_articles_form_validate($form, &$form_state) {
+}
+
+/**
+ * Perform the requested import.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   $form_state   Structured array containing the
+ *                                current values of the form, as well
+ *                                as other form state information
+ */
+function pdq_ebms_import_internal_articles_form_submit($form, &$form_state) {
+    drupal_set_message('Can\'t implement Import until we know about comments');
+    return;
+    try {
+        $batch = Ebms\importArticlesFromNLM('live', $pmids, null, null,
+                                            $comment, false, 'I');
+    }
+    catch (\Exception $e) {
+        drupal_set_message($e);
+        $batch = null;
+        $url = 'import-internal-articles';
+    }
 }

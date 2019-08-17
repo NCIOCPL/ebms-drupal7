@@ -365,7 +365,7 @@ function ebms_menu() {
         // PRINTING PACKETS
         'print-packets' => array(
             'page callback' => 'pdq_ebms_print_packets',
-            'page_arguments' => array(2),
+            'page arguments' => array(2),
             'file' => 'print.inc',
             'access arguments' => array('administer'),
             'type' => MENU_CALLBACK,
@@ -374,7 +374,7 @@ function ebms_menu() {
         // DOWNLOAD MEETING DOCS
         'download-meeting-docs' => array(
             'page callback' => 'pdq_ebms_download_meeting_docs',
-            'page_arguments' => array(1),
+            'page arguments' => array(1),
             'file' => 'calendar.inc',
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
@@ -391,7 +391,7 @@ function ebms_menu() {
         // LINK FROM HOME-PAGE EVENT NOTIFICATION TO EVENT (OCEEBMS-296)
         'event' => array(
             'page callback' => 'pdq_ebms_event_link',
-            'page_arguments' => array(1),
+            'page arguments' => array(1),
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
@@ -400,7 +400,7 @@ function ebms_menu() {
         // OCEEBMS-296
         'packet' => array(
             'page callback' => 'pdq_ebms_packet_link',
-            'page_arguments' => array(1),
+            'page arguments' => array(1),
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
@@ -463,6 +463,14 @@ function ebms_menu() {
         'admin/internal-tags' => array(
             'title' => 'EBMS Internal Tags',
             'page callback' => 'pdq_ebms_internal_tags',
+            'access arguments' => array('administer'),
+            'file' => 'internal.inc',
+        ),
+
+        // IMPORT INTERNAL ARTICLES
+        'import-internal-articles' => array(
+            'title' => 'Import Internal Articles',
+            'page callback' => 'pdq_ebms_import_internal_articles',
             'access arguments' => array('administer'),
             'file' => 'internal.inc',
         ),

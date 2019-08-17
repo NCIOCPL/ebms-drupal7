@@ -493,7 +493,7 @@ class ImportBatch {
         // User
         if (is_null($userId)) {
             global $user;
-            $userId = $user;
+            $userId = $user->uid;
         }
         $this->userId = $userId;
 
@@ -879,6 +879,8 @@ function loadNotList ($boardId, $source='Pubmed') {
  *                               Could be null but think that should be rare.
  *                               Will be null when we're just refreshing
  *                               article XML from NLM.
+ *                               2019-08-16 import of "internal" articles
+ *                               (see OCEEBMS-509) will have a NULL topic ID.
  *  @param string $comment      Comment to record in import_batch table (only
  *                               in live mode), default is none.
  *                               Comment is also recorded in setArticleState()
@@ -951,8 +953,13 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
 
     // Load not list if needed
     $notList = array();
-    if ($useNotList && !is_null($boardId))
+    if ($useNotList) {
+        if (is_null($boardId)) {
+            $message = '"Not" list processing requested without board/topic';
+            throw new \Exception($message);
+        }
         $notList = loadNotList($boardId, 'Pubmed');
+    }
 
     // Instantiate an ImportBatch to contain stats and report
     $ib = new ImportBatch();
@@ -1097,7 +1104,8 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                     $rec->setArticleState('ReadyInitReview', $topicId,
                         $boardId, $comment, $userId, $pi->constantDt,
                         $cycleId);
-                $ib->addArticle('reviewReady', $pmid, $rec->getId(), null);
+                if ($ib->inputType !== 'I')
+                    $ib->addArticle('reviewReady', $pmid, $rec->getId(), null);
             }
 
             // Is it not listed?

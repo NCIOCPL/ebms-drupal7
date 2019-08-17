@@ -78,9 +78,9 @@ function pdq_ebms_show_topics() {
     $button_class = array('class' => array('button'));
     $attrs = array('attributes' => $button_class);
     return array(
-        'title' => array(
+        /*'title' => array(
             '#markup' => '<h2 id="topics-title">EBMS Topics</h2>',
-        ),
+            ),*/
         'new-link' => array(
             '#markup' => l('Add New Topic', 'admin/topics/add', $attrs) .
             '<br /><br />',
@@ -122,9 +122,11 @@ function pdq_ebms_show_topic_groups() {
     $attrs = array('attributes' => $button_class);
     $link = l('Add New Topic Group', 'admin/topic-groups/add', $attrs);
     return array(
+        /*
         'title' => array(
             '#markup' => '<h2 id="topics-title">EBMS Topic Groups</h2>',
         ),
+        */
         'new-link' => array(
             '#markup' => "$link<br><br>",
         ),
@@ -272,9 +274,10 @@ function pdq_ebms_topic_form($form, &$form_state, $topic_id=0) {
     // Assemble and return the form render array.
     $title = $topic_id ? 'Edit Topic' : 'Add Topic';
     return array(
+        /*
         'title' => array(
             '#markup' => "<h2>$title</h2>",
-        ),
+            ),*/
         'name' => array(
             '#type' => 'textfield',
             '#title' => 'Topic Name',
@@ -490,9 +493,10 @@ function pdq_ebms_topic_group_form($form, &$form_state, $group_id=0) {
     // Assemble and return the form render array.
     $title = $group_id ? 'Edit Topic Group' : 'Add Topic Group';
     return array(
+        /*
         'title' => array(
             '#markup' => "<h2>$title</h2>",
-        ),
+            ),*/
         'name' => array(
             '#type' => 'textfield',
             '#title' => 'Topic Group Name',

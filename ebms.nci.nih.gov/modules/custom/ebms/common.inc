@@ -258,6 +258,7 @@ class Menu {
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
                     new Menu('Publish Citations', 'citations/publish'),
+                    new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations', $children);
             case 'admin assistant':
@@ -265,6 +266,7 @@ class Menu {
                     new Menu('Full Text Retrieval', 'citations/fulltext'),
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
+                    new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations/fulltext', $children);
             default:
@@ -272,6 +274,7 @@ class Menu {
                     new Menu('Review Citations', 'citations'),
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
+                    new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations', $children);
         }
@@ -1479,6 +1482,7 @@ class Util {
             array('Search Database', 'citations/search'),
             array('Import Citations', 'citations/import'),
             array('Journal Maintenance', 'citations/not-list'),
+            array('Internal Import', 'import-internal-articles'),
         );
         if (in_array('medical librarian', $user->roles))
             $links[] = array('Publish Citations', 'citations/publish');

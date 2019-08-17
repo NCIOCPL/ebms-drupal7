@@ -1777,3 +1777,6 @@ input#pmid-search-box {
     text-align: center;
     border-radius: 5px;
 }
+
+/* OCEEBMS-509 */
+#internal-import-form { float: left; width: 710px; }
