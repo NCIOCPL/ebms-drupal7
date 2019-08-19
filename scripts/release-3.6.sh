@@ -89,8 +89,9 @@ drush pmu -y ldap_authorization ldap_authentication
 drush pmu -y ldap_user ldap_servers
 
 echo Applying Drupal security updates - ignore 4 byte UTF-8 for mysql warnings
-drush up -y drupal-7.67 ctools-7.x-1.15 role_delegation-7.x-1.2
-drush up -y views-7.x-3.23 webform-7.2-4.20 wysiwyg-7.x-2.6
+drush up -y drupal-7.67 chain_menu_access-7.x-2.0 ctools-7.x-1.15
+drush up -y role_delegation-7.x-1.2 views-7.x-3.23
+drush up -y webform-7.2-4.20 wysiwyg-7.x-2.6
 drush cc all
 
 echo Disabling and re-enabling the site modules
