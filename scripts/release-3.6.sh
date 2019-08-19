@@ -57,6 +57,9 @@ echo Putting site into maintenance mode
 cd $SITEDIR
 drush vset maintenance_mode 1
 
+echo Preparing for the upgrade to PHP 7.2
+sed -i 's/^ini_set.*session.save_handler/#&/' $SITEDIR/settings.php
+
 echo Deleting the current software
 cd $SITEDIR
 rm -rf modules/* themes/*
