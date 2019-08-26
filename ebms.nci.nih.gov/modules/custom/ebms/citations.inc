@@ -24,7 +24,7 @@
  *           more than one queue for each user, and the queues can be
  *           filtered to restrict the portion displayed by various criteria
  *
- *  'not-list' - uses pdq_ebms_citation_not_list to build the form for
+ *  'journals' - uses pdq_ebms_citation_not_list to build the form for
  *           managing the lists of journals which have historically
  *           published articles which are not useful for the PDQ
  *           boards; the import process dead-ends such articles by
@@ -207,6 +207,52 @@ namespace {
             '#suffix' => "</div>",
         );
 
+        // Show the full text if we have it.
+        $full_text_info = _pdq_ebms_full_text_info($article);
+        if (!empty($full_text_info)) {
+            $form['full-text-info'] = array(
+                '#markup' => '<div class="full-citation-element">' .
+                '<div class="citation-subheader" id="full-text-info-title">' .
+                'FULL TEXT</div> ' . $full_text_info . '</div>'
+            );
+        }
+
+
+        // Display internal tags, if any.
+        $internal_tags = array();
+        foreach ($article->getInternalTags() as $internal_tag)
+            $internal_tags[] = htmlspecialchars($internal_tag);
+        $internal_tags = implode('; ', $internal_tags);
+        if (!empty($internal_tags)) {
+            $form['internal-tags'] = array(
+                '#markup' => '<div class="full-citation-element">' .
+                '<div class="citation-subheader" id="internal-tags-title">' .
+                'INTERNAL TAGS</div>' .
+                "<div>$internal_tags</div></div>",
+            );
+        }
+
+        // Ditto for internal comments.
+        $internal_comments = array();
+        foreach ($article->getInternalComments() as $id => $comment)
+            $internal_comments[] = _format_internal_comment($id, $comment,
+                                                            $articleId);
+        $internal_comments = implode('<br>', $internal_comments);
+        if (!empty($internal_comments)) {
+            $form['internal-comments'] = array(
+                '#markup' => '<div class="full-citation-element">' .
+                '<div class="citation-subheader" ' .
+                'id="internal-article-comment-title">INTERNAL COMMENTS</div>' .
+                "$internal_comments</div>" .
+                '<div id="confirm-internal-comment-deletion" ' .
+                'style="display: none" title="Delete internal comment?">' .
+                '<p><span class="ui-icon ui-icon-alert" style="float:left; ' .
+                'margin:0 7px 20px 0;"></span>Internal comment will be ' .
+                'permanently deleted and cannot be recovered. Are you sure?' .
+                '</p></div>',
+            );
+        }
+
         // Display related articles, if any (OCEEBMS-349).
         $related = $article->getRelatedArticles();
         if (!empty($related)) {
@@ -221,6 +267,7 @@ namespace {
                 _display_article_relationship($r, $articleId);
             $form['related-articles'] = $related_articles_block;
         }
+
         $citations_inc_display_phase = DISPLAY_PHASE::REVIEW_CYCLE;
         // Build array of currently active citation tags ever assigned,
         // in date order.
@@ -329,6 +376,47 @@ namespace {
             }
         }
         return $form;
+    }
+
+    function _delete_internal_comment($comment_id) {
+        $article_id = db_select('ebms_internal_article_comment', 'c')
+            ->fields('c', array('article_id'))
+            ->condition('c.comment_id', $comment_id)
+            ->execute()
+            ->fetchField();
+        db_delete('ebms_internal_article_comment')
+            ->condition('comment_id', $comment_id)
+            ->execute();
+        $url = "citations/full/$article_id";
+        $opts = array('query' => drupal_get_query_parameters());
+        drupal_goto($url, $opts);
+    }
+
+    function _format_internal_comment($comment_id, $comment, $article_id) {
+        $opts = array('query' => drupal_get_query_parameters());
+        $url = url("internal-article-comment/edit/$comment_id", $opts);
+        $edit_icon = Ebms\EDIT_INACTIVE;
+        $del_icon = Ebms\DELETE_ICON;
+        $request_uri = request_uri();
+        $pos = strpos($request_uri, 'citations/full/');
+        if ($pos === false)
+            $tail = "$article_id";
+        else
+            $tail = substr($request_uri, $pos + strlen('citations/full/'));
+        $del_url = "/delete-internal-article-comment/$comment_id";
+        $del = "delInternalComment('$del_url')";
+        $html = array();
+        $html[] = '<div class="internal-article-comment">';
+        $eclass = 'edit-internal-comment-link';
+        $dclass = 'del-internal-comment-link';
+        $html[] = "<span title='Delete comment' class='$dclass' ";
+        $html[] = "onclick=\"$del\">";
+        $html[] = "<img src=\"$del_icon\"></span>";
+        $html[] = "<a href=\"$url\" title=\"Edit comment\" class=\"$eclass\">";
+        $html[] = "<img src=\"$edit_icon\"></a>";
+        $html[] = '<span class="hanging-indent-comment">';
+        $html[] = htmlspecialchars($comment->comment_text) . '</span></div>';
+        return implode('', $html);
     }
 
     /**
@@ -451,12 +539,15 @@ namespace {
 
         $links[] = array('View Abstract', $pm_url, $target);
 
-        if ($fileUrl)
-            $links[] = array('Download Full Text', $fileUrl, $target);
+        // Removed by OCEEBMS-509.
+        // if ($fileUrl)
+        //     $links[] = array('Download Full Text', $fileUrl, $target);
+        $link_opt = array('query' => drupal_get_query_parameters());
+        $upload_url = "upload-full-text/$articleId";
+        $links[] = array('Upload Full text', $upload_url, $link_opt);
 
         // Add action for linking related citations (OCEEBMS-349).
         $link_url = "citations/link/add/$articleId";
-        $link_opt = array('query' => drupal_get_query_parameters());
         $links[] = array('Link Related Citation', $link_url, $link_opt);
 
         // Add link for adding a board manager topic-specific comment
@@ -472,6 +563,16 @@ namespace {
             $links[] = array('Add Board Manager Comment',
                              $link_url, $link_opt);
         }
+
+        // Add a link for editing the internal article tags.
+        $link_url = "edit-internal-article-tags/$articleId";
+        $link_label = 'Edit Internal Tags';
+        $links[] = array($link_label, $link_url, $link_opt);
+
+        // Add a link for adding an internal article comment.
+        $link_url = "internal-article-comment/add/$articleId";
+        $link_label = 'Add Internal Comment';
+        $links[] = array($link_label, $link_url, $link_opt);
 
         $items = array();
         foreach ($links as $link) {
@@ -748,11 +849,13 @@ namespace {
                 _wrap_decision($form_state, $articleId, $topicId, $decision,
                                $decisionInfo, $empty_decisions);
 
+            /*
             $decisionInfo = Ebms\EbmsTopicDecisions::$FULLTEXT;
             $decision = _format_topic_full_text_decision($article);
             $decisions['topic_full_text_decision'] =
                 _wrap_decision($form_state, $articleId, $topicId, $decision,
                                $decisionInfo, $empty_decisions);
+            */
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$SURVEILLANCE;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
@@ -1464,6 +1567,7 @@ namespace {
         return $form;
     }
 
+    /*
     function _format_topic_full_text_decision(Ebms\EbmsArticle $article) {
         $form = array();
 
@@ -1526,6 +1630,7 @@ namespace {
 
         return $form;
     }
+    */
 
     /**
      * Renders the block showing review packets assembled for board members
@@ -1988,6 +2093,8 @@ namespace {
                     );
 
                     break;
+
+                /*
                 case Ebms\EbmsTopicDecisions::$FULLTEXT:
                     $form['fulltext_title'] = $full_title;
 
@@ -2017,6 +2124,8 @@ namespace {
                     );
 
                     break;
+                */
+
                 case Ebms\EbmsTopicDecisions::$SURVEILLANCE:
                     $form['surveillance_title'] = $full_title;
 
@@ -5635,7 +5744,7 @@ namespace {
         $target = $diff;
     }
 
-    /******************************* NOT LIST **************************/
+    /******************************* JOURNALS **************************/
 
     /**
      * Construct the form used in NOT list maintenance, i.e., maintaining
@@ -7467,6 +7576,361 @@ td, th { border-bottom: 1px black solid; }
         return drupal_get_form($name, $action, $id, $id2);
     }
 
+    function pdq_ebms_full_text_upload_form($form, &$form_state, $article_id) {
+        $comment = '';
+        $description = 'Select PDF file to be uploaded.';
+        $title = 'Upload Full Text PDF File';
+        $unavailable = false;
+        $full_text_id = db_select('ebms_article', 'a')
+            ->fields('a', array('full_text_id'))
+            ->condition('a.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+        if (empty($full_text_id)) {
+            $comment = db_select('ebms_ft_unavailable', 'u')
+                ->condition('u.article_id', $article_id)
+                ->fields('u', array('comment'))
+                ->execute()
+                ->fetch();
+            $unavailable = true;
+        }
+        else {
+            $title = 'Replace Full Text PDF File';
+            $row = db_select('file_managed', 'f')
+                ->condition('f.fid', $full_text_id)
+                ->fields('f')
+                ->execute()
+                ->fetch();
+            $user = htmlspecialchars(user_load($row->uid)->name);
+            $filename = htmlspecialchars($row->filename);
+            $date = format_date($row->timestamp, 'custom', 'Y-m-d');
+            $url = file_create_url($row->uri);
+            $target = array('attributes' => array('target' => '_blank'));
+            $link = l($filename, $url, $target);
+            $description .=
+                " This will replace $link uploaded $date by $user.";
+        }
+        return array(
+            'title' => array('#markup' => "<h2>$title</h2>"),
+            'article' => array(
+                '#type' => 'hidden',
+                '#value' => $article_id,
+            ),
+            'full-text' => array(
+                '#title' => 'Full Text PDF File',
+                '#type' => 'file',
+                '#upload_validators' => array(
+                    'file_validate_extensions' => array('pdf'),
+                ),
+                '#description' => $description,
+            ),
+            'unavailable' => array(
+                '#type' => 'checkbox',
+                '#title' => 'Full Text File Unavailable',
+                '#default' => $unavailable,
+                '#description' => 'Check if attempts to obtain the full ' .
+                'text for the article have not succeeded (and are not ' .
+                'likely to in the future).',
+            ),
+            'comment' => array(
+                '#type' => 'textarea',
+                '#title' => 'Comment',
+                '#default_value' => $comment,
+                '#description' =>
+                'Only stored if full-text file is unavailable.',
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#submit' => 'pdq_ebms_full_text_upload_form_submit',
+                '#limit_validation_errors' => array(),
+            ),
+        );
+    }
+
+    function pdq_ebms_full_text_upload_form_validate($form, &$form_state) {
+        $values = $form_state['values'];
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        if ($values['op'] != 'Submit') {
+            $article_id = $values['article'];
+            $url = "citations/full/$article_id";
+            $opts = array('query' => $parms);
+            drupal_goto($url, $opts);
+        }
+        $form_state['article'] = $values['article'];
+        $form_state['full-text-id'] = null;
+        $form_state['comment'] = $values['comment'];
+        $form_state['unavailable'] = !empty($values['unavailable']);
+        if (!empty($_FILES['files']['name']['full-text'])) {
+            if ($form_state['unavailable']) {
+                form_set_error('unavailable',
+                               'File cannot be available and unavailable ' .
+                               'at the same time.');
+                return;
+            }
+            $name = $_FILES['files']['name']['full-text'];
+            $path = $_FILES['files']['tmp_name']['full-text'];
+            $extension_ok = Ebms\Util::has_valid_extension($name, 'pdf');
+            $mime_type = Ebms\Util::get_mime_type($path);
+            if (!$extension_ok || $mime_type !== 'application/pdf')
+                form_set_error('full-text', 'Full text must be a PDF file');
+            else {
+                $validators = ['file_validate_extensions' => ['pdf']];
+                $file = file_save_upload('full-text', $validators);
+                if ($file) {
+                    $file = file_move($file, 'public://');
+                    $file->status |= FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                    $form_state['full-text-id'] = $file->fid;
+                }
+                else
+                    form_set_error('full-text', "Unable to upload $name");
+            }
+        }
+        elseif (!$form_state['unavailable']) {
+            form_set_error('full-text', 'You must choose a PDF file ' .
+                           'or indicate that the file is unavailable ' .
+                           '(preferably with an explanation in the ' .
+                           'latter case).');
+        }
+    }
+
+    function pdq_ebms_full_text_upload_form_submit($form, &$form_state) {
+        $full_text_id = $form_state['full-text-id'];
+        $article_id = $form_state['article'];
+        $transaction = db_transaction();
+        try {
+            if ($full_text_id) {
+                db_update('ebms_article')
+                    ->fields(array('full_text_id' => $full_text_id))
+                    ->condition('article_id', $article_id)
+                    ->execute();
+                db_delete('ebms_unavailable')
+                    ->condition('article_id', $article_id);
+            }
+            else {
+                global $user;
+                $fields = array(
+                    'flagged' => strftime("%Y-%m-%d %H:%M:%S"),
+                    'flagged_by' => $user->uid,
+                    'comment' => $form_state['comment'],
+                );
+                db_merge('ebms_ft_unavailable')
+                    ->key(array('article_id' => $article_id))
+                    ->fields($fields)
+                    ->execute();
+                db_update('ebms_article')
+                    ->fields(array('full_text_id' => null))
+                    ->condition('article_id', $article_id)
+                    ->execute();
+            }
+        }
+        catch (\Exception $e) {
+            $transaction->rollback();
+            throw $e;
+        }
+        $url = "citations/full/$article_id";
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        $opts = array('query' => $parms);
+        drupal_goto($url, $opts);
+    }
+
+    function pdq_ebms_edit_internal_comment($form, &$form_state, $verb, $id) {
+
+        $verb = ucfirst($verb);
+        $comment = '';
+        $comment_id = null;
+        if ($verb === 'Add')
+            $article_id = $id;
+        else {
+            $comment_id = $id;
+            $result = db_select('ebms_internal_article_comment', 'c')
+                ->fields('c', array('article_id', 'comment_text'))
+                ->condition('c.comment_id', $comment_id)
+                ->execute()
+                ->fetch();
+            $article_id = $result->article_id;
+            $comment = $result->comment_text;
+        }
+        $title = "$verb Internal Comment for EBMS $article_id";
+        return array(
+            'title' => array('#markup' => "<h2>$title</h2>"),
+            'article' => array(
+                '#type' => 'hidden',
+                '#value' => $article_id,
+            ),
+            'comment' => array(
+                '#type' => 'hidden',
+                '#value' => $comment_id,
+            ),
+            'comment-text' => array(
+                '#type' => 'textarea',
+                '#title' => 'Comment',
+                '#default_value' => $comment,
+                '#description' => 'Provide notes about how this article ' .
+                'may be of interest to internal PDQ staff.',
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#submit' => 'pdq_ebms_edit_internal_comment_submit',
+                '#limit_validation_errors' => array(),
+            ),
+        );
+    }
+
+    function pdq_ebms_edit_internal_comment_validate($form, &$form_state) {
+        $values = $form_state['values'];
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        if (!empty($values['op']) && $values['op'] === 'Submit') {
+            $comment = trim($values['comment-text']);
+            if (empty($comment)) {
+                form_set_error('comment-text', 'Comment cannot be empty. ' .
+                               'Use the delete icon to delete a comment.');
+            }
+        }
+        else {
+            $article_id = $values['article'];
+            $url = "citations/full/$article_id";
+            $opts = array('query' => $parms);
+            drupal_goto($url, $opts);
+        }
+    }
+
+    function pdq_ebms_edit_internal_comment_submit($form, &$form_state) {
+
+        // Make sure we're really supposed to store the new values.
+        $values = $form_state['values'];
+        $article_id = $values['article'];
+        $comment_id = $values['comment'];
+        $comment = $values['comment-text'];
+        if (!empty($values['op']) && $values['op'] === 'Submit') {
+            $table = 'ebms_internal_article_comment';
+            if (empty($comment_id)) {
+                global $user;
+                $now = strftime("%Y-%m-%d %H:%M:%S");
+                $fields = array(
+                    'user_id' => $user->uid,
+                    'comment_date' => $now,
+                    'comment_text' => $comment,
+                    'article_id' => $article_id,
+                );
+                db_insert($table)->fields($fields)->execute();
+                drupal_set_message('Internal comment successfully added.');
+            }
+            else {
+                db_update($table)
+                    ->fields(array('comment_text' => $comment))
+                    ->condition('comment_id', $comment_id)
+                    ->execute();
+                drupal_set_message('Internal comment successfully updated.');
+            }
+        }
+        $url = "citations/full/$article_id";
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        $opts = array('query' => $parms);
+        drupal_goto($url, $opts);
+    }
+
+    function pdq_ebms_edit_internal_tags(
+        $form, &$form_state, $article_id
+    ) {
+        $results = db_select('ebms_internal_tag', 't')
+            ->fields('t', array('tag_id', 'tag_name'))
+            ->condition('t.active_status', 'A')
+            ->execute();
+        $tags = array();
+        foreach ($results as $result)
+            $tags[$result->tag_id] = htmlspecialchars($result->tag_name);
+        $results = db_select('ebms_internal_article_tag', 't')
+            ->fields('t', array('tag_id'))
+            ->condition('t.article_id', $article_id)
+            ->execute();
+        $selected_tags = array();
+        foreach ($results as $result)
+            if (array_key_exists($result->tag_id, $tags))
+                $selected_tags[] = $result->tag_id;
+        return array(
+            'title' => array(
+                '#markup' => "<h2>Internal tags for EBMS $article_id</h2>",
+            ),
+            'article' => array(
+                '#type' => 'hidden',
+                '#value' => $article_id,
+            ),
+            'tags' => array(
+                '#type' => 'checkboxes',
+                '#title' => 'Tag(s)',
+                '#options' => $tags,
+                '#default_value' => $selected_tags,
+                '#description' => t('Optionally select one or more tags.'),
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#submit' => 'pdq_ebms_edit_internal_tags_submit',
+                '#limit_validation_errors' => array(),
+            ),
+        );
+    }
+
+    function pdq_ebms_edit_internal_tags_validate($form, &$form_state) {
+        $values = $form_state['values'];
+        $article_id = $values['article'];
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        if (!empty($values['op']) && $values['op'] === 'Cancel') {
+            $url = "citations/full/$article_id";
+            $opts = array('query' => $parms);
+            drupal_goto($url, $opts);
+        }
+    }
+
+    function pdq_ebms_edit_internal_tags_submit($form, &$form_state) {
+
+        // Make sure we're really supposed to store the new values.
+        $values = $form_state['values'];
+        $article_id = $values['article'];
+        if (!empty($values['op']) && $values['op'] === 'Submit') {
+
+            // Wrap this in a transaction.
+            $transaction = db_transaction();
+            try {
+                $table = 'ebms_internal_article_tag';
+                db_delete($table)
+                    ->condition('article_id', $article_id)
+                    ->execute();
+                $fields = array('article_id' => $article_id);
+                foreach ($values['tags'] as $key => $value) {
+                    if (!empty($value)) {
+                        $fields['tag_id'] = $key;
+                        db_insert($table)->fields($fields)->execute();
+                    }
+                }
+            }
+            catch (\Exception $e) {
+                $transaction->rollback();
+                throw $e;
+            }
+        }
+        drupal_set_message('Internal tags successfully updated.');
+        $url = "citations/full/$article_id";
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        $opts = array('query' => $parms);
+        drupal_goto($url, $opts);
+    }
+
     function pdq_ebms_article_relationship_form(
         $form, &$form_state, $action, $id, $id2
     ) {
@@ -7681,6 +8145,44 @@ td, th { border-bottom: 1px black solid; }
         drupal_goto($url, $opts);
     }
 
+    function _pdq_ebms_full_text_info($article) {
+
+        // See if we have determined that it isn't available.
+        $full_text_id = $article->getFullTextId();
+        if (empty($full_text_id)) {
+            $row = db_select('ebms_ft_unavailable', 'u')
+                ->condition('u.article_id', $article->getId())
+                ->fields('u')
+                ->execute()
+                ->fetch();
+            if (empty($row))
+                return '';
+            $date = _format_date($row->flagged);
+            $user = htmlspecialchars(user_load($row->flagged_by)->name);
+            $comment = $row->comment;
+            $html = "<div>Flagged $date by $user as unavailable.";
+            if (!empty($comment))
+                $html .= '<br><b><i>Note:</i></b> ' .
+                    htmlspecialchars($comment);
+            $html .= '</div>';
+            return $html;
+        }
+
+        // Show the information about the full text file.
+        $row = db_select('file_managed', 'f')
+            ->condition('f.fid', $full_text_id)
+            ->fields('f')
+            ->execute()
+            ->fetch();
+        $user = htmlspecialchars(user_load($row->uid)->name);
+        $filename = htmlspecialchars($row->filename);
+        $date = format_date($row->timestamp, 'custom', 'Y-m-d');
+        $url = file_create_url($row->uri);
+        $target = array('attributes' => array('target' => '_blank'));
+        $link = l($filename, $url, $target);
+        return "$link uploaded $date by $user.";
+    }
+
     function _display_article_relationship($relationship, $article_id) {
         $rid = $relationship->relationship_id;
         $opts = array('query' => drupal_get_query_parameters());
@@ -7786,7 +8288,7 @@ namespace Ebms {
         static $READYINITIAL = null;
         static $PUBLISHED = null;
         static $NCIREVIEWER = null;
-        static $FULLTEXT = null;
+        // static $FULLTEXT = null;
         static $SURVEILLANCE = null;
         static $BOARDMANAGERCOMMENT = null;
         static $ASSIGNEDFORREVIEW = null;
@@ -7841,8 +8343,8 @@ namespace Ebms {
                 new EbmsTopicDecisions($index++, 'Abstract Decision', null,
                     array(EbmsArticleStates::PassedBMReview),
                     array(EbmsArticleStates::RejectBMReview));
-            self::$FULLTEXT =
-                new EbmsTopicDecisions($index++, 'Full Text Retrieved', null);
+            // self::$FULLTEXT =
+            //   new EbmsTopicDecisions($index++, 'Full Text Retrieved', null);
             self::$SURVEILLANCE =
                 new EbmsTopicDecisions($index++,
                     'Full-Text Decision', null,

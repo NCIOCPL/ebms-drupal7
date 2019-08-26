@@ -173,6 +173,15 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // UPLOAD FULL TEXT PDF FOR SINGLE ARTICLE FROM FULL CITATION PAGE
+        'upload-full-text' => array(
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('pdq_ebms_full_text_upload_form', 1),
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+
         // SEARCH DATABASE
         'citations/search' => array(
             'page callback' => 'pdq_ebms_search',
@@ -467,12 +476,48 @@ function ebms_menu() {
             'file' => 'internal.inc',
         ),
 
+        // EDIT AN ARTICLE'S INTERNAL TAGS
+        'edit-internal-article-tags' => array(
+            'title' => 'Edit Internal Article Tags',
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('pdq_ebms_edit_internal_tags', 1),
+            'access arguments' => array('administer'),
+            'file' => 'citations.inc',
+        ),
+
+        // ADD OR EDIT AN INTERNAL COMMMENT FOR AN ARTICLE
+        'internal-article-comment' => array(
+            'title' => 'Internal Article Comment',
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('pdq_ebms_edit_internal_comment', 1, 2),
+            'access arguments' => array('administer'),
+            'file' => 'citations.inc',
+        ),
+
+        // DELETE AN INTERNAL COMMMENT FROM AN ARTICLE
+        'delete-internal-article-comment' => array(
+            'title' => 'Delete Internal Article Comment',
+            'page callback' => '_delete_internal_comment',
+            'page arguments' => array(1),
+            'access arguments' => array('administer'),
+            'file' => 'citations.inc',
+        ),
+
         // IMPORT INTERNAL ARTICLES
         'import-internal-articles' => array(
             'title' => 'Import Internal Articles',
             'page callback' => 'pdq_ebms_import_internal_articles',
             'access arguments' => array('administer'),
             'file' => 'internal.inc',
+        ),
+
+        // INTERNAL ARTICLE QUEUE
+        'internal-articles' => array(
+            'title' => 'Internal Articles',
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('pdq_ebms_internal_articles', 1),
+            'file' => 'internal.inc',
+            'access arguments' => array('manage citations'),
         ),
 
         // MANAGE EBMS BOARDS

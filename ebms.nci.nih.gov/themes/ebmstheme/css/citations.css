@@ -290,11 +290,20 @@ tr.extra-abstract-space { height: 75px; xborder-bottom: 1px solid black; }
 }
 
 /* JIRA::OCEEBMS-349, JIRA::OCEEBMS-381 */
+/* JIRA::OCEEBMS-509 */
 .article-relationship { margin: 10px 0 15px; }
+.internal-article-comment .edit-internal-comment-link,
 .article-relationship .edit-relationship-link { float: left; width: 30px; }
 .board-manager-comment .edit-comment { float: left; }
 .article-relationship div { display: inline-block; }
+.internal-article-comment .del-internal-comment-link,
 .article-relationship .del-relationship-link,
 .board-manager-comment .del-comment {
     float: left; width: 10px; padding-right: 10px;
 }
+#internal-article-comment-title { margin-bottom: 15px; }
+.internal-article-comment span.hanging-indent-comment {
+    display: block;
+    margin-left: 50px;
+}
+#internal-tags-title, #full-text-info-title { margin-bottom: 5px; }

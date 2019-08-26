@@ -5,6 +5,8 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_internal_article_tag;
+DROP TABLE IF EXISTS ebms_internal_article_comment;
 DROP TABLE IF EXISTS ebms_pubmed_results;
 DROP TABLE IF EXISTS ebms_related_article;
 DROP TABLE IF EXISTS ebms_article_relation_type;
@@ -44,6 +46,8 @@ DROP TABLE IF EXISTS ebms_packet_reviewer;
 DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
 DROP TABLE IF EXISTS ebms_agenda_meeting;
+DROP TABLE IF EXISTS ebms_internal_article_comment;
+DROP TABLE IF EXISTS ebms_internal_article_tag;
 DROP TABLE IF EXISTS ebms_article_board_decision;
 DROP TABLE IF EXISTS ebms_article_board_decision_value;
 DROP TABLE IF EXISTS ebms_article_board_decision_member;
@@ -74,6 +78,7 @@ DROP TABLE IF EXISTS ebms_ad_hoc_group;
 DROP TABLE IF EXISTS ebms_doc_board;
 DROP TABLE IF EXISTS ebms_doc_tag;
 DROP TABLE IF EXISTS ebms_tag;
+DROP TABLE IF EXISTS ebms_internal_tag;
 DROP TABLE IF EXISTS ebms_subgroup_member;
 DROP TABLE IF EXISTS ebms_subgroup;
 DROP TABLE IF EXISTS ebms_board_member;
@@ -292,6 +297,24 @@ CREATE TABLE ebms_ad_hoc_group_member
  PRIMARY KEY (user_id, group_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid),
  FOREIGN KEY (group_id) REFERENCES ebms_ad_hoc_group (group_id))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Used for building the queue of internal articles of interest
+ * to PDQ staff, but not necessarily intended for inclusion in
+ * the board member review process.
+ *
+ * tag_id        automatically generated primary key
+ * tag_name      unique display name for group
+ * active_status only allow this tag to be assigned to
+ *               articles in the administrative UI if the
+ *               value of this column is 'A'
+ */
+CREATE TABLE ebms_internal_tag
+       (tag_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      tag_name VARCHAR(255)     NOT NULL,
+ active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
+  UNIQUE KEY internal_tag_name_ix (tag_name))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
@@ -785,7 +808,10 @@ CREATE TABLE ebms_import_disposition (
  *                   'F'ast track import,
  *                   'S'pecial search import,
  *                   'D'ata refresh from source (batch job that gets
- *                      latest data to replace ebms_article.source_data.)
+ *                      latest data to replace ebms_article.source_data)
+ *                   'I'nternal import of article(s) of interest to
+ *                      staff but not necessarily intended to be included
+ *                      in the board member review process
  *  article_count   Number of unique article IDs.  May be less than the
  *                   number of import_action rows referencing this row
  *                   because one article can appear in multiple categories.
@@ -807,7 +833,7 @@ CREATE TABLE ebms_import_batch (
     cycle_id        INT NOT NULL,
     user_id         INT UNSIGNED NOT NULL,
     not_list        ENUM ('Y', 'N') NOT NUlL DEFAULT 'Y',
-    input_type      ENUM ('R', 'F', 'S', 'D') NOT NULL DEFAULT 'R',
+    input_type      ENUM ('R', 'F', 'S', 'D', 'I') NOT NULL DEFAULT 'R',
     article_count   INT NOT NULL,
     comment         VARCHAR(2048) NULL,
     messages        TEXT NULL,
@@ -2155,3 +2181,53 @@ when_submitted DATETIME   NOT NULL,
   results_file MEDIUMBLOB NOT NULL)
         ENGINE=InnoDB DEFAULT CHARSET=utf8;
 CREATE INDEX ebms_pubmed_results_date ON ebms_pubmed_results(when_submitted);
+
+/*
+ * Tag identifying a particular flavor of "internal" article,
+ * of interest to PDQ staff, but not necessarily to be included
+ * in the board member review process.
+ *
+ * tag_id          automatically generated primary key
+ * tag_name        string for the tag's display name
+ * active_status   'A'ctive or 'I'nactive.
+ */
+CREATE TABLE ebms_internal_tag
+       (tag_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+      tag_name VARCHAR(255)     NOT NULL,
+ active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
+  UNIQUE KEY internal_tag_name_ix (tag_name))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Internal tag assignment to a specific article.
+ *
+ * tag_pk         automatically generated primary key
+ * article_id     foreign key into the ebms_article table
+ * tag_id         foreign key into the ebms_internal_tag table
+ */
+CREATE TABLE ebms_internal_article_tag
+     (tag_pk INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  article_id INTEGER NOT NULL,
+      tag_id INTEGER NOT NULL,
+ FOREIGN KEY (tag_id)     REFERENCES ebms_internal_tag (tag_id),
+ FOREIGN KEY (article_id) REFERENCES ebms_article (article_id))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*
+ * Internal comment on a specific article.
+ *
+ * comment_id      automatically generated primary key
+ * article_id      foreign key into the ebms_article table
+ * user_id         foreign key into the users table
+ * comment_date    when the comment was first posted
+ * comment_text    current text for the comment (possibly edited)
+ */
+CREATE TABLE ebms_internal_article_comment
+ (comment_id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  article_id INTEGER NOT NULL,
+     user_id INTEGER UNSIGNED NOT NULL,
+comment_date DATETIME NOT NULL
+comment_text TEXT     NOT NULL,
+ FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
+ FOREIGN KEY (user_id)    REFERENCES users(uid))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;

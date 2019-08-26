@@ -258,6 +258,7 @@ class Menu {
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
                     new Menu('Publish Citations', 'citations/publish'),
+                    new Menu('Internal Articles', 'internal-articles'),
                     new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations', $children);
@@ -266,6 +267,7 @@ class Menu {
                     new Menu('Full Text Retrieval', 'citations/fulltext'),
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
+                    new Menu('Internal Articles', 'internal-articles'),
                     new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations/fulltext', $children);
@@ -274,6 +276,7 @@ class Menu {
                     new Menu('Review Citations', 'citations'),
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
+                    new Menu('Internal Articles', 'internal-articles'),
                     new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations', $children);
@@ -1482,6 +1485,7 @@ class Util {
             array('Search Database', 'citations/search'),
             array('Import Citations', 'citations/import'),
             array('Journal Maintenance', 'citations/not-list'),
+            array('Internal Articles', 'internal-articles'),
             array('Internal Import', 'import-internal-articles'),
         );
         if (in_array('medical librarian', $user->roles))
@@ -1902,7 +1906,8 @@ class Util {
      *
      *  @return                     Render array for report
      */
-    public static function import_report(&$batch, $title, $cols=5) {
+    public static function import_report(&$batch, $title, $cols=5,
+                                         $internal=false) {
         $ebms_ids = array();
         $blocks = array(
             'imported' => 'ARTICLE{S} IMPORTED',
@@ -1960,6 +1965,13 @@ class Util {
             'replaced' => 'ARTICLE{S} REPLACED',
             'error' => 'ARTICLE{S} WITH ERRORS',
         );
+        if ($internal)
+            $blocks = array(
+                'imported' => 'ARTICLE{S} IMPORTED',
+                'duplicate' => 'DUPLICATE ARTICLE{S}',
+                'replaced' => 'ARTICLE{S} REPLACED',
+                'error' => 'ARTICLE{S} WITH ERRORS',
+            );
         foreach ($blocks as $key => $title) {
             $ids = array();
             foreach ($batch->action[$key] as $article)

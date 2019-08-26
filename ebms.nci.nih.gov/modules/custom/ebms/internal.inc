@@ -7,6 +7,201 @@
  * OCEEBMS-509.
  */
 
+require_once('EbmsImport.inc');
+require_once('EbmsArticle.inc');
+
+function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
+    $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+    $use_table = !empty($parms['format']) && $parms['format'] === 'table';
+    $start = date('Y-m-d', strtotime('-1 month'));
+    $selected_tags = array();
+    $end = date('Y-m-d');
+    if (!empty($request_id)) {
+        $json = db_select('ebms_report_request', 'r')
+            ->fields('r', array('parameters'))
+            ->condition('r.request_id', $request_id)
+            ->execute()
+            ->fetchField();
+        $request = drupal_json_decode($json);
+        foreach ($request['tags'] as $key => $val) {
+            if (!empty($val))
+                $selected_tags[] = $key;
+        }
+        $start = $request['import-date-start']['date'] ?? '';
+        $end = $request['import-date-end']['date'] ?? '';
+    }
+
+    $label = 'Import Date';
+    $name = 'import-date';
+    $date_field = Ebms\Util::date_range_field($label, $name, $start, $end,
+                                              '', false);
+    $results = db_select('ebms_internal_tag', 't')
+        ->fields('t', array('tag_id', 'tag_name'))
+        ->condition('t.active_status', 'A')
+        ->orderBy('t.tag_name')
+        ->execute();
+    $tag_options = array();
+    foreach ($results as $result)
+        $tag_options[$result->tag_id] = htmlspecialchars($result->tag_name);
+    $query = db_select('ebms_article', 'a');
+    $query->join('ebms_internal_article_tag', 't',
+                 't.article_id = a.article_id');
+    if (!empty($selected_tags))
+        $query->condition('t.tag_id', $selected_tags, 'IN');
+    Ebms\Util::add_date_range_to_query($query, $start, $end, 'a.import_date');
+    $query->fields('a', array('article_id', 'import_date'));
+    $results = $query->distinct()->orderBy('a.import_date', 'DESC')->execute();
+    if ($use_table)
+        $queue = _internal_articles_table($results);
+    else
+        $queue = _internal_articles_list($results);
+    return array(
+        'left_nav' => Ebms\Util::build_left_nav('Internal Articles'),
+        'form' => array(
+            '#prefix' => '<div id="internal-articles-filter-form">',
+            '#suffix' => '</div>',
+            'title' => array(
+                '#markup' => '<h2>Internal Articles</h2>',
+            ),
+            'tags' => array(
+                '#type' => 'checkboxes',
+                '#options' => $tag_options,
+                '#default_value' => $selected_tags,
+                '#title' => 'Tags',
+            ),
+            'import-date' => $date_field,
+            'save' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Reset',
+                '#submit' => array('pdq_ebms_internal_articles_submit'),
+                '#limit_validation_errors' => array(),
+            ),
+        ),
+        'articles' => array(
+            'title' => array('#markup' => '<h2>Article Queue</h2>'),
+            'queue' => $queue,
+        ),
+    );
+}
+
+function _internal_articles_table($results) {
+    $headers = array(
+        array('data' => 'Citation', 'class' => array('col-1')),
+        array('data' => 'Imported', 'class' => array('col-2')),
+        array('data' => 'Tags', 'class' => array('col-3')),
+        array('data' => 'Comments', 'class' => array('col-4')),
+    );
+    $rows = array();
+    foreach ($results as $result) {
+        $article = new Ebms\EbmsArticle($result->article_id);
+        $display = $article->display();
+        if (empty($display->authors))
+            $authors = '<b>[No authors]</b>';
+        else
+            $authors = '<b>' . implode(', ', $display->authors) . '</b>';
+        $title = '<i>' . htmlspecialchars($display->title) . '</i>';
+        $publication = htmlspecialchars($display->publication);
+        $pubmed_link = $display->pubmed_link;
+        $ebms_link = $display->ebms_link;
+        $ids = "PMID: {$pubmed_link} &nbsp; EBMS: {$ebms_link}";
+        $citation = "$authors<br>$title<br>$publication<br>$ids";
+        $tags = array();
+        foreach ($article->getInternalTags() as $id => $tag)
+            $tags[] = htmlspecialchars($tag);
+        $tags = implode('<br>', $tags);
+        $comments = array();
+        foreach ($article->getInternalComments() as $id => $comment)
+            $comments[] = '<b>' . htmlspecialchars($comment->name) . '</b>: ' .
+                htmlspecialchars($comment->comment_text);
+        $comments = implode('<br><br>', $comments);
+        $imported = substr($result->import_date, 0, 10);
+        $rows[] = array(
+            'no_striping' => true,
+            'data' => array($citation, $imported, $tags, $comments),
+        );
+    }
+    return array(
+        '#theme' => 'table',
+        '#rows' => $rows,
+        '#header' => $headers,
+    );
+}
+
+function _internal_articles_list($results) {
+    $items = array();
+    foreach ($results as $result) {
+        $article = new Ebms\EbmsArticle($result->article_id);
+        $display = $article->display();
+        if (empty($display->authors))
+            $authors = '<b>[No authors]</b>';
+        else
+            $authors = '<b>' . implode(', ', $display->authors) . '</b>';
+        $title = '<i>' . htmlspecialchars($display->title) . '</i>';
+        $publication = htmlspecialchars($display->publication);
+        $pubmed_link = $display->pubmed_link;
+        $ebms_link = $display->ebms_link;
+        $ids = "PMID: {$pubmed_link} &nbsp; EBMS: {$ebms_link}";
+        $citation = "$authors<br>$title<br>$publication &nbsp; $ids";
+        $tags = array();
+        foreach ($article->getInternalTags() as $id => $tag)
+            $tags[] = htmlspecialchars($tag);
+        $tags = '<b>Tags:</b> ' . implode(', ', $tags);
+        $comments = array();
+        foreach ($article->getInternalComments() as $id => $comment)
+            $comments[] = '[Posted ' . $comment->comment_date . ' by ' .
+                htmlspecialchars($comment->name) . '] ' .
+                htmlspecialchars($comment->comment_text);
+        $comments = implode('<br><br>', $comments);
+        $imported = '<b>Imported:</b> ' . $result->import_date;
+        $item = array($citation, $imported, $tags);
+        if (!empty($comments))
+            $item[] = '<b>Comments</b>:<br><br>' . $comments;
+        $items[] = implode('<br><br>', $item);
+    }
+    return array(
+        '#theme' => 'item_list',
+        '#type' => 'ol',
+        '#items' => $items,
+    );
+}
+
+function pdq_ebms_internal_articles_validate($form, &$form_state) {
+    $values = $form_state['values'];
+    if ($values['op'] !== 'Submit')
+        return;
+    $start = $values['import-date-start']['date'];
+    $end = $values['import-date-start']['date'];
+    if (Ebms\Util::fill_in_date($start) > Ebms\Util::fill_in_date($end))
+        form_set_error('import-date-end', 'End of range cannot precede start.');
+}
+
+function pdq_ebms_internal_articles_submit($form, &$form_state) {
+    $values = $form_state['values'];
+    $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+    $opts = array('query' => $parms);
+    $url = 'internal-articles';
+    if ($values['op'] === 'Submit') {
+        global $user;
+        $now = strftime('%Y-%m-%d %H:%M:%S');
+        $request_id = db_insert('ebms_report_request')
+            ->fields(
+                array(
+                    'report_name' => 'Internal',
+                    'requestor_id' => $user->uid,
+                    'submitted' => $now,
+                    'parameters' => drupal_json_encode($values),
+                )
+            )
+            ->execute();
+        $url .= "/$request_id";
+    }
+    drupal_goto($url, $opts);
+}
+
 /**
  * Entry point for internal tag management.
  *
@@ -241,27 +436,49 @@ function pdq_ebms_internal_tag_form_submit($form, &$form_state) {
  *                                current values of the form, as well
  *                                as other form state information
  */
-function pdq_ebms_import_internal_articles() {
+function pdq_ebms_import_internal_articles($request_id = 0) {
+    $form_id = 'pdq_ebms_import_internal_articles_form';
     return array(
         'left_nav' => Ebms\Util::build_left_nav('Internal Import'),
-        drupal_get_form('pdq_ebms_import_internal_articles_form'),
+        drupal_get_form($form_id, $request_id),
     );
 }
 
-function pdq_ebms_import_internal_articles_form($form, &$form_state) {
+function pdq_ebms_import_internal_articles_form($form, &$form_state,
+                                                $request_id = 0) {
+
+    // Set initial form values.
+    $pmids = $comment = '';
+    $selected_tags = [];
+    if ($request_id) {
+        $result = db_select('ebms_import_request', 'r')
+            ->fields('r', array('request_params', 'report_data'))
+            ->condition('r.request_id', $request_id)
+            ->execute()
+            ->fetchObject();
+        $report = $result->report_data;
+        $params = drupal_json_decode($result->request_params);
+        $pmids = $params['pmid'];
+        $selected_tags = $params['tags'];
+        $comment = $params['comment'];
+    }
+
+    // Assemble list of internal tags which can be selected.
     $results = db_select('ebms_internal_tag', 't')
         ->fields('t', array('tag_id', 'tag_name'))
         ->condition('t.active_status', 'A')
+        ->orderBy('t.tag_name')
         ->execute();
     $tags = array();
     foreach ($results as $result)
         $tags[$result->tag_id] = htmlspecialchars($result->tag_name);
-    return array(
+    $form = array(
         '#id' => 'internal-import-form',
         'title' => array('#markup' => '<h2>Import Internal Articles</h2>'),
         'pmid' => array(
             '#type' => 'textfield',
             '#title' => 'PMID(s)',
+            '#default_value' => $pmids,
             '#required' => true,
             '#description' => t('Separate multiple PMIDs with commas ' .
                                 'or spaces.'),
@@ -269,13 +486,15 @@ function pdq_ebms_import_internal_articles_form($form, &$form_state) {
         'comment' => array(
             '#type' => 'textfield',
             '#title' => 'Comment',
-            '#description' => t('We don\'t yet know if the comment is ' .
-                                'associated with the article or the tag.'),
+            '#default_value' => $comment,
+            '#description' => t('Optionally add a comment related to the ' .
+                                'relevance of this article to PDQ work.'),
         ),
-        'tag' => array(
+        'tags' => array(
             '#type' => 'checkboxes',
             '#title' => 'Tag(s)',
             '#options' => $tags,
+            '#default_value' => $selected_tags,
             '#required' => true,
             '#description' => t('Select one or more internal article tags. ' .
                                 'Additional tags can be added on the ' .
@@ -285,9 +504,9 @@ function pdq_ebms_import_internal_articles_form($form, &$form_state) {
             '#title' => 'Full Text PDF File',
             '#type' => 'file',
             '#upload_validators' => ['file_validate_extensions' => ['pdf']],
-            '#description' => t('Only allowed if a single article is ' .
-                                'being imported. Can also be added later ' .
-                                'from the "Full Citation" page.'),
+            '#description' => t('Only allowed if a single article is being ' .
+                                'imported. Can also be added later from ' .
+                                'the "Full Citation" page (coming soon).'),
         ),
         'submit' => array(
             '#type' => 'submit',
@@ -305,6 +524,14 @@ function pdq_ebms_import_internal_articles_form($form, &$form_state) {
             '#limit_validation_errors' => array(),
         ),
     );
+
+    // If we just handled an import request, show the statistics from that job.
+    if ($request_id) {
+        $batch = drupal_json_decode($report);
+        $batch = (object) $batch;
+        $form['report'] = Ebms\Util::import_report($batch, 'Statistics', true);
+    }
+    return $form;
 }
 
 /**
@@ -317,6 +544,63 @@ function pdq_ebms_import_internal_articles_form($form, &$form_state) {
  *                                as other form state information
  */
 function pdq_ebms_import_internal_articles_form_validate($form, &$form_state) {
+    $value = $form_state['values']['pmid'];
+    $pmids = preg_split('/[\s,]+/', $value, null, PREG_SPLIT_NO_EMPTY);
+    foreach ($pmids as $pmid) {
+        if (!preg_match('/^\d{1,8}$/', $pmid)) {
+            form_set_error('pmid', 'Invalid Pubmed ID format.');
+            break;
+        }
+    }
+    if (empty($pmids))
+        form_set_error('pmid', 'At least one Pubmed ID must be specified.');
+    $active_tags = db_select('ebms_internal_tag', 't')
+        ->fields('t', array('tag_id'))
+        ->condition('t.active_status', 'A')
+        ->execute()
+        ->fetchCol();
+    $tags = array();
+    foreach ($form_state['values']['tags'] as $key => $val) {
+        if (!empty($val)) {
+            if (!in_array($key, $active_tags))
+                form_set_error('tags', "$key is not a valid internal tag ID.");
+            else
+                $tags[] = $key;
+        }
+    }
+    if (empty($tags)) {
+        $message = 'At least one internal article tag must be selected.';
+        form_set_error('tags', $message);
+    }
+    $form_state['full-text-id'] = null;
+    if (!empty($_FILES['files']['name']['full-text'])) {
+        if (count($pmids) > 1)
+            form_set_error('full-text', 'Full-text PDF upload can only be ' .
+                'used for importing a single article');
+        else {
+            $name = $_FILES['files']['name']['full-text'];
+            $path = $_FILES['files']['tmp_name']['full-text'];
+            $extension_ok = Ebms\Util::has_valid_extension($name, 'pdf');
+            $mime_type = Ebms\Util::get_mime_type($path);
+            if (!$extension_ok || $mime_type !== 'application/pdf')
+                form_set_error('full-text', 'Full text must be a PDF file');
+            else {
+                $validators = ['file_validate_extensions' => ['pdf']];
+                $file = file_save_upload('full-text', $validators);
+                if ($file) {
+                    $file = file_move($file, 'public://');
+                    $file->status |= FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                    $form_state['full-text-id'] = $file->fid;
+                }
+                else
+                    form_set_error('full-text', "Unable to upload $name");
+            }
+        }
+    }
+    $form_state['pmids'] = $pmids;
+    $form_state['tags'] = $tags;
+    $form_state['comment'] = trim($form_state['values']['comment']);
 }
 
 /**
@@ -329,15 +613,95 @@ function pdq_ebms_import_internal_articles_form_validate($form, &$form_state) {
  *                                as other form state information
  */
 function pdq_ebms_import_internal_articles_form_submit($form, &$form_state) {
-    drupal_set_message('Can\'t implement Import until we know about comments');
-    return;
+
+    // To cancel, we just route the user to a fresh form.
+    if ($form_state['values']['op'] == 'Clear') {
+        drupal_goto('import-internal-articles');
+        return;
+    }
+
+    // Use a canned comment for the import request.
+    $pmids = $form_state['pmids'];
+    $import_comment = 'Imported for internal PDQ staff use.';
     try {
         $batch = Ebms\importArticlesFromNLM('live', $pmids, null, null,
-                                            $comment, false, 'I');
+                                            $import_comment, false, 'I');
     }
     catch (\Exception $e) {
         drupal_set_message($e);
-        $batch = null;
-        $url = 'import-internal-articles';
+        drupal_goto('import-internal-articles');
+        return;
+   }
+
+    // If we succeeded, store the statistical information about the job,
+    // and do some population of related tables as appropriate.
+    if ($batch) {
+
+        // Get a list of articles affected by the import.
+        $articles = array();
+        foreach (['imported', 'duplicate'] as $disposition) {
+            foreach ($batch->action[$disposition] as $info) {
+                list($pmid, $article_id) = $info;
+                $message = "Imported PMID $pmid as EBMS $article_id";
+                drupal_set_message($message);
+                $articles[] = $article_id;
+            }
+        }
+
+        // Record the location of the full-text PDF file (OCEEBMS-472).
+        // Validation has already ensured that at most one article
+        // has been imported (duplicate or not).
+        $full_text_id = $form_state['full-text-id'];
+        if (!empty($full_text_id)) {
+            foreach ($articles as $article_id) {
+                db_update('ebms_article')
+                    ->fields(array('full_text_id' => $full_text_id))
+                    ->condition('article_id', $article_id)
+                    ->execute();
+            }
+        }
+
+        // Store the internal tags with each article.
+        $table = 'ebms_internal_article_tag';
+        foreach($form_state['tags'] as $tag_id) {
+            $fields = ['tag_id' => $tag_id];
+            foreach ($articles as $article_id) {
+                $fields['article_id'] = $article_id;
+                db_insert($table)->fields($fields)->execute();
+            }
+        }
+
+        // Store the comment with the articles, not the import batch.
+        $comment = $form_state['comment'];
+        if (!empty($comment)) {
+            global $user;
+            $now = strftime("%Y-%m-%d %H:%M:%S");
+            $table = 'ebms_internal_article_comment';
+            $fields = array(
+                'user_id' => $user->uid,
+                'comment_date' => $now,
+                'comment_text' => $comment,
+            );
+            foreach ($articles as $article_id) {
+                $fields['article_id'] = $article_id;
+                db_insert($table)->fields($fields)->execute();
+            }
+        }
+
+        // Save the statistical report information.
+        $report_data = drupal_json_encode($batch);
+        $request_params = drupal_json_encode($form_state['values']);
+        $request_id = db_insert('ebms_import_request')
+            ->fields(
+                array(
+                    'request_params' => $request_params,
+                    'report_data' => $report_data,
+                )
+            )
+            ->execute();
+        $url = "import-internal-articles/$request_id";
     }
+
+    // Draw the form again.
+    drupal_goto($url);
 }

@@ -245,7 +245,8 @@ class EbmsArticle {
       // The errors are strings in an array
       // Else null
       $errorMsgs,
-      $related_articles;
+      $related_articles,
+      $internal_tags;
 
     /**
      * Construct an object using either data from the database identified
@@ -334,25 +335,27 @@ class EbmsArticle {
 
         // Load the object from the row
         // Other parts will come from elsewhere
-        $this->article_id       = $row->article_id;
-        $this->source           = $row->source;
-        $this->source_id        = $row->source_id;
-        $this->source_jrnl_id   = $row->source_jrnl_id;
-        $this->source_status    = $row->source_status;
-        $this->article_title    = $row->article_title;
-        $this->jrnl_title       = $row->jrnl_title;
-        $this->brf_jrnl_title   = $row->brf_jrnl_title;
-        $this->import_date      = $row->import_date;
-        $this->imported_by      = $row->imported_by;
-        $this->update_date      = $row->update_date;
-        $this->abstract         = $row->abstract;
-        $this->published_date   = $row->published_date;
-        $this->brf_citation     = $row->brf_citation;
-        $this->authors          = $this->getAuthors();
-        $this->source_data      = $row->source_data;
-        $this->full_text_id     = $row->full_text_id;
-        $this->errorMsgs        = null;
-        $this->related_articles = $this->getRelatedArticles();
+        $this->article_id        = $row->article_id;
+        $this->source            = $row->source;
+        $this->source_id         = $row->source_id;
+        $this->source_jrnl_id    = $row->source_jrnl_id;
+        $this->source_status     = $row->source_status;
+        $this->article_title     = $row->article_title;
+        $this->jrnl_title        = $row->jrnl_title;
+        $this->brf_jrnl_title    = $row->brf_jrnl_title;
+        $this->import_date       = $row->import_date;
+        $this->imported_by       = $row->imported_by;
+        $this->update_date       = $row->update_date;
+        $this->abstract          = $row->abstract;
+        $this->published_date    = $row->published_date;
+        $this->brf_citation      = $row->brf_citation;
+        $this->authors           = $this->getAuthors();
+        $this->source_data       = $row->source_data;
+        $this->full_text_id      = $row->full_text_id;
+        $this->errorMsgs         = null;
+        $this->related_articles  = $this->getRelatedArticles();
+        $this->internal_tags     = $this->getInternalTags();
+        $this->internal_comments = $this->getInternalComments();
     }
 
     /**
@@ -378,6 +381,7 @@ class EbmsArticle {
         $this->full_text_id     = null;
         $this->errorMsgs        = null;
         $this->related_articles = null;
+        $this->internal_tags    = null;
     }
 
     /**
@@ -470,6 +474,45 @@ class EbmsArticle {
             $this->related_articles = $related_articles;
         }
         return $this->related_articles;
+    }
+
+    /**
+     * Retrieve list of internal tags. Use cache if available.
+     */
+    public function getInternalTags() {
+        if (!isset($this->internal_tags)) {
+            $query = db_select('ebms_internal_tag', 't');
+            $query->join('ebms_internal_article_tag', 'a',
+                         'a.tag_id = t.tag_id');
+            $query->fields('t', array('tag_id', 'tag_name'));
+            $query->condition('a.article_id', $this->article_id);
+            $query->orderBy('t.tag_name');
+            $results = $query->execute();
+            $this->internal_tags = array();
+            foreach ($results as $result)
+                $this->internal_tags[$result->tag_id] = $result->tag_name;
+        }
+        return $this->internal_tags;
+    }
+
+    /**
+     * Retrieve dictionary of internal comments. Use cache if available.
+     */
+    public function getInternalComments() {
+        if (!isset($this->internal_comments)) {
+            $query = db_select('ebms_internal_article_comment', 'c');
+            $query->join('users', 'u', 'u.uid = c.user_id');
+            $query->fields(
+                'c', array('comment_id', 'comment_date', 'comment_text'));
+            $query->fields('u', array('uid', 'name'));
+            $query->condition('c.article_id', $this->article_id);
+            $query->orderBy('c.comment_date');
+            $results = $query->execute();
+            $this->internal_comments = array();
+            foreach ($results as $result)
+                $this->internal_comments[$result->comment_id] = $result;
+        }
+        return $this->internal_comments;
     }
 
     /**
@@ -1214,6 +1257,56 @@ class EbmsArticle {
     public function getTopics() {
 
         return getTopics($this->article_id);
+    }
+
+    /**
+     * Assemble an object containing the pieces needed for creating
+     * a displayable representation of the article in a list.
+     */
+    public function display() {
+        $doc = new \SimpleXMLElement($this->source_data);
+        $article = $doc->MedlineCitation->Article;
+        $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
+        $year = $article->Journal->JournalIssue->PubDate->Year;
+        $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
+        $vol = htmlspecialchars($article->Journal->JournalIssue->Volume);
+        $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
+        $publication = array("$ta $vol");
+        if ($issue)
+            $publication[] = "($issue)";
+        if ($pgn)
+            $publication[] = ": $pgn";
+        if ($year)
+            $publication[] = ", $year";
+        $authors = array();
+        if (isset($doc->MedlineCitation->Article->AuthorList->Author)) {
+            foreach ($doc->MedlineCitation->Article->AuthorList->Author
+                     as $author) {
+                $name = null;
+                if ($author->LastName) {
+                    $name = $author->LastName;
+                    if ($author->Initials)
+                        $name .= ' ' . $author->Initials;
+                }
+                elseif ($author->CollectiveName)
+                    $name = $author->CollectiveName;
+                if ($name)
+                    $authors[] = $name;
+            }
+        }
+        $pmid = $doc->MedlineCitation->PMID;
+        $opts = array('attributes' => array('target' => '_blank'));
+        $url = Util::pubmed_url($pmid);
+        $article_id = $this->article_id;
+        return (object) [
+            'authors' => $authors,
+            'title' => Util::get_text($article->ArticleTitle),
+            'publication' => implode('', $publication),
+            'pubmed_id' => $pmid,
+            'pubmed_url' => $url,
+            'pubmed_link' => l($pmid, $url, $opts),
+            'ebms_link' => l($article_id, "citations/full/$article_id"),
+        ];
     }
 }
 

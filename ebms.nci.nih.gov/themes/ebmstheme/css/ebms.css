@@ -602,7 +602,7 @@ a.ui-dialog-titlebar-close:hover { color: #a90101; }
 .ui-state-hover, .ui-widget-content .ui-state-hover,
 .ui-widget-header .ui-state-hover, .ui-state-focus,
 .ui-widget-content .ui-state-focus,
-.ui-widget-header .ui-state-focus { background: #696559; }
+.ui-widget-header .ui-state-focus { background: #696559; color: white; }
 .ui-dialog-titlebar-close.ui-state-hover { border: none; }
 .ui-widget-header .ui-state-hover .ui-icon.ui-icon-closethick {
     background-image: url("../images/dialog-close-red.gif");
@@ -1779,4 +1779,24 @@ input#pmid-search-box {
 }
 
 /* OCEEBMS-509 */
+#internal-articles-filter-form,
 #internal-import-form { float: left; width: 710px; }
+#pdq-ebms-internal-articles th.col-1 { width: 350px; }
+#pdq-ebms-internal-articles th.col-2 { width: 50px; }
+#pdq-ebms-internal-articles th.col-3 { width: 125px; }
+#pdq-ebms-internal-articles div div.item-list ol {
+    list-style: none;
+    counter-reset: internal-list-counter;
+    margin-top: 20px;
+    margin-left: -30px;
+}
+#pdq-ebms-internal-articles div div.item-list ol li {
+    counter-increment: internal-list-counter;
+    margin-bottom: 15px;
+}
+#pdq-ebms-internal-articles div div.item-list ol li:before {
+    content: counter(internal-list-counter) ". ";
+    font-weight: bold;
+    font-size: 24pt;
+    margin-left: -35px;
+}

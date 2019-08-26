@@ -210,3 +210,22 @@ function delManagerComment(url) {
     });
     return false;
 }
+
+function delInternalComment(url) {
+    jQuery("#confirm-internal-comment-deletion").dialog({
+        resizable: false,
+        height: 200,
+        width: 400,
+        modal: true,
+        buttons: {
+            "Delete Comment": function() {
+                location.href = url;
+                jQuery(this).dialog("close");
+            },
+            "Cancel": function() {
+                jQuery(this).dialog("close");
+            }
+        }
+    });
+    return false;
+}
