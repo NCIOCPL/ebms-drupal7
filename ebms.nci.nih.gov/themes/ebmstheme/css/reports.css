@@ -195,6 +195,13 @@ form #doc-report .form-type-checkbox:not(#foo) label {
     text-decoration: none; padding: 12px; margin-left: 20px;
 }
 #pdq-ebms-documents-report-form #archive-instructions { margin: 10px 0; }
-#pdq-ebms-documents-report-form #docs-to-archive { margin-left: 20px; }
+#pdq-ebms-documents-report-form #docs-to-archive {
+    margin-left: 20px;
     font-size: 16px;
 }
+
+/* OCEEBMS-519 */
+#statistics-report { clear: both; }
+#statistics-report h2 { margin-top: 25px; }
+#statistics-report th { text-align: center; }
+#statistics-report td { text-align: right; }

@@ -101,6 +101,9 @@ class EbmsReports {
         Ebms\Menu::$active = 'Reports';
         drupal_add_css(Ebms\CSS_DIR . '/reports.css');
         switch ($this->report) {
+            case 'statistics':
+                return drupal_get_form('pdq_ebms_statistics_form',
+                                       $this->request_id);
             case 'recent-activity':
                 return drupal_get_form('pdq_ebms_recent_activity_form',
                                        $this->request_id);
@@ -489,6 +492,7 @@ class EbmsReports {
                             'reports/boards-and-topics',
                         ),
                         array('Invalid Pubmed IDs', 'reports/missing-from-nlm'),
+                        array('Statistics', 'reports/statistics'),
                     ),
                 ),
             ),
@@ -7531,4 +7535,299 @@ function pdq_ebms_board_topic_list_submit($form, &$form_state) {
     $report = 'Board and Topic Lists';
     $request_id = EbmsReports::save_report_request($values, $report);
     drupal_goto('reports/boards-and-topics/' . $request_id);
+}
+
+function pdq_ebms_statistics_form($form, &$form_state, $request_id) {
+
+    $report_title = 'Article Statistics Report';
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Citation Management Reports', 'reports/citation'),
+            $report_title,
+        )
+    );
+
+    // Initialize defaults for the form field's values.
+    $board = 0; // \Ebms\Util::get_user_default_board(0);
+    // $selected_topics = array();
+    $topic = 0;
+    $start = date('Y-m-d', strtotime('-1 month'));
+    $end = date('Y-m-d');
+
+    // Pull request parameters from the database if appropriate.
+    if ($request_id) {
+        $values = EbmsReports::fetch_report_request($request_id);
+        $board = $values['board'];
+        // $selected_topics = $values['topics'];
+        $topic = $values['topic'];
+        $start = $values['date-start']['date'];
+        $end = $values['date-end']['date'];
+        if ($start)
+            $start = Ebms\Util::fill_in_date($start);
+        if ($end)
+            $end = Ebms\Util::fill_in_date($end, true);
+    }
+
+    // Get the values of interest for ajax callbacks.
+    if (isset($form_state['values'])) {
+        $board = $form_state['values']['board'];
+        // $selected_topics = $form_state['values']['topics'];
+        $topics = $form_state['values']['topic'];
+    }
+
+    // How tall should the picklists allowing multiple selections be?
+    // $size = 6;
+
+    // Create the picklists.
+    // $topics = array();
+    $topics = array(0 => ' ');
+    $boards = array(0 => ' ') + Ebms\Util::boards();
+
+    // If a board has been selected, populate the topic picklist.
+    if ($board) {
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->condition('t.active_status', 'A')
+            ->orderBy('t.topic_name')
+            ->execute();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+        //foreach ($selected_topics as $key => $value)
+        //    if (!array_key_exists($value, $topics))
+        //        unset($selected_topics[$key]);
+        if (!array_key_exists($topic, $topics))
+            $topic = 0;
+     }
+
+
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
+                                            'Statistics');
+    $date_field = Ebms\Util::date_range_field('Dates', 'date', $start, $end,
+                                              '', false);
+    list($title, $table) = pdq_ebms_statistics_table($board, $topic,
+                                                     $start, $end);
+    return array(
+        'left_nav' => $left_nav,
+        'form' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'report-form'),
+            'title' => array('#markup' => "<h2>$report_title</h2>"),
+            'board' => array(
+                '#type' => 'select',
+                '#options' => $boards,
+                '#default_value' => $board,
+                '#title' => 'Editorial Board',
+                '#attributes' => array('class' => array('fixed-width')),
+                '#ajax' => array(
+                    'callback' => 'pdq_ebms_report_ajax',
+                    'wrapper' => 'board-dependent',
+                ),
+            ),
+            'ajax fields' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'board-dependent'),
+                // 'topics' => array(
+                'topic' => array(
+                    '#type' => 'select',
+                    // '#multiple' => true,
+                    '#options' => $topics,
+                    // '#default_value' => $selected_topics,
+                    '#default_value' => $topic,
+                    // '#title' => 'Topic(s)',
+                    '#title' => 'Topic',
+                    // '#size' => $size,
+                    '#attributes' => array('class' => array('fixed-width')),
+                ),
+            ),
+            'dates' => $date_field,
+            'save' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Reset',
+                '#submit' => array('pdq_ebms_internal_articles_submit'),
+                '#limit_validation_errors' => array(),
+            ),
+        ),
+        'report' => array(
+            '#prefix' => '<div id="statistics-report">',
+            '#suffix' => '</div>',
+            'title' => array('#markup' => "<br><br><h2>$title</h2>"),
+            'table' => $table,
+        ),
+    );
+}
+
+function pdq_ebms_statistics_table($board, $topic, $start, $end) {
+    $start = Ebms\Util::fill_in_date($start);
+    $end = Ebms\Util::fill_in_date($end);
+    $subquery = db_select('ebms_article_state', 'a');
+    $subquery->fields('a', array('article_id'));
+    $subquery->addExpression('MIN(a.article_state_id)', 'sid');
+    $subquery->groupBy('a.article_id');
+    if (!empty($topic)) {
+        $name = htmlspecialchars(db_select('ebms_topic', 't')
+            ->fields('t', array('topic_name'))
+            ->condition('t.topic_id', $topic)
+            ->fetchField());
+        $title = "Statistics for Topic $name ($start - $end)";
+        $subquery->condition('a.topic_id', $topic);
+    }
+    elseif (!empty($board)) {
+        $name = htmlspecialchars(Ebms\Util::get_board_name($board));
+        if (strpos(strtolower($name), 'complementary') !== false)
+            $name = 'IACT';
+        $title = "Statistics for $name Board ($start - $end)";
+        $subquery->condition('a.board_id', $board);
+    }
+    else
+        $title = "Statistics ($start - $end)";
+    $query = db_select('ebms_article_state', 's')->distinct();
+    $query->join($subquery, 'a', 'a.sid = s.article_state_id');
+    $query->fields('s', array('article_id'));
+    Ebms\Util::add_date_range_to_query($query, $start, $end, 's.status_dt');
+    $row = array($query->countQuery()->execute()->fetchField());
+    $states = array('RejectJournalTitle', 'PassedInitReview', 'RejectInitReview', 'Published',
+                    'PassedBMReview', 'RejectBMReview');
+    foreach ($states as $state)
+        $row[] = _get_counts_for_ebms_state($state, $board, $topic, $start, $end);
+    $query = db_select('ebms_article', 'a')->distinct();
+    $query->join('file_managed', 'f', 'f.fid = a.full_text_id');
+    $query->fields('a', array('article_id'));
+    if (!empty($topic)) {
+        $query->join('ebms_article_state', 's', 's.article_id = a.article_id');
+        $query->condition('s.topic_id', $topic);
+    }
+    elseif (!empty($board)) {
+        $query->join('ebms_article_state', 's', 's.article_id = a.article_id');
+        $query->condition('s.board_id', $board);
+    }
+    if (!empty($start)) {
+        $timestamp = strtotime(Ebms\Util::fill_in_date($start));
+        $query->condition('f.timestamp', $timestamp, '>=');
+    }
+    if (!empty($end)) {
+        $timestamp = strtotime(Ebms\Util::fill_in_date($end));
+        $query->condition('f.timestamp', $timestamp, '<=');
+    }
+    $row[] = $query->countQuery()->execute()->fetchField();
+    $states = array('PassedFullReview', 'RejectFullReview', 'FullReviewHold');
+    foreach ($states as $state)
+        $row[] = _get_counts_for_ebms_state($state, $board, $topic, $start, $end);
+    $query = db_select('ebms_packet', 'p')->distinct();
+    $query->join('ebms_packet_article', 'a', 'a.packet_id = p.packet_id');
+    $query->fields('a', array('article_id'));
+    Ebms\Util::add_date_range_to_query($query, $start, $end, 'p.created_at');
+    if (!empty($topic))
+        $query->condition('p.topic_id', $topic);
+    elseif (!empty($board)) {
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->condition('t.board_id', $board);
+    }
+    $row[] = $query->countQuery()->execute()->fetchField();
+    $no_changes = db_select('ebms_review_disposition_value', 'v')
+        ->condition('v.value_name', 'Warrants no changes to the summary')
+        ->fields('v', array('value_id'))
+        ->execute()
+        ->fetchField();
+    foreach (['=', '<>'] as $op) {
+        $query = db_select('ebms_article_review', 'r')->distinct();
+        $query->join('ebms_review_disposition', 'd', 'd.review_id = r.review_id');
+        $query->fields('r', array('article_id'));
+        $query->condition('d.value_id', $no_changes, $op);
+        Ebms\Util::add_date_range_to_query($query, $start, $end, 'r.when_posted');
+        if (!empty($topic)) {
+            $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+            $query->condition('p.topic_id', $topic);
+        }
+        elseif (!empty($board)) {
+            $query->join('ebms_packet', 'p', 'p.packet_id = r.packet_id');
+            $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+            $query->condition('t.board_id', $board);
+        }
+        $row[] = $query->countQuery()->execute()->fetchField();
+    }
+    $query = db_select('ebms_packet', 'p')->distinct();
+    $query->leftJoin('ebms_article_review', 'r', 'r.packet_id = p.packet_id');
+    if (!empty($topic))
+        $query->condition('p.topic_id', $topic);
+    elseif (!empty($board)) {
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->condition('t.board_id', $board);
+    }
+    if (!empty($start))
+        $query->condition('p.created_at', Ebms\Util::fill_in_date($start), '>=');
+    $query->isNull('r.article_id');
+    $row[] = $query->countQuery()->execute()->fetchField();
+    $decisions = array('Text approved', 'Cited (citation only)', 'Cited (legacy)');
+    foreach ($decisions as $decision) {
+        $decision_id = db_select('ebms_article_board_decision_value', 'v')
+            ->condition('v.value_name', $decision)
+            ->fields('v', array('value_id'))
+            ->execute()
+            ->fetchField();
+        $query = db_select('ebms_article_state', 's')->distinct();
+        $query->join('ebms_article_board_decision', 'd', 'd.article_state_id = s.article_state_id');
+        $query->condition('d.decision_value_id', $decision_id);
+        $query->fields('s', array('article_id'));
+        Ebms\Util::add_date_range_to_query($query, start, $end, 's.status_dt');
+        if (!empty($topic))
+            $query->condition('s.topic_id', $topic);
+        if (!empty($board))
+            $query->condition('s.board_id', $board);
+        $row[] = $query->countQuery()->execute()->fetchField();
+    }
+    list($yes, $no) = ["\u{1f44d}", "\u{1f44e}"];
+    $key = ('<p><b>IMP</b> = Imported<br>' .
+            '<b>JNL</b> = Rejected because journal is on board\'s "not" list<br>' .
+            '<b>LIB</b> = Librarian approval/rejection<br>' .
+            '<b>PUB</b> = Published<br>' .
+            '<b>ABS</b> = Approval/rejection from article abstract<br>' .
+            '<b>FT</b> = Full text retrieval/approval/rejection<br>' .
+            '<b>HLD</b> = On hold (at full-text state)<br>' .
+            '<b>PKT</b> = Assigned to packets for review<br>' .
+            '<b>RSP</b> = Board member response following review<br>' .
+            '<b>NR</b> = Not reviewed<br>' .
+            '<b>TA</b> = Text approved<br>' .
+            '<b>CIT</b> = Cited (citation only)<br>' .
+            '<b>LEG</b> = Cited (legacy)</p></div>');
+    return array(
+        $title,
+        array(
+            'data' => array(
+                '#theme' => 'table',
+                '#header' => array('Imp', "Jnl$no", "Lib$yes", "Lib$no",
+                                   'Pub', "Abs$yes", "Abs$no", 'FT',
+                                   "FT$yes", "FT$no", 'Hld', 'Pkt', "Rsp$yes", "Rsp$no", 'NR',
+                                   'TA', 'CIT', 'LEG'),
+                '#rows' => array($row),
+            ),
+            'key' => array('#markup' => $key),
+        ),
+    );
+}
+function _get_counts_for_ebms_state($state, $board, $topic, $start, $end) {
+    $state_id = Ebms\Util::state_id_from_text_id($state);
+    $query = db_select('ebms_article_state', 's')
+        ->fields('s', array('article_id'))
+        ->condition('s.state_id', $state_id)
+        ->distinct();
+    Ebms\Util::add_date_range_to_query($query, $start, $end, 's.status_dt');
+    if (!empty($topic))
+        $query->condition('s.topic_id', $topic);
+    if (!empty($board))
+        $query->condition('s.board_id', $board);
+    return $query->countQuery()->execute()->fetchField();
+}
+function pdq_ebms_statistics_form_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/statistics');
+    $values = $form_state['values'];
+    $report = 'Statistics';
+    $request_id = EbmsReports::save_report_request($values, $report);
+    drupal_goto('reports/statistics/' . $request_id);
 }
