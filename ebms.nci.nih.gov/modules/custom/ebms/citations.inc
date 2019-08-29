@@ -566,7 +566,7 @@ namespace {
 
         // Add a link for editing the internal article tags.
         $link_url = "edit-internal-article-tags/$articleId";
-        $link_label = 'Edit Internal Tags';
+        $link_label = 'Add/Edit Internal Tags';
         $links[] = array($link_label, $link_url, $link_opt);
 
         // Add a link for adding an internal article comment.

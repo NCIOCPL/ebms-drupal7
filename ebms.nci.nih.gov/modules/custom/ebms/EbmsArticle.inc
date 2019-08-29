@@ -1298,6 +1298,19 @@ class EbmsArticle {
         $opts = array('attributes' => array('target' => '_blank'));
         $url = Util::pubmed_url($pmid);
         $article_id = $this->article_id;
+        $ft_user = $ft_filename = $ft_uploaded = $ft_uri = $ft_url = '';
+        if (!empty($this->full_text_id)) {
+            $row = db_select('file_managed', 'f')
+                ->condition('f.fid', $this->full_text_id)
+                ->fields('f')
+                ->execute()
+                ->fetch();
+            $ft_user = user_load($row->uid)->name;
+            $ft_filename = $row->filename;
+            $ft_uploaded = format_date($row->timestamp, 'custom', 'Y-m-d');
+            $ft_uri = $row->uri;
+            $ft_url = file_create_url($row->uri);
+        }
         return (object) [
             'authors' => $authors,
             'title' => Util::get_text($article->ArticleTitle),
@@ -1306,6 +1319,11 @@ class EbmsArticle {
             'pubmed_url' => $url,
             'pubmed_link' => l($pmid, $url, $opts),
             'ebms_link' => l($article_id, "citations/full/$article_id"),
+            'ft_user' => $ft_user,
+            'ft_filename' => $ft_filename,
+            'ft_uploaded' => $ft_uploaded,
+            'ft_uri' => $ft_uri,
+            'ft_url' => $ft_url,
         ];
     }
 }

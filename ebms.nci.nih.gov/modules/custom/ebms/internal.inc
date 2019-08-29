@@ -11,10 +11,9 @@ require_once('EbmsImport.inc');
 require_once('EbmsArticle.inc');
 
 function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
-    $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
-    $use_table = !empty($parms['format']) && $parms['format'] === 'table';
     $start = date('Y-m-d', strtotime('-1 month'));
     $selected_tags = array();
+    $comment = '';
     $end = date('Y-m-d');
     if (!empty($request_id)) {
         $json = db_select('ebms_report_request', 'r')
@@ -29,6 +28,7 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
         }
         $start = $request['import-date-start']['date'] ?? '';
         $end = $request['import-date-end']['date'] ?? '';
+        $comment = $request['comment'];
     }
 
     $label = 'Import Date';
@@ -43,18 +43,20 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
     $tag_options = array();
     foreach ($results as $result)
         $tag_options[$result->tag_id] = htmlspecialchars($result->tag_name);
-    $query = db_select('ebms_article', 'a');
+    $query = db_select('ebms_article', 'a')->distinct();
     $query->join('ebms_internal_article_tag', 't',
                  't.article_id = a.article_id');
     if (!empty($selected_tags))
         $query->condition('t.tag_id', $selected_tags, 'IN');
+    if (!empty($comment)) {
+        $query->join('ebms_internal_article_comment', 'c',
+                     'c.article_id = a.article_id');
+        $query->condition('c.comment_text', "%${comment}%", 'LIKE');
+    }
     Ebms\Util::add_date_range_to_query($query, $start, $end, 'a.import_date');
     $query->fields('a', array('article_id', 'import_date'));
-    $results = $query->distinct()->orderBy('a.import_date', 'DESC')->execute();
-    if ($use_table)
-        $queue = _internal_articles_table($results);
-    else
-        $queue = _internal_articles_list($results);
+    $results = $query->orderBy('a.import_date', 'DESC')->execute();
+    $queue = _internal_articles_table($results);
     return array(
         'left_nav' => Ebms\Util::build_left_nav('Internal Articles'),
         'form' => array(
@@ -70,6 +72,11 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
                 '#title' => 'Tags',
             ),
             'import-date' => $date_field,
+            'comment' => array(
+                '#type' => 'textfield',
+                '#title' => 'Comment',
+                '#default_value' => $comment,
+            ),
             'save' => array(
                 '#type' => 'submit',
                 '#value' => 'Submit',
@@ -82,7 +89,7 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
             ),
         ),
         'articles' => array(
-            'title' => array('#markup' => '<h2>Article Queue</h2>'),
+            'title' => array('#markup' => '<h2>Articles</h2>'),
             'queue' => $queue,
         ),
     );
@@ -90,25 +97,40 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
 
 function _internal_articles_table($results) {
     $headers = array(
-        array('data' => 'Citation', 'class' => array('col-1')),
+        array('data' => '', 'class' => array('col-0')),
+        array('data' => 'Article', 'class' => array('col-1')),
         array('data' => 'Imported', 'class' => array('col-2')),
         array('data' => 'Tags', 'class' => array('col-3')),
         array('data' => 'Comments', 'class' => array('col-4')),
     );
     $rows = array();
+    $n = 1;
+    $target_opts = array('attributes' => array('target' => '_blank'));
+    $title_opts = array('attributes' => array('class' => 'cite-title'));
     foreach ($results as $result) {
-        $article = new Ebms\EbmsArticle($result->article_id);
+        $article_id = $result->article_id;
+        $article = new Ebms\EbmsArticle($article_id);
         $display = $article->display();
         if (empty($display->authors))
             $authors = '<b>[No authors]</b>';
+        else if (count($display->authors) > 3) {
+            $authors = array_slice($display->authors, 0, 3);
+            $authors[] = 'et al.';
+            $authors = implode(', ', $authors);
+        }
         else
-            $authors = '<b>' . implode(', ', $display->authors) . '</b>';
-        $title = '<i>' . htmlspecialchars($display->title) . '</i>';
+            $authors = implode(', ', $display->authors);
+        $url = "citations/full/$article_id";
+        $title = htmlspecialchars($display->title);
+        $title = l($title, $url, $title_opts);
         $publication = htmlspecialchars($display->publication);
-        $pubmed_link = $display->pubmed_link;
-        $ebms_link = $display->ebms_link;
-        $ids = "PMID: {$pubmed_link} &nbsp; EBMS: {$ebms_link}";
-        $citation = "$authors<br>$title<br>$publication<br>$ids";
+        $links = array(l('VIEW ABSTRACT', $display->pubmed_url, $target_opts));
+        if (!empty($display->ft_url))
+            $links[] = l('DOWNLOAD FULL TEXT', $display->ft_url, $target_opts);
+        $links = implode(' &nbsp; ', $links);
+        $ids = "PMID: {$display->pubmed_id} &nbsp; EBMS: {$article_id}";
+        $citation = "$authors<br>$title<br>$publication<br>$ids<br>$links";
+        $citation = ['data' => $citation, 'class' => ['internal-cite']];
         $tags = array();
         foreach ($article->getInternalTags() as $id => $tag)
             $tags[] = htmlspecialchars($tag);
@@ -121,51 +143,13 @@ function _internal_articles_table($results) {
         $imported = substr($result->import_date, 0, 10);
         $rows[] = array(
             'no_striping' => true,
-            'data' => array($citation, $imported, $tags, $comments),
+            'data' => array($n++, $citation, $imported, $tags, $comments),
         );
     }
     return array(
         '#theme' => 'table',
         '#rows' => $rows,
         '#header' => $headers,
-    );
-}
-
-function _internal_articles_list($results) {
-    $items = array();
-    foreach ($results as $result) {
-        $article = new Ebms\EbmsArticle($result->article_id);
-        $display = $article->display();
-        if (empty($display->authors))
-            $authors = '<b>[No authors]</b>';
-        else
-            $authors = '<b>' . implode(', ', $display->authors) . '</b>';
-        $title = '<i>' . htmlspecialchars($display->title) . '</i>';
-        $publication = htmlspecialchars($display->publication);
-        $pubmed_link = $display->pubmed_link;
-        $ebms_link = $display->ebms_link;
-        $ids = "PMID: {$pubmed_link} &nbsp; EBMS: {$ebms_link}";
-        $citation = "$authors<br>$title<br>$publication &nbsp; $ids";
-        $tags = array();
-        foreach ($article->getInternalTags() as $id => $tag)
-            $tags[] = htmlspecialchars($tag);
-        $tags = '<b>Tags:</b> ' . implode(', ', $tags);
-        $comments = array();
-        foreach ($article->getInternalComments() as $id => $comment)
-            $comments[] = '[Posted ' . $comment->comment_date . ' by ' .
-                htmlspecialchars($comment->name) . '] ' .
-                htmlspecialchars($comment->comment_text);
-        $comments = implode('<br><br>', $comments);
-        $imported = '<b>Imported:</b> ' . $result->import_date;
-        $item = array($citation, $imported, $tags);
-        if (!empty($comments))
-            $item[] = '<b>Comments</b>:<br><br>' . $comments;
-        $items[] = implode('<br><br>', $item);
-    }
-    return array(
-        '#theme' => 'item_list',
-        '#type' => 'ol',
-        '#items' => $items,
     );
 }
 
@@ -492,7 +476,7 @@ function pdq_ebms_import_internal_articles_form($form, &$form_state,
         ),
         'tags' => array(
             '#type' => 'checkboxes',
-            '#title' => 'Tag(s)',
+            '#title' => 'Internal Tag(s)',
             '#options' => $tags,
             '#default_value' => $selected_tags,
             '#required' => true,
