@@ -7548,99 +7548,19 @@ function pdq_ebms_statistics_form($form, &$form_state, $request_id) {
         )
     );
 
-    // Initialize defaults for the form field's values.
-    $board = 0; // \Ebms\Util::get_user_default_board(0);
-    // $selected_topics = array();
-    $topic = 0;
-    $start = date('Y-m-d', strtotime('-1 month'));
+    $start = date('Y-m-d', strtotime('-3 years'));
     $end = date('Y-m-d');
-
-    // Pull request parameters from the database if appropriate.
-    if ($request_id) {
-        $values = EbmsReports::fetch_report_request($request_id);
-        $board = $values['board'];
-        // $selected_topics = $values['topics'];
-        $topic = $values['topic'];
-        $start = $values['date-start']['date'];
-        $end = $values['date-end']['date'];
-        if ($start)
-            $start = Ebms\Util::fill_in_date($start);
-        if ($end)
-            $end = Ebms\Util::fill_in_date($end, true);
-    }
-
-    // Get the values of interest for ajax callbacks.
-    if (isset($form_state['values'])) {
-        $board = $form_state['values']['board'];
-        // $selected_topics = $form_state['values']['topics'];
-        $topics = $form_state['values']['topic'];
-    }
-
-    // How tall should the picklists allowing multiple selections be?
-    // $size = 6;
-
-    // Create the picklists.
-    // $topics = array();
-    $topics = array(0 => ' ');
-    $boards = array(0 => ' ') + Ebms\Util::boards();
-
-    // If a board has been selected, populate the topic picklist.
-    if ($board) {
-        $results = db_select('ebms_topic', 't')
-            ->fields('t', array('topic_id', 'topic_name'))
-            ->condition('t.board_id', $board)
-            ->condition('t.active_status', 'A')
-            ->orderBy('t.topic_name')
-            ->execute();
-        foreach ($results as $result)
-            $topics[$result->topic_id] = $result->topic_name;
-        //foreach ($selected_topics as $key => $value)
-        //    if (!array_key_exists($value, $topics))
-        //        unset($selected_topics[$key]);
-        if (!array_key_exists($topic, $topics))
-            $topic = 0;
-     }
-
 
     $left_nav = EbmsReports::build_left_nav('Citation Management',
                                             'Statistics');
-    $date_field = Ebms\Util::date_range_field('Dates', 'date', $start, $end,
-                                              '', false);
-    list($title, $table) = pdq_ebms_statistics_table($board, $topic,
-                                                     $start, $end);
+    $date_field = Ebms\Util::date_range_field('Report Dates', 'date',
+                                              $start, $end, '', false);
     return array(
         'left_nav' => $left_nav,
         'form' => array(
             '#type' => 'container',
             '#attributes' => array('id' => 'report-form'),
             'title' => array('#markup' => "<h2>$report_title</h2>"),
-            'board' => array(
-                '#type' => 'select',
-                '#options' => $boards,
-                '#default_value' => $board,
-                '#title' => 'Editorial Board',
-                '#attributes' => array('class' => array('fixed-width')),
-                '#ajax' => array(
-                    'callback' => 'pdq_ebms_report_ajax',
-                    'wrapper' => 'board-dependent',
-                ),
-            ),
-            'ajax fields' => array(
-                '#type' => 'container',
-                '#attributes' => array('id' => 'board-dependent'),
-                // 'topics' => array(
-                'topic' => array(
-                    '#type' => 'select',
-                    // '#multiple' => true,
-                    '#options' => $topics,
-                    // '#default_value' => $selected_topics,
-                    '#default_value' => $topic,
-                    // '#title' => 'Topic(s)',
-                    '#title' => 'Topic',
-                    // '#size' => $size,
-                    '#attributes' => array('class' => array('fixed-width')),
-                ),
-            ),
             'dates' => $date_field,
             'save' => array(
                 '#type' => 'submit',
@@ -7649,52 +7569,50 @@ function pdq_ebms_statistics_form($form, &$form_state, $request_id) {
             'cancel' => array(
                 '#type' => 'submit',
                 '#value' => 'Reset',
-                '#submit' => array('pdq_ebms_internal_articles_submit'),
+                '#submit' => array('pdq_ebms_statistics_form_submit'),
                 '#limit_validation_errors' => array(),
             ),
-        ),
-        'report' => array(
-            '#prefix' => '<div id="statistics-report">',
-            '#suffix' => '</div>',
-            'title' => array('#markup' => "<br><br><h2>$title</h2>"),
-            'table' => $table,
         ),
     );
 }
 
-function pdq_ebms_statistics_table($board, $topic, $start, $end) {
-    $start = Ebms\Util::fill_in_date($start);
-    $end = Ebms\Util::fill_in_date($end);
+function pdq_ebms_statistics_form_validate($form, &$form_state) {
+    if ($form_state['values']['op'] === 'Reset')
+        drupal_goto('reports/statistics');
+}
+
+function _ebms_stats($board, $topic, $start, $end, $decisions) {
+
+    // Get the first time the article was seen for this board/topic.
     $subquery = db_select('ebms_article_state', 'a');
     $subquery->fields('a', array('article_id'));
     $subquery->addExpression('MIN(a.article_state_id)', 'sid');
     $subquery->groupBy('a.article_id');
-    if (!empty($topic)) {
-        $name = htmlspecialchars(db_select('ebms_topic', 't')
-            ->fields('t', array('topic_name'))
-            ->condition('t.topic_id', $topic)
-            ->fetchField());
-        $title = "Statistics for Topic $name ($start - $end)";
+    if (!empty($topic))
         $subquery->condition('a.topic_id', $topic);
-    }
-    elseif (!empty($board)) {
-        $name = htmlspecialchars(Ebms\Util::get_board_name($board));
-        if (strpos(strtolower($name), 'complementary') !== false)
-            $name = 'IACT';
-        $title = "Statistics for $name Board ($start - $end)";
+    elseif (!empty($board))
         $subquery->condition('a.board_id', $board);
-    }
-    else
-        $title = "Statistics ($start - $end)";
+
+    // Join on that virtual table to get the 'Imported' count.
     $query = db_select('ebms_article_state', 's')->distinct();
     $query->join($subquery, 'a', 'a.sid = s.article_state_id');
     $query->fields('s', array('article_id'));
     Ebms\Util::add_date_range_to_query($query, $start, $end, 's.status_dt');
-    $row = array($query->countQuery()->execute()->fetchField());
-    $states = array('RejectJournalTitle', 'PassedInitReview', 'RejectInitReview', 'Published',
-                    'PassedBMReview', 'RejectBMReview');
+    $stats = array($query->countQuery()->execute()->fetchField());
+
+    // Get the counts leading up to the full text retrieval.
+    $states = array(
+        'RejectJournalTitle',
+        'PassedInitReview',
+        'RejectInitReview',
+        'Published',
+        'PassedBMReview',
+        'RejectBMReview',
+    );
     foreach ($states as $state)
-        $row[] = _get_counts_for_ebms_state($state, $board, $topic, $start, $end);
+        $stats[] = _ebms_state_counts($state, $board, $topic, $start, $end);
+
+    // Find out how many articles we have full text PDFs for.
     $query = db_select('ebms_article', 'a')->distinct();
     $query->join('file_managed', 'f', 'f.fid = a.full_text_id');
     $query->fields('a', array('article_id'));
@@ -7714,10 +7632,14 @@ function pdq_ebms_statistics_table($board, $topic, $start, $end) {
         $timestamp = strtotime(Ebms\Util::fill_in_date($end));
         $query->condition('f.timestamp', $timestamp, '<=');
     }
-    $row[] = $query->countQuery()->execute()->fetchField();
+    $stats[] = $query->countQuery()->execute()->fetchField();
+
+    // Get the counts for the decisions made by board managers from full text.
     $states = array('PassedFullReview', 'RejectFullReview', 'FullReviewHold');
     foreach ($states as $state)
-        $row[] = _get_counts_for_ebms_state($state, $board, $topic, $start, $end);
+        $stats[] = _ebms_state_counts($state, $board, $topic, $start, $end);
+
+    // How many articles were assigned to packets for review?
     $query = db_select('ebms_packet', 'p')->distinct();
     $query->join('ebms_packet_article', 'a', 'a.packet_id = p.packet_id');
     $query->fields('a', array('article_id'));
@@ -7728,7 +7650,9 @@ function pdq_ebms_statistics_table($board, $topic, $start, $end) {
         $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
         $query->condition('t.board_id', $board);
     }
-    $row[] = $query->countQuery()->execute()->fetchField();
+    $stats[] = $query->countQuery()->execute()->fetchField();
+
+    // Counts for the board members' feedback on the articles.
     $no_changes = db_select('ebms_review_disposition_value', 'v')
         ->condition('v.value_name', 'Warrants no changes to the summary')
         ->fields('v', array('value_id'))
@@ -7749,10 +7673,15 @@ function pdq_ebms_statistics_table($board, $topic, $start, $end) {
             $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
             $query->condition('t.board_id', $board);
         }
-        $row[] = $query->countQuery()->execute()->fetchField();
+        $stats[] = $query->countQuery()->execute()->fetchField();
     }
+
+    // How many articles didn't get reviewed?
     $query = db_select('ebms_packet', 'p')->distinct();
-    $query->leftJoin('ebms_article_review', 'r', 'r.packet_id = p.packet_id');
+    $query->join('ebms_packet_article', 'a', 'a.packet_id = p.packet_id');
+    $query->fields('a', array('article_id'));
+    $query->leftJoin('ebms_article_review', 'r',
+        'r.packet_id = a.packet_id AND r.article_id = a.article_id');
     if (!empty($topic))
         $query->condition('p.topic_id', $topic);
     elseif (!empty($board)) {
@@ -7762,55 +7691,28 @@ function pdq_ebms_statistics_table($board, $topic, $start, $end) {
     if (!empty($start))
         $query->condition('p.created_at', Ebms\Util::fill_in_date($start), '>=');
     $query->isNull('r.article_id');
-    $row[] = $query->countQuery()->execute()->fetchField();
-    $decisions = array('Text approved', 'Cited (citation only)', 'Cited (legacy)');
-    foreach ($decisions as $decision) {
-        $decision_id = db_select('ebms_article_board_decision_value', 'v')
-            ->condition('v.value_name', $decision)
-            ->fields('v', array('value_id'))
-            ->execute()
-            ->fetchField();
+    $stats[] = $query->countQuery()->execute()->fetchField();
+
+    // Get the counts for the board decisions.
+    foreach ($decisions as $decision_id => $decision_value) {
         $query = db_select('ebms_article_state', 's')->distinct();
-        $query->join('ebms_article_board_decision', 'd', 'd.article_state_id = s.article_state_id');
+        $query->join('ebms_article_board_decision', 'd',
+                     'd.article_state_id = s.article_state_id');
         $query->condition('d.decision_value_id', $decision_id);
         $query->fields('s', array('article_id'));
-        Ebms\Util::add_date_range_to_query($query, start, $end, 's.status_dt');
+        Ebms\Util::add_date_range_to_query($query, $start, $end, 's.status_dt');
         if (!empty($topic))
             $query->condition('s.topic_id', $topic);
         if (!empty($board))
             $query->condition('s.board_id', $board);
-        $row[] = $query->countQuery()->execute()->fetchField();
+        $stats[] = $query->countQuery()->execute()->fetchField();
     }
-    list($yes, $no) = ["\u{1f44d}", "\u{1f44e}"];
-    $key = ('<p><b>IMP</b> = Imported<br>' .
-            '<b>JNL</b> = Rejected because journal is on board\'s "not" list<br>' .
-            '<b>LIB</b> = Librarian approval/rejection<br>' .
-            '<b>PUB</b> = Published<br>' .
-            '<b>ABS</b> = Approval/rejection from article abstract<br>' .
-            '<b>FT</b> = Full text retrieval/approval/rejection<br>' .
-            '<b>HLD</b> = On hold (at full-text state)<br>' .
-            '<b>PKT</b> = Assigned to packets for review<br>' .
-            '<b>RSP</b> = Board member response following review<br>' .
-            '<b>NR</b> = Not reviewed<br>' .
-            '<b>TA</b> = Text approved<br>' .
-            '<b>CIT</b> = Cited (citation only)<br>' .
-            '<b>LEG</b> = Cited (legacy)</p></div>');
-    return array(
-        $title,
-        array(
-            'data' => array(
-                '#theme' => 'table',
-                '#header' => array('Imp', "Jnl$no", "Lib$yes", "Lib$no",
-                                   'Pub', "Abs$yes", "Abs$no", 'FT',
-                                   "FT$yes", "FT$no", 'Hld', 'Pkt', "Rsp$yes", "Rsp$no", 'NR',
-                                   'TA', 'CIT', 'LEG'),
-                '#rows' => array($row),
-            ),
-            'key' => array('#markup' => $key),
-        ),
-    );
+
+    // Return the assembled array of counts.
+    return $stats;
 }
-function _get_counts_for_ebms_state($state, $board, $topic, $start, $end) {
+
+function _ebms_state_counts($state, $board, $topic, $start, $end) {
     $state_id = Ebms\Util::state_id_from_text_id($state);
     $query = db_select('ebms_article_state', 's')
         ->fields('s', array('article_id'))
@@ -7823,11 +7725,126 @@ function _get_counts_for_ebms_state($state, $board, $topic, $start, $end) {
         $query->condition('s.board_id', $board);
     return $query->countQuery()->execute()->fetchField();
 }
+
 function pdq_ebms_statistics_form_submit($form, &$form_state) {
-    if ($form_state['values']['op'] == 'Reset')
-        drupal_goto('reports/statistics');
     $values = $form_state['values'];
-    $report = 'Statistics';
-    $request_id = EbmsReports::save_report_request($values, $report);
-    drupal_goto('reports/statistics/' . $request_id);
+    if ($form_state['values']['op'] == 'Reset') {
+        drupal_goto('reports/statistics');
+        return;
+    }
+    $start = $values['date-start']['date'];
+    $end = $values['date-end']['date'];
+    $title = 'Statistics For ' . Ebms\Util::fill_in_date($start) .
+        ' - ' . substr(Ebms\Util::fill_in_date($end, true), 0, 10);
+    $cols = array(
+        'Board',
+        'Imported',
+        '"Not" Listed',
+        'Initial Approval',
+        'Initial Rejection',
+        'Published',
+        'Approved From Abstract',
+        'Rejected From Abstract',
+        'Full Text Retrieved',
+        'Approved From Full Text',
+        'Rejected From Full Text',
+        'On Hold With Full Text',
+        'Assigned For Review',
+        'Positive Responses',
+        'No Changes Warranted',
+        'No Reviews Received',
+    );
+    $results = db_select('ebms_article_board_decision_value', 'v')
+        ->fields('v', array('value_id', 'value_name'))
+        ->orderBy('v.value_id')
+        ->execute();
+    $decisions = array();
+    foreach ($results as $result) {
+        $decisions[$result->value_id] = $result->value_name;
+        $cols[] = $result->value_name;
+    }
+    $last_col = 'A';
+    for ($i = count($cols) - 1; $i > 0; $i--)
+        $last_col++;
+    $boards = Ebms\Util::boards();
+    $xllib = libraries_get_path('PHPExcel');
+    require_once $xllib . '/Classes/PHPExcel.php';
+    require_once $xllib . '/Classes/PHPExcel/IOFactory.php';
+    $excel = new PHPExcel();
+    $sheet = $excel->getActiveSheet();
+    $sheet->setTitle('Boards');
+    $sheet->mergeCells("A1:${last_col}1");
+    $sheet->mergeCells("A2:${last_col}2");
+    $center = PHPExcel_Style_Alignment::HORIZONTAL_CENTER;
+    $style = array(
+        'font' => array('bold' => true),
+        'alignment' => array('horizontal' => $center),
+    );
+    $title = "EBMS Statistics ($start - $end)";
+    $sheet->getStyle("A1:${last_col}3")->applyFromArray($style);
+    $sheet->setCellValue('A1', $title);
+    $sheet->fromArray($cols, null, 'A3');
+    foreach (range('A', $last_col) as $col)
+        $sheet->getColumnDimension($col)->setAutoSize(true);
+    $row_number = 4;
+    $board_stats = array();
+    foreach ($boards as $id => $name) {
+        if (strpos(strtolower($name), 'complementary') !== false)
+            $name = 'IACT';
+        $sheet->setCellValue("A$row_number", $name);
+        $values = _ebms_stats($id, 0, $start, $end, $decisions);
+        $board_stats[$id] = $values;
+        $sheet->fromArray($values, null, "B$row_number");
+        $row_number++;
+    }
+    $sheet->setCellValue("A$row_number", 'All Boards');
+    $values = _ebms_stats(0, 0, $start, $end, $decisions);
+    $sheet->fromArray($values, null, "B$row_number");
+    $sheet_id = 1;
+    $cols[0] = 'Topics';
+    foreach ($boards as $id => $name) {
+        $excel->createSheet();
+        $excel->setActiveSheetIndex($sheet_id++);
+        $sheet = $excel->getActiveSheet();
+        foreach (range('A', $last_col) as $col)
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        if (strpos(strtolower($name), 'complementary') !== false)
+            $sheet->setTitle('IACT');
+        else
+            $sheet->setTitle($name);
+        $sheet->getStyle("A1:${last_col}4")->applyFromArray($style);
+        $sheet->mergeCells("A1:${last_col}1");
+        $sheet->mergeCells("A2:${last_col}2");
+        $sheet->mergeCells("A3:${last_col}3");
+        $sheet->setCellValue('A1', $title);
+        $sheet->setCellValue('A2', $name);
+        $sheet->fromArray($cols, null, 'A4');
+        $row_number = 5;
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $id)
+            ->orderBy('t.topic_name')
+            ->execute();
+        foreach ($results as $result) {
+            $topic_id = $result->topic_id;
+            $sheet->setCellValue("A$row_number", $result->topic_name);
+            $values = _ebms_stats(0, $topic_id, $start, $end, $decisions);
+            $sheet->fromArray($values, null, "B$row_number");
+            $row_number++;
+        }
+        $sheet->setCellValue("A$row_number", 'All Topics');
+        $sheet->fromArray($board_stats[$id], null, "B$row_number");
+    }
+    $excel->setActiveSheetIndex(0);
+    $name = 'ebms-statistics-' . strftime('%Y%m%d%H%M%S') . '.xlsx';
+    drupal_add_http_header('Content-Type',
+                           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    drupal_add_http_header('Content-Disposition',
+                           'attachment;filename="' . $name . '"');
+    drupal_add_http_header('Cache-Control',
+                           'must-revalidate, post-check=0, pre-check=0');
+    drupal_add_http_header('Content-transfer-encoding', 'binary');
+    $writer = PHPExcel_IOFactory::createWriter($excel, 'Excel2007');
+    $writer->save('php://output');
+    exit(0);
 }
