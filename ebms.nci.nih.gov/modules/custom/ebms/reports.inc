@@ -7740,14 +7740,14 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
         'Board',
         'Imported',
         '"Not" Listed',
-        'Initial Approval',
-        'Initial Rejection',
+        'Librarian Approval',
+        'Librarian Rejection',
         'Published',
-        'Approved From Abstract',
-        'Rejected From Abstract',
+        'Abstract Approval',
+        'Abstract Rejection',
         'Full Text Retrieved',
-        'Approved From Full Text',
-        'Rejected From Full Text',
+        'Full Text Approval',
+        'Full Text Rejection',
         'On Hold With Full Text',
         'Assigned For Review',
         'Positive Responses',
@@ -7772,6 +7772,7 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
     require_once $xllib . '/Classes/PHPExcel/IOFactory.php';
     $excel = new PHPExcel();
     $sheet = $excel->getActiveSheet();
+    $sheet->freezePane('B1');
     $sheet->setTitle('Boards');
     $sheet->mergeCells("A1:${last_col}1");
     $sheet->mergeCells("A2:${last_col}2");
@@ -7786,8 +7787,11 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
     $sheet->fromArray($cols, null, 'A3');
     foreach (range('A', $last_col) as $col)
         $sheet->getColumnDimension($col)->setAutoSize(true);
-    $row_number = 4;
     $board_stats = array();
+    $sheet->setCellValue('A4', 'All Boards');
+    $values = _ebms_stats(0, 0, $start, $end, $decisions);
+    $sheet->fromArray($values, null, 'B4');
+    $row_number = 6;
     foreach ($boards as $id => $name) {
         if (strpos(strtolower($name), 'complementary') !== false)
             $name = 'IACT';
@@ -7797,15 +7801,13 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
         $sheet->fromArray($values, null, "B$row_number");
         $row_number++;
     }
-    $sheet->setCellValue("A$row_number", 'All Boards');
-    $values = _ebms_stats(0, 0, $start, $end, $decisions);
-    $sheet->fromArray($values, null, "B$row_number");
     $sheet_id = 1;
     $cols[0] = 'Topics';
     foreach ($boards as $id => $name) {
         $excel->createSheet();
         $excel->setActiveSheetIndex($sheet_id++);
         $sheet = $excel->getActiveSheet();
+        $sheet->freezePane('B5');
         foreach (range('A', $last_col) as $col)
             $sheet->getColumnDimension($col)->setAutoSize(true);
         if (strpos(strtolower($name), 'complementary') !== false)
@@ -7819,7 +7821,9 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
         $sheet->setCellValue('A1', $title);
         $sheet->setCellValue('A2', $name);
         $sheet->fromArray($cols, null, 'A4');
-        $row_number = 5;
+        $sheet->setCellValue('A5', 'All Topics');
+        $sheet->fromArray($board_stats[$id], null, 'B5');
+        $row_number = 7;
         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
             ->condition('t.board_id', $id)
@@ -7832,8 +7836,6 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
             $sheet->fromArray($values, null, "B$row_number");
             $row_number++;
         }
-        $sheet->setCellValue("A$row_number", 'All Topics');
-        $sheet->fromArray($board_stats[$id], null, "B$row_number");
     }
     $excel->setActiveSheetIndex(0);
     $name = 'ebms-statistics-' . strftime('%Y%m%d%H%M%S') . '.xlsx';
