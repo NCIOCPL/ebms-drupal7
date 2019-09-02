@@ -105,12 +105,6 @@ echo Refreshing settings for text editing filters
 drush -y en ebms_config
 drush fr ebms_config
 
-echo Installing admin_views module for OCEEBMS-510
-drush en -y views_bulk_operations
-drush up -y views_bulk_operations-7.x-3.5
-drush dl admin_views-7.x-1.6
-drush en -y admin_views
-
 echo Clearing caches twice, once is not always sufficient
 drush cc all
 drush cc all
