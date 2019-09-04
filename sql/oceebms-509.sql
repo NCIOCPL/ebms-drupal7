@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS ebms_internal_article_comment;
+DROP TABLE IF EXISTS ebms_internal_article_tag;
+DROP TABLE IF EXISTS ebms_internal_tag;
 CREATE TABLE ebms_internal_tag
        (tag_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
       tag_name VARCHAR(255)     NOT NULL,
@@ -15,7 +18,7 @@ CREATE TABLE ebms_internal_article_comment
  (comment_id INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
   article_id INTEGER NOT NULL,
      user_id INTEGER UNSIGNED NOT NULL,
-comment_date DATETIME NOT NULL
+comment_date DATETIME NOT NULL,
 comment_text TEXT     NOT NULL,
  FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
  FOREIGN KEY (user_id)    REFERENCES users(uid))

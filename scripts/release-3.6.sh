@@ -60,6 +60,36 @@ drush vset maintenance_mode 1
 echo Preparing for the upgrade to PHP 7.2
 sed -i 's/^ini_set.*session.save_handler/#&/' $SITEDIR/settings.php
 
+echo Applying database changes
+cd $SITEDIR
+table=ebms_article_tag_type
+cond="text_id = 'high_priority'"
+query="SELECT COUNT(*) FROM $table WHERE $cond"
+count=`drush sqlq --extra=--skip-column-names "$query"`
+if [ $count = "0" ]
+then
+    if [ -r $WORKDIR/ebms/sql/oceebms-469.sql ]
+    then
+        echo Database changes for OCEEBMS-469
+        drush sqlc < $WORKDIR/ebms/sql/oceebms-469.sql
+    else
+        echo $WORKDIR/ebms/sql/oceebms-469.sql missing
+        echo Aborting script.
+        exit
+    fi
+else
+    echo Database changes for OCEEBMS-469 already applied
+fi
+if [ -r $WORKDIR/ebms/sql/oceebms-509.sql ]
+then
+    echo Database changes for OCEEBMS-509
+    drush sqlc < $WORKDIR/ebms/sql/oceebms-509.sql
+else
+    echo $WORKDIR/ebms/sql/oceebms-509.sql missing
+    echo Aborting script.
+    exit
+fi
+
 echo Deleting the current software
 cd $SITEDIR
 rm -rf modules/* themes/*
@@ -102,8 +132,8 @@ drush -y dis ebms ebms_content ebms_webforms
 drush -y en ebms ebms_content ebms_webforms
 
 echo Refreshing settings for text editing filters
-drush -y en ebms_config
-drush fr ebms_config
+drush en -y ebms_config
+drush fr -y ebms_config
 
 echo Clearing caches twice, once is not always sufficient
 drush cc all
