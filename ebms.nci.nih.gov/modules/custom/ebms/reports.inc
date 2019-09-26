@@ -7490,9 +7490,14 @@ function pdq_ebms_board_topic_list($form, &$form_state, $request_id=0) {
             $query->orderBy('u.name');
             $query->orderBy('t.topic_name');
             $results = $query->execute();
+            $current = '';
             foreach ($results as $result) {
+                if ($current !== $result->name)
+                    $name = $current = $result->name;
+                else
+                    $name = '';
                 $row = array(
-                    htmlspecialchars($result->name),
+                    htmlspecialchars($name),
                     htmlspecialchars($result->topic_name),
                     l('EDIT TOPIC', 'admin/topics/edit/' . $result->topic_id),
                 );
