@@ -1044,8 +1044,9 @@ function pdq_ebms_refresh_xml($source, $max=null) {
 
     // Ask NLM for fresh documents for these PMIDs.
     if (!empty($pmids)) {
+        $comment = 'BATCH REPLACEMENT OF UPDATED ARTICLES FROM PUBMED';
         $batch = Ebms\importArticlesFromNLM('live', $pmids, null, null,
-                 'BATCH REPLACEMENT OF UPDATED ARTICLES FROM PUBMED');
+                                            comment, false);
         if ($batch->status != 'Success') {
             print '0';
             exit(0);
