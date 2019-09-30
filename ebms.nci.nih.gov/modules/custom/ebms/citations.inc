@@ -6070,7 +6070,7 @@ namespace {
             '#suffix' => '</div>',
         );
 
-        $url = "/citations/not-list-print-friendly?board=$board";
+        $url = "/citations/journals-print-friendly?board=$board";
         if ($brief_title)
             $url .= '&brief_title=' . urlencode($brief_title);
         if ($full_title)
@@ -6356,7 +6356,7 @@ namespace {
 <html>
 <head>
 <meta charset=\"utf-8\">
-<title>Not-Listed Journals</title>
+<title>Journals</title>
 <style>
 body {
     font-family: Arial, sans-serif;

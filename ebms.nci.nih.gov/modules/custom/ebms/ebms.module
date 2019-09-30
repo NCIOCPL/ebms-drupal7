@@ -264,7 +264,7 @@ function ebms_menu() {
             'access arguments' => array('manage citations'),
             'type' => MENU_CALLBACK,
         ),
-        'citations/not-list-print-friendly' => array(
+        'citations/journals-print-friendly' => array(
             'page callback' => '_print_friendly_not_list',
             'file' => 'citations.inc',
             'access callback' => 'user_is_logged_in',
