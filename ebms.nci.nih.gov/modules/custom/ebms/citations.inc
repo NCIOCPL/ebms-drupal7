@@ -7675,9 +7675,10 @@ td, th { border-bottom: 1px black solid; }
             $name = $_FILES['files']['name']['full-text'];
             $path = $_FILES['files']['tmp_name']['full-text'];
             $extension_ok = Ebms\Util::has_valid_extension($name, 'pdf');
+            $msg = 'File is not a PDF file or exceeds the limit of 20MB.';
             $mime_type = Ebms\Util::get_mime_type($path);
             if (!$extension_ok || $mime_type !== 'application/pdf')
-                form_set_error('full-text', 'Full text must be a PDF file');
+                form_set_error('full-text', $msg);
             else {
                 $validators = ['file_validate_extensions' => ['pdf']];
                 $file = file_save_upload('full-text', $validators);
