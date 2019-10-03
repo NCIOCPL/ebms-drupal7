@@ -7618,6 +7618,8 @@ td, th { border-bottom: 1px black solid; }
             ),
             'full-text' => array(
                 '#title' => 'Full Text PDF File',
+                '#description' =>
+                'Select a PDF file smaller than 20 MB to be uploaded.',
                 '#type' => 'file',
                 '#upload_validators' => array(
                     'file_validate_extensions' => array('pdf'),
