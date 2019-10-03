@@ -44,7 +44,7 @@ mv NCIOCPL-ebms* ebms || {
 }
 
 echo Updating cron job
-cp $WORKDIR/scheduled/update-pubmed-data.py $HOME/cron/
+cp $WORKDIR/ebms/scheduled/update-pubmed-data.py $HOME/cron/
 
 # CBIIT has an older version of tar installed on the servers,
 # so the --wildcard option has to be specified explicitly.
