@@ -7578,7 +7578,7 @@ td, th { border-bottom: 1px black solid; }
 
     function pdq_ebms_full_text_upload_form($form, &$form_state, $article_id) {
         $comment = '';
-        $description = 'Select PDF file to be uploaded.';
+        $description = 'Select a PDF file smaller than 20 MB to be uploaded.';
         $title = 'Upload Full Text PDF File';
         $unavailable = false;
         $full_text_id = db_select('ebms_article', 'a')
@@ -7618,8 +7618,6 @@ td, th { border-bottom: 1px black solid; }
             ),
             'full-text' => array(
                 '#title' => 'Full Text PDF File',
-                '#description' =>
-                'Select a PDF file smaller than 20 MB to be uploaded.',
                 '#type' => 'file',
                 '#upload_validators' => array(
                     'file_validate_extensions' => array('pdf'),
