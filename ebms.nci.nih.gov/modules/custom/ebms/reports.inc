@@ -7553,7 +7553,7 @@ function pdq_ebms_statistics_form($form, &$form_state, $request_id) {
         )
     );
 
-    $start = date('Y-m-d', strtotime('-3 years'));
+    $start = date('Y-m-d', strtotime('-1 year'));
     $end = date('Y-m-d');
 
     $left_nav = EbmsReports::build_left_nav('Citation Management',
