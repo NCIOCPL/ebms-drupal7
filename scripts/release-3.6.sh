@@ -18,9 +18,6 @@ export SITEDIR=/local/drupal/sites/ebms.nci.nih.gov
 export CURL="curl -L -s -k"
 echo "Site directory is $SITEDIR"
 
-echo Updating cron job
-cp $WORKDIR/scheduled/update-pubmed-data.py $HOME/cron/
-
 echo Creating a working directory at $WORKDIR
 mkdir $WORKDIR || {
     echo creating $WORKDIR failed
@@ -46,6 +43,9 @@ mv NCIOCPL-ebms* ebms || {
     exit 1
 }
 
+echo Updating cron job
+cp $WORKDIR/scheduled/update-pubmed-data.py $HOME/cron/
+
 # CBIIT has an older version of tar installed on the servers,
 # so the --wildcard option has to be specified explicitly.
 echo Preparing to remove the ebms_forums module for OCEEBMS-504
@@ -60,7 +60,11 @@ cd $SITEDIR
 drush vset maintenance_mode 1
 
 echo Preparing for the upgrade to PHP 7.2
+chmod +w $SITEDIR/settings.php
+chmod +w $SITEDIR
 sed -i 's/^ini_set.*session.save_handler/#&/' $SITEDIR/settings.php
+chmod -w $SITEDIR/settings.php
+chmod -w $SITEDIR
 
 echo Applying database changes
 cd $SITEDIR
