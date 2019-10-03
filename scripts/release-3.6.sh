@@ -18,6 +18,8 @@ export SITEDIR=/local/drupal/sites/ebms.nci.nih.gov
 export CURL="curl -L -s -k"
 echo "Site directory is $SITEDIR"
 
+echo Updating cron job
+cp $WORKDIR/scheduled/update-pubmed-data.py $HOME/cron/
 
 echo Creating a working directory at $WORKDIR
 mkdir $WORKDIR || {
