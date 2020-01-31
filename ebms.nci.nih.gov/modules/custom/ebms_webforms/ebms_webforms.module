@@ -154,7 +154,7 @@ function ebms_webforms_form_alter(&$form, &$form_state, $form_id) {
         }
 
         if(empty($form['submitted']['meeting']['#options'])){
-            $form['submitted']['meeting']['#empty_value'] = 0;
+            $form['submitted']['meeting']['#empty_value'] = '';
             $form['submitted']['meeting']['#empty_option'] = t('No available meetings');
         }
     }

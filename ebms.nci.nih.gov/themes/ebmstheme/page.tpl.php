@@ -72,28 +72,19 @@ $user_name = $user_photo = '';
 $menu_class = 'anon';
 $content = render($page['content']);
 $main_wrapper_class = 'other_page';
-$search_box = '';
-$sb_markup = '<input id="pmid-search-box" value="Enter PMID" ' .
+$search_box = '<input id="pmid-search-box" value="Enter PMID" ' .
     'title="Press ENTER to submit PMID search"> &nbsp;|&nbsp;';
 if ($logged_in) {
-    if ($user->uid == 1) {
-        $search_box = $sb_markup;
+    if ($user->uid == 1)
         $menu_class = 'manager admin';
-    }
-    elseif (in_array('medical librarian', $user->roles)) {
+    elseif (in_array('medical librarian', $user->roles))
         $menu_class = 'librarian';
-        $search_box = $sb_markup;
-    }
     elseif (in_array('board member', $user->roles))
         $menu_class = 'member';
-    elseif (in_array('icrdb manager', $user->roles)) {
+    elseif (in_array('icrdb manager', $user->roles))
         $menu_class = 'icrdb-manager';
-        $search_box = $sb_markup;
-    }
-    else {
+    else
         $menu_class = 'manager';
-        $search_box = $sb_markup;
-    }
 
     /* Make "About PDQ" page user-editable (OCEEBMS-235) */
     if ($title == "About PDQ\xc2\xae") {

@@ -10,6 +10,20 @@ jQuery(document).ready(function(){
 function addHooks() {
     jQuery('input[name=submit_source]').val('');
 
+    // Make the 'which journal' checkboxes exclusive (as if they were radios).
+    // Because these don't look like radio buttons, if the user "unchecks"
+    // a box, treat that as a request for "ALL JOURNALS."
+    // TODO: When the EBMS gets rewritten for Drupal 9, we need to eliminate this
+    // silliness of conflating radio buttons with checkboxes.
+    jQuery(".which-journals input").click(function() {
+        var checked = jQuery(this).attr("checked");
+        jQuery(".which-journals input").attr("checked", "");
+        if (checked)
+            jQuery(this).attr("checked", "checked");
+        else
+            jQuery("#edit-all-journals-check").attr("checked", "checked");
+    });
+
     // strip any pager query when the search is performed
     jQuery('input#edit-search-button, input#edit-sort-button').click(function () {
         var form = jQuery(this).closest('form');
@@ -180,6 +194,25 @@ function delArticleLink(url) {
 
 function delManagerComment(url) {
     jQuery("#confirm-manager-comment-deletion").dialog({
+        resizable: false,
+        height: 200,
+        width: 400,
+        modal: true,
+        buttons: {
+            "Delete Comment": function() {
+                location.href = url;
+                jQuery(this).dialog("close");
+            },
+            "Cancel": function() {
+                jQuery(this).dialog("close");
+            }
+        }
+    });
+    return false;
+}
+
+function delInternalComment(url) {
+    jQuery("#confirm-internal-comment-deletion").dialog({
         resizable: false,
         height: 200,
         width: 400,

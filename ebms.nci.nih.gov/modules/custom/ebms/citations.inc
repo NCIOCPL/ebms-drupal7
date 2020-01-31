@@ -24,7 +24,7 @@
  *           more than one queue for each user, and the queues can be
  *           filtered to restrict the portion displayed by various criteria
  *
- *  'not-list' - uses pdq_ebms_citation_not_list to build the form for
+ *  'journals' - uses pdq_ebms_citation_not_list to build the form for
  *           managing the lists of journals which have historically
  *           published articles which are not useful for the PDQ
  *           boards; the import process dead-ends such articles by
@@ -62,11 +62,14 @@ namespace {
      *
      * Entry point for all functions in this file.
      *
-     * @param string $action    What kind of form to build, default (null) = review form.
-     * @param int $article_id   What article to build, default (null) = not article specific.
+     * @param string $action
+     *   What kind of form to build, default (null) = review form.
+     * @param int $article_id
+     *   What article to build, default (null) = not article specific.
      *
-     * @return array $result    Render array for the main page content + side bar.
-     *                          MENU_NOT_FOUND if unable to determine type of page requested.
+     * @return array $result
+     *   Render array for the main page content + side bar.
+     *   MENU_NOT_FOUND if unable to determine type of page requested.
      */
     function pdq_ebms_citations($action = null, $article_id = null) {
 
@@ -81,7 +84,8 @@ namespace {
         Ebms\Menu::$active = 'Citation Management';
         drupal_set_title('Citation Management');
         $crumbs = array(
-            $action ? l('Citation Management', 'citations') : 'Citation Management'
+            $action ? l('Citation Management', 'citations')
+                    : 'Citation Management'
         );
         $result = null;
         switch ($action) {
@@ -93,26 +97,32 @@ namespace {
                 $form = drupal_get_form('pdq_ebms_full_citation', $article_id);
 
                 // Build the left nav components
-                $result['left_nav'] = \Ebms\Util::build_left_nav('Review Citations');
-                $result['left_nav']['actions'] = _build_full_citation_actions($article_id);
-                $result['left_nav']['icon_key'] = _build_full_citation_icon_key();
+                $result['left_nav'] =
+                    \Ebms\Util::build_left_nav('Review Citations');
+                $result['left_nav']['actions'] =
+                    _build_full_citation_actions($article_id);
+                $result['left_nav']['icon_key'] =
+                    _build_full_citation_icon_key();
 
                 // Combine the two into a single render array
                 $result['full_citation_form'] = $form;
                 break;
 
             case 'not-list':
-                $crumbs[] = "Not List Maintenance";
+                $crumbs[] = "Journal Maintenance";
                 $form = drupal_get_form('pdq_ebms_citation_not_list');
-                $result['left_nav'] = \Ebms\Util::build_left_nav('Not List Maintenance');
+                $result['left_nav'] =
+                    \Ebms\Util::build_left_nav('Journal Maintenance');
                 $result['not_list_form'] = $form;
                 break;
 
             case null:
             case 'review':
                 $crumbs[] = 'Review Citations';
-                $form = drupal_get_form('pdq_ebms_citation_queue', $is_librarian);
-                $result['left_nav'] = \Ebms\Util::build_left_nav('Review Citations');
+                $form = drupal_get_form('pdq_ebms_citation_queue',
+                                        $is_librarian);
+                $result['left_nav'] =
+                    \Ebms\Util::build_left_nav('Review Citations');
                 $result['cite_queue_form'] = $form;
                 break;
         }
@@ -152,9 +162,9 @@ namespace {
     /**
      * Build the form for a full citation display for one article.
      *
-     * @param array $form           Standard drupal form render array
+     * @param array $form        Standard drupal form render array
      * @param array &$form_state
-     * @param int $articleId        Internal EBMS unique ID of one article citation.
+     * @param int $articleId     Internal EBMS unique ID of an article citation
      *
      * @return Updated $form render array.
      */
@@ -197,6 +207,52 @@ namespace {
             '#suffix' => "</div>",
         );
 
+        // Show the full text if we have it.
+        $full_text_info = _pdq_ebms_full_text_info($article);
+        if (!empty($full_text_info)) {
+            $form['full-text-info'] = array(
+                '#markup' => '<div class="full-citation-element">' .
+                '<div class="citation-subheader" id="full-text-info-title">' .
+                'FULL TEXT</div> ' . $full_text_info . '</div>'
+            );
+        }
+
+
+        // Display internal tags, if any.
+        $internal_tags = array();
+        foreach ($article->getInternalTags() as $internal_tag)
+            $internal_tags[] = htmlspecialchars($internal_tag);
+        $internal_tags = implode('; ', $internal_tags);
+        if (!empty($internal_tags)) {
+            $form['internal-tags'] = array(
+                '#markup' => '<div class="full-citation-element">' .
+                '<div class="citation-subheader" id="internal-tags-title">' .
+                'INTERNAL TAGS</div>' .
+                "<div>$internal_tags</div></div>",
+            );
+        }
+
+        // Ditto for internal comments.
+        $internal_comments = array();
+        foreach ($article->getInternalComments() as $id => $comment)
+            $internal_comments[] = _format_internal_comment($id, $comment,
+                                                            $articleId);
+        $internal_comments = implode('<br>', $internal_comments);
+        if (!empty($internal_comments)) {
+            $form['internal-comments'] = array(
+                '#markup' => '<div class="full-citation-element">' .
+                '<div class="citation-subheader" ' .
+                'id="internal-article-comment-title">INTERNAL COMMENTS</div>' .
+                "$internal_comments</div>" .
+                '<div id="confirm-internal-comment-deletion" ' .
+                'style="display: none" title="Delete internal comment?">' .
+                '<p><span class="ui-icon ui-icon-alert" style="float:left; ' .
+                'margin:0 7px 20px 0;"></span>Internal comment will be ' .
+                'permanently deleted and cannot be recovered. Are you sure?' .
+                '</p></div>',
+            );
+        }
+
         // Display related articles, if any (OCEEBMS-349).
         $related = $article->getRelatedArticles();
         if (!empty($related)) {
@@ -211,28 +267,32 @@ namespace {
                 _display_article_relationship($r, $articleId);
             $form['related-articles'] = $related_articles_block;
         }
+
         $citations_inc_display_phase = DISPLAY_PHASE::REVIEW_CYCLE;
-        // build array of currently active citation tags ever assigned, in date order
+        // Build array of currently active citation tags ever assigned,
+        // in date order.
         $tags = Ebms\getTagHistory($articleId, null, null, true, false, 'D');
 
-        // reverse order so most recent is first
+        // Reverse order so most recent is first.
         $tags = array_reverse($tags);
 
-        // build the render array of tags
+        // Build the render array of tags.
         $tag_array = _format_tags($form_state, $tags);
 
         // Remember whether we have active tags for article
         $no_tags = (empty($tag_array));
 
         // generate the add tag button (or placeholder if triggered)
-        $button_array = _build_add_tag_button($no_tags, $form_state, $articleId);
+        $button_array = _build_add_tag_button($no_tags, $form_state,
+                                              $articleId);
         $form['article_tag_add_button'] = $button_array['button'];
         if ($no_tags) {
             if (count($button_array['form']))
                 $form['button_form'] = $button_array['form'];
             else
                 $form['placeholder'] = array(
-                    '#markup' => '<div class="full-citation-element">&nbsp;</div>'
+                    '#markup' => '<div class="full-citation-element">' .
+                                 '&nbsp;</div>'
                 );
         }
         else {
@@ -258,25 +318,29 @@ namespace {
         $citations_inc_display_phase = DISPLAY_PHASE::IMPORT_PROCESS;
         $form['import_process'] = array(
             '#type' => 'fieldset',
-            '#title' => '<span class="citation-subheader">Import Process</span>',
+            '#title' => '<span class="citation-subheader">' .
+                        'Import Process</span>',
             'section' => _format_import($article, $importData),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element citation-subheader'>",
-            '#suffix' => "</div>",
+            '#prefix' => '<div class="full-citation-element ' .
+                         'citation-subheader">',
+            '#suffix' => '</div>',
         );
 
         // Render the initial_review info, i.e., first review at import time
         $citations_inc_display_phase = DISPLAY_PHASE::MED_LIB_INIT_REVIEW;
         $form['initial_review'] = array(
             '#type' => 'fieldset',
-            '#title' => '<span class="citation-subheader">Medical Librarian Initial Review</span>',
+            '#title' => '<span class="citation-subheader">' .
+                        'Medical Librarian Initial Review</span>',
             'section' => _format_boards($form_state, $article, $history, $tags,
                                         DISPLAY_PHASE::MED_LIB_INIT_REVIEW),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element citation-subheader'>",
-            '#suffix' => "</div>",
+            '#prefix' => '<div class="full-citation-element ' .
+                         'citation-subheader">',
+            '#suffix' => '</div>',
         );
 
         // Render the publishing history section
@@ -288,8 +352,9 @@ namespace {
                                         DISPLAY_PHASE::PUBLISHING),
             '#collapsible' => true,
             '#collapsed' => true,
-            '#prefix' => "<div class='full-citation-element citation-subheader'>",
-            '#suffix' => "</div>",
+            '#prefix' => '<div class="full-citation-element ' .
+                         'citation-subheader">',
+            '#suffix' => '</div>',
         );
         $citations_inc_display_phase = DISPLAY_PHASE::NO_PHASE;
 
@@ -302,16 +367,56 @@ namespace {
                 // do not create a path that does not already exist
                 if (isset($path[$parent])) {
                     $path = &$path[$parent];
-
-                    if (isset($path['#type']) && $path['#type'] == 'fieldset') {
-                        $path['#collapsed'] = false;
-                    }
+                    if (isset($path['#type']))
+                        if ($path['#type'] === 'fieldset')
+                            $path['#collapsed'] = false;
                 }
                 else
                     break;
             }
         }
         return $form;
+    }
+
+    function _delete_internal_comment($comment_id) {
+        $article_id = db_select('ebms_internal_article_comment', 'c')
+            ->fields('c', array('article_id'))
+            ->condition('c.comment_id', $comment_id)
+            ->execute()
+            ->fetchField();
+        db_delete('ebms_internal_article_comment')
+            ->condition('comment_id', $comment_id)
+            ->execute();
+        $url = "citations/full/$article_id";
+        $opts = array('query' => drupal_get_query_parameters());
+        drupal_goto($url, $opts);
+    }
+
+    function _format_internal_comment($comment_id, $comment, $article_id) {
+        $opts = array('query' => drupal_get_query_parameters());
+        $url = url("internal-article-comment/edit/$comment_id", $opts);
+        $edit_icon = Ebms\EDIT_INACTIVE;
+        $del_icon = Ebms\DELETE_ICON;
+        $request_uri = request_uri();
+        $pos = strpos($request_uri, 'citations/full/');
+        if ($pos === false)
+            $tail = "$article_id";
+        else
+            $tail = substr($request_uri, $pos + strlen('citations/full/'));
+        $del_url = "/delete-internal-article-comment/$comment_id";
+        $del = "delInternalComment('$del_url')";
+        $html = array();
+        $html[] = '<div class="internal-article-comment">';
+        $eclass = 'edit-internal-comment-link';
+        $dclass = 'del-internal-comment-link';
+        $html[] = "<span title='Delete comment' class='$dclass' ";
+        $html[] = "onclick=\"$del\">";
+        $html[] = "<img src=\"$del_icon\"></span>";
+        $html[] = "<a href=\"$url\" title=\"Edit comment\" class=\"$eclass\">";
+        $html[] = "<img src=\"$edit_icon\"></a>";
+        $html[] = '<span class="hanging-indent-comment">';
+        $html[] = htmlspecialchars($comment->comment_text) . '</span></div>';
+        return implode('', $html);
     }
 
     /**
@@ -341,7 +446,8 @@ namespace {
             $form['article_tag_header'] = array(
                 '#markup' => '<div class="citation-subheader">Tag(s)</div>'
             );
-            $form['article_tag_header']['#prefix'] = '<div class="full-citation-indent">';
+            $form['article_tag_header']['#prefix'] =
+                '<div class="full-citation-indent">';
             $form['article_tag_header']['#suffix'] = '</div>';
 
             $tag = array_shift($topic_tags[$targetTopicId]);
@@ -433,15 +539,19 @@ namespace {
 
         $links[] = array('View Abstract', $pm_url, $target);
 
-        if ($fileUrl)
-            $links[] = array('Download Full Text', $fileUrl, $target);
+        // Removed by OCEEBMS-509.
+        // if ($fileUrl)
+        //     $links[] = array('Download Full Text', $fileUrl, $target);
+        $link_opt = array('query' => drupal_get_query_parameters());
+        $upload_url = "upload-full-text/$articleId";
+        $links[] = array('Upload Full text', $upload_url, $link_opt);
 
         // Add action for linking related citations (OCEEBMS-349).
         $link_url = "citations/link/add/$articleId";
-        $link_opt = array('query' => drupal_get_query_parameters());
         $links[] = array('Link Related Citation', $link_url, $link_opt);
 
-        // Add link for adding a board manager topic-specific comment (OCEEBMS-375).
+        // Add link for adding a board manager topic-specific comment
+        // (OCEEBMS-375).
         $query = db_select('ebms_article_topic', 't');
         $query->leftJoin('ebms_article_topic_comment', 'c',
             'c.article_id = t.article_id AND c.topic_id = t.topic_id');
@@ -450,8 +560,19 @@ namespace {
         $count = $query->countQuery()->execute()->fetchField();
         if ($count > 0) {
             $link_url = "citations/comment/add/$articleId";
-            $links[] = array('Add Board Manager Comment', $link_url, $link_opt);
+            $links[] = array('Add Board Manager Comment',
+                             $link_url, $link_opt);
         }
+
+        // Add a link for editing the internal article tags.
+        $link_url = "edit-internal-article-tags/$articleId";
+        $link_label = 'Add/Edit Internal Tags';
+        $links[] = array($link_label, $link_url, $link_opt);
+
+        // Add a link for adding an internal article comment.
+        $link_url = "internal-article-comment/add/$articleId";
+        $link_label = 'Add Internal Comment';
+        $links[] = array($link_label, $link_url, $link_opt);
 
         $items = array();
         foreach ($links as $link) {
@@ -544,7 +665,8 @@ namespace {
         foreach ($history as $status) {
             if ($status->board_name && $status->topic_name) {
                 $board_topic_states[$status->board_name][$status->topic_name]
-                    [$status->type_sequence][$status->active_status][] = $status;
+                    [$status->type_sequence]
+                    [$status->active_status][] = $status;
             }
         }
 
@@ -560,7 +682,8 @@ namespace {
         if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
             $form['boards_header']['button'] = $button_array['button'];
         $form['boards_header']['title'] = array(
-            "#markup" => '<div class="citation-subheader full-citation-indent ' .
+            "#markup" => '<div class="citation-subheader ' .
+                         'full-citation-indent ' .
                          'full-citation-element">Editorial Board(s)</div>'
         );
         if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
@@ -587,29 +710,31 @@ namespace {
                 '#suffix' => '</div>',
             );
             if (!$mode) {
-                $form[$board_name]['fieldset']['#attributes']['class'][] = 'full-citation-topic';
+                $form[$board_name]['fieldset']['#attributes']['class'][] =
+                    'full-citation-topic';
             }
             if ($showButtons && $mode != DISPLAY_PHASE::PUBLISHING)
                 $form[$board_name]['form'] = $button_array['form'];
         }
 
-        // Add the block for the confirmation dialog for deleting manager comments.
-        // Do this here, because we can only have one of these, no matter how many
-        // topics with manager comments there are in the article.
+        // Add the block for the confirmation dialog for deleting manager
+        // comments. Do this here, because we can only have one of these,
+        // no matter how many topics with manager comments there are in
+        // the article.
         $form['manager comment deletion confirmation dialog'] = array(
-            '#markup' => "
-<div id='confirm-manager-comment-deletion' style='display: none' title='Delete Comment?'>
- <p>
-  <span class='ui-icon ui-icon-alert' style='float:left; margin:0 7px 20px 0;'></span>
-  Comment will be permanently deleted and cannot be recovered. Are you sure?</p>
-</div>"
+            '#markup' => '<div id="confirm-manager-comment-deletion" ' .
+                         'style="display: none" title="Delete Comment?">' .
+                         '<p><span class="ui-icon ui-icon-alert" ' .
+                         'style="float:left; margin:0 7px 20px 0;"></span> ' .
+                         'Comment will be permanently deleted and cannot ' .
+                         'be recovered. Are you sure?</p></div>'
         );
 
         return $form;
     }
 
     /**
-     * Formats an array of topics and their related state histories for rendering.
+     * Format array of topics and their related state histories for rendering.
      * @param mixed $topics
      * @return mixed the formatted render array.
      */
@@ -634,14 +759,14 @@ namespace {
      * Formats a topic a single name and associated topic states for rendering.
      * Subroutine of _format_topics.
      *
-     * @param array &$form_state        Current drupal form state.
-     * @param object $article           Loaded EbmsArticle object for which we generate info.
-     * @param string $topicName         Human readable topic name.
+     * @param array &$form_state Current drupal form state.
+     * @param object $article    EbmsArticle object for which we generate info.
+     * @param string $topicName  Human readable topic name.
      * @param mixed $topic_sequences
      * @return mixed the formatted render array.
      */
-    function _format_topic(&$form_state, $article, $topicName, $topic_sequences,
-        $tags, $display_cycle, $mode) {
+    function _format_topic(&$form_state, $article, $topicName,
+        $topic_sequences, $tags, $display_cycle, $mode) {
         $form = array();
 
         $showButtons = true;
@@ -653,20 +778,20 @@ namespace {
             }
         }
 
-        // retrieve the relevant ids for this article and topic
-        // topic id should have error-checking, but originates from an error-checked
-        // method
+        // Retrieve the relevant ids for this article and topic.
+        // Topic id should have error-checking, but originates
+        // from an error-checked method.
         $articleId = $article->getId();
         $topicId = Ebms\getTopicIdByName($topicName);
 
         // generate the add tag button and render array of tags
         $tag_array = _format_tags($form_state, $tags, $topicId);
         $no_tags = empty($tag_array);
-        $button_array = _build_add_tag_button($no_tags, $form_state, $articleId,
-            $topicId);
+        $button_array = _build_add_tag_button($no_tags, $form_state,
+                                              $articleId, $topicId);
 
-        // split the button and potential form into separate areas based on the existence of
-        // tags
+        // Split the button and potential form into separate areas
+        // based on the existence of tags.
         $form['topic_header'] = _format_topic_header($topicName,
             $no_tags && $showButtons ? $button_array['button'] : array());
         if ($display_cycle) {
@@ -705,9 +830,10 @@ namespace {
             if (true) {
                 $decision = _format_topic_decision($decisionInfo,
                     $topic_sequences, $form_state, null, $showButtons);
-                $decisions['topic_initial_review_decision'] = _wrap_decision($form_state,
-                    $articleId, $topicId, $decision, $decisionInfo,
-                    $empty_decisions);
+                $decisions['topic_initial_review_decision'] =
+                    _wrap_decision($form_state,
+                                   $articleId, $topicId, $decision,
+                                   $decisionInfo, $empty_decisions);
             } else {
                 $decisions['topic_initial_review_decision'] =
                     _format_topic_decision($decisionInfo, $topic_sequences);
@@ -719,19 +845,24 @@ namespace {
             $decisionInfo = Ebms\EbmsTopicDecisions::$NCIREVIEWER;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
                 $form_state);
-            $decisions['topic_nci_reviewer_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_nci_reviewer_decision'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
+            /*
             $decisionInfo = Ebms\EbmsTopicDecisions::$FULLTEXT;
             $decision = _format_topic_full_text_decision($article);
-            $decisions['topic_full_text_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_full_text_decision'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
+            */
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$SURVEILLANCE;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
                 $form_state);
-            $decisions['topic_nci_surveillance_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_nci_surveillance_decision'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $comment = _format_board_manager_comment($articleId, $topicId);
             $decisions['board_manager_comment'] = $comment;
@@ -744,26 +875,30 @@ namespace {
             $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMEMBERRESPONSES;
             $decision = _format_topic_board_member_responses($articleId,
                 $topicId);
-            $decisions['topic_board_member_responses'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_board_member_responses'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$BOARDMANAGERACTIONS;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-            $decisions['topic_board_manager_actions'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+                                               $form_state);
+            $decisions['topic_board_manager_actions'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$ONAGENDA;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
                 $form_state);
-            $decisions['topic_on_agenda'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+            $decisions['topic_on_agenda'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $decisionInfo = Ebms\EbmsTopicDecisions::$EDITORIALBOARD;
             $decision = _format_topic_decision($decisionInfo, $topic_sequences,
-                $form_state);
-            $decisions['topic_board_decision'] = _wrap_decision($form_state,
-                $articleId, $topicId, $decision, $decisionInfo, $empty_decisions);
+                                               $form_state);
+            $decisions['topic_board_decision'] =
+                _wrap_decision($form_state, $articleId, $topicId, $decision,
+                               $decisionInfo, $empty_decisions);
 
             $last_key = null;
             $last_array = null;
@@ -823,7 +958,8 @@ namespace {
  <a href='$url' title='Edit comment' class='edit-comment'>
   <img src='$edit_icon'>
  </a>
- <div class='citation-subheader full-citation-indent'>Board Manager Comment</div>
+ <div class='citation-subheader full-citation-indent'
+>Board Manager Comment</div>
  <div class='full-citation-indent'>COMMENT: $comment</div>
 </div>");
     }
@@ -860,16 +996,20 @@ namespace {
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Active.png';
             // create add tag button
             $form['button'][$buttonId] = array(
-                '#markup' => "<img class='full-citation-button image-button' alt='Add Tag' src='$iconPath'>",
+                '#markup' => '<img class="full-citation-button ' .
+                             'image-button" alt="Add Tag" src="' .
+                             $iconPath . '">',
             );
 
             $formId = "add_tag_form_$hash";
             $form['form'][$formId] = _build_add_tag_form($articleId, $topicId);
-            $form['form'][$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+            $form['form'][$formId]['#prefix'] =
+                '<div class="full-citation-form full-citation-indent">';
             $form['form'][$formId]['#suffix'] = '</div>';
         } else if ($showButtons) {
             // grab icon for button
-            $iconPath = $noTags ? Ebms\TAG_INACTIVE : Ebms\ADD_DECISION_INACTIVE;
+            $iconPath = $noTags ? Ebms\TAG_INACTIVE
+                                : Ebms\ADD_DECISION_INACTIVE;
             //Ebms\IMAGES_DIR . '/EBMS_AddDecision_Icon_Inactive.png';
             // create add tag button
             $form['button'][$buttonId] = array(
@@ -920,14 +1060,18 @@ namespace {
         $form['#suffix'] = '</div>';
 
         $date = _format_date($tag->dt);
-        $form['article_tag'] = array('#markup' => "<div class='full-citation-indent'>$tag->type_name - $date - $tag->user_name</div>");
+        $form['article_tag'] = array(
+            '#markup' => '<div class="full-citation-indent">' .
+                         "$tag->type_name - $date - $tag->user_name" .
+                         '</div>');
 
-        // if a form state is provided, indent the elements to provide space for
-        // the button
+        // If a form state is provided, indent the elements to provide
+        // space for the button.
         if ($form_state != null) {
             //drop in 'add comment' button
             $form['article_tag_comment_add_button'] =
-                _build_add_tag_comment_button($form_state, $tag->article_tag_id);
+                _build_add_tag_comment_button($form_state,
+                                              $tag->article_tag_id);
         }
 
         if ($tag->comments)
@@ -943,11 +1087,11 @@ namespace {
      *
      * See also _build_decision_icon_tag(), _build_add_state_comment_button().
      *
-     * @param array &$form_state    Drupal form state to find if related form
-     *                              is triggered.
-     * @param int $articleTagId     Used in making a unique ID for the button.
+     * @param array &$form_state   Drupal form state to find if related form
+     *                             is triggered.
+     * @param int $articleTagId    Used in making a unique ID for the button.
      *
-     * @return                      Render array for icon and ajax invoked form.
+     * @return                     Render array for icon and ajax invoked form.
      */
     function _build_add_tag_comment_button(&$form_state, $articleTagId) {
         $form = array();
@@ -965,13 +1109,14 @@ namespace {
             // create add tag button
             $form[$buttonId] = array(
                 '#markup' =>
-                  "<img class='full-citation-button image-button' alt ='' src='$iconPath'>",
+     "<img class='full-citation-button image-button' alt ='' src='$iconPath'>",
             );
 
             // create add comment form
             $formId = "add_tag_comment_form_$hash";
             $form[$formId] = _build_add_tag_comment_form($articleTagId);
-            $form[$formId]['#prefix'] = '<div class="full-citation-form full-citation-indent">';
+            $form[$formId]['#prefix'] =
+                '<div class="full-citation-form full-citation-indent">';
             $form[$formId]['#suffix'] = '</div>';
         } else {
             // grab icon for button
@@ -997,8 +1142,6 @@ namespace {
                 ),
             );
         }
-
-
 
         return $form;
     }
@@ -1070,7 +1213,7 @@ namespace {
         Ebms\addTagComment($articleTagId, $comment);
     }
 
-    function _format_topic_board_manager_actions($status, &$form_state = null) {
+    function _format_topic_board_manager_actions($status, &$form_state=null) {
         $form = array();
 
         $date = _format_date($status->dt);
@@ -1424,6 +1567,7 @@ namespace {
         return $form;
     }
 
+    /*
     function _format_topic_full_text_decision(Ebms\EbmsArticle $article) {
         $form = array();
 
@@ -1486,6 +1630,7 @@ namespace {
 
         return $form;
     }
+    */
 
     /**
      * Renders the block showing review packets assembled for board members
@@ -1948,6 +2093,8 @@ namespace {
                     );
 
                     break;
+
+                /*
                 case Ebms\EbmsTopicDecisions::$FULLTEXT:
                     $form['fulltext_title'] = $full_title;
 
@@ -1977,6 +2124,8 @@ namespace {
                     );
 
                     break;
+                */
+
                 case Ebms\EbmsTopicDecisions::$SURVEILLANCE:
                     $form['surveillance_title'] = $full_title;
 
@@ -2626,7 +2775,8 @@ namespace {
                 $mime_type = Ebms\Util::get_mime_type($path);
                 if ($mime_type != 'application/pdf') {
                     drupal_set_message(htmlspecialchars($value) .
-                        ' is not a PDF file.', 'error');
+                        ' is not a PDF file or exceeds the limit of 20MB.',
+                        'error');
                     continue;
                 }
                 $file = file_save_upload($key, $validators);
@@ -2706,13 +2856,14 @@ namespace {
         if (empty($loe))
             $loe = null;
 
-        // retrieve current user and member names to populate comment annotation
+        // Retrieve current user and member names to populate comment
+        // annotation.
         global $user;
         $account = user_load($memberId);
 
         if ($account === FALSE) {
-            drupal_set_message(
-                "Could not load user $memberId - response not saved.", 'error');
+            $message = "Could not load user $memberId - response not saved.";
+            drupal_set_message($message, 'error');
             return;
         }
 
@@ -5593,12 +5744,14 @@ namespace {
         $target = $diff;
     }
 
-    /******************************* NOT LIST **************************/
+    /******************************* JOURNALS **************************/
 
     /**
      * Construct the form used in NOT list maintenance, i.e., maintaining
      * board specific lists of journals from which we will not, by default,
      * import articles.
+     * "Not List Maintenance" renamed 2019-08-10 to "Journal Maintenance"
+     * by ticket OCEEBMS-511.
      */
     function pdq_ebms_citation_not_list($form, &$form_state) {
 
@@ -5625,7 +5778,8 @@ namespace {
         $form['not-list']['#prefix'] = '<div id="citation-form-div">';
         $form['not-list']['#suffix'] = '</div>';
 
-        $form['not-list']['description']['#markup'] = '<h2>Not List Maintenance</h2>';
+        $form['not-list']['description']['#markup'] =
+            '<h2>Journal Maintenance</h2>';
         $form['not-list']['board_select'] = array(
             '#type' => 'select',
             '#title' => 'Editorial Board',
@@ -5655,10 +5809,24 @@ namespace {
         $form['not-list']['all_journals_check'] = array(
             '#type' => 'checkbox',
             '#title' => 'All Journals',
-            '#prefix' => '<div class="citation-input-div">',
+            '#prefix' => '<div class="citation-input-div which-journals">',
             '#suffix' => '</div>',
+            '#default_value' => false,
         );
-
+        $form['not-list']['included_journals_check'] = array(
+            '#type' => 'checkbox',
+            '#title' => 'Included Journals',
+            '#prefix' => '<div class="citation-input-div which-journals">',
+            '#suffix' => '</div>',
+            '#default_value' => false,
+        );
+        $form['not-list']['excluded_journals_check'] = array(
+            '#type' => 'checkbox',
+            '#title' => 'Excluded Journals',
+            '#prefix' => '<div class="citation-input-div which-journals">',
+            '#suffix' => '</div>',
+            '#default_value' => true,
+        );
         $form['not-list']['reset_button'] = array(
             '#type' => 'submit',
             '#value' => 'Reset',
@@ -5679,10 +5847,13 @@ namespace {
             $brief_title = $form_state['values']['brief_title_field'];
             $full_title = $form_state['values']['full_title_field'];
             $id = $form_state['values']['journal_id_field'];
-            $all_journals = $form_state['values']['all_journals_check'];
-
+            $which_journals = "excluded";
+            if (!empty($form_state['values']['all_journals_check']))
+                $which_journals = "all";
+            elseif (!empty($form_state['values']['included_journals_check']))
+                $which_journals = "included";
             $form['citation-results'] = _not_list_results(array(), $form_state,
-                $board, $brief_title, $full_title, $id, $all_journals);
+                $board, $brief_title, $full_title, $id, $which_journals);
         }
 
         return $form;
@@ -5846,15 +6017,19 @@ namespace {
      *  @param string $id
      *    Only include journals for which the source (e.g. Pubmed) id contains
      *    this substring.
-     *  @param boolean $all_journals
-     *    True = include all journals in the results list that match the other
-     *    search criteria, whether or not they are on the "not list".
+     *  @param string $which_journals
+     *    'all' = include all journals in the results list that match the other
+     *            search criteria, whether or not they are on the "not list".
+     *    'included' = only journals which not on the "not list" and match
+     *                 the other search criteria
+     *    'excluded' = only journals which are on the "not list" and match
+     *                 the other search criteria
      *
      *  @return array
      *    Modified $form.
      */
     function _not_list_results($form, &$form_state, $board, $brief_title,
-        $full_title, $id, $all_journals) {
+                               $full_title, $id, $which_journals) {
 
         // first, refresh the journal list
         require_once('common.inc');
@@ -5868,41 +6043,6 @@ namespace {
             $per_page = $form_state['values']['per_page'];
         if (!is_numeric($per_page))
             $per_page = 10;
-
-        // if all_journals is set, then a right-join needs to be performed
-        // in order to include all journals, not just those on not-list.
-        $query = db_select('ebms_not_list', 'nl');
-        if ($all_journals) {
-            $query->rightJoin('ebms_journal', 'j',
-                'j.source = nl.source
-                AND j.source_jrnl_id = nl.source_jrnl_id
-                AND nl.board_id = :board',
-                array(':board' => $board));
-        } else {
-            $query->join('ebms_journal', 'j',
-                'nl.source_jrnl_id = j.source_jrnl_id AND nl.source = j.source');
-            $query->condition('nl.board_id', $board);
-        }
-
-        $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
-
-        // add the other filter fields
-        if ($brief_title)
-            $query->condition('j.brf_jrnl_title', "%$brief_title%", 'LIKE');
-
-        if ($full_title)
-            $query->condition('j.jrnl_title', "%$full_title%", 'LIKE');
-
-        if ($id)
-            $query->condition('j.source_jrnl_id', "%$id%", 'LIKE');
-
-        $num_rows = $query->countQuery()->execute()->fetchField();
-
-        $query
-            ->fields('j',
-                array('brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'));
-
-        $query->addExpression('!ISNULL(nl.source_jrnl_id)', 'default_value');
 
         // set up header sorting
         $field = 'j.jrnl_title';
@@ -5918,8 +6058,11 @@ namespace {
             $form_state['header_sort']['#index'] = $index;
         }
 
+        $query = _not_list_query($board, $brief_title, $full_title, $id,
+                                 $which_journals);
+        $num_rows = $query->countQuery()->execute()->fetchField();
+        $query = $query->extend('Ebms\EbmsPager')->limit($per_page);
         $query->orderBy($field, $dir);
-
         $result = $query->execute();
 
         $form += array(
@@ -5927,7 +6070,19 @@ namespace {
             '#suffix' => '</div>',
         );
 
-        $form['results-title']['#markup'] = "<h2>Not List Search Results <span class = 'results-count'>($num_rows)</span></h2>";
+        $url = "/citations/journals-print-friendly?board=$board";
+        if ($brief_title)
+            $url .= '&brief_title=' . urlencode($brief_title);
+        if ($full_title)
+            $url .= '&full_title=' . urlencode($full_title);
+        if ($id)
+            $url .= '&journal_id=' . urlencode($id);
+        $url .= "&which_journals=$which_journals";
+        $form['results-title']['#markup'] =
+            '<h2 id="not-list-report-title">Journals ' .
+            '<span class="results-count">' .
+            "($num_rows)</span><a href=\"$url\" target=\"_blank\">" .
+            'Printer-Friendly Version</a></h2>';
 
         $form['buttons'] = array(
             '#prefix' => '<div id="citation-buttons-div">',
@@ -5946,7 +6101,8 @@ namespace {
 
         $form['buttons']['display_options'] = array(
             '#type' => 'fieldset',
-            '#title' => '<span class="citation-subheader">Display Options</span>',
+            '#title' =>
+                '<span class="citation-subheader">Display Options</span>',
             'options' => _build_citation_sort_options($form_state, false),
             '#collapsible' => true,
             '#collapsed' => true,
@@ -5969,9 +6125,6 @@ namespace {
             '#prefix' => "<div class='citation-header'>",
             '#suffix' => '</div>',
         );
-
-        /* $form['table']['header'][]['#markup'] =
-          "<div class='citation-cell brief-title left-column'>Brief Journal Title</div>"; */
 
         $form['table']['header']['header-brief-title'] = array(
             '#type' => 'container',
@@ -6001,8 +6154,6 @@ namespace {
             ),
         );
 
-        /* $form['table']['header'][]['#markup'] =
-          "<div class='citation-cell full-title'>Full Journal Title</div>"; */
         $form['table']['header']['header-title'] = array(
             '#type' => 'container',
             'header-submit' => array(
@@ -6030,8 +6181,6 @@ namespace {
             ),
         );
 
-        /* $form['table']['header'][]['#markup'] =
-          "<div class='citation-cell id'>Journal ID</div>"; */
         $form['table']['header']['header-journal-id'] = array(
             '#type' => 'container',
             'header-submit' => array(
@@ -6080,28 +6229,32 @@ namespace {
             );
 
             $form['table']['rows'][$ix]['brief_title']['#markup'] =
-                "<div class='citation-cell brief-title left-column'>$record->brf_jrnl_title</div>";
+                '<div class="citation-cell brief-title left-column">' .
+                $record->brf_jrnl_title . '</div>';
             $form['table']['rows'][$ix]['full_title']['#markup'] =
-                "<div class='citation-cell full-title'>$record->jrnl_title</div>";
+                '<div class="citation-cell full-title">' .
+                $record->jrnl_title . '</div>';
             $form['table']['rows'][$ix]['journal_id']['#markup'] =
-                "<div class='citation-cell id'>$record->source_jrnl_id</div>";
+                '<div class="citation-cell id">' .
+                $record->source_jrnl_id . '</div>';
 
-            $initial = $record->default_value;
-            $journal_hash = "$record->source|$record->source_jrnl_id|$board|$initial";
-            $default = $initial;
+            // Is the journal on the "not" list for this board?
+            $not_listed = !empty($record->board_id) ? true : false;
+            $journal_hash = "$record->source|$record->source_jrnl_id|" .
+                "$board|$not_listed";
+            $default = $not_listed;
             if (isset($form_state['altered_states'][$journal_hash])) {
                 $default = $form_state['altered_states'][$journal_hash];
             }
 
-            $form['table']['rows'][$ix]["not_list_state_$journal_hash"] = array(
+            $form['table']['rows'][$ix]["not_list_state_$journal_hash"] = [
                 '#type' => 'checkbox',
                 '#title' => "&nbsp;",
                 '#default_value' => $default,
-                '#prefix' => "<div class='citation-cell not-check borderless'>",
+                '#prefix' => '<div class="citation-cell not-check ' .
+                             'borderless">',
                 '#suffix' => "</div>",
-                //'#return_value' => ,
-                //'#attributes' => array('name' => "search_row_${ix}_button"),
-            );
+            ];
 
             $ix++;
         }
@@ -6128,6 +6281,139 @@ namespace {
         return $form;
     }
 
+    /**
+     * Extract not-list query logic for common use.
+     *
+     *  @param int $board
+     *    primary key for the ebms_board table
+     *  @param string $brief
+     *    pattern for narrowing list of journals with brief titles
+     *    matching this substring (possibly with wildcards)
+     *  @param string $full
+     *    same thing, but for the journals' full titles
+     *  @param string $journal_id
+     *    ditto for journal IDs maintained by NLM
+     *  @param string $which
+     *    "all", "included", "excluded" (looking at whether the journals are
+     *    on the "not" list ("excluded")
+     */
+    function _not_list_query($board, $brief, $full, $journal_id, $which) {
+
+        // Create the base query.
+        $join_conditions = implode(' AND ', [
+            'n.source = j.source',
+            'n.source_jrnl_id = j.source_jrnl_id',
+            'n.board_id = :board',
+        ]);
+        $values = [':board' => $board];
+        $query = db_select('ebms_journal', 'j');
+        $query->leftJoin('ebms_not_list', 'n', $join_conditions, $values);
+        switch ($which) {
+        case 'excluded':
+            $query->isNotNull('n.board_id');
+            break;
+        case 'included':
+            $query->isNull('n.board_id');
+            break;
+        }
+
+        // add the other filter fields
+        if ($brief)
+            $query->condition('j.brf_jrnl_title', "%$brief%", 'LIKE');
+        if ($full)
+            $query->condition('j.jrnl_title', "%$full%", 'LIKE');
+        if ($journal_id)
+            $query->condition('j.source_jrnl_id', "%$journal_id%", 'LIKE');
+
+        // Specify which columns need to be part of the results set.
+        // Include the board_id from the left join on the "not" list table,
+        // which is used as a flag: if the value for the board ID is not NULL,
+        // then the journal is on the "not" list for this board; otherwise
+        // it isn't.
+        $fields = ['brf_jrnl_title', 'jrnl_title', 'source_jrnl_id', 'source'];
+        $query->fields('j', $fields);
+        $query->fields('n', array('board_id'));
+        return $query;
+    }
+
+    /**
+     * Menu callback for a version of the "not list" page for printing
+     */
+    function _print_friendly_not_list() {
+        $parms = drupal_get_query_parameters();
+        $board = $parms['board'];
+        $brief = $parms['brief_title'] ?? '';
+        $full = $parms['full_title'] ?? '';
+        $id = $parms['journal_id'] ?? '';
+        $which = $parms['which_journals'] ?? 'all';
+        $query = _not_list_query($board, $brief, $full, $id, $which);
+        $query->orderBy('j.jrnl_title');
+        $num_rows = $query->countQuery()->execute()->fetchField();
+        $today = strftime('%Y-%m-%d');
+        $board_name = htmlspecialchars(Ebms\Util::get_board_name($board));
+        $title = ucfirst($which) . " $board_name Journals ($num_rows)";
+        echo "<!DOCTYPE html>
+<html>
+<head>
+<meta charset=\"utf-8\">
+<title>Journals</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    /* width: 1024px; margin: 20px auto; */
+}
+h1 {font-size: 16pt; }
+h2 { font-size: 14pt; }
+h3 { font-size: 12pt; }
+table { border-collapse: collapse; }
+td, th { border-bottom: 1px black solid; }
+.center { text-align: center; }
+</style>
+</head>
+<body>
+<h1>$title</h1>
+<h2>Report Date: $today</h2>
+";
+        if ($brief) {
+            echo "<h3>With brief title containing '";
+            echo htmlspecialchars($brief) . "'</h3>\n";
+        }
+        if ($full) {
+            echo "<h3>With full title containing '";
+            echo htmlspecialchars($full) . "'</h3>\n";
+        }
+        if ($id) {
+            echo "<h3>With journal ID containing '";
+            echo htmlspecialchars($journal_id) . "'</h3>\n";
+        }
+        echo "<table>
+<tr>
+<th>Brief Title</th>
+<th>Full Title</th>
+<th>Journal ID</th>
+";
+        if ($which === 'all')
+            echo "<th>\"Not\" Listed?</th>\n";
+        echo "</tr>\n";
+        $results = $query->execute();
+        foreach ($results as $result) {
+            $brief_title = htmlspecialchars($result->brf_jrnl_title);
+            $full_title = htmlspecialchars($result->jrnl_title);
+            $journal_id = htmlspecialchars($result->source_jrnl_id);
+            echo "<tr>\n";
+            echo "<td>$brief_title</td>\n";
+            echo "<td>$full_title</td>\n";
+            echo "<td>$journal_id</td>\n";
+            if ($which === 'all') {
+                $not_listed = !empty($result->board_id) ? 'Yes' :'No';
+                echo "<td class=\"center\">$not_listed</td>\n";
+            }
+            echo "<tr>\n";
+        }
+        echo "</table>\n</body>\n</html>\n";
+        exit(0);
+    }
+
     function _not_list_results_ajax($form, &$form_state) {
         return $form['citation-results'];
     }
@@ -6135,7 +6421,8 @@ namespace {
     /******************************** COMMON ***************************/
 
     /**
-     * Simple wrapper to include often-needed ctools and modal settings scripts.
+     * Simple wrapper to include often-needed ctools and modal settings
+     * scripts.
      */
     function _include_modal_scripts() {
         // add ctools includes and style for popups
@@ -6227,7 +6514,7 @@ namespace {
         $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $title = array();
         $articleXML = $doc->MedlineCitation->Article;
-        $rawTitle = (string) $articleXML->ArticleTitle;
+        $rawTitle = Ebms\Util::get_text($articleXML->ArticleTitle);
         if (!$long_form) {
             // create link-like submit element
             // 2016-08-31: add #name property for OCEEBMS-387
@@ -7289,6 +7576,362 @@ namespace {
         return drupal_get_form($name, $action, $id, $id2);
     }
 
+    function pdq_ebms_full_text_upload_form($form, &$form_state, $article_id) {
+        $comment = '';
+        $description = 'Select a PDF file smaller than 20 MB to be uploaded.';
+        $title = 'Upload Full Text PDF File';
+        $unavailable = false;
+        $full_text_id = db_select('ebms_article', 'a')
+            ->fields('a', array('full_text_id'))
+            ->condition('a.article_id', $article_id)
+            ->execute()
+            ->fetchField();
+        if (empty($full_text_id)) {
+            $comment = db_select('ebms_ft_unavailable', 'u')
+                ->condition('u.article_id', $article_id)
+                ->fields('u', array('comment'))
+                ->execute()
+                ->fetch();
+            $unavailable = true;
+        }
+        else {
+            $title = 'Replace Full Text PDF File';
+            $row = db_select('file_managed', 'f')
+                ->condition('f.fid', $full_text_id)
+                ->fields('f')
+                ->execute()
+                ->fetch();
+            $user = htmlspecialchars(user_load($row->uid)->name);
+            $filename = htmlspecialchars($row->filename);
+            $date = format_date($row->timestamp, 'custom', 'Y-m-d');
+            $url = file_create_url($row->uri);
+            $target = array('attributes' => array('target' => '_blank'));
+            $link = l($filename, $url, $target);
+            $description .=
+                " This will replace $link uploaded $date by $user.";
+        }
+        return array(
+            'title' => array('#markup' => "<h2>$title</h2>"),
+            'article' => array(
+                '#type' => 'hidden',
+                '#value' => $article_id,
+            ),
+            'full-text' => array(
+                '#title' => 'Full Text PDF File',
+                '#type' => 'file',
+                '#upload_validators' => array(
+                    'file_validate_extensions' => array('pdf'),
+                ),
+                '#description' => $description,
+            ),
+            'unavailable' => array(
+                '#type' => 'checkbox',
+                '#title' => 'Full Text File Unavailable',
+                '#default' => $unavailable,
+                '#description' => 'Check if attempts to obtain the full ' .
+                'text for the article have not succeeded (and are not ' .
+                'likely to in the future).',
+            ),
+            'comment' => array(
+                '#type' => 'textarea',
+                '#title' => 'Comment',
+                '#default_value' => $comment,
+                '#description' =>
+                'Only stored if full-text file is unavailable.',
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#submit' => 'pdq_ebms_full_text_upload_form_submit',
+                '#limit_validation_errors' => array(),
+            ),
+        );
+    }
+
+    function pdq_ebms_full_text_upload_form_validate($form, &$form_state) {
+        $values = $form_state['values'];
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        if ($values['op'] != 'Submit') {
+            $article_id = $values['article'];
+            $url = "citations/full/$article_id";
+            $opts = array('query' => $parms);
+            drupal_goto($url, $opts);
+        }
+        $form_state['article'] = $values['article'];
+        $form_state['full-text-id'] = null;
+        $form_state['comment'] = $values['comment'];
+        $form_state['unavailable'] = !empty($values['unavailable']);
+        if (!empty($_FILES['files']['name']['full-text'])) {
+            if ($form_state['unavailable']) {
+                form_set_error('unavailable',
+                               'File cannot be available and unavailable ' .
+                               'at the same time.');
+                return;
+            }
+            $name = $_FILES['files']['name']['full-text'];
+            $path = $_FILES['files']['tmp_name']['full-text'];
+            $extension_ok = Ebms\Util::has_valid_extension($name, 'pdf');
+            $msg = 'File is not a PDF file or exceeds the limit of 20MB.';
+            $mime_type = Ebms\Util::get_mime_type($path);
+            if (!$extension_ok || $mime_type !== 'application/pdf')
+                form_set_error('full-text', $msg);
+            else {
+                $validators = ['file_validate_extensions' => ['pdf']];
+                $file = file_save_upload('full-text', $validators);
+                if ($file) {
+                    $file = file_move($file, 'public://');
+                    $file->status |= FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                    $form_state['full-text-id'] = $file->fid;
+                }
+                else
+                    form_set_error('full-text', "Unable to upload $name");
+            }
+        }
+        elseif (!$form_state['unavailable']) {
+            form_set_error('full-text', 'You must choose a PDF file ' .
+                           'or indicate that the file is unavailable ' .
+                           '(preferably with an explanation in the ' .
+                           'latter case).');
+        }
+    }
+
+    function pdq_ebms_full_text_upload_form_submit($form, &$form_state) {
+        $full_text_id = $form_state['full-text-id'];
+        $article_id = $form_state['article'];
+        $transaction = db_transaction();
+        try {
+            if ($full_text_id) {
+                db_update('ebms_article')
+                    ->fields(array('full_text_id' => $full_text_id))
+                    ->condition('article_id', $article_id)
+                    ->execute();
+                db_delete('ebms_unavailable')
+                    ->condition('article_id', $article_id);
+            }
+            else {
+                global $user;
+                $fields = array(
+                    'flagged' => strftime("%Y-%m-%d %H:%M:%S"),
+                    'flagged_by' => $user->uid,
+                    'comment' => $form_state['comment'],
+                );
+                db_merge('ebms_ft_unavailable')
+                    ->key(array('article_id' => $article_id))
+                    ->fields($fields)
+                    ->execute();
+                db_update('ebms_article')
+                    ->fields(array('full_text_id' => null))
+                    ->condition('article_id', $article_id)
+                    ->execute();
+            }
+        }
+        catch (\Exception $e) {
+            $transaction->rollback();
+            throw $e;
+        }
+        $url = "citations/full/$article_id";
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        $opts = array('query' => $parms);
+        drupal_goto($url, $opts);
+    }
+
+    function pdq_ebms_edit_internal_comment($form, &$form_state, $verb, $id) {
+
+        $verb = ucfirst($verb);
+        $comment = '';
+        $comment_id = null;
+        if ($verb === 'Add')
+            $article_id = $id;
+        else {
+            $comment_id = $id;
+            $result = db_select('ebms_internal_article_comment', 'c')
+                ->fields('c', array('article_id', 'comment_text'))
+                ->condition('c.comment_id', $comment_id)
+                ->execute()
+                ->fetch();
+            $article_id = $result->article_id;
+            $comment = $result->comment_text;
+        }
+        $title = "$verb Internal Comment for EBMS $article_id";
+        return array(
+            'title' => array('#markup' => "<h2>$title</h2>"),
+            'article' => array(
+                '#type' => 'hidden',
+                '#value' => $article_id,
+            ),
+            'comment' => array(
+                '#type' => 'hidden',
+                '#value' => $comment_id,
+            ),
+            'comment-text' => array(
+                '#type' => 'textarea',
+                '#title' => 'Comment',
+                '#default_value' => $comment,
+                '#description' => 'Provide notes about how this article ' .
+                'may be of interest to internal PDQ staff.',
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#submit' => 'pdq_ebms_edit_internal_comment_submit',
+                '#limit_validation_errors' => array(),
+            ),
+        );
+    }
+
+    function pdq_ebms_edit_internal_comment_validate($form, &$form_state) {
+        $values = $form_state['values'];
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        if (!empty($values['op']) && $values['op'] === 'Submit') {
+            $comment = trim($values['comment-text']);
+            if (empty($comment)) {
+                form_set_error('comment-text', 'Comment cannot be empty. ' .
+                               'Use the delete icon to delete a comment.');
+            }
+        }
+        else {
+            $article_id = $values['article'];
+            $url = "citations/full/$article_id";
+            $opts = array('query' => $parms);
+            drupal_goto($url, $opts);
+        }
+    }
+
+    function pdq_ebms_edit_internal_comment_submit($form, &$form_state) {
+
+        // Make sure we're really supposed to store the new values.
+        $values = $form_state['values'];
+        $article_id = $values['article'];
+        $comment_id = $values['comment'];
+        $comment = $values['comment-text'];
+        if (!empty($values['op']) && $values['op'] === 'Submit') {
+            $table = 'ebms_internal_article_comment';
+            if (empty($comment_id)) {
+                global $user;
+                $now = strftime("%Y-%m-%d %H:%M:%S");
+                $fields = array(
+                    'user_id' => $user->uid,
+                    'comment_date' => $now,
+                    'comment_text' => $comment,
+                    'article_id' => $article_id,
+                );
+                db_insert($table)->fields($fields)->execute();
+                drupal_set_message('Internal comment successfully added.');
+            }
+            else {
+                db_update($table)
+                    ->fields(array('comment_text' => $comment))
+                    ->condition('comment_id', $comment_id)
+                    ->execute();
+                drupal_set_message('Internal comment successfully updated.');
+            }
+        }
+        $url = "citations/full/$article_id";
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        $opts = array('query' => $parms);
+        drupal_goto($url, $opts);
+    }
+
+    function pdq_ebms_edit_internal_tags(
+        $form, &$form_state, $article_id
+    ) {
+        $results = db_select('ebms_internal_tag', 't')
+            ->fields('t', array('tag_id', 'tag_name'))
+            ->condition('t.active_status', 'A')
+            ->execute();
+        $tags = array();
+        foreach ($results as $result)
+            $tags[$result->tag_id] = htmlspecialchars($result->tag_name);
+        $results = db_select('ebms_internal_article_tag', 't')
+            ->fields('t', array('tag_id'))
+            ->condition('t.article_id', $article_id)
+            ->execute();
+        $selected_tags = array();
+        foreach ($results as $result)
+            if (array_key_exists($result->tag_id, $tags))
+                $selected_tags[] = $result->tag_id;
+        return array(
+            'title' => array(
+                '#markup' => "<h2>Internal tags for EBMS $article_id</h2>",
+            ),
+            'article' => array(
+                '#type' => 'hidden',
+                '#value' => $article_id,
+            ),
+            'tags' => array(
+                '#type' => 'checkboxes',
+                '#title' => 'Tag(s)',
+                '#options' => $tags,
+                '#default_value' => $selected_tags,
+                '#description' => t('Optionally select one or more tags.'),
+            ),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Submit',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Cancel',
+                '#submit' => 'pdq_ebms_edit_internal_tags_submit',
+                '#limit_validation_errors' => array(),
+            ),
+        );
+    }
+
+    function pdq_ebms_edit_internal_tags_validate($form, &$form_state) {
+        $values = $form_state['values'];
+        $article_id = $values['article'];
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        if (!empty($values['op']) && $values['op'] === 'Cancel') {
+            $url = "citations/full/$article_id";
+            $opts = array('query' => $parms);
+            drupal_goto($url, $opts);
+        }
+    }
+
+    function pdq_ebms_edit_internal_tags_submit($form, &$form_state) {
+
+        // Make sure we're really supposed to store the new values.
+        $values = $form_state['values'];
+        $article_id = $values['article'];
+        if (!empty($values['op']) && $values['op'] === 'Submit') {
+
+            // Wrap this in a transaction.
+            $transaction = db_transaction();
+            try {
+                $table = 'ebms_internal_article_tag';
+                db_delete($table)
+                    ->condition('article_id', $article_id)
+                    ->execute();
+                $fields = array('article_id' => $article_id);
+                foreach ($values['tags'] as $key => $value) {
+                    if (!empty($value)) {
+                        $fields['tag_id'] = $key;
+                        db_insert($table)->fields($fields)->execute();
+                    }
+                }
+            }
+            catch (\Exception $e) {
+                $transaction->rollback();
+                throw $e;
+            }
+        }
+        drupal_set_message('Internal tags successfully updated.');
+        $url = "citations/full/$article_id";
+        $parms = $form_state['query-parms'] ?? drupal_get_query_parameters();
+        $opts = array('query' => $parms);
+        drupal_goto($url, $opts);
+    }
+
     function pdq_ebms_article_relationship_form(
         $form, &$form_state, $action, $id, $id2
     ) {
@@ -7503,6 +8146,44 @@ namespace {
         drupal_goto($url, $opts);
     }
 
+    function _pdq_ebms_full_text_info($article) {
+
+        // See if we have determined that it isn't available.
+        $full_text_id = $article->getFullTextId();
+        if (empty($full_text_id)) {
+            $row = db_select('ebms_ft_unavailable', 'u')
+                ->condition('u.article_id', $article->getId())
+                ->fields('u')
+                ->execute()
+                ->fetch();
+            if (empty($row))
+                return '';
+            $date = _format_date($row->flagged);
+            $user = htmlspecialchars(user_load($row->flagged_by)->name);
+            $comment = $row->comment;
+            $html = "<div>Flagged $date by $user as unavailable.";
+            if (!empty($comment))
+                $html .= '<br><b><i>Note:</i></b> ' .
+                    htmlspecialchars($comment);
+            $html .= '</div>';
+            return $html;
+        }
+
+        // Show the information about the full text file.
+        $row = db_select('file_managed', 'f')
+            ->condition('f.fid', $full_text_id)
+            ->fields('f')
+            ->execute()
+            ->fetch();
+        $user = htmlspecialchars(user_load($row->uid)->name);
+        $filename = htmlspecialchars($row->filename);
+        $date = format_date($row->timestamp, 'custom', 'Y-m-d');
+        $url = file_create_url($row->uri);
+        $target = array('attributes' => array('target' => '_blank'));
+        $link = l($filename, $url, $target);
+        return "$link uploaded $date by $user.";
+    }
+
     function _display_article_relationship($relationship, $article_id) {
         $rid = $relationship->relationship_id;
         $opts = array('query' => drupal_get_query_parameters());
@@ -7608,7 +8289,7 @@ namespace Ebms {
         static $READYINITIAL = null;
         static $PUBLISHED = null;
         static $NCIREVIEWER = null;
-        static $FULLTEXT = null;
+        // static $FULLTEXT = null;
         static $SURVEILLANCE = null;
         static $BOARDMANAGERCOMMENT = null;
         static $ASSIGNEDFORREVIEW = null;
@@ -7663,8 +8344,8 @@ namespace Ebms {
                 new EbmsTopicDecisions($index++, 'Abstract Decision', null,
                     array(EbmsArticleStates::PassedBMReview),
                     array(EbmsArticleStates::RejectBMReview));
-            self::$FULLTEXT =
-                new EbmsTopicDecisions($index++, 'Full Text Retrieved', null);
+            // self::$FULLTEXT =
+            //   new EbmsTopicDecisions($index++, 'Full Text Retrieved', null);
             self::$SURVEILLANCE =
                 new EbmsTopicDecisions($index++,
                     'Full-Text Decision', null,

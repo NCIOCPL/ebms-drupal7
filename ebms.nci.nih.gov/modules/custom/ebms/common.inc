@@ -223,18 +223,20 @@ class Menu {
             $children[] = new Menu('Upload Document', 'docs/post');
             $children[] = new Menu('Manage Documents', 'docs');
         }
+        $children[] = new Menu('Manage Internal Tags', 'admin/internal-tags');
         $children[] = new Menu('Manage Summary Topics', 'admin/topics');
         $children[] = new Menu('Manage Summary Topic Groups',
                       'admin/topic-groups');
         if ($role != 'librarian') {
             $children[] = new Menu('Manage Groups', 'groups');
+            $children[] = new Menu('Find Users', 'admin/users');
             $children[] = new Menu('Print Packets', 'print-packets/run');
             $children[] = new Menu('View Packet Printing Jobs',
                           'print-packets/view');
             $children[] = new Menu('Manage Print Recipients',
                           'print-packets/mbrs');
         }
-        $children[] = new Menu('Not List Maintenance', 'citations/not-list');
+        $children[] = new Menu('Journal Maintenance', 'citations/not-list');
         if ($role == 'librarian')
             $children[] = new Menu('Refresh Journal List',
                           'admin/refresh-journals');
@@ -257,6 +259,8 @@ class Menu {
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
                     new Menu('Publish Citations', 'citations/publish'),
+                    new Menu('Internal Articles', 'internal-articles'),
+                    new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations', $children);
             case 'admin assistant':
@@ -264,6 +268,8 @@ class Menu {
                     new Menu('Full Text Retrieval', 'citations/fulltext'),
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
+                    new Menu('Internal Articles', 'internal-articles'),
+                    new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations/fulltext', $children);
             default:
@@ -271,6 +277,8 @@ class Menu {
                     new Menu('Review Citations', 'citations'),
                     new Menu('Search Database', 'citations/search'),
                     new Menu('Import Citations', 'citations/import'),
+                    new Menu('Internal Articles', 'internal-articles'),
+                    new Menu('Internal Import', 'import-internal-articles'),
                 );
                 return new Menu($title, 'citations', $children);
         }
@@ -931,6 +939,20 @@ class Util {
     }
 
     /**
+     * Get all of the text content of a node without the markup.
+     *
+     * @param object $node   DOMElement or SimpleXMLElement
+     *
+     * @return               Simple text string, without markup
+     */
+    public static function get_text($node) {
+        if (!is_a($node, 'DOMElement')) {
+            $node = dom_import_simplexml($node);
+        }
+        return $node->textContent;
+    }
+
+    /**
      * Create a version of a string specialized for indexing in one of
      * several ways:
      *
@@ -1463,7 +1485,9 @@ class Util {
         $links = array(
             array('Search Database', 'citations/search'),
             array('Import Citations', 'citations/import'),
-            array('Not List Maintenance', 'citations/not-list'),
+            array('Journal Maintenance', 'citations/not-list'),
+            array('Internal Articles', 'internal-articles'),
+            array('Internal Import', 'import-internal-articles'),
         );
         if (in_array('medical librarian', $user->roles))
             $links[] = array('Publish Citations', 'citations/publish');
@@ -1883,7 +1907,8 @@ class Util {
      *
      *  @return                     Render array for report
      */
-    public static function import_report(&$batch, $title, $cols=5) {
+    public static function import_report(&$batch, $title, $cols=5,
+                                         $internal=false) {
         $ebms_ids = array();
         $blocks = array(
             'imported' => 'ARTICLE{S} IMPORTED',
@@ -1941,6 +1966,13 @@ class Util {
             'replaced' => 'ARTICLE{S} REPLACED',
             'error' => 'ARTICLE{S} WITH ERRORS',
         );
+        if ($internal)
+            $blocks = array(
+                'imported' => 'ARTICLE{S} IMPORTED',
+                'duplicate' => 'DUPLICATE ARTICLE{S}',
+                'replaced' => 'ARTICLE{S} REPLACED',
+                'error' => 'ARTICLE{S} WITH ERRORS',
+            );
         foreach ($blocks as $key => $title) {
             $ids = array();
             foreach ($batch->action[$key] as $article)
@@ -2448,6 +2480,29 @@ class Util {
             return "[RELATED CITATION: $display]";
         }
         return '';
+    }
+
+    /**
+     * Assemble the list of tags assigned to an article for a topic.
+     *
+     *  @param int $article_id
+     *      Unique ID of the article for which tags have been assigned
+     *
+     *  @param int $topic_id
+     *      Unique ID of the topic associated with the assignment
+     *
+     *  @return array
+     *       Sequence of tag display names
+     */
+    public static function get_topic_tags($article_id, $topic_id) {
+        $query = db_select('ebms_article_tag_type', 'n');
+        $query->join('ebms_article_tag', 't', 't.tag_id = n.tag_id');
+        $query->condition('t.article_id', $article_id);
+        $query->condition('t.topic_id', $topic_id);
+        $query->condition('t.active_status', 'A');
+        $query->orderBy('t.tag_dt');
+        $query->fields('n', array('tag_name'));
+        return $query->execute()->fetchCol();
     }
 }
 

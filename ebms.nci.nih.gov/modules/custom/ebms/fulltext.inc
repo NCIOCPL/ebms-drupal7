@@ -47,7 +47,7 @@ class EbmsFullText {
         $article = $doc->MedlineCitation->Article;
         //$title = htmlspecialchars($article->ArticleTitle);
         // Changed by TIR 2458.
-        $title = l($article->ArticleTitle, 'citations/full/' . $article_id);
+        $title = l(Ebms\Util::get_text($article->ArticleTitle), 'citations/full/' . $article_id);
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);

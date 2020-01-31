@@ -534,7 +534,7 @@ class EbmsPublish {
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = htmlspecialchars($article->ArticleTitle);
+        $title = htmlspecialchars(Ebms\Util::get_text($article->ArticleTitle));
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);

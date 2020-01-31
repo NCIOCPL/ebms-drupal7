@@ -39,6 +39,7 @@ function getSearchQuery($json) {
     $srch->srchModifiedDate();
     $srch->srchOnAgenda();
     $srch->srchDecision();
+    $srch->excludeInternalArticles();
 
     // Sort them
     $srch->srchOrder();
@@ -52,7 +53,7 @@ function getSearchQuery($json) {
 // $jspec = print_r($srch->spec, true);
 // logw("Full decoded json spec:\n$jspec\n");
 // logw("SQL for query:\n{$srch->qry}\n");
-
+// drupal_set_message('qry: ' . (string)$srch->qry);
 
     return $srch->qry;
 }
@@ -647,6 +648,26 @@ class EbmsSearch {
                 else if (!empty($this->boards))
                     $this->qry->condition("comstate.board_id", $this->boards,
                         'IN');
+            }
+
+            // Simpler treatment for board manager comments.
+            $comment = $this->spec['board-manager-comment'];
+            if (!empty($comment)) {
+                $this->qry->join('ebms_article_topic_comment', 'topiccom',
+                    'topiccom.article_id = art.article_id');
+                $op = '=';
+                if ($this->chkWildCards($comment))
+                    $op = 'LIKE';
+                $this->qry->condition('topiccom.comment', $comment, $op);
+                if (!empty($this->topics))
+                    $this->qry->condition('topiccom.topic_id', $this->topics,
+                        'IN');
+                else if (!empty($this->boards)) {
+                    $this->qry->join('ebms_topic', 'topiccom_topic',
+                        'topiccom_topic.topic_id = topiccom.topic_id');
+                    $this->qry->condition("topiccom_topic.board_id",
+                        $this->boards, 'IN');
+                }
             }
         }
     }
@@ -1292,6 +1313,32 @@ class EbmsSearch {
             default:
                 $this->qry->orderBy('art.article_id', 'DESC');
                 break;
+        }
+    }
+
+    /**
+     * Make sure we don't pick up articles intended for internal staff only.
+     *
+     * See OCEEBMS-509. An "internal" article in this context is one which
+     * has no topics associated with it. It is possible for an article to
+     * disappear both from the internal article queue page and from the
+     * search system, if an article is imported as internal, is never
+     * assigned any topics, and someone subsequently deletes all of its
+     * internal tags. In that case, the way to get it to reappear would
+     * be to re-import it, either internally with new internal tags, or
+     * using the standard import page, assigning a board and topic.
+     *
+     * All we need to do is to add a join on the ebme_article_state table.
+     * We don't even need to do that if any of the search parameters has
+     * already introduced such a join. No conditions on our join are
+     * needed. The SELECT DISTINCT in our query takes care of making sure
+     * we don't introduce duplicate article IDs in the search results.
+     */
+    function excludeInternalArticles() {
+        if (!$this->stateFilters) {
+            $alias = 'state_alias_exclude_internal';
+            $this->qry->join('ebms_article_state', $alias,
+                             "$alias.article_id = art.article_id");
         }
     }
 

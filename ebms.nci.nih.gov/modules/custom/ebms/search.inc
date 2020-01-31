@@ -321,7 +321,7 @@ body {
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = $article->ArticleTitle;
+        $title = Ebms\Util::get_text($article->ArticleTitle);
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
@@ -449,6 +449,7 @@ class EbmsSearchSpec {
         $title = '',
         $journal = '',
         $comments = '',
+        $board_manager_comment = '',
         $publication_year = 0,
         $publication_month = 0,
         $review_cycle = 0,
@@ -525,6 +526,7 @@ class EbmsSearchSpec {
                 $this->summary_topics_added = $spec['summary-topics-added'];
                 $this->cms_id = $spec['cms-id'];
                 $this->comments = $spec['comments'];
+                $this->board_manager_comment = $spec['board-manager-comment'];
                 $this->review_cycle = $spec['review-cycle'];
                 $this->reviewer = $spec['reviewer'];
                 $this->response = $spec['response'];
@@ -628,7 +630,7 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
             'reviewer', 'response', 'decision', 'tag',
             'fyi-citation', 'nci-reviewer-decision',
             'committee-decision', 'meeting-category',
-            'full-text-retrieved',
+            'full-text-retrieved', 'board-manager-comment',
             // 'core-journals', XXX not implemeted yet
             'summary-topics-added',
             'only-unpublished', 'only-rejected', 'only-not-listed',
@@ -1122,6 +1124,13 @@ function pdq_ebms_search_db_form(
                 '#suffix' => '</div>',
                 '#default_value' => $defaults->core_journals,
             ),
+            'board-manager-comment' => array(
+                '#type' => 'textfield',
+                '#title' => 'BOARD MANAGER COMMENT',
+                '#title_display' => 'after',
+                '#attributes' => array('class' => array('fixed-width')),
+                '#default_value' => $defaults->board_manager_comment,
+            ),
         );
 
         // Yet another collapsible portion.
@@ -1335,18 +1344,45 @@ function pdq_ebms_fix_date($element) {
  * search page instead, seeded with the PMID.
  *
  * OCEEBMS-445
+ *
+ * 2019-08-12 (OCEEBMS-457): add quick PMID search for
+ * board members (show them the PDF if available).
  */
 function pdq_ebms_pmid_search($pmid) {
-    $article_id = db_select('ebms_article', 'a')
+    global $user;
+    $is_board_member = in_array('board member', $user->roles);
+    $not_found = array(
+        '#markup' => '<h2>Not Found</h2>' .
+        '<p>A PDF of this article is not available in the EBMS. ' .
+        'E-mail your Board manager to request a copy of this ' .
+        'article.',
+    );
+    $results = db_select('ebms_article', 'a')
         ->condition('source', 'Pubmed')
         ->condition('source_id', $pmid)
-        ->fields('a', array('article_id'))
-        ->execute()
-        ->fetchField();
-    if (empty($article_id)) {
-        $opts = array('query' => array('pmid' => $pmid));
-        drupal_goto(EbmsSearch::$url, $opts);
+        ->fields('a', array('article_id', 'full_text_id'))
+        ->execute();
+    foreach ($results as $result) {
+        $article_id = $result->article_id;
+        $full_text_id = $result->full_text_id;
+        if ($is_board_member) {
+            if (empty($full_text_id))
+                return $not_found;
+            else {
+                $uri = db_select('file_managed', 'f')
+                    ->condition('f.fid', $full_text_id)
+                    ->fields('f', array('uri'))
+                    ->execute()
+                    ->fetchField();
+                drupal_goto(file_create_url($uri));
+            }
+        }
+        else
+            drupal_goto("citations/full/$article_id");
     }
+    $opts = array('query' => array('pmid' => $pmid));
+    if ($is_board_member)
+        return $not_found;
     else
-        drupal_goto("citations/full/$article_id");
+        drupal_goto('citations/import', $opts);
 }

@@ -73,7 +73,7 @@ class EbmsReview {
     }
 
     /**
-     * Select the version of the page appropriate the user's role.
+     * Select the version of the page appropriate for the user's role.
      */
     public function run() {
         Ebms\Util::add_js();
@@ -89,7 +89,58 @@ class EbmsReview {
             }
             return $this->choose_member_review_page();
         }
+        if ($this->needs_packet_bulk_archive_confirmation())
+            return drupal_get_form('ebms_packet_bulk_archive_confirm');
+        $this->perform_requested_bulk_archive();
         return $this->choose_manager_review_page();
+    }
+
+    /**
+     * Determine whether we need to get the user to confirm archiving.
+     *
+     * Yes, this looks strange, but this is the way core Drupal code
+     * does it (by examining $_POST directly).
+     */
+    private function needs_packet_bulk_archive_confirmation() {
+        # drupal_set_message('POST is ' . print_r($_POST, true));
+        $archive = 'ebms_packet_bulk_archive';
+        if (!isset($_POST['form_id']) || $_POST['form_id'] !== $archive)
+            return false;
+        if (!isset($_POST['op']) || $_POST['op'] !== 'ARCHIVE')
+            return false;
+        return !empty($_POST['packets']);
+    }
+
+    /**
+     * Perform a bulk packet archive request, if approved.
+     *
+     * This is even stranger, but Drupal is not routing the confirm
+     * button to the submit handler for the confirmation form. So
+     * we have to work from $_POST directly.
+     */
+    private function perform_requested_bulk_archive() {
+
+        // Are we catching the results of the confirmation page?
+        $form_id = 'ebms_packet_bulk_archive_confirm';
+        if (!isset($_POST['form_id']) || $_POST['form_id'] !== $form_id)
+            return;
+
+        // Make sure the action is confirmed and has selected packets.
+        if (empty($_POST['confirm']) || empty($_POST['packets']))
+            return;
+
+        // Walk through the selected packets marking each as inactive.
+        $packets = array_filter($_POST['packets']);
+        foreach ($packets as $pid => $value) {
+            db_update('ebms_packet')
+                ->fields(array('active_status' => 'I'))
+                ->condition('packet_id', $pid)
+                ->execute();
+        }
+
+        // Tell the user what we did.
+        $count = count($packets);
+        drupal_set_message("Archived $count packet(s).");
     }
 
     /**
@@ -199,8 +250,8 @@ class EbmsReview {
      * all packets (the default) or only those which have reviews
      * attached.
      */
-    private function manager_packets_view_toggle($options) {
-        if ($this->reviewed) {
+    public static function manager_packets_view_toggle($options) {
+        if (Ebms\Util::get_request_value('reviewed')) {
             unset($options['query']['reviewed']);
             $label = 'All';
         }
@@ -254,33 +305,8 @@ class EbmsReview {
                 'View/Edit Packets',
             )
         );
-        $headers = array(
-            array(
-                'data' => 'Packet Name',
-                'field' => 'p.packet_title',
-            ),
-            array(
-                'data' => 'Board',
-                'field' => 'b.board_name',
-            ),
-            array(
-                'data' => 'Uploaded By',
-                'field' => 'u.name',
-            ),
-            array(
-                'data' => 'Created',
-                'class' => array('col-5'),
-                'field' => 'p.created_at',
-                'sort' => 'desc',
-            ),
-            array(
-                'data' => 'Actions',
-                'class' => array('col-4'),
-            ),
-        );
-
-        // See if the user has identified one or more boards.
-        $boards = EbmsReview::get_board_ids();
+        $url = EbmsReview::$url . '/packets';
+        $opts = array('query' => drupal_get_query_parameters());
 
         // If there was a filter request, the drupal path will say:
         //  {url}/packets/search/{num}
@@ -290,120 +316,41 @@ class EbmsReview {
         else
             $search_id = 0;
 
-        // Build the query to show packets
-        $query = db_select('ebms_packet', 'p');
+        // Get the form for the top (selecting packets).
+        $form_id = 'pdq_ebms_manager_packets_filter_form';
+        $form = drupal_get_form($form_id, $search_id);
+        $form['#prefix'] = '<div id="manager-packets-filter">';
+        $form['#suffix'] = '</div>';
+
+        // Get the form for the bottom (showing packets).
+        $form_id = 'ebms_packet_bulk_archive';
+        $report = drupal_get_form($form_id, $search_id);
         if ($this->pager != 'off')
-            $query = $query->extend('PagerDefault')->limit(10);
-        $query = $query->extend('TableSort');
-        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
-        $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
-        $query->join('users', 'u', 'u.uid = p.created_by');
-        if ($this->reviewed) {
-            $query->join('ebms_article_review', 'r',
-                'r.packet_id = p.packet_id');
-            $query->distinct();
-        }
-        $query->fields('p', array('packet_id', 'packet_title', 'created_at'));
-        $query->fields('b', array('board_name'));
-        $query->fields('u', array('name'));
-        if (count($boards) == 1)
-            $query->condition('b.board_id', reset($boards));
-        elseif (count($boards) > 1)
-            $query->condition('b.board_id', $boards, 'IN');
-        // $query->condition('p.created_by', $this->user->uid);
-        // $query->condition('p.active_status', 'A');
-
-        // Apply any filters
-        $query = EbmsReview::apply_manager_packet_filters($query, $search_id);
-
-        $query->orderByHeader($headers);
-        // Execute packet selection
-        $packets = $query->execute();
-
-        $divider = '<span class="action-divider">|</span>';
-        $main_url = EbmsReview::$url;
-        $del_func = 'javascript:ebmsscript.delete_packet';
-        $opts = array('query' => drupal_get_query_parameters());
-        $rows = array();
-        foreach ($packets as $p) {
-            $edit_url = "$main_url/edit/{$p->packet_id}";
-            $edit_link = l('EDIT', $edit_url, $opts);
-            $del_parm = url("$main_url/delete/{$p->packet_id}", $opts);
-            $del_url = "$del_func('$del_parm');";
-            $del_link = '<a href="' . $del_url . '">ARCHIVE</a>';
-            $title = str_replace(' [Legacy]', '', $p->packet_title);
-            $title .= " [Packet #{$p->packet_id}]";
-            $title_link = l(htmlspecialchars($title), $edit_url, $opts);
-            $data = array(
-                $title_link,
-                htmlspecialchars($p->board_name),
-                htmlspecialchars($p->name),
-                date('m/d/Y', strtotime($p->created_at)),
-                "$edit_link $divider $del_link",
-            );
-            $rows[] = array(
-                'data' => $data,
-                'no_striping' => true,
-            );
-        }
-        $view = $this->manager_packets_view_toggle($opts);
-        $add = l('Add New', EbmsReview::$url . '/add', $opts);
-        $title = 'Literature Surveillance Packets';
-        $id = 'manager-packets-page-title';
-        $table = array(
-            'filter' => array(
-                '#type' => 'container',
-                '#attributes' => array('id' => 'manager-packets-filter'),
-                'fblock' =>
-                    drupal_get_form('pdq_ebms_manager_packets_filter_form',
-                                    $search_id),
-            ),
-            'title' => array(
-                '#type' => 'markup',
-                '#markup' => "<h2 id='$id'>$title $add $view</h2>",
-            ),
-            'table' => array(
-                '#attributes' => array('id' => 'manager-packets-table'),
-                '#theme' => 'table',
-                '#rows' => $rows,
-                '#header' => $headers,
-            ),
-            'delete-confirm' => array(
-                '#type' => 'container',
-                '#attributes' => array(
-                    'id' => 'confirm-packet-delete',
-                    'title' => 'Archive Packet?',
-                ),
-                'confirm-message' => array(
-                    '#type' => 'markup',
-                    '#markup' =>
-                    '<p>Archiving this packet will remove it from the queues'
-                     . ' of any reviewers who have not responded.</p>'
-                ),
-            ),
-        );
-        $left_nav = $this->build_left_nav('View / Edit Packets');
-        $url = EbmsReview::$url . '/packets';
-        if (count($this->user->boards) > 1)
-            $left_nav['board filter box'] =
-                $this->board_filter_box($opts, $url);
-        if ($this->pager != 'off')
-            $table['pager'] = array('#theme' => 'pager');
+            $report['pager'] = array('#theme' => 'pager');
         else {
             unset($opts['query']['pager']);
             $link = l('VIEW PAGES', $url, $opts);
-            $table['pager'] = array(
+            $report['pager'] = array(
                 '#type' => 'markup',
                 '#markup' => "<div id='pager-view-pages'>$link</div>",
             );
         }
+
+        // Get the navigation panel for the left side of the page.
+        $left_nav = $this->build_left_nav('View / Edit Packets');
+        if (count($this->user->boards) > 1)
+            $left_nav['board filter box'] =
+                $this->board_filter_box($opts, $url);
+
+        // Put the whole page together.
         return array(
             'left-nav' => $left_nav,
             'packets' => array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'main-right-panel'),
-                'report' => $table,
+                'form' => $form,
             ),
+            'report' => $report,
         );
     }
 
@@ -416,7 +363,7 @@ class EbmsReview {
      *
      * @return                  Modified query object.
      */
-    private static function apply_manager_packet_filters($query, $search_id) {
+    public static function apply_manager_packet_filters($query, $search_id) {
 
         // Filter criteria are in the database, get them
         $filters = array();
@@ -452,10 +399,11 @@ class EbmsReview {
                 $query->condition('p.created_at', $date, '<=');
             }
 
-            // Archived and legacy system packets.  These are interrelated
-            $active   = $filters['pkt_scope']['Active'] ? True : False;
-            $archived = $filters['pkt_scope']['Archived'] ? True : False;
-            $legacy   = $filters['pkt_scope']['Legacy'] ? True : False;
+            // Archived and legacy system packets. These are interrelated
+            $active     = $filters['pkt_scope']['Active'] ? True : False;
+            $archived   = $filters['pkt_scope']['Archived'] ? True : False;
+            $legacy     = $filters['pkt_scope']['Legacy'] ? True : False;
+            $unreviewed = $filters['pkt_scope']['Unreviewed'] ? True : False;
 
             // If users turn off all the checkboxes, default to active
             if (!($active || $archived || $legacy))
@@ -480,6 +428,13 @@ class EbmsReview {
                 $query->condition(db_or()
                     ->condition('p.active_status', 'A')
                     ->condition('p.created_at', Ebms\CONVERSION_DATE, '<'));
+
+            // Unreviewed packets only? (OCEEBMS-470)
+            if ($unreviewed) {
+                $query->leftJoin('ebms_article_review', 'ear',
+                    'ear.packet_id = p.packet_id');
+                $query->isNull('ear.packet_id');
+            }
         }
 
         // No filters selected, default to just active docs
@@ -902,7 +857,7 @@ class EbmsReview {
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = htmlspecialchars($article->ArticleTitle);
+        $title = htmlspecialchars(Ebms\Util::get_text($article->ArticleTitle));
         $opts = array();
         if (!$narrow)
             $opts['attributes']['target'] = '_blank';
@@ -1013,16 +968,9 @@ class EbmsReview {
      * Assemble list of topic-specific tags for an article, to be
      * displayed on the Reviewed Packet page.
      */
-    private function get_topic_tags($article_id, $topic_id) {
-        $query = db_select('ebms_article_tag_type', 'n');
-        $query->join('ebms_article_tag', 't', 't.tag_id = n.tag_id');
-        $query->condition('t.article_id', $article_id);
-        $query->condition('t.topic_id', $topic_id);
-        $query->condition('t.active_status', 'A');
-        $query->orderBy('t.tag_dt');
-        $query->fields('n', array('tag_name'));
-        $tags = htmlspecialchars(implode('; ', $query->execute()->fetchCol()));
-        return $tags;
+    private static function get_topic_tags($article_id, $topic_id) {
+        $tags = Ebms\Util::get_topic_tags($article_id, $topic_id);
+        return htmlspecialchars(implode('; ', $tags));
     }
 
     /**
@@ -1204,6 +1152,7 @@ class EbmsReview {
 
             // Add related articles and board manager comment (OCEEBMS-381).
             // Also most recent status and topic-associated tags (OCEEBMS-405).
+            // Also highlight high-priority article/topic combos (OCEEBMS-478).
             $related = Ebms\Util::get_related_articles($article_id);
             if ($related)
                 $citation .= "<br>$related";
@@ -1217,6 +1166,10 @@ class EbmsReview {
                 $citation .= "<br>[ARTICLE TAG(S): $topic_tags]";
             $comment = EbmsReview::get_article_topic_comment($article_id,
                                                              $topic_id);
+            if (strpos($topic_tags, 'High priority') !== false) {
+                $citation .= '<br><br><span class="hi-priority">';
+                $citation .= 'HIGH PRIORITY</span>';
+            }
             if ($comment) {
                 $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
                 $citation .= "<br>$comment</span>";
@@ -2721,7 +2674,7 @@ class EbmsReview {
             ->execute()
             ->fetchField();
         foreach ($articles as $article) {
-            $is_fyi =EbmsReview::is_fyi($article->article_id, $topic_id);
+            $is_fyi = EbmsReview::is_fyi($article->article_id, $topic_id);
             $options['query']['article'] = $article->article_id;
             $pm_id = $article->source_id;
             $pm_url = Ebms\Util::pubmed_url($pm_id);
@@ -3239,7 +3192,7 @@ class EbmsReview {
             $citation[] = '[No authors listed]';
         $title_opts = array('attributes' => array('target' => '_blank'));
         $url = "citations/full/$article_id";
-        $title = l($article->ArticleTitle, $url, $title_opts);
+        $title = l(Ebms\Util::get_text($article->ArticleTitle), $url, $title_opts);
         $citation[] = $title; //htmlspecialchars($article->ArticleTitle);
         $ta = $doc->MedlineCitation->MedlineJournalInfo->MedlineTA;
         $citation[] = htmlspecialchars($ta);
@@ -3249,10 +3202,17 @@ class EbmsReview {
         $citation[] = $doc->MedlineCitation->PMID;
         $citation = implode('; ', $citation);
 
+
         // Add related articles and board manager comments (OCEEBMS-381).
+        // Also flag high-priority article/topic combos (OCEEBMS-478).
         $citation .= Ebms\Util::get_related_articles($article_id, true);
+        $topic_tags = EbmsReview::get_topic_tags($article_id, $topic_id);
         $comment = EbmsReview::get_article_topic_comment($article_id,
                                                          $topic_id);
+        if (strpos($topic_tags, 'High priority') !== false) {
+            $citation .= '<br><br><span class="hi-priority">';
+            $citation .= 'HIGH PRIORITY</span>';
+        }
         if ($comment) {
             $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
             $citation .= "<br>$comment</span><br>";
@@ -3546,7 +3506,7 @@ ORDER BY t.topic_name";
         $doc = new \SimpleXMLElement($xml);
         $title = $ta = $vol = $issue = $pgn = $year = $pmid = '';
         $article = $doc->MedlineCitation->Article;
-        $title = htmlspecialchars($article->ArticleTitle);
+        $title = htmlspecialchars(Ebms\Util::get_text($article->ArticleTitle));
         $pgn = htmlspecialchars($article->Pagination->MedlinePgn);
         $year = $article->Journal->JournalIssue->PubDate->Year;
         $issue = htmlspecialchars($article->Journal->JournalIssue->Issue);
@@ -3596,9 +3556,15 @@ ORDER BY t.topic_name";
         $pieces[] = "PMID: $pmid";
 
         // Add related articles and board manager comments if present (OCEEBMS-381).
+        // Also, highlight high-priority article/topic combos (OCEEBMS-477).
         $related_articles = Ebms\Util::get_related_articles($article_id);
         if ($related_articles)
             $pieces[] = "<br>$related_articles";
+        $topic_tags = EbmsReview::get_topic_tags($article_id, $topic_id);
+        if (strpos($topic_tags, 'High priority') !== false) {
+            $pieces[] = '<br><br><span class="hi-priority">';
+            $pieces[] = 'HIGH PRIORITY</span>';
+        }
         $comment = EbmsReview::get_article_topic_comment($article_id,
                                                          $topic_id);
         if ($comment) {
@@ -4088,19 +4054,24 @@ function pdq_ebms_store_review($form, &$form_state) {
         // append the name of the intended user and add the manager's left
         // nav.  TIR 2409: don't use HTML markup to do this, since we're
         // appending to raw user input.
-        $comment_suffix = " (Recorded by $user->name on behalf of $account->name.)";
+        // 2019-08-12 - overturned by OCEEBMS-451: store with markup.
+        $uname = $user->name;
+        $aname = $account->name;
+        $comment_suffix = "<i>Recorded by $uname on behalf of $aname</i>";
     }
     else
-    {
         $account = $user;
-    }
 
     $packet_id = $form_state['values']['packet'];
     $article_id = $form_state['values']['article'];
     //$expanded = $form_state['values']['expanded'];
     $sort_col = $form_state['values']['sortcol'];
     $sort_dir = $form_state['values']['sortdir'];
-    $comments = $form_state['values']['comments'];
+    $comments = trim($form_state['values']['comments']);
+    if (empty($comments))
+        $comments = $comment_suffix;
+    else
+        $comments .= "<br><br>$comment_suffix";
     $loe = $form_state['values']['loe'];
     $now = strftime("%Y-%m-%d %H:%M:%S");
     $review_id = db_insert('ebms_article_review')
@@ -4110,7 +4081,7 @@ function pdq_ebms_store_review($form, &$form_state) {
                 'article_id'  => $article_id,
                 'reviewer_id' => $account->uid,
                 'when_posted' => $now,
-                'comments'    => trim($comments.$comment_suffix),
+                'comments'    => $comments,
                 'loe_info'    => $loe,
             )
         )
@@ -5198,11 +5169,11 @@ function pdq_ebms_manager_packets_filter_form (
     $date_fields = Ebms\Util::date_range_field('Packet Creation Date:', 'date',
                                                '', '', ':+0', false);
     $form['date-limits'] = $date_fields;
-    $scope_opts = array('Active', 'Archived', 'Legacy');
+    $scope_opts = array('Active', 'Archived', 'Legacy', 'Unreviewed');
     $form['pkt_scope'] = array(
         '#type' => 'checkboxes',
         '#options' => drupal_map_assoc($scope_opts),
-        '#default_value' => array('Active'),
+        '#default_value' => array('Active', 'Unreviewed'),
         '#title' => 'Include packets that are:',
     );
     $form['submit'] = array(
@@ -5786,18 +5757,25 @@ function quick_no_form_submit($form, &$form_state) {
     global $user;
     $comment_suffix = '';
     $account = pdq_ebms_find_effective_user(false);
-    if ($account)
+    if ($account) {
         // append the name of the intended user and add the manager's left
         // nav.  TIR 2409: don't use HTML markup to do this, since we're
         // appending to raw user input.
-        $comment_suffix = ' (Recorded by ' . $user->name .
-            ' on behalf of ' . $account->name . '.)';
+        // 2019-08-12 - overturned by OCEEBMS-451: store with markup.
+        $uname = $user->name;
+        $aname = $account->name;
+        $comment_suffix = "<i>Recorded by $uname on behalf of $aname</i>";
+    }
     else
         $account = $user;
 
     $packet_id = $form_state['values']['packet'];
     $article_id = $form_state['values']['article'];
-    $comments = $form_state['values']['comments'];
+    $comments = trim($form_state['values']['comments']);
+    if (empty($comments))
+        $comments = $comment_suffix;
+    else
+        $comments .= "<br><br>$comment_suffix";
     $now = strftime("%Y-%m-%d %H:%M:%S");
     $review_id = db_insert('ebms_article_review')
         ->fields(
@@ -5806,7 +5784,7 @@ function quick_no_form_submit($form, &$form_state) {
                 'article_id'  => $article_id,
                 'reviewer_id' => $account->uid,
                 'when_posted' => $now,
-                'comments'    => trim($comments.$comment_suffix),
+                'comments'    => $comments,
                 'loe_info'    => '',
             )
         )
@@ -5845,4 +5823,255 @@ function quick_no_form_submit($form, &$form_state) {
                 ->execute();
         }
     }
+}
+
+/**
+ * Assemble the manager packets table with bulk archive checkboxes.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $search_id    Primary key for ebms_search table
+ *  @return array                 Render array usable by FAPI
+ */
+function ebms_packet_bulk_archive($form, &$form_state, $search_id) {
+    $headers = array(
+        array(
+            'data' => 'Packet Name',
+            'field' => 'p.packet_title',
+        ),
+        array(
+            'data' => 'Board',
+            'field' => 'b.board_name',
+        ),
+        array(
+            'data' => 'Uploaded By',
+            'field' => 'u.name',
+        ),
+        array(
+            'data' => 'Created',
+            'class' => array('col-5'),
+            'field' => 'p.created_at',
+            'sort' => 'desc',
+        ),
+        array(
+            'data' => 'Actions',
+            'class' => array('col-4'),
+        ),
+    );
+
+    // See if the user has identified one or more boards.
+    $boards = EbmsReview::get_board_ids();
+
+    // Build the query to find the manager's packets.
+    $query = db_select('ebms_packet', 'p');
+    $pager = Ebms\Util::get_request_value('pager');
+    if ($pager != 'off')
+        $query = $query->extend('PagerDefault')->limit(10);
+    $query = $query->extend('TableSort');
+    $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+    $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
+    $query->join('users', 'u', 'u.uid = p.created_by');
+    if (Ebms\Util::get_request_value('reviewed')) {
+        $query->join('ebms_article_review', 'r',
+            'r.packet_id = p.packet_id');
+        $query->distinct();
+    }
+    $query->fields('p', array('packet_id', 'packet_title', 'created_at'));
+    $query->fields('b', array('board_name'));
+    $query->fields('u', array('name'));
+    if (count($boards) == 1)
+        $query->condition('b.board_id', reset($boards));
+    elseif (count($boards) > 1)
+        $query->condition('b.board_id', $boards, 'IN');
+    $query = EbmsReview::apply_manager_packet_filters($query, $search_id);
+    $query->orderByHeader($headers);
+    $rows = $query->execute();
+
+    // Assemble the packet rows.
+    $divider = '<span class="action-divider">|</span>';
+    $main_url = EbmsReview::$url;
+    $del_func = 'javascript:ebmsscript.delete_packet';
+    $opts = array('query' => drupal_get_query_parameters());
+    $packets = array();
+    foreach ($rows as $p) {
+        $edit_url = "$main_url/edit/{$p->packet_id}";
+        $edit_link = l('EDIT', $edit_url, $opts);
+        $del_parm = url("$main_url/delete/{$p->packet_id}", $opts);
+        $del_url = "$del_func('$del_parm');";
+        $del_link = '<a href="' . $del_url . '">ARCHIVE</a>';
+        $title = str_replace(' [Legacy]', '', $p->packet_title);
+        $title .= " [Packet #{$p->packet_id}]";
+        $title_link = l(htmlspecialchars($title), $edit_url, $opts);
+        $packets[$p->packet_id] = array(
+            $title_link,
+            htmlspecialchars($p->board_name),
+            htmlspecialchars($p->name),
+            date('m/d/Y', strtotime($p->created_at)),
+            "$edit_link $divider $del_link",
+        );
+    }
+
+    // Put it all together in a FAPI-ready render array.
+    $view = EbmsReview::manager_packets_view_toggle($opts);
+    $add = l('Add New', EbmsReview::$url . '/add', $opts);
+    $title = 'Literature Surveillance Packets';
+    $id = 'manager-packets-page-title';
+    return array(
+        'archive' => array(
+            '#type' => 'submit',
+            '#value' => 'ARCHIVE',
+            '#suffix' => '<span>Consider clicking VIEW ALL before ' .
+            'selecting documents to archive.',
+        ),
+        'title' => array(
+            '#type' => 'markup',
+            '#markup' => "<h2 id='$id'>$title $add $view</h2>",
+        ),
+        'packets' => array(
+            '#attributes' => array('id' => 'manager-packets-table'),
+            '#type' => 'tableselect',
+            '#options' => $packets,
+            '#header' => $headers,
+            '#empty' => t('No packets found.'),
+        ),
+        'delete-confirm' => array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => 'confirm-packet-delete',
+                'title' => 'Archive Packet?',
+            ),
+            'confirm-message' => array(
+                '#type' => 'markup',
+                '#markup' =>
+                '<p>Archiving this packet will remove it from the queues'
+                . ' of any reviewers who have not responded.</p>'
+            ),
+        ),
+    );
+}
+
+/**
+ * Make sure packets have been selected for archiving.
+ *
+ * This is only invoked if we have already detected that no packets
+ * have been selected to be archived. An odd way to do things, but
+ * we're following the lead of Drupal core.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $search_id    Primary key for ebms_search table
+ *  @return array                 Render array usable by FAPI
+ */
+function ebms_packet_bulk_archive_validate($form, &$form_state) {
+    $packets = array_diff($form_state['values']['packets'], [0]);
+    if (empty($packets))
+        form_set_error('', t('No packets selected for archiving.'));
+}
+
+/**
+ * This method will never be invoked, as far as I can tell.
+ */
+function ebms_packet_bulk_archive_submit($form, &$form_state) {
+    $debug_values = print_r($form_state['values'], true);
+    drupal_set_message("archive submit: $debug_values");
+}
+
+/**
+ * Give the user a chance to back away from a bulk archive request.
+ *
+ * We route directly to this form ourselves, based on an
+ * examination of the global $_POST values, following the
+ * lead of Drupal core.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @return array                 Render array usable by FAPI
+ */
+function ebms_packet_bulk_archive_confirm($form, &$form_state) {
+
+    // Show the user where she's been.
+    drupal_set_breadcrumb(
+        array(
+            l('Literature', EbmsReview::$url . '/reviews'),
+            l('View/Edit Packets', '/review/packets'),
+            'Bulk Packet Archive',
+        )
+    );
+
+    // Put our own title up (EBMS CSS suppresses display of the
+    // Drupal page title).
+    $title = t('Are your sure you want to archive these packets?');
+    $title_id = 'packet-bulk-archive-confirm-title';
+
+    // Assemble a form to remind the user what she's asked to archive.
+    $form = array(
+        'packets' => array(
+            '#prefix' => "<h1 id=\"$title_id\">$title</h1><ul>",
+            '#suffix' => '</ul>',
+            '#tree' => true,
+        ),
+    );
+    $main_url = EbmsReview::$url;
+    $opts = array('query' => drupal_get_query_parameters());
+    $count = 0;
+    $input = $form_state['input'];
+    foreach (array_filter($input['packets']) as $pid => $value) {
+        $query = db_select('ebms_packet', 'p');
+        $query->fields('p', array('packet_title'));
+        $query->condition('p.packet_id', $pid);
+        $title = htmlspecialchars($query->execute()->fetchField());
+        $title = str_replace(' [Legacy]', '', $title);
+        $url = "$main_url/edit/{$pid}";
+        $link = l("$title [Packet #$pid]", $url, $opts);
+        $form['packets'][$pid] = array(
+            '#type' => 'hidden',
+            '#value' => $pid,
+            '#prefix' => '<li>',
+            '#suffix' => "$link</li>",
+        );
+        ++$count;
+    }
+
+    // This could only happen in the very unlikely event that another
+    // user snuck in an archive in the very tiny window between clicking
+    // the Archive button and drawing this page.
+    if (!$count) {
+        drupal_set_message('No packets selected to be archived.');
+        drupal_goto('review/packets');
+    }
+
+    // Put up the confirmation form.
+    $question = 'Really archive packets?';
+    $form['operation'] = array('#type' => 'hidden', '#value' => 'archive');
+    $path = 'review/packets';
+    $description = '<span class="packet-bulk-archive-confirm-description">' .
+            t('Archiving these packets will remove them from the queues ' .
+            'of any reviewers who have not yet responded.') . '</span>';
+    $yes = t('Archive Packets');
+    $no = t('Cancel');
+    return confirm_form($form, $question, $path, $description, $yes, $no);
+}
+
+/**
+ * When the user clicks the $yes button from the confirm_form() call
+ * this submit handler should be invoked, according to the documentation
+ * (https://api.drupal.org/api/drupal/modules!system!system.module/function/confirm_form/7.x)
+ * but that isn't happening. So we're handling the requested bulk
+ * archive request in the needs_packet_bulk_archive_confirmation()
+ * method near the top of this file.
+ */
+function ebms_packet_bulk_archive_confirm_submit($form, &$form_state) {
+    drupal_set_message('confirm submit: ' .  print_r($form_state, true));
 }

@@ -133,7 +133,13 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
-        // CITATION MANAGEMENT
+        // USERS
+        'admin/users' => array(
+            'page callback' => 'pdq_ebms_users',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+
         'citations' => array(
             'page callback' => 'pdq_ebms_citations',
             'file' => 'citations.inc',
@@ -173,6 +179,15 @@ function ebms_menu() {
             'type' => MENU_CALLBACK,
         ),
 
+        // UPLOAD FULL TEXT PDF FOR SINGLE ARTICLE FROM FULL CITATION PAGE
+        'upload-full-text' => array(
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('pdq_ebms_full_text_upload_form', 1),
+            'file' => 'citations.inc',
+            'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+
         // SEARCH DATABASE
         'citations/search' => array(
             'page callback' => 'pdq_ebms_search',
@@ -185,7 +200,7 @@ function ebms_menu() {
         'pmid-search' => array(
             'page callback' => 'pdq_ebms_pmid_search',
             'file' => 'search.inc',
-            'access arguments' => array('manage citations'),
+            'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
 
@@ -247,6 +262,12 @@ function ebms_menu() {
             'page arguments' => array(1),
             'file' => 'citations.inc',
             'access arguments' => array('manage citations'),
+            'type' => MENU_CALLBACK,
+        ),
+        'citations/journals-print-friendly' => array(
+            'page callback' => '_print_friendly_not_list',
+            'file' => 'citations.inc',
+            'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
 
@@ -359,7 +380,7 @@ function ebms_menu() {
         // PRINTING PACKETS
         'print-packets' => array(
             'page callback' => 'pdq_ebms_print_packets',
-            'page_arguments' => array(2),
+            'page arguments' => array(2),
             'file' => 'print.inc',
             'access arguments' => array('administer'),
             'type' => MENU_CALLBACK,
@@ -368,7 +389,7 @@ function ebms_menu() {
         // DOWNLOAD MEETING DOCS
         'download-meeting-docs' => array(
             'page callback' => 'pdq_ebms_download_meeting_docs',
-            'page_arguments' => array(1),
+            'page arguments' => array(1),
             'file' => 'calendar.inc',
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
@@ -385,7 +406,7 @@ function ebms_menu() {
         // LINK FROM HOME-PAGE EVENT NOTIFICATION TO EVENT (OCEEBMS-296)
         'event' => array(
             'page callback' => 'pdq_ebms_event_link',
-            'page_arguments' => array(1),
+            'page arguments' => array(1),
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
@@ -394,7 +415,7 @@ function ebms_menu() {
         // OCEEBMS-296
         'packet' => array(
             'page callback' => 'pdq_ebms_packet_link',
-            'page_arguments' => array(1),
+            'page arguments' => array(1),
             'access callback' => 'user_is_logged_in',
             'type' => MENU_CALLBACK,
         ),
@@ -451,6 +472,58 @@ function ebms_menu() {
             'page callback' => 'pdq_ebms_subgroups',
             'access arguments' => array('administer'),
             'file' => 'subgroups.inc',
+        ),
+
+        // MANAGE EBMS INTERNAL TAGS
+        'admin/internal-tags' => array(
+            'title' => 'EBMS Internal Tags',
+            'page callback' => 'pdq_ebms_internal_tags',
+            'access arguments' => array('administer'),
+            'file' => 'internal.inc',
+        ),
+
+        // EDIT AN ARTICLE'S INTERNAL TAGS
+        'edit-internal-article-tags' => array(
+            'title' => 'Edit Internal Article Tags',
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('pdq_ebms_edit_internal_tags', 1),
+            'access arguments' => array('administer'),
+            'file' => 'citations.inc',
+        ),
+
+        // ADD OR EDIT AN INTERNAL COMMMENT FOR AN ARTICLE
+        'internal-article-comment' => array(
+            'title' => 'Internal Article Comment',
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('pdq_ebms_edit_internal_comment', 1, 2),
+            'access arguments' => array('administer'),
+            'file' => 'citations.inc',
+        ),
+
+        // DELETE AN INTERNAL COMMMENT FROM AN ARTICLE
+        'delete-internal-article-comment' => array(
+            'title' => 'Delete Internal Article Comment',
+            'page callback' => '_delete_internal_comment',
+            'page arguments' => array(1),
+            'access arguments' => array('administer'),
+            'file' => 'citations.inc',
+        ),
+
+        // IMPORT INTERNAL ARTICLES
+        'import-internal-articles' => array(
+            'title' => 'Import Internal Articles',
+            'page callback' => 'pdq_ebms_import_internal_articles',
+            'access arguments' => array('administer'),
+            'file' => 'internal.inc',
+        ),
+
+        // INTERNAL ARTICLE QUEUE
+        'internal-articles' => array(
+            'title' => 'Internal Articles',
+            'page callback' => 'drupal_get_form',
+            'page arguments' => array('pdq_ebms_internal_articles', 1),
+            'file' => 'internal.inc',
+            'access arguments' => array('manage citations'),
         ),
 
         // MANAGE EBMS BOARDS
@@ -2483,3 +2556,53 @@ function pdq_ebms_packet_link($packet_id=null) {
 }
 
 function pdq_ebms_tester_theme() { return 'apitest'; }
+
+function pdq_ebms_users() {
+    drupal_set_breadcrumb(
+        array(
+            l('Home', '/'),
+            l('Administration', 'admin'),
+        )
+    );
+    $opts = array('attributes' => array('target' => '_blank'));
+    $board_names = Ebms\Util::boards();
+    $uids = db_select('users', 'u')
+        ->condition('u.uid', 1, '>')
+        ->fields('u', array('uid'))
+        ->orderBy('u.name')
+        ->execute()
+        ->fetchCol();
+    $rows = array();
+    foreach ($uids as $uid) {
+        $user = user_load($uid);
+        $url = "user/$uid/edit";
+        $name = htmlspecialchars($user->name);
+        $opts['query'] = ['destination' => 'admin/users'];
+        $name = l($name, $url, $opts);
+        $created = date('Y-m-d', $user->created);
+        $access = $user->access ? date('Y-m-d', $user->access) : '';
+        $login = $user->login ? date('Y-m-d', $user->access) : '';
+        $status = $user->status ? 'Active' : 'Inactive';
+        $roles = array();
+        foreach ($user->roles as $role)
+            if ($role === 'icrdb manager')
+                $roles[] = 'ICRDB Manager';
+            elseif ($role !== 'authenticated user')
+                $roles[] = ucwords($role);
+        $roles = implode('<br>', $roles);
+        $boards = array();
+        foreach ($user->boards as $board_id)
+            $boards[] = $board_names[$board_id];
+        $boards = implode('<br>', $boards);
+        $rows[] = [$name, $status, $created, $login, $access, $roles, $boards];
+    }
+    return array(
+        'title' => array('#markup' => '<h2>EBMS Users</h2>'),
+        'table' => array(
+            '#theme' => 'table',
+            '#header' => ['Name', 'Status', 'Created', 'Last Login', 'Last Action',
+                          'Roles', 'Boards'],
+            '#rows' => $rows,
+        ),
+    );
+}
