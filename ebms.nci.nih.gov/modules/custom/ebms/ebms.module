@@ -380,7 +380,7 @@ function ebms_menu() {
         // PRINTING PACKETS
         'print-packets' => array(
             'page callback' => 'pdq_ebms_print_packets',
-            'page arguments' => array(2),
+            'page arguments' => array(1, 2),
             'file' => 'print.inc',
             'access arguments' => array('administer'),
             'type' => MENU_CALLBACK,
