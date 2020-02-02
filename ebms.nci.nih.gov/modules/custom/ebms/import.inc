@@ -25,7 +25,7 @@ require_once('EbmsImport.inc');
  * Callback registered for /citations/import pages.
  */
 function pdq_ebms_import($job_id=null) {
-    Ebms\Menu::$active = 'Citation Management';
+    Ebms\Menu::$active = 'Manage@@BR@@Citations';
     $control = new EbmsImport($job_id);
     return $control->run();
 }

@@ -78,7 +78,7 @@ class EbmsReview {
     public function run() {
         Ebms\Util::add_js();
         drupal_add_css(Ebms\CSS_DIR . '/review.css');
-        Ebms\Menu::$active = 'Literature';
+        Ebms\Menu::$active = 'Literature@@BR@@Packets';
 
         if (!$this->check_permissions())
             return MENU_ACCESS_DENIED;

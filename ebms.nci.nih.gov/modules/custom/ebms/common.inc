@@ -112,6 +112,14 @@ class Menu {
      * here, without recursion.
      */
     public function render_array() {
+        if (!Menu::$active)
+            Menu::$active = Menu::find_active_menu();
+        // else {
+        //     $a = Menu::$active;
+        //     $q = $_GET['q'];
+        //     $t = drupal_get_title();
+        //     drupal_set_message("[$a] [$q] [$t]");
+        // }
         $link = Menu::make_link($this->label, $this->path, $this->tip);
         $ra = array('data' => $link);
         if ($this->label == Menu::$active)
@@ -122,6 +130,43 @@ class Menu {
         if (!empty($children))
             $ra['children'] = $children;
         return $ra;
+    }
+
+    /**
+     * Figure out which menu to highlight.
+     */
+    static function find_active_menu() {
+        $t = drupal_get_title();
+        // drupal_set_message("\$q is [$q] and \$t is [$t]");
+        switch ($t) {
+        case 'Travel':
+        case 'Directions':
+        case 'Policies and Procedures':
+        case 'Hotel Request':
+        case 'Reimbursement Request':
+        case 'Hotel Requests Report':
+        case 'Reimbursement Requests':
+            return 'Travel';
+        case 'User Help':
+            return 'Admin';
+        }
+        $q = $_GET['q'];
+        if (strpos($q, 'home') === 0) return 'Home';
+        if (strpos($q, 'user-help') === 0) return 'Admin';
+        if (strpos($q, 'travel') === 0) return 'Travel';
+        if (strpos($q, 'node/1') === 0) return 'Travel';
+        if (strpos($q, 'node/2') === 0) return 'Travel';
+        if (strpos($q, 'node') === 0) return 'Calendar';
+        if (strpos($q, 'calendar') === 0) return 'Calendar';
+        if (strpos($q, 'summaries') === 0) return 'Manage@@BR@@Summaries';
+        if (strpos($q, 'reports') === 0) return 'Reports';
+        if (strpos($q, 'Admin') === 0) return 'Admin';
+        if (strpos($q, 'review') === 0) return 'Literature@@BR@@Packets';
+        if (strpos($q, 'citations/not-list') === 0) return 'Admin';
+        if (strpos($q, 'citations') === 0) return 'Manage@@BR@@Citations';
+        if (strpos($q, 'internal-articles') !== false)
+            return 'Manage@@BR@@Citations';
+        return 'Admin';
     }
 
     /**

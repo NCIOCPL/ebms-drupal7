@@ -27,7 +27,7 @@ class EbmsFullText {
         Ebms\Util::add_js();
         drupal_set_breadcrumb(array('Citation Management'));
         drupal_add_css(Ebms\CSS_DIR . '/fulltext.css');
-        Ebms\Menu::$active = 'Citation Management';
+        Ebms\Menu::$active = 'Manage@@BR@@Citations';
         return drupal_get_form('pdq_ebms_fulltext_form', $request_id);
     }
 

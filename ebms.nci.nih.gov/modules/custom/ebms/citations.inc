@@ -81,7 +81,7 @@ namespace {
         global $user;
         $is_librarian = in_array('medical librarian', $user->roles);
 
-        Ebms\Menu::$active = 'Citation Management';
+        Ebms\Menu::$active = 'Manage@@BR@@Citations';
         drupal_set_title('Citation Management');
         $crumbs = array(
             $action ? l('Citation Management', 'citations')
@@ -109,11 +109,12 @@ namespace {
                 break;
 
             case 'not-list':
-                $crumbs[] = "Journal Maintenance";
+                $crumbs = ['Admin', 'Journal Maintenance'];
                 $form = drupal_get_form('pdq_ebms_citation_not_list');
                 $result['left_nav'] =
                     \Ebms\Util::build_left_nav('Journal Maintenance');
                 $result['not_list_form'] = $form;
+                Ebms\Menu::$active = 'Admin';
                 break;
 
             case null:
