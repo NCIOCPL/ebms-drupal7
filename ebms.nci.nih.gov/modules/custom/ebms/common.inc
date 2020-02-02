@@ -67,7 +67,7 @@ define ('Ebms\NOTE_ICON', IMAGES_DIR . '/note.ico');
 
 define('Ebms\DOC_TYPES', 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg');
 
-define('Ebms\PUBMED_URL', 'https://www.ncbi.nlm.nih.gov/pubmed');
+define('Ebms\PUBMED_URL', 'https://pubmed.ncbi.nlm.nih.gov');
 
 /**
  * As a result of bugs in the Superfish menu module, poor documentation
