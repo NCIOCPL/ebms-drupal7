@@ -462,7 +462,7 @@ class EbmsReports {
                         ),
                         */
                         array(
-                            'Board Member Activity Report',
+                            'Board Member Login Report',
                             'reports/board-members-last-login',
                         ),
                         array(
