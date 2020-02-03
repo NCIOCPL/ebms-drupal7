@@ -87,6 +87,41 @@ class EbmsReports {
         print $html;
     }
 
+    /**
+     * Version of the "board and topic lists" report tailored for print
+     * (OCEEBMS-533).
+     */
+    private function btl_print() {
+        $table = _pdq_ebms_board_topic_table($this->request_id, true);
+        $title = 'Board and Topic Lists';
+        $table = array(
+            'title' => array('#markup' => "<h1 id=\"btl-h1\">$title</h1>"),
+            'table' => array(
+                '#prefix' => '<div id="btl">',
+                '#suffix' => '</div>',
+                '#theme' => 'table',
+                '#rows' => $table->rows,
+                '#header' => $table->headers,
+            ),
+        );
+        $css = Ebms\CSS_DIR . '/stripped-report.css';
+        $page = array(
+            'language' => 'en',
+            'head' => '<meta charset="utf-8">',
+            'title' => $title,
+            'scripts' => '',
+            'favicon' => '',
+            'css' => "<link rel=\"stylesheet\" href=\"/$css\">",
+            'message' => array(),
+            'footer_scripts' => '',
+            'body' => drupal_render($table),
+        );
+        $html = theme('stripped', array('page' => $page));
+        drupal_add_http_header('Content-Type', 'text/html; charset=utf-8');
+        drupal_send_headers();
+        print $html;
+    }
+
     /*
      * Routes the report request to the appropriate form.  Also handles
      * routing of URLs which are intended for a higher-level Reports
@@ -109,6 +144,8 @@ class EbmsReports {
                                        $this->request_id);
             case 'awr-member':
                 return $this->awr_member();
+            case 'btl-print':
+                return $this->btl_print();
             case 'board-members-last-login':
                 return pdq_ebms_board_members_last_login();
             case 'meeting-dates':
@@ -7441,83 +7478,122 @@ function pdq_ebms_board_topic_list($form, &$form_state, $request_id=0) {
 
     // If we have a submitted report request, add the report under the form.
     if ($request_id) {
-        $rows = array();
-        $values = EbmsReports::fetch_report_request($request_id);
-        $query = db_select('users', 'u');
-        $query->join('ebms_topic_reviewer', 'r', 'r.user_id = u.uid');
-        $query->join('ebms_topic', 't', 't.topic_id = r.topic_id');
-        $query->condition('t.board_id', $board);
-        $query->condition('u.status', 1);
-        $query->fields('t', array('topic_id', 'topic_name'));
-        $query->fields('u', array('name'));
-        if (!empty($selected_topics))
-            $query->condition('t.topic_id', $selected_topics, 'IN');
-        if (!empty($selected_members))
-            $query->condition('u.uid', $selected_members, 'IN');
-
-        // Use table structure for 'group by topic' option.
-        if ($group_by === 'topic') {
-            $headers = array('Topic', 'Board Members', 'Manage Summary Topic');
-            $query->orderBy('t.topic_name');
-            $query->orderBy('u.name');
-            $results = $query->execute();
-            $topic_members = array();
-            foreach ($results as $result) {
-                if (!array_key_exists($result->topic_id, $topic_members))
-                    $topic_members[$result->topic_id] = array(
-                        'name' => htmlspecialchars($result->topic_name),
-                        'members' => array(),
-                    );
-                $name = htmlspecialchars($result->name);
-                $topic_members[$result->topic_id]['members'][] = $name;
-            }
-            foreach ($topic_members as $topic_id => $topic_info) {
-                $row = array(
-                    htmlspecialchars($topic_info['name']),
-                    implode('<br>', $topic_info['members']),
-                    l('EDIT TOPIC', 'admin/topics/edit/' . $topic_id),
-                );
-                $rows[] = array(
-                    'data' => $row,
-                    'no_striping' => true,
-                );
-            }
-        }
-
-        // Use table structure for 'group by member' option.
-        else {
-            $headers = array('Board Member', 'Topics', 'Manage Summary Topic');
-            $query->orderBy('u.name');
-            $query->orderBy('t.topic_name');
-            $results = $query->execute();
-            $current = '';
-            foreach ($results as $result) {
-                if ($current !== $result->name)
-                    $name = $current = $result->name;
-                else
-                    $name = '';
-                $row = array(
-                    htmlspecialchars($name),
-                    htmlspecialchars($result->topic_name),
-                    l('EDIT TOPIC', 'admin/topics/edit/' . $result->topic_id),
-                );
-                $rows[] = array(
-                    'data' => $row,
-                    'no_striping' => true,
-                );
-            }
-        }
+        $table = _pdq_ebms_board_topic_table($request_id);
+        $style = 'position: relative; clear: both;';
+        $opts = array(
+            'attributes' => array(
+                'target' => '_blank',
+                'class' => 'button print-version',
+                'style' => 'position: relative; top: -15px; float: right',
+            ),
+        );
+        $link = l('Print Version', "reports/btl-print/$request_id", $opts);
         $page['report'] = array(
-            'title' => array('#markup' => "<h2>$report_title</h2>"),
+            'title' => array('#markup' =>
+                "<h2 style=\"$style\">$report_title $link</h2>"),
             'table' => array(
                 '#attributes' => array('id' => 'board-topic-list-report'),
                 '#theme' => 'table',
-                '#rows' => $rows,
-                '#header' => $headers,
+                '#rows' => $table->rows,
+                '#header' => $table->headers,
             ),
         );
     }
     return $page;
+}
+
+/**
+ * Assemble rows and headers for the board/topic report.
+ *
+ * Pass:
+ *    $request_id - primary key into the table with report parameters
+ *    $print_version - if true, only include the first two columns
+ *
+ * Return:
+ *    object with rows and headers properties
+ */
+function _pdq_ebms_board_topic_table($request_id, $print_version=false) {
+
+    // Extract the query parameters from the table.
+    $values = EbmsReports::fetch_report_request($request_id);
+    $board = $values['board'];
+    $selected_topics = $values['topics'];
+    $selected_members = $values['members'];
+    $group_by = $values['group-by'];
+
+    // Build the query used by both flavors of the report.
+    $query = db_select('users', 'u');
+    $query->join('ebms_topic_reviewer', 'r', 'r.user_id = u.uid');
+    $query->join('ebms_topic', 't', 't.topic_id = r.topic_id');
+    $query->condition('t.board_id', $board);
+    $query->condition('u.status', 1);
+    $query->fields('t', array('topic_id', 'topic_name'));
+    $query->fields('u', array('name'));
+    if (!empty($selected_topics))
+        $query->condition('t.topic_id', $selected_topics, 'IN');
+    if (!empty($selected_members))
+        $query->condition('u.uid', $selected_members, 'IN');
+
+    // Use table structure for 'group by topic' option.
+    $label = 'EDIT TOPIC';
+    $table = new stdClass();
+    $table->rows = array();
+    if ($group_by === 'topic') {
+        $table->headers = array('Topic', 'Board Members');
+        $query->orderBy('t.topic_name');
+        $query->orderBy('u.name');
+        $results = $query->execute();
+        $topic_members = array();
+        foreach ($results as $result) {
+            if (!array_key_exists($result->topic_id, $topic_members))
+                $topic_members[$result->topic_id] = array(
+                    'name' => htmlspecialchars($result->topic_name),
+                    'members' => array(),
+                );
+            $name = htmlspecialchars($result->name);
+            $topic_members[$result->topic_id]['members'][] = $name;
+        }
+        foreach ($topic_members as $topic_id => $topic_info) {
+            $row = array(
+                htmlspecialchars($topic_info['name']),
+                implode('<br>', $topic_info['members']),
+            );
+            if (!$print_version)
+                $row[] = l($label, 'admin/topics/edit/' . $topic_id);
+            $table->rows[] = array(
+                'data' => $row,
+                'no_striping' => true,
+            );
+        }
+    }
+
+    // Use table structure for 'group by member' option.
+    else {
+        $table->headers = array('Board Member', 'Topics');
+        $query->orderBy('u.name');
+        $query->orderBy('t.topic_name');
+        $results = $query->execute();
+        $current = '';
+        foreach ($results as $result) {
+            if ($current !== $result->name)
+                $name = $current = $result->name;
+            else
+                $name = '';
+            $row = array(
+                htmlspecialchars($name),
+                htmlspecialchars($result->topic_name),
+            );
+            if (!$print_version)
+                $row[] = l($label, 'admin/topics/edit/' . $result->topic_id);
+            $table->rows[] = array(
+                'data' => $row,
+                'no_striping' => true,
+            );
+        }
+    }
+    if (!$print_version)
+        $table->headers[] = 'Manage Summary Topic';
+    return $table;
 }
 
 /**
