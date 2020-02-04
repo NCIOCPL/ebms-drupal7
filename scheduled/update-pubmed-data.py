@@ -196,7 +196,7 @@ def update_mod_dates(host, articles, latest_mod, stop_date=None):
                 offset += BATCH_SIZE
                 params = dict(date=date, source="Pubmed", ids=subset)
                 logging.debug("calling url with params %s", params)
-                response = requests.get(url, params=params)
+                response = requests.post(url, data=params)
                 if response.status_code != 200:
                     msg = FAILURE.format(date, response.status_code)
                     logging.error(msg)
