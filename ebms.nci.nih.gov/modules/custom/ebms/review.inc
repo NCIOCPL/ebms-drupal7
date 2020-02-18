@@ -400,40 +400,31 @@ class EbmsReview {
             }
 
             // Archived and legacy system packets. These are interrelated
-            $active     = $filters['pkt_scope']['Active'] ? True : False;
-            $archived   = $filters['pkt_scope']['Archived'] ? True : False;
-            $legacy     = $filters['pkt_scope']['Legacy'] ? True : False;
-            $unreviewed = $filters['pkt_scope']['Unreviewed'] ? True : False;
+            $active     = $filters['pkt_scope_active']['Active'] ? True : False;
+            $archived   = $filters['pkt_scope_active']['Archived'] ? True : False;
+            $reviewed   = $filters['pkt_scope_reviewed']['Reviewed'] ? True : False;
+            $unreviewed = $filters['pkt_scope_reviewed']['Unreviewed'] ? True : False;
 
-            // If users turn off all the checkboxes, default to active
-            if (!($active || $archived || $legacy))
-                $active = True;
-
-            // Fetch active or archived documents only?
-            if (!($archived || $legacy))
-                $query->condition('p.active_status', 'A');
-            else if (!$active)
-                $query->condition('p.active_status', 'I');
-
-            // If archived but not legacy requested, exclude legacy
-            if ($archived && !$legacy)
-                $query->condition('p.created_at', Ebms\CONVERSION_DATE, ">=");
-
-            // If only legacy requested, drop packets created since conversion.
-            if ($legacy && !$archived && !$active)
-                $query->condition('p.created_at', Ebms\CONVERSION_DATE, "<");
-
-            // Handle this bizarre combination correctly.
-            if ($active && $legacy && !$archived)
-                $query->condition(db_or()
-                    ->condition('p.active_status', 'A')
-                    ->condition('p.created_at', Ebms\CONVERSION_DATE, '<'));
-
-            // Unreviewed packets only? (OCEEBMS-470)
-            if ($unreviewed) {
-                $query->leftJoin('ebms_article_review', 'ear',
-                    'ear.packet_id = p.packet_id');
-                $query->isNull('ear.packet_id');
+            // Apply the checkboxes.
+            if (!($active && $archived)) {
+                if ($active)
+                    $query->condition('p.active_status', 'A');
+                elseif ($archived)
+                    $query->condition('p.active_status', 'I');
+                else
+                    $query->condition('p.packet_id', 0);
+            }
+            if (!($reviewed && $unreviewed)) {
+                if ($unreviewed) {
+                    $query->leftJoin('ebms_article_review', 'ear',
+                                     'ear.packet_id = p.packet_id');
+                    $query->isNull('ear.packet_id');
+                }
+                elseif ($reviewed)
+                    $query->join('ebms_article_review', 'ear',
+                                 'ear.packet_id = p.packet_id');
+                else
+                    $query->condition('p.packet_id', 0);
             }
         }
 
@@ -498,17 +489,16 @@ class EbmsReview {
         }
 
         // Scope checkboxes
-        $default_scope = array();
-        foreach ($filters['pkt_scope'] as $key => $val) {
-            if ($key === $val) {
-                array_push($default_scope, $val);
+        $scopes = ['pkt_scope_active', 'pkt_scope_reviewed'];
+        foreach ($scopes as $scope) {
+            $default_scope = array();
+            foreach ($filters[$scope] as $key => $val) {
+                if ($key === $val) {
+                    array_push($default_scope, $val);
+                }
             }
+            $form[$scope]['#default_value']= $default_scope;
         }
-        if (count($default_scope) > 0)
-            $form['pkt_scope']['#default_value'] = $default_scope;
-        else
-            // Ensure that active is checked if nothing else is
-            $form['pkt_scope']['#default_value'] = array('Active');
 
         return $form;
     }
@@ -5169,12 +5159,20 @@ function pdq_ebms_manager_packets_filter_form (
     $date_fields = Ebms\Util::date_range_field('Packet Creation Date:', 'date',
                                                '', '', ':+0', false);
     $form['date-limits'] = $date_fields;
-    $scope_opts = array('Active', 'Archived', 'Legacy', 'Unreviewed');
-    $form['pkt_scope'] = array(
+    $form['pkt_scope_active'] = array(
         '#type' => 'checkboxes',
-        '#options' => drupal_map_assoc($scope_opts),
-        '#default_value' => array('Active', 'Unreviewed'),
-        '#title' => 'Include packets that are:',
+        '#options' => drupal_map_assoc(array('Active', 'Archived')),
+        '#default_value' => array('Active'),
+        '#title' => 'Packet Statuses To Include:',
+    );
+    $form['pkt_scope_reviewed'] = array(
+        '#type' => 'checkboxes',
+        '#options' => array(
+            'Reviewed' => 'Have at least one review of any article in the packet',
+            'Unreviewed' => 'Have no reviews yet for any article in the packet',
+        ),
+        '#default_value' => array('Reviewed', 'Unreviewed'),
+        '#title' => 'Include packets that:',
     );
     $form['submit'] = array(
         '#type' => 'submit',
