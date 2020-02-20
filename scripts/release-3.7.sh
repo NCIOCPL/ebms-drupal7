@@ -48,7 +48,7 @@ echo Putting site into maintenance mode
 cd $SITEDIR
 drush vset maintenance_mode 1
 
-echo Applying database changes
+echo Adding travel admin role/permissions
 cd $SITEDIR
 query="SELECT COUNT(*) FROM role WHERE name = 'travel admin'"
 count=`drush sqlq --extra=--skip-column-names "$query"`
@@ -59,6 +59,9 @@ then
 else
     echo Role for travel admin already added
 fi
+drush rap 'travel admin' 'access all webform results'
+drush rap 'travel admin' 'manage travel'
+drush rap 'travel admin' 'view all events'
 
 echo Deleting the current software
 cd $SITEDIR

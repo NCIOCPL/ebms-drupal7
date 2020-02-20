@@ -27,56 +27,61 @@ module_load_include('inc', 'ebms', 'includes/ebms.nodes');
  */
 function ebms_permission() {
     return array(
-            /* Administer EBMS vs Administer:
-              The Administer permission below should be changed to be something
-              other than "administer" since that permission is not really
-              an admin type permission.  'administer ebms' will be used for managing
-              board membership, subgroup membership, and adhoc membership.  Also
-              this permission will grant access to all EBMS content.
-              --BryanP 12/16/2012
-             *
-             */
-            'administer ebms' => array(
-                    'title' => t('Administer EBMS'),
-                    'description' => t('Manage EBMS Membership and Users.  Note: Also enables access to all EBMS content.')
-            ),
-            'administer' => array(
-                    'title' => t('Perform Administrative Tasks'),
-                    'description' =>
-                    t('Post documents, manage groups, send messages, etc.'),
-            ),
-            'manage citations' => array(
-                    'title' => t('Manage Citations'),
-                    'description' =>
-                    t('Import and screen journal articles, and set their statuses'),
-            ),
-            'manage boards' => array(
-                    'title' => t('Manage Boards'),
-                    'description' =>
-                    t('Make final determination of status for journal articles, ' .
-                        'and assign literature for review'),
-            ),
-            'review literature' => array(
-                    'title' => t('Review Literature'),
-                    'description' =>
-                    t('Review journal articles on cancer and make recommendations ' .
-                        'for incorporation information from those articles into ' .
-                        'PDQ\xc2\xae Cancer Summaries'),
-            ),
-            'view all events' => array(
-                    'title' => t('View All Events'),
-                    'description' =>
-                    t('Determines if the user can access all events views in the ' .
-                        'calendar. Note: This will also show all board events in ' .
-                        "the user's filtered view. ")
-            ),
-            'record print responses' => array(
-                    'title' => t('Record Print Responses'),
-                    'description' =>
-                    t('Determines if the user can input print responses on ' .
-                        'behalf of board members.')
-            ),
-
+        /*
+         * Administer EBMS vs Administer:
+         * The Administer permission below should be changed to be something
+         * other than "administer" since that permission is not really
+         * an admin type permission. 'administer ebms' will be used for
+         * managing board membership, subgroup membership, and adhoc
+         * membership. Also this permission will grant access to all EBMS
+         * content.
+         * --BryanP 12/16/2012
+         */
+        'administer ebms' => array(
+            'title' => t('Administer EBMS'),
+            'description' => t('Manage EBMS Membership and Users. Note: ' .
+                               'Also enables access to all EBMS content.'),
+        ),
+        'administer' => array(
+            'title' => t('Perform Administrative Tasks'),
+            'description' =>
+            t('Post documents, manage groups, send messages, etc.'),
+        ),
+        'manage citations' => array(
+            'title' => t('Manage Citations'),
+            'description' =>
+            t('Import and screen journal articles, and set their statuses'),
+        ),
+        'manage boards' => array(
+            'title' => t('Manage Boards'),
+            'description' =>
+            t('Make final determination of status for journal articles, ' .
+              'and assign literature for review'),
+        ),
+        'review literature' => array(
+            'title' => t('Review Literature'),
+            'description' =>
+            t('Review journal articles on cancer and make recommendations ' .
+              'for incorporation information from those articles into ' .
+              'PDQ\xc2\xae Cancer Summaries'),
+        ),
+        'view all events' => array(
+            'title' => t('View All Events'),
+            'description' =>
+            t('Determines if the user can access all events views in the ' .
+              'calendar. Note: This will also show all board events in ' .
+              "the user's filtered view. "),
+        ),
+        'record print responses' => array(
+            'title' => t('Record Print Responses'),
+            'description' =>
+            t('Determines if the user can input print responses on ' .
+              'behalf of board members.'),
+        ),
+        'manage travel' => array(
+            'title' => t('Manage Travel'),
+            'description' => t('Handle hotel/reimbursement requests.'),
+        ),
     );
 }
 
@@ -373,7 +378,7 @@ function ebms_menu() {
         'reports' => array(
             'page callback' => 'pdq_ebms_reports',
             'file' => 'reports.inc',
-            'access arguments' => array('administer'),
+            'access callback' => 'pdq_ebms_can_use_reports',
             'type' => MENU_CALLBACK,
         ),
 
@@ -662,6 +667,13 @@ function ebms_menu() {
             'access callback' => true,
         ),
     );
+}
+
+/**
+ * Return true iff user has permission for the reports menu.
+ */
+function pdq_ebms_can_use_reports() {
+    return user_access('administer') || user_access('manage travel');
 }
 
 /**

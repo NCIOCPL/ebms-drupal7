@@ -16,6 +16,9 @@
  * now handled earlier, in ebms_init().
  */
 function pdq_ebms_home() {
+    global $user;
+    if (in_array('travel admin', $user->roles))
+        drupal_goto('travel');
     $page = new EbmsHomePage();
     return $page->build();
 }

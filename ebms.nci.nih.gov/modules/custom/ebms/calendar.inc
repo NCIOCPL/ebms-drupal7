@@ -144,14 +144,16 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
         $output[] = $filtering->box('Calendar Actions', $actions);
     }
 
+    global $user;
     if (user_access('view all events')) {
-        global $user;
-        $s = count($user->boards) > 1 ? 's' : '';
-        $options = array(
-            $filtering->option('boards', 'mine', "My Board$s"),
-            $filtering->option('boards', 'all'),
-        );
-        $output[] = $filtering->box('Board Filtering', $options);
+        if (!in_array('travel admin', $user->roles)) {
+            $s = count($user->boards) > 1 ? 's' : '';
+            $options = array(
+                $filtering->option('boards', 'mine', "My Board$s"),
+                $filtering->option('boards', 'all'),
+            );
+            $output[] = $filtering->box('Board Filtering', $options);
+        }
         $options = array(
             $filtering->option('meetings', 'board'),
             $filtering->option('meetings', 'all'),
@@ -160,10 +162,12 @@ function ebms_calendar_left_nav($span = null, $args = array()) {
     }
 
     // retrieve upcoming events view
-    $view = views_get_view('event_calendar');
-    if ($view) {
-        $display = $view->preview('block_upcoming');
-        $output[] = $display;
+    if (!in_array('travel admin', $user->roles)) {
+        $view = views_get_view('event_calendar');
+        if ($view) {
+            $display = $view->preview('block_upcoming');
+            $output[] = $display;
+        }
     }
 
     return implode('', $output);
@@ -186,6 +190,8 @@ function _calendar_query_alter(&$view, &$query) {
         $field = "$alias.field_event_category_value";
         $query->add_where('category', $field, 'board');
     }
+    if (in_array('travel admin', $user->roles))
+        return;
     if (user_access('administer ebms') || user_access('view all events')) {
         if ($filtering->boards == 'all')
             return;

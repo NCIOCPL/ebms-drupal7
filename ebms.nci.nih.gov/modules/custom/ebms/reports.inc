@@ -6,6 +6,9 @@
  * Implementation of EBMS page for running system reports.
  */
 function pdq_ebms_reports($report=null, $request_id=0) {
+    global $user;
+    if (empty($report) && in_array('travel admin', $user->roles))
+        drupal_goto(Ebms\Util::webform_report_url('Hotel'));
     //register_shutdown_function('pdq_ebms_shutdown');
     $control = new EbmsReports($report, $request_id);
     return $control->run();
@@ -527,25 +530,10 @@ class EbmsReports {
     static function get_nav_links() {
 
         // Get the URLs for webform-based reports.
-        $hotel_report_node = db_select('node', 'n')
-            ->fields('n', array('nid'))
-            ->condition('n.type', 'webform')
-            ->condition('n.title', 'Hotel Request')
-            ->execute()
-            ->fetchField();
-        $reimbursement_report_node = db_select('node', 'n')
-            ->fields('n', array('nid'))
-            ->condition('n.type', 'webform')
-            ->condition('n.title', 'Reimbursement Request')
-            ->execute()
-            ->fetchField();
-        $hotel_report_url = $reimbursement_report_url = 'stub';
-        if ($hotel_report_node)
-            $hotel_report_url =
-                "node/$hotel_report_node/webform-results/table";
-        if ($reimbursement_report_node)
-            $reimbursement_report_url =
-                "node/$reimbursement_report_node/webform-results/table";
+        $hotel_report_url = Ebms\Util::webform_report_url('Hotel');
+        $reimbursement_report_url =
+            Ebms\Util::webform_report_url('Reimbursement');
+
         global $user;
         if (in_array('medical librarian', $user->roles))
             $role = 'librarian';
@@ -642,35 +630,62 @@ class EbmsReports {
      */
     public static function build_left_nav($open=null, $active=null) {
 
-        $links = EbmsReports::get_nav_links();
         $items = array();
-        foreach ($links as $parent) {
-            list($label, $url, $children) = $parent;
-            $link = l($label, $url);
-            $class = array(
-                'parent',
-                $label == $active ? 'active' : 'inactive',
+        global $user;
+        if (in_array('travel admin', $user->roles)) {
+            $hotel = Ebms\Util::webform_report_url('Hotel');
+            $reimb = Ebms\Util::webform_report_url('Reimbursement');
+            $links = array(
+                array('Hotel Requests', $hotel),
+                array('Reimbursement Requests', $reimb),
+                array('Board Membership', 'reports/membership'),
             );
-            if ($open == $label)
-                $class[] = 'open';
-            $items[] = array(
-                'data' => $link,
-                'class' => $class,
-            );
-            if ($open == $label) {
-                foreach ($children as $child) {
-                    list($label, $url) = $child;
-                    $link = l($label, $url);
-                    $items[] = array(
-                        'data' => $link,
-                        'class' => array(
-                            'child',
-                            $label == $active ? 'active' : 'inactive',
-                        ),
-                    );
+            foreach ($links as $link) {
+                list($label, $url) = $link;
+                $link = l($label, $url);
+                $class = array(
+                    'parent',
+                    $label === $active ? 'active' : 'inactive',
+                );
+                $items[] = array(
+                    'data' => $link,
+                    'class' => $class,
+                );
+            }
+        }
+
+        else {
+
+            $links = EbmsReports::get_nav_links();
+            foreach ($links as $parent) {
+                list($label, $url, $children) = $parent;
+                $link = l($label, $url);
+                $class = array(
+                    'parent',
+                    $label == $active ? 'active' : 'inactive',
+                );
+                if ($open == $label)
+                    $class[] = 'open';
+                $items[] = array(
+                    'data' => $link,
+                    'class' => $class,
+                );
+                if ($open == $label) {
+                    foreach ($children as $child) {
+                        list($label, $url) = $child;
+                        $link = l($label, $url);
+                        $items[] = array(
+                            'data' => $link,
+                            'class' => array(
+                                'child',
+                                $label == $active ? 'active' : 'inactive',
+                            ),
+                        );
+                    }
                 }
             }
         }
+
         return array(
             '#type' => 'container',
             '#attributes' => array(

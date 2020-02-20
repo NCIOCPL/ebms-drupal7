@@ -223,38 +223,47 @@ class Menu {
             $role = 'member';
         elseif (in_array('admin assistant', $user->roles))
             $role = 'admin assistant'; // XXX maybe later 'assistant';
+        elseif (in_array('travel admin', $user->roles))
+            $role = 'travel admin';
         else
             $role = 'board manager';
         switch ($role) {
-            case 'board manager':
-            case 'icrdb manager':
-            case 'admin assistant':
-                self::$menus = array(
-                    Menu::admin($role),
-                    Menu::citations($role),
-                    Menu::reports($role),
-                    Menu::literature($role),
-                    Menu::summaries($role),
-                    Menu::travel($role),
-                    Menu::calendar($role),
-                );
-                break;
-            case 'librarian':
-                self::$menus = array(
-                    Menu::admin($role),
-                    Menu::citations($role),
-                    Menu::reports($role),
-                    Menu::calendar($role),
-                );
-                break;
-            case 'member':
-                self::$menus = array(
-                    Menu::search(),
-                    Menu::literature($role),
-                    Menu::summaries($role),
-                    Menu::travel($role),
-                    Menu::calendar($role),
-                );
+        case 'travel admin':
+            self::$menus = array(
+                Menu::travel($role),
+                Menu::reports($role),
+                Menu::calendar($role),
+            );
+            break;
+        case 'board manager':
+        case 'icrdb manager':
+        case 'admin assistant':
+            self::$menus = array(
+                Menu::admin($role),
+                Menu::citations($role),
+                Menu::reports($role),
+                Menu::literature($role),
+                Menu::summaries($role),
+                Menu::travel($role),
+                Menu::calendar($role),
+            );
+        break;
+        case 'librarian':
+            self::$menus = array(
+                Menu::admin($role),
+                Menu::citations($role),
+                Menu::reports($role),
+                Menu::calendar($role),
+            );
+            break;
+        case 'member':
+            self::$menus = array(
+                Menu::search(),
+                Menu::literature($role),
+                Menu::summaries($role),
+                Menu::travel($role),
+                Menu::calendar($role),
+            );
         }
     }
 
@@ -334,6 +343,16 @@ class Menu {
      * Build the EBMS menu information for reports.
      */
     public static function reports($role) {
+        if ($role === 'travel admin')
+            return new Menu(
+                'Reports', 'reports', array(
+                    new Menu('Hotel Requests',
+                             Util::webform_report_url('Hotel')),
+                    new Menu('Reimbursement Requests',
+                             Util::webform_report_url('Reimbursement')),
+                    new Menu('Board Membership', 'reports/membership'),
+                )
+            );
         return new Menu(
             'Reports', 'reports', array(
                 new Menu('Board Management', 'reports/board'),
@@ -2549,6 +2568,25 @@ class Util {
         $query->orderBy('t.tag_dt');
         $query->fields('n', array('tag_name'));
         return $query->execute()->fetchCol();
+    }
+
+    /**
+     * Find a webform node ID and use it to build the report URL.
+     *
+     *   @param string $subject  front portion of the form's title
+     *
+     *   @return string          url for the form's report
+     */
+    public static function webform_report_url($subject) {
+        $node = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->condition('n.type', 'webform')
+            ->condition('n.title', "$subject Request")
+            ->execute()
+            ->fetchField();
+        if (!empty($node))
+            return "node/$node/webform-results/table";
+        return 'stub';
     }
 }
 
