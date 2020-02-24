@@ -80,6 +80,10 @@ echo Refreshing settings for text editing filters
 drush en -y ebms_config
 drush fr -y ebms_config
 
+echo Applying security updates
+drush up -y webform-7.x-4.22
+drush up -y drupal-7.69
+
 echo Clearing caches twice, once is not always sufficient
 drush cc all
 drush cc all
