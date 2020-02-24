@@ -285,7 +285,7 @@ class Menu {
         if ($role != 'librarian') {
             $children[] = new Menu('Manage Groups', 'groups');
             $children[] = new Menu('Find Users', 'admin/users');
-            $children[] = new Menu('EBMS Profiles', 'profile/all');
+            $children[] = new Menu('User Profiles', 'profile/all');
             $children[] = new Menu('Print Packets', 'print-packets/run');
             $children[] = new Menu('View Packet Printing Jobs',
                           'print-packets/view');
