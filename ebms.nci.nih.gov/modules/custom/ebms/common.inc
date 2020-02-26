@@ -2589,6 +2589,64 @@ class Util {
             return "node/$node/webform-results/table";
         return 'stub';
     }
+
+    /**
+     * Find post-review status for an article (to be displayed
+     * on the reviewed packet page). OCEEBMS-405
+     */
+    public static function get_latest_status($article_id, $topic_id, $fr_seq) {
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_article_state_type', 't',
+                     't.state_id = s.state_id');
+        $query->fields('s', array('article_state_id'));
+        $query->fields('t', array('state_text_id', 'state_name'));
+        $query->condition('s.article_id', $article_id);
+        $query->condition('s.topic_id', $topic_id);
+        $query->condition('s.current', 'Y');
+        $query->condition('t.sequence', $fr_seq, '>');
+        $results = $query->execute();
+        foreach ($results as $result) {
+            switch ($result->state_text_id) {
+                case 'FinalBoardDecision':
+                    $query = db_select('ebms_article_board_decision', 'd');
+                    $query->join('ebms_article_board_decision_value', 'v',
+                        'v.value_id = d.decision_value_id');
+                    $query->condition('d.article_state_id',
+                        $result->article_state_id);
+                    $query->fields('v', array('value_name'));
+                    $query->orderBy('v.value_name');
+                    $decisions = implode('; ', $query->execute()->fetchCol());
+                    if (!$decisions === '')
+                        $decisions = 'NO DECISION RECORDED';
+                    $decisions = htmlspecialchars($decisions);
+                    return "Editorial Board Decision: $decisions";
+                case 'OnAgenda':
+                    $query = db_select('node', 'n');
+                    $query->join('ebms_agenda_meeting', 'm', 'm.nid = n.nid');
+                    $query->join('field_data_field_datespan', 'd',
+                        'd.entity_id = n.nid');
+                    $query->condition('m.article_state_id',
+                        $result->article_state_id);
+                    $query->fields('n', array('title'));
+                    $query->fields('d', array('field_datespan_value'));
+                    $rows = $query->execute();
+                    $meetings = array();
+                    foreach ($rows as $row) {
+                        $title = $row->title;
+                        $date = date('Y-m-d', $row->field_datespan_value);
+                        $meetings[] = "$title - $date";
+                    }
+                    $meetings = htmlspecialchars(implode('; ', $meetings));
+                    if (!$meetings === '')
+                        $meetings = 'NO MEETINGS RECORDED';
+                    return "On Agenda: $meetings";
+                default:
+                    $action = htmlspecialchars($result->state_name);
+                    return "Board Manager Action: $action";
+            }
+        }
+        return '';
+    }
 }
 
 class EbmsPager extends \PagerDefault {

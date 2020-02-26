@@ -101,6 +101,8 @@ class EbmsReports {
         'Literature Reviews' => 'Used to find citations that have been ' .
         'included in a literature packet and to view several Board ' .
         'member responses at one time.',
+        'Citations By Tag' => 'Used to keep track of high priority ' .
+        'citations and core journal citations, for example.',
         'Responses By Reviewer' => 'Used to assess literature surveillance ' .
         'responses (completed reviews) for each Board member. This report ' .
         'may be worth sharing with the Editors in Chief periodically.',
@@ -259,6 +261,9 @@ class EbmsReports {
                                        $this->request_id);
             case 'cites-status':
                 return drupal_get_form('pdq_ebms_cites_by_status_form',
+                                       $this->request_id);
+            case 'cites-tag':
+                return drupal_get_form('pdq_ebms_cites_by_tag',
                                        $this->request_id);
             case 'citations':
                 return drupal_get_form('pdq_ebms_citation_reports_form');
@@ -554,6 +559,7 @@ class EbmsReports {
                     'reports/cite',
                     array(
                         array('Citation Reports', 'reports/citations'),
+                        array('Citations By Tag', 'reports/cites-tag'),
                         array('Import Report', 'reports/import'),
                     ),
                 ),
@@ -594,6 +600,7 @@ class EbmsReports {
                         array('Import Report', 'reports/import'),
                         array('Citation Reports', 'reports/citations'),
                         array('Citations By Status', 'reports/cites-status'),
+                        array('Citations By Tag', 'reports/cites-tag'),
                         array('Literature Reviews', 'reports/lit-review'),
                         array(
                             'Responses By Reviewer',
@@ -6839,6 +6846,345 @@ function pdq_ebms_articles_without_responses_submit($form, &$form_state) {
     $report = 'Articles Without Responses';
     $request_id = EbmsReports::save_report_request($values, $report);
     drupal_goto('reports/articles-without-responses/' . $request_id);
+}
+
+/**
+ * Drupal form API callback which generates the form for the
+ * report on articles to which a specific tag has been assigned.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *  @param  int     $request_id   Primary key into the EBMS table
+ *                                for report request parameters
+ *
+ *  @return array                 Array containing specification
+ *                                of the fields to appear on the
+ *                                form, as well as other markup
+ */
+function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
+
+    // Override the breadcrumbs which Drupal would automatically
+    // set based on the menu callback, in order to comply with
+    // the customized requirements of the EBMS design.
+    drupal_set_breadcrumb(
+        array(
+            l('Reports', 'reports'),
+            l('Citation Management Reports', 'reports/cite'),
+            'Citations By Tag',
+        )
+    );
+
+    // Initialize defaults for the form field's values.
+    $board = \Ebms\Util::get_user_default_board(0);
+    $selected_topics = array();
+    $tag = '';
+    $comment = '';
+    $start = $end = '';
+
+    // Pull request parameters from the database if appropriate.
+    if ($request_id) {
+        $values = EbmsReports::fetch_report_request($request_id);
+        $board = $values['board'];
+        $selected_topics = $values['topics'];
+        $start = $values['date-start']['date'];
+        $end = $values['date-end']['date'];
+        if ($start)
+            $start = Ebms\Util::fill_in_date($start);
+        if ($end)
+            $end = Ebms\Util::fill_in_date($end, true);
+        $comment = $values['comment'];
+        $tag = $values['tag'];
+    }
+
+    // Get the values of interest for ajax callbacks.
+    if (isset($form_state['values'])) {
+        $board = $form_state['values']['board'];
+        $selected_topics = $form_state['values']['topics'];
+    }
+
+    // How tall should the picklists allowing multiple selections be?
+    $size = 6;
+
+    // Create the picklists.
+    $topics = array();
+    $boards = array(0 => ' ') + Ebms\Util::boards();
+    $tags = array();
+    $results = db_select('ebms_article_tag_type', 't')
+        ->fields('t', array('tag_id', 'tag_name'))
+        ->condition('t.active_status', 'A')
+        ->orderBy('t.tag_name')
+        ->execute();
+    foreach ($results as $result)
+        $tags[$result->tag_id] = $result->tag_name;
+
+    // If a board has been selected, populate the board-dependent picklists.
+    if ($board) {
+        $results = db_select('ebms_topic', 't')
+            ->fields('t', array('topic_id', 'topic_name'))
+            ->condition('t.board_id', $board)
+            ->condition('t.active_status', 'A')
+            ->orderBy('t.topic_name')
+            ->execute();
+        foreach ($results as $result)
+            $topics[$result->topic_id] = $result->topic_name;
+        foreach ($selected_topics as $key => $value)
+            if (!array_key_exists($value, $topics))
+                unset($selected_topics[$key]);
+     }
+
+    // Assemble the request form.
+    $form = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'report-form'),
+        'title' => array('#markup' => '<h2>Citations By Tag</h2>'),
+        'board' => array(
+            '#type' => 'select',
+            '#options' => $boards,
+            '#required' => true,
+            '#default_value' => $board,
+            '#title' => 'Editorial Board',
+            '#attributes' => array('class' => array('fixed-width')),
+            '#ajax' => array(
+                'callback' => 'pdq_ebms_report_ajax',
+                'wrapper' => 'board-dependent',
+            ),
+        ),
+        'ajax fields' => array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'board-dependent'),
+            'topics' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $topics,
+                '#default_value' => $selected_topics,
+                '#title' => 'Topic(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
+        ),
+        'tag' => array(
+            '#type' => 'select',
+            '#options' => $tags,
+            '#default_value' => $tag,
+            '#title' => 'Tag',
+            '#required' => true,
+            '#attributes' => array('class' => array('fixed-width')),
+        ),
+        'date' => Ebms\Util::date_range_field('Assigned Date', 'date',
+                                              $start, $end, '', false),
+        'comment' => array(
+            '#type' => 'textfield',
+            '#default_value' => $comment,
+            '#title' => 'Comment',
+        ),
+        'reset' => array(
+            '#type' => 'submit',
+            '#value' => 'Reset',
+        ),
+        'submit' => array(
+            '#type' => 'submit',
+            '#value' => 'Submit',
+        ),
+    );
+
+    // Assemble the page where the form lives, including the left nav penel.
+    $left_nav = EbmsReports::build_left_nav('Citation Management',
+                                            'Citations By Tag');
+    $page['top'] = array(
+        '#type' => 'container',
+        '#attributes' => array('id' => 'cites-by-tag-report-top'),
+        'left-nav' => $left_nav,
+        'report-form' => $form,
+    );
+
+    // If we have a submitted report request, add the report under the form.
+    if ($request_id) {
+        $report = cites_by_tag_report($request_id);
+        $id = 'report-title';
+        $title = "Articles ($report->total)";
+        $page['report'] = array(
+            'title' => array(
+                '#markup' =>
+                "<h2 style='position: relative' id='$id'>$title</h2>",
+            ),
+            'table' => array(
+                '#attributes' => array('id' => 'unreviewed-articles-report'),
+                '#theme' => 'table',
+                '#rows' => $report->rows,
+                '#header' => $report->headers,
+            ),
+        );
+    }
+    return $page;
+}
+
+/**
+ * Assemble the report table showing articles assigned a particular tag.
+ */
+function cites_by_tag_report($request_id, $member_version=false) {
+
+    // Our return value will be an object.
+    $report = new stdClass();
+    $report->total = 0;
+    $report->headers = array(
+        'Citation',
+        'Summary Topic',
+        'Date Tag Added',
+        'Current Article State',
+        'Comments',
+    );
+
+    // Fetch the settings for this request, use them to find the report data.
+    $values = EbmsReports::fetch_report_request($request_id);
+    $query = db_select('ebms_article_tag', 'g');
+    $query->fields('g', array('article_id', 'tag_dt'));
+    $query->join('ebms_article', 'a', 'a.article_id = g.article_id');
+    $query->condition('g.active_status', 'A');
+    $query->condition('g.tag_id', $values['tag']);
+    $query->join('ebms_topic', 't', 't.topic_id = g.topic_id');
+    $query->fields('t', array('topic_id', 'topic_name'));
+    if (!empty($values['topics']))
+        $query->condition('t.topic_id', $values['topics'], 'IN');
+    else
+        $query->condition('t.board_id', $values['board']);
+
+    // Filter by date if asked to do so.
+    if ($values['date-start']['date']) {
+        $start = Ebms\Util::fill_in_date($values['date-start']['date']);
+        $query->condition('g.tag_dt', $start, '>=');
+    }
+    if ($values['date-end']['date']) {
+        $end = Ebms\Util::fill_in_date($values['date-end']['date'], true);
+        $query->condition('g.tag_dt', $end, '<=');
+    }
+
+    // Narrow by comment as appropriate.
+    if (!empty($values['comment'])) {
+        $query->join('ebms_article_state', 's',
+                     's.article_id = g.article_id AND ' .
+                     's.topic_id = g.topic_id');
+        $query->join('ebms_article_state_comment', 'c',
+                     'c.article_state_id = s.article_state_id');
+        $query->condition('c.comment', $values['comment'], 'LIKE');
+    }
+
+    // We'll need this for finding the latest article statuses.
+    $passed_full_review = db_select('ebms_article_state_type', 't')
+        ->fields('t', array('sequence', 'state_name'))
+        ->condition('t.state_text_id', 'PassedFullReview')
+        ->execute()
+        ->fetchObject();
+
+    // Beginning of comments we want to avoid reporting.
+    $machine_comments = array(
+        'status entered by conversion because the topic/article combination',
+        'published state added as a result of setting the state for this',
+        'tir 2506 (',
+        'published as part of import from core journals',
+        'core journals search',
+        'delete this journal',
+        'state inactivated by setting "published" at',
+    );
+
+    // Assemble the rows in the report.
+    $report->rows = array();
+    $query->distinct();
+    $query->orderBy('a.article_title');
+    $query->orderBy('t.topic_name');
+    $results = $query->execute();
+    $current = 0;
+    $board_member_comment = '<span class="bmc">BOARD MANAGER COMMENT</span>';
+    foreach ($results as $result) {
+
+        $article_id = $result->article_id;
+        $topic_id = $result->topic_id;
+        if ($current !== $article_id) {
+            $citation = EbmsReports::format_citation($article_id);
+            $current = $article_id;
+            $report->total++;
+        }
+        $cite = $citation;
+        $dt = date('Y-m-d', strtotime($result->tag_dt));
+        $state = Ebms\Util::get_latest_status($article_id, $topic_id,
+                                              $passed_full_review->sequence);
+        if (empty($state)) {
+            $query = db_select('ebms_article_state_type', 't')
+                ->fields('t', array('state_name'));
+            $query->join('ebms_article_state', 's', 's.state_id = t.state_id');
+            $query->condition('s.article_id', $article_id);
+            $query->condition('s.topic_id', $topic_id);
+            $query->condition('s.current', 'Y');
+            $state = $query->execute()->fetchField();
+        }
+        if ($state === $passed_full_review->state_name) {
+            $atc = db_select('ebms_article_topic_comment', 'c')
+                ->fields('c', array('comment_id'))
+                ->condition('c.article_id', $article_id)
+                ->condition('c.topic_id', $topic_id)
+                ->execute()->fetch();
+            if (!empty($atc))
+                $cite .= "<br><br>$board_member_comment";
+        }
+        $query = db_select('ebms_article_state_comment', 'c')
+            ->fields('c', array('comment'));
+        $query->join('ebms_article_state', 's', 's.article_state_id ' .
+                     '= c.article_state_id');
+        $query->condition('s.article_id', $article_id);
+        $query->condition('s.topic_id', $topic_id);
+        $query->orderBy('c.comment_dt', 'DESC');
+        $comment_rows = $query->execute();
+        $comments = array();
+        foreach ($comment_rows as $comment_row) {
+            $comment = trim($comment_row->comment);
+            if (!empty($comment)) {
+                $lowercmt = strtolower($comment);
+                $include = true;
+                foreach ($machine_comments as $mc) {
+                    if (substr($lowercmt, 0, strlen($mc)) === $mc) {
+                        $include = false;
+                        break;
+                    }
+                }
+                if ($include)
+                    $comments[] = htmlspecialchars($comment);
+            }
+        }
+        $comments = implode('<br><br>', $comments);
+        $row = array($cite, $result->topic_name, $dt, $state, $comments);
+        $report->rows[] = array('data' => $row, 'no_striping' => true);
+    }
+
+    // Snag a count of articles in the report.
+    $report->total = count($report->rows);
+
+    // Return the assembled object.
+    return $report;
+}
+
+/**
+ * Store the report request parameters in the database and send the user
+ * to the URL which knows where those parameters were stored.
+ *
+ *  @param  array   $form         Structured array containing the
+ *                                elements and properties of the form
+ *  @param  array   &$form_state  Modifiable structured array
+ *                                containing the current values
+ *                                of the form, as well as other
+ *                                form state information
+ *
+ *  @return     none
+ */
+function pdq_ebms_cites_by_tag_submit($form, &$form_state) {
+    if ($form_state['values']['op'] == 'Reset')
+        drupal_goto('reports/cites-tag');
+    $values = $form_state['values'];
+    $report = 'Citations By Tag';
+    $request_id = EbmsReports::save_report_request($values, $report);
+    drupal_goto('reports/cites-tag/' . $request_id);
 }
 
 /*
