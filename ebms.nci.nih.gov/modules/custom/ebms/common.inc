@@ -379,6 +379,7 @@ class Menu {
             default:
                 $submenus = array(
                     new Menu('Reviewed Packets', 'review/reviews'),
+                    new Menu('Unreviewed Packets', 'review/unreviewed'),
                     new Menu('Create Packet', 'review/add'),
                     new Menu('View/Edit Packets', 'review/packets'),
                     new Menu('Record Responses', 'review/record'),
