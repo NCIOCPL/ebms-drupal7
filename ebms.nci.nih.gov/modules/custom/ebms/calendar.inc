@@ -21,6 +21,9 @@ class EbmsCalendarFiltering {
         $parms = drupal_get_query_parameters();
         $this->boards = $this->boards_default = 'mine';
         $this->meetings = $this->meetings_default = 'all';
+        global $user;
+        if (in_array('travel admin', $user->roles))
+            $this->meetings = $this->meetings_default = 'board';
         if (!empty($parms['boards']))
             $this->boards = $parms['boards'];
         if (!empty($parms['meetings']))
