@@ -5581,11 +5581,13 @@ function pdq_ebms_manager_packets_filter_form (
     $form['pkt_scope_reviewed'] = array(
         '#type' => 'checkboxes',
         '#options' => array(
-            'Reviewed' => 'Have at least one review of any article in the packet',
-            'Unreviewed' => 'Have no reviews yet for any article in the packet',
+            'Reviewed' =>
+            'Reviewed (packets that have at least one review for any article)',
+            'Unreviewed' =>
+            'Unreviewed (packets that have no reviews for any article)',
         ),
         '#default_value' => array('Reviewed', 'Unreviewed'),
-        '#title' => 'Include packets that:',
+        '#title' => 'Review Statuses To Include:',
     );
     $form['submit'] = array(
         '#type' => 'submit',
