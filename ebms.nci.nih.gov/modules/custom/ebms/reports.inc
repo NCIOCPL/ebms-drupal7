@@ -7087,7 +7087,7 @@ function cites_by_tag_report($request_id, $member_version=false) {
         'published as part of import from core journals',
         'core journals search',
         'delete this journal',
-        'state inactivated by setting "published" at',
+        'state inactivated by setting "',
     );
 
     // Assemble the rows in the report.
