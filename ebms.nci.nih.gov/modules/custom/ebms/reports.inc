@@ -7093,8 +7093,8 @@ function cites_by_tag_report($request_id, $member_version=false) {
     // Assemble the rows in the report.
     $report->rows = array();
     $query->distinct();
-    $query->orderBy('a.article_title');
     $query->orderBy('t.topic_name');
+    $query->orderBy('a.article_title');
     $results = $query->execute();
     $current = 0;
     $board_member_comment = '<span class="bmc">BOARD MANAGER COMMENT</span>';
