@@ -122,7 +122,7 @@ class EbmsReports {
         'sharing with the Editors in Chief periodically.',
 
         'Board and Topic Lists' =>
-        'Shows which board members are assigned to which topics. A print-' .
+        'Shows which Board members are assigned to which topics. A print-' .
         'friendly version of this report is available.',
 
         'Invalid Pubmed IDs' =>
@@ -134,7 +134,7 @@ class EbmsReports {
         'run at any time from the report menus.',
 
         'Statistics' =>
-        'Excel workbook with one sheet for each board, providing counts ' .
+        'Excel workbook with one sheet for each Board, providing counts ' .
         'for the number of articles reaching each processing state for ' .
         'the reporting period (which by default is the previous twelve ' .
         'months).',
