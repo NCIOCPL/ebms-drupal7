@@ -44,92 +44,100 @@ class EbmsReports {
 
     // Report descriptions (OCEEBMS-532).
     private static $descriptions = array(
+
         'Documents' =>
         'Used to locate, edit, or archive documents in the system. ' .
         'Multiple documents can be archived at one time using this report.',
+
         'Meeting Dates' =>
         'This report is planned for a future release.',
-        'Hotel Requests' => 'Used to see which Board members have submitted ' .
-        'a request for a hotel. The report is automatically generated ' .
-        'and displayed when the page is opened. The SUBMITTED, USER, ' .
-        'and MEETING headings can be clicked to display the information ' .
-        'in those columns in reverse order. The report page shows every ' .
-        'request that has ever been submitted through the EBMS. ' .
-        '(Requests submitted directly to the Admin staff will not appear ' .
-        'on the report.) You may also use the fields at the top of the ' .
-        'page to filter the results.',
-        'Reimbursement Requests' => 'Used to see which Board members have ' .
-        'submitted a request for reimbursement of meeting expenses. The ' .
-        'report is automatically generated and displayed when the page is ' .
-        'opened. The SUBMITTED, USER, and MEETING headings can be clicked ' .
-        'to display the information in those columns in reverse order. ' .
-        'The report page shows every request that has ever been submitted ' .
-        'through the EBMS. (Requests submitted directly to the Admin staff ' .
-        'will not appear on the report.) You may also use the fields at ' .
-        'the top of the page to filter the results.',
-        'Board Membership' => 'Used to generate a list of active Board ' .
-        'members on an Editorial Board and/or in subgroups.',
-        'Board Member Login Report' => 'This report is no longer used. It ' .
-        'was created to assist with the frequent login problems our ' .
-        'Board members experienced before we switched to using ' .
-        'Google/Open ID as the primary login mechanism.',
-        'Recent Activity Report' => 'Used to determine when Board members ' .
-        'last logged into the EBMS. Clicking on the report name from the ' .
-        'report menu will generate an Excel report with this information.',
-        'Import Report' => 'Allows users to display the details of a ' .
-        'specific import batch (a set of one or more articles imported ' .
-        'to the EBMS for a single topic at a single time). Each import ' .
-        'batch is assigned a number, import date, Editorial Board, and ' .
-        'summary topic. The number of Unique IDs in the Batch, Articles ' .
-        'Imported, Articles Not Listed, Duplicate Articles, Articles ' .
-        'Ready for Review, Articles with Topic Added, Articles Replaced, ' .
-        'and Articles with Errors is recorded for each import batch and ' .
-        'included in each Import Report. This report is primarily used ' .
-        'by Medical Librarians.',
+
+        'Hotel Requests' =>
+        'Used to see which Board members have submitted a request for a ' .
+        'hotel. The report is automatically generated and displayed when ' .
+        'the page is opened.',
+
+        'Reimbursement Requests' =>
+        'Used to see which Board members have submitted a request for ' .
+        'reimbursement of meeting expenses. The report is automatically ' .
+        'generated and displayed when the page is opened.',
+
+        'Board Membership' =>
+        'Used to generate a list of active Board members on an Editorial ' .
+        'Board and/or in subgroups.',
+
+        'Board Member Login Report' =>
+        'Used to determine when Board members last logged into the EBMS. ' .
+        'Clicking on the report name from the report menu will generate ' .
+        'an Excel report with this information.',
+
+        'Recent Activity Report' =>
+        'Used to summarize recent Board-related activity in the EBMS. ' .
+        'It may be useful if you are concerned you missed something or ' .
+        'if a Board member has had a period of inactivity and wants to ' .
+        'catch up (the Board manager would need to copy and paste the ' .
+        'report results to send to the Board member).',
+
+        'Import Report' =>
+        'Used to display the details of a specific import batch (a set ' .
+        'of one or more articles imported to the EBMS for a single topic ' .
+        'at a single time). This report is primarily used by the Medical ' .
+        'Librarians.',
+
         'Citation Reports' =>
-        'Collection of reports primarily used by the Medical Librarians ' .
-        'to generate citation statistics, gather more information about ' .
-        'a particular reviewing cycle or import session, and identify and ' .
-        'troubleshoot problems. ' .
-        'There are five Citation Reports, each of which can be selected ' .
-        'from the REPORTS menu on the CITATION REPORTS page.',
-        'Citations By Status' => 'Used to find a single citation or a group ' .
-        'of citations that is/are at a particular point in the review ' .
-        'process. It can be helpful when looking for agenda items or ' .
-        'checking to see if final dispositions have been chosen for ' .
-        'papers from a specific meeting.',
-        'Literature Reviews' => 'Used to find citations that have been ' .
-        'included in a literature packet and to view several Board ' .
-        'member responses at one time.',
-        'Citations By Tag' => 'Used to keep track of high priority ' .
-        'citations and core journal citations, for example.',
-        'Responses By Reviewer' => 'Used to assess literature surveillance ' .
-        'responses (completed reviews) for each Board member. This report ' .
-        'may be worth sharing with the Editors in Chief periodically.',
-        'Articles Without Responses' => 'Used to identify which articles ' .
-        'were assigned for review but haven\'t received any further ' .
-        'attention. In other words, the articles were not reviewed nor ' .
-        'have they been given a later state in the EBMS (i.e., added a ' .
-        'Board manager action, placed on a meeting agenda, or given an ' .
-        'Editorial Board decision). The results of this report are often ' .
-        'used to help plan meeting agendas and prevent important papers ' .
-        'from "falling through the cracks." A Board member version of ' .
-        'this report is also available as the results are often shared ' .
-        'with Board members. This report may be worth sharing with the ' .
-        'Editors in Chief periodically.',
+        'Collection of reports used to generate citation statistics, ' .
+        'gather more information about a particular reviewing cycle or ' .
+        'import session, and identify and troubleshoot problems. There ' .
+        'are five Citation Reports, each of which can be selected from ' .
+        'the REPORTS menu on the CITATION REPORTS page. These reports ' .
+        'are primarily used by the Medical Librarians.',
+
+        'Citations By Status' =>
+        'Used to find a single citation or a group of citations that ' .
+        'is/are at a particular point in the review process. It can be ' .
+        'helpful when looking for agenda items or checking to see if ' .
+        'final dispositions have been chosen for papers from a specific ' .
+        'meeting.',
+
+        'Literature Reviews' =>
+        'Used to find citations that have been included in a literature ' .
+        'packet and to view several Board member responses at one time.',
+
+        'Citations By Tag' =>
+        'Used to keep track of high priority citations and core journal ' .
+        'citations, for example.',
+
+        'Responses By Reviewer' =>
+        'Used to assess literature surveillance responses (completed ' .
+        'reviews) for each Board member. This report may be worth ' .
+        'sharing with the Editors in Chief periodically.',
+
+        'Articles Without Responses' =>
+        'Used to identify which articles were assigned for review but ' .
+        'haven\'t received any further attention. The results of this ' .
+        'report are often used to help plan meeting agendas and prevent ' .
+        'important papers from "falling through the cracks." A Board ' .
+        'member version of this report is also available as the results ' .
+        'are often shared with Board members. This report may be worth ' .
+        'sharing with the Editors in Chief periodically.',
+
         'Board and Topic Lists' =>
         'Shows which board members are assigned to which topics. A print-' .
         'friendly version of this report is available.',
-        'Invalid Pubmed IDs' => 'Used to identify citations that have ' .
-        'PubMed IDs that are no longer in PubMed. (Occasionally, the ' .
-        'PubMed ID for a citation can change when an error such as a ' .
-        'duplicate record is caught at NLM.) Bonnie, Robin J, and Bob ' .
-        'currently receive this report via e-mail weekly (on Sundays), ' .
-        'but it can also be run at any time from the report menus.',
-        'Statistics' => 'Excel workbook with one sheet for each board, ' .
-        'providing counts for the number of articles reaching each ' .
-        'processing state for the reporting period (which by default ' .
-        'is the previous twelve months).',
+
+        'Invalid Pubmed IDs' =>
+        'Used to identify citations that have PubMed IDs that are no ' .
+        'longer in PubMed. (Occasionally, the PubMed ID for a citation ' .
+        'can change when an error such as a duplicate record is caught ' .
+        'at NLM.) Bonnie, Robin J, and Bob currently receive this ' .
+        'report via e-mail weekly (on Sundays), but it can also be ' .
+        'run at any time from the report menus.',
+
+        'Statistics' =>
+        'Excel workbook with one sheet for each board, providing counts ' .
+        'for the number of articles reaching each processing state for ' .
+        'the reporting period (which by default is the previous twelve ' .
+        'months).',
     );
 
     // Instance attributes.
