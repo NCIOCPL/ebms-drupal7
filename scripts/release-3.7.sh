@@ -80,6 +80,7 @@ fi
 drush rap 'travel admin' 'access all webform results'
 drush rap 'travel admin' 'manage travel'
 drush rap 'travel admin' 'view all events'
+drush rap 'site manager' 'assign travel admin role'
 
 echo Applying security updates
 drush up -y webform-7.x-4.22
