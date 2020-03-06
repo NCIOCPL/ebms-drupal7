@@ -1328,9 +1328,8 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
         return findPubmedIDsInXML($dataStr);
     }
     throw new \Exception(
-        "Unsupported Pubmed search result format - " .
-        "only accepting Medline print format (text) or Pubmed XML.  " .
-        "For clean data, use Pubmed's 'Send to: File' to save the data)");
+        'Unsupported Pubmed search result format - ' .
+        'please use the standard RIS format.');
 }
 
 /**
