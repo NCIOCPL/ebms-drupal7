@@ -402,10 +402,12 @@ class EbmsReview {
             }
 
             // Archived and legacy system packets. These are interrelated
-            $active     = $filters['pkt_scope_active']['Active'] ? True : False;
-            $archived   = $filters['pkt_scope_active']['Archived'] ? True : False;
-            $reviewed   = $filters['pkt_scope_reviewed']['Reviewed'] ? True : False;
-            $unreviewed = $filters['pkt_scope_reviewed']['Unreviewed'] ? True : False;
+            $scope = $filters['pkt_scope_active'];
+            $active = $scope['Active'] ? True : False;
+            $archived = $scope['Archived'] ? True : False;
+            $scope = $filters['pkt_scope_reviewed'];
+            $reviewed = $scope['Reviewed'] ? True : False;
+            $unreviewed = $scope['Unreviewed'] ? True : False;
 
             // Apply the checkboxes.
             if (!($active && $archived)) {
@@ -6427,11 +6429,11 @@ function ebms_packet_bulk_archive($form, &$form_state, $search_id) {
     $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
     $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
     $query->join('users', 'u', 'u.uid = p.created_by');
-    if (Ebms\Util::get_request_value('reviewed')) {
-        $query->join('ebms_article_review', 'r',
-            'r.packet_id = p.packet_id');
-        $query->distinct();
-    }
+    $query->distinct();
+    #if (Ebms\Util::get_request_value('reviewed')) {
+    #    $query->join('ebms_article_review', 'r',
+    #        'r.packet_id = p.packet_id');
+    #}
     $query->fields('p', array('packet_id', 'packet_title', 'created_at'));
     $query->fields('b', array('board_name'));
     $query->fields('u', array('name'));
