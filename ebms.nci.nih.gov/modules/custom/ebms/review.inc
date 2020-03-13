@@ -187,6 +187,8 @@ class EbmsReview {
             unset($opts['query']['target']);
             if ($target == 'reviews')
                 drupal_goto(EbmsReview::$url . '/reviews', $opts);
+            if ($target == 'unreviewed')
+                drupal_goto(EbmsReview::$url . '/unreviewed', $opts);
         }
         drupal_goto(EbmsReview::$url . '/packets', $opts);
     }
@@ -1697,7 +1699,7 @@ class EbmsReview {
         $main_url = EbmsReview::$url;
         $del_func = 'javascript:ebmsscript.delete_packet';
         $opts = array('query' => drupal_get_query_parameters());
-        $opts['query']['target'] = 'reviews';
+        $opts['query']['target'] = 'unreviewed';
         $del_parm = url("$main_url/delete/$packet_id", $opts);
         $del_url = "$del_func('$del_parm');";
         $del_button = '<a href="' . $del_url .
