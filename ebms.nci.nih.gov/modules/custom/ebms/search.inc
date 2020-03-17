@@ -39,11 +39,11 @@ function pdq_ebms_search($id=null) {
     drupal_add_css(Ebms\CSS_DIR . '/search.css');
     $search = new EbmsSearch($id);
     if ($search->is_board_member) {
-        Ebms\Menu::$active = 'Search Citations';
+        Ebms\Menu::$active = 'Search@@BR@@Citations';
         drupal_set_breadcrumb(array('Search Citations'));
     }
     else {
-        Ebms\Menu::$active = 'Citation Management';
+        Ebms\Menu::$active = 'Manage@@BR@@Citations';
         drupal_set_breadcrumb(
             array(
                 l('Citation Management', 'citations'),

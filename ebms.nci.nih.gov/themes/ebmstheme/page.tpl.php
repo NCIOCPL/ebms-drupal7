@@ -192,7 +192,8 @@ if ($logged_in) {
             </div> <!-- /#name-and-slogan -->
 <?php if ($logged_in) { ?>
             <div id="help-and-about-links">
-              <?php echo $search_box; ?>
+              <?php if (!in_array('travel admin', $user->roles))
+                    echo $search_box; ?>
               <?php print l('About PDQ', 'about') ?> &nbsp;|&nbsp;
               <?php print l('EBMS Help', 'help') ?>
             </div>

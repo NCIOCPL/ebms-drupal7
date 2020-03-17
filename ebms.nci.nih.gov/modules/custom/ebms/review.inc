@@ -78,7 +78,7 @@ class EbmsReview {
     public function run() {
         Ebms\Util::add_js();
         drupal_add_css(Ebms\CSS_DIR . '/review.css');
-        Ebms\Menu::$active = 'Literature';
+        Ebms\Menu::$active = 'Literature@@BR@@Packets';
 
         if (!$this->check_permissions())
             return MENU_ACCESS_DENIED;
@@ -160,6 +160,8 @@ class EbmsReview {
                 return $this->record_responses();
             case 'packets':
                 return $this->manager_packets();
+            case 'unreviewed':
+                return $this->manager_unreviewed();
             case 'reviews':
             default:
                 return $this->manager_reviews();
@@ -185,6 +187,8 @@ class EbmsReview {
             unset($opts['query']['target']);
             if ($target == 'reviews')
                 drupal_goto(EbmsReview::$url . '/reviews', $opts);
+            if ($target == 'unreviewed')
+                drupal_goto(EbmsReview::$url . '/unreviewed', $opts);
         }
         drupal_goto(EbmsReview::$url . '/packets', $opts);
     }
@@ -400,40 +404,33 @@ class EbmsReview {
             }
 
             // Archived and legacy system packets. These are interrelated
-            $active     = $filters['pkt_scope']['Active'] ? True : False;
-            $archived   = $filters['pkt_scope']['Archived'] ? True : False;
-            $legacy     = $filters['pkt_scope']['Legacy'] ? True : False;
-            $unreviewed = $filters['pkt_scope']['Unreviewed'] ? True : False;
+            $scope = $filters['pkt_scope_active'];
+            $active = $scope['Active'] ? True : False;
+            $archived = $scope['Archived'] ? True : False;
+            $scope = $filters['pkt_scope_reviewed'];
+            $reviewed = $scope['Reviewed'] ? True : False;
+            $unreviewed = $scope['Unreviewed'] ? True : False;
 
-            // If users turn off all the checkboxes, default to active
-            if (!($active || $archived || $legacy))
-                $active = True;
-
-            // Fetch active or archived documents only?
-            if (!($archived || $legacy))
-                $query->condition('p.active_status', 'A');
-            else if (!$active)
-                $query->condition('p.active_status', 'I');
-
-            // If archived but not legacy requested, exclude legacy
-            if ($archived && !$legacy)
-                $query->condition('p.created_at', Ebms\CONVERSION_DATE, ">=");
-
-            // If only legacy requested, drop packets created since conversion.
-            if ($legacy && !$archived && !$active)
-                $query->condition('p.created_at', Ebms\CONVERSION_DATE, "<");
-
-            // Handle this bizarre combination correctly.
-            if ($active && $legacy && !$archived)
-                $query->condition(db_or()
-                    ->condition('p.active_status', 'A')
-                    ->condition('p.created_at', Ebms\CONVERSION_DATE, '<'));
-
-            // Unreviewed packets only? (OCEEBMS-470)
-            if ($unreviewed) {
-                $query->leftJoin('ebms_article_review', 'ear',
-                    'ear.packet_id = p.packet_id');
-                $query->isNull('ear.packet_id');
+            // Apply the checkboxes.
+            if (!($active && $archived)) {
+                if ($active)
+                    $query->condition('p.active_status', 'A');
+                elseif ($archived)
+                    $query->condition('p.active_status', 'I');
+                else
+                    $query->condition('p.packet_id', 0);
+            }
+            if (!($reviewed && $unreviewed)) {
+                if ($unreviewed) {
+                    $query->leftJoin('ebms_article_review', 'ear',
+                                     'ear.packet_id = p.packet_id');
+                    $query->isNull('ear.packet_id');
+                }
+                elseif ($reviewed)
+                    $query->join('ebms_article_review', 'ear',
+                                 'ear.packet_id = p.packet_id');
+                else
+                    $query->condition('p.packet_id', 0);
             }
         }
 
@@ -498,17 +495,16 @@ class EbmsReview {
         }
 
         // Scope checkboxes
-        $default_scope = array();
-        foreach ($filters['pkt_scope'] as $key => $val) {
-            if ($key === $val) {
-                array_push($default_scope, $val);
+        $scopes = ['pkt_scope_active', 'pkt_scope_reviewed'];
+        foreach ($scopes as $scope) {
+            $default_scope = array();
+            foreach ($filters[$scope] as $key => $val) {
+                if ($key === $val) {
+                    array_push($default_scope, $val);
+                }
             }
+            $form[$scope]['#default_value']= $default_scope;
         }
-        if (count($default_scope) > 0)
-            $form['pkt_scope']['#default_value'] = $default_scope;
-        else
-            // Ensure that active is checked if nothing else is
-            $form['pkt_scope']['#default_value'] = array('Active');
 
         return $form;
     }
@@ -526,6 +522,7 @@ class EbmsReview {
     public static function build_left_nav($active=null) {
         $links = array(
             array('Reviewed Packets', 'review/reviews'),
+            array('Unreviewed Packets', 'review/unreviewed'),
             array('Create Packet', 'review/add'),
             array('View / Edit Packets', 'review/packets'),
         );
@@ -567,7 +564,7 @@ class EbmsReview {
             return $this->show_reviewed_packet($opts);
         drupal_set_breadcrumb(
             array(
-                l('Literature', EbmsReview::$url . '/reviews'),
+                l('Literature', EbmsReview::$url),
                 'Reviewed Packets',
             )
         );
@@ -589,6 +586,42 @@ class EbmsReview {
                 'form' => $form,
             ),
             'packets' => $this->reviewed_packet_list($opts),
+        );
+    }
+
+    /**
+     * Show packets for which no reviews have been submitted yet.
+     * Switches to the appropriate page type, if the user has drilled
+     * down to a specific packet or article.
+     */
+    private function manager_unreviewed() {
+        $opts = array('query' => drupal_get_query_parameters());
+        if ($this->packet_id)
+            return $this->show_unreviewed_packet($opts);
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                'Unreviewed Packets',
+            )
+        );
+        $left_nav = $this->build_left_nav('Unreviewed Packets');
+        $url = EbmsReview::$url . '/unreviewed';
+        if (count($this->user->boards) > 1) {
+            $board_opts = array('query' => array('pager' => 'off'));
+            if (!empty($opts['query']['boards']))
+                $board_opts['query']['boards'] = $opts['query']['boards'];
+            $left_nav['board filter box'] =
+                $this->board_filter_box($board_opts, $url);
+        }
+        $form = drupal_get_form('ebms_unreviewed_packets_filter_form', $opts);
+        return array(
+            'left-nav' => $left_nav,
+            'filter' => array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'main-right-panel'),
+                'form' => $form,
+            ),
+            'packets' => $this->unreviewed_packet_list($opts),
         );
     }
 
@@ -806,8 +839,6 @@ class EbmsReview {
         }
 
         // Assemble the render array for the table and return it.
-        $title = 'Literature Surveillance Packets';
-        $id = 'manager-packets-page-title';
         if ($this->pager != 'off')
             $pager = array('#theme' => 'pager');
         else {
@@ -844,9 +875,183 @@ class EbmsReview {
     }
 
     /*
+     * Builds the Drupal render array for the list of all the unreviewed
+     * packets connected with the user's board(s).  If the user has explicitly
+     * identified boards for which she wants to see review, show packets
+     * for those boards instead.
+     */
+    private function unreviewed_packet_list($opts) {
+
+        // See if the user has identified one or more boards.
+        $boards = EbmsReview::get_board_ids();
+
+        // If we don't have any boards, then there's nothing more to do.
+        if (count($boards) < 1) {
+            drupal_set_message('You are not linked to any boards');
+            return array(
+                '#type' => 'container',
+                '#attributes' => array('id' => 'main-right-panel'),
+                'page title' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<h2>Unreviewed Packets</h2>',
+                ),
+            );
+        }
+
+        // Set up the table headers, specifying sorting options.
+        $headers = array(
+            array(
+                'data' => 'Packet Name',
+                'field' => 'p.packet_title',
+            ),
+            array(
+                'data' => 'Assigned To',
+            ),
+            array(
+                'data' => 'Posted',
+                'field' => 'p.created_at',
+                'sort' => 'desc',
+            ),
+        );
+
+        // Build the query to show the packets without reviews.
+        $query = db_select('ebms_packet', 'p');
+        if ($this->pager != 'off')
+            $query = $query->extend('PagerDefault')->limit(10);
+        $query = $query->extend('TableSort');
+        $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
+        $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
+        $query->leftJoin('ebms_article_review', 'r',
+                         'r.packet_id = p.packet_id');
+        $query->isNull('r.packet_id');
+        $query->fields('p', array('packet_id', 'packet_title', 'created_at'));
+        $query->condition('b.board_id', $boards, 'IN');
+        $query->condition('p.active_status', 'A');
+        $query->orderByHeader($headers);
+        // $query->groupBy('p.packet_id');
+        if (!empty($opts['query']['filter'])) {
+            $filter_id = $opts['query']['filter'];
+            $filter = pdq_ebms_get_filter_criteria($filter_id);
+            $topics = array();
+            foreach ($filter['topics'] as $id => $val) {
+                if ($val)
+                    $topics[] = $id;
+            }
+            switch (count($topics)) {
+            case 0:
+                break;
+            case 1:
+                $query->condition('p.topic_id', $topics[0]);
+                break;
+            default:
+                $query->condition('p.topic_id', $topics, 'IN');
+            }
+
+            // Get packet creation start and end dates.
+            if (!empty($filter['date-start']['date'])) {
+                $ds = Ebms\Util::fill_in_date($filter['date-start']['date']);
+                if ($ds)
+                    $query->condition('p.created_at', $ds, '>=');
+            }
+            if (!empty($filter['date-end']['date'])) {
+                $de = Ebms\Util::fill_in_date($filter['date-end']['date'], 1);
+                if ($de)
+                    $query->condition('p.created_at', $de, '<=');
+            }
+
+            // Narrow by assigned reviewer(s).
+            $assigned = array();
+            foreach ($filter['reviewers'] as $id => $val) {
+                if ($val)
+                    $assigned[] = $id;
+            }
+            if (count($assigned) > 0) {
+                $query->join('ebms_packet_reviewer', 'u',
+                             'u.packet_id = p.packet_id');
+                if (count($assigned) > 1)
+                    $query->condition('u.reviewer_id', $assigned, 'IN');
+                else
+                    $query->condition('u.reviewer_id', $assigned[0]);
+            }
+            if (!empty($filter['packet_title_text'])) {
+                $pattern = $filter['packet_title_text'];
+                $query->condition('p.packet_title', $pattern, 'LIKE');
+            }
+        }
+        $packets = $query->execute();
+
+        // Assemble the rows for the table.
+        $rows = array();
+        $opts = array('query' => drupal_get_query_parameters());
+        foreach ($packets as $p) {
+            $title = str_replace(' [Legacy]', '', $p->packet_title);
+            $title .= " [Packet #{$p->packet_id}]";
+            $query = db_select('users', 'u');
+            $query->fields('u', array('name', 'uid'));
+            $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+            $query->condition('r.packet_id', $p->packet_id);
+            $query->distinct();
+            $query->orderBy('u.name');
+            $results = $query->execute();
+            $reviewers = array();
+            foreach ($results as $result) {
+                $name = htmlspecialchars($result->name);
+                $reviewers[] = "<div>$name</div>";
+            }
+
+            $url = EbmsReview::$url . '/unreviewed/' . $p->packet_id;
+            $link = l($title, $url);
+            $data = array(
+                $link,
+                array(
+                    'data' => implode('', $reviewers),
+                    'class' => array('reviewers'),
+                ),
+                date("m/d/Y", strtotime($p->created_at)),
+            );
+            $rows[] = array(
+                'data' => $data,
+                'no_striping' => true,
+            );
+        }
+
+        // Assemble the render array for the table and return it.
+        if ($this->pager != 'off')
+            $pager = array('#theme' => 'pager');
+        else {
+            unset($opts['query']['pager']);
+            $link = l('VIEW PAGES', EbmsReview::$url . '/reviews', $opts);
+            $pager = array(
+                '#type' => 'markup',
+                '#markup' => "<div id='pager-view-pages'>$link</div>",
+            );
+        }
+        $table = array(
+            '#type' => 'container',
+            '#attributes' => array('id' => 'reviewed-packet-list'),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>Unreviewed Packets</h2>',
+            ),
+            'top pager' => $pager,
+            'table' => array(
+                '#attributes' => array('id' => 'manager-packets-table'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+            'bottom pager' => $pager,
+        );
+        return $table;
+    }
+
+    /*
      * Assembles the full citation display for a single article.
      * XXX to be rewritten when Alan's API for getting the citation
      * elements is complete.
+     *
+     * The name of this method is now a little misleading, as with
+     * OCEEBMS-550 it's now also used by the Unreviewed Packets pages.
      */
     private function get_reviewed_citation($article_id, $narrow=true) {
         $xml = db_select('ebms_article', 'a')
@@ -905,63 +1110,6 @@ class EbmsReview {
         if ($legacy_id)
             $pieces[] = "{$separator}Legacy CMS ID: $legacy_id";
         return implode($pieces);
-    }
-
-    /**
-     * Find post-review status for an article (to be displayed
-     * on the reviewed packet page). OCEEBMS-405
-     */
-    private function get_latest_status($article_id, $topic_id, $fr_seq) {
-        $query = db_select('ebms_article_state', 's');
-        $query->join('ebms_article_state_type', 't', 't.state_id = s.state_id');
-        $query->fields('s', array('article_state_id'));
-        $query->fields('t', array('state_text_id', 'state_name'));
-        $query->condition('s.article_id', $article_id);
-        $query->condition('s.topic_id', $topic_id);
-        $query->condition('s.current', 'Y');
-        $query->condition('t.sequence', $fr_seq, '>');
-        $results = $query->execute();
-        foreach ($results as $result) {
-            switch ($result->state_text_id) {
-                case 'FinalBoardDecision':
-                    $query = db_select('ebms_article_board_decision', 'd');
-                    $query->join('ebms_article_board_decision_value', 'v',
-                        'v.value_id = d.decision_value_id');
-                    $query->condition('d.article_state_id',
-                        $result->article_state_id);
-                    $query->fields('v', array('value_name'));
-                    $query->orderBy('v.value_name');
-                    $decisions = implode('; ', $query->execute()->fetchCol());
-                    if (!$decisions === '')
-                        $decisions = 'NO DECISION RECORDED';
-                    $decisions = htmlspecialchars($decisions);
-                    return "Editorial Board Decision: $decisions";
-                case 'OnAgenda':
-                    $query = db_select('node', 'n');
-                    $query->join('ebms_agenda_meeting', 'm', 'm.nid = n.nid');
-                    $query->join('field_data_field_datespan', 'd',
-                        'd.entity_id = n.nid');
-                    $query->condition('m.article_state_id',
-                        $result->article_state_id);
-                    $query->fields('n', array('title'));
-                    $query->fields('d', array('field_datespan_value'));
-                    $rows = $query->execute();
-                    $meetings = array();
-                    foreach ($rows as $row) {
-                        $title = $row->title;
-                        $date = date('Y-m-d', $row->field_datespan_value);
-                        $meetings[] = "$title - $date";
-                    }
-                    $meetings = htmlspecialchars(implode('; ', $meetings));
-                    if (!$meetings === '')
-                        $meetings = 'NO MEETINGS RECORDED';
-                    return "On Agenda: $meetings";
-                default:
-                    $action = htmlspecialchars($result->state_name);
-                    return "Board Manager Action: $action";
-            }
-        }
-        return '';
     }
 
     /**
@@ -1037,7 +1185,7 @@ class EbmsReview {
         $url = EbmsReview::$url . '/reviews/' . $packet_id;
         drupal_set_breadcrumb(
             array(
-                l('Literature', EbmsReview::$url . '/reviews'),
+                l('Literature', EbmsReview::$url),
                 l('Reviewed Packets', EbmsReview::$url . '/reviews'),
                 $this->packet_title,
             )
@@ -1130,13 +1278,15 @@ class EbmsReview {
         $target = array('attributes' => array('target' => '_blank'));
         foreach ($articles as $article) {
 
+            // Get the base string for the article citation display.
+            $article_id = $article->article_id;
+            $citation = $this->get_reviewed_citation($article_id, false);
+
             // Index for walking through the $packet_reviewers list.
             $i = 0;
 
             // Collect information about what each reviewer said about the
             // article.
-            $article_id = $article->article_id;
-            $citation = $this->get_reviewed_citation($article_id, false);
             $query = db_select('users', 'u');
             $query->fields('u', array('name'));
             $query->join('ebms_article_review', 'r', 'r.reviewer_id = u.uid');
@@ -1174,7 +1324,7 @@ class EbmsReview {
                 $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
                 $citation .= "<br>$comment</span>";
             }
-            $latest_status = EbmsReview::get_latest_status($article_id,
+            $latest_status = Ebms\Util::get_latest_status($article_id,
                              $topic_id, $full_review_sequence);
             if ($latest_status)
                 $citation .= '<br><br><span class="mrs">ARTICLE STATE<br>' .
@@ -1269,7 +1419,7 @@ class EbmsReview {
         // Remember when the board manager last looked at this packet (but
         // only if it's one she created herself).
         // 2014-08-08 (OCEEBMS-184): Robin changed her mind. She now wants
-        // us to remember when the manager for the packet's board say
+        // us to remember when the manager for the packet's board saw
         // the reviews, not when the packet creator saw them.
         $query = db_select('ebms_board', 'b');
         $query->fields('b', array('board_manager'));
@@ -1335,6 +1485,263 @@ class EbmsReview {
         $reviewer_files = $this->get_reviewer_files();
         if ($reviewer_files)
             $page['reviewer files'] = $reviewer_files;
+        return $page;
+    }
+
+    /**
+     * The user (a board manager) has selected a specific packet from the
+     * list of unreviewed packets. Show the articles in the packet, with
+     * a checkbox allowing the board manager to suppress ("archive") the
+     * article from the packet (or to turn off that suppression.)
+     */
+    private function show_unreviewed_packet($opts) {
+
+        // We'll need this for finding the latest article statuses.
+        $full_review_sequence = db_select('ebms_article_state_type', 't')
+            ->fields('t', array('sequence'))
+            ->condition('t.state_text_id', 'PassedFullReview')
+            ->execute()
+            ->fetchField();
+
+        // We'll use this a lot.
+        $packet_id = $this->packet_id;
+
+        // Get the date the packet was created.
+        $created = db_select('ebms_packet', 'p')
+            ->fields('p', array('created_at'))
+            ->condition('p.packet_id', $packet_id)
+            ->execute()
+            ->fetchField();
+        $created = date('Y-m-d', strtotime($created));
+
+        // We'll have at least one use for the current date/time.
+        $now = strftime("%Y-%m-%d %H:%M:%S");
+
+        // If the user asked to suppress one of the articles in the
+        // packet, update the table to reflect this request.
+        if (isset($opts['query']['archive'])) {
+            $article_id = $opts['query']['archive'];
+            if ($article_id) {
+                db_update('ebms_packet_article')
+                    ->fields(array('archived' => $now))
+                    ->condition('article_id', $article_id)
+                    ->condition('packet_id', $packet_id)
+                    ->execute();
+            }
+
+            // Not enough to pull it out of our own set; table sorting
+            // URLs will go back to the original query for parameters.
+            unset($_GET['archive']);
+            unset($opts['query']['archive']);
+        }
+
+        // Undo the suppression of an article in a packet.
+        if (isset($opts['query']['revive'])) {
+            $article_id = $opts['query']['revive'];
+            if ($article_id) {
+                db_update('ebms_packet_article')
+                    ->fields(array('archived' => null))
+                    ->condition('article_id', $article_id)
+                    ->condition('packet_id', $packet_id)
+                    ->execute();
+            }
+
+            // See note above about clearing the 'archive' parameter.
+            unset($_GET['revive']);
+            unset($opts['query']['revive']);
+        }
+
+        // Manual breadcrumb setting to match requirements.
+        $url = EbmsReview::$url . '/unreviewed/' . $packet_id;
+        drupal_set_breadcrumb(
+            array(
+                l('Literature', EbmsReview::$url),
+                l('Unreviewed Packets', EbmsReview::$url . '/unreviewed'),
+                $this->packet_title,
+            )
+        );
+
+        // Handle some of the other page state settings.
+        if ($this->pager != 'off')
+            $pager = array('#theme' => 'pager');
+        else {
+            unset($opts['query']['pager']);
+            $link = l('VIEW PAGES', EbmsReview::$url . '/unreviewed', $opts);
+            $pager = array(
+                '#type' => 'markup',
+                '#markup' => "<div id='pager-view-pages'>$link</div>",
+            );
+        }
+        $archive_opts = $opts;
+        if (isset($archive_opts['query']['sa'])) {
+            $archive_title = 'Don\'t Show Archived Articles';
+            unset($archive_opts['query']['sa']);
+            $sa = true;
+        }
+        else {
+            $archive_title = 'Show Archived Articles';
+            $archive_opts['query']['sa'] = 1;
+            $sa = false;
+        }
+        $archive_opts['attributes'] = array('title' => $archive_title);
+
+        // Set up sorting via the table column headers.
+        $headers = array(
+            array(
+                'data' => 'Article',
+                'field' => 'a.article_title',
+            ),
+            array(
+                'data' => l('Archive', $url, $archive_opts),
+                'class' => array('col-4'),
+            ),
+        );
+
+        // Construct the query to get the articles in the packet.
+        $query = db_select('ebms_packet_article', 'p');
+        $query = $query->extend('TableSort');
+        $query->join('ebms_article', 'a', 'a.article_id = p.article_id');
+        $query->leftJoin('file_managed', 'f', 'f.fid = a.full_text_id');
+        $query->fields('a', array('article_id', 'article_title', 'source_id'));
+        $query->fields('p', array('archived'));
+        $query->fields('f', array('uri'));
+        $query->condition('p.packet_id', $packet_id);
+        if (!$sa)
+            $query->isNull('p.archived');
+        $query->groupBy('a.article_id');
+        $query->orderByHeader($headers);
+        $articles = $query->execute();
+
+        // Get a list of all the reviewers assigned to the packet.
+        $packet_reviewers = array();
+        $query = db_select('users', 'u');
+        $query->fields('u', array('name'));
+        $query->join('ebms_packet_reviewer', 'r', 'r.reviewer_id = u.uid');
+        $query->condition('r.packet_id', $packet_id);
+        $query->orderBy('u.name');
+        $results = $query->execute();
+        foreach ($results as $result)
+            $packet_reviewers[] = $result->name;
+
+        // Build up the sequence of table rows.
+        $rows = array();
+        $target = array('attributes' => array('target' => '_blank'));
+        foreach ($articles as $article) {
+
+            // Get the base string for the article citation display.
+            // Yes, the name of the method is inappropriate. But it works. :-)
+            $article_id = $article->article_id;
+            $citation = $this->get_reviewed_citation($article_id, false);
+
+            // Add related articles and board manager comment (OCEEBMS-381).
+            // Also most recent status and topic-associated tags (OCEEBMS-405).
+            // Also highlight high-priority article/topic combos (OCEEBMS-478).
+            $related = Ebms\Util::get_related_articles($article_id);
+            if ($related)
+                $citation .= "<br>$related";
+            $topic_id = db_select('ebms_packet', 'p')
+                ->fields('p', array('topic_id'))
+                ->condition('p.packet_id', $packet_id)
+                ->execute()
+                ->fetchField();
+            $topic_tags = EbmsReview::get_topic_tags($article_id, $topic_id);
+            if ($topic_tags)
+                $citation .= "<br>[ARTICLE TAG(S): $topic_tags]";
+            $comment = EbmsReview::get_article_topic_comment($article_id,
+                                                             $topic_id);
+            if (strpos($topic_tags, 'High priority') !== false) {
+                $citation .= '<br><br><span class="hi-priority">';
+                $citation .= 'HIGH PRIORITY</span>';
+            }
+            if ($comment) {
+                $citation .= '<br><br><span class="bmc">BOARD MANAGER COMMENT';
+                $citation .= "<br>$comment</span>";
+            }
+            $latest_status = Ebms\Util::get_latest_status($article_id,
+                             $topic_id, $full_review_sequence);
+            if ($latest_status)
+                $citation .= '<br><br><span class="mrs">ARTICLE STATE<br>' .
+                    $latest_status . '</span>';
+
+            // Assemble the row.
+            $article_opts = $opts;
+            $action = $article->archived ? 'revive' : 'archive';
+            $article_opts['query'][$action] = $article_id;
+            $href = url($url, $article_opts);
+            $type = 'type="checkbox"';
+            $onclick = 'onclick=\'location.href="' . $href . '"\'';
+            $checked = $article->archived ? ' checked="checked"' : '';
+            $checkbox = "<input $type $onclick$checked />";
+            $pm_url = Ebms\Util::pubmed_url($article->source_id);
+            $links = '<div class="links">' .
+                l('View Abstract', $pm_url, $target);
+            if ($article->uri) {
+                $f_url = file_create_url($article->uri);
+                $links .= ' | ' . l('Download Full Text', $f_url, $target);
+            }
+            $a_url = EbmsReview::$url . '/reviews/' . $packet_id . '/' .
+                $article_id;
+            $links .= '</div>';
+            $data = array(
+                $citation . $links,
+                array(
+                    'data' => $checkbox,
+                    'class' => array('col-4'),
+                ),
+            );
+            $rows[] = array(
+                'data' => $data,
+                'no_striping' => true,
+            );
+        }
+
+        // Put together and return the render array for the table.
+        $main_url = EbmsReview::$url;
+        $del_func = 'javascript:ebmsscript.delete_packet';
+        $opts = array('query' => drupal_get_query_parameters());
+        $opts['query']['target'] = 'unreviewed';
+        $del_parm = url("$main_url/delete/$packet_id", $opts);
+        $del_url = "$del_func('$del_parm');";
+        $del_button = '<a href="' . $del_url .
+            '" class="button">Archive Packet</a>';
+        $page = array(
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => '<h2>' . htmlspecialchars($this->packet_title) .
+                '</h2>'
+                . '<p><i><b>Assigned ' . $created . ' for review to: </b>'
+                . implode(', ', $packet_reviewers)
+                . '</i></p>'
+                ,
+            ),
+            'buttons' => array(
+                '#type' => 'markup',
+                '#markup' => $del_button, // $buttons,
+                '#prefix' => '<div id="buttons">',
+                '#suffix' => '</div>',
+            ),
+            'top pager' => $pager,
+            'table' => array(
+                '#attributes' => array('id' => 'manager-packet-table'),
+                '#theme' => 'table',
+                '#rows' => $rows,
+                '#header' => $headers,
+            ),
+            'bottom pager' => $pager,
+            'delete-confirm' => array(
+                '#type' => 'container',
+                '#attributes' => array(
+                    'id' => 'confirm-packet-delete',
+                    'title' => 'Archive Packet?',
+                ),
+                'confirm-message' => array(
+                    '#type' => 'markup',
+                    '#markup' =>
+                    '<p>Archiving this packet will remove it from the queues'
+                     . ' of the assigned reviewers.</p>'
+                ),
+            ),
+        );
         return $page;
     }
 
@@ -5169,12 +5576,22 @@ function pdq_ebms_manager_packets_filter_form (
     $date_fields = Ebms\Util::date_range_field('Packet Creation Date:', 'date',
                                                '', '', ':+0', false);
     $form['date-limits'] = $date_fields;
-    $scope_opts = array('Active', 'Archived', 'Legacy', 'Unreviewed');
-    $form['pkt_scope'] = array(
+    $form['pkt_scope_active'] = array(
         '#type' => 'checkboxes',
-        '#options' => drupal_map_assoc($scope_opts),
-        '#default_value' => array('Active', 'Unreviewed'),
-        '#title' => 'Include packets that are:',
+        '#options' => drupal_map_assoc(array('Active', 'Archived')),
+        '#default_value' => array('Active'),
+        '#title' => 'Packet Statuses To Include:',
+    );
+    $form['pkt_scope_reviewed'] = array(
+        '#type' => 'checkboxes',
+        '#options' => array(
+            'Reviewed' =>
+            'Reviewed (packets that have at least one review for any article)',
+            'Unreviewed' =>
+            'Unreviewed (packets that have no reviews for any article)',
+        ),
+        '#default_value' => array('Reviewed', 'Unreviewed'),
+        '#title' => 'Review Statuses To Include:',
     );
     $form['submit'] = array(
         '#type' => 'submit',
@@ -5576,6 +5993,145 @@ function ebms_reviewed_packets_filter_form_submit($form, &$form_state) {
 }
 
 /**
+ * Throttle the display of packets for which reviews have not been submitted.
+ * Added for JIRA ticket OCEEBMS-550.
+ */
+function ebms_unreviewed_packets_filter_form($form_id, $form_state, $opts) {
+
+    // Make sure the current user is connected with at least one board.
+    $board_ids = EbmsReview::get_board_ids();
+    if (count($board_ids) < 1)
+        return array();
+
+    // Get a list of all the board members for those boards.
+    $reviewers = array();
+    foreach ($board_ids as $board_id)
+        $reviewers += EbmsReview::board_members($board_id);
+    natcasesort($reviewers);
+
+    // Get a list of all of the topics for those boards.
+    $topics = db_select('ebms_topic', 't')
+        ->fields('t', array('topic_id', 'topic_name'))
+        ->condition('t.board_id', $board_ids, 'IN')
+        ->orderBy('t.topic_name')
+        ->execute()
+        ->fetchAllKeyed();
+
+    // Initialize the default form values to empty.
+    $topic_defaults = array();
+    $title = $start_date = $end_date = '';
+    $reviewer_defaults = array();
+
+    // If we're handling a filter request, adjust the default values.
+    if (!empty($opts['query']['filter'])) {
+        $filter_id = $opts['query']['filter'];
+        $filter = pdq_ebms_get_filter_criteria($filter_id);
+        foreach ($filter['topics'] as $id => $val) {
+            if ($val && array_key_exists($id, $topics))
+                $topic_defaults[] = $id;
+        }
+        foreach ($filter['reviewers'] as $id => $val) {
+            if ($val && array_key_exists($id, $reviewers))
+                $reviewer_defaults[] = $id;
+        }
+        $title = $filter['packet_title_text'];
+        $start_date = $filter['date-start']['date'];
+        $end_date = $filter['date-end']['date'];
+        if ($start_date)
+            $start_date = Ebms\Util::fill_in_date($start_date);
+        if ($end_date)
+            $end_date = Ebms\Util::fill_in_date($end_date, true);
+    }
+
+    // Build and return the Drupal render array for the filtering form.
+    $date_fields = Ebms\Util::date_range_field('Packet Created:', 'date',
+                                               $start_date, $end_date,
+                                               ':+0', false);
+    return array(
+        '#id' =>'unreviewed-packets-filter-form',
+        'title' => array(
+            '#type' => 'markup',
+            '#markup' => '<h3>Filter Packet Selection</h3>',
+        ),
+        'topic_box' => array(
+            '#type' => 'fieldset',
+            '#title' => 'Summary topics',
+            '#collapsible' => true,
+            '#collapsed' => true,
+            'topics' => array(
+                '#type' => 'checkboxes',
+                '#options' => $topics,
+                '#default_value' => $topic_defaults,
+            ),
+        ),
+        'reviewer_box' => array(
+            '#type' => 'fieldset',
+            '#title' => 'Assigned Reviewers',
+            '#collapsible' => true,
+            '#collapsed' => true,
+            'reviewers' => array(
+                '#type' => 'checkboxes',
+                '#options' => $reviewers,
+                '#default_value' => $reviewer_defaults,
+            ),
+        ),
+        'packet_title_text' => array(
+            '#type' => 'textfield',
+            '#size' => 40,
+            '#title' => 'Packet Name: ',
+            '#title_display' => 'before',
+            '#default_value' => $title,
+        ),
+        'date-limits' => $date_fields,
+        'buttons' => array(
+            '#type' => 'container',
+            '#attributes' => array('class' => array('button-wrapper')),
+            'submit' => array(
+                '#type' => 'submit',
+                '#value' => 'Filter',
+            ),
+            'cancel' => array(
+                '#type' => 'submit',
+                '#value' => 'Reset',
+            ),
+        ),
+    );
+}
+
+/**
+ * Submit function gathers the info into a JSON string and inserts it in
+ * the database.  Then re-invokes the top level function with the row ID
+ * of the row in ebms_search containing the filter criteria.
+ */
+function ebms_unreviewed_packets_filter_form_submit($form, &$form_state) {
+
+    global $user;
+
+    // Start fresh with no filtering if the user clicks the 'Reset' button.
+    if (trim($form_state['values']['op']) == 'Reset')
+        drupal_goto(EbmsReview::$url . '/unreviewed');
+
+    // Save the filter options so we can use them to find the right packets.
+    $filter_spec = drupal_json_encode($form_state['values']);
+    $parms       = drupal_get_query_parameters();
+    $now         = db_query('SELECT NOW()')->fetchField();
+    $uid         = $user->uid;
+    $fields      = array(
+        'when_searched' => $now,
+        'searched_by'   => $uid,
+        'search_spec'   => $filter_spec
+    );
+    $filter_id = db_insert('ebms_search')->fields($fields)->execute();
+
+    // Rebuild the unreviewed packets page with the new filter options.
+    $opts = array('query' => array('filter' => $filter_id));
+    $opts['query']['pager'] = 'off';
+    if (!empty($parms['boards']))
+        $opts['query']['boards'] = $parms['boards'];
+    drupal_goto(EbmsReview::$url . "/unreviewed", $opts);
+}
+
+/**
  * Assemble the HTML markup for a packet's star, to be displayed on the
  * board manager's Reviewed Packets page.
  * See https://tracker.nci.nih.gov/browse/OCEEBMS-350.
@@ -5875,11 +6431,11 @@ function ebms_packet_bulk_archive($form, &$form_state, $search_id) {
     $query->join('ebms_topic', 't', 't.topic_id = p.topic_id');
     $query->join('ebms_board', 'b', 'b.board_id = t.board_id');
     $query->join('users', 'u', 'u.uid = p.created_by');
-    if (Ebms\Util::get_request_value('reviewed')) {
-        $query->join('ebms_article_review', 'r',
-            'r.packet_id = p.packet_id');
-        $query->distinct();
-    }
+    $query->distinct();
+    #if (Ebms\Util::get_request_value('reviewed')) {
+    #    $query->join('ebms_article_review', 'r',
+    #        'r.packet_id = p.packet_id');
+    #}
     $query->fields('p', array('packet_id', 'packet_title', 'created_at'));
     $query->fields('b', array('board_name'));
     $query->fields('u', array('name'));

@@ -163,7 +163,7 @@ def update_mod_dates(host, articles, latest_mod, stop_date=None):
     @return            string summarizing processing activity
     """
 
-    BATCH_SIZE = 10000
+    BATCH_SIZE = 100
     url = "https://%s/update-source-mod" % host
     logging.debug("top of update_mod_dates(); url: %s", url)
     y, m, d = [int(p) for p in latest_mod.split("-")]
@@ -196,10 +196,11 @@ def update_mod_dates(host, articles, latest_mod, stop_date=None):
                 offset += BATCH_SIZE
                 params = dict(date=date, source="Pubmed", ids=subset)
                 logging.debug("calling url with params %s", params)
-                response = requests.get(url, params=params)
+                response = requests.post(url, data=params)
                 if response.status_code != 200:
                     msg = FAILURE.format(date, response.status_code)
                     logging.error(msg)
+                    logging.error("reason: %s", response.reason)
                     return msg
                 logging.debug("code is OK")
             total += len(mod_pmids)

@@ -105,7 +105,7 @@ class EbmsPublish {
             }
         }
         drupal_add_css(Ebms\CSS_DIR . '/publish.css');
-        Ebms\Menu::$active = 'Citation Management';
+        Ebms\Menu::$active = 'Manage@@BR@@Citations';
         drupal_set_breadcrumb(
             array(
                 l('Citation Management', 'citations'),

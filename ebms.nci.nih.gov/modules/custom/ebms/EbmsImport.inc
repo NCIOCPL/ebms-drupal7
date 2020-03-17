@@ -26,6 +26,9 @@ define('Ebms\PMID_PAT', '/[^\d](?P<pmid>\d{7,8})[^\d]/');
 // Medline format Pubmed ID
 define('Ebms\MEDLINE_PMID_PAT', '/^PMID- (\d{2,8})/m');
 
+// RIS format Pubmed ID
+define('Ebms\RIS_PMID_PAT', '/^AN  -\s*(\d{2,8})/m');
+
 // Pubmed XML format recognizer
 define('Ebms\PUBMED_XML_START_PAT', '/<!DOCTYPE PubmedArticleSet/m');
 
@@ -1237,6 +1240,10 @@ function getCurrentCycleId() {
  * them and parse appropriately.  The first implementation will be for
  * the Medline print format - which has been used for ten years in CiteMS.
  *
+ * February 2020 (OCEEBMS-528): Add support for RIS format, which NLM
+ * is now using instead of the deprecated (soon to be discontinued)
+ * Medline print format.
+ *
  *  @param int $resultFid       Unique file ID in the managed_file table.
  *  @param string $resultFile   Name of a file of search results, accessible
  *                               to the web server.
@@ -1294,6 +1301,11 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
     if (substr($dataStr, 0, 3) == $BOM)
         $dataStr = substr($dataStr, 3);
 
+    // Is there an RIS format Pubmed ID?
+    $found = preg_match(RIS_PMID_PAT, $dataStr);
+    if ($found)
+        return findPubmedIdsInRISFmt($dataStr);
+
     // Is there a Medline format Pubmed ID?
     $matches = array();
     $found = preg_match(MEDLINE_PMID_PAT, $dataStr, $matches,
@@ -1316,9 +1328,31 @@ function findPubmedIDs($resultFid, $resultFile, $resultStr) {
         return findPubmedIDsInXML($dataStr);
     }
     throw new \Exception(
-        "Unsupported Pubmed search result format - " .
-        "only accepting Medline print format (text) or Pubmed XML.  " .
-        "For clean data, use Pubmed's 'Send to: File' to save the data)");
+        'Unsupported Pubmed search result format - ' .
+        'please use the standard RIS format.');
+}
+
+/**
+ * Parse Pubmed IDs out of an RIS Format search result. (OCEEBMS-528)
+ *
+ *  @param string $resultStr    The search result as a single string.
+ *
+ *  @return array               Array of Pubmed IDs as ASCII digit strings.
+ *
+ *  @throws Exception           If no Pubmed IDs found.
+ */
+function findPubmedIDsInRISFmt($resultStr) {
+
+    $matches = array();
+    $count = preg_match_all(RIS_PMID_PAT, $resultStr, $matches);
+    if ($count == 0) {
+        throw new \Exception(
+            "findPubmedIDsInRISFormat: Couldn't find any '^AN  - nnn'. " .
+            " How can that happen?");
+    }
+
+    // Return the pmids - the first subpattern in MEDLINE_PMID_PAT
+    return $matches[1];
 }
 
 /**

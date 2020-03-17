@@ -64,7 +64,7 @@ class EbmsSummaries {
                 return MENU_ACCESS_DENIED;
         Ebms\Util::add_js();
         drupal_add_css(Ebms\CSS_DIR . '/summaries.css');
-        Ebms\Menu::$active = 'Summaries';
+        Ebms\Menu::$active = 'Manage@@BR@@Summaries';
 
         // Check to see if we've been asked to remove a subpage from the
         // board's list.  Part of TIR 2173.

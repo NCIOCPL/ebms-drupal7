@@ -1328,11 +1328,18 @@ function _ebms_webforms_results_table($node, $pager_count=0) {
 
     // Since all webforms are likely to go in the reports section, let's
     // make that breadcrumb universal
-    drupal_set_breadcrumb(array(
-        l('Reports', 'reports'),
-        l('Board Management Reports', 'reports/board'),
-        drupal_get_title() . 's',
-    ));
+    global $user;
+    if (in_array('travel admin', $user->roles))
+        drupal_set_breadcrumb(array(
+            l('Reports', 'reports'),
+            drupal_get_title() . 's',
+        ));
+    else
+        drupal_set_breadcrumb(array(
+            l('Reports', 'reports'),
+            l('Board Management Reports', 'reports/board'),
+            drupal_get_title() . 's',
+        ));
 
     // Set the top navigation to be Reports
     module_load_include('inc', 'ebms', 'common');

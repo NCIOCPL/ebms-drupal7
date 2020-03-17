@@ -67,7 +67,8 @@ define ('Ebms\NOTE_ICON', IMAGES_DIR . '/note.ico');
 
 define('Ebms\DOC_TYPES', 'txt doc pdf docx ppt pptx xls xlsx jpg jpeg');
 
-define('Ebms\PUBMED_URL', 'https://www.ncbi.nlm.nih.gov/pubmed');
+define('Ebms\PUBMED_URL', variable_get('pubmed_url',
+                                       'https://pubmed.ncbi.nlm.nih.gov'));
 
 /**
  * As a result of bugs in the Superfish menu module, poor documentation
@@ -112,6 +113,14 @@ class Menu {
      * here, without recursion.
      */
     public function render_array() {
+        if (!Menu::$active)
+            Menu::$active = Menu::find_active_menu();
+        // else {
+        //     $a = Menu::$active;
+        //     $q = $_GET['q'];
+        //     $t = drupal_get_title();
+        //     drupal_set_message("[$a] [$q] [$t]");
+        // }
         $link = Menu::make_link($this->label, $this->path, $this->tip);
         $ra = array('data' => $link);
         if ($this->label == Menu::$active)
@@ -122,6 +131,43 @@ class Menu {
         if (!empty($children))
             $ra['children'] = $children;
         return $ra;
+    }
+
+    /**
+     * Figure out which menu to highlight.
+     */
+    static function find_active_menu() {
+        $t = drupal_get_title();
+        // drupal_set_message("\$q is [$q] and \$t is [$t]");
+        switch ($t) {
+        case 'Travel':
+        case 'Directions':
+        case 'Policies and Procedures':
+        case 'Hotel Request':
+        case 'Reimbursement Request':
+        case 'Hotel Requests Report':
+        case 'Reimbursement Requests':
+            return 'Travel';
+        case 'User Help':
+            return 'Admin';
+        }
+        $q = $_GET['q'];
+        if (strpos($q, 'home') === 0) return 'Home';
+        if (strpos($q, 'user-help') === 0) return 'Admin';
+        if (strpos($q, 'travel') === 0) return 'Travel';
+        if (strpos($q, 'node/1') === 0) return 'Travel';
+        if (strpos($q, 'node/2') === 0) return 'Travel';
+        if (strpos($q, 'node') === 0) return 'Calendar';
+        if (strpos($q, 'calendar') === 0) return 'Calendar';
+        if (strpos($q, 'summaries') === 0) return 'Manage@@BR@@Summaries';
+        if (strpos($q, 'reports') === 0) return 'Reports';
+        if (strpos($q, 'Admin') === 0) return 'Admin';
+        if (strpos($q, 'review') === 0) return 'Literature@@BR@@Packets';
+        if (strpos($q, 'citations/not-list') === 0) return 'Admin';
+        if (strpos($q, 'citations') === 0) return 'Manage@@BR@@Citations';
+        if (strpos($q, 'internal-articles') !== false)
+            return 'Manage@@BR@@Citations';
+        return 'Admin';
     }
 
     /**
@@ -178,38 +224,47 @@ class Menu {
             $role = 'member';
         elseif (in_array('admin assistant', $user->roles))
             $role = 'admin assistant'; // XXX maybe later 'assistant';
+        elseif (in_array('travel admin', $user->roles))
+            $role = 'travel admin';
         else
             $role = 'board manager';
         switch ($role) {
-            case 'board manager':
-            case 'icrdb manager':
-            case 'admin assistant':
-                self::$menus = array(
-                    Menu::admin($role),
-                    Menu::citations($role),
-                    Menu::reports($role),
-                    Menu::literature($role),
-                    Menu::summaries($role),
-                    Menu::travel($role),
-                    Menu::calendar($role),
-                );
-                break;
-            case 'librarian':
-                self::$menus = array(
-                    Menu::admin($role),
-                    Menu::citations($role),
-                    Menu::reports($role),
-                    Menu::calendar($role),
-                );
-                break;
-            case 'member':
-                self::$menus = array(
-                    Menu::search(),
-                    Menu::literature($role),
-                    Menu::summaries($role),
-                    Menu::travel($role),
-                    Menu::calendar($role),
-                );
+        case 'travel admin':
+            self::$menus = array(
+                Menu::travel($role),
+                Menu::reports($role),
+                Menu::calendar($role),
+            );
+            break;
+        case 'board manager':
+        case 'icrdb manager':
+        case 'admin assistant':
+            self::$menus = array(
+                Menu::admin($role),
+                Menu::citations($role),
+                Menu::reports($role),
+                Menu::literature($role),
+                Menu::summaries($role),
+                Menu::travel($role),
+                Menu::calendar($role),
+            );
+        break;
+        case 'librarian':
+            self::$menus = array(
+                Menu::admin($role),
+                Menu::citations($role),
+                Menu::reports($role),
+                Menu::calendar($role),
+            );
+            break;
+        case 'member':
+            self::$menus = array(
+                Menu::search(),
+                Menu::literature($role),
+                Menu::summaries($role),
+                Menu::travel($role),
+                Menu::calendar($role),
+            );
         }
     }
 
@@ -230,6 +285,7 @@ class Menu {
         if ($role != 'librarian') {
             $children[] = new Menu('Manage Groups', 'groups');
             $children[] = new Menu('Find Users', 'admin/users');
+            $children[] = new Menu('User Profiles', 'profile/all');
             $children[] = new Menu('Print Packets', 'print-packets/run');
             $children[] = new Menu('View Packet Printing Jobs',
                           'print-packets/view');
@@ -288,6 +344,16 @@ class Menu {
      * Build the EBMS menu information for reports.
      */
     public static function reports($role) {
+        if ($role === 'travel admin')
+            return new Menu(
+                'Reports', 'reports', array(
+                    new Menu('Hotel Requests',
+                             Util::webform_report_url('Hotel')),
+                    new Menu('Reimbursement Requests',
+                             Util::webform_report_url('Reimbursement')),
+                    new Menu('Board Membership', 'reports/membership'),
+                )
+            );
         return new Menu(
             'Reports', 'reports', array(
                 new Menu('Board Management', 'reports/board'),
@@ -313,6 +379,7 @@ class Menu {
             default:
                 $submenus = array(
                     new Menu('Reviewed Packets', 'review/reviews'),
+                    new Menu('Unreviewed Packets', 'review/unreviewed'),
                     new Menu('Create Packet', 'review/add'),
                     new Menu('View/Edit Packets', 'review/packets'),
                     new Menu('Record Responses', 'review/record'),
@@ -2503,6 +2570,83 @@ class Util {
         $query->orderBy('t.tag_dt');
         $query->fields('n', array('tag_name'));
         return $query->execute()->fetchCol();
+    }
+
+    /**
+     * Find a webform node ID and use it to build the report URL.
+     *
+     *   @param string $subject  front portion of the form's title
+     *
+     *   @return string          url for the form's report
+     */
+    public static function webform_report_url($subject) {
+        $node = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->condition('n.type', 'webform')
+            ->condition('n.title', "$subject Request")
+            ->execute()
+            ->fetchField();
+        if (!empty($node))
+            return "node/$node/webform-results/table";
+        return 'stub';
+    }
+
+    /**
+     * Find post-review status for an article (to be displayed
+     * on the reviewed packet page). OCEEBMS-405
+     */
+    public static function get_latest_status($article_id, $topic_id, $fr_seq) {
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_article_state_type', 't',
+                     't.state_id = s.state_id');
+        $query->fields('s', array('article_state_id'));
+        $query->fields('t', array('state_text_id', 'state_name'));
+        $query->condition('s.article_id', $article_id);
+        $query->condition('s.topic_id', $topic_id);
+        $query->condition('s.current', 'Y');
+        $query->condition('t.sequence', $fr_seq, '>');
+        $results = $query->execute();
+        foreach ($results as $result) {
+            switch ($result->state_text_id) {
+                case 'FinalBoardDecision':
+                    $query = db_select('ebms_article_board_decision', 'd');
+                    $query->join('ebms_article_board_decision_value', 'v',
+                        'v.value_id = d.decision_value_id');
+                    $query->condition('d.article_state_id',
+                        $result->article_state_id);
+                    $query->fields('v', array('value_name'));
+                    $query->orderBy('v.value_name');
+                    $decisions = implode('; ', $query->execute()->fetchCol());
+                    if (!$decisions === '')
+                        $decisions = 'NO DECISION RECORDED';
+                    $decisions = htmlspecialchars($decisions);
+                    return "Editorial Board Decision: $decisions";
+                case 'OnAgenda':
+                    $query = db_select('node', 'n');
+                    $query->join('ebms_agenda_meeting', 'm', 'm.nid = n.nid');
+                    $query->join('field_data_field_datespan', 'd',
+                        'd.entity_id = n.nid');
+                    $query->condition('m.article_state_id',
+                        $result->article_state_id);
+                    $query->fields('n', array('title'));
+                    $query->fields('d', array('field_datespan_value'));
+                    $rows = $query->execute();
+                    $meetings = array();
+                    foreach ($rows as $row) {
+                        $title = $row->title;
+                        $date = date('Y-m-d', $row->field_datespan_value);
+                        $meetings[] = "$title - $date";
+                    }
+                    $meetings = htmlspecialchars(implode('; ', $meetings));
+                    if (!$meetings === '')
+                        $meetings = 'NO MEETINGS RECORDED';
+                    return "On Agenda: $meetings";
+                default:
+                    $action = htmlspecialchars($result->state_name);
+                    return "Board Manager Action: $action";
+            }
+        }
+        return '';
     }
 }
 
