@@ -272,6 +272,10 @@ def fetch(opts):
         os.mkdir(where)
     except Exception as e:
         print(f"{where}: {e}")
+    start = opts["start"]
+    end = opts["end"] + " 23:59:59"
+    del opts["start"]
+    del opts["end"]
     opts["passwd"] = getpass.getpass(f"password for {opts['user']}: ")
     conn = pymysql.connect(**opts)
     cursor = conn.cursor()
@@ -298,11 +302,15 @@ SELECT source_jrnl_id, board_id
         for row in rows:
             fp.write(f"{row!r}\n")
     sys.stderr.write(f"fetched {len(rows):d} journals\n")
-    cursor.execute("SELECT article_id, source_jrnl_id FROM ebms_article")
+    cursor.execute("""\
+SELECT article_id, source_jrnl_id FROM ebms_article
+ WHERE import_date BETWEEN %s AND %s""", (start, end))
+    articles = set()
     with open(f"{where}/articles", "w") as fp:
         count = 0
         row = cursor.fetchone()
         while row:
+            articles.add(row[0])
             fp.write(f"{row!r}\n")
             row = cursor.fetchone()
             count += 1
@@ -324,9 +332,10 @@ SELECT DISTINCT article_id, board_id
         count = 0
         row = cursor.fetchone()
         while row:
-            fp.write(f"{row!r}\n")
+            if row[0] in articles:
+                fp.write(f"{row!r}\n")
+                count += 1
             row = cursor.fetchone()
-            count += 1
     sys.stderr.write(f"fetched {count:d} article boards\n")
     wanted = ",".join([str(w) for w in states.wanted()])
     cursor.execute(f"""\
@@ -334,13 +343,16 @@ SELECT article_state_id, article_id, state_id, board_id
   FROM ebms_article_state
  WHERE active_status = 'A'
    AND state_id IN ({wanted})""")
+    article_state_ids = set()
     with open(f"{where}/article_states", "w") as fp:
         row = cursor.fetchone()
         count = 0
         while row:
-            fp.write(f"{row!r}\n")
+            if row[1] in articles:
+                fp.write(f"{row!r}\n")
+                count += 1
+                article_state_ids.add(row[0])
             row = cursor.fetchone()
-            count += 1
     sys.stderr.write(f"fetched {count:d} article states\n")
     cursor.execute("""\
 SELECT value_id, value_name
@@ -357,9 +369,10 @@ SELECT article_state_id, decision_value_id
     count = 0
     with open(f"{where}/board_decisions", "w") as fp:
         while row:
-            fp.write(f"{row!r}\n")
+            if row[0] in article_state_ids:
+                fp.write(f"{row!r}\n")
+                count += 1
             row = cursor.fetchone()
-            count += 1
     sys.stderr.write(f"fetched {count:d} board decisions\n")
     return where
 
@@ -371,6 +384,8 @@ def main():
     parser.add_argument("--port", type=int, default=3661)
     parser.add_argument("--db", default="oce_ebms")
     parser.add_argument("--user", default="oce_ebms")
+    parser.add_argument("--start", default="2019-06-01")
+    parser.add_argument("--end", default="2020-07-01")
     opts = parser.parse_args()
     if opts.path:
         path = opts.path
