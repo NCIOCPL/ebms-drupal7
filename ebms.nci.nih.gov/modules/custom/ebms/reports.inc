@@ -8317,22 +8317,27 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
     $sheet->setTitle('Boards');
     $sheet->mergeCells("A1:${last_col}1");
     $sheet->mergeCells("A2:${last_col}2");
+    $sheet->mergeCells("A3:M3");
+    $sheet->mergeCells("N3:P3");
+    $sheet->mergeCells("Q3:${last_col}3");
     $center = PHPExcel_Style_Alignment::HORIZONTAL_CENTER;
     $style = array(
         'font' => array('bold' => true),
         'alignment' => array('horizontal' => $center),
     );
     $title = "EBMS Statistics ($start - $end)";
-    $sheet->getStyle("A1:${last_col}3")->applyFromArray($style);
+    $sheet->getStyle("A1:${last_col}4")->applyFromArray($style);
     $sheet->setCellValue('A1', $title);
-    $sheet->fromArray($cols, null, 'A3');
+    $sheet->setCellValue('N3', 'Board Member Responses');
+    $sheet->setCellValue('Q3', 'Editorial Board Decisions');
+    $sheet->fromArray($cols, null, 'A4');
     foreach (range('A', $last_col) as $col)
         $sheet->getColumnDimension($col)->setAutoSize(true);
     $board_stats = array();
-    $sheet->setCellValue('A4', 'All Boards');
+    $sheet->setCellValue('A5', 'All Boards');
     $values = _ebms_stats(0, 0, $start, $end, $decisions);
-    $sheet->fromArray($values, null, 'B4');
-    $row_number = 6;
+    $sheet->fromArray($values, null, 'B5');
+    $row_number = 7;
     foreach ($boards as $id => $name) {
         if (strpos(strtolower($name), 'complementary') !== false)
             $name = 'IACT';
@@ -8348,23 +8353,28 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
         $excel->createSheet();
         $excel->setActiveSheetIndex($sheet_id++);
         $sheet = $excel->getActiveSheet();
-        $sheet->freezePane('B5');
+        $sheet->freezePane('B6');
         foreach (range('A', $last_col) as $col)
             $sheet->getColumnDimension($col)->setAutoSize(true);
         if (strpos(strtolower($name), 'complementary') !== false)
             $sheet->setTitle('IACT');
         else
             $sheet->setTitle($name);
-        $sheet->getStyle("A1:${last_col}4")->applyFromArray($style);
+        $sheet->getStyle("A1:${last_col}5")->applyFromArray($style);
         $sheet->mergeCells("A1:${last_col}1");
         $sheet->mergeCells("A2:${last_col}2");
         $sheet->mergeCells("A3:${last_col}3");
+        $sheet->mergeCells("A4:M4");
+        $sheet->mergeCells("N4:P4");
+        $sheet->mergeCells("Q4:${last_col}4");
         $sheet->setCellValue('A1', $title);
         $sheet->setCellValue('A2', $name);
-        $sheet->fromArray($cols, null, 'A4');
-        $sheet->setCellValue('A5', 'All Topics');
-        $sheet->fromArray($board_stats[$id], null, 'B5');
-        $row_number = 7;
+        $sheet->setCellValue('N4', 'Board Member Responses');
+        $sheet->setCellValue('Q4', 'Editorial Board Decisions');
+        $sheet->fromArray($cols, null, 'A5');
+        $sheet->setCellValue('A6', 'All Topics');
+        $sheet->fromArray($board_stats[$id], null, 'B6');
+        $row_number = 8;
         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
             ->condition('t.board_id', $id)
