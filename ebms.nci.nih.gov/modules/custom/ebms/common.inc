@@ -138,7 +138,6 @@ class Menu {
      */
     static function find_active_menu() {
         $t = drupal_get_title();
-        // drupal_set_message("\$q is [$q] and \$t is [$t]");
         switch ($t) {
         case 'Travel':
         case 'Directions':
@@ -152,12 +151,11 @@ class Menu {
             return 'Admin';
         }
         $q = $_GET['q'];
+        if ($q === 'node/1' || $q === 'node/2') return 'Travel';
+        if (strpos($q, 'node') === 0) return 'Calendar';
         if (strpos($q, 'home') === 0) return 'Home';
         if (strpos($q, 'user-help') === 0) return 'Admin';
         if (strpos($q, 'travel') === 0) return 'Travel';
-        if (strpos($q, 'node/1') === 0) return 'Travel';
-        if (strpos($q, 'node/2') === 0) return 'Travel';
-        if (strpos($q, 'node') === 0) return 'Calendar';
         if (strpos($q, 'calendar') === 0) return 'Calendar';
         if (strpos($q, 'summaries') === 0) return 'Manage@@BR@@Summaries';
         if (strpos($q, 'reports') === 0) return 'Reports';
