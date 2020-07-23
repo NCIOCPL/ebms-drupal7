@@ -6512,7 +6512,8 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
 
     // Initialize defaults for the form field's values.
     $board = \Ebms\Util::get_user_default_board(0);
-    $selected_topics = /* $selected_cycles = */ array();
+    $selected_topics = array();
+    $selected_members = array();
     $order_by = 'author';
     $start = $end = '';
     $hi_priority = false;
@@ -6522,7 +6523,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         $values = EbmsReports::fetch_report_request($request_id);
         $board = $values['board'];
         $selected_topics = $values['topics'];
-        // $selected_cycles = $values['cycles'];
+        $selected_members = $values['members'];
         $start = $values['date-start']['date'];
         $end = $values['date-end']['date'];
         if ($start)
@@ -6537,7 +6538,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     if (isset($form_state['values'])) {
         $board = $form_state['values']['board'];
         $selected_topics = $form_state['values']['topics'];
-        /* $selected_cycles = $form_state['values']['cycles']; */
+        $selected_members = $form_state['values']['members'];
     }
 
     // How tall should the picklists allowing multiple selections be?
@@ -6545,8 +6546,8 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
 
     // Create the picklists.
     $topics = array();
+    $members = array();
     $boards = array(0 => ' ') + Ebms\Util::boards();
-    // $cycles = Ebms\Util::cycles();
 
     // If a board has been selected, populate the board-dependent picklists.
     if ($board) {
@@ -6561,6 +6562,22 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         foreach ($selected_topics as $key => $value)
             if (!array_key_exists($value, $topics))
                 unset($selected_topics[$key]);
+        $role = user_role_load_by_name('board member');
+        $query = db_select('users', 'u')
+            ->fields('u', array('uid', 'name'));
+        $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+        $query->join('users_roles', 'r', 'r.uid = u.uid');
+        $query->condition('m.board_id', $board);
+        $query->condition('u.status', 1);
+        $query->condition('r.rid', $role->rid);
+        $query->orderBy('u.name');
+        $query->distinct();
+        $results = $query->execute();
+        foreach ($results as $result)
+            $members[$result->uid] = $result->name;
+        foreach ($selected_members as $key => $value)
+            if (!array_key_exists($value, $members))
+                unset($selected_members[$key]);
      }
 
     // Assemble the request form.
@@ -6592,19 +6609,16 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
                 '#size' => $size,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
+            'members' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $members,
+                '#default_value' => $selected_members,
+                '#title' => 'Board Member(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
         ),
-        // Suppress filtering this report by cycle (OCEEBMS-362)
-        /*
-        'cycles' => array(
-            '#type' => 'select',
-            '#multiple' => true,
-            '#options' => $cycles,
-            '#default_value' => $selected_cycles,
-            '#title' => 'Cycle(s)',
-            '#size' => $size,
-            '#attributes' => array('class' => array('fixed-width')),
-        ),
-        */
         'date' => Ebms\Util::date_range_field('Assigned Date', 'date',
                                               $start, $end, '', false),
         'options' => array(
@@ -6716,6 +6730,10 @@ function articles_without_responses_report($request_id, $member_version=false) {
         $query->condition('p.topic_id', $values['topics'], 'IN');
     else
         $query->condition('t.board_id', $values['board']);
+
+    // Filter on specific members, if any are selected (OCEEBMS-562).
+    if (count($values['members']))
+        $query->condition('rwr.reviewer_id', $values['members'], 'IN');
 
     // Exclude articles which have at least one review for the packet.
     $query->leftJoin('ebms_article_review', 'r',
