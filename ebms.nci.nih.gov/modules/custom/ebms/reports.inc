@@ -6227,10 +6227,12 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
     $board = \Ebms\Util::get_user_default_board(0);
     $selected_topics = $selected_reviewers = array();
     $start = $end = '';
+    $member_version = false;
 
     // Pull request parameters from the database if appropriate.
     if ($request_id) {
         $values = EbmsReports::fetch_report_request($request_id);
+        $member_version = !empty($values['member-report']);
         $board = $values['board'];
         $selected_topics = $values['topics'];
         $selected_reviewers = $values['reviewers'];
@@ -6247,6 +6249,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
         $board = $form_state['values']['board'];
         $selected_topics = $form_state['values']['topics'];
         $selected_reviewers = $form_state['values']['reviewers'];
+        $member_version = !empty($form_state['values']['member-report']);
     }
 
     // How tall should the picklists allowing multiple selections be?
@@ -6327,6 +6330,11 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
         ),
         'dates' => Ebms\Util::date_range_field('DATE ASSIGNED', 'date',
                                                $start, $end, '', false),
+        'member-report' => array(
+            '#type' => 'checkbox',
+            '#title' => 'Board Member Version',
+            '#default_value' => $member_version,
+        ),
         'reset' => array(
             '#type' => 'submit',
             '#value' => 'Reset',
@@ -6349,6 +6357,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
 
     // If we have a submitted report request, add the report under the form.
     if ($request_id) {
+        $start = $end = '';
         $query = db_select('ebms_packet', 'p')
             ->fields('p', array('packet_id', 'packet_title', 'created_at'));
         $query = $query->extend('TableSort');
@@ -6380,6 +6389,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
                 'data' => 'Created',
                 'field' => 'p.created_at',
                 'sort' => 'desc',
+                'class' => array('hidden'),
             ),
             array(
                 'data' => 'Reviewer',
@@ -6389,6 +6399,10 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             'Completed',
             'Not Completed',
         );
+        $member_version = !empty($values['member-report']);
+        if ($member_version)
+            $headers = ['Packet Name', 'Reviewer', 'Assigned', 'Completed',
+                        'Not Completed'];
         $query->orderByHeader($headers);
         $rows = array();
         $results = $query->execute();
@@ -6413,7 +6427,8 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             }
             $row = array();
             $row[] = htmlspecialchars($result->packet_title);
-            $row[] = substr($result->created_at, 0, 10);
+            if (!$member_version)
+                $row[] = substr($result->created_at, 0, 10);
             $row[] = htmlspecialchars($result->name);
             $row[] = $assigned;
             $row[] = $completed;
@@ -6423,18 +6438,28 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             $total_completed += $completed;
             $total_not_completed += $not_completed;
         }
-        $rows[] = array(
-            '<b>TOTALS</b>',
-            '',
-            '',
-            "<b>$total_assigned</b>",
-            "<b>$total_completed</b>",
-            "<b>$total_not_completed</b>",
-        );
+        $row = array('<b>TOTALS</b>', '');
+        if (!$member_version)
+            $row[] = '';
+        $row[] = "<b>$total_assigned</b>";
+        $row[] = "<b>$total_completed</b>";
+        $row[] = "<b>$total_not_completed</b>";
+        $rows[] = $row;
 
         // Assemble the table.
         $id = 'report-title';
         $title = 'Responses';
+        if (!empty($values['member-report']) && ($start || $end)) {
+            if ($end) {
+                $end = substr($end, 0, 10);
+                if ($start)
+                    $title .= " ($start - $end)";
+                else
+                    $title .= " (through $end)";
+            }
+            else
+                $title .= " (from $start)";
+        }
         $page['report'] = array(
             'title' => array(
                 '#markup' => "<h2 id='$id'>$title</h2>",
