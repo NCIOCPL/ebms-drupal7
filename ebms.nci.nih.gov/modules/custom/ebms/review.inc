@@ -2913,9 +2913,16 @@ class EbmsReview {
         $url = EbmsReview::$url;
         $links = array();
         foreach ($packets as $p) {
+            $count = db_select('ebms_packet_article', 'a')
+                ->condition('a.packet_id', $p->packet_id)
+                ->condition('a.drop_flag', 0)
+                ->countQuery()
+                ->execute()
+                ->fetchField();
             $options['query'] = array('packet' => $p->packet_id);
             pdq_ebms_preserve_on_behalf($options);
-            $links[] = l($p->packet_title, $url, $options);
+            $title = htmlspecialchars($p->packet_title);
+            $links[] = l("$title <b>($count articles)</b>", $url, $options);
         }
 
         // Added at Sridhar's request (TIR 2520).
