@@ -4429,11 +4429,12 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
         'comments' => array(
             '#type' => 'textarea',
             '#resizable' => false,
-            '#title' => 'Comments',
+            '#title' => 'Comments and Changes to Summary',
             '#description' =>
             'Please make your suggested changes directly in the summary ' .
-            'using Track Changes. If you have additional comments, please ' .
-            'add them here.',
+            'using Track Changes and upload the revised summary on the page ' .
+            'for this literature packet. If you have additional comments, ' .
+            'please add them here.',
         ),
         'loe' => array(
             '#type' => 'textarea',
