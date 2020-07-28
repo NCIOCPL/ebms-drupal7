@@ -7248,7 +7248,7 @@ function pdq_ebms_board_members_last_login() {
     require_once $xllib . '/Classes/PHPExcel/IOFactory.php';
     $excel = new PHPExcel();
     $query = db_select('users', 'u')
-        ->fields('u', array('name', 'login'))
+        ->fields('u', array('name', 'login', 'uid'))
         ->condition('u.status', 1);
     $query->join('users_roles', 'ur', 'ur.uid = u.uid');
     $query->join('role', 'r', 'r.rid = ur.rid');
@@ -7265,6 +7265,7 @@ function pdq_ebms_board_members_last_login() {
     $current_board = null;
     $sheet_id = 0;
     foreach ($results as $result) {
+        $articles = Ebms\Util::get_reviewer_article_count($result->uid);
         $last_login = $result->login ? $result->last : '';
         $board = $result->board;
         if ($board == 'Integrative, Alternative, and Complementary Therapies')
@@ -7283,10 +7284,12 @@ function pdq_ebms_board_members_last_login() {
             $sheet->getColumnDimension('A')->setAutoSize(true);
             $sheet->getColumnDimension('B')->setAutoSize(true);
             $sheet->getColumnDimension('C')->setAutoSize(true);
+            $sheet->getColumnDimension('D')->setAutoSize(true);
             $sheet->setCellValue('A1', 'Name');
             $sheet->setCellValue('B1', 'Authname');
             $sheet->setCellValue('C1', 'Last Login');
-            $sheet->getStyle('A1:C1')->applyFromArray(
+            $sheet->setCellValue('D1', 'Outstanding Reviews');
+            $sheet->getStyle('A1:D1')->applyFromArray(
                 array(
                     'fill' => array(
                         'type' => PHPExcel_Style_Fill::FILL_SOLID,
@@ -7309,6 +7312,7 @@ function pdq_ebms_board_members_last_login() {
         $sheet->setCellValue("A$row", $name);
         $sheet->setCellValue("B$row", $authname);
         $sheet->setCellValue("C$row", $last_login);
+        $sheet->setCellValue("D$row", $articles);
         ++$row;
         $sheet->setSelectedCell('A2');
     }

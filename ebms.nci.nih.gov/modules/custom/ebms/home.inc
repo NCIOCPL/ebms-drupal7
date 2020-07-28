@@ -513,47 +513,8 @@ class EbmsHomePage {
      */
     private function get_review_count() {
 
-        // To count unreviewed articles, we need to know:
-        //    1.  is the article in a packet assigned to this board member?
-        //    2.  is the packet still active?
-        //    3.  has the board member already posted a review for the article?
-        //    4.  is the article marked FYI for this topic?
-        //    5.  is the current state's seq# for this topic higher than 60?
-        // (#4 and #5 added by OCEEBMS-402)
-        if ($this->role == 'member') {
-            $query = db_select('ebms_article_state_type', 't');
-            $query->condition('t.state_text_id', 'PassedFullReview');
-            $query->fields('t', array('sequence'));
-            $sequence = $query->execute()->fetchField();
-            $query = db_select('ebms_packet_article', 'a');
-            $query->fields('a', array('article_id'));
-            $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
-            $query->join('ebms_packet_reviewer', 'm',
-                'a.packet_id = m.packet_id');
-            $query->join('ebms_article_state', 's',
-                's.article_id = a.article_id AND s.topic_id = p.topic_id');
-            $query->join('ebms_article_state_type', 't',
-                't.state_id = s.state_id');
-            $query->leftJoin('ebms_article_review', 'r',
-                implode(' AND ',
-                    array(
-                        'r.article_id = a.article_id',
-                        'r.reviewer_id = m.reviewer_id',
-                        'r.packet_id = a.packet_id',
-                    )
-                )
-            );
-            $query->condition('m.reviewer_id', $this->user->uid);
-            $query->condition('p.active_status', 'A');
-            $query->condition('a.drop_flag', 0);
-            $query->condition('s.current', 'Y');
-            $query->condition('t.state_text_id', 'FYI', '<>');
-            $query->condition('t.sequence', $sequence, '<=');
-            $query->isNull('r.article_id');
-            $query->distinct();
-            $query = $query->countQuery();
-            return $query->execute()->fetchField();
-        }
+        if ($this->role == 'member')
+            return Ebms\Util::get_reviewer_article_count($this->user->uid);
 
         // To find unseen reviews, we check:
         //    1. is the review for a packet for this manager's board?

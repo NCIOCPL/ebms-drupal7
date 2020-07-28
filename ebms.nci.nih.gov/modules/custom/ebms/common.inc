@@ -2646,6 +2646,53 @@ class Util {
         }
         return '';
     }
+
+    /**
+     * Determine how many article await review by specified user.
+     *
+     * Used by reviewer's home page and by the login report, so
+     * hoisted out here for common usage.
+     *
+     * To count unreviewed articles, we need to know:
+     *    1.  is the article in a packet assigned to this board member?
+     *    2.  is the packet still active?
+     *    3.  has the board member already posted a review for the article?
+     *    4.  is the article marked FYI for this topic?
+     *    5.  is the current state's seq# for this topic higher than 60?
+     * (#4 and #5 added by OCEEBMS-402)
+     */
+    public static function get_reviewer_article_count($uid) {
+        $query = db_select('ebms_article_state_type', 't');
+        $query->condition('t.state_text_id', 'PassedFullReview');
+        $query->fields('t', array('sequence'));
+        $sequence = $query->execute()->fetchField();
+        $query = db_select('ebms_packet_article', 'a');
+        $query->fields('a', array('article_id'));
+        $query->join('ebms_packet', 'p', 'p.packet_id = a.packet_id');
+        $query->join('ebms_packet_reviewer', 'm',
+            'a.packet_id = m.packet_id');
+        $query->join('ebms_article_state', 's',
+            's.article_id = a.article_id AND s.topic_id = p.topic_id');
+        $query->join('ebms_article_state_type', 't',
+            't.state_id = s.state_id');
+        $conditions = array(
+            'r.article_id = a.article_id',
+            'r.reviewer_id = m.reviewer_id',
+            'r.packet_id = a.packet_id',
+        );
+        $conditions = implode(' AND ', $conditions);
+        $query->leftJoin('ebms_article_review', 'r', $conditions);
+        $query->condition('m.reviewer_id', $uid);
+        $query->condition('p.active_status', 'A');
+        $query->condition('a.drop_flag', 0);
+        $query->condition('s.current', 'Y');
+        $query->condition('t.state_text_id', 'FYI', '<>');
+        $query->condition('t.sequence', $sequence, '<=');
+        $query->isNull('r.article_id');
+        $query->distinct();
+        $query = $query->countQuery();
+        return $query->execute()->fetchField();
+    }
 }
 
 class EbmsPager extends \PagerDefault {
