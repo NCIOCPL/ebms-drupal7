@@ -157,7 +157,9 @@ p.archived-review-header { border: 1px solid black; font-style: italic; }
 #reviewed-packet-list .unstarred-packet { color: #c1c1c1; }
 
 /* OCEEBMS-405 */
-#manager-packet-table span.mrs { color: #2a72a5; }
+#manager-packet-table span.mrs,
+#member-packet div#articles span.mrs,
+#member-review span.mrs { color: #2a72a5; }
 
 /* OCEEBMS-438 */
 body.page-review div.ctools-modal-content div.modal-header {

@@ -3122,6 +3122,14 @@ class EbmsReview {
             $links .= '</div>';
             $citation = EbmsReview::show_citation($article->article_id,
                         $topic_id, 3);
+            $state = EbmsReview::get_on_agenda_state($article->article_id,
+                                                     $topic_id);
+            if ($state) {
+                if (!preg_match('/<br>\s*$/', $citation))
+                    $citation .= '<br>';
+                $citation .= '<br><span class="mrs">ARTICLE STATE<br>' .
+                    $state . '</span>';
+            }
             if ($is_fyi)
                 $c2 = '<span class="fyi">FYI</span>';
             elseif ($article->when_posted) {
@@ -3168,6 +3176,45 @@ class EbmsReview {
             ),
         );
     }
+
+    /**
+     * Get the string showing meeting on whose agenda this article appears.
+     * OCEEBMS-465
+     */
+    public static function get_on_agenda_state($article_id, $topic_id) {
+        $query = db_select('ebms_article_state', 's');
+        $join = 't.state_id = s.state_id';
+        $query->join('ebms_article_state_type', 't', $join);
+        $query->fields('s', array('article_state_id'));
+        $query->condition('s.article_id', $article_id);
+        $query->condition('s.topic_id', $topic_id);
+        $query->condition('s.current', 'Y');
+        $query->condition('t.state_text_id', 'OnAgenda');
+        $results = $query->execute();
+        foreach ($results as $result) {
+            $id = $result->article_state_id;
+            $join = 'd.entity_id = n.nid';
+            $query = db_select('node', 'n');
+            $query->join('ebms_agenda_meeting', 'm', 'm.nid = n.nid');
+            $query->join('field_data_field_datespan', 'd', $join);
+            $query->condition('m.article_state_id', $id);
+            $query->fields('n', array('title'));
+            $query->fields('d', array('field_datespan_value'));
+            $rows = $query->execute();
+            $meetings = array();
+            foreach ($rows as $row) {
+                $title = $row->title;
+                $date = date('Y-m-d', $row->field_datespan_value);
+                $meetings[] = "$title - $date";
+            }
+            $meetings = htmlspecialchars(implode('; ', $meetings));
+            if (!$meetings === '')
+                $meetings = 'NO MEETINGS RECORDED';
+            return "On Agenda: $meetings";
+        }
+        return '';
+    }
+
 
     /**
      * Display a table listing the files the user has uploaded for this
@@ -4276,6 +4323,13 @@ function pdq_ebms_board_member_review_form($form, &$form_state, $review) {
     $pm_url = EbmsReview::pubmed_url($article_id);
     $links = '<div class="links">' . l('VIEW ABSTRACT', $pm_url, $attrs);
     $cite = EbmsReview::show_citation($article_id, $topic_id);
+    $state = EbmsReview::get_on_agenda_state($article_id, $topic_id);
+    if ($state) {
+        if (!preg_match('/<br>\s*$/', $cite))
+            $cite .= '<br>';
+        $cite .= '<br><span class="mrs">ARTICLE STATE<br>' .
+            $state . '</span>';
+    }
 
     // Add a link for viewing the article's full text (if we have it).
     $query = db_select('file_managed', 'f');

@@ -2648,7 +2648,7 @@ class Util {
     }
 
     /**
-     * Determine how many article await review by specified user.
+     * Determine how many articles await review by specified user.
      *
      * Used by reviewer's home page and by the login report, so
      * hoisted out here for common usage.
@@ -2658,7 +2658,7 @@ class Util {
      *    2.  is the packet still active?
      *    3.  has the board member already posted a review for the article?
      *    4.  is the article marked FYI for this topic?
-     *    5.  is the current state's seq# for this topic higher than 60?
+     *    5.  is the current state's seq# for this topic no higher than 60?
      * (#4 and #5 added by OCEEBMS-402)
      */
     public static function get_reviewer_article_count($uid) {
