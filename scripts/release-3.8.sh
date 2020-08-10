@@ -24,7 +24,7 @@ mkdir $WORKDIR || {
 
 echo Backing up existing files
 cd $SITEDIR
-tar -xcxf $WORKDIR/ebms-pre-release-3.8-backup.tgz modules themes || {
+tar -czf $WORKDIR/ebms-pre-release-3.8-backup.tgz modules themes || {
     echo "tar of themes and modules failed"
     exit 1
 }
