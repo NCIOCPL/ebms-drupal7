@@ -7913,7 +7913,10 @@ td, th { border-bottom: 1px black solid; }
                 db_delete($table)
                     ->condition('article_id', $article_id)
                     ->execute();
-                $fields = array('article_id' => $article_id);
+                $fields = array(
+                    'article_id' => $article_id,
+                    'tag_added' => date('Y-m-d'),
+                );
                 foreach ($values['tags'] as $key => $value) {
                     if (!empty($value)) {
                         $fields['tag_id'] = $key;
