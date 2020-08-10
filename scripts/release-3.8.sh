@@ -68,6 +68,7 @@ chmod +x $HOME/cron/*
 #drush fr -y ebms_config
 
 echo Applying database changes
+cd $SITEDIR
 schema="TABLE_SCHEMA = 'oce_ebms'"
 table=information_schema.COLUMNS
 cond="$schema AND TABLE_NAME = 'ebms_internal_article_tag' AND COLUMN_NAME = 'tag_added'"
@@ -79,12 +80,12 @@ then
 else
     echo Database changes for OCEEBMS-541 already applied
 fi
-if [ -r $WORKDIR/oceebms-541.sql ]
+if [ -r $WORKDIR/ebms/sql/oceebms-541.sql ]
 then
     echo Database changes for OCEEBMS-541
-    drush sqlc < $WORKDIR/oceebms-541.sql
+    drush sqlc < $WORKDIR/ebms/sql/oceebms-541.sql
 else
-    echo $WORKDIR/oceebms-541.sql missing
+    echo $WORKDIR/ebms/sql/oceebms-541.sql missing
     echo Aborting script.
     exit
 fi
