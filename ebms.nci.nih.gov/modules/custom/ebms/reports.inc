@@ -7179,6 +7179,19 @@ function cites_by_tag_report($request_id, $member_version=false) {
                 ->execute()->fetch();
             if (!empty($atc))
                 $cite .= "<br><br>$board_member_comment";
+            $query = db_select('ebms_packet', 'p')
+                ->fields('p', array('packet_title'));
+            $query->join('ebms_packet_article', 'a',
+                         'a.packet_id = p.packet_id');
+            $query->condition('a.article_id', $article_id);
+            $query->condition('p.topic_id', $topic_id);
+            $query->condition('p.active_status', 'A');
+            $query->condition('a.drop_flag', 0);
+            $packet_title = $query->execute()->fetchField();
+            if (!empty($packet_title)) {
+                $packet_title = htmlspecialchars($packet_title);
+                $state = "Assigned for Review: $packet_title";
+            }
         }
         $query = db_select('ebms_article_state_comment', 'c')
             ->fields('c', array('comment'));
