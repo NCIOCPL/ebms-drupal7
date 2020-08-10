@@ -113,6 +113,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     $board = $topic = $cycle = $not_list = $test_mode = $fast_track =
         $special_search = $disposition = $past_meeting = $future_meeting =
         $core_journals_search = $hi_priority = 0;
+    $bma_disposition = '';
 
     //$selected_tags = array();
     $pmid = $comments = $placement = $ft_comments = $mgr_comment = '';
@@ -143,6 +144,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $placement = $params['placement'];
         $ft_comments = $params['ft-comments'];
         $disposition = $params['disposition'];
+        $bma_disposition = $params['bma-disposition'];
     }
     else {
 
@@ -206,6 +208,19 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $past_meetings = pdq_ebms_agenda_meeting_picklist(true, $now, $board);
         $future_meetings = pdq_ebms_agenda_meeting_picklist(false, $now, $board);
     }
+    $on_hold = db_select('ebms_article_state_type', 't')
+        ->fields('t', array('sequence'))
+        ->condition('t.state_text_id', 'OnHold')
+        ->execute()
+        ->fetchField();
+    $results = db_select('ebms_article_state_type', 't')
+        ->fields('t', array('state_text_id', 'state_name'))
+        ->condition('t.sequence', $on_hold)
+        ->orderBy('t.state_name')
+        ->execute();
+    $bma_dispositions = array('' => ' ');
+    foreach ($results as $result)
+        $bma_dispositions[$result->state_text_id] = $result->state_name;
     if (!array_key_exists($topic, $topics))
         $topic = 0;
     if (!array_key_exists($past_meeting, $past_meetings))
@@ -348,6 +363,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
                 'Published' => 'Published',
                 'PassedBMReview' => 'Passed abstract review',
                 'PassedFullReview' => 'Passed full text review',
+                'BMA' => 'Board Manager Action',
                 'OnAgenda' => 'On agenda',
                 'FinalBoardDecision' => 'Editorial Board decision',
             ),
@@ -356,6 +372,19 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
                 'visible' => array(
                     '#edit-fast-track' => array(
                         'checked' => true
+                    ),
+                ),
+            ),
+        ),
+        'bma-disposition' => array(
+            '#type' => 'select',
+            '#title' => 'DISPOSITION *',
+            '#options' => $bma_dispositions,
+            '#default_value' => $bma_disposition,
+            '#states' => array(
+                'visible' => array(
+                    ':input[name="placement"]' => array(
+                        'value' => 'BMA',
                     ),
                 ),
             ),
@@ -576,6 +605,12 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
                     'Exactly one meeting must be selected for ' .
                     'On Agenda state.');
         }
+        elseif ($form_state['values']['placement'] == 'BMA') {
+            if (!$form_state['values']['bma-disposition'])
+                form_set_error('bma-disposition',
+                    'A disposition must be selected for ' .
+                    'Board Member Actions.');
+        }
     }
     $pmids = array();
     $validators = array('file_validate_extensions' => array());
@@ -768,11 +803,14 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
             // If the user checked the "Fast Track" option, add the new state.
             if ($fast_track) {
                 $disposition = $values['disposition'];
+                $bma_disposition = $values['bma-disposition'];
                 $future_meeting = $values['future-meeting'];
                 $past_meeting = $values['past-meeting'];
                 $meeting = $future_meeting ? $future_meeting : $past_meeting;
                 $cmt = $values['ft-comments'];
                 $state = $values['placement'];
+                if ($state === 'BMA')
+                    $state = $bma_disposition;
                 foreach ($review_ready as $id) {
                     $state_id = Ebms\setArticleState($id, $state, $topic,
                                                      $board, $cmt);
