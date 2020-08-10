@@ -20,6 +20,15 @@ From the ticket:
       It would be something like editorial/comment, supplement, errata)
     * the journal abbreviation for the related citation
     * the date of publication of the related citation
+
+Example block from PubMed XML:
+
+        <CommentsCorrectionsList>
+            <CommentsCorrections RefType="CommentOn">
+                <RefSource>Lancet Oncol. 2020 Jan;21(1):105-120</RefSource>
+                <PMID Version="1">31753727</PMID>
+            </CommentsCorrections>
+        </CommentsCorrectionsList>
 """
 
 import argparse
@@ -31,17 +40,34 @@ import pymysql
 import openpyxl
 from lxml import etree
 
+SQL = "SELECT article_id FROM ebms_article WHERE import_date >= '2020-01-01'"
 PATH = "MedlineCitation/Article/PublicationTypeList/PublicationType"
+PATH = "MedlineCitation/CommentsCorrectionsList/CommentsCorrections"
 COLS = (
     "PMID",
     "Journal",
     "Published",
     "Imported",
     "Related",
-    "Type(s)",
-    "Related Journal",
-    "Related Publication",
+    "Ref Type",
+    "Ref Source",
 )
+
+class CommentsCorrections:
+    def __init__(self, node):
+        self.node = node
+    @property
+    def ref_source(self):
+        node = self.node.find("RefSource")
+        return node.text if node is not None else None
+    @property
+    def pmid(self):
+        node = self.node.find("PMID")
+        return node.text if node is not None else None
+    @property
+    def ref_type(self):
+        return self.node.get("RefType")
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--host", required=True)
 parser.add_argument("--port", type=int, default=3661)
@@ -49,41 +75,31 @@ parser.add_argument("--db", default="oce_ebms")
 parser.add_argument("--user", default="oce_ebms")
 opts = vars(parser.parse_args())
 opts["passwd"] = getpass.getpass("password for %s: " % opts["user"])
-conn = pymysql.connect(**opts)
-cursor = conn.cursor()
+cursor = pymysql.connect(**opts).cursor()
 cursor.execute("SET NAMES utf8")
-cursor.execute("""\
-SELECT f.source_id,
-       f.brf_jrnl_title,
-       f.published_date,
-       f.import_date,
-       t.source_id,
-       t.source_data,
-       t.brf_jrnl_title,
-       t.published_date,
-       r.inactivated,
-       rt.type_name
-  FROM ebms_article f
-  JOIN ebms_related_article r
-    ON r.from_id = f.article_id
-  JOIN ebms_article t
-    ON t.article_id = r.to_id
-  JOIN ebms_article_relation_type rt
-    ON rt.type_id = r.type_id
- WHERE f.import_date >= '2020-01-01'""")
-row = cursor.fetchone()
+cursor.execute(SQL)
+ids = [row[0] for row in cursor.fetchall()]
 rows = []
-while row:
-    fid, fjnl, fpub, fimp, tid, xml, tjnl, tpub, inac, rtype = row
+done = 0
+for id in ids:
+    cursor.execute("""\
+SELECT source_id,
+       brf_jrnl_title,
+       published_date,
+       import_date,
+       source_data
+  FROM ebms_article
+ WHERE article_id = %s""", (id,))
+    pmid, journal, published, imported, xml = cursor.fetchone()
     root = etree.fromstring(xml.encode("utf-8"))
-    types = []
     for node in root.findall(PATH):
-        if node.text and node.text.strip():
-            types.append(node.text.strip())
-    types = "\n".join(types)
-    fimp = str(fimp)[:10]
-    rows.append((fid, fjnl, fpub, fimp, tid, types, tjnl, tpub, inac, rtype))
+        cc = CommentsCorrections(node)
+        imported = str(imported)[:10]
+        rows.append((pmid, journal, published, imported,
+                     cc.pmid, cc.ref_type, cc.ref_source))
     row = cursor.fetchone()
+    done += 1
+    sys.stderr.write(f"\rparsed {done} of {len(ids)} articles")
 book = openpyxl.Workbook()
 sheet = book.active
 sheet.title = "Related"
@@ -95,3 +111,4 @@ for row in rows:
         sheet.cell(row=r, column=c+1, value=value)
     r += 1
 book.save("oceebms-570.xlsx")
+sys.stderr.write("\nwrote oceebms-570.xlsx\n")
