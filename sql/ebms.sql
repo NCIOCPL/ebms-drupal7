@@ -2204,11 +2204,13 @@ CREATE TABLE ebms_internal_tag
  * tag_pk         automatically generated primary key
  * article_id     foreign key into the ebms_article table
  * tag_id         foreign key into the ebms_internal_tag table
+ * tag_added      date the tag was assigned to the article
  */
 CREATE TABLE ebms_internal_article_tag
      (tag_pk INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
   article_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
+   tag_added DATE    NOT NULL,
  FOREIGN KEY (tag_id)     REFERENCES ebms_internal_tag (tag_id),
  FOREIGN KEY (article_id) REFERENCES ebms_article (article_id))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
