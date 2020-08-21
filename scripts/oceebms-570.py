@@ -51,19 +51,34 @@ COLS = (
     "Related",
     "Ref Type",
     "Ref Source",
+    "Board(s)",
+    "In EBMS?",
 )
 
 class CommentsCorrections:
-    def __init__(self, node):
+    def __init__(self, cursor, node):
         self.node = node
+        self.cursor = cursor
     @property
     def ref_source(self):
         node = self.node.find("RefSource")
         return node.text if node is not None else None
     @property
     def pmid(self):
-        node = self.node.find("PMID")
-        return node.text if node is not None else None
+        if not hasattr(self, "_pmid"):
+            node = self.node.find("PMID")
+            self._pmid = node.text if node is not None else None
+        return self._pmid
+    @property
+    def in_ebms(self):
+        if not hasattr(self, "_in_ebms"):
+            self.cursor.execute("""\
+SELECT COUNT(*)
+  FROM ebms_article
+ WHERE source_id = %s""", (self.pmid,))
+            count = self.cursor.fetchall()[0][0]
+            self._in_ebms = count > 0
+        return self._in_ebms
     @property
     def ref_type(self):
         return self.node.get("RefType")
@@ -76,7 +91,9 @@ parser.add_argument("--user", default="oce_ebms")
 opts = vars(parser.parse_args())
 opts["passwd"] = getpass.getpass("password for %s: " % opts["user"])
 cursor = pymysql.connect(**opts).cursor()
+cursor2 = pymysql.connect(**opts).cursor()
 cursor.execute("SET NAMES utf8")
+cursor2.execute("SET NAMES utf8")
 cursor.execute(SQL)
 ids = [row[0] for row in cursor.fetchall()]
 rows = []
@@ -92,11 +109,19 @@ SELECT source_id,
  WHERE article_id = %s""", (id,))
     pmid, journal, published, imported, xml = cursor.fetchone()
     root = etree.fromstring(xml.encode("utf-8"))
+    cursor2.execute("""\
+SELECT DISTINCT b.board_name
+  FROM ebms_board b
+  JOIN ebms_article_state s
+    ON s.board_id = b.board_id
+ WHERE s.article_id = %s""", (id,))
+    boards = "\n".join([row[0] for row in cursor2.fetchall()])
     for node in root.findall(PATH):
-        cc = CommentsCorrections(node)
+        cc = CommentsCorrections(cursor2, node)
         imported = str(imported)[:10]
         rows.append((pmid, journal, published, imported,
-                     cc.pmid, cc.ref_type, cc.ref_source))
+                     cc.pmid, cc.ref_type, cc.ref_source,
+                     boards, cc.in_ebms))
     row = cursor.fetchone()
     done += 1
     sys.stderr.write(f"\rparsed {done} of {len(ids)} articles")
