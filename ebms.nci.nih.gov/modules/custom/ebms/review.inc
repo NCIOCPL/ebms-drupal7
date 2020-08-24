@@ -2922,7 +2922,8 @@ class EbmsReview {
             $options['query'] = array('packet' => $p->packet_id);
             pdq_ebms_preserve_on_behalf($options);
             $title = htmlspecialchars($p->packet_title);
-            $links[] = l("$title <b>($count articles)</b>", $url, $options);
+            $what = $count == 1 ? 'article' : 'articles';
+            $links[] = l("$title <b>($count $what)</b>", $url, $options);
         }
 
         // Added at Sridhar's request (TIR 2520).
