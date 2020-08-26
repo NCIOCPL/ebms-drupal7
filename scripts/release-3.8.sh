@@ -111,6 +111,7 @@ else
 fi
 
 cond="$schema AND TABLE_NAME = 'ebms_board' AND COLUMN_NAME = 'auto_import'"
+table=information_schema.COLUMNS
 query="SELECT COUNT(*) FROM $table WHERE $cond"
 count=`drush sqlq --extra=--skip-column-names "$query"`
 if [ $count = "0" ]
