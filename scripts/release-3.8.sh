@@ -110,7 +110,7 @@ else
     echo Database changes for OCEEBMS-567 already applied
 fi
 
-cond="$schema AND TABLE_NAME = 'ebms_board' AND COLUMN_NAME = 'auto_import'"
+cond="$schema AND TABLE_NAME = 'ebms_board' AND COLUMN_NAME = 'auto_imports'"
 table=information_schema.COLUMNS
 query="SELECT COUNT(*) FROM $table WHERE $cond"
 count=`drush sqlq --extra=--skip-column-names "$query"`
