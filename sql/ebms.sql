@@ -139,12 +139,16 @@ CREATE TABLE ebms_doc
  * board_id       automatically generated primary key
  * board_name     unique string for the board's name
  * loe_guidelines optional foreign key into ebms_doc for board's LOE guidelines
+ * auto_imports   flag indicating whether followup additional import jobs
+ *                should be automatically created when articles appearing
+ *                in core journals are imported for one of this board's topics
  */
   CREATE TABLE ebms_board
      (board_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     board_name VARCHAR(255)     NOT NULL,
  board_manager INTEGER UNSIGNED NOT NULL,
 loe_guidelines INTEGER              NULL,
+  auto_imports INTEGER          NOT NULL DEFAULT 0,
     UNIQUE KEY board_name_ix (board_name),
    FOREIGN KEY (loe_guidelines) REFERENCES ebms_doc (doc_id)),
    FOREIGN KEY (board_manager)  REFERENCES users (uid))

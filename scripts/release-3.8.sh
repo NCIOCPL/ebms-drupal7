@@ -110,6 +110,24 @@ else
     echo Database changes for OCEEBMS-567 already applied
 fi
 
+cond="$schema AND TABLE_NAME = 'ebms_board' AND COLUMN_NAME = 'auto_import'"
+query="SELECT COUNT(*) FROM $table WHERE $cond"
+count=`drush sqlq --extra=--skip-column-names "$query"`
+if [ $count = "0" ]
+then
+    if [ -r $WORKDIR/ebms/sql/oceebms-568.sql ]
+    then
+        echo Database changes for OCEEBMS-568
+        drush sqlc < $WORKDIR/ebms/sql/oceebms-568.sql
+    else
+        echo $WORKDIR/ebms/sql/oceebms-568.sql missing
+        echo Aborting script.
+        exit
+    fi
+else
+    echo Database changes for OCEEBMS-568 already applied
+fi
+
 echo Clearing caches twice, once is not always sufficient
 drush cc all
 drush cc all
