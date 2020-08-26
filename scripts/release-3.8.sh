@@ -92,7 +92,7 @@ else
 fi
 
 table=ebms_article_tag_type
-cond="text_id = 'comment_for_librarian'"
+cond="text_id = 'librarian_cmt'"
 query="SELECT COUNT(*) FROM $table WHERE $cond"
 count=`drush sqlq --extra=--skip-column-names "$query"`
 if [ $count = "0" ]
