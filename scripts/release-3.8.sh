@@ -71,12 +71,13 @@ echo Applying database changes
 cd $SITEDIR
 schema="TABLE_SCHEMA = 'oce_ebms'"
 table=information_schema.COLUMNS
-cond="$schema AND TABLE_NAME = 'ebms_internal_article_tag' AND COLUMN_NAME = 'tag_added'"
+name=ebms_internal_article_tag
+cond="$schema AND TABLE_NAME = '$name' AND COLUMN_NAME = 'tag_added'"
 query="SELECT COUNT(*) FROM $table WHERE $cond"
 count=`drush sqlq --extra=--skip-column-names "$query"`
 if [ $count = "0" ]
 then
-    drush sqlq "ALTER TABLE ebms_internal_article_tag ADD tag_added DATE NOT NULL"
+    drush sqlq "ALTER TABLE $name ADD tag_added DATE NOT NULL"
 else
     echo Database changes for OCEEBMS-541 already applied
 fi
@@ -90,9 +91,28 @@ else
     exit
 fi
 
-#echo Clearing caches twice, once is not always sufficient
-#drush cc all
-#drush cc all
+table=ebms_article_tag_type
+cond="text_id = 'comment_for_librarian'"
+query="SELECT COUNT(*) FROM $table WHERE $cond"
+count=`drush sqlq --extra=--skip-column-names "$query"`
+if [ $count = "0" ]
+then
+    if [ -r $WORKDIR/ebms/sql/oceebms-567.sql ]
+    then
+        echo Database changes for OCEEBMS-567
+        drush sqlc < $WORKDIR/ebms/sql/oceebms-567.sql
+    else
+        echo $WORKDIR/ebms/sql/oceebms-567.sql missing
+        echo Aborting script.
+        exit
+    fi
+else
+    echo Database changes for OCEEBMS-567 already applied
+fi
+
+echo Clearing caches twice, once is not always sufficient
+drush cc all
+drush cc all
 
 #echo Putting site back into live mode
 #drush vset maintenance_mode 0
