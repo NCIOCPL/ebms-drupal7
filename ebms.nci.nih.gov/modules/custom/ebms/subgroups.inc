@@ -408,7 +408,7 @@ function pdq_ebms_board_form($form, &$form_state, $board_id=0) {
             $name = substr($name, 9);
         $docs[$result->doc_id] = $name;
     }
-    $loe_guidelines = $manager = 0;
+    $loe_guidelines = $manager = $auto_imports = 0;
     $name = '';
     if ($board_id) {
         $board = db_select('ebms_board', 'b')
@@ -419,6 +419,7 @@ function pdq_ebms_board_form($form, &$form_state, $board_id=0) {
         $name = $board->board_name;
         $manager = $board->board_manager;
         $loe_guidelines = $board->loe_guidelines;
+        $auto_imports = $board->auto_imports;
     }
     return array(
         'board' => array(
@@ -446,6 +447,13 @@ function pdq_ebms_board_form($form, &$form_state, $board_id=0) {
             '#options' => $docs,
             '#default_value' => $loe_guidelines,
         ),
+        'auto-imports' => array(
+            '#type' => 'checkbox',
+            '#title' => 'Propose extra import jobs for related ' .
+                        'documents in core journals',
+            '#default_value' => $auto_imports,
+            '#suffix' => '<br>',
+        ),
         'save' => array(
             '#type' => 'submit',
             '#value' => 'Save',
@@ -471,12 +479,14 @@ function pdq_ebms_board_form_submit($form, &$form_state) {
         $name = $form_state['values']['name'];
         $manager = $form_state['values']['manager'];
         $loe_guidelines = $form_state['values']['loe-guidelines'];
+        $auto_imports = $form_state['values']['auto-imports'];
         if (!$loe_guidelines)
             $loe_guidelines = null;
         $fields = array(
             'board_name' => $name,
             'board_manager' => $manager,
             'loe_guidelines' => $loe_guidelines,
+            'auto_imports' => $auto_imports,
         );
         if ($board_id) {
             db_update('ebms_board')
