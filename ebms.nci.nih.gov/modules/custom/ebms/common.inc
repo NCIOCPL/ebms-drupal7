@@ -2693,6 +2693,18 @@ class Util {
         $query = $query->countQuery();
         return $query->execute()->fetchField();
     }
+
+    /**
+     * Determine whether an article was published in a core journal.
+     */
+    public static function in_core_journal($article_id) {
+        $query = db_select('ebms_article', 'a');
+        $query->join('ebms_core_journal', 'c',
+            'c.source = a.source AND c.source_jrnl_id = a.source_jrnl_id');
+        $query->condition('a.article_id', $article_id);
+        $query = $query->countQuery();
+        return $query->execute()->fetchField() == 1;
+    }
 }
 
 class EbmsPager extends \PagerDefault {
