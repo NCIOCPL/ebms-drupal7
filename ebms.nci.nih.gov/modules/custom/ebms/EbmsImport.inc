@@ -1117,12 +1117,24 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                 // If it was previously processed for this topic,
                 //   we don't want to reject it now.  That could override
                 //   a human's decision.
-                if ($topicId && is_null($oldTopicState)) {
-                    if ($mode == 'live') {
-                        $rec->setArticleState('RejectJournalTitle',
-                               $topicId, $boardId, $comment, $userId,
-                               $pi->constantDt, $cycleId);
-                    }
+                // 2020-09-02: ignore 'RejectJournalTitle' state for that
+                //   determination; if that was the state before this import
+                //   request, then we want to preserve that state (see
+                //   OCEEBMS-571).
+                $rjt = 'RejectJournalTitle';
+                $rejectedByJournal = TRUE;
+                if (empty($topicId))
+                    $rejectedByJournal = FALSE;
+                elseif (!is_null($oldTopicState)) {
+                    $oldStateId = $oldTopicState['state_text_id'];
+                    if (!empty($oldStateId) && $oldStateId !== $rjt)
+                        $rejectedByJournal = FALSE;
+                }
+                if ($rejectedByJournal) {
+                    if ($mode == 'live')
+                        $rec->setArticleState($rjt, $topicId, $boardId,
+                                              $comment, $userId,
+                                              $pi->constantDt, $cycleId);
                     $ib->addArticle('notListed', $pmid, $rec->getId(), $msgs);
                 }
             }
