@@ -45,27 +45,27 @@ echo Updating cron jobs
 cp $WORKDIR/ebms/scheduled/* $HOME/cron/
 chmod +x $HOME/cron/*
 
-#echo Putting site into maintenance mode
-#cd $SITEDIR
-#drush vset maintenance_mode 1
+echo Putting site into maintenance mode
+cd $SITEDIR
+drush vset maintenance_mode 1
 
-#echo Deleting the current software
-#cd $SITEDIR
-#rm -rf modules/* themes/*
+echo Deleting the current software
+cd $SITEDIR
+rm -rf modules/* themes/*
 
-#echo Replacing it with new
-#cd $WORKDIR/ebms/ebms.nci.nih.gov
-#cp -r modules $SITEDIR/ || { echo cp modules failed; exit; }
-#cp -r themes $SITEDIR/ || { echo cp themes failed; exit; }
+echo Replacing it with new
+cd $WORKDIR/ebms/ebms.nci.nih.gov
+cp -r modules $SITEDIR/ || { echo cp modules failed; exit; }
+cp -r themes $SITEDIR/ || { echo cp themes failed; exit; }
 
-#echo Disabling and re-enabling the site modules
-#cd $SITEDIR
-#drush -y dis ebms ebms_content ebms_webforms
-#drush -y en ebms ebms_content ebms_webforms
+echo Disabling and re-enabling the site modules
+cd $SITEDIR
+drush -y dis ebms ebms_content ebms_webforms
+drush -y en ebms ebms_content ebms_webforms
 
-#echo Refreshing settings for text editing filters
-#drush en -y ebms_config
-#drush fr -y ebms_config
+echo Refreshing settings for text editing filters
+drush en -y ebms_config
+drush fr -y ebms_config
 
 echo Applying database changes
 cd $SITEDIR
@@ -133,7 +133,7 @@ echo Clearing caches twice, once is not always sufficient
 drush cc all
 drush cc all
 
-#echo Putting site back into live mode
-#drush vset maintenance_mode 0
+echo Putting site back into live mode
+drush vset maintenance_mode 0
 
 echo Done
