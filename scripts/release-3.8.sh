@@ -49,6 +49,9 @@ echo Putting site into maintenance mode
 cd $SITEDIR
 drush vset maintenance_mode 1
 
+echo Upgrading Drupal core
+drush up -y drupal-7.73
+
 echo Deleting the current software
 cd $SITEDIR
 rm -rf modules/* themes/*
