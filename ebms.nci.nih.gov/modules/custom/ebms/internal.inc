@@ -11,10 +11,11 @@ require_once('EbmsImport.inc');
 require_once('EbmsArticle.inc');
 
 function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
-    $start = $tstart = date('Y-m-d', strtotime('-1 month'));
+
+    // 2020-09-18 (OCEEBMS-541): don't use default dates.
+    $start = $tstart = $end = $tend = '';
     $selected_tags = array();
     $comment = '';
-    $end = $tend = date('Y-m-d');
     if (!empty($request_id)) {
         $json = db_select('ebms_report_request', 'r')
             ->fields('r', array('parameters'))
