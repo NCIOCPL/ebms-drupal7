@@ -132,6 +132,8 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $board = $params['board'];
         $topic = $params['topic'];
         $cycle = $params['cycle'];
+        $past_meeting = $params['past-meeting'];
+        $future_meeting = $params['future-meeting'];
         //$selected_tags = $params['tags'];
         $special_search = $params['special-search'];
         $core_journals_search = $params['core-journals-search'];
@@ -221,11 +223,9 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     foreach ($results as $result)
         $dispositions[$result->value_id] = $result->value_name;
 
-    if ($disposition == 'OnAgenda') {
-        $now = time();
-        $past_meetings = pdq_ebms_agenda_meeting_picklist(true, $now, $board);
-        $future_meetings = pdq_ebms_agenda_meeting_picklist(false, $now, $board);
-    }
+    $now = time();
+    $past_meetings = pdq_ebms_agenda_meeting_picklist(true, $now, $board);
+    $future_meetings = pdq_ebms_agenda_meeting_picklist(false, $now, $board);
     $on_hold = db_select('ebms_article_state_type', 't')
         ->fields('t', array('sequence'))
         ->condition('t.state_text_id', 'OnHold')
@@ -541,10 +541,21 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
  *   which the newly found articles are related
  */
 function _pdq_find_related_articles($report) {
+
+    // Collect the article IDs for newly imported and re-imported articles.
+    $states = ['imported', 'duplicate'];
+    $articles = [];
+    foreach ($states as $state) {
+        foreach ($report['action'][$state] as $article) {
+            $id = $article[1];
+            $articles[$id] = $id;
+        }
+    }
+
+    // Find the PMIDs of the related articles.
     $pmids = [];
-    foreach ($report['action']['imported'] as $art_vals) {
-    // foreach ($report['action']['duplicate'] as $art_vals) {
-        $article_id = $art_vals[1];
+    foreach ($articles as $key => $value) {
+        $article_id = $key;
         if (Ebms\Util::in_core_journal($article_id)) {
             $xml = db_select('ebms_article', 'a')
                 ->fields('a', array('source_data'))
@@ -559,11 +570,15 @@ function _pdq_find_related_articles($report) {
                     if (!empty($cc->PMID)) {
                         $pmid = trim($cc->PMID);
                         if (!empty($pmid)) {
+                            /* The users have changed their minds. They no longer want to
+                               restrict this enhancement to articles we haven't seen before,
+                               but to all articles in core journals, EVERY TIME we see them.
+                               (2020-09-25 OCEEBMS-568 later comments)
                             $query = db_select('ebms_article', 'a')
                                 ->condition('a.source_id', $pmid);
                             $query = $query->countQuery();
                             $count = $query->execute()->fetchField();
-                            if (empty($count))
+                            if (empty($count)) */
                                 $pmids[$pmid][] = $article_id;
                         }
                     }
