@@ -570,15 +570,11 @@ function _pdq_find_related_articles($report) {
                     if (!empty($cc->PMID)) {
                         $pmid = trim($cc->PMID);
                         if (!empty($pmid)) {
-                            /* The users have changed their minds. They no longer want to
-                               restrict this enhancement to articles we haven't seen before,
-                               but to all articles in core journals, EVERY TIME we see them.
-                               (2020-09-25 OCEEBMS-568 later comments)
                             $query = db_select('ebms_article', 'a')
                                 ->condition('a.source_id', $pmid);
                             $query = $query->countQuery();
                             $count = $query->execute()->fetchField();
-                            if (empty($count)) */
+                            if (empty($count))
                                 $pmids[$pmid][] = $article_id;
                         }
                     }
