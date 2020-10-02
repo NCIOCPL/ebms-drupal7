@@ -49,7 +49,7 @@ mv NCIOCPL-ebms* ebms || {
 }
 
 echo Customizing crontab for $1
-sed -i -e "s/@@HOST@@/$1/" $WORKDIR/scheduled/drupal.crontab
+sed -i -e "s/@@HOST@@/$1/" $WORKDIR/ebms/scheduled/drupal.crontab
 
 echo Updating cron jobs
 cp $WORKDIR/ebms/scheduled/* $HOME/cron/
