@@ -8,6 +8,13 @@ then
     exit
 fi
 
+echo Verifying required command-line argument
+if [ "$#" -ne 1 ]; then
+    echo usage: release-3.8.sh LOCAL-HOST-NAME
+    echo " e.g.: release-3.8.sh ebms-test"
+    exit 1
+fi
+
 echo Setting locations
 export NCIOCPL=https://api.github.com/repos/NCIOCPL
 export URL=$NCIOCPL/ebms/tarball/canyonlands
@@ -41,9 +48,13 @@ mv NCIOCPL-ebms* ebms || {
     exit 1
 }
 
+echo Customizing crontab for $1
+sed -i -e "s/@@HOST@@/$1/" $WORKDIR/scheduled/drupal.crontab
+
 echo Updating cron jobs
 cp $WORKDIR/ebms/scheduled/* $HOME/cron/
 chmod +x $HOME/cron/*
+crontab $HOME/cron/drupal.crontab
 
 echo Putting site into maintenance mode
 cd $SITEDIR
