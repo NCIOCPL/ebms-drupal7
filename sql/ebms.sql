@@ -139,12 +139,16 @@ CREATE TABLE ebms_doc
  * board_id       automatically generated primary key
  * board_name     unique string for the board's name
  * loe_guidelines optional foreign key into ebms_doc for board's LOE guidelines
+ * auto_imports   flag indicating whether followup additional import jobs
+ *                should be automatically created when articles appearing
+ *                in core journals are imported for one of this board's topics
  */
   CREATE TABLE ebms_board
      (board_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
     board_name VARCHAR(255)     NOT NULL,
  board_manager INTEGER UNSIGNED NOT NULL,
 loe_guidelines INTEGER              NULL,
+  auto_imports INTEGER          NOT NULL DEFAULT 0,
     UNIQUE KEY board_name_ix (board_name),
    FOREIGN KEY (loe_guidelines) REFERENCES ebms_doc (doc_id)),
    FOREIGN KEY (board_manager)  REFERENCES users (uid))
@@ -2204,11 +2208,13 @@ CREATE TABLE ebms_internal_tag
  * tag_pk         automatically generated primary key
  * article_id     foreign key into the ebms_article table
  * tag_id         foreign key into the ebms_internal_tag table
+ * tag_added      date the tag was assigned to the article
  */
 CREATE TABLE ebms_internal_article_tag
      (tag_pk INTEGER NOT NULL AUTO_INCREMENT PRIMARY KEY,
   article_id INTEGER NOT NULL,
       tag_id INTEGER NOT NULL,
+   tag_added DATE    NOT NULL,
  FOREIGN KEY (tag_id)     REFERENCES ebms_internal_tag (tag_id),
  FOREIGN KEY (article_id) REFERENCES ebms_article (article_id))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;

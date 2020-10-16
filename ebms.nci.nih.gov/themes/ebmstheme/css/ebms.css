@@ -402,6 +402,7 @@ table { width: 100%; }
 tbody { border: none; }
 th { text-transform: uppercase; border: none; }
 th, td { margin: 0; border-left: 1px solid #696559; padding: 10px; }
+tr.even, tr.odd { background-color: white; }
 th:first-child, td:first-child, tr.event, tr.odd { border: none; }
 td.active, th.active { background: white; }
 th a:hover, th a:hover span { text-decoration: none; }

@@ -1,4 +1,4 @@
-#!/usr/local/python37/bin/python3
+#!/usr/bin/env python3
 
 """Refresh EBMS articles from NLM's PubMed.
 

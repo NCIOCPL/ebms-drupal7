@@ -11,10 +11,11 @@ require_once('EbmsImport.inc');
 require_once('EbmsArticle.inc');
 
 function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
-    $start = date('Y-m-d', strtotime('-1 month'));
+
+    // 2020-09-18 (OCEEBMS-541): don't use default dates.
+    $start = $tstart = $end = $tend = '';
     $selected_tags = array();
     $comment = '';
-    $end = date('Y-m-d');
     if (!empty($request_id)) {
         $json = db_select('ebms_report_request', 'r')
             ->fields('r', array('parameters'))
@@ -28,6 +29,8 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
         }
         $start = $request['import-date-start']['date'] ?? '';
         $end = $request['import-date-end']['date'] ?? '';
+        $tstart = $request['tag-date-start']['date'] ?? '';
+        $tend = $request['tag-date-end']['date'] ?? '';
         $comment = $request['comment'];
     }
 
@@ -35,6 +38,10 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
     $name = 'import-date';
     $date_field = Ebms\Util::date_range_field($label, $name, $start, $end,
                                               '', false);
+    $label = 'Tag Date';
+    $name = 'tag-date';
+    $tdate_field = Ebms\Util::date_range_field($label, $name, $tstart, $tend,
+                                               '', false);
     $results = db_select('ebms_internal_tag', 't')
         ->fields('t', array('tag_id', 'tag_name'))
         ->condition('t.active_status', 'A')
@@ -54,6 +61,7 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
         $query->condition('c.comment_text', "%${comment}%", 'LIKE');
     }
     Ebms\Util::add_date_range_to_query($query, $start, $end, 'a.import_date');
+    Ebms\Util::add_date_range_to_query($query, $tstart, $tend, 't.tag_added');
     $query->fields('a', array('article_id', 'import_date'));
     $results = $query->orderBy('a.import_date', 'DESC')->execute();
     $queue = _internal_articles_table($results);
@@ -72,6 +80,7 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
                 '#title' => 'Tags',
             ),
             'import-date' => $date_field,
+            'tag-date' => $tdate_field,
             'comment' => array(
                 '#type' => 'textfield',
                 '#title' => 'Comment',

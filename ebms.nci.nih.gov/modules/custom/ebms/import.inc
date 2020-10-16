@@ -113,9 +113,11 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     $board = $topic = $cycle = $not_list = $test_mode = $fast_track =
         $special_search = $disposition = $past_meeting = $future_meeting =
         $core_journals_search = $hi_priority = 0;
+    $bma_disposition = '';
 
     //$selected_tags = array();
     $pmid = $comments = $placement = $ft_comments = $mgr_comment = '';
+    $auto_imports = [];
 
     // If this is a followup form to a previous import request, use
     // the values submitted for that request to seed the form (TIR 2194).
@@ -125,11 +127,13 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             ->condition('r.request_id', $request_id)
             ->execute()
             ->fetchObject();
-        $report = $result->report_data;
+        $report = drupal_json_decode($result->report_data);
         $params = drupal_json_decode($result->request_params);
         $board = $params['board'];
         $topic = $params['topic'];
         $cycle = $params['cycle'];
+        $past_meeting = $params['past-meeting'];
+        $future_meeting = $params['future-meeting'];
         //$selected_tags = $params['tags'];
         $special_search = $params['special-search'];
         $core_journals_search = $params['core-journals-search'];
@@ -143,6 +147,24 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
         $placement = $params['placement'];
         $ft_comments = $params['ft-comments'];
         $disposition = $params['disposition'];
+        $bma_disposition = $params['bma-disposition'];
+        $want_auto_imports = db_select('ebms_board', 'b')
+            ->fields('b', array('board_id'))
+            ->condition('b.auto_imports', 1)
+            ->execute()
+            ->fetchCol();
+        $success = $report['status'] === 'Success';
+        $board_wants_auto_imports = in_array($board, $want_auto_imports);
+        if (!$test_mode && $success && $board_wants_auto_imports) {
+            $auto_imports = _pdq_find_related_articles($report);
+            if (!empty($auto_imports)) {
+                drupal_set_message('PMIDs for ' . count($auto_imports) .
+                    ' related articles have been loaded into the ' .
+                    'PUB MED ID field.');
+                $pmid = implode(' ', array_keys($auto_imports));
+            }
+            $auto_imports = drupal_json_encode($auto_imports);
+        }
     }
     else {
 
@@ -201,11 +223,22 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
     foreach ($results as $result)
         $dispositions[$result->value_id] = $result->value_name;
 
-    if ($disposition == 'OnAgenda') {
-        $now = time();
-        $past_meetings = pdq_ebms_agenda_meeting_picklist(true, $now, $board);
-        $future_meetings = pdq_ebms_agenda_meeting_picklist(false, $now, $board);
-    }
+    $now = time();
+    $past_meetings = pdq_ebms_agenda_meeting_picklist(true, $now, $board);
+    $future_meetings = pdq_ebms_agenda_meeting_picklist(false, $now, $board);
+    $on_hold = db_select('ebms_article_state_type', 't')
+        ->fields('t', array('sequence'))
+        ->condition('t.state_text_id', 'OnHold')
+        ->execute()
+        ->fetchField();
+    $results = db_select('ebms_article_state_type', 't')
+        ->fields('t', array('state_text_id', 'state_name'))
+        ->condition('t.sequence', $on_hold)
+        ->orderBy('t.state_name')
+        ->execute();
+    $bma_dispositions = array('' => ' ');
+    foreach ($results as $result)
+        $bma_dispositions[$result->state_text_id] = $result->state_name;
     if (!array_key_exists($topic, $topics))
         $topic = 0;
     if (!array_key_exists($past_meeting, $past_meetings))
@@ -276,6 +309,10 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
             '#type' => 'textfield',
             '#default_value' => $pmid,
             '#title' => 'PUB MED IDS',
+        ),
+        'auto_imports' => array(
+            '#type' => 'hidden',
+            '#value' => $auto_imports,
         ),
         'comments' => array(
             '#type' => 'textfield',
@@ -348,6 +385,7 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
                 'Published' => 'Published',
                 'PassedBMReview' => 'Passed abstract review',
                 'PassedFullReview' => 'Passed full text review',
+                'BMA' => 'Board Manager Action',
                 'OnAgenda' => 'On agenda',
                 'FinalBoardDecision' => 'Editorial Board decision',
             ),
@@ -356,6 +394,19 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
                 'visible' => array(
                     '#edit-fast-track' => array(
                         'checked' => true
+                    ),
+                ),
+            ),
+        ),
+        'bma-disposition' => array(
+            '#type' => 'select',
+            '#title' => 'DISPOSITION *',
+            '#options' => $bma_dispositions,
+            '#default_value' => $bma_disposition,
+            '#states' => array(
+                'visible' => array(
+                    ':input[name="placement"]' => array(
+                        'value' => 'BMA',
                     ),
                 ),
             ),
@@ -470,11 +521,68 @@ function pdq_ebms_import_form($form, &$form_state, $request_id) {
 
     // If we just handled an import request, show the statistics from that job.
     if ($request_id) {
-        $batch = drupal_json_decode($report);
-        $batch = (object) $batch;
+        $batch = (object) $report;
         $form['report'] = Ebms\Util::import_report($batch, 'Statistics');
     }
     return $form;
+}
+
+/**
+ * Inspect the articles newly imported by the batch we just processed
+ * to see if any other articles which we don't already have are listed
+ * as related to one or more of those newly imported articles.
+ *
+ * @param array $report
+ *   Information about the batch we just imported
+ *
+ * @return array
+ *   Array whose keys are PMIDs for the related articles and whose
+ *   values are lists of the EBMS IDs for the imported articles to
+ *   which the newly found articles are related
+ */
+function _pdq_find_related_articles($report) {
+
+    // Collect the article IDs for newly imported and re-imported articles.
+    $states = ['imported', 'duplicate'];
+    $articles = [];
+    foreach ($states as $state) {
+        foreach ($report['action'][$state] as $article) {
+            $id = $article[1];
+            $articles[$id] = $id;
+        }
+    }
+
+    // Find the PMIDs of the related articles.
+    $pmids = [];
+    foreach ($articles as $key => $value) {
+        $article_id = $key;
+        if (Ebms\Util::in_core_journal($article_id)) {
+            $xml = db_select('ebms_article', 'a')
+                ->fields('a', array('source_data'))
+                ->condition('a.article_id', $article_id)
+                ->execute()
+                ->fetchField();
+            $doc = new \SimpleXMLElement($xml);
+            $cite = $doc->MedlineCitation;
+            if (isset($cite->CommentsCorrectionsList->CommentsCorrections)) {
+                foreach ($cite->CommentsCorrectionsList->CommentsCorrections
+                         as $cc) {
+                    if (!empty($cc->PMID)) {
+                        $pmid = trim($cc->PMID);
+                        if (!empty($pmid)) {
+                            $query = db_select('ebms_article', 'a')
+                                ->condition('a.source_id', $pmid);
+                            $query = $query->countQuery();
+                            $count = $query->execute()->fetchField();
+                            if (empty($count))
+                                $pmids[$pmid][] = $article_id;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return $pmids;
 }
 
 /**
@@ -575,6 +683,12 @@ function pdq_ebms_import_form_validate($form, &$form_state) {
                 form_set_error('future-meeting',
                     'Exactly one meeting must be selected for ' .
                     'On Agenda state.');
+        }
+        elseif ($form_state['values']['placement'] == 'BMA') {
+            if (!$form_state['values']['bma-disposition'])
+                form_set_error('bma-disposition',
+                    'A disposition must be selected for ' .
+                    'Board Member Actions.');
         }
     }
     $pmids = array();
@@ -680,7 +794,7 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                  $comments, $use_not_list, $import_type);
     }
     catch (\Exception $e) {
-        drupal_set_message($e);
+        drupal_set_message($e, 'error');
         $batch = null;
         $url = EbmsImport::$url;
     }
@@ -689,6 +803,10 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
     // and do some population of related tables as appropriate.
     if ($batch) {
         if (!$test) {
+
+            // We'll need these in more than one place.
+            global $user;
+            $now = strftime("%Y-%m-%d %H:%M:%S");
 
             // Get a list of articles affected by the import.
             $imported = array();
@@ -746,8 +864,6 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
 
             // Store the board manager comment if provided (OCEEBMS-472).
             if (!empty($mgr_comment)) {
-                global $user;
-                $now = strftime("%Y-%m-%d %H:%M:%S");
                 $table = 'ebms_article_topic_comment';
                 $fields = array(
                     'topic_id' => $topic,
@@ -768,11 +884,14 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
             // If the user checked the "Fast Track" option, add the new state.
             if ($fast_track) {
                 $disposition = $values['disposition'];
+                $bma_disposition = $values['bma-disposition'];
                 $future_meeting = $values['future-meeting'];
                 $past_meeting = $values['past-meeting'];
                 $meeting = $future_meeting ? $future_meeting : $past_meeting;
                 $cmt = $values['ft-comments'];
                 $state = $values['placement'];
+                if ($state === 'BMA')
+                    $state = $bma_disposition;
                 foreach ($review_ready as $id) {
                     $state_id = Ebms\setArticleState($id, $state, $topic,
                                                      $board, $cmt);
@@ -796,6 +915,41 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                                 )
                             )
                             ->execute();
+                    }
+                }
+            }
+
+            // Some of these may have been imported because
+            // they were designated by NLM as related to articles
+            // in the previous import batch. See OCEEBMS-568.
+            $related = array();
+            $auto_imports = $values['auto_imports'];
+            if (!empty($auto_imports)) {
+                $related = drupal_json_decode($auto_imports);
+                $today = date('Y-m-d');
+                $comment = "linked programmatically upon import ($today)";
+                $other = db_select('ebms_article_relation_type', 't')
+                    ->fields('t', array('type_id'))
+                    ->condition('t.type_name', 'Other')
+                    ->execute()
+                    ->fetchField();
+                $fields = array(
+                    'type_id' => $other,
+                    'comment' => $comment,
+                    'created_by' => $user->uid,
+                    'created' => $now,
+                );
+                foreach ($batch->action['imported'] as $info) {
+                    $pmid = $info[0];
+                    $to_id = $info[1];
+                    if (array_key_exists($pmid, $related)) {
+                        $fields['to_id'] = $to_id;
+                        foreach ($related[$pmid] as $from_id) {
+                            $fields['from_id'] = $from_id;
+                            $id = db_insert('ebms_related_article')
+                                ->fields($fields)
+                                ->execute();
+                        }
                     }
                 }
             }

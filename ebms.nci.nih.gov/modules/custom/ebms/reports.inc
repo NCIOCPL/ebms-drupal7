@@ -6227,10 +6227,12 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
     $board = \Ebms\Util::get_user_default_board(0);
     $selected_topics = $selected_reviewers = array();
     $start = $end = '';
+    $member_version = false;
 
     // Pull request parameters from the database if appropriate.
     if ($request_id) {
         $values = EbmsReports::fetch_report_request($request_id);
+        $member_version = !empty($values['member-report']);
         $board = $values['board'];
         $selected_topics = $values['topics'];
         $selected_reviewers = $values['reviewers'];
@@ -6247,6 +6249,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
         $board = $form_state['values']['board'];
         $selected_topics = $form_state['values']['topics'];
         $selected_reviewers = $form_state['values']['reviewers'];
+        $member_version = !empty($form_state['values']['member-report']);
     }
 
     // How tall should the picklists allowing multiple selections be?
@@ -6327,6 +6330,11 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
         ),
         'dates' => Ebms\Util::date_range_field('DATE ASSIGNED', 'date',
                                                $start, $end, '', false),
+        'member-report' => array(
+            '#type' => 'checkbox',
+            '#title' => 'Board Member Version',
+            '#default_value' => $member_version,
+        ),
         'reset' => array(
             '#type' => 'submit',
             '#value' => 'Reset',
@@ -6349,6 +6357,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
 
     // If we have a submitted report request, add the report under the form.
     if ($request_id) {
+        $start = $end = '';
         $query = db_select('ebms_packet', 'p')
             ->fields('p', array('packet_id', 'packet_title', 'created_at'));
         $query = $query->extend('TableSort');
@@ -6380,6 +6389,7 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
                 'data' => 'Created',
                 'field' => 'p.created_at',
                 'sort' => 'desc',
+                'class' => array('hidden'),
             ),
             array(
                 'data' => 'Reviewer',
@@ -6389,6 +6399,10 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             'Completed',
             'Not Completed',
         );
+        $member_version = !empty($values['member-report']);
+        if ($member_version)
+            $headers = ['Packet Name', 'Reviewer', 'Assigned', 'Completed',
+                        'Not Completed'];
         $query->orderByHeader($headers);
         $rows = array();
         $results = $query->execute();
@@ -6413,7 +6427,8 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             }
             $row = array();
             $row[] = htmlspecialchars($result->packet_title);
-            $row[] = substr($result->created_at, 0, 10);
+            if (!$member_version)
+                $row[] = substr($result->created_at, 0, 10);
             $row[] = htmlspecialchars($result->name);
             $row[] = $assigned;
             $row[] = $completed;
@@ -6423,18 +6438,28 @@ function pdq_ebms_responses_by_reviewer($form, &$form_state, $request_id=0) {
             $total_completed += $completed;
             $total_not_completed += $not_completed;
         }
-        $rows[] = array(
-            '<b>TOTALS</b>',
-            '',
-            '',
-            "<b>$total_assigned</b>",
-            "<b>$total_completed</b>",
-            "<b>$total_not_completed</b>",
-        );
+        $row = array('<b>TOTALS</b>', '');
+        if (!$member_version)
+            $row[] = '';
+        $row[] = "<b>$total_assigned</b>";
+        $row[] = "<b>$total_completed</b>";
+        $row[] = "<b>$total_not_completed</b>";
+        $rows[] = $row;
 
         // Assemble the table.
         $id = 'report-title';
         $title = 'Responses';
+        if (!empty($values['member-report']) && ($start || $end)) {
+            if ($end) {
+                $end = substr($end, 0, 10);
+                if ($start)
+                    $title .= " ($start - $end)";
+                else
+                    $title .= " (through $end)";
+            }
+            else
+                $title .= " (from $start)";
+        }
         $page['report'] = array(
             'title' => array(
                 '#markup' => "<h2 id='$id'>$title</h2>",
@@ -6512,7 +6537,8 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
 
     // Initialize defaults for the form field's values.
     $board = \Ebms\Util::get_user_default_board(0);
-    $selected_topics = /* $selected_cycles = */ array();
+    $selected_topics = array();
+    $selected_members = array();
     $order_by = 'author';
     $start = $end = '';
     $hi_priority = false;
@@ -6522,7 +6548,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         $values = EbmsReports::fetch_report_request($request_id);
         $board = $values['board'];
         $selected_topics = $values['topics'];
-        // $selected_cycles = $values['cycles'];
+        $selected_members = $values['members'];
         $start = $values['date-start']['date'];
         $end = $values['date-end']['date'];
         if ($start)
@@ -6537,7 +6563,7 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
     if (isset($form_state['values'])) {
         $board = $form_state['values']['board'];
         $selected_topics = $form_state['values']['topics'];
-        /* $selected_cycles = $form_state['values']['cycles']; */
+        $selected_members = $form_state['values']['members'];
     }
 
     // How tall should the picklists allowing multiple selections be?
@@ -6545,8 +6571,8 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
 
     // Create the picklists.
     $topics = array();
+    $members = array();
     $boards = array(0 => ' ') + Ebms\Util::boards();
-    // $cycles = Ebms\Util::cycles();
 
     // If a board has been selected, populate the board-dependent picklists.
     if ($board) {
@@ -6561,6 +6587,22 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
         foreach ($selected_topics as $key => $value)
             if (!array_key_exists($value, $topics))
                 unset($selected_topics[$key]);
+        $role = user_role_load_by_name('board member');
+        $query = db_select('users', 'u')
+            ->fields('u', array('uid', 'name'));
+        $query->join('ebms_board_member', 'm', 'm.user_id = u.uid');
+        $query->join('users_roles', 'r', 'r.uid = u.uid');
+        $query->condition('m.board_id', $board);
+        $query->condition('u.status', 1);
+        $query->condition('r.rid', $role->rid);
+        $query->orderBy('u.name');
+        $query->distinct();
+        $results = $query->execute();
+        foreach ($results as $result)
+            $members[$result->uid] = $result->name;
+        foreach ($selected_members as $key => $value)
+            if (!array_key_exists($value, $members))
+                unset($selected_members[$key]);
      }
 
     // Assemble the request form.
@@ -6592,19 +6634,16 @@ function pdq_ebms_articles_without_responses($form, &$form_state,
                 '#size' => $size,
                 '#attributes' => array('class' => array('fixed-width')),
             ),
+            'members' => array(
+                '#type' => 'select',
+                '#multiple' => true,
+                '#options' => $members,
+                '#default_value' => $selected_members,
+                '#title' => 'Board Member(s)',
+                '#size' => $size,
+                '#attributes' => array('class' => array('fixed-width')),
+            ),
         ),
-        // Suppress filtering this report by cycle (OCEEBMS-362)
-        /*
-        'cycles' => array(
-            '#type' => 'select',
-            '#multiple' => true,
-            '#options' => $cycles,
-            '#default_value' => $selected_cycles,
-            '#title' => 'Cycle(s)',
-            '#size' => $size,
-            '#attributes' => array('class' => array('fixed-width')),
-        ),
-        */
         'date' => Ebms\Util::date_range_field('Assigned Date', 'date',
                                               $start, $end, '', false),
         'options' => array(
@@ -6716,6 +6755,10 @@ function articles_without_responses_report($request_id, $member_version=false) {
         $query->condition('p.topic_id', $values['topics'], 'IN');
     else
         $query->condition('t.board_id', $values['board']);
+
+    // Filter on specific members, if any are selected (OCEEBMS-562).
+    if (count($values['members']))
+        $query->condition('rwr.reviewer_id', $values['members'], 'IN');
 
     // Exclude articles which have at least one review for the packet.
     $query->leftJoin('ebms_article_review', 'r',
@@ -7136,6 +7179,19 @@ function cites_by_tag_report($request_id, $member_version=false) {
                 ->execute()->fetch();
             if (!empty($atc))
                 $cite .= "<br><br>$board_member_comment";
+            $query = db_select('ebms_packet', 'p')
+                ->fields('p', array('packet_title'));
+            $query->join('ebms_packet_article', 'a',
+                         'a.packet_id = p.packet_id');
+            $query->condition('a.article_id', $article_id);
+            $query->condition('p.topic_id', $topic_id);
+            $query->condition('p.active_status', 'A');
+            $query->condition('a.drop_flag', 0);
+            $packet_title = $query->execute()->fetchField();
+            if (!empty($packet_title)) {
+                $packet_title = htmlspecialchars($packet_title);
+                $state = "Assigned for Review: $packet_title";
+            }
         }
         $query = db_select('ebms_article_state_comment', 'c')
             ->fields('c', array('comment'));
@@ -7205,7 +7261,7 @@ function pdq_ebms_board_members_last_login() {
     require_once $xllib . '/Classes/PHPExcel/IOFactory.php';
     $excel = new PHPExcel();
     $query = db_select('users', 'u')
-        ->fields('u', array('name', 'login'))
+        ->fields('u', array('name', 'login', 'uid'))
         ->condition('u.status', 1);
     $query->join('users_roles', 'ur', 'ur.uid = u.uid');
     $query->join('role', 'r', 'r.rid = ur.rid');
@@ -7222,6 +7278,7 @@ function pdq_ebms_board_members_last_login() {
     $current_board = null;
     $sheet_id = 0;
     foreach ($results as $result) {
+        $articles = Ebms\Util::get_reviewer_article_count($result->uid);
         $last_login = $result->login ? $result->last : '';
         $board = $result->board;
         if ($board == 'Integrative, Alternative, and Complementary Therapies')
@@ -7240,10 +7297,12 @@ function pdq_ebms_board_members_last_login() {
             $sheet->getColumnDimension('A')->setAutoSize(true);
             $sheet->getColumnDimension('B')->setAutoSize(true);
             $sheet->getColumnDimension('C')->setAutoSize(true);
+            $sheet->getColumnDimension('D')->setAutoSize(true);
             $sheet->setCellValue('A1', 'Name');
             $sheet->setCellValue('B1', 'Authname');
             $sheet->setCellValue('C1', 'Last Login');
-            $sheet->getStyle('A1:C1')->applyFromArray(
+            $sheet->setCellValue('D1', 'Outstanding Reviews');
+            $sheet->getStyle('A1:D1')->applyFromArray(
                 array(
                     'fill' => array(
                         'type' => PHPExcel_Style_Fill::FILL_SOLID,
@@ -7266,6 +7325,7 @@ function pdq_ebms_board_members_last_login() {
         $sheet->setCellValue("A$row", $name);
         $sheet->setCellValue("B$row", $authname);
         $sheet->setCellValue("C$row", $last_login);
+        $sheet->setCellValue("D$row", $articles);
         ++$row;
         $sheet->setSelectedCell('A2');
     }
@@ -8317,22 +8377,27 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
     $sheet->setTitle('Boards');
     $sheet->mergeCells("A1:${last_col}1");
     $sheet->mergeCells("A2:${last_col}2");
+    $sheet->mergeCells("A3:M3");
+    $sheet->mergeCells("N3:P3");
+    $sheet->mergeCells("Q3:${last_col}3");
     $center = PHPExcel_Style_Alignment::HORIZONTAL_CENTER;
     $style = array(
         'font' => array('bold' => true),
         'alignment' => array('horizontal' => $center),
     );
     $title = "EBMS Statistics ($start - $end)";
-    $sheet->getStyle("A1:${last_col}3")->applyFromArray($style);
+    $sheet->getStyle("A1:${last_col}4")->applyFromArray($style);
     $sheet->setCellValue('A1', $title);
-    $sheet->fromArray($cols, null, 'A3');
+    $sheet->setCellValue('N3', 'Board Member Responses');
+    $sheet->setCellValue('Q3', 'Editorial Board Decisions');
+    $sheet->fromArray($cols, null, 'A4');
     foreach (range('A', $last_col) as $col)
         $sheet->getColumnDimension($col)->setAutoSize(true);
     $board_stats = array();
-    $sheet->setCellValue('A4', 'All Boards');
+    $sheet->setCellValue('A5', 'All Boards');
     $values = _ebms_stats(0, 0, $start, $end, $decisions);
-    $sheet->fromArray($values, null, 'B4');
-    $row_number = 6;
+    $sheet->fromArray($values, null, 'B5');
+    $row_number = 7;
     foreach ($boards as $id => $name) {
         if (strpos(strtolower($name), 'complementary') !== false)
             $name = 'IACT';
@@ -8348,23 +8413,28 @@ function pdq_ebms_statistics_form_submit($form, &$form_state) {
         $excel->createSheet();
         $excel->setActiveSheetIndex($sheet_id++);
         $sheet = $excel->getActiveSheet();
-        $sheet->freezePane('B5');
+        $sheet->freezePane('B6');
         foreach (range('A', $last_col) as $col)
             $sheet->getColumnDimension($col)->setAutoSize(true);
         if (strpos(strtolower($name), 'complementary') !== false)
             $sheet->setTitle('IACT');
         else
             $sheet->setTitle($name);
-        $sheet->getStyle("A1:${last_col}4")->applyFromArray($style);
+        $sheet->getStyle("A1:${last_col}5")->applyFromArray($style);
         $sheet->mergeCells("A1:${last_col}1");
         $sheet->mergeCells("A2:${last_col}2");
         $sheet->mergeCells("A3:${last_col}3");
+        $sheet->mergeCells("A4:M4");
+        $sheet->mergeCells("N4:P4");
+        $sheet->mergeCells("Q4:${last_col}4");
         $sheet->setCellValue('A1', $title);
         $sheet->setCellValue('A2', $name);
-        $sheet->fromArray($cols, null, 'A4');
-        $sheet->setCellValue('A5', 'All Topics');
-        $sheet->fromArray($board_stats[$id], null, 'B5');
-        $row_number = 7;
+        $sheet->setCellValue('N4', 'Board Member Responses');
+        $sheet->setCellValue('Q4', 'Editorial Board Decisions');
+        $sheet->fromArray($cols, null, 'A5');
+        $sheet->setCellValue('A6', 'All Topics');
+        $sheet->fromArray($board_stats[$id], null, 'B6');
+        $row_number = 8;
         $results = db_select('ebms_topic', 't')
             ->fields('t', array('topic_id', 'topic_name'))
             ->condition('t.board_id', $id)

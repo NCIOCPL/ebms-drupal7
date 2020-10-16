@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 #----------------------------------------------------------------------
 #
@@ -14,7 +14,7 @@ import os
 import smtplib
 import subprocess
 import sys
-import urllib2
+import urllib.request
 
 def fix_path():
     """
@@ -42,7 +42,7 @@ def get_drupal_var(name):
     logging.debug("running %r", command)
     logging.debug("options %r", opts)
     try:
-        value = subprocess.Popen(command, **opts).stdout.read()
+        value = subprocess.Popen(command, **opts).stdout.read().decode("utf-8")
         logging.debug("value is %r", value)
         return value
     except Exception as e:
@@ -111,7 +111,7 @@ def main():
     if len(sys.argv) < 2:
         cmd = sys.argv[0]
         message = "command line argument for EBMS host name is required"
-        print "usage %s EBMS-HOST-NAME" % cmd
+        print("usage %s EBMS-HOST-NAME" % cmd)
         report(message)
         exit(1)
     host = "%s.nci.nih.gov" % sys.argv[1]
@@ -125,11 +125,12 @@ def main():
     fix_path()
     try:
         logging.debug("opening %s", url)
-        f = urllib2.urlopen(url)
+        f = urllib.request.urlopen(url)
         logging.debug("response received from the EBMS host")
         line = f.readline()
         last_line = "marking unreviewed articles"
         while line:
+            line = line.decode("utf-8")
             logging.info(line.strip())
             last_line = line.strip()
             line = f.readline()

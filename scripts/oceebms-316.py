@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 #----------------------------------------------------------------------
 #
@@ -20,7 +20,7 @@
 #----------------------------------------------------------------------
 import argparse
 import getpass
-import MySQLdb
+import pymysql
 import xlwt
 
 class Reason:
@@ -41,8 +41,8 @@ class Reason:
             if count:
                 sheet.write(row, col, count)
             col += 1
-    def __cmp__(self, other):
-        return cmp(self.name, other.name)
+    def __lt__(self, other):
+        return self.name < other.name
 
 class Control:
     "Loads up all of the data for the report"
@@ -54,7 +54,7 @@ class Control:
         parser.add_argument("--user", default="oce_ebms")
         opts = vars(parser.parse_args())
         opts["passwd"] = getpass.getpass("password for %s: " % opts["user"])
-        conn = MySQLdb.connect(**opts)
+        conn = pymysql.connect(**opts)
         cursor = conn.cursor()
         cursor.execute("SET NAMES utf8")
         cursor.execute("USE %s" % opts["db"])
@@ -68,8 +68,7 @@ SELECT value_id, value_name
         self.boards = {}
         for board_id, board_name in cursor.fetchall():
             self.boards[board_id] = board_name
-        self.board_ids = self.boards.keys()
-        self.board_ids.sort(lambda a,b: cmp(self.boards[a], self.boards[b]))
+        self.board_ids = sorted(self.boards, key=lambda id: self.boards[id])
         cursor.execute("""\
   SELECT COUNT(*), r.value_id, t.board_id
     FROM ebms_review_rejection_reason r

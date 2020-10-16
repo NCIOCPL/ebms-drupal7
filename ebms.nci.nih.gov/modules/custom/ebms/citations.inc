@@ -549,7 +549,7 @@ namespace {
 
         // Add action for linking related citations (OCEEBMS-349).
         $link_url = "citations/link/add/$articleId";
-        $links[] = array('Link Related Citation', $link_url, $link_opt);
+        $links[] = array('Link Related Citation(s)', $link_url, $link_opt);
 
         // Add link for adding a board manager topic-specific comment
         // (OCEEBMS-375).
@@ -7913,7 +7913,10 @@ td, th { border-bottom: 1px black solid; }
                 db_delete($table)
                     ->condition('article_id', $article_id)
                     ->execute();
-                $fields = array('article_id' => $article_id);
+                $fields = array(
+                    'article_id' => $article_id,
+                    'tag_added' => date('Y-m-d'),
+                );
                 foreach ($values['tags'] as $key => $value) {
                     if (!empty($value)) {
                         $fields['tag_id'] = $key;
@@ -7947,8 +7950,13 @@ td, th { border-bottom: 1px black solid; }
                         'error');
                     drupal_goto('citations');
                 }
+                $to_id_desc = 'EBMS ID(s) of related article(s), ' .
+                    'separated by commas and/or spaces';
+                $to_id_title = 'Related Article ID(s)';
                 break;
             case 'edit':
+                $to_id_desc = 'EBMS ID of related article';
+                $to_id_title = 'Related Article ID';
                 $title = 'Edit Article Relationship';
                 $relationship_id = $id;
                 $form_state['viewed-article'] = $id2;
@@ -8014,10 +8022,10 @@ td, th { border-bottom: 1px black solid; }
             ),
             'to_id' => array(
                 '#type' => 'textfield',
-                '#title' => 'Related Article ID',
+                '#title' => $to_id_title,
                 '#default_value' => $to_id,
                 '#required' => true,
-                '#description' => 'EBMS ID of related article',
+                '#description' => $to_id_desc,
             ),
             'rel-type' => array(
                 '#type' => 'radios',
@@ -8067,30 +8075,40 @@ td, th { border-bottom: 1px black solid; }
             $url = "citations/full/$article_id";
             drupal_goto($url, $opts);
         }
-        if (empty($values['to_id']))
-            form_set_error('to_id', 'Missing EBMS ID for related article.');
-        else {
-            $to_id = trim($values['to_id']);
-            if (!Ebms\Util::validate_int($to_id))
-                form_set_error('to_id', 'EBMS ID must be an integer.');
-            elseif ($from_id == $to_id)
+        $rid = $values['relationship_id'];
+        $opts = PREG_SPLIT_NO_EMPTY;
+        $ids = preg_split('/[\s,]+/', $values['to_id'], null, $opts);
+        $linked_articles = array();
+        foreach ($ids as $id) {
+            if (!Ebms\Util::validate_int($id)) {
+                form_set_error('to_id', "Invalid EBMS ID format '$id'.");
+            }
+            elseif ($from_id == $id)
                 form_set_error('to_id', 'Cannot link article to itself.');
             else {
                 $results = db_select('ebms_article', 'a')
                     ->fields('a', array('article_title'))
-                    ->condition('a.article_id', $to_id)
+                    ->condition('a.article_id', $id)
                     ->execute();
                 $title = null;
                 foreach ($results as $result)
                     $title = $result->article_title;
-                if (empty($title))
-                    form_set_error('to_id', "Cannot find EBMS $to_id.");
-                else {
-                    $form_state['linked-article-title'] = $title;
-                    $form_state['linked-article-id'] = $to_id;
-                    $form_state['linking-article-id'] = $from_id;
+                if (empty($title)) {
+                    form_set_error('to_id', "Cannot find EBMS $id.");
                 }
+                else
+                    $linked_articles[$id] = $title;
             }
+        }
+        if (empty($linked_articles))
+            form_set_error('to_id', 'No valid relationship targets found.');
+        elseif (!empty($rid) && count($ids) > 1) {
+            $msg = 'Only a single relationship can be edited at a time.';
+            form_set_error('to_id', $msg);
+        }
+        else {
+            $form_state['linked-articles'] = $linked_articles;
+            $form_state['linking-article-id'] = $from_id;
         }
         if (empty($values['rel-type']))
             form_set_error('rel-type', 'You must select a relationship type.');
@@ -8115,28 +8133,34 @@ td, th { border-bottom: 1px black solid; }
         if (!empty($values['op']) && $values['op'] == 'Submit') {
             $fields = array(
                 'from_id' => $form_state['linking-article-id'],
-                'to_id' => $form_state['linked-article-id'],
                 'type_id' => $form_state['relationship-type-id'],
                 'comment' => $values['comment'],
             );
             $rid = $values['relationship_id'];
-            $title = htmlspecialchars($form_state['linked-article-title']);
-            if ($rid) {
-                db_update('ebms_related_article')
-                    ->fields($fields)
-                    ->condition('relationship_id', $rid)
-                    ->execute();
-                drupal_set_message("Relationship with '$title' updated.");
+            if (empty($rid)) {
+                global $user;
+                $fields['created_by'] = $user->uid;
+                $fields['created'] = strftime("%Y-%m-%d %H:%M:%S");
+                foreach ($form_state['linked-articles'] as $id => $title) {
+                    $fields['to_id'] = $id;
+                    db_insert('ebms_related_article')
+                        ->fields($fields)
+                        ->execute();
+                    $title = htmlspecialchars($title);
+                    drupal_set_message("Relationship with '$title' created.");
+                }
             }
             else {
-                global $user;
-                $now = strftime("%Y-%m-%d %H:%M:%S");
-                $fields['created_by'] = $user->uid;
-                $fields['created'] = $now;
-                db_insert('ebms_related_article')
-                    ->fields($fields)
-                    ->execute();
-                drupal_set_message("Relationship with '$title' created.");
+                // Validation made sure that this array has exactly one item.
+                foreach ($form_state['linked-articles'] as $id => $title) {
+                    $fields['to_id'] = $id;
+                    db_update('ebms_related_article')
+                        ->fields($fields)
+                        ->condition('relationship_id', $rid)
+                        ->execute();
+                    $title = htmlspecialchars($title);
+                    drupal_set_message("Relationship with '$title' updated.");
+                }
             }
         }
         if (empty($form_state['query-parms']))
