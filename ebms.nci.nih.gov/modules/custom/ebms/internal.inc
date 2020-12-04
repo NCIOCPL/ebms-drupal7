@@ -656,8 +656,9 @@ function pdq_ebms_import_internal_articles_form_submit($form, &$form_state) {
 
         // Store the internal tags with each article.
         $table = 'ebms_internal_article_tag';
+        $fields = ['tag_added' => date('Y-m-d')];
         foreach($form_state['tags'] as $tag_id) {
-            $fields = ['tag_id' => $tag_id];
+            $fields['tag_id'] = $tag_id;
             foreach ($articles as $article_id) {
                 $fields['article_id'] = $article_id;
                 db_insert($table)->fields($fields)->execute();
