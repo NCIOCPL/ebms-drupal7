@@ -5415,6 +5415,8 @@ function pdq_ebms_doc_edit_form_validate($form, &$form_state) {
         // Workaround for shifting MS word mime types (OCEEBMS-383).
         if ($mime_type == "application/$word_xml")
             $mime_type = 'application/msword';
+        elseif ($mime_type == 'application/CDFV2' && $extension == 'doc')
+            $mime_type = 'application/msword';
 
         $expected = $acceptable[$extension];
         if ($mime_type != $expected) {

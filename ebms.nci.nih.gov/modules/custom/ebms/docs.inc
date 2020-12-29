@@ -607,6 +607,8 @@ function pdq_ebms_post_doc_form_validate($form, &$form_state) {
     $word_xml = 'vnd.openxmlformats-officedocument.wordprocessingml.document';
     if ($mime_type == "application/$word_xml")
         $mime_type = 'application/msword';
+    elseif ($mime_type == 'application/CDFV2' && $extension == 'doc')
+        $mime_type = 'application/msword';
 
     // Another hoop to jump through if it's a summary document.
     if ($is_summary) {
