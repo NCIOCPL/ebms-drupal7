@@ -462,8 +462,12 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
     $board = $values['board'];
     $cycle = $values['cycle'];
     $topic = $values['topic'];
-    $page = $values['page'];
-    $pager = $values['pager'];
+    $page = 0;
+    $pager = true;
+    if (isset($parms['page']))
+        $page = $parms['page'];
+    if (isset($parms['pager']) && $parms['pager'] === 'off')
+        $pager = false;
     $request = array(
         'type' => 'fulltext queue',
         'board' => $board,
@@ -550,7 +554,7 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
         ->execute();
     $url = EbmsFullText::$url . '/' . $request_id;
     $opts = array();
-    if ($pager == 'off')
+    if (!$pager)
         $opts['query'] = array('pager' => 'off');
     elseif ($page)
         $opts['query'] = array('page' => $page);
