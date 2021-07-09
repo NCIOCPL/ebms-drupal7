@@ -6638,16 +6638,19 @@ td, th { border-bottom: 1px black solid; }
             $related = Ebms\Util::get_related_articles($article_id);
             if ($related)
                 $pieces[]= "<div>$related</div>";
-            $results = db_select('ebms_article_topic_comment', 'c')
-                ->fields('c', array('comment'))
-                ->condition('c.article_id', $article_id)
-                //->condition('c.topic_id', $topic_id)
-                ->execute();
+            $query = db_select('ebms_article_topic_comment', 'c');
+            $query->join('ebms_topic', 't', 't.topic_id = c.topic_id');
+            $query->fields('c', array('comment'));
+            $query->fields('t', array('topic_name'));
+            $query->condition('c.article_id', $article_id);
+            // $query->condition('c.topic_id', $topic_id)
+            $results = $query->execute();
             foreach ($results as $result)
                 if ($result->comment) {
                     $comment = htmlspecialchars($result->comment);
+                    $topic = htmlspecialchars($result->topic_name);
                     $pieces[] = '<br><div class="bmc">';
-                    $pieces[] = 'BOARD MANAGER COMMENT';
+                    $pieces[] = "BOARD MANAGER COMMENT ($topic)";
                     $pieces[] = "<br>$comment</div><br>";
                 }
             if ($showAbstract) {
