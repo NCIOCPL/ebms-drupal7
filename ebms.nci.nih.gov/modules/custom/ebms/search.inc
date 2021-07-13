@@ -453,6 +453,8 @@ class EbmsSearchSpec {
         $publication_year = 0,
         $publication_month = 0,
         $review_cycle = 0,
+        $cycle_range_start = 0,
+        $cycle_range_end = 0,
         $fyi = 0,
         $nci_reviewer_decision = '',
         $full_text_retrieved = '',
@@ -528,6 +530,8 @@ class EbmsSearchSpec {
                 $this->comments = $spec['comments'];
                 $this->board_manager_comment = $spec['board-manager-comment'];
                 $this->review_cycle = $spec['review-cycle'];
+                $this->cycle_range_start = $spec['cycle-range-start'];
+                $this->cycle_range_end = $spec['cycle-range-end'];
                 $this->reviewer = $spec['reviewer'];
                 $this->response = $spec['response'];
                 $this->meeting_category = $spec['meeting-category'];
@@ -627,6 +631,7 @@ function pdq_ebms_search_db_form_validate($form, &$form_state) {
         $simple_fields = array(
             'pmid', 'cms-id', 'author', 'title', 'journal',
             'comments', 'publication-year', 'review-cycle',
+            'cycle-range-start', 'cycle-range-end',
             'reviewer', 'response', 'decision', 'tag',
             'fyi-citation', 'nci-reviewer-decision',
             'committee-decision', 'meeting-category',
@@ -828,14 +833,19 @@ function pdq_ebms_search_db_form(
         foreach ($results as $result)
             $reviewers[$result->uid] = $result->name;
 
-        // Build the review cycle picklist.
+        // Build the review cycle picklists.
         $results = db_select('ebms_cycle', 'c')
             ->fields('c', array('cycle_id', 'cycle_name'))
             ->orderBy('c.start_date', 'DESC')
             ->execute();
         $review_cycles = array(0 => ' ');
-        foreach ($results as $result)
+        $review_cycles_start = array(0 => 'START');
+        $review_cycles_end = array(0 => 'END');
+        foreach ($results as $result) {
             $review_cycles[$result->cycle_id] = $result->cycle_name;
+            $review_cycles_start[$result->cycle_id] = $result->cycle_name;
+            $review_cycles_end[$result->cycle_id] = $result->cycle_name;
+        }
 
         // Build picklist for meeting types, e.g., 'Board', 'Subgroup'
         // Space value ' ' means any meeting type, or no meeting criteria
@@ -1010,6 +1020,32 @@ function pdq_ebms_search_db_form(
                 '#options' => $review_cycles,
                 '#default_value' => $defaults->review_cycle,
             ),
+
+            'cycle-range' => array(
+                '#type' => 'container',
+                '#attributes' => array(
+                    'class' => array('cycle-range'),
+                ),
+                'cycle-range-start' => array(
+                    '#type' => 'select',
+                    '#title' => 'CYCLE RANGE START',
+                    '#title_display' => 'none',
+                    '#options' => $review_cycles_start,
+                    '#default_value' => $defaults->cycle_range_start,
+                ),
+                'cycle-range-end' => array(
+                    '#type' => 'select',
+                    '#title' => 'CYCLE RANGE END',
+                    '#title_display' => 'none',
+                    '#options' => $review_cycles_end,
+                    '#default_value' => $defaults->cycle_range_end,
+                ),
+                'cycle-range-label' => array(
+                    '#type' => 'markup',
+                    '#markup' => '<span>REVIEW CYCLE RANGE</span>',
+                ),
+            ),
+
             'fyi-citation' => array(
                 '#type' => 'checkbox',
                 '#title' => 'FYI CITATION',

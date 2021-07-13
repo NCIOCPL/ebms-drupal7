@@ -376,6 +376,7 @@ class EbmsSearch {
      * noted there, $states can be an array or a single integer.
      * The condition() method for the query object automatically
      * uses the correct operator: 'IN' for arrays, '=' otherwise.
+     * OCEEBMS-599: support searching by cycle range.
      *
      *  @return  string     Alias for the joined state table
      */
@@ -389,13 +390,24 @@ class EbmsSearch {
             $this->qry->condition("$alias.current", 'Y');
         elseif ($state_filter == 'active')
             $this->qry->condition("$alias.active_status", 'A');
-        if (!empty($this->spec['review-cycle'])) {
-            $cycle_id = $this->spec['review-cycle'];
+        $cycle_id = $this->spec['review-cycle'] ?? 0;
+        $start_id = $this->spec['cycle-range-start'] ?? 0;
+        $end_id = $this->spec['cycle-range-end'] ?? 0;
+        if ($cycle_id || $start_id || $end_id) {
             $cycle_alias = 'cycle_alias_' . $this->delta;
             $this->qry->join('ebms_article_topic', $cycle_alias,
                 "$cycle_alias.article_id = $alias.article_id AND " .
                 "$cycle_alias.topic_id = $alias.topic_id");
-            $this->qry->condition("$cycle_alias.cycle_id", $cycle_id);
+            if ($cycle_id)
+                $this->qry->condition("$cycle_alias.cycle_id", $cycle_id);
+            else {
+                if ($start_id)
+                    $this->qry->condition("$cycle_alias.cycle_id",
+                                          $start_id, '>=');
+                if ($end_id)
+                    $this->qry->condition("$cycle_alias.cycle_id",
+                                          $end_id, '<=');
+            }
         }
 
         // Remember that we've filtered by state.
@@ -415,7 +427,7 @@ class EbmsSearch {
      *
      * We rarely have to do anything here, because all of the state
      * checks take care of looking for boards and topics requested,
-     * and the same is true for a specified cycle.
+     * and the same is true for searching by cycle.
      *
      * Note that we don't have to check the active_status column
      * of the state rows, because the only way for a status row
@@ -428,8 +440,12 @@ class EbmsSearch {
      */
     function srchTopicsBoards() {
 
-        // Make sure this hasn't been taken care of already.
-        if (!$this->stateFilters && empty($this->spec['review-cycle'])) {
+        // Make sure this isn't taken care of elsewhere.
+        if (!$this->stateFilters
+            && empty($this->spec['review-cycle'])
+            && empty($this->spec['cycle-range-start'])
+            && empty($this->spec['cycle-range-end'])
+        ) {
 
             // Check topics first.
             if (!empty($this->topics)) {
@@ -839,6 +855,7 @@ class EbmsSearch {
      * Restrict the results to those which have been assigned to
      * a specific cycle.  Using the new ebms_article_topic table,
      * created for just this purpose.
+     * OCEEBMS-599: allow for searching by cycle range.
      */
     function srchCycle() {
 
@@ -851,8 +868,10 @@ class EbmsSearch {
             return;
 
         // Don't do anything unless a specific cycle was chosen.
-        $cycleId  = $this->spec['review-cycle'];
-        if ($cycleId) {
+        $cycleId = $this->spec['review-cycle'] ?? 0;
+        $startId = $this->spec['cycle-range-start'] ?? 0;
+        $endId = $this->spec['cycle-range-end'] ?? 0;
+        if ($cycleId || $startId || $endId) {
 
             // Are we narrowing by topics?
             if (count($this->topics) > 0) {
@@ -862,7 +881,17 @@ class EbmsSearch {
                 if ($logic == 'OR' || count($this->topics) == 1) {
                     $this->qry->join('ebms_article_topic', 'art_top_cycle',
                         'art_top_cycle.article_id = art.article_id');
-                    $this->qry->condition('art_top_cycle.cycle_id', $cycleId);
+                    if ($cycleId)
+                        $this->qry->condition('art_top_cycle.cycle_id',
+                                              $cycleId);
+                    else {
+                        if ($startId)
+                            $this->qry->condition('art_top_cycle.cycle_id',
+                                                  $startId, '>=');
+                        if ($endId)
+                            $this->qry->condition('art_top_cycle.cycle_id',
+                                                  $endId, '<=');
+                    }
                     if (count($this->topics) == 1)
                         $this->qry->condition('art_top_cycle.topic_id',
                             $this->topics[0]);
@@ -878,7 +907,16 @@ class EbmsSearch {
                         $alias = "cycle_$i";
                         $this->qry->join('ebms_article_topic', $alias,
                             "$alias.article_id = art.article_id");
-                        $this->qry->condition("$alias.cycle_id", $cycleId);
+                        if ($cycleId)
+                            $this->qry->condition("$alias.cycle_id", $cycleId);
+                        else {
+                            if ($startId)
+                                $this->qry->condition("$alias.cycle_id",
+                                                      $startId, '>=');
+                            if ($endId)
+                                $this->qry->condition("$alias.cycle_id",
+                                                      $endId, '<=');
+                        }
                         $this->qry->condition("$alias.topic_id", $topicId);
                         ++$i;
                     }
@@ -895,7 +933,16 @@ class EbmsSearch {
                         "$alias1.article_id = art.article_id");
                     $this->qry->join('ebms_topic', $alias2,
                         "$alias2.topic_id = $alias1.topic_id");
-                    $this->qry->condition("$alias1.cycle_id", $cycleId);
+                    if ($cycleId)
+                        $this->qry->condition("$alias1.cycle_id", $cycleId);
+                    else {
+                        if ($startId)
+                            $this->qry->condition("$alias1.cycle_id",
+                                                  $startId, '>=');
+                        if ($endId)
+                            $this->qry->condition("$alias1.cycle_id",
+                                                  $endId, '<=');
+                    }
                     $this->qry->condition("$alias2.board_id", $boardId);
                 }
             }
@@ -904,7 +951,16 @@ class EbmsSearch {
             else {
                 $this->qry->join('ebms_article_topic', 'art_top_cycle',
                     'art_top_cycle.article_id = art.article_id');
-                $this->qry->condition('art_top_cycle.cycle_id', $cycleId);
+                if ($cycleId)
+                    $this->qry->condition('art_top_cycle.cycle_id', $cycleId);
+                else {
+                    if ($startId)
+                        $this->qry->condition('art_top_cycle.cycle_id',
+                                              $startId, '>=');
+                    if ($endId)
+                        $this->qry->condition('art_top_cycle.cycle_id',
+                                              $endId, '<=');
+                }
             }
         }
     }

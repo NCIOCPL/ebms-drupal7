@@ -33,6 +33,7 @@
 #search-db-form .form-checkboxes .form-type-checkbox,
 #search-db-form .yes-no-boxes,
 #search-db-form .year-and-month,
+#search-db-form .cycle-range,
 #search-db-form .fieldset-wrapper > .form-type-select,
 #search-db-form div.form-item.form-type-textfield {
     margin: 5px 0; float: none; overflow: hidden;
@@ -64,10 +65,14 @@ form#search-db-form .form-item.form-type-checkbox:not(#foo) label {
 #search-db-form .checkbox-line { padding-left: 463px; }
 #search-db-form .left-radios .form-radios { width: auto; }
 /*#search-db-form .form-type-date select { width: 127px; margin-right: 5px; }*/
-#search-db-form .year-and-month .form-type-select select { width: 235px; }
+#search-db-form .year-and-month .form-type-select select,
+#search-db-form .cycle-range .form-type-select select { width: 235px; }
 
 /* Correct spacing between year and month fields. */
 #search-db-form div.form-item-publication-month { padding-left: 15px; }
+
+/* Ditto for cycle range fields. */
+#search-db-form div.form-item-cycle-range-end { padding-left: 15px; }
 
 /* Use floats to keep custom field pieces on the same line. */
 #search-db-form .form-radios,
@@ -75,7 +80,8 @@ form#search-db-form .form-item.form-type-checkbox:not(#foo) label {
 /*#search-db-form .form-type-date,*/
 #search-db-form .fieldset-wrapper .form-radios .form-item-topic-logic,
 #search-db-form .use-range-checkbox,
-#search-db-form .year-and-month .form-type-select {
+#search-db-form .year-and-month .form-type-select,
+#search-db-form .cycle-range .form-type-select {
     float: left;
 }
 
@@ -84,6 +90,7 @@ form#search-db-form .form-item.form-type-checkbox:not(#foo) label {
 #search-db-form .form-type-select label,
 #search-db-form .form-type-textfield label,
 #search-db-form .year-and-month span,
+#search-db-form .cycle-range span,
 #search-db-form .form-type-radios > label,
 #search-db-form .yes-no-boxes legend.radios-508 {
     line-height: 22px; float: right; width: 205px;
