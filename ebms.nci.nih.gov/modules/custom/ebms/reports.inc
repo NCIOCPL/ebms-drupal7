@@ -7091,10 +7091,17 @@ function cites_by_tag_report($request_id, $member_version=false) {
         'Comments',
     );
 
+    // Special treatment for librarian comment tags (OCEEBMS-575).
+    $librarian_cmt = db_select('ebms_article_tag_type', 't')
+        ->fields('t', array('tag_id'))
+        ->condition('t.text_id', 'librarian_cmt')
+        ->execute()
+        ->fetchField();
+
     // Fetch the settings for this request, use them to find the report data.
     $values = EbmsReports::fetch_report_request($request_id);
     $query = db_select('ebms_article_tag', 'g');
-    $query->fields('g', array('article_id', 'tag_dt'));
+    $query->fields('g', array('article_id', 'tag_dt', 'article_tag_id'));
     $query->join('ebms_article', 'a', 'a.article_id = g.article_id');
     $query->condition('g.active_status', 'A');
     $query->condition('g.tag_id', $values['tag']);
@@ -7117,11 +7124,19 @@ function cites_by_tag_report($request_id, $member_version=false) {
 
     // Narrow by comment as appropriate.
     if (!empty($values['comment'])) {
-        $query->join('ebms_article_state', 's',
-                     's.article_id = g.article_id AND ' .
-                     's.topic_id = g.topic_id');
-        $query->join('ebms_article_state_comment', 'c',
-                     'c.article_state_id = s.article_state_id');
+
+        // OCEEBMS-575: special treatment for librarian comment tags.
+        if ($values['tag'] == $librarian_cmt) {
+            $query->join('ebms_article_tag_comment', 'c',
+                         'c.article_tag_id = g.article_tag_id');
+        }
+        else {
+            $query->join('ebms_article_state', 's',
+                         's.article_id = g.article_id AND ' .
+                         's.topic_id = g.topic_id');
+            $query->join('ebms_article_state_comment', 'c',
+                         'c.article_state_id = s.article_state_id');
+        }
         $query->condition('c.comment', $values['comment'], 'LIKE');
     }
 
@@ -7195,12 +7210,21 @@ function cites_by_tag_report($request_id, $member_version=false) {
                 $state = "Assigned for Review: $packet_title";
             }
         }
-        $query = db_select('ebms_article_state_comment', 'c')
-            ->fields('c', array('comment'));
-        $query->join('ebms_article_state', 's', 's.article_state_id ' .
-                     '= c.article_state_id');
-        $query->condition('s.article_id', $article_id);
-        $query->condition('s.topic_id', $topic_id);
+
+        // OCEEBMS-575: special treatment for librarian comment tags.
+        if ($values['tag'] == $librarian_cmt) {
+            $query = db_select('ebms_article_tag_comment', 'c')
+                ->fields('c', array('comment'))
+                ->condition('c.article_tag_id', $result->article_tag_id);
+        }
+        else {
+            $query = db_select('ebms_article_state_comment', 'c')
+                ->fields('c', array('comment'));
+            $query->join('ebms_article_state', 's', 's.article_state_id ' .
+                         '= c.article_state_id');
+            $query->condition('s.article_id', $article_id);
+            $query->condition('s.topic_id', $topic_id);
+        }
         $query->orderBy('c.comment_dt', 'DESC');
         $comment_rows = $query->execute();
         $comments = array();
