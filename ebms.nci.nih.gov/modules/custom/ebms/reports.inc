@@ -6937,6 +6937,7 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
     $tag = '';
     $comment = '';
     $start = $end = '';
+    $no_board_decisions = FALSE;
 
     // Pull request parameters from the database if appropriate.
     if ($request_id) {
@@ -6951,6 +6952,7 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
             $end = Ebms\Util::fill_in_date($end, true);
         $comment = $values['comment'];
         $tag = $values['tag'];
+        $no_board_decisions = !empty($values['no-board-decisions']);
     }
 
     // Get the values of interest for ajax callbacks.
@@ -7033,6 +7035,11 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
             '#type' => 'textfield',
             '#default_value' => $comment,
             '#title' => 'Comment',
+        ),
+        'no-board-decisions' => array(
+            '#type' => 'checkbox',
+            '#title' => 'No Board Decisions',
+            '#default_value' => $no_board_decisions,
         ),
         'reset' => array(
             '#type' => 'submit',
@@ -7138,6 +7145,20 @@ function cites_by_tag_report($request_id, $member_version=false) {
                          'c.article_state_id = s.article_state_id');
         }
         $query->condition('c.comment', $values['comment'], 'LIKE');
+    }
+
+    // OCEEBMS-553: option to suppress articles with board decisions.
+    if (!empty($values['no-board-decisions'])) {
+        $fbd = db_select('ebms_article_state_type', 't')
+            ->fields('t', array('state_id'))
+            ->condition('t.state_text_id', 'FinalBoardDecision')
+            ->execute()
+            ->fetchField();
+        $query->leftJoin('ebms_article_state', 'bds',
+                         'bds.article_id = g.article_id AND ' .
+                         'bds.topic_id = g.topic_id AND ' .
+                         'bds.state_id = ' . $fbd);
+        $query->isNull('bds.article_id');
     }
 
     // We'll need this for finding the latest article statuses.
@@ -8316,7 +8337,8 @@ function _ebms_stats($board, $topic, $start, $end, $decisions) {
         $query->condition('t.board_id', $board);
     }
     if (!empty($start))
-        $query->condition('p.created_at', Ebms\Util::fill_in_date($start), '>=');
+        $query->condition('p.created_at', Ebms\Util::fill_in_date($start),
+                          '>=');
     $query->isNull('r.article_id');
     $stats[] = $query->countQuery()->execute()->fetchField();
 
@@ -8327,7 +8349,8 @@ function _ebms_stats($board, $topic, $start, $end, $decisions) {
                      'd.article_state_id = s.article_state_id');
         $query->condition('d.decision_value_id', $decision_id);
         $query->fields('s', array('article_id'));
-        Ebms\Util::add_date_range_to_query($query, $start, $end, 's.status_dt');
+        Ebms\Util::add_date_range_to_query($query, $start, $end,
+                                           's.status_dt');
         if (!empty($topic))
             $query->condition('s.topic_id', $topic);
         if (!empty($board))
