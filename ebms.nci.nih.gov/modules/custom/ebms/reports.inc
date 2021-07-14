@@ -1284,6 +1284,118 @@ class EbmsReports {
     }
 
     /**
+     * Build a statistical report of the counts of articles approved
+     * during review from the abstract. Implemented for OCEEBMS-579.
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().
+     *
+     *  @param  int    $board   ID of board (if the user specified
+     *                          one for the report)
+     *  @param  int    $cycle   ID of the cycle used for filtering
+     *                          the report
+     *
+     *  @return array           Drupal render array for the report
+     */
+    public static function abstract_approved($board, $cycle) {
+
+        // Will be caught by validation function.
+        $cycle_name = Ebms\Util::get_cycle_name($cycle);
+        if (!$cycle_name) {
+            drupal_set_message('Cycle is required for this report', 'error');
+            return array();
+        }
+
+        // Start the render array with the title and meta data.
+        $d = date('m/d/Y');
+        $t = 'Citations Selected for Full-Text Retrieval';
+        $report = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => 'report',
+                'class' => array('abstract-approved'),
+            ),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => "<h2>$t</h2>" .
+                "<div class='meta'><span class='label'>Date:</span> $d</div>" .
+                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                $cycle_name . '</div>',
+            )
+        );
+
+        // Construct the report's query.
+        $state_id = Ebms\Util::state_id_from_text_id('PassedBMReview');
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
+        $query->join('ebms_article_topic', 'a',
+            'a.article_id = s.article_id AND a.topic_id = s.topic_id');
+        $query->condition('a.cycle_id', $cycle);
+        $query->condition('s.state_id', $state_id);
+        $query->fields('b', array('board_name'));
+        $query->groupBy('b.board_name');
+        if ($board)
+            $query->condition('s.board_id', $board);
+
+        // Branch off at this point for a separate version of the query
+        // to get the total number of articles for each board (which we
+        // can't get by summing the per-board/topic counts, because an
+        // article can be represented in those counts more than once).
+        $total_query = clone($query);
+        $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+        $results = $total_query->execute();
+        $totals = array();
+        $total = 0;
+        foreach ($results as $result) {
+            $totals[$result->board_name] = $result->n;
+            $total += $result->n;
+        }
+
+        // Resume with the rest of the original query, from which we
+        // need more granularity.
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->fields('t', array('topic_name'));
+        $query->groupBy('t.topic_name');
+        $query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+        $query->orderBy('b.board_name');
+        $query->orderBy('t.topic_name');
+
+        // Collect the query result in an array indexed by board.
+        $results = $query->execute();
+        $stats = array();
+        foreach ($results as $result) {
+            $board_name = $result->board_name;
+            if (!array_key_exists($board_name, $stats))
+                $stats[$board_name] = array();
+            $stats[$board_name][$result->topic_name] = $result->n;
+        }
+
+        // Add a section for each board, showing counts for imports
+        // by topic.
+        foreach ($stats as $board_name => &$topic_array) {
+            $rows = array();
+            foreach ($topic_array as $topic_name => $count)
+                $rows[] = array($topic_name, $count);
+            $rows[] = array('TOTAL', $totals[$board_name]);
+            $report[$board_name] = array(
+                '#theme' => 'table',
+                '#caption' => $board_name,
+                '#header' => array('Topic Name', 'Articles Selected'),
+                '#rows' => $rows,
+            );
+        }
+
+        // Add a separate table for the grand total if appropriate.
+        if (!$board)
+            $report['grand_total'] = array(
+                '#theme' => 'table',
+                '#caption' => 'Grand Total',
+                '#rows' => [['ALL BOARDS', $total]],
+            );
+
+        return $report;
+    }
+
+    /**
      * Build a report showing all of the article-topic combinations
      * rejected by the board manager in her first pass.
      * One of several "Citations" reports, invoked by the function
@@ -3942,6 +4054,7 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             'Citation Summary Topic Changes',
             'Citations Excluded by NOT Journal Filters',
             'Citations Reviewed by Medical Librarian',
+            'Citations Selected for Full-Text Retrieval',
         )
     );
     $results = db_select('ebms_cycle', 'c')
@@ -4062,6 +4175,10 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             case 'Citations Reviewed by Medical Librarian':
                 $form['report'] =
                     EbmsReports::librarian_reviewed($board, $cycle);
+                break;
+            case 'Citations Selected for Full-Text Retrieval':
+                $form['report'] =
+                    EbmsReports::abstract_approved($board, $cycle);
                 break;
         }
     }
