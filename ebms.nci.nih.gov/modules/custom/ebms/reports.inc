@@ -967,10 +967,15 @@ class EbmsReports {
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
         $query->condition('a.cycle_id', $cycle);
         $query->condition('s.state_id', $state_ids, 'IN');
-        $query->fields('b', array('board_name'));
-        $query->groupBy('b.board_name');
         if ($board)
             $query->condition('s.board_id', $board);
+        else {
+            $total_query = clone($query);
+            $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+            $total = $total_query->execute()->fetchField();
+        }
+        $query->fields('b', array('board_name'));
+        $query->groupBy('b.board_name');
 
         // Branch off at this point for a separate version of the query
         // to get the total number of articles for each board (which we
@@ -980,11 +985,8 @@ class EbmsReports {
         $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
         $results = $total_query->execute();
         $totals = array();
-        $total = 0;
-        foreach ($results as $result) {
+        foreach ($results as $result)
             $totals[$result->board_name] = $result->n;
-            $total += $result->n;
-        }
 
         // Resume with the rest of the original query, from which we
         // need more granularity.
@@ -1079,10 +1081,15 @@ class EbmsReports {
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
         $query->condition('a.cycle_id', $cycle);
         $query->condition('s.state_id', $state_id);
-        $query->fields('b', array('board_name'));
-        $query->groupBy('b.board_name');
         if ($board)
             $query->condition('s.board_id', $board);
+        else {
+            $total_query = clone($query);
+            $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+            $total = $total_query->execute()->fetchField();
+        }
+        $query->fields('b', array('board_name'));
+        $query->groupBy('b.board_name');
 
         // Branch off at this point for a separate version of the query
         // to get the total number of articles for each board (which we
@@ -1092,11 +1099,8 @@ class EbmsReports {
         $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
         $results = $total_query->execute();
         $totals = array();
-        $total = 0;
-        foreach ($results as $result) {
+        foreach ($results as $result)
             $totals[$result->board_name] = $result->n;
-            $total += $result->n;
-        }
 
         // Resume with the rest of the original query, from which we
         // need more granularity.
@@ -1331,10 +1335,15 @@ class EbmsReports {
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
         $query->condition('a.cycle_id', $cycle);
         $query->condition('s.state_id', $state_id);
-        $query->fields('b', array('board_name'));
-        $query->groupBy('b.board_name');
         if ($board)
             $query->condition('s.board_id', $board);
+        else {
+            $total_query = clone($query);
+            $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+            $total = $total_query->execute()->fetchField();
+        }
+        $query->fields('b', array('board_name'));
+        $query->groupBy('b.board_name');
 
         // Branch off at this point for a separate version of the query
         // to get the total number of articles for each board (which we
@@ -1344,11 +1353,8 @@ class EbmsReports {
         $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
         $results = $total_query->execute();
         $totals = array();
-        $total = 0;
-        foreach ($results as $result) {
+        foreach ($results as $result)
             $totals[$result->board_name] = $result->n;
-            $total += $result->n;
-        }
 
         // Resume with the rest of the original query, from which we
         // need more granularity.
