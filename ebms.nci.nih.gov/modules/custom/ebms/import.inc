@@ -940,6 +940,7 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                     'created' => $now,
                 );
                 foreach ($batch->action['imported'] as $info) {
+                    $pubmsg = 'Published related article';
                     $pmid = $info[0];
                     $to_id = $info[1];
                     if (array_key_exists($pmid, $related)) {
@@ -949,6 +950,13 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                             $id = db_insert('ebms_related_article')
                                 ->fields($fields)
                                 ->execute();
+                        }
+
+                        // Mark as published, if a state hasn't already
+                        // been selected (OCEEBMS-583).
+                        if (!$fast_track && !$core_journals) {
+                            Ebms\setArticleState($to_id, 'Published', $topic,
+                                                 $board, $pubmsg);
                         }
                     }
                 }
