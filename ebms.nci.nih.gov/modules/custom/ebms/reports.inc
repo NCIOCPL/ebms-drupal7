@@ -715,6 +715,23 @@ class EbmsReports {
     }
 
     /**
+     * Get the label and value for one of the "Citations" reports display.
+     *
+     *  @param mixed  $cycle   integer or pair of two integers
+     *
+     *  @return array          label and value for cycle or cycle range
+     */
+    public static function cycle_display($cycle) {
+        if (is_array($cycle))
+            return array(
+                'Review cycle range',
+                Ebms\Util::get_cycle_name($cycle[0]) .
+                ' through ' . Ebms\Util::get_cycle_name($cycle[1]),
+            );
+        return array('Review cycle', Ebms\Util::get_cycle_name($cycle));
+    }
+
+    /**
      * Builds the Drupal render array for the report on published
      * citations.  "Published" in this context means release for the
      * board manager's initial review (from the abstract).
@@ -724,20 +741,14 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
     public static function cites_published($board, $cycle) {
 
-        // Will be caught by validation.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -749,7 +760,7 @@ class EbmsReports {
                 '#type' => 'markup',
                 '#markup' => '<h2>Citations Published</h2>' .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -760,7 +771,8 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $published);
         $query->fields('b', array('board_name'));
         $query->groupBy('b.board_name');
@@ -823,20 +835,14 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
     public static function cites_imported($board, $cycle) {
 
-        // Will be caught by validation function.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -848,7 +854,7 @@ class EbmsReports {
                 '#type' => 'markup',
                 '#markup' => '<h2>Citations Imported</h2>' .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -862,7 +868,8 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $state_ids, 'IN');
         $query->fields('b', array('board_name'));
         $query->groupBy('b.board_name');
@@ -925,20 +932,14 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
     public static function librarian_reviewed($board, $cycle) {
 
-        // Will be caught by validation function.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $t = 'Citations Reviewed by Medical Librarian';
         $report = array(
@@ -951,7 +952,7 @@ class EbmsReports {
                 '#type' => 'markup',
                 '#markup' => "<h2>$t</h2>" .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -965,7 +966,8 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $state_ids, 'IN');
         if ($board)
             $query->condition('s.board_id', $board);
@@ -1042,20 +1044,14 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
     public static function cites_notlisted($board, $cycle) {
 
-        // Will be caught by validation function.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $t = 'Citations Excluded by NOT Journal Filters';
         $report = array(
@@ -1068,7 +1064,7 @@ class EbmsReports {
                 '#type' => 'markup',
                 '#markup' => "<h2>$t</h2>" .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -1079,7 +1075,8 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $state_id);
         if ($board)
             $query->condition('s.board_id', $board);
@@ -1158,7 +1155,7 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
@@ -1168,14 +1165,8 @@ class EbmsReports {
         $rejected = Ebms\Util::state_id_from_text_id('RejectInitReview');
         $accepted = Ebms\Util::state_id_from_text_id('PassedInitReview');
 
-        // Will be caught by validation function.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -1188,7 +1179,7 @@ class EbmsReports {
                 '#markup' =>
                 '<h2>Citations Rejected/Accepted for Publishing</h2>' .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -1196,12 +1187,13 @@ class EbmsReports {
         // New requirement (OCEEBMS-204): If no board is selected,
         // add a total count of unique rejected articles at the top
         // of the report.
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
         if (!$board) {
             $on = 't.article_id = s.article_id AND t.topic_id = s.topic_id';
             $query = db_select('ebms_article_state', 's');
             $query->join('ebms_article_topic', 't', $on);
             $query->condition('s.state_id', $rejected);
-            $query->condition('t.cycle_id', $cycle);
+            $query->condition('t.cycle_id', $cycle, $cycle_op);
             $query->addExpression('COUNT(DISTINCT s.article_id)', 'total');
             $total_rejected = $query->execute()->fetchField();
             $label = '<span class="label">Total Articles Rejected:</span>';
@@ -1216,7 +1208,7 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $state_ids, 'IN');
         $query->fields('b', array('board_name'));
         $query->fields('s', array('state_id'));
@@ -1296,20 +1288,14 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
     public static function abstract_approved($board, $cycle) {
 
-        // Will be caught by validation function.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $t = 'Citations Selected for Full-Text Retrieval';
         $report = array(
@@ -1322,7 +1308,7 @@ class EbmsReports {
                 '#type' => 'markup',
                 '#markup' => "<h2>$t</h2>" .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -1333,7 +1319,8 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $state_id);
         if ($board)
             $query->condition('s.board_id', $board);
@@ -1410,7 +1397,7 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *  @param  array  $start   Drupal form date field for the beginning
      *                          of a filtering date range
      *  @param  array  $end     Drupal form date field for the end
@@ -1472,9 +1459,10 @@ class EbmsReports {
         if ($board)
             $query->condition('s.board_id', $board);
         if ($cycle) {
+            $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
             $query->join('ebms_article_topic', 'c',
                 'c.article_id = s.article_id AND c.topic_id = s.topic_id');
-            $query->condition('c.cycle_id', $cycle);
+            $query->condition('c.cycle_id', $cycle, $cycle_op);
         }
         else {
             if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
@@ -3753,6 +3741,10 @@ class EbmsReports {
      * block for the meta-data at the top of one of the citation reports.
      */
     static function format_cycle_name($cycle) {
+        if (is_array($cycle))
+            return '<div class="meta"><span class="label">Review Cycle ' .
+                'Range:</span> ' . Ebms\Util::get_cycle_name($cycle[0]) .
+                ' through ' . Ebms\Util::get_cycle_name($cycle[1]) . '</div>';
         $cycle_name = Ebms\Util::get_cycle_name($cycle);
         return '<div class="meta"><span class="label">Review Cycle:</span> ' .
             $cycle_name . '</div>';
@@ -4023,7 +4015,7 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
 
     // Initialize defaults for the form field's values.
     $board = \Ebms\Util::get_user_default_board(0);
-    $cycle = $report = 0;
+    $cycle = $report = $cycle_range_start = $cycle_range_end = 0;
     $start_date = $end_date = '';
 
     // Check for overrides of the defaults from the form's current state.
@@ -4034,6 +4026,10 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             $board = $values['board'];
         if (isset($values['cycle']))
             $cycle = $values['cycle'];
+        if (isset($values['cycle-range-start']))
+            $cycle_range_start = $values['cycle-range-start'];
+        if (isset($values['cycle-range-end']))
+            $cycle_range_end = $values['cycle-range-end'];
         if (isset($values['report']))
             $report = $values['report'];
         if (isset($values['date-start'])) {
@@ -4118,8 +4114,7 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
         ),
     );
 
-    // Only one of the five citation reports needs the Board and
-    // Cycle fields.
+    // All but one of the citation reports needs the Board and Cycle fields.
     if (strcmp($report, 'Citation Summary Topic Changes')) {
         $form['top']['report-form']['ajax fields']['board'] = array(
             '#type' => 'select',
@@ -4137,6 +4132,35 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             '#default_value' => $cycle,
             '#attributes' => array('class' => array('fixed-width')),
         );
+
+        $form['top']['report-form']['ajax fields']['cycle-range'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'class' => array('cycle-range'),
+                'id' => 'citerep-cycle-range',
+            ),
+            'cycle-range-start' => array(
+                '#type' => 'select',
+                '#title' => 'Cycle Range Start',
+                '#title_display' => 'none',
+                '#options' => $cycles,
+                '#default_value' => $cycle_range_start,
+            ),
+            'cycle-range-end' => array(
+                '#type' => 'select',
+                '#title' => 'Cycle Range End',
+                '#title_display' => 'none',
+                '#options' => $cycles,
+                '#default_value' => $cycle_range_end,
+            ),
+            'cycle-range-label' => array(
+                '#type' => 'markup',
+                '#markup' => '<span>Review Cycle Range</span>',
+            ),
+        );
+
+
+
     }
 
     // Two of the five reports allow the user to specify a date range
@@ -4152,6 +4176,8 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
     // the appropriate class method to build the render array for the
     // report's display, and plug that into the form structure.
     if ($report && $values['op'] == 'Submit') {
+        if ($cycle_range_start && $cycle_range_end)
+            $cycle = [$cycle_range_start, $cycle_range_end];
         switch ($report) {
             case 'Citations Published':
                 $form['report'] =
@@ -4192,7 +4218,7 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
 }
 
 /**
- * The librarians' five citation reports have different requirements,
+ * The librarians' citation reports have different requirements,
  * depending on which report was selected.  Flag any violations of
  * these requirements.
  *
@@ -4210,49 +4236,63 @@ function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
     // Collect the values we need for validation.
     $values = $form_state['values'];
     $report = $values['report'];
-    $cycle = isset($values['cycle']) ? $values['cycle'] : 0;
+    $cycle = $values['cycle'] ?? 0;
+    $first_cycle = $values['cycle-range-start'] ?? 0;
+    $last_cycle = $values['cycle-range-end'] ?? 0;
 
     // No matter what else is wrong, a report selection is required.
     if (!$report)
         form_set_error('report', 'No report selected');
     else {
-        switch ($report) {
 
-            // Three of the reports only require a review cycle selection.
-            case 'Citations Published':
-            case 'Citations Rejected/Accepted for Publishing':
-            case 'Citations Imported':
-                if (!$cycle)
-                    form_set_error('cycle', 'Please select a review cycle');
-                break;
+        $cycle_and_range = 'Cycle and cycle range both selected';
+        switch ($report) {
 
             // For the report on articles rejected by the board manager
             // in her first review pass, make sure the user has not
-            // specified both date(s) and a review cycle.  Also,
-            // ensure that both dates are complete if a date range is
+            // specified both date(s) and review cycle(s).  Also,
+            // ensure that both values are supplied if a range is
             // specified.
             case 'Citations Not Selected for Full Text Retrieval':
                 $start = $values['date-start']['date'];
                 $end = $values['date-end']['date'];
-                if ($cycle) {
+                if ($cycle || $first_cycle || $last_cycle) {
                     $msg = 'Cannot specify both cycle and dates.';
                     if ($start)
                         form_set_error('date-start', $msg);
                     elseif ($end)
                         form_set_error('end-date', $msg);
+                    if ($cycle) {
+                        if ($first_cycle || $last_cycle)
+                            form_set_error('cycle', $cycle_and_range);
+                    }
+                    elseif (!$first_cycle)
+                        form_set_error('cycle-range-start',
+                                       'Missing cycle range start');
+                    elseif (!$last_cycle)
+                        form_set_error('cycle-range-end',
+                                       'Missing cycle range end');
                 }
                 elseif (!$start && !$end)
-                    form_set_error('cycle', 'Must specify cycle or dates.');
+                    form_set_error('cycle', 'Must specify cycle(s) or dates.');
                 break;
 
             // For the report on articles for which the board manager
-            // have added topics not included by the librarian,
-            // we must have a fully specified date range.
+            // have added topics not included by the librarian, we must
+            // have a fully specified date range.
             case 'Citation Summary Topic Changes':
                 $start = $values['date-start']['date'];
                 $end = $values['date-end']['date'];
                 if (!$start && !$end)
-                    form_set_error('date-start', 'A date is required.');
+                    form_set_error('date-start', 'Date range is required.');
+                break;
+
+            // Most of the reports require a review cycle selection.
+            default:
+                if (!($cycle || $first_cycle && $last_cycle))
+                    form_set_error('cycle', 'No cycle(s) selected');
+                if ($cycle && $first_cycle)
+                    form_set_error('cycle', $cycle_and_range);
                 break;
         }
     }

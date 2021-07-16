@@ -205,3 +205,30 @@ form #doc-report .form-type-checkbox:not(#foo) label {
 #statistics-report h2 { margin-top: 25px; }
 #statistics-report th { text-align: center; }
 #statistics-report td { text-align: right; }
+
+/* OCEEBMS-604 */
+#citerep-cycle-range.form-wrapper {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    margin-left: 12px;
+    float: none;
+    overflow: hidden;
+}
+#citerep-cycle-range.form-wrapper span {
+    text-transform: uppercase;
+    float: left;
+    display: inline-block;
+    padding-left: 3.5px;
+    margin-top: 2px;
+}
+#citerep-cycle-range .form-item-cycle-range-start.form-item,
+#citerep-cycle-range .form-item-cycle-range-end.form-item {
+    float: left;
+    display: inline-block;
+    margin: 0;
+}
+#citerep-cycle-range .form-item-cycle-range-end { padding-left: 10px; }
+#citerep-cycle-range .form-item-cycle-range-start select,
+#citerep-cycle-range .form-item-cycle-range-end select {
+    width: 245px;
+}
