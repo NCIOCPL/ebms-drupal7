@@ -153,7 +153,7 @@ class EbmsSearch {
      * a results page for a search performed by a board manager, to
      * be given to a board member.
      */
-    function show_board_member_version($query, $count) {
+    function show_board_member_version($query, $count, $spec) {
         $results = $query->execute();
         $page = array();
         $pos = 1;
@@ -173,6 +173,153 @@ body {
   <h1>EBMS Search Results (' . $count . ')</h1>
   <h2>' . $now . '</h2>
 ';
+
+        // Add selected search criteria (OCEEBMS-594).
+        if (!empty($spec['boards'])) {
+            $boards = array();
+            foreach ($spec['boards'] as $id)
+                $boards[] = Ebms\Util::get_board_name($id);
+            $value = htmlspecialchars(implode(', ', $boards));
+            print "  <p><b>Board(s): $value</b></p>\n";
+        }
+        if (!empty($spec['topics'])) {
+            $names = db_select('ebms_topic', 't')
+                ->fields('t', array('topic_name'))
+                ->condition('t.topic_id', $spec['topics'], 'IN')
+                ->execute()
+                ->fetchCol();
+            $value = htmlspecialchars(implode(', ', $names));
+            if ($value)
+                print "  <p><b>Topic(s): $value</b></p>\n";
+        }
+        if (!empty($spec['publication-year'])) {
+            $value = $spec['publication-year'];
+            print "  <p><b>Year: $value</b></p>\n";
+        }
+        if (!empty($spec['review-cycle'])) {
+            $value = Ebms\Util::get_cycle_name($spec['review-cycle']);
+            if ($value)
+                print "  <p><b>Review Cycle: $value</b></p>\n";
+        }
+        elseif (!empty($spec['cycle-range-start']) ||
+                !empty($spec['cycle-range-end'])) {
+            if (!empty($spec['cycle-range-start'])) {
+                $start = Ebms\Util::get_cycle_name($spec['cycle-range-start']);
+                if (!empty($spec['cycle-range-end'])) {
+                    $end = Ebms\Util::get_cycle_name($spec['cycle-range-end']);
+                    $value = "$start to $end";
+                }
+                else
+                    $value = "Since $start";
+            }
+            else {
+                $end = Ebms\Util::get_cycle_name($spec['cycle-range-end']);
+                $value = "Through $end";
+            }
+            print "  <p><b>Review Cycle Range: $value</b></p>\n";
+        }
+        if (!empty($spec['nci-reviewer-decision'])) {
+            $value = 'No';
+            if (strcmp($spec['nci-reviewer-decision'], 'PassedBMReview') === 0)
+                $value = 'Yes';
+            print "  <p><b>Abstract Decision: $value</b></p>\n";
+        }
+        if (!empty($spec['committee-decision'])) {
+            $value = 'No';
+            if (strcmp($spec['committee-decision'], 'PassedFullReview') === 0)
+                $value = 'Yes';
+            print "  <p><b>Full Text Decision: $value</b></p>\n";
+        }
+        if (!empty($spec['meeting-category'])) {
+            $value = htmlspecialchars(ucfirst($spec['meeting-category']));
+            print "  <p><b>Meeting Category: $value</b></p>\n";
+        }
+        if (!empty($spec['meeting-start']['date']) ||
+            !empty($spec['meeting-end']['date'])) {
+            if (!empty($spec['meeting-start']['date'])) {
+                $start = print_r($spec['meeting-start']['date'], true);
+                if (!empty($spec['meeting-end']['date'])) {
+                    $end = $spec['meeting-end']['date'];
+                    $value = "$start to $end";
+                }
+                else
+                    $value = "Since $start";
+            }
+            else {
+                $end = $spec['meeting-end']['date'];
+                $value = "Through $end";
+            }
+            print "  <p><b>Meeting Date Range: $value</b></p>\n";
+        }
+        if (!empty($spec['decision'])) {
+            $value = db_select('ebms_article_board_decision_value', 'v')
+                ->fields('v', array('value_name'))
+                ->condition('v.value_id', $spec['decision'])
+                ->execute()
+                ->fetchField();
+            if ($value) {
+                $value = htmlspecialchars($value);
+                print "  <p><b>Editorial Board Decision: $value</b></p>\n";
+            }
+        }
+        if (!empty($spec['comments'])) {
+            $value = htmlspecialchars($spec['comments']);
+            print "  <p><b>Comment(s): $value</b></p>\n";
+        }
+        if (!empty($spec['comment-added-start']['date']) ||
+            !empty($spec['comment-added-end']['date'])) {
+            if (!empty($spec['comment-added-start']['date'])) {
+                $start = print_r($spec['comment-added-start']['date'], true);
+                if (!empty($spec['comment-added-end']['date'])) {
+                    $end = $spec['comment-added-end']['date'];
+                    $value = "$start to $end";
+                }
+                else
+                    $value = "Since $start";
+            }
+            else {
+                $end = $spec['comment-added-end']['date'];
+                $value = "Through $end";
+            }
+            print "  <p><b>Date Comment(s) Added: $value</b></p>\n";
+        }
+        if (!empty($spec['tag'])) {
+            $value = db_select('ebms_article_tag_type', 't')
+                ->fields('t', array('tag_name'))
+                ->condition('t.tag_id', $spec['tag'])
+                ->execute()
+                ->fetchField();
+            if ($value) {
+                $value = htmlspecialchars($value);
+                print "  <p><b>Tag(s): $value</b></p>\n";
+            }
+        }
+        if (!empty($spec['tag-added-start']['date']) ||
+            !empty($spec['tag-added-end']['date'])) {
+            if (!empty($spec['tag-added-start']['date'])) {
+                $start = print_r($spec['tag-added-start']['date'], true);
+                if (!empty($spec['tag-added-end']['date'])) {
+                    $end = $spec['tag-added-end']['date'];
+                    $value = "$start to $end";
+                }
+                else
+                    $value = "Since $start";
+            }
+            else {
+                $end = $spec['tag-added-end']['date'];
+                $value = "Through $end";
+            }
+            print "  <p><b>Date Tag(s) Added: $value</b></p>\n";
+        }
+        if (!empty($spec['core-journals'])) {
+            $value = ucfirst($spec['core-journals']);
+            if ($value)
+                print "  <p><b>Core Journals: $value</b></p>\n";
+        }
+        if (!empty($spec['board-manager-comment'])) {
+            $value = htmlspecialchars($spec['board-manager-comment']);
+            print "  <p><b>Board Manager Comment(s): $value</b></p>\n";
+        }
         foreach ($results as $result) {
             $article = $this->list_article($result->article_id, $pos++, true);
             print "  <p>$article</p>\n";
@@ -201,7 +348,7 @@ body {
 
         // OCEEBMS-209
         if (!empty($spec['board-member']) && $count)
-            $this->show_board_member_version($query, $count);
+            $this->show_board_member_version($query, $count, $spec);
 
 
         // Figure out whether we're going to need paging.
