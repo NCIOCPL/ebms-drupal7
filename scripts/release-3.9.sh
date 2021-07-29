@@ -83,6 +83,24 @@ else
     echo Database changes for OCEEBMS-592 already applied
 fi
 
+cond="text_id = 'comp_review'"
+query="SELECT COUNT(*) FROM $table WHERE $cond"
+count=`drush sqlq --extra=--skip-column-names "$query"`
+if [ $count = "0" ]
+then
+    if [ -r $WORKDIR/ebms/sql/oceebms-603.sql ]
+    then
+        echo Database changes for OCEEBMS-603
+        drush sqlc < $WORKDIR/ebms/sql/oceebms-603.sql
+    else
+        echo $WORKDIR/ebms/sql/oceebms-603.sql missing
+        echo Aborting script.
+        exit
+    fi
+else
+    echo Database changes for OCEEBMS-603 already applied
+fi
+
 echo Clearing caches twice, once is not always sufficient
 drush cc all
 drush cc all
