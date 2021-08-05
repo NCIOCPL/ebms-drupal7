@@ -7487,6 +7487,17 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
  */
 function cites_by_tag_report($request_id, $member_version=false) {
 
+    // Special treatment for librarian comment tags (OCEEBMS-575).
+    $librarian_cmt = db_select('ebms_article_tag_type', 't')
+        ->fields('t', array('tag_id'))
+        ->condition('t.text_id', 'librarian_cmt')
+        ->execute()
+        ->fetchField();
+    $comment_header = 'Comments';
+    $values = EbmsReports::fetch_report_request($request_id);
+    if ($values['tag'] == $librarian_cmt)
+        $comment_header = 'Comment for Librarian';
+
     // Our return value will be an object.
     $report = new stdClass();
     $report->total = 0;
@@ -7495,18 +7506,10 @@ function cites_by_tag_report($request_id, $member_version=false) {
         'Summary Topic',
         'Date Tag Added',
         'Current Article State',
-        'Comments',
+        $comment_header,
     );
 
-    // Special treatment for librarian comment tags (OCEEBMS-575).
-    $librarian_cmt = db_select('ebms_article_tag_type', 't')
-        ->fields('t', array('tag_id'))
-        ->condition('t.text_id', 'librarian_cmt')
-        ->execute()
-        ->fetchField();
-
     // Fetch the settings for this request, use them to find the report data.
-    $values = EbmsReports::fetch_report_request($request_id);
     $query = db_select('ebms_article_tag', 'g');
     $query->fields('g', array('article_id', 'tag_dt', 'article_tag_id'));
     $query->join('ebms_article', 'a', 'a.article_id = g.article_id');
