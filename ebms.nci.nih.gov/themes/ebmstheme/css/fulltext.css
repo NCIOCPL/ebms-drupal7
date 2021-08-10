@@ -26,3 +26,14 @@ div.ebms-error {
     padding: 10px 12px; margin: 6px 0 6px 11px;
 }
 div.ebms-error ul { margin: 0 0 0 1em; padding: 0; }
+#queue-options div {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    margin-left: 0;
+}
+form #queue-options .form-item.form-type-checkbox:not(#foo) label {
+    text-transform: uppercase;
+    float: right;
+    width: 189px;
+    padding-left: 26px;
+}
