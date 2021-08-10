@@ -7944,6 +7944,7 @@ td, th { border-bottom: 1px black solid; }
     ) {
         $from_id = $to_id = $comment = '';
         $relationship_id = $relationship_type = null;
+        $suppress = 0;
         switch ($action) {
             case 'add':
                 $title = 'Link Related Article';
@@ -7969,7 +7970,14 @@ td, th { border-bottom: 1px black solid; }
                 }
                 $results = db_select('ebms_related_article', 'a')
                     ->fields('a',
-                        array('from_id', 'to_id', 'type_id', 'comment'))
+                        array(
+                            'from_id',
+                            'to_id',
+                            'type_id',
+                            'comment',
+                            'suppress'
+                        )
+                    )
                     ->condition('a.relationship_id', $relationship_id)
                     ->isNull('a.inactivated')
                     ->execute();
@@ -7978,6 +7986,7 @@ td, th { border-bottom: 1px black solid; }
                     $to_id = $result->to_id;
                     $comment = $result->comment;
                     $relationship_type = $result->type_id;
+                    $suppress = $result->suppress;
                 }
                 if (!$from_id) {
                     drupal_set_message('Relationship deleted', 'error');
@@ -8043,6 +8052,13 @@ td, th { border-bottom: 1px black solid; }
                 '#title' => 'Comments',
                 '#description' => 'Optional notes about the relationship',
                 '#default_value' => $comment,
+            ),
+            'suppress' => array(
+                '#prefix' => '<div class="form-item"><b>OPTIONS</b></div>',
+                '#type' => 'checkbox',
+                '#title' => 'SUPPRESS.',
+                '#description' => "Don't show relationship for packets",
+                '#default_value' => $suppress,
             ),
             'submit' => array(
                 '#type' => 'submit',
@@ -8138,6 +8154,7 @@ td, th { border-bottom: 1px black solid; }
                 'from_id' => $form_state['linking-article-id'],
                 'type_id' => $form_state['relationship-type-id'],
                 'comment' => $values['comment'],
+                'suppress' => $values['suppress'],
             );
             $rid = $values['relationship_id'];
             if (empty($rid)) {

@@ -3667,7 +3667,7 @@ class EbmsReview {
 
         // Add related articles and board manager comments (OCEEBMS-381).
         // Also flag high-priority article/topic combos (OCEEBMS-478).
-        $citation .= Ebms\Util::get_related_articles($article_id, true);
+        $citation .= Ebms\Util::get_related_articles($article_id, true, true);
         $topic_tags = EbmsReview::get_topic_tags($article_id, $topic_id);
         $comment = EbmsReview::get_article_topic_comment($article_id,
                                                          $topic_id);
@@ -4019,7 +4019,9 @@ ORDER BY t.topic_name";
 
         // Add related articles and board manager comments if present (OCEEBMS-381).
         // Also, highlight high-priority article/topic combos (OCEEBMS-477).
-        $related_articles = Ebms\Util::get_related_articles($article_id);
+        $related_articles = Ebms\Util::get_related_articles($article_id,
+                                                            false,
+                                                            true);
         if ($related_articles)
             $pieces[] = "<br>$related_articles";
         $topic_tags = EbmsReview::get_topic_tags($article_id, $topic_id);

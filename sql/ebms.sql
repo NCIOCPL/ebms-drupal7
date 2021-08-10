@@ -2153,6 +2153,7 @@ active_status ENUM ('A', 'I') NOT NULL DEFAULT 'A',
  * comment            optional notes about the relatationship
  * inactivated_by     foreign key into the users table
  * inactivated        date/time the relationship was deleted (if ever)
+ * suppress           don't show for packets (OCEEBMS-598)
  */
 CREATE TABLE ebms_related_article
 (relationship_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -2164,6 +2165,7 @@ CREATE TABLE ebms_related_article
          comment TEXT                 NULL,
   inactivated_by INTEGER UNSIGNED     NULL,
      inactivated DATETIME             NULL,
+        suppress INTEGER          NOT NULL DEFAULT 0,
 FOREIGN KEY (from_id)        REFERENCES ebms_article (article_id),
 FOREIGN KEY (to_id)          REFERENCES ebms_article (article_id),
 FOREIGN KEY (type_id)        REFERENCES ebms_article_relation_type (type_id),

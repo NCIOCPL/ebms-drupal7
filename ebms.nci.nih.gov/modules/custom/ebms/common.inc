@@ -2468,7 +2468,12 @@ class Util {
      *  @return string
      *      HTML markup identifying related articles
      */
-    public static function get_related_articles($article_id, $link_ebms_id=false) {
+    public static function get_related_articles(
+        $article_id,
+        $link_ebms_id=false,
+        $honor_suppress_flag=false
+    ) {
+
         // Add links to related articles.
         $query = db_select('ebms_related_article', 'a')
             ->fields('a', array('from_id', 'to_id'))
@@ -2476,6 +2481,8 @@ class Util {
                 ->condition('a.from_id', $article_id)
                 ->condition('a.to_id', $article_id))
             ->isNull('a.inactivated');
+        if ($honor_suppress_flag)
+            $query->condition('a.suppress', 0);
         $results = $query->execute();
         $related_ids = array();
         foreach ($results as $result) {
