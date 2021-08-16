@@ -28,14 +28,14 @@
  * evenly over the remaining 90% of the table.
  */
 ?>
-// BEGIN EBMS PATCH
-+<?php if (user_access('create ebms_event content')) : ?>
-+  <div class='button'>
-+    <a href='<?php print '/node/add/ebms-event?date=' . $rows['date']; ?>'>Add Event</a>
-+  </div>
-+  <div class='clearfix'></div>
-+<?php endif; ?>
-// END EBMS PATCH
+<!-- BEGIN EBMS PATCH -->
+<?php if (user_access('create ebms_event content')) : ?>
+  <div class='button'>
+    <a href='<?php print '/node/add/ebms-event?date=' . $rows['date']; ?>'>Add Event</a>
+  </div>
+  <div class='clearfix'></div>
+<?php endif; ?>
+<!-- END EBMS PATCH -->
 <div class="calendar-calendar"><div class="day-view">
 <div id="multi-day-container">
   <table class="full">
