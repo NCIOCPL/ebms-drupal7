@@ -63,7 +63,8 @@ function pdq_ebms_internal_articles($form, &$form_state, $request_id) {
     Ebms\Util::add_date_range_to_query($query, $start, $end, 'a.import_date');
     Ebms\Util::add_date_range_to_query($query, $tstart, $tend, 't.tag_added');
     $query->fields('a', array('article_id', 'import_date'));
-    $results = $query->orderBy('a.import_date', 'DESC')->execute();
+    $query->fields('t', array('tag_added'));
+    $results = $query->orderBy('t.tag_added', 'DESC')->execute();
     $queue = _internal_articles_table($results);
     return array(
         'left_nav' => Ebms\Util::build_left_nav('Internal Articles'),
@@ -108,7 +109,7 @@ function _internal_articles_table($results) {
     $headers = array(
         array('data' => '', 'class' => array('col-0')),
         array('data' => 'Article', 'class' => array('col-1')),
-        array('data' => 'Imported', 'class' => array('col-2')),
+        array('data' => 'Tag Date', 'class' => array('col-2')),
         array('data' => 'Tags', 'class' => array('col-3')),
         array('data' => 'Comments', 'class' => array('col-4')),
     );
@@ -149,10 +150,10 @@ function _internal_articles_table($results) {
             $comments[] = '<b>' . htmlspecialchars($comment->name) . '</b>: ' .
                 htmlspecialchars($comment->comment_text);
         $comments = implode('<br><br>', $comments);
-        $imported = substr($result->import_date, 0, 10);
+        $tagged = substr($result->tag_added, 0, 10);
         $rows[] = array(
             'no_striping' => true,
-            'data' => array($n++, $citation, $imported, $tags, $comments),
+            'data' => array($n++, $citation, $tagged, $tags, $comments),
         );
     }
     return array(
