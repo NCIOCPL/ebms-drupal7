@@ -83,6 +83,27 @@ else
     echo Database changes for OCEEBMS-592 already applied
 fi
 
+schema="TABLE_SCHEMA = 'oce_ebms'"
+table=information_schema.COLUMNS
+name=ebms_related_article
+cond="$schema AND TABLE_NAME = '$name' AND COLUMN_NAME = 'suppress'"
+query="SELECT COUNT(*) FROM $table WHERE $cond"
+count=`drush sqlq --extra=--skip-column-names "$query"`
+if [ $count = "0" ]
+then
+    if [ -r $WORKDIR/ebms/sql/oceebms-598.sql ]
+    then
+        echo Database changes for OCEEBMS-598
+        drush sqlc < $WORKDIR/ebms/sql/oceebms-598.sql
+    else
+        echo $WORKDIR/ebms/sql/oceebms-598.sql missing
+        echo Aborting script.
+        exit
+    fi
+else
+    echo Database changes for OCEEBMS-598 already applied
+fi
+
 cond="text_id = 'comp_review'"
 query="SELECT COUNT(*) FROM $table WHERE $cond"
 count=`drush sqlq --extra=--skip-column-names "$query"`
@@ -99,6 +120,25 @@ then
     fi
 else
     echo Database changes for OCEEBMS-603 already applied
+fi
+
+table=ebms_core_journal
+value=101652861
+query="SELECT COUNT(*) FROM $table WHERE source_jrnl_id = '$value'"
+count=`drush sqlq --extra=--skip-column-names "$query"`
+if [ $count = "0" ]
+then
+    if [ -r $WORKDIR/ebms/sql/oceebms-607.sql ]
+    then
+        echo Database changes for OCEEBMS-607
+        drush sqlc < $WORKDIR/ebms/sql/oceebms-607.sql
+    else
+        echo $WORKDIR/ebms/sql/oceebms-607.sql missing
+        echo Aborting script.
+        exit
+    fi
+else
+    echo Database changes for OCEEBMS-607 already applied
 fi
 
 echo Clearing caches twice, once is not always sufficient
