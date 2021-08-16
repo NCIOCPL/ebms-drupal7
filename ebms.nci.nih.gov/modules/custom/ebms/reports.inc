@@ -7438,7 +7438,7 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
         ),
         'no-board-decisions' => array(
             '#type' => 'checkbox',
-            '#title' => 'No Board Decisions',
+            '#title' => 'Exclude Articles With an Editorial Board Decision',
             '#default_value' => $no_board_decisions,
         ),
         'reset' => array(
