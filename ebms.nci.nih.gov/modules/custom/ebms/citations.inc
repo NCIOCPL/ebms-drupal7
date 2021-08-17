@@ -4573,6 +4573,12 @@ namespace {
         $cycle_id = 0;
         $tag_id = 0;
 
+        // Fetch article type hierarchy information (OCEEBMS-593).
+        $query = db_select('ebms_config', 'c')
+            ->condition('c.config_name', 'article-type-ancestors')
+            ->fields('c', array('config_value'));
+        $ancestors = json_decode($query->execute()->fetchField(), TRUE);
+
         // get values if they exist
         if (isset($form_state['values'])) {
             $board_id = $form_state['values']['board_select'];
@@ -5053,7 +5059,7 @@ namespace {
             //
             // will need a separate row for these two items if in the full-citation view
             // build citation
-            $cite = _cite_article($article, false, $isAbstract,
+            $cite = _cite_article($article, $ancestors, false, $isAbstract,
                                   $fulltext_review || $hold_review);
 
             $recordIx = $ix + $first_row;
@@ -6490,6 +6496,7 @@ td, th { border-bottom: 1px black solid; }
      * to it - which may be added to the form later.
      *
      * @param object $article       Loaded EbmsArticle object for the article.
+     * @param array $type_ancestors Optional info for publication types.
      * @param boolean $long_form    True=show the fuller form of the article.
      * @param boolean $showAbstract True=include the abstract.
      * @param boolean $showFullText True=include a link to the full article
@@ -6497,8 +6504,9 @@ td, th { border-bottom: 1px black solid; }
      *
      * @return Render array for the article.
      */
-    function _cite_article(Ebms\EbmsArticle $article, $long_form = true,
-        $showAbstract = false, $showFullText = true) {
+    function _cite_article(Ebms\EbmsArticle $article, $type_ancestors = null,
+                           $long_form = true, $showAbstract = false,
+                           $showFullText = true) {
         $form = array();
 
         $article_id = $article->getId();
@@ -6614,15 +6622,43 @@ td, th { border-bottom: 1px black solid; }
             $pieces[] = ": $pgn";
         if ($year)
             $pieces[] = ", $year";
+        $pieces[] = '.</div>';
+
+        // Show some article publication types (OCEEBMS-593).
+        if ($type_ancestors &&
+                isset($articleXML->PublicationTypeList->PublicationType)) {
+            $pubtypes = [];
+            foreach ($articleXML->PublicationTypeList->PublicationType as $pt)
+                $pubtypes[] = $pt;
+            $ancestor_set = array();
+            foreach ($pubtypes as $pubtype) {
+                foreach ($type_ancestors[strtolower($pubtype)] as $ancestor) {
+                    $ancestor_set[$ancestor] = true;
+                }
+            }
+            $types = [];
+            foreach ($pubtypes as $pubtype) {
+                if (!array_key_exists(strtolower($pubtype), $ancestor_set)) {
+                    $pt = htmlspecialchars($pubtype);
+                    $types[] = "<span>$pt</span>";
+                }
+                else {
+                    $pt = htmlspecialchars($pubtype);
+                    $types[] = "<span style=\"text-decoration: line-through; color: red; font-weight: bold;\">$pt</span>";
+                }
+            }
+            $pieces[] = '<div class="pub-types">PUB TYPE(S):<br>';
+            $pieces[] = implode('<br>', $types) . '</div>';
+        }
 
         if ($showAbstract) {
-            $pieces[] = ".</div>$tPMID<div>$pmid&nbsp;&nbsp;&nbsp;&nbsp;EBMS ID: $ebmsId";
+            $pieces[] = "$tPMID<div>$pmid&nbsp;&nbsp;&nbsp;&nbsp;EBMS ID: $ebmsId";
             if ($legacy_id)
                 $pieces[] = "&nbsp;&nbsp;&nbsp;&nbsp;Legacy CMS ID: $legacy_id";
             $pieces[] = '</div>';
         }
         else {
-            $pieces[] = ".</div>$tPMID<div>$pmid</div>";
+            $pieces[] = "$tPMID<div>$pmid</div>";
             $pieces[] = "$tEBMSID<div>$ebmsId</div>";
             if ($legacy_id)
                 $pieces[] = "$tLEGACYID<div>$legacy_id</div>";

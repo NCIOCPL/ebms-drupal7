@@ -5,6 +5,7 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_config;
 DROP TABLE IF EXISTS ebms_internal_article_tag;
 DROP TABLE IF EXISTS ebms_internal_article_comment;
 DROP TABLE IF EXISTS ebms_pubmed_results;
@@ -2238,4 +2239,18 @@ comment_date DATETIME NOT NULL
 comment_text TEXT     NOT NULL,
  FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
  FOREIGN KEY (user_id)    REFERENCES users(uid))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/**
+ * Custom runtime configuration values.
+ *
+ * Unlike the Drupal config table, these values are loaded on demand,
+ * rather than at bootstrap time for every request.
+ *
+ * config_name    identifies which value is stored (primary key)
+ * config_value   string value holding the configuration
+ */
+CREATE TABLE ebms_config (
+ config_name VARCHAR(256) NOT NULL PRIMARY KEY,
+config_value TEXT         NOT NULL)
       ENGINE=InnoDB DEFAULT CHARSET=utf8;

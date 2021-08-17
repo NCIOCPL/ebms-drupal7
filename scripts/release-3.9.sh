@@ -83,6 +83,8 @@ else
     echo Database changes for OCEEBMS-592 already applied
 fi
 
+$WORKDIR/ebms/scripts/oceebms-593.sh
+
 schema="TABLE_SCHEMA = 'oce_ebms'"
 table=information_schema.COLUMNS
 name=ebms_related_article
