@@ -232,3 +232,4 @@ form #doc-report .form-type-checkbox:not(#foo) label {
 #citerep-cycle-range .form-item-cycle-range-end select {
     width: 245px;
 }
+.citation-reports .date-field-widgets .form-type-textfield { margin-top: 0; }

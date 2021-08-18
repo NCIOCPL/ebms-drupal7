@@ -1410,12 +1410,18 @@ class EbmsReports {
         // Build up the markup for the report's title.
         $title = '<h2>Citations Not Selected for Full Text Retrieval</h2>';
         $title .= EbmsReports::format_report_date();
+
+        // Add a second flavor for the report (OCEEBMS-606).
+        $topic_article_counts = FALSE;
         if ($board) {
             $board_name = Ebms\Util::get_board_name($board);
             $title .= EbmsReports::format_board($board_name);
         }
-        if ($cycle)
+        if ($cycle) {
             $title .= EbmsReports::format_cycle_name($cycle);
+            if (is_array($cycle))
+                $topic_article_counts = TRUE;
+        }
         else {
             $range = EbmsReports::format_date_range($start, $end);
             if (!$range) {
@@ -1441,21 +1447,30 @@ class EbmsReports {
 
         // Construct the query for the report.
         $state_id = Ebms\Util::state_id_from_text_id('RejectBMReview');
-        $header = array(
-            'EBMS ID',
-            'PMID',
-            array('data' => 'Topic(s)', 'class' => array('col-3')),
-            array('data' => 'NCI Reviewer', 'class' => array('col-4')),
-            'Comments',
-        );
+        if ($topic_article_counts)
+            $header = array('Topic', 'Count');
+        else
+            $header = array(
+                'EBMS ID',
+                'PMID',
+                array('data' => 'Topic(s)', 'class' => array('col-3')),
+                array('data' => 'NCI Reviewer', 'class' => array('col-4')),
+                'Comments',
+            );
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
         $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
         $query->join('users', 'u', 's.user_id = u.uid');
-        $query->fields('a', array('article_id', 'source_id'));
         $query->fields('t', array('topic_name'));
-        $query->fields('u', array('name'));
-        $query->fields('s', array('article_state_id'));
+        if (!$topic_article_counts) {
+            $query->fields('a', array('article_id', 'source_id'));
+            $query->fields('u', array('name'));
+            $query->fields('s', array('article_state_id'));
+        }
+        else {
+            $query->groupBy('t.topic_name');
+            $query->addExpression('COUNT(*)', 'n');
+        }
         if ($board)
             $query->condition('s.board_id', $board);
         if ($cycle) {
@@ -1473,49 +1488,56 @@ class EbmsReports {
             }
         }
         $query->condition('s.state_id', $state_id);
-        $query->orderBy('a.article_id');
+        if (!$topic_article_counts)
+            $query->orderBy('a.article_id');
         $query->orderBy('t.topic_name');
-
-        // Prep for links to NLM's PubMed.
-        $pubmed_base = 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
-            'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
-        $new_tab = array('attributes' => array('target' => '_blank'));
 
         // Walk through the query results, assembling the rows for the
         // report table.
         $results = $query->execute();
         $rows = array();
-        $last_article_id = null;
-        foreach ($results as $result) {
-            $article_state_id = $result->article_state_id;
-            $article_id = $result->article_id;
-            $pmid = $result->source_id;
-            $col3 = $result->topic_name;
-            $col4 = $result->name;
-            $comment_rows = db_select('ebms_article_state_comment', 'c')
-                ->fields('c', array('comment'))
-                ->condition('c.article_state_id', $article_state_id)
-                ->orderBy('c.comment_id')
-                ->execute();
-            $comments = array();
-            foreach ($comment_rows as $comment_row)
-                $comments[] = $comment_row->comment;
-            $col5 = implode('; ', $comments);
-            if ($article_id != $last_article_id) {
-                $col1 = l($article_id, 'citations/full/' . $article_id,
-                          $new_tab);
-                $col2 = l($pmid, $pubmed_base . $pmid, $new_tab);
-                $last_article_id = $article_id;
+        if ($topic_article_counts) {
+            foreach ($results as $result) {
+                $rows[] = array($result->topic_name, $result->n);
             }
-            else
-                $col1 = $col2 = '&nbsp;';
-            $rows[] = array(
-                array('data' => $col1, 'class' => array('col-1')),
-                array('data' => $col2, 'class' => array('col-2')),
-                array('data' => $col3, 'class' => array('col-3')),
-                array('data' => $col4, 'class' => array('col-4')),
-                array('data' => $col5, 'class' => array('col-5')),
-            );
+        }
+        else {
+            // Prep for links to NLM's PubMed.
+            $pubmed_base = 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
+                'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
+            $new_tab = array('attributes' => array('target' => '_blank'));
+            $last_article_id = null;
+            foreach ($results as $result) {
+                $article_state_id = $result->article_state_id;
+                $article_id = $result->article_id;
+                $pmid = $result->source_id;
+                $col3 = $result->topic_name;
+                $col4 = $result->name;
+                $comment_rows = db_select('ebms_article_state_comment', 'c')
+                    ->fields('c', array('comment'))
+                    ->condition('c.article_state_id', $article_state_id)
+                    ->orderBy('c.comment_id')
+                    ->execute();
+                $comments = array();
+                foreach ($comment_rows as $comment_row)
+                    $comments[] = $comment_row->comment;
+                $col5 = implode('; ', $comments);
+                if ($article_id != $last_article_id) {
+                    $col1 = l($article_id, 'citations/full/' . $article_id,
+                              $new_tab);
+                    $col2 = l($pmid, $pubmed_base . $pmid, $new_tab);
+                    $last_article_id = $article_id;
+                }
+                else
+                    $col1 = $col2 = '&nbsp;';
+                $rows[] = array(
+                    array('data' => $col1, 'class' => array('col-1')),
+                    array('data' => $col2, 'class' => array('col-2')),
+                    array('data' => $col3, 'class' => array('col-3')),
+                    array('data' => $col4, 'class' => array('col-4')),
+                    array('data' => $col5, 'class' => array('col-5')),
+                );
+            }
         }
         $report['table'] = array(
             '#theme' => 'table',
@@ -4078,7 +4100,10 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
         'left-nav' => $left_nav,
         'report-form' => array(
             '#type' => 'container',
-            '#attributes' => array('id' => 'report-form'),
+            '#attributes' => array(
+                'id' => 'report-form',
+                'class' => array('citation-reports'),
+            ),
             'title' => array(
                 '#type' => 'markup',
                 '#markup' => '<h2>Citation Reports</h2>',
@@ -4158,9 +4183,6 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
                 '#markup' => '<span>Review Cycle Range</span>',
             ),
         );
-
-
-
     }
 
     // Two of the five reports allow the user to specify a date range
@@ -4254,8 +4276,8 @@ function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
             // ensure that both values are supplied if a range is
             // specified.
             case 'Citations Not Selected for Full Text Retrieval':
-                $start = $values['date-start']['date'];
-                $end = $values['date-end']['date'];
+                $start = $values['date-start']['date'] ?? '';
+                $end = $values['date-end']['date'] ?? '';
                 if ($cycle || $first_cycle || $last_cycle) {
                     $msg = 'Cannot specify both cycle and dates.';
                     if ($start)
