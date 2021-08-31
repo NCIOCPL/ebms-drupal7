@@ -83,7 +83,7 @@ else
     echo Database changes for OCEEBMS-592 already applied
 fi
 
-$WORKDIR/ebms/scripts/oceebms-593.sh
+drush scr --script-path=$WORKDIR/ebms/scripts oceebms-593
 
 schema="TABLE_SCHEMA = 'oce_ebms'"
 table=information_schema.COLUMNS
@@ -106,6 +106,7 @@ else
     echo Database changes for OCEEBMS-598 already applied
 fi
 
+table=ebms_article_tag_type
 cond="text_id = 'comp_review'"
 query="SELECT COUNT(*) FROM $table WHERE $cond"
 count=`drush sqlq --extra=--skip-column-names "$query"`
