@@ -6638,17 +6638,18 @@ td, th { border-bottom: 1px black solid; }
             }
             $types = [];
             foreach ($pubtypes as $pubtype) {
-                if (!array_key_exists(strtolower($pubtype), $ancestor_set)) {
-                    $pt = htmlspecialchars($pubtype);
-                    $types[] = "<span>$pt</span>";
-                }
-                else {
-                    $pt = htmlspecialchars($pubtype);
-                    $types[] = "<span style=\"text-decoration: line-through; color: red; font-weight: bold;\">$pt</span>";
+                $key = strtolower($pubtype);
+                if (!array_key_exists($key, $ancestor_set)) {
+                    if ($key != 'journal article') {
+                        $pt = htmlspecialchars($pubtype);
+                        $types[] = "<span>$pt</span>";
+                    }
                 }
             }
-            $pieces[] = '<div class="pub-types">PUB TYPE(S):<br>';
-            $pieces[] = implode('<br>', $types) . '</div>';
+            if (!empty($types)) {
+                $pieces[] = '<div class="pub-types">PUB TYPE(S):<br>';
+                $pieces[] = implode('<br>', $types) . '</div>';
+            }
         }
 
         if ($showAbstract) {
