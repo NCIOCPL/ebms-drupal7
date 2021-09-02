@@ -1312,7 +1312,7 @@ FOREIGN KEY (uid)
  * packet_title   how the packet should be identified in lists of packets
  * last_seen      when the board manager last saw the feedback for the packet
  * active_status  'A'ctive or 'I'nactive.
- * starred        1 if a board member wants to come back to the packet
+ * starred        1 if a board manager wants to come back to the packet
  *                (see OCEEBMS-350)
  */
  CREATE TABLE ebms_packet
