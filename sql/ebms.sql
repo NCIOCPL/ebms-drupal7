@@ -47,8 +47,6 @@ DROP TABLE IF EXISTS ebms_packet_reviewer;
 DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
 DROP TABLE IF EXISTS ebms_agenda_meeting;
-DROP TABLE IF EXISTS ebms_internal_article_comment;
-DROP TABLE IF EXISTS ebms_internal_article_tag;
 DROP TABLE IF EXISTS ebms_article_board_decision;
 DROP TABLE IF EXISTS ebms_article_board_decision_value;
 DROP TABLE IF EXISTS ebms_article_board_decision_member;
@@ -302,24 +300,6 @@ CREATE TABLE ebms_ad_hoc_group_member
  PRIMARY KEY (user_id, group_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid),
  FOREIGN KEY (group_id) REFERENCES ebms_ad_hoc_group (group_id))
-      ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-/*
- * Used for building the queue of internal articles of interest
- * to PDQ staff, but not necessarily intended for inclusion in
- * the board member review process.
- *
- * tag_id        automatically generated primary key
- * tag_name      unique display name for group
- * active_status only allow this tag to be assigned to
- *               articles in the administrative UI if the
- *               value of this column is 'A'
- */
-CREATE TABLE ebms_internal_tag
-       (tag_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      tag_name VARCHAR(255)     NOT NULL,
- active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
-  UNIQUE KEY internal_tag_name_ix (tag_name))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
@@ -2190,13 +2170,15 @@ when_submitted DATETIME   NOT NULL,
 CREATE INDEX ebms_pubmed_results_date ON ebms_pubmed_results(when_submitted);
 
 /*
- * Tag identifying a particular flavor of "internal" article,
- * of interest to PDQ staff, but not necessarily to be included
- * in the board member review process.
+ * Used for building the queue of internal articles of interest
+ * to PDQ staff, but not necessarily intended for inclusion in
+ * the board member review process.
  *
- * tag_id          automatically generated primary key
- * tag_name        string for the tag's display name
- * active_status   'A'ctive or 'I'nactive.
+ * tag_id        automatically generated primary key
+ * tag_name      unique display name for group
+ * active_status only allow this tag to be assigned to
+ *               articles in the administrative UI if the
+ *               value of this column is 'A'
  */
 CREATE TABLE ebms_internal_tag
        (tag_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
