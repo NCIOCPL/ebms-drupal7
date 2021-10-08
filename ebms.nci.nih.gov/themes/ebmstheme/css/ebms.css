@@ -1783,7 +1783,7 @@ input#pmid-search-box {
 #internal-articles-filter-form,
 #internal-import-form { float: left; width: 710px; }
 #pdq-ebms-internal-articles th.col-1 { width: 350px; border-left: none; }
-#pdq-ebms-internal-articles th.col-2 { width: 50px; }
+#pdq-ebms-internal-articles th.col-2 { width: 70px; }
 #pdq-ebms-internal-articles th.col-3 { width: 125px; }
 /*
 #pdq-ebms-internal-articles div div.item-list ol {

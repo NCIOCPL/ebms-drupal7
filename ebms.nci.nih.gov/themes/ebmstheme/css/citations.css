@@ -307,3 +307,4 @@ tr.extra-abstract-space { height: 75px; xborder-bottom: 1px solid black; }
     margin-left: 50px;
 }
 #internal-tags-title, #full-text-info-title { margin-bottom: 5px; }
+div.pub-types span { padding-left: 2em; }

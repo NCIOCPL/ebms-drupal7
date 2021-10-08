@@ -557,16 +557,16 @@ function _pdq_find_related_articles($report) {
     foreach ($articles as $key => $value) {
         $article_id = $key;
         if (Ebms\Util::in_core_journal($article_id)) {
-            $xml = db_select('ebms_article', 'a')
-                ->fields('a', array('source_data'))
+            $row = db_select('ebms_article', 'a')
+                ->fields('a', array('source_data', 'source_jrnl_id'))
                 ->condition('a.article_id', $article_id)
                 ->execute()
-                ->fetchField();
-            $doc = new \SimpleXMLElement($xml);
+                ->fetchObject();
+            $doc = new \SimpleXMLElement($row->source_data);
             $cite = $doc->MedlineCitation;
             if (isset($cite->CommentsCorrectionsList->CommentsCorrections)) {
-                foreach ($cite->CommentsCorrectionsList->CommentsCorrections
-                         as $cc) {
+                $cc_list = $cite->CommentsCorrectionsList->CommentsCorrections;
+                foreach ($cc_list as $cc) {
                     if (!empty($cc->PMID)) {
                         $pmid = trim($cc->PMID);
                         if (!empty($pmid)) {
@@ -574,8 +574,12 @@ function _pdq_find_related_articles($report) {
                                 ->condition('a.source_id', $pmid);
                             $query = $query->countQuery();
                             $count = $query->execute()->fetchField();
-                            if (empty($count))
+                            if (empty($count)) {
+                                // Import if in same journal (OCEEBMS-600).
+                                $journal_id = _pdq_get_article_journal($pmid);
+                                if ($journal_id == $row->source_jrnl_id)
                                 $pmids[$pmid][] = $article_id;
+                            }
                         }
                     }
                 }
@@ -583,6 +587,35 @@ function _pdq_find_related_articles($report) {
         }
     }
     return $pmids;
+}
+
+/**
+ * Get the NLM unique journal ID for the specified article.
+ */
+function _pdq_get_article_journal($pmid) {
+
+    // Prepare the request.
+    $base = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi';
+    $parms = 'db=pubmed&rettype=medline&retmode=xml&id=' . $pmid;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $base);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $parms);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+
+    // Fetch the article document.
+    $results = curl_exec($ch);
+    curl_close($ch);
+    sleep(1);
+
+    // Parse the document and extract the journal ID.
+    if (empty($results))
+        return '';
+    $article_set = new \SimpleXMLElement($results);
+    $article = $article_set->PubmedArticle;
+    return $article->MedlineCitation->MedlineJournalInfo->NlmUniqueID;
 }
 
 /**
@@ -940,6 +973,7 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                     'created' => $now,
                 );
                 foreach ($batch->action['imported'] as $info) {
+                    $pubmsg = 'Published related article';
                     $pmid = $info[0];
                     $to_id = $info[1];
                     if (array_key_exists($pmid, $related)) {
@@ -949,6 +983,13 @@ function pdq_ebms_import_form_submit($form, &$form_state) {
                             $id = db_insert('ebms_related_article')
                                 ->fields($fields)
                                 ->execute();
+                        }
+
+                        // Mark as published, if a state hasn't already
+                        // been selected (OCEEBMS-583).
+                        if (!$fast_track && !$core_journals) {
+                            Ebms\setArticleState($to_id, 'Published', $topic,
+                                                 $board, $pubmsg);
                         }
                     }
                 }

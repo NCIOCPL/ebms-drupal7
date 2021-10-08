@@ -715,6 +715,23 @@ class EbmsReports {
     }
 
     /**
+     * Get the label and value for one of the "Citations" reports display.
+     *
+     *  @param mixed  $cycle   integer or pair of two integers
+     *
+     *  @return array          label and value for cycle or cycle range
+     */
+    public static function cycle_display($cycle) {
+        if (is_array($cycle))
+            return array(
+                'Review cycle range',
+                Ebms\Util::get_cycle_name($cycle[0]) .
+                ' through ' . Ebms\Util::get_cycle_name($cycle[1]),
+            );
+        return array('Review cycle', Ebms\Util::get_cycle_name($cycle));
+    }
+
+    /**
      * Builds the Drupal render array for the report on published
      * citations.  "Published" in this context means release for the
      * board manager's initial review (from the abstract).
@@ -724,20 +741,14 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
     public static function cites_published($board, $cycle) {
 
-        // Will be caught by validation.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -749,7 +760,7 @@ class EbmsReports {
                 '#type' => 'markup',
                 '#markup' => '<h2>Citations Published</h2>' .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -760,7 +771,8 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $published);
         $query->fields('b', array('board_name'));
         $query->groupBy('b.board_name');
@@ -823,20 +835,14 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
     public static function cites_imported($board, $cycle) {
 
-        // Will be caught by validation function.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -848,7 +854,7 @@ class EbmsReports {
                 '#type' => 'markup',
                 '#markup' => '<h2>Citations Imported</h2>' .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -862,7 +868,8 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $state_ids, 'IN');
         $query->fields('b', array('board_name'));
         $query->groupBy('b.board_name');
@@ -917,6 +924,227 @@ class EbmsReports {
     }
 
     /**
+     * Build a statistical report of the counts of articles reviewed
+     * by the librarians for each topic. Implemented for OCEEBMS-578.
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().
+     *
+     *  @param  int    $board   ID of board (if the user specified
+     *                          one for the report)
+     *  @param  int    $cycle   ID of the cycle used for filtering
+     *                          the report (or pair of IDs for range)
+     *
+     *  @return array           Drupal render array for the report
+     */
+    public static function librarian_reviewed($board, $cycle) {
+
+        // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
+        $d = date('m/d/Y');
+        $t = 'Citations Reviewed by Medical Librarian';
+        $report = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => 'report',
+                'class' => array('librarian-reviewed'),
+            ),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => "<h2>$t</h2>" .
+                "<div class='meta'><span class='label'>Date:</span> $d</div>" .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
+                $cycle_name . '</div>',
+            )
+        );
+
+        // Construct the report's query.
+        $state_ids = array(
+            Ebms\Util::state_id_from_text_id('RejectInitReview'),
+            Ebms\Util::state_id_from_text_id('PassedInitReview'),
+        );
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
+        $query->join('ebms_article_topic', 'a',
+            'a.article_id = s.article_id AND a.topic_id = s.topic_id');
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
+        $query->condition('s.state_id', $state_ids, 'IN');
+        if ($board)
+            $query->condition('s.board_id', $board);
+        else {
+            $total_query = clone($query);
+            $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+            $total = $total_query->execute()->fetchField();
+        }
+        $query->fields('b', array('board_name'));
+        $query->groupBy('b.board_name');
+
+        // Branch off at this point for a separate version of the query
+        // to get the total number of articles for each board (which we
+        // can't get by summing the per-board/topic counts, because an
+        // article can be represented in those counts more than once).
+        $total_query = clone($query);
+        $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+        $results = $total_query->execute();
+        $totals = array();
+        foreach ($results as $result)
+            $totals[$result->board_name] = $result->n;
+
+        // Resume with the rest of the original query, from which we
+        // need more granularity.
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->fields('t', array('topic_name'));
+        $query->groupBy('t.topic_name');
+        $query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+        $query->orderBy('b.board_name');
+        $query->orderBy('t.topic_name');
+
+        // Collect the query result in an array indexed by board.
+        $results = $query->execute();
+        $stats = array();
+        foreach ($results as $result) {
+            $board_name = $result->board_name;
+            if (!array_key_exists($board_name, $stats))
+                $stats[$board_name] = array();
+            $stats[$board_name][$result->topic_name] = $result->n;
+        }
+
+        // Add a section for each board, showing counts for imports
+        // by topic.
+        foreach ($stats as $board_name => &$topic_array) {
+            $rows = array();
+            foreach ($topic_array as $topic_name => $count)
+                $rows[] = array($topic_name, $count);
+            $rows[] = array('TOTAL', $totals[$board_name]);
+            $report[$board_name] = array(
+                '#theme' => 'table',
+                '#caption' => $board_name,
+                '#header' => array('Topic Name', 'Articles Reviewed'),
+                '#rows' => $rows,
+            );
+        }
+
+        // Add a separate table for the grand total if appropriate.
+        if (!$board)
+            $report['grand_total'] = array(
+                '#theme' => 'table',
+                '#caption' => 'Grand Total',
+                '#rows' => [['ALL BOARDS', $total]],
+            );
+
+        return $report;
+    }
+
+    /**
+     * Build a statistical report of the counts of articles not-listed
+     * for each topic. Implemented for OCEEBMS-577.
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().
+     *
+     *  @param  int    $board   ID of board (if the user specified
+     *                          one for the report)
+     *  @param  int    $cycle   ID of the cycle used for filtering
+     *                          the report (or pair of IDs for range)
+     *
+     *  @return array           Drupal render array for the report
+     */
+    public static function cites_notlisted($board, $cycle) {
+
+        // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
+        $d = date('m/d/Y');
+        $t = 'Citations Excluded by NOT Journal Filters';
+        $report = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => 'report',
+                'class' => array('cites-notlisted'),
+            ),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => "<h2>$t</h2>" .
+                "<div class='meta'><span class='label'>Date:</span> $d</div>" .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
+                $cycle_name . '</div>',
+            )
+        );
+
+        // Construct the report's query.
+        $state_id = Ebms\Util::state_id_from_text_id('RejectJournalTitle');
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
+        $query->join('ebms_article_topic', 'a',
+            'a.article_id = s.article_id AND a.topic_id = s.topic_id');
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
+        $query->condition('s.state_id', $state_id);
+        if ($board)
+            $query->condition('s.board_id', $board);
+        else {
+            $total_query = clone($query);
+            $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+            $total = $total_query->execute()->fetchField();
+        }
+        $query->fields('b', array('board_name'));
+        $query->groupBy('b.board_name');
+
+        // Branch off at this point for a separate version of the query
+        // to get the total number of articles for each board (which we
+        // can't get by summing the per-board/topic counts, because an
+        // article can be represented in those counts more than once).
+        $total_query = clone($query);
+        $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+        $results = $total_query->execute();
+        $totals = array();
+        foreach ($results as $result)
+            $totals[$result->board_name] = $result->n;
+
+        // Resume with the rest of the original query, from which we
+        // need more granularity.
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->fields('t', array('topic_name'));
+        $query->groupBy('t.topic_name');
+        $query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+        $query->orderBy('b.board_name');
+        $query->orderBy('t.topic_name');
+
+        // Collect the query result in an array indexed by board.
+        $results = $query->execute();
+        $stats = array();
+        foreach ($results as $result) {
+            $board_name = $result->board_name;
+            if (!array_key_exists($board_name, $stats))
+                $stats[$board_name] = array();
+            $stats[$board_name][$result->topic_name] = $result->n;
+        }
+
+        // Add a section for each board, showing counts for imports
+        // by topic.
+        foreach ($stats as $board_name => &$topic_array) {
+            $rows = array();
+            foreach ($topic_array as $topic_name => $count)
+                $rows[] = array($topic_name, $count);
+            $rows[] = array('TOTAL', $totals[$board_name]);
+            $report[$board_name] = array(
+                '#theme' => 'table',
+                '#caption' => $board_name,
+                '#header' => array('Topic Name', 'Articles Not-Listed'),
+                '#rows' => $rows,
+            );
+        }
+
+        // Add a separate table for the grand total if appropriate.
+        if (!$board)
+            $report['grand_total'] = array(
+                '#theme' => 'table',
+                '#caption' => 'Grand Total',
+                '#rows' => [['ALL BOARDS', $total]],
+            );
+
+        return $report;
+    }
+
+    /**
      * Produces a three-column report, in sections by board, showing
      * each topic for which any initial winnowing decisions were made
      * by the librarians, the number of articles rejected for the topic,
@@ -927,7 +1155,7 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *
      *  @return array           Drupal render array for the report
      */
@@ -937,14 +1165,8 @@ class EbmsReports {
         $rejected = Ebms\Util::state_id_from_text_id('RejectInitReview');
         $accepted = Ebms\Util::state_id_from_text_id('PassedInitReview');
 
-        // Will be caught by validation function.
-        $cycle_name = Ebms\Util::get_cycle_name($cycle);
-        if (!$cycle_name) {
-            drupal_set_message('Cycle is required for this report', 'error');
-            return array();
-        }
-
         // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
         $d = date('m/d/Y');
         $report = array(
             '#type' => 'container',
@@ -957,7 +1179,7 @@ class EbmsReports {
                 '#markup' =>
                 '<h2>Citations Rejected/Accepted for Publishing</h2>' .
                 "<div class='meta'><span class='label'>Date:</span> $d</div>" .
-                "<div class='meta'><span class='label'>Review cycle:</span> " .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
                 $cycle_name . '</div>',
             )
         );
@@ -965,12 +1187,13 @@ class EbmsReports {
         // New requirement (OCEEBMS-204): If no board is selected,
         // add a total count of unique rejected articles at the top
         // of the report.
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
         if (!$board) {
             $on = 't.article_id = s.article_id AND t.topic_id = s.topic_id';
             $query = db_select('ebms_article_state', 's');
             $query->join('ebms_article_topic', 't', $on);
             $query->condition('s.state_id', $rejected);
-            $query->condition('t.cycle_id', $cycle);
+            $query->condition('t.cycle_id', $cycle, $cycle_op);
             $query->addExpression('COUNT(DISTINCT s.article_id)', 'total');
             $total_rejected = $query->execute()->fetchField();
             $label = '<span class="label">Total Articles Rejected:</span>';
@@ -985,7 +1208,7 @@ class EbmsReports {
         $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
         $query->join('ebms_article_topic', 'a',
             'a.article_id = s.article_id AND a.topic_id = s.topic_id');
-        $query->condition('a.cycle_id', $cycle);
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
         $query->condition('s.state_id', $state_ids, 'IN');
         $query->fields('b', array('board_name'));
         $query->fields('s', array('state_id'));
@@ -1057,6 +1280,115 @@ class EbmsReports {
     }
 
     /**
+     * Build a statistical report of the counts of articles approved
+     * during review from the abstract. Implemented for OCEEBMS-579.
+     * One of several "Citations" reports, invoked by the function
+     * pdq_ebms_citation_reports_form().
+     *
+     *  @param  int    $board   ID of board (if the user specified
+     *                          one for the report)
+     *  @param  int    $cycle   ID of the cycle used for filtering
+     *                          the report (or pair of IDs for range)
+     *
+     *  @return array           Drupal render array for the report
+     */
+    public static function abstract_approved($board, $cycle) {
+
+        // Start the render array with the title and meta data.
+        list($cycle_label, $cycle_name) = EbmsReports::cycle_display($cycle);
+        $d = date('m/d/Y');
+        $t = 'Citations Selected for Full-Text Retrieval';
+        $report = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'id' => 'report',
+                'class' => array('abstract-approved'),
+            ),
+            'title' => array(
+                '#type' => 'markup',
+                '#markup' => "<h2>$t</h2>" .
+                "<div class='meta'><span class='label'>Date:</span> $d</div>" .
+                "<div class='meta'><span class='label'>$cycle_label:</span> " .
+                $cycle_name . '</div>',
+            )
+        );
+
+        // Construct the report's query.
+        $state_id = Ebms\Util::state_id_from_text_id('PassedBMReview');
+        $query = db_select('ebms_article_state', 's');
+        $query->join('ebms_board', 'b', 'b.board_id = s.board_id');
+        $query->join('ebms_article_topic', 'a',
+            'a.article_id = s.article_id AND a.topic_id = s.topic_id');
+        $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
+        $query->condition('a.cycle_id', $cycle, $cycle_op);
+        $query->condition('s.state_id', $state_id);
+        if ($board)
+            $query->condition('s.board_id', $board);
+        else {
+            $total_query = clone($query);
+            $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+            $total = $total_query->execute()->fetchField();
+        }
+        $query->fields('b', array('board_name'));
+        $query->groupBy('b.board_name');
+
+        // Branch off at this point for a separate version of the query
+        // to get the total number of articles for each board (which we
+        // can't get by summing the per-board/topic counts, because an
+        // article can be represented in those counts more than once).
+        $total_query = clone($query);
+        $total_query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+        $results = $total_query->execute();
+        $totals = array();
+        foreach ($results as $result)
+            $totals[$result->board_name] = $result->n;
+
+        // Resume with the rest of the original query, from which we
+        // need more granularity.
+        $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
+        $query->fields('t', array('topic_name'));
+        $query->groupBy('t.topic_name');
+        $query->addExpression('COUNT(DISTINCT s.article_id)', 'n');
+        $query->orderBy('b.board_name');
+        $query->orderBy('t.topic_name');
+
+        // Collect the query result in an array indexed by board.
+        $results = $query->execute();
+        $stats = array();
+        foreach ($results as $result) {
+            $board_name = $result->board_name;
+            if (!array_key_exists($board_name, $stats))
+                $stats[$board_name] = array();
+            $stats[$board_name][$result->topic_name] = $result->n;
+        }
+
+        // Add a section for each board, showing counts for imports
+        // by topic.
+        foreach ($stats as $board_name => &$topic_array) {
+            $rows = array();
+            foreach ($topic_array as $topic_name => $count)
+                $rows[] = array($topic_name, $count);
+            $rows[] = array('TOTAL', $totals[$board_name]);
+            $report[$board_name] = array(
+                '#theme' => 'table',
+                '#caption' => $board_name,
+                '#header' => array('Topic Name', 'Articles Selected'),
+                '#rows' => $rows,
+            );
+        }
+
+        // Add a separate table for the grand total if appropriate.
+        if (!$board)
+            $report['grand_total'] = array(
+                '#theme' => 'table',
+                '#caption' => 'Grand Total',
+                '#rows' => [['ALL BOARDS', $total]],
+            );
+
+        return $report;
+    }
+
+    /**
      * Build a report showing all of the article-topic combinations
      * rejected by the board manager in her first pass.
      * One of several "Citations" reports, invoked by the function
@@ -1065,7 +1397,7 @@ class EbmsReports {
      *  @param  int    $board   ID of board (if the user specified
      *                          one for the report)
      *  @param  int    $cycle   ID of the cycle used for filtering
-     *                          the report
+     *                          the report (or pair of IDs for range)
      *  @param  array  $start   Drupal form date field for the beginning
      *                          of a filtering date range
      *  @param  array  $end     Drupal form date field for the end
@@ -1078,12 +1410,18 @@ class EbmsReports {
         // Build up the markup for the report's title.
         $title = '<h2>Citations Not Selected for Full Text Retrieval</h2>';
         $title .= EbmsReports::format_report_date();
+
+        // Add a second flavor for the report (OCEEBMS-606).
+        $topic_article_counts = FALSE;
         if ($board) {
             $board_name = Ebms\Util::get_board_name($board);
             $title .= EbmsReports::format_board($board_name);
         }
-        if ($cycle)
+        if ($cycle) {
             $title .= EbmsReports::format_cycle_name($cycle);
+            if (is_array($cycle))
+                $topic_article_counts = TRUE;
+        }
         else {
             $range = EbmsReports::format_date_range($start, $end);
             if (!$range) {
@@ -1109,27 +1447,37 @@ class EbmsReports {
 
         // Construct the query for the report.
         $state_id = Ebms\Util::state_id_from_text_id('RejectBMReview');
-        $header = array(
-            'EBMS ID',
-            'PMID',
-            array('data' => 'Topic(s)', 'class' => array('col-3')),
-            array('data' => 'NCI Reviewer', 'class' => array('col-4')),
-            'Comments',
-        );
+        if ($topic_article_counts)
+            $header = array('Topic', 'Count');
+        else
+            $header = array(
+                'EBMS ID',
+                'PMID',
+                array('data' => 'Topic(s)', 'class' => array('col-3')),
+                array('data' => 'NCI Reviewer', 'class' => array('col-4')),
+                'Comments',
+            );
         $query = db_select('ebms_article_state', 's');
         $query->join('ebms_topic', 't', 't.topic_id = s.topic_id');
         $query->join('ebms_article', 'a', 'a.article_id = s.article_id');
         $query->join('users', 'u', 's.user_id = u.uid');
-        $query->fields('a', array('article_id', 'source_id'));
         $query->fields('t', array('topic_name'));
-        $query->fields('u', array('name'));
-        $query->fields('s', array('article_state_id'));
+        if (!$topic_article_counts) {
+            $query->fields('a', array('article_id', 'source_id'));
+            $query->fields('u', array('name'));
+            $query->fields('s', array('article_state_id'));
+        }
+        else {
+            $query->groupBy('t.topic_name');
+            $query->addExpression('COUNT(*)', 'n');
+        }
         if ($board)
             $query->condition('s.board_id', $board);
         if ($cycle) {
+            $cycle_op = is_array($cycle) ? 'BETWEEN' : '=';
             $query->join('ebms_article_topic', 'c',
                 'c.article_id = s.article_id AND c.topic_id = s.topic_id');
-            $query->condition('c.cycle_id', $cycle);
+            $query->condition('c.cycle_id', $cycle, $cycle_op);
         }
         else {
             if (!Ebms\Util::add_date_range_to_query($query, $start, $end,
@@ -1140,49 +1488,56 @@ class EbmsReports {
             }
         }
         $query->condition('s.state_id', $state_id);
-        $query->orderBy('a.article_id');
+        if (!$topic_article_counts)
+            $query->orderBy('a.article_id');
         $query->orderBy('t.topic_name');
-
-        // Prep for links to NLM's PubMed.
-        $pubmed_base = 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
-            'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
-        $new_tab = array('attributes' => array('target' => '_blank'));
 
         // Walk through the query results, assembling the rows for the
         // report table.
         $results = $query->execute();
         $rows = array();
-        $last_article_id = null;
-        foreach ($results as $result) {
-            $article_state_id = $result->article_state_id;
-            $article_id = $result->article_id;
-            $pmid = $result->source_id;
-            $col3 = $result->topic_name;
-            $col4 = $result->name;
-            $comment_rows = db_select('ebms_article_state_comment', 'c')
-                ->fields('c', array('comment'))
-                ->condition('c.article_state_id', $article_state_id)
-                ->orderBy('c.comment_id')
-                ->execute();
-            $comments = array();
-            foreach ($comment_rows as $comment_row)
-                $comments[] = $comment_row->comment;
-            $col5 = implode('; ', $comments);
-            if ($article_id != $last_article_id) {
-                $col1 = l($article_id, 'citations/full/' . $article_id,
-                          $new_tab);
-                $col2 = l($pmid, $pubmed_base . $pmid, $new_tab);
-                $last_article_id = $article_id;
+        if ($topic_article_counts) {
+            foreach ($results as $result) {
+                $rows[] = array($result->topic_name, $result->n);
             }
-            else
-                $col1 = $col2 = '&nbsp;';
-            $rows[] = array(
-                array('data' => $col1, 'class' => array('col-1')),
-                array('data' => $col2, 'class' => array('col-2')),
-                array('data' => $col3, 'class' => array('col-3')),
-                array('data' => $col4, 'class' => array('col-4')),
-                array('data' => $col5, 'class' => array('col-5')),
-            );
+        }
+        else {
+            // Prep for links to NLM's PubMed.
+            $pubmed_base = 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?' .
+                'cmd=Retrieve&db=PubMed&dopt=abstract&list_uids=';
+            $new_tab = array('attributes' => array('target' => '_blank'));
+            $last_article_id = null;
+            foreach ($results as $result) {
+                $article_state_id = $result->article_state_id;
+                $article_id = $result->article_id;
+                $pmid = $result->source_id;
+                $col3 = $result->topic_name;
+                $col4 = $result->name;
+                $comment_rows = db_select('ebms_article_state_comment', 'c')
+                    ->fields('c', array('comment'))
+                    ->condition('c.article_state_id', $article_state_id)
+                    ->orderBy('c.comment_id')
+                    ->execute();
+                $comments = array();
+                foreach ($comment_rows as $comment_row)
+                    $comments[] = $comment_row->comment;
+                $col5 = implode('; ', $comments);
+                if ($article_id != $last_article_id) {
+                    $col1 = l($article_id, 'citations/full/' . $article_id,
+                              $new_tab);
+                    $col2 = l($pmid, $pubmed_base . $pmid, $new_tab);
+                    $last_article_id = $article_id;
+                }
+                else
+                    $col1 = $col2 = '&nbsp;';
+                $rows[] = array(
+                    array('data' => $col1, 'class' => array('col-1')),
+                    array('data' => $col2, 'class' => array('col-2')),
+                    array('data' => $col3, 'class' => array('col-3')),
+                    array('data' => $col4, 'class' => array('col-4')),
+                    array('data' => $col5, 'class' => array('col-5')),
+                );
+            }
         }
         $report['table'] = array(
             '#theme' => 'table',
@@ -3408,6 +3763,10 @@ class EbmsReports {
      * block for the meta-data at the top of one of the citation reports.
      */
     static function format_cycle_name($cycle) {
+        if (is_array($cycle))
+            return '<div class="meta"><span class="label">Review Cycle ' .
+                'Range:</span> ' . Ebms\Util::get_cycle_name($cycle[0]) .
+                ' through ' . Ebms\Util::get_cycle_name($cycle[1]) . '</div>';
         $cycle_name = Ebms\Util::get_cycle_name($cycle);
         return '<div class="meta"><span class="label">Review Cycle:</span> ' .
             $cycle_name . '</div>';
@@ -3678,7 +4037,7 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
 
     // Initialize defaults for the form field's values.
     $board = \Ebms\Util::get_user_default_board(0);
-    $cycle = $report = 0;
+    $cycle = $report = $cycle_range_start = $cycle_range_end = 0;
     $start_date = $end_date = '';
 
     // Check for overrides of the defaults from the form's current state.
@@ -3689,6 +4048,10 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             $board = $values['board'];
         if (isset($values['cycle']))
             $cycle = $values['cycle'];
+        if (isset($values['cycle-range-start']))
+            $cycle_range_start = $values['cycle-range-start'];
+        if (isset($values['cycle-range-end']))
+            $cycle_range_end = $values['cycle-range-end'];
         if (isset($values['report']))
             $report = $values['report'];
         if (isset($values['date-start'])) {
@@ -3713,6 +4076,9 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             'Citations Imported',
             'Citations Not Selected for Full Text Retrieval',
             'Citation Summary Topic Changes',
+            'Citations Excluded by NOT Journal Filters',
+            'Citations Reviewed by Medical Librarian',
+            'Citations Selected for Full-Text Retrieval',
         )
     );
     $results = db_select('ebms_cycle', 'c')
@@ -3734,7 +4100,10 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
         'left-nav' => $left_nav,
         'report-form' => array(
             '#type' => 'container',
-            '#attributes' => array('id' => 'report-form'),
+            '#attributes' => array(
+                'id' => 'report-form',
+                'class' => array('citation-reports'),
+            ),
             'title' => array(
                 '#type' => 'markup',
                 '#markup' => '<h2>Citation Reports</h2>',
@@ -3770,8 +4139,7 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
         ),
     );
 
-    // Only one of the five citation reports needs the Board and
-    // Cycle fields.
+    // All but one of the citation reports needs the Board and Cycle fields.
     if (strcmp($report, 'Citation Summary Topic Changes')) {
         $form['top']['report-form']['ajax fields']['board'] = array(
             '#type' => 'select',
@@ -3789,6 +4157,32 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
             '#default_value' => $cycle,
             '#attributes' => array('class' => array('fixed-width')),
         );
+
+        $form['top']['report-form']['ajax fields']['cycle-range'] = array(
+            '#type' => 'container',
+            '#attributes' => array(
+                'class' => array('cycle-range'),
+                'id' => 'citerep-cycle-range',
+            ),
+            'cycle-range-start' => array(
+                '#type' => 'select',
+                '#title' => 'Cycle Range Start',
+                '#title_display' => 'none',
+                '#options' => $cycles,
+                '#default_value' => $cycle_range_start,
+            ),
+            'cycle-range-end' => array(
+                '#type' => 'select',
+                '#title' => 'Cycle Range End',
+                '#title_display' => 'none',
+                '#options' => $cycles,
+                '#default_value' => $cycle_range_end,
+            ),
+            'cycle-range-label' => array(
+                '#type' => 'markup',
+                '#markup' => '<span>Review Cycle Range</span>',
+            ),
+        );
     }
 
     // Two of the five reports allow the user to specify a date range
@@ -3804,6 +4198,8 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
     // the appropriate class method to build the render array for the
     // report's display, and plug that into the form structure.
     if ($report && $values['op'] == 'Submit') {
+        if ($cycle_range_start && $cycle_range_end)
+            $cycle = [$cycle_range_start, $cycle_range_end];
         switch ($report) {
             case 'Citations Published':
                 $form['report'] =
@@ -3826,13 +4222,25 @@ function pdq_ebms_citation_reports_form($form, &$form_state) {
                 $form['report'] =
                     EbmsReports::topic_changes($start_date, $end_date);
                 break;
+            case 'Citations Excluded by NOT Journal Filters':
+                $form['report'] =
+                    EbmsReports::cites_notlisted($board, $cycle);
+                break;
+            case 'Citations Reviewed by Medical Librarian':
+                $form['report'] =
+                    EbmsReports::librarian_reviewed($board, $cycle);
+                break;
+            case 'Citations Selected for Full-Text Retrieval':
+                $form['report'] =
+                    EbmsReports::abstract_approved($board, $cycle);
+                break;
         }
     }
     return $form;
 }
 
 /**
- * The librarians' five citation reports have different requirements,
+ * The librarians' citation reports have different requirements,
  * depending on which report was selected.  Flag any violations of
  * these requirements.
  *
@@ -3850,49 +4258,63 @@ function pdq_ebms_citation_reports_form_validate($form, &$form_state) {
     // Collect the values we need for validation.
     $values = $form_state['values'];
     $report = $values['report'];
-    $cycle = isset($values['cycle']) ? $values['cycle'] : 0;
+    $cycle = $values['cycle'] ?? 0;
+    $first_cycle = $values['cycle-range-start'] ?? 0;
+    $last_cycle = $values['cycle-range-end'] ?? 0;
 
     // No matter what else is wrong, a report selection is required.
     if (!$report)
         form_set_error('report', 'No report selected');
     else {
-        switch ($report) {
 
-            // Three of the reports only require a review cycle selection.
-            case 'Citations Published':
-            case 'Citations Rejected/Accepted for Publishing':
-            case 'Citations Imported':
-                if (!$cycle)
-                    form_set_error('cycle', 'Please select a review cycle');
-                break;
+        $cycle_and_range = 'Cycle and cycle range both selected';
+        switch ($report) {
 
             // For the report on articles rejected by the board manager
             // in her first review pass, make sure the user has not
-            // specified both date(s) and a review cycle.  Also,
-            // ensure that both dates are complete if a date range is
+            // specified both date(s) and review cycle(s).  Also,
+            // ensure that both values are supplied if a range is
             // specified.
             case 'Citations Not Selected for Full Text Retrieval':
-                $start = $values['date-start']['date'];
-                $end = $values['date-end']['date'];
-                if ($cycle) {
+                $start = $values['date-start']['date'] ?? '';
+                $end = $values['date-end']['date'] ?? '';
+                if ($cycle || $first_cycle || $last_cycle) {
                     $msg = 'Cannot specify both cycle and dates.';
                     if ($start)
                         form_set_error('date-start', $msg);
                     elseif ($end)
                         form_set_error('end-date', $msg);
+                    if ($cycle) {
+                        if ($first_cycle || $last_cycle)
+                            form_set_error('cycle', $cycle_and_range);
+                    }
+                    elseif (!$first_cycle)
+                        form_set_error('cycle-range-start',
+                                       'Missing cycle range start');
+                    elseif (!$last_cycle)
+                        form_set_error('cycle-range-end',
+                                       'Missing cycle range end');
                 }
                 elseif (!$start && !$end)
-                    form_set_error('cycle', 'Must specify cycle or dates.');
+                    form_set_error('cycle', 'Must specify cycle(s) or dates.');
                 break;
 
             // For the report on articles for which the board manager
-            // have added topics not included by the librarian,
-            // we must have a fully specified date range.
+            // have added topics not included by the librarian, we must
+            // have a fully specified date range.
             case 'Citation Summary Topic Changes':
                 $start = $values['date-start']['date'];
                 $end = $values['date-end']['date'];
                 if (!$start && !$end)
-                    form_set_error('date-start', 'A date is required.');
+                    form_set_error('date-start', 'Date range is required.');
+                break;
+
+            // Most of the reports require a review cycle selection.
+            default:
+                if (!($cycle || $first_cycle && $last_cycle))
+                    form_set_error('cycle', 'No cycle(s) selected');
+                if ($cycle && $first_cycle)
+                    form_set_error('cycle', $cycle_and_range);
                 break;
         }
     }
@@ -6937,6 +7359,7 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
     $tag = '';
     $comment = '';
     $start = $end = '';
+    $no_board_decisions = FALSE;
 
     // Pull request parameters from the database if appropriate.
     if ($request_id) {
@@ -6951,6 +7374,7 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
             $end = Ebms\Util::fill_in_date($end, true);
         $comment = $values['comment'];
         $tag = $values['tag'];
+        $no_board_decisions = !empty($values['no-board-decisions']);
     }
 
     // Get the values of interest for ajax callbacks.
@@ -7034,6 +7458,11 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
             '#default_value' => $comment,
             '#title' => 'Comment',
         ),
+        'no-board-decisions' => array(
+            '#type' => 'checkbox',
+            '#title' => 'Exclude Articles With an Editorial Board Decision',
+            '#default_value' => $no_board_decisions,
+        ),
         'reset' => array(
             '#type' => 'submit',
             '#value' => 'Reset',
@@ -7080,6 +7509,17 @@ function pdq_ebms_cites_by_tag($form, &$form_state, $request_id=0) {
  */
 function cites_by_tag_report($request_id, $member_version=false) {
 
+    // Special treatment for librarian comment tags (OCEEBMS-575).
+    $librarian_cmt = db_select('ebms_article_tag_type', 't')
+        ->fields('t', array('tag_id'))
+        ->condition('t.text_id', 'librarian_cmt')
+        ->execute()
+        ->fetchField();
+    $comment_header = 'Comments';
+    $values = EbmsReports::fetch_report_request($request_id);
+    if ($values['tag'] == $librarian_cmt)
+        $comment_header = 'Comment for Librarian';
+
     // Our return value will be an object.
     $report = new stdClass();
     $report->total = 0;
@@ -7088,13 +7528,12 @@ function cites_by_tag_report($request_id, $member_version=false) {
         'Summary Topic',
         'Date Tag Added',
         'Current Article State',
-        'Comments',
+        $comment_header,
     );
 
     // Fetch the settings for this request, use them to find the report data.
-    $values = EbmsReports::fetch_report_request($request_id);
     $query = db_select('ebms_article_tag', 'g');
-    $query->fields('g', array('article_id', 'tag_dt'));
+    $query->fields('g', array('article_id', 'tag_dt', 'article_tag_id'));
     $query->join('ebms_article', 'a', 'a.article_id = g.article_id');
     $query->condition('g.active_status', 'A');
     $query->condition('g.tag_id', $values['tag']);
@@ -7117,12 +7556,34 @@ function cites_by_tag_report($request_id, $member_version=false) {
 
     // Narrow by comment as appropriate.
     if (!empty($values['comment'])) {
-        $query->join('ebms_article_state', 's',
-                     's.article_id = g.article_id AND ' .
-                     's.topic_id = g.topic_id');
-        $query->join('ebms_article_state_comment', 'c',
-                     'c.article_state_id = s.article_state_id');
+
+        // OCEEBMS-575: special treatment for librarian comment tags.
+        if ($values['tag'] == $librarian_cmt) {
+            $query->join('ebms_article_tag_comment', 'c',
+                         'c.article_tag_id = g.article_tag_id');
+        }
+        else {
+            $query->join('ebms_article_state', 's',
+                         's.article_id = g.article_id AND ' .
+                         's.topic_id = g.topic_id');
+            $query->join('ebms_article_state_comment', 'c',
+                         'c.article_state_id = s.article_state_id');
+        }
         $query->condition('c.comment', $values['comment'], 'LIKE');
+    }
+
+    // OCEEBMS-553: option to suppress articles with board decisions.
+    if (!empty($values['no-board-decisions'])) {
+        $fbd = db_select('ebms_article_state_type', 't')
+            ->fields('t', array('state_id'))
+            ->condition('t.state_text_id', 'FinalBoardDecision')
+            ->execute()
+            ->fetchField();
+        $query->leftJoin('ebms_article_state', 'bds',
+                         'bds.article_id = g.article_id AND ' .
+                         'bds.topic_id = g.topic_id AND ' .
+                         'bds.state_id = ' . $fbd);
+        $query->isNull('bds.article_id');
     }
 
     // We'll need this for finding the latest article statuses.
@@ -7195,12 +7656,21 @@ function cites_by_tag_report($request_id, $member_version=false) {
                 $state = "Assigned for Review: $packet_title";
             }
         }
-        $query = db_select('ebms_article_state_comment', 'c')
-            ->fields('c', array('comment'));
-        $query->join('ebms_article_state', 's', 's.article_state_id ' .
-                     '= c.article_state_id');
-        $query->condition('s.article_id', $article_id);
-        $query->condition('s.topic_id', $topic_id);
+
+        // OCEEBMS-575: special treatment for librarian comment tags.
+        if ($values['tag'] == $librarian_cmt) {
+            $query = db_select('ebms_article_tag_comment', 'c')
+                ->fields('c', array('comment'))
+                ->condition('c.article_tag_id', $result->article_tag_id);
+        }
+        else {
+            $query = db_select('ebms_article_state_comment', 'c')
+                ->fields('c', array('comment'));
+            $query->join('ebms_article_state', 's', 's.article_state_id ' .
+                         '= c.article_state_id');
+            $query->condition('s.article_id', $article_id);
+            $query->condition('s.topic_id', $topic_id);
+        }
         $query->orderBy('c.comment_dt', 'DESC');
         $comment_rows = $query->execute();
         $comments = array();
@@ -8292,7 +8762,8 @@ function _ebms_stats($board, $topic, $start, $end, $decisions) {
         $query->condition('t.board_id', $board);
     }
     if (!empty($start))
-        $query->condition('p.created_at', Ebms\Util::fill_in_date($start), '>=');
+        $query->condition('p.created_at', Ebms\Util::fill_in_date($start),
+                          '>=');
     $query->isNull('r.article_id');
     $stats[] = $query->countQuery()->execute()->fetchField();
 
@@ -8303,7 +8774,8 @@ function _ebms_stats($board, $topic, $start, $end, $decisions) {
                      'd.article_state_id = s.article_state_id');
         $query->condition('d.decision_value_id', $decision_id);
         $query->fields('s', array('article_id'));
-        Ebms\Util::add_date_range_to_query($query, $start, $end, 's.status_dt');
+        Ebms\Util::add_date_range_to_query($query, $start, $end,
+                                           's.status_dt');
         if (!empty($topic))
             $query->condition('s.topic_id', $topic);
         if (!empty($board))

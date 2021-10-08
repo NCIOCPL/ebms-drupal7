@@ -131,7 +131,8 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     $errors = array();
     $parms = drupal_get_query_parameters();
     $page = 0;
-    $pager = true;
+    $pager = $no_pdf_queue = true;
+    $preliminary_pdf_queue = false;
     if (isset($parms['page']))
         $page = $parms['page'];
     if (isset($parms['pager']) && $parms['pager'] === 'off')
@@ -141,6 +142,8 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
         $board = $values['board'];
         $cycle = $values['cycle'];
         $topic = $values['topic'];
+        $no_pdf_queue = $values['no-pdfs'];
+        $preliminary_pdf_queue = $values['preliminary-pdfs'];
     }
     elseif ($request_id) {
         $json = db_select('ebms_search', 's')
@@ -153,7 +156,11 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
         $cycle = $request['cycle'];
         $topic = $request['topic'];
         $errors = $request['errors'];
+        $no_pdf_queue = $request['no-pdfs'];
+        $preliminary_pdf_queue = $request['preliminary-pdfs'];
     }
+    if ($preliminary_pdf_queue)
+        $no_pdf_queue = false;
 
     $boards = array(0 => ' ') + Ebms\Util::boards();
     $cycles = array(0 => ' ');
@@ -219,6 +226,22 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
                 '#options' => $cycles,
                 '#default_value' => $cycle,
             ),
+            'queue-selection' => array(
+                '#prefix' => '<div class="clearfix" id="queue-options">',
+                '#suffix' => '</div>',
+                'queues' => array(
+                    'no-pdfs' => array(
+                        '#type' => 'checkbox',
+                        '#title' => t('Without PDFs'),
+                        '#default_value' => $no_pdf_queue,
+                    ),
+                    'preliminary-pdfs' => array(
+                        '#type' => 'checkbox',
+                        '#title' => t('With Preliminary PDFs'),
+                        '#default_value' => $preliminary_pdf_queue,
+                    ),
+                ),
+            ),
             'buttons' => array(
                 '#type' => 'container',
                 '#attributes' => array('id' => 'filter-buttons'),
@@ -246,7 +269,15 @@ function pdq_ebms_fulltext_form($form, &$form_state, $request_id) {
     $query->join('ebms_article_state', 's', 'a.article_id = s.article_id');
     $query->condition('s.current', 'Y');
     $query->condition('s.state_id', $passed_bm_review);
-    $query->isNull('a.full_text_id');
+    if ($no_pdf_queue)
+        $query->isNull('a.full_text_id');
+    else {
+        $query->isNotNull('a.full_text_id');
+        $query->join('ebms_article_tag', 'tag',
+                     'tag.article_id = a.article_id');
+        $query->join('ebms_article_tag_type', 'tt', 'tt.tag_id = tag.tag_id');
+        $query->condition('tt.text_id', 'preliminary');
+    }
     $query->distinct();
     if ($board)
         $query->condition('s.board_id', $board);
@@ -462,14 +493,20 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
     $board = $values['board'];
     $cycle = $values['cycle'];
     $topic = $values['topic'];
-    $page = $values['page'];
-    $pager = $values['pager'];
+    $page = 0;
+    $pager = true;
+    if (isset($parms['page']))
+        $page = $parms['page'];
+    if (isset($parms['pager']) && $parms['pager'] === 'off')
+        $pager = false;
     $request = array(
         'type' => 'fulltext queue',
         'board' => $board,
         'cycle' => $cycle,
         'topic' => $topic,
         'errors' => array(),
+        'no-pdfs' => !empty($values['no-pdfs']),
+        'preliminary-pdfs' => !empty($values['preliminary-pdfs']),
     );
 
     // Only process the fields for the Submit button (not the Filter button).
@@ -550,7 +587,7 @@ function pdq_ebms_fulltext_form_submit($form, &$form_state) {
         ->execute();
     $url = EbmsFullText::$url . '/' . $request_id;
     $opts = array();
-    if ($pager == 'off')
+    if (!$pager)
         $opts['query'] = array('pager' => 'off');
     elseif ($page)
         $opts['query'] = array('page' => $page);

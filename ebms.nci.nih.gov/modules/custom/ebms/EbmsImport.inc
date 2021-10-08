@@ -461,7 +461,9 @@ class ImportBatch {
      *  @param string $source   Should always be 'Pubmed' for now, more later?
      *  @param int $topicId     Topic of this import, may be null?
      *  @param int $cycleId     Cycle when import occurred.
-     *  @param int $notList     'Y' = NOT list used on import, else 'N'.
+     *  @param string $notList  'Y' = NOT list used on import, else 'N'.
+     *  @param string $inputType 'R'egular, 'F'ast track, 'S'pecial search,
+     *                           or 'I'nternal.
      *  @param string $comment  Comment to record as purpose (or whatever) of
      *                           this import batch.
      *  @param int $userId      User performing import, or use global.
@@ -1107,7 +1109,7 @@ function importArticlesFromNLM($mode, $articleIds, $topicId, $cycleId=null,
                     $rec->setArticleState('ReadyInitReview', $topicId,
                         $boardId, $comment, $userId, $pi->constantDt,
                         $cycleId);
-                if ($ib->inputType !== 'I')
+                if ($ib->inputType !== 'I') // I=internal
                     $ib->addArticle('reviewReady', $pmid, $rec->getId(), null);
             }
 

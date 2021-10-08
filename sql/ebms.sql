@@ -5,6 +5,7 @@
 /********************************************************
  * Drop all tables in reverse order to any references.
  ********************************************************/
+DROP TABLE IF EXISTS ebms_config;
 DROP TABLE IF EXISTS ebms_internal_article_tag;
 DROP TABLE IF EXISTS ebms_internal_article_comment;
 DROP TABLE IF EXISTS ebms_pubmed_results;
@@ -46,8 +47,6 @@ DROP TABLE IF EXISTS ebms_packet_reviewer;
 DROP TABLE IF EXISTS ebms_packet_summary;
 DROP TABLE IF EXISTS ebms_packet;
 DROP TABLE IF EXISTS ebms_agenda_meeting;
-DROP TABLE IF EXISTS ebms_internal_article_comment;
-DROP TABLE IF EXISTS ebms_internal_article_tag;
 DROP TABLE IF EXISTS ebms_article_board_decision;
 DROP TABLE IF EXISTS ebms_article_board_decision_value;
 DROP TABLE IF EXISTS ebms_article_board_decision_member;
@@ -301,24 +300,6 @@ CREATE TABLE ebms_ad_hoc_group_member
  PRIMARY KEY (user_id, group_id),
  FOREIGN KEY (user_id)  REFERENCES users (uid),
  FOREIGN KEY (group_id) REFERENCES ebms_ad_hoc_group (group_id))
-      ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-/*
- * Used for building the queue of internal articles of interest
- * to PDQ staff, but not necessarily intended for inclusion in
- * the board member review process.
- *
- * tag_id        automatically generated primary key
- * tag_name      unique display name for group
- * active_status only allow this tag to be assigned to
- *               articles in the administrative UI if the
- *               value of this column is 'A'
- */
-CREATE TABLE ebms_internal_tag
-       (tag_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
-      tag_name VARCHAR(255)     NOT NULL,
- active_status ENUM ('A', 'I')  NOT NULL DEFAULT 'A',
-  UNIQUE KEY internal_tag_name_ix (tag_name))
       ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 /*
@@ -1331,7 +1312,7 @@ FOREIGN KEY (uid)
  * packet_title   how the packet should be identified in lists of packets
  * last_seen      when the board manager last saw the feedback for the packet
  * active_status  'A'ctive or 'I'nactive.
- * starred        1 if a board member wants to come back to the packet
+ * starred        1 if a board manager wants to come back to the packet
  *                (see OCEEBMS-350)
  */
  CREATE TABLE ebms_packet
@@ -2153,6 +2134,7 @@ active_status ENUM ('A', 'I') NOT NULL DEFAULT 'A',
  * comment            optional notes about the relatationship
  * inactivated_by     foreign key into the users table
  * inactivated        date/time the relationship was deleted (if ever)
+ * suppress           don't show for packets (OCEEBMS-598)
  */
 CREATE TABLE ebms_related_article
 (relationship_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -2164,6 +2146,7 @@ CREATE TABLE ebms_related_article
          comment TEXT                 NULL,
   inactivated_by INTEGER UNSIGNED     NULL,
      inactivated DATETIME             NULL,
+        suppress INTEGER          NOT NULL DEFAULT 0,
 FOREIGN KEY (from_id)        REFERENCES ebms_article (article_id),
 FOREIGN KEY (to_id)          REFERENCES ebms_article (article_id),
 FOREIGN KEY (type_id)        REFERENCES ebms_article_relation_type (type_id),
@@ -2187,13 +2170,15 @@ when_submitted DATETIME   NOT NULL,
 CREATE INDEX ebms_pubmed_results_date ON ebms_pubmed_results(when_submitted);
 
 /*
- * Tag identifying a particular flavor of "internal" article,
- * of interest to PDQ staff, but not necessarily to be included
- * in the board member review process.
+ * Used for building the queue of internal articles of interest
+ * to PDQ staff, but not necessarily intended for inclusion in
+ * the board member review process.
  *
- * tag_id          automatically generated primary key
- * tag_name        string for the tag's display name
- * active_status   'A'ctive or 'I'nactive.
+ * tag_id        automatically generated primary key
+ * tag_name      unique display name for group
+ * active_status only allow this tag to be assigned to
+ *               articles in the administrative UI if the
+ *               value of this column is 'A'
  */
 CREATE TABLE ebms_internal_tag
        (tag_id INTEGER          NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -2236,4 +2221,18 @@ comment_date DATETIME NOT NULL
 comment_text TEXT     NOT NULL,
  FOREIGN KEY (article_id) REFERENCES ebms_article (article_id),
  FOREIGN KEY (user_id)    REFERENCES users(uid))
+      ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/**
+ * Custom runtime configuration values.
+ *
+ * Unlike the Drupal config table, these values are loaded on demand,
+ * rather than at bootstrap time for every request.
+ *
+ * config_name    identifies which value is stored (primary key)
+ * config_value   string value holding the configuration
+ */
+CREATE TABLE ebms_config (
+ config_name VARCHAR(256) NOT NULL PRIMARY KEY,
+config_value TEXT         NOT NULL)
       ENGINE=InnoDB DEFAULT CHARSET=utf8;

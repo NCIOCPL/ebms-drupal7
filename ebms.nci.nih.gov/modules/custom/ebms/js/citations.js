@@ -13,8 +13,8 @@ function addHooks() {
     // Make the 'which journal' checkboxes exclusive (as if they were radios).
     // Because these don't look like radio buttons, if the user "unchecks"
     // a box, treat that as a request for "ALL JOURNALS."
-    // TODO: When the EBMS gets rewritten for Drupal 9, we need to eliminate this
-    // silliness of conflating radio buttons with checkboxes.
+    // TODO: When the EBMS gets rewritten for Drupal 9, we need to eliminate
+    // this silliness of conflating radio buttons with checkboxes.
     jQuery(".which-journals input").click(function() {
         var checked = jQuery(this).attr("checked");
         jQuery(".which-journals input").attr("checked", "");

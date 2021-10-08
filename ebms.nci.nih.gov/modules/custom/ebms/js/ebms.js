@@ -1040,6 +1040,18 @@ ebmsscript.init_search_box = function() {
 }
 
 /**
+ * Make checkboxes added for OCEEBMS-601 act like radio buttons.
+ * (Don't ask. You don't want to know.)
+ */
+ebmsscript.init_fulltext_checkboxes = function() {
+    let selector = "#fulltext-filter #queue-options input";
+    jQuery(selector).click(function() {
+        jQuery(selector).attr("checked", false);
+        jQuery(this).attr("checked", true);
+    });
+}
+
+/**
  * Initialization housekeeping which can only be performed after we're
  * sure the document has been loaded.
  */
@@ -1055,4 +1067,5 @@ jQuery(function() {
     ebmsscript.init_docs_page();
     ebmsscript.init_groups_page();
     ebmsscript.init_search_box();
+    ebmsscript.init_fulltext_checkboxes();
 });
