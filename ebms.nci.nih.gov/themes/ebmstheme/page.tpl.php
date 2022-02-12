@@ -304,24 +304,26 @@ if ($logged_in) {
         <div id="footer">
           <div class="section">
             <?php print l('EBMS Home', 'home') ?> |
-            <a href="http://www.cancer.gov/global/web/policies"
+            <a href="https://www.cancer.gov/global/web/policies"
                target="_blank">Policies</a> |
-            <a href="http://www.cancer.gov/global/web/policies/accessibility"
+            <a href="https://www.cancer.gov/global/web/policies/accessibility"
                target="_blank">Accessibility</a> |
-            <a href="http://www.cancer.gov/global/viewing-files"
+            <a href="https://www.cancer.gov/global/viewing-files"
                target="_blank">Viewing Files</a> |
-            <a href="http://www.cancer.gov/global/web/policies/foia"
+            <a href="https://www.cancer.gov/global/web/policies/foia"
                target="_blank">FOIA</a> |
+            <a href="https://www.hhs.gov/vulnerability-disclosure-policy/index.html"
+               target="_blank">HHS Vulnerability Disclosure</a> |
             <?php print l('Site Help', 'help') ?> <br />
-            <a href="http://www.hhs.gov" target="_blank"
+            <a href="https://www.hhs.gov" target="_blank"
               ><img src="<?php print $images; ?>/hhs.png" alt="HHS" />
             </a> &nbsp;
-            <a href="http://www.nih.gov" target="_blank"
+            <a href="https://www.nih.gov" target="_blank"
               ><img src="<?php print $images; ?>/nih.png" alt="NIH" />
             </a> &nbsp;
-            <a href="http://www.cancer.gov" target="_blank"
+            <a href="https://www.cancer.gov" target="_blank"
               ><img src="<?php print $images; ?>/nci-logo.png" alt="NCI" /></a>
-            <a href="http://www.usa.gov" target="_blank"
+            <a href="https://www.usa.gov" target="_blank"
               ><img src="<?php print $images; ?>/usa.png" alt="USA GOV" /></a>
           </div>
         </div> <!-- /#footer -->
