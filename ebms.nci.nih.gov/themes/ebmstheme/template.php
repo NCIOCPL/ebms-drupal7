@@ -53,7 +53,11 @@ function ebmstheme_pager($variables) {
 
     // Don't bother doing anything if there's only one page.
     global $pager_page_array, $pager_total;
+    if (!isset($variables['element']))
+        return '';
     $element = $variables['element'];
+    if (!isset($pager_total[$element]) || !isset($pager_page_array[$element]))
+        return '';
     $num_pages = $pager_total[$element];
     if ($num_pages < 2)
         return '';
