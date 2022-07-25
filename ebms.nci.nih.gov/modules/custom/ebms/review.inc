@@ -803,7 +803,7 @@ class EbmsReview {
 
                 // 2014-08-01 (OCEEBMS-184): show count of unseen reviews.
                 $reviewers[] = '<div>' . htmlspecialchars($result->name);
-                if ($this->user->uid == $p->board_manager) {
+                if ($this->user->uid != $p->board_manager) {
                     $query = db_select('ebms_article_review', 'r')
                         ->condition('r.packet_id', $p->packet_id)
                         ->condition('r.reviewer_id', $result->uid);
