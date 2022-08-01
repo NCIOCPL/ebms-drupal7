@@ -16,12 +16,12 @@ function addHooks() {
     // TODO: When the EBMS gets rewritten for Drupal 9, we need to eliminate
     // this silliness of conflating radio buttons with checkboxes.
     jQuery(".which-journals input").click(function() {
-        var checked = jQuery(this).attr("checked");
-        jQuery(".which-journals input").attr("checked", "");
+        var checked = jQuery(this).prop("checked");
+        jQuery(".which-journals input").prop("checked", false);
         if (checked)
-            jQuery(this).attr("checked", "checked");
+            jQuery(this).prop("checked", true);
         else
-            jQuery("#edit-all-journals-check").attr("checked", "checked");
+            jQuery("#edit-all-journals-check").prop("checked", true);
     });
 
     // strip any pager query when the search is performed
@@ -71,20 +71,24 @@ function addHooks() {
         // get the parent div
         var parent = jQuery(this).closest('.summary-topic-check');
         //alert("Found parent " + parent);
+        console.log("found parent " + parent);
 
         // get the sibling checkbox and label
         var siblings = parent.siblings('.summary-topic-check');
         //alert("Found " + siblings.length + ' siblings!');
+        console.log("found " + siblings.length + ' siblings');
 
         var sib_inputs = siblings.find('input.form-checkbox');
         //alert("Found " + sib_inputs.length + ' sibling checkboxes!');
+        console.log('found ' + sib_inputs.length + ' sibling checkboxes');
         var sib_labels = siblings.find('label');
 
         // based on the current state of this checkbox,
         // either disable the other checkbox or enable all checkboxes
-        if(jQuery(this).attr('checked')) {
+        if(jQuery(this).prop('checked')) {
+            console.log('unchecking the other checkbox');
             // this is set, uncheck the other checkbox
-            sib_inputs.attr("checked", "");
+            sib_inputs.prop("checked", false);
         }
     });
 
@@ -99,13 +103,13 @@ function addHooks() {
 
         // based on the current state of this checkbox,
         // either disable the other checkbox or enable all checkboxes
-        if(jQuery(this).attr('checked')) {
+        if(jQuery(this).prop('checked')) {
             // this is set, uncheck the other checkbox
-            sib_input.attr("checked", "");
+            sib_input.prop("checked", false);
         }
 
         // prevent turning off of a checked button.
-        jQuery(this).attr('checked', 'checked');
+        jQuery(this).prop('checked', true);
     });
 
     // show/hide the response reject fieldset when the response select is

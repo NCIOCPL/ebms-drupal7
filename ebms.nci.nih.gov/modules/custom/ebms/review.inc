@@ -803,7 +803,7 @@ class EbmsReview {
 
                 // 2014-08-01 (OCEEBMS-184): show count of unseen reviews.
                 $reviewers[] = '<div>' . htmlspecialchars($result->name);
-                if ($this->user->uid != $p->board_manager) {
+                if ($this->user->uid == $p->board_manager) {
                     $query = db_select('ebms_article_review', 'r')
                         ->condition('r.packet_id', $p->packet_id)
                         ->condition('r.reviewer_id', $result->uid);
@@ -5341,10 +5341,6 @@ function pdq_ebms_edit_packet_form_validate($form, &$form_state) {
             $article_count++;
     if (!$article_count)
         form_set_error('articles', 'At least one article must be selected.');
-    $form_state['redirect'] = array(
-        EbmsReview::$url . '/packets',
-        'query' => drupal_get_query_parameters(),
-    );
 }
 
 /**
@@ -5520,6 +5516,10 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
             )
             ->execute();
     }
+
+    // Go back to the packets page.
+    $opts = array('query' => drupal_get_query_parameters());
+    drupal_goto(EbmsReview::$url . '/packets', $opts);
 
 // XXX DEBUGGING FOR QA TEAM
 //     $status = db_select('ebms_packet', 'p')

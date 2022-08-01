@@ -5,6 +5,44 @@
 ebmsscript = {};
 
 /**
+ * See https://stackoverflow.com/questions/14798403.
+ */
+var matched, browser;
+
+jQuery.uaMatch = function( ua ) {
+    ua = ua.toLowerCase();
+
+    var match = /(chrome)[ \/]([\w.]+)/.exec( ua ) ||
+        /(webkit)[ \/]([\w.]+)/.exec( ua ) ||
+        /(opera)(?:.*version|)[ \/]([\w.]+)/.exec( ua ) ||
+        /(msie) ([\w.]+)/.exec( ua ) ||
+        ua.indexOf("compatible") < 0 && /(mozilla)(?:.*? rv:([\w.]+)|)/.exec( ua ) ||
+        [];
+
+    return {
+        browser: match[ 1 ] || "",
+        version: match[ 2 ] || "0"
+    };
+};
+
+matched = jQuery.uaMatch( navigator.userAgent );
+browser = {};
+
+if ( matched.browser ) {
+    browser[ matched.browser ] = true;
+    browser.version = matched.version;
+}
+
+// Chrome is Webkit, but Webkit is also Safari.
+if ( browser.chrome ) {
+    browser.webkit = true;
+} else if ( browser.webkit ) {
+    browser.safari = true;
+}
+
+jQuery.browser = browser;
+
+/**
  * State and static variables.
  */
 ebmsscript.file_upload_textarea_open = false;
@@ -129,12 +167,12 @@ ebmsscript.disp_check = function(merits_changes) {
     if (typeof merits_changes === "boolean") {
         if (merits_changes) {
             if (change_boxes.is(":checked")) {
-                no_change_box.attr("checked", false);
-                jQuery("#reasons-wrapper input").attr("checked", false);
+                no_change_box.prop("checked", false);
+                jQuery("#reasons-wrapper input").prop("checked", false);
             }
         }
         else if (no_change_box.is(":checked")) {
-            change_boxes.attr("checked", false);
+            change_boxes.prop("checked", false);
         }
     }
     if (change_boxes.is(":checked")) {
@@ -924,7 +962,7 @@ ebmsscript.publish_checkbox = function(box, queue_id, article_state_id) {
 
 ebmsscript.publish_check_all = function(queue_id) {
     jQuery("td.col-5 input").each(function() {
-        jQuery(this).attr("checked", true);
+        jQuery(this).prop("checked", true);
     });
     jQuery.ajax({
         url: ebmsscript.site_root + "/publish-checkbox-ajax",
@@ -943,7 +981,7 @@ ebmsscript.publish_check_all = function(queue_id) {
 }
 ebmsscript.publish_clear_all = function(queue_id) {
     jQuery("td.col-5 input").each(function() {
-        jQuery(this).attr("checked", false);
+        jQuery(this).prop("checked", false);
     });
     jQuery.ajax({
         url: ebmsscript.site_root + "/publish-checkbox-ajax",
@@ -1046,8 +1084,8 @@ ebmsscript.init_search_box = function() {
 ebmsscript.init_fulltext_checkboxes = function() {
     let selector = "#fulltext-filter #queue-options input";
     jQuery(selector).click(function() {
-        jQuery(selector).attr("checked", false);
-        jQuery(this).attr("checked", true);
+        jQuery(selector).prop("checked", false);
+        jQuery(this).prop("checked", true);
     });
 }
 
