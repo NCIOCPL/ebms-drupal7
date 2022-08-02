@@ -31,6 +31,7 @@ tar -czf $WORKDIR/ebms-pre-release-3.9.1-backup.tgz modules themes || {
 }
 cd $SITES_ALL
 tar -czf $WORKDIR/fpdf-181.tgz libraries/fpdf
+tar -czf $WORKDIR/PHPExcel-broken.tgz libraries/PHPExcel
 tar -czf $WORKDIR/ckeditor_link.tgz modules/ckeditor_link
 tar -czf $WORKDIR/webform.tgz modules/webform
 
@@ -69,6 +70,11 @@ cd $SITES_ALL/libraries
 rm -rf fpdf
 tar -xzf $WORKDIR/ebms/scripts/fpdf184.tgz
 mv fpdf184 fpdf
+
+echo Updating PHPExcel library
+cd $SITES_ALL/libraries
+rm -rf PHPExcel
+tar -xzf $WORKDIR/ebms/scripts/PHPExcel-hacked-20220802.tgz
 
 echo Patching EBMS code
 cd $WORKDIR/ebms/ebms.nci.nih.gov/modules/custom/ebms
