@@ -74,7 +74,7 @@ mv fpdf184 fpdf
 echo Updating PHPExcel library
 cd $SITES_ALL/libraries
 rm -rf PHPExcel
-tar -xzf $WORKDIR/ebms/scripts/PHPExcel-hacked-20220802.tgz
+tar -xzf $WORKDIR/ebms/scripts/PHPExcel-hacked-20220804.tgz
 
 echo Patching EBMS code
 cd $WORKDIR/ebms/ebms.nci.nih.gov/modules/custom/ebms
