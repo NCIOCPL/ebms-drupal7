@@ -1,0 +1,4 @@
+documents:
+  css:
+    theme:
+      css/documents.css: {}

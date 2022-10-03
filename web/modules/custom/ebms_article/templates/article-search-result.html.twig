@@ -1,0 +1,29 @@
+<div class="article-search-result">
+  <div class="article-authors">{{ article.authors|join('; ') }}</div>
+  <div class="article-title">
+    {% if restricted %}
+    {{ article.title }}
+    {% else %}
+    <a href="{{ article.url }}">{{ article.title }}</a>
+    {% endif %}
+  </div>
+  <div class="article-citation">{{ article.publication }}</div>
+  <div class="article-ids">
+    <span class="pmid">PMID: {{ article.pmid }}</span>
+    {% if not restricted %}
+    <span class="article-id">EBMS ID: {{ article.id }}</span>
+    {% if article.legacy_id %}
+    <span class="legacy-id">Legacy CMS ID: {{ article.legacy_id }}</span>
+    {% endif %}
+    {% endif %}
+  </div>
+  {% if article.topics %}
+  <div class="article-topics">Topics: {{ article.topics|join('; ') }}</div>
+  {% endif %}
+  <div class="buttons">
+    <a href="https:///pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank" class="usa-button">View Abstract</a>
+    {% if article.full_text_url %}
+    <a href="{{ article.full_text_url }}" target="_blank" class="usa-button">Download Full Text</a>
+    {% endif %}
+  </div>
+</div>

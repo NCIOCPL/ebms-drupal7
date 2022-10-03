@@ -1,0 +1,35 @@
+.articles-by-status .article {
+  margin-bottom: 2rem;
+}
+.authors {
+  font-weight: bold;
+}
+.title,
+.topic-name,
+.meeting-name {
+  font-style: italic;
+}
+.decision-label,
+.action-name {
+  font-weight: bold;
+}
+.decision,
+.packet,
+.review,
+.action,
+.agenda-topic,
+.board-decision-topic {
+  border-top: 1px #222 solid;
+}
+.comments,
+.board-decision-topic ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.comments li {
+  font-style: italic;
+}
+.board-decision-topic .comment,
+.agenda-topic .comment {
+  font-style: italic;
+}

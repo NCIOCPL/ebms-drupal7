@@ -1,0 +1,42 @@
+ebms_travel.landing_page:
+  path: '/travel'
+  defaults:
+    _title: 'Travel'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_travel.directions:
+  path: '/travel/directions'
+  defaults:
+    _title: 'Directions'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_travel.policies_and_procedures:
+  path: '/travel/policies-and-procedures'
+  defaults:
+    _title: 'Policies and Procedures'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_travel.hotel_request:
+  path: /travel/hotel-request
+  defaults:
+    _title: 'Hotel Request'
+    _form: Drupal\ebms_travel\Form\HotelRequestForm
+  requirements:
+    _permission: 'submit travel requests+enter travel requests'
+ebms_travel.reimbursement_request:
+  path: /travel/reimbursement-request
+  defaults:
+    _title: 'Reimbursement Request'
+    _form: Drupal\ebms_travel\Form\ReimbursementRequestForm
+  requirements:
+    _permission: 'submit travel requests+enter travel requests'
+ebms_travel.configuration:
+  path: /travel/manage-configuration
+  defaults:
+    _title: Manage Travel Configuration
+    _form: Drupal\ebms_travel\Form\ConfigurationForm
+  requirements:
+    _permission: 'administer site configuration'

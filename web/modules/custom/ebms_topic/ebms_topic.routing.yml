@@ -1,0 +1,12 @@
+ebms_topic.reviewers:
+  path: '/topics/reviewers/{topic_id}'
+  defaults:
+    _form: Drupal\ebms_topic\Form\TopicReviewersForm
+    _title: 'Topic Reviewers'
+  requirements:
+    _permission: 'manage review packets'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer

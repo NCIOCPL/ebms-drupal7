@@ -1,0 +1,3270 @@
+[
+  {
+    "id": 343,
+    "user": 245,
+    "submitted": "2016-11-19 10:54:58",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "74.00",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-18",
+        "type": "taxi",
+        "amount": "72.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2016-11-18",
+        "type": "airport",
+        "amount": "24.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "If you tell the truth you don\u2019t have to remember anything.",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "lucille.field@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 344,
+    "user": 208,
+    "submitted": "2016-11-19 11:57:32",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "74.00",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-17",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "24"
+      },
+      {
+        "date": "2016-11-18",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "24"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2016-11-18",
+        "type": "airport",
+        "amount": "66.00"
+      },
+      {
+        "date": "2016-11-17",
+        "type": "toll",
+        "amount": "5.54"
+      },
+      {
+        "date": "2016-11-18",
+        "type": "toll",
+        "amount": "5.54"
+      },
+      {
+        "date": "2016-11-18",
+        "type": "toll",
+        "amount": "2.54"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "The only thing that can grow is the thing you give energy to.",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "jack.clayburgh@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 345,
+    "user": 59,
+    "submitted": "2016-11-19 12:28:01",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-16",
+        "type": "taxi",
+        "amount": "80.00",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-16",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "30"
+      },
+      {
+        "date": "2016-11-18",
+        "type": "taxi",
+        "amount": "80.00",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-18",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "30"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2016-11-18",
+        "type": "airport",
+        "amount": "24.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Keep going like there\u2019s a big rock rolling behind you. Never stop until you find ways to dodge it!",
+    "certified": true,
+    "arrival": "2016-11-16",
+    "departure": "2016-11-18",
+    "confirmation_email": "andy.walken@example.com",
+    "total_amount": "",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 346,
+    "user": 142,
+    "submitted": "2016-11-19 14:01:00",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "43.11",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "55.87",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-18",
+        "type": "taxi",
+        "amount": "60.00",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-18",
+        "type": "taxi",
+        "amount": "58.40",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_declined",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "drew.wilder@example.com",
+    "total_amount": "417.38",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 347,
+    "user": 142,
+    "submitted": "2016-11-19 14:01:01",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "43.11",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_declined",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "drew.wilder@example.com",
+    "total_amount": "417.38",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 348,
+    "user": 142,
+    "submitted": "2016-11-19 14:01:02",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "43.11",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_declined",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "drew.wilder@example.com",
+    "total_amount": "417.38",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 349,
+    "user": 156,
+    "submitted": "2016-11-19 14:28:17",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-16",
+        "type": "taxi",
+        "amount": "74.87",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2016-11-18",
+        "type": "airport",
+        "amount": "60.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Pain is inevitable. Suffering is optional.",
+    "certified": true,
+    "arrival": "2016-11-16",
+    "departure": "2016-11-18",
+    "confirmation_email": "simone.harlow@example.com",
+    "total_amount": "421.62",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 350,
+    "user": 151,
+    "submitted": "2016-11-21 10:32:33",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-17",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "51"
+      },
+      {
+        "date": "2016-11-18",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "51"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2016-11-17",
+        "type": "toll",
+        "amount": "5.90"
+      },
+      {
+        "date": "2016-11-18",
+        "type": "toll",
+        "amount": "5.90"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "mae.costello@example.com",
+    "total_amount": "200",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 351,
+    "user": 153,
+    "submitted": "2016-11-23 12:59:26",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "18.81",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "112.00",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-18",
+        "type": "taxi",
+        "amount": "40.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "270.81"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Good things happen to those who hustle.",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "sissy.farrow@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 353,
+    "user": 357,
+    "submitted": "2016-12-09 16:05:30",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "2016-11-17",
+        "type": "taxi",
+        "amount": "68.00",
+        "mileage": ""
+      },
+      {
+        "date": "2016-11-18",
+        "type": "taxi",
+        "amount": "66.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "8.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "We must let go of the life we have planned, so as to accept the one that is waiting for us.",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "cicely.gable@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 365,
+    "user": 226,
+    "submitted": "2017-03-13 15:34:02",
+    "remote_address": "127.0.0.1",
+    "meeting": 440,
+    "transportation": [
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": "0.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "0",
+    "meals_and_incidentals": "per_diem_declined",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2016-11-17",
+    "departure": "2016-11-18",
+    "confirmation_email": "penelope.harris@example.com",
+    "total_amount": "200",
+    "nights_stayed": ""
+  },
+  {
+    "id": 380,
+    "user": 155,
+    "submitted": "2017-04-25 14:38:58",
+    "remote_address": "127.0.0.1",
+    "meeting": 648,
+    "transportation": [
+      {
+        "date": "2017-04-19",
+        "type": "taxi",
+        "amount": "75.00",
+        "mileage": ""
+      },
+      {
+        "date": "2017-04-20",
+        "type": "taxi",
+        "amount": "12.00",
+        "mileage": ""
+      },
+      {
+        "date": "2017-04-20",
+        "type": "taxi",
+        "amount": "75.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2017-04-20",
+        "type": "airport",
+        "amount": "22.00"
+      },
+      {
+        "date": "0000-00-00",
+        "type": "toll",
+        "amount": "5.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2017-04-19",
+    "departure": "2017-04-20",
+    "confirmation_email": "dwayne.cleese@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 386,
+    "user": 157,
+    "submitted": "2017-05-03 20:44:04",
+    "remote_address": "127.0.0.1",
+    "meeting": 648,
+    "transportation": [
+      {
+        "date": "2017-04-19",
+        "type": "taxi",
+        "amount": "40.60",
+        "mileage": ""
+      },
+      {
+        "date": "2017-04-20",
+        "type": "taxi",
+        "amount": "10.00",
+        "mileage": ""
+      },
+      {
+        "date": "2017-04-20",
+        "type": "taxi",
+        "amount": "13.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "0",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "The only impossible journey is the one you never begin.",
+    "certified": true,
+    "arrival": "2017-04-19",
+    "departure": "2017-04-20",
+    "confirmation_email": "jean.gardner@example.com",
+    "total_amount": "63.60",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 473,
+    "user": 347,
+    "submitted": "2018-03-14 21:19:47",
+    "remote_address": "127.0.0.1",
+    "meeting": 729,
+    "transportation": [
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "41.20",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "35.87",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "38.58",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "49.46",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2018-03-14",
+    "departure": "2018-03-14",
+    "confirmation_email": "chuck.cruise@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 474,
+    "user": 378,
+    "submitted": "2018-03-15 21:56:26",
+    "remote_address": "127.0.0.1",
+    "meeting": 729,
+    "transportation": [
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "40.00",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "40.00",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "60.00",
+        "mileage": ""
+      },
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "The meaning of life is to give life meaning.",
+    "certified": true,
+    "arrival": "2018-03-14",
+    "departure": "2018-03-14",
+    "confirmation_email": "denzel.thurman@example.com",
+    "total_amount": "140",
+    "nights_stayed": ""
+  },
+  {
+    "id": 479,
+    "user": 164,
+    "submitted": "2018-03-23 16:04:57",
+    "remote_address": "127.0.0.1",
+    "meeting": 729,
+    "transportation": [
+      {
+        "date": "2018-03-13",
+        "type": "taxi",
+        "amount": "68.00",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "65.00",
+        "mileage": ""
+      },
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-13",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "34"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2018-03-14",
+        "type": "airport",
+        "amount": "48.00"
+      }
+    ],
+    "hotel_payment": "i_paid",
+    "hotel_amount": "93.20",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2018-03-13",
+    "departure": "2018-03-14",
+    "confirmation_email": "marlene.kidder@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 482,
+    "user": 80,
+    "submitted": "2018-04-08 00:41:20",
+    "remote_address": "127.0.0.1",
+    "meeting": 729,
+    "transportation": [
+      {
+        "date": "2018-03-13",
+        "type": "taxi",
+        "amount": "53.82",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "",
+        "amount": "28.88",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2018-03-14",
+        "type": "airport",
+        "amount": "44.00"
+      },
+      {
+        "date": "2018-03-13",
+        "type": "toll",
+        "amount": "2.70"
+      },
+      {
+        "date": "2018-03-13",
+        "type": "toll",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2018-03-13",
+    "departure": "2018-03-14",
+    "confirmation_email": "demi.connery@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 488,
+    "user": 378,
+    "submitted": "2018-05-01 19:53:04",
+    "remote_address": "127.0.0.1",
+    "meeting": 729,
+    "transportation": [
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "40.00",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "60.00",
+        "mileage": ""
+      },
+      {
+        "date": "2018-03-14",
+        "type": "taxi",
+        "amount": "40.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Happiness is not by chance, but by choice.",
+    "certified": true,
+    "arrival": "2018-03-14",
+    "departure": "2018-03-14",
+    "confirmation_email": "denzel.thurman@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 531,
+    "user": 208,
+    "submitted": "2018-11-03 10:51:15",
+    "remote_address": "127.0.0.1",
+    "meeting": 704,
+    "transportation": [
+      {
+        "date": "2018-11-01",
+        "type": "taxi",
+        "amount": "74.80",
+        "mileage": ""
+      },
+      {
+        "date": "2018-11-01",
+        "type": "metro",
+        "amount": "3.85",
+        "mileage": ""
+      },
+      {
+        "date": "2018-11-02",
+        "type": "taxi",
+        "amount": "73.80",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "208.15",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Don\u2019t let yesterday take up too much of today.",
+    "certified": true,
+    "arrival": "2018-11-01",
+    "departure": "2018-11-02",
+    "confirmation_email": "jack.clayburgh@example.com",
+    "total_amount": "389.95",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 532,
+    "user": 156,
+    "submitted": "2018-11-03 11:07:36",
+    "remote_address": "127.0.0.1",
+    "meeting": 704,
+    "transportation": [
+      {
+        "date": "2018-10-31",
+        "type": "taxi",
+        "amount": "72.60",
+        "mileage": ""
+      },
+      {
+        "date": "2018-11-02",
+        "type": "taxi",
+        "amount": "72.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2018-11-02",
+        "type": "airport",
+        "amount": "56.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "495.65",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2018-10-31",
+    "departure": "2018-11-02",
+    "confirmation_email": "simone.harlow@example.com",
+    "total_amount": "404.60",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 534,
+    "user": 153,
+    "submitted": "2018-11-04 21:22:31",
+    "remote_address": "127.0.0.1",
+    "meeting": 704,
+    "transportation": [
+      {
+        "date": "2018-10-31",
+        "type": "taxi",
+        "amount": "15.50",
+        "mileage": ""
+      },
+      {
+        "date": "2018-10-31",
+        "type": "metro",
+        "amount": "6.80",
+        "mileage": ""
+      },
+      {
+        "date": "2018-11-02",
+        "type": "taxi",
+        "amount": "14.95",
+        "mileage": ""
+      },
+      {
+        "date": "2018-11-02",
+        "type": "metro",
+        "amount": "6.80",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2018-11-02",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "0",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-10-31",
+    "departure": "2019-11-02",
+    "confirmation_email": "sissy.farrow@example.com",
+    "total_amount": "244.05",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 535,
+    "user": 245,
+    "submitted": "2018-11-05 10:06:46",
+    "remote_address": "127.0.0.1",
+    "meeting": 704,
+    "transportation": [
+      {
+        "date": "2018-11-01",
+        "type": "metro",
+        "amount": "6.00",
+        "mileage": ""
+      },
+      {
+        "date": "2018-11-04",
+        "type": "metro",
+        "amount": "6.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2018-11-04",
+        "type": "airport",
+        "amount": "38.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Nothing is impossible to a willing heart.",
+    "certified": true,
+    "arrival": "2018-11-01",
+    "departure": "2018-11-04",
+    "confirmation_email": "lucille.field@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 537,
+    "user": 185,
+    "submitted": "2018-11-06 14:50:34",
+    "remote_address": "127.0.0.1",
+    "meeting": 704,
+    "transportation": [
+      {
+        "date": "2018-10-31",
+        "type": "taxi",
+        "amount": "14.50",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2018-11-01",
+        "type": "airport",
+        "amount": "12.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2018-10-31",
+    "departure": "2018-11-01",
+    "confirmation_email": "art.fiennes@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 559,
+    "user": 142,
+    "submitted": "2019-03-30 13:34:34",
+    "remote_address": "127.0.0.1",
+    "meeting": 871,
+    "transportation": [
+      {
+        "date": "2019-03-28",
+        "type": "taxi",
+        "amount": "16.44",
+        "mileage": ""
+      },
+      {
+        "date": "2019-03-28",
+        "type": "taxi",
+        "amount": "70.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-03-28",
+        "type": "taxi",
+        "amount": "10.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-03-29",
+        "type": "taxi",
+        "amount": "70.72",
+        "mileage": ""
+      },
+      {
+        "date": "2019-03-29",
+        "type": "taxi",
+        "amount": "39.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-03-28",
+    "departure": "2019-03-29",
+    "confirmation_email": "drew.wilder@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 560,
+    "user": 156,
+    "submitted": "2019-03-31 00:28:39",
+    "remote_address": "127.0.0.1",
+    "meeting": 871,
+    "transportation": [
+      {
+        "date": "2019-03-27",
+        "type": "taxi",
+        "amount": "73.46",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-03-29",
+        "type": "airport",
+        "amount": "56.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-03-27",
+    "departure": "2019-03-29",
+    "confirmation_email": "simone.harlow@example.com",
+    "total_amount": "329.46",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 561,
+    "user": 245,
+    "submitted": "2019-04-01 13:09:01",
+    "remote_address": "127.0.0.1",
+    "meeting": 871,
+    "transportation": [
+      {
+        "date": "2019-03-28",
+        "type": "metro",
+        "amount": "5.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-03-29",
+        "type": "metro",
+        "amount": "5.00",
+        "mileage": ""
+      },
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-03-31",
+        "type": "airport",
+        "amount": "38.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "We are all in the gutter, but some of us are looking at the stars.",
+    "certified": true,
+    "arrival": "2019-03-26",
+    "departure": "2019-03-29",
+    "confirmation_email": "lucille.field@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 562,
+    "user": 185,
+    "submitted": "2019-04-01 16:41:39",
+    "remote_address": "127.0.0.1",
+    "meeting": 871,
+    "transportation": [
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-03-29",
+        "type": "airport",
+        "amount": "12.00"
+      }
+    ],
+    "hotel_payment": "i_paid",
+    "hotel_amount": "224.25",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-03-28",
+    "departure": "2019-03-29",
+    "confirmation_email": "art.fiennes@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 574,
+    "user": 226,
+    "submitted": "2019-05-18 13:13:56",
+    "remote_address": "127.0.0.1",
+    "meeting": 747,
+    "transportation": [
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": "0.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "0",
+    "meals_and_incidentals": "per_diem_inelgible",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-05-17",
+    "departure": "2019-05-17",
+    "confirmation_email": "penelope.harris@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 575,
+    "user": 142,
+    "submitted": "2019-05-18 13:20:54",
+    "remote_address": "127.0.0.1",
+    "meeting": 747,
+    "transportation": [
+      {
+        "date": "2019-05-16",
+        "type": "taxi",
+        "amount": "26.29",
+        "mileage": ""
+      },
+      {
+        "date": "2019-05-16",
+        "type": "taxi",
+        "amount": "74.75",
+        "mileage": ""
+      },
+      {
+        "date": "2019-05-17",
+        "type": "taxi",
+        "amount": "10.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-05-17",
+        "type": "taxi",
+        "amount": "70.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-05-17",
+        "type": "taxi",
+        "amount": "60.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-05-16",
+    "departure": "2019-05-17",
+    "confirmation_email": "drew.wilder@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 577,
+    "user": 156,
+    "submitted": "2019-05-19 22:35:05",
+    "remote_address": "127.0.0.1",
+    "meeting": 747,
+    "transportation": [
+      {
+        "date": "2019-05-16",
+        "type": "taxi",
+        "amount": "70.96",
+        "mileage": ""
+      },
+      {
+        "date": "2019-05-17",
+        "type": "taxi",
+        "amount": "75.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-05-17",
+        "type": "airport",
+        "amount": "27.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-05-16",
+    "departure": "2019-05-17",
+    "confirmation_email": "simone.harlow@example.com",
+    "total_amount": "372.96",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 578,
+    "user": 245,
+    "submitted": "2019-05-20 16:20:12",
+    "remote_address": "127.0.0.1",
+    "meeting": 747,
+    "transportation": [
+      {
+        "date": "2019-05-16",
+        "type": "taxi",
+        "amount": "72.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-05-17",
+        "type": "metro",
+        "amount": "5.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-05-17",
+        "type": "airport",
+        "amount": "19.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_declined",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-05-16",
+    "departure": "2019-05-17",
+    "confirmation_email": "lucille.field@example.com",
+    "total_amount": "296.00",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 579,
+    "user": 218,
+    "submitted": "2019-05-22 10:00:27",
+    "remote_address": "127.0.0.1",
+    "meeting": 747,
+    "transportation": [
+      {
+        "date": "2019-05-17",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "30"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_inelgible",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-05-17",
+    "departure": "2019-05-17",
+    "confirmation_email": "forest.scott@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 580,
+    "user": 185,
+    "submitted": "2019-05-22 17:42:42",
+    "remote_address": "127.0.0.1",
+    "meeting": 747,
+    "transportation": [
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-05-17",
+        "type": "airport",
+        "amount": "12.00"
+      }
+    ],
+    "hotel_payment": "i_paid",
+    "hotel_amount": "280.6",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-05-16",
+    "departure": "2019-05-17",
+    "confirmation_email": "art.fiennes@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 582,
+    "user": 151,
+    "submitted": "2019-06-04 14:02:51",
+    "remote_address": "127.0.0.1",
+    "meeting": 747,
+    "transportation": [
+      {
+        "date": "2019-05-17",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "104"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-05-17",
+        "type": "toll",
+        "amount": "14.80"
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_declined",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-05-17",
+    "departure": "2019-05-17",
+    "confirmation_email": "mae.costello@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 597,
+    "user": 265,
+    "submitted": "2019-09-14 10:01:01",
+    "remote_address": "127.0.0.1",
+    "meeting": 802,
+    "transportation": [
+      {
+        "date": "2019-09-13",
+        "type": "taxi",
+        "amount": "45.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-12",
+        "type": "taxi",
+        "amount": "42.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-12",
+        "type": "metro",
+        "amount": "5.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Every moment is a fresh beginning.",
+    "certified": true,
+    "arrival": "2019-09-12",
+    "departure": "2019-09-13",
+    "confirmation_email": "anthony.dangerfield@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 602,
+    "user": 398,
+    "submitted": "2019-09-19 18:20:39",
+    "remote_address": "127.0.0.1",
+    "meeting": 840,
+    "transportation": [
+      {
+        "date": "2019-09-17",
+        "type": "taxi",
+        "amount": "74.34",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-18",
+        "type": "taxi",
+        "amount": "69.58",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-18",
+        "type": "taxi",
+        "amount": "8.57",
+        "mileage": ""
+      },
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-09-18",
+        "type": "airport",
+        "amount": "20.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-09-17",
+    "departure": "2019-09-18",
+    "confirmation_email": "rodney.tomlin@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 603,
+    "user": 164,
+    "submitted": "2019-09-20 12:43:36",
+    "remote_address": "127.0.0.1",
+    "meeting": 840,
+    "transportation": [
+      {
+        "date": "2019-09-18",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "416"
+      },
+      {
+        "date": "2019-09-19",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "416"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-09-18",
+        "type": "toll",
+        "amount": "19.00"
+      },
+      {
+        "date": "2019-09-18",
+        "type": "hotel",
+        "amount": "25.00"
+      },
+      {
+        "date": "2019-09-19",
+        "type": "toll",
+        "amount": "19.00"
+      }
+    ],
+    "hotel_payment": "i_paid",
+    "hotel_amount": "189",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "You can\u2019t cross the sea merely by standing and staring at the water.",
+    "certified": true,
+    "arrival": "2019-09-18",
+    "departure": "2019-09-19",
+    "confirmation_email": "marlene.kidder@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 604,
+    "user": 164,
+    "submitted": "2019-09-20 12:43:44",
+    "remote_address": "127.0.0.1",
+    "meeting": 840,
+    "transportation": [
+      {
+        "date": "2019-09-18",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "416"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-09-18",
+        "type": "toll",
+        "amount": "19.00"
+      }
+    ],
+    "hotel_payment": "i_paid",
+    "hotel_amount": "189",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Let the beauty of what you love be what you do.",
+    "certified": true,
+    "arrival": "2019-09-18",
+    "departure": "2019-09-19",
+    "confirmation_email": "marlene.kidder@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 605,
+    "user": 164,
+    "submitted": "2019-09-20 12:43:46",
+    "remote_address": "127.0.0.1",
+    "meeting": 840,
+    "transportation": [
+      {
+        "date": "2019-09-18",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "416"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-09-18",
+        "type": "toll",
+        "amount": "19.00"
+      }
+    ],
+    "hotel_payment": "i_paid",
+    "hotel_amount": "189",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "No act of kindness, no matter how small, is ever wasted.",
+    "certified": true,
+    "arrival": "2019-09-18",
+    "departure": "2019-09-19",
+    "confirmation_email": "marlene.kidder@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 606,
+    "user": 208,
+    "submitted": "2019-09-23 06:53:30",
+    "remote_address": "127.0.0.1",
+    "meeting": 750,
+    "transportation": [
+      {
+        "date": "2019-09-19",
+        "type": "taxi",
+        "amount": "81.73",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-19",
+        "type": "metro",
+        "amount": "6.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-19",
+        "type": "taxi",
+        "amount": "17.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-20",
+        "type": "metro",
+        "amount": "6.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-21",
+        "type": "taxi",
+        "amount": "70.09",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "208.15",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "The question is not what you look at, but what you see.",
+    "certified": true,
+    "arrival": "2019-09-19",
+    "departure": "2019-09-21",
+    "confirmation_email": "jack.clayburgh@example.com",
+    "total_amount": "415.57",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 607,
+    "user": 156,
+    "submitted": "2019-09-23 19:12:03",
+    "remote_address": "127.0.0.1",
+    "meeting": 750,
+    "transportation": [
+      {
+        "date": "2019-09-19",
+        "type": "taxi",
+        "amount": "70.40",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-20",
+        "type": "taxi",
+        "amount": "67.28",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-09-20",
+        "type": "airport",
+        "amount": "30.00"
+      }
+    ],
+    "hotel_payment": "i_paid",
+    "hotel_amount": "288.65",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-09-19",
+    "departure": "2019-09-20",
+    "confirmation_email": "simone.harlow@example.com",
+    "total_amount": "656.33",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 609,
+    "user": 233,
+    "submitted": "2019-09-25 10:30:36",
+    "remote_address": "127.0.0.1",
+    "meeting": 750,
+    "transportation": [
+      {
+        "date": "2019-09-19",
+        "type": "taxi",
+        "amount": "40.47",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-21",
+        "type": "taxi",
+        "amount": "45.16",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-09-23",
+        "type": "airport",
+        "amount": "30.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-09-19",
+    "departure": "2019-09-21",
+    "confirmation_email": "milton.montand@example.com",
+    "total_amount": "",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 610,
+    "user": 381,
+    "submitted": "2019-09-25 19:08:51",
+    "remote_address": "127.0.0.1",
+    "meeting": 840,
+    "transportation": [
+      {
+        "date": "2019-09-17",
+        "type": "taxi",
+        "amount": "71.90",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-17",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "50"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-09-17",
+    "departure": "2019-09-18",
+    "confirmation_email": "ben.ford@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 612,
+    "user": 226,
+    "submitted": "2019-10-02 10:22:53",
+    "remote_address": "127.0.0.1",
+    "meeting": 750,
+    "transportation": [
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_inelgible",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-09-20",
+    "departure": "2019-09-20",
+    "confirmation_email": "penelope.harris@example.com",
+    "total_amount": "200",
+    "nights_stayed": ""
+  },
+  {
+    "id": 613,
+    "user": 151,
+    "submitted": "2019-10-03 11:34:22",
+    "remote_address": "127.0.0.1",
+    "meeting": 750,
+    "transportation": [
+      {
+        "date": "2019-09-20",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "104"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-09-20",
+        "type": "toll",
+        "amount": "5.00"
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_declined",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-09-20",
+    "departure": "2019-09-20",
+    "confirmation_email": "mae.costello@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 616,
+    "user": 100,
+    "submitted": "2019-10-07 11:51:14",
+    "remote_address": "127.0.0.1",
+    "meeting": 750,
+    "transportation": [
+      {
+        "date": "2019-09-20",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "190.2"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      },
+      {
+        "date": "2019-09-20",
+        "type": "toll",
+        "amount": "26.12"
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_inelgible",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-09-20",
+    "departure": "2019-09-20",
+    "confirmation_email": "george.elliott@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 619,
+    "user": 352,
+    "submitted": "2019-10-09 19:22:17",
+    "remote_address": "127.0.0.1",
+    "meeting": 840,
+    "transportation": [
+      {
+        "date": "2019-09-17",
+        "type": "taxi",
+        "amount": "18.56",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-17",
+        "type": "taxi",
+        "amount": "50.51",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-18",
+        "type": "taxi",
+        "amount": "8.57",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-18",
+        "type": "taxi",
+        "amount": "46.03",
+        "mileage": ""
+      },
+      {
+        "date": "2019-09-18",
+        "type": "taxi",
+        "amount": "14.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-09-17",
+    "departure": "2019-09-18",
+    "confirmation_email": "tom.newman@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 626,
+    "user": 245,
+    "submitted": "2019-11-15 15:20:57",
+    "remote_address": "127.0.0.1",
+    "meeting": 751,
+    "transportation": [
+      {
+        "date": "2019-11-14",
+        "type": "metro",
+        "amount": "4.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-15",
+        "type": "metro",
+        "amount": "4.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-11-15",
+        "type": "airport",
+        "amount": "38.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-11-14",
+    "departure": "2019-11-15",
+    "confirmation_email": "lucille.field@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 627,
+    "user": 156,
+    "submitted": "2019-11-16 12:07:04",
+    "remote_address": "127.0.0.1",
+    "meeting": 751,
+    "transportation": [
+      {
+        "date": "2019-11-13",
+        "type": "taxi",
+        "amount": "67.40",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-15",
+        "type": "metro",
+        "amount": "4.75",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-11-15",
+        "type": "airport",
+        "amount": "56.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-11-13",
+    "departure": "2019-11-15",
+    "confirmation_email": "simone.harlow@example.com",
+    "total_amount": "328.15",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 628,
+    "user": 142,
+    "submitted": "2019-11-16 12:49:07",
+    "remote_address": "127.0.0.1",
+    "meeting": 751,
+    "transportation": [
+      {
+        "date": "2020-11-14",
+        "type": "taxi",
+        "amount": "24.76",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-14",
+        "type": "taxi",
+        "amount": "71.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-14",
+        "type": "taxi",
+        "amount": "8.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-15",
+        "type": "taxi",
+        "amount": "13.04",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-15",
+        "type": "taxi",
+        "amount": "75.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-15",
+        "type": "taxi",
+        "amount": "43.80",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-11-14",
+    "departure": "2019-11-15",
+    "confirmation_email": "drew.wilder@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 629,
+    "user": 153,
+    "submitted": "2019-11-17 08:12:29",
+    "remote_address": "127.0.0.1",
+    "meeting": 751,
+    "transportation": [
+      {
+        "date": "2019-11-14",
+        "type": "taxi",
+        "amount": "20.50",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-14",
+        "type": "taxi",
+        "amount": "15.00",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-14",
+        "type": "metro",
+        "amount": "4.50",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-15",
+        "type": "metro",
+        "amount": "5.50",
+        "mileage": ""
+      },
+      {
+        "date": "2019-11-15",
+        "type": "taxi",
+        "amount": "17.50",
+        "mileage": ""
+      },
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-11-14",
+    "departure": "2019-11-15",
+    "confirmation_email": "sissy.farrow@example.com",
+    "total_amount": "63.00",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 630,
+    "user": 100,
+    "submitted": "2019-11-18 10:47:33",
+    "remote_address": "127.0.0.1",
+    "meeting": 751,
+    "transportation": [
+      {
+        "date": "2019-11-15",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "190.2"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-11-15",
+        "type": "toll",
+        "amount": "26.12"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-11-14",
+    "departure": "2019-11-15",
+    "confirmation_email": "george.elliott@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 633,
+    "user": 226,
+    "submitted": "2019-11-24 12:48:13",
+    "remote_address": "127.0.0.1",
+    "meeting": 751,
+    "transportation": [
+      {
+        "date": "2019-11-14",
+        "type": "taxi",
+        "amount": "41.75",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-11-14",
+    "departure": "2019-11-15",
+    "confirmation_email": "penelope.harris@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 635,
+    "user": 151,
+    "submitted": "2019-12-03 14:11:34",
+    "remote_address": "127.0.0.1",
+    "meeting": 751,
+    "transportation": [
+      {
+        "date": "2019-11-14",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "52"
+      },
+      {
+        "date": "2019-11-15",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "52"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2019-11-14",
+        "type": "toll",
+        "amount": "7.90"
+      },
+      {
+        "date": "2019-11-15",
+        "type": "toll",
+        "amount": "7.90"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2019-11-14",
+    "departure": "2019-11-15",
+    "confirmation_email": "mae.costello@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 638,
+    "user": 226,
+    "submitted": "2020-01-17 15:08:49",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-17",
+        "type": "taxi",
+        "amount": "0.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "0",
+    "meals_and_incidentals": "per_diem_inelgible",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-01-17",
+    "departure": "2020-01-17",
+    "confirmation_email": "penelope.harris@example.com",
+    "total_amount": "200",
+    "nights_stayed": ""
+  },
+  {
+    "id": 639,
+    "user": 43,
+    "submitted": "2020-01-18 10:22:27",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-15",
+        "type": "taxi",
+        "amount": "55.00",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-17",
+        "type": "taxi",
+        "amount": "65.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "244.08",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Every noble work is at first impossible.",
+    "certified": true,
+    "arrival": "2020-01-15",
+    "departure": "2020-01-17",
+    "confirmation_email": "debbie.spacey@example.com",
+    "total_amount": "320",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 640,
+    "user": 245,
+    "submitted": "2020-01-18 13:55:50",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-16",
+        "type": "taxi",
+        "amount": "18.00",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-16",
+        "type": "taxi",
+        "amount": "72.00",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-17",
+        "type": "metro",
+        "amount": "3.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-01-17",
+        "type": "airport",
+        "amount": "14.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "It is better to fail in originality than to succeed in imitation.",
+    "certified": true,
+    "arrival": "2020-01-16",
+    "departure": "2020-01-17",
+    "confirmation_email": "lucille.field@example.com",
+    "total_amount": "307.00",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 641,
+    "user": 156,
+    "submitted": "2020-01-18 17:29:56",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-16",
+        "type": "taxi",
+        "amount": "68.02",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-17",
+        "type": "taxi",
+        "amount": "71.88",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-01-17",
+        "type": "airport",
+        "amount": "26.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-01-16",
+    "departure": "2020-01-17",
+    "confirmation_email": "simone.harlow@example.com",
+    "total_amount": "365.90",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 642,
+    "user": 153,
+    "submitted": "2020-01-20 10:00:24",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-16",
+        "type": "taxi",
+        "amount": "53.59",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-19",
+        "type": "metro",
+        "amount": "6.50",
+        "mileage": ""
+      },
+      {
+        "date": "0000-00-00",
+        "type": "taxi",
+        "amount": 0.0,
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-01-19",
+        "type": "airport",
+        "amount": "12.50"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-01-16",
+    "departure": "2020-01-19",
+    "confirmation_email": "sissy.farrow@example.com",
+    "total_amount": "272.59",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 643,
+    "user": 208,
+    "submitted": "2020-01-20 12:46:43",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-16",
+        "type": "taxi",
+        "amount": "50.46",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-16",
+        "type": "metro",
+        "amount": "6.00",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-16",
+        "type": "taxi",
+        "amount": "17.00",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-17",
+        "type": "taxi",
+        "amount": "63.10",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "211.60",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "If you don\u2019t like the road you\u2019re walking, start paving another one.",
+    "certified": true,
+    "arrival": "2020-01-17",
+    "departure": "2020-01-17",
+    "confirmation_email": "jack.clayburgh@example.com",
+    "total_amount": "371.31",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 644,
+    "user": 185,
+    "submitted": "2020-01-22 12:09:00",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-16",
+        "type": "taxi",
+        "amount": "15.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-01-16",
+    "departure": "2020-01-17",
+    "confirmation_email": "art.fiennes@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 645,
+    "user": 192,
+    "submitted": "2020-01-23 13:12:39",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-16",
+        "type": "taxi",
+        "amount": "23.15",
+        "mileage": ""
+      },
+      {
+        "date": "2021-01-17",
+        "type": "taxi",
+        "amount": "72.60",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-21",
+        "type": "taxi",
+        "amount": "29.41",
+        "mileage": ""
+      },
+      {
+        "date": "2021-01-16",
+        "type": "taxi",
+        "amount": "75.47",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "0",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-01-16",
+    "departure": "2020-01-17",
+    "confirmation_email": "marlon.wood@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 646,
+    "user": 100,
+    "submitted": "2020-01-27 17:54:43",
+    "remote_address": "127.0.0.1",
+    "meeting": 918,
+    "transportation": [
+      {
+        "date": "2020-01-17",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "190.2"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-01-17",
+        "type": "toll",
+        "amount": "26.12"
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-01-17",
+    "departure": "2020-01-17",
+    "confirmation_email": "george.elliott@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 647,
+    "user": 398,
+    "submitted": "2020-01-31 14:08:37",
+    "remote_address": "127.0.0.1",
+    "meeting": 984,
+    "transportation": [
+      {
+        "date": "2020-01-28",
+        "type": "taxi",
+        "amount": "66.84",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-29",
+        "type": "taxi",
+        "amount": "9.48",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-29",
+        "type": "taxi",
+        "amount": "67.85",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-01-29",
+        "type": "airport",
+        "amount": "70.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-01-28",
+    "departure": "2020-01-29",
+    "confirmation_email": "rodney.tomlin@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 648,
+    "user": 164,
+    "submitted": "2020-02-09 09:26:23",
+    "remote_address": "127.0.0.1",
+    "meeting": 984,
+    "transportation": [
+      {
+        "date": "2020-01-28",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "420"
+      },
+      {
+        "date": "2020-01-29",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "420"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-01-28",
+        "type": "hotel",
+        "amount": "50.00"
+      }
+    ],
+    "hotel_payment": "i_paid",
+    "hotel_amount": "167.46",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "You must do the things you think you cannot do.",
+    "certified": true,
+    "arrival": "2020-01-28",
+    "departure": "2020-01-29",
+    "confirmation_email": "marlene.kidder@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 649,
+    "user": 381,
+    "submitted": "2020-02-13 21:20:57",
+    "remote_address": "127.0.0.1",
+    "meeting": 984,
+    "transportation": [
+      {
+        "date": "2020-01-29",
+        "type": "taxi",
+        "amount": "63.50",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-28",
+        "type": "taxi",
+        "amount": "64.26",
+        "mileage": ""
+      },
+      {
+        "date": "2020-01-28",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "19"
+      },
+      {
+        "date": "2020-01-29",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "19"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-01-29",
+        "type": "airport",
+        "amount": "48.00"
+      },
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-01-28",
+    "departure": "2020-01-29",
+    "confirmation_email": "ben.ford@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 651,
+    "user": 218,
+    "submitted": "2020-03-05 18:40:47",
+    "remote_address": "127.0.0.1",
+    "meeting": 943,
+    "transportation": [
+      {
+        "date": "2020-03-05",
+        "type": "taxi",
+        "amount": "23.74",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "no_hotel",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem_inelgible",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-03-05",
+    "departure": "2020-03-05",
+    "confirmation_email": "forest.scott@example.com",
+    "total_amount": "",
+    "nights_stayed": ""
+  },
+  {
+    "id": 652,
+    "user": 153,
+    "submitted": "2020-03-07 10:39:20",
+    "remote_address": "127.0.0.1",
+    "meeting": 943,
+    "transportation": [
+      {
+        "date": "2020-03-05",
+        "type": "taxi",
+        "amount": "21.71",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-05",
+        "type": "metro",
+        "amount": "6.50",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-06",
+        "type": "taxi",
+        "amount": "25.39",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-03-06",
+        "type": "airport",
+        "amount": 0.0
+      },
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-03-05",
+    "departure": "2020-03-06",
+    "confirmation_email": "sissy.farrow@example.com",
+    "total_amount": "367.60",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 653,
+    "user": 156,
+    "submitted": "2020-03-07 14:48:30",
+    "remote_address": "127.0.0.1",
+    "meeting": 943,
+    "transportation": [
+      {
+        "date": "2020-03-04",
+        "type": "taxi",
+        "amount": "69.41",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-06",
+        "type": "taxi",
+        "amount": "75.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-03-06",
+        "type": "airport",
+        "amount": "52.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "588.80",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-03-04",
+    "departure": "2020-03-06",
+    "confirmation_email": "simone.harlow@example.com",
+    "total_amount": "396.41",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 654,
+    "user": 226,
+    "submitted": "2020-03-08 11:31:43",
+    "remote_address": "127.0.0.1",
+    "meeting": 944,
+    "transportation": [
+      {
+        "date": "2020-03-05",
+        "type": "taxi",
+        "amount": "34.53",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-06",
+        "type": "taxi",
+        "amount": "35.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "294.40",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-03-05",
+    "departure": "2020-03-06",
+    "confirmation_email": "penelope.harris@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 655,
+    "user": 208,
+    "submitted": "2020-03-08 14:19:34",
+    "remote_address": "127.0.0.1",
+    "meeting": 943,
+    "transportation": [
+      {
+        "date": "2020-03-05",
+        "type": "taxi",
+        "amount": "60.42",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-05",
+        "type": "metro",
+        "amount": "6.00",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-06",
+        "type": "taxi",
+        "amount": "71.20",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": 0.0
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "256.00",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "You can be everything. You can be the infinite amount of things that people are.",
+    "certified": true,
+    "arrival": "2020-03-05",
+    "departure": "2020-03-06",
+    "confirmation_email": "jack.clayburgh@example.com",
+    "total_amount": "377.57",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 656,
+    "user": 151,
+    "submitted": "2020-03-09 09:58:42",
+    "remote_address": "127.0.0.1",
+    "meeting": 943,
+    "transportation": [
+      {
+        "date": "2020-03-05",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "52"
+      },
+      {
+        "date": "2020-03-06",
+        "type": "private",
+        "amount": 0.0,
+        "mileage": "52"
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-03-05",
+        "type": "toll",
+        "amount": "7.90"
+      },
+      {
+        "date": "2020-03-06",
+        "type": "toll",
+        "amount": "7.90"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-03-05",
+    "departure": "2020-03-06",
+    "confirmation_email": "mae.costello@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  },
+  {
+    "id": 657,
+    "user": 192,
+    "submitted": "2020-03-09 17:04:52",
+    "remote_address": "127.0.0.1",
+    "meeting": 943,
+    "transportation": [
+      {
+        "date": "2020-03-04",
+        "type": "taxi",
+        "amount": "27.13",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-04",
+        "type": "taxi",
+        "amount": "73.61",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-06",
+        "type": "taxi",
+        "amount": "73.20",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-06",
+        "type": "taxi",
+        "amount": "33.00",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "0000-00-00",
+        "type": "airport",
+        "amount": "0.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-03-04",
+    "departure": "2020-03-06",
+    "confirmation_email": "marlon.wood@example.com",
+    "total_amount": "",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 658,
+    "user": 185,
+    "submitted": "2020-03-16 15:41:25",
+    "remote_address": "127.0.0.1",
+    "meeting": 943,
+    "transportation": [
+      {
+        "date": "2020-03-04",
+        "type": "taxi",
+        "amount": "20.00",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-06",
+        "type": "taxi",
+        "amount": "80.40",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-03-06",
+        "type": "airport",
+        "amount": "6.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "work",
+    "comments": "",
+    "certified": true,
+    "arrival": "2020-03-04",
+    "departure": "2020-03-06",
+    "confirmation_email": "art.fiennes@example.com",
+    "total_amount": "",
+    "nights_stayed": "2"
+  },
+  {
+    "id": 659,
+    "user": 245,
+    "submitted": "2020-03-18 12:59:49",
+    "remote_address": "127.0.0.1",
+    "meeting": 943,
+    "transportation": [
+      {
+        "date": "2020-03-05",
+        "type": "metro",
+        "amount": "4.15",
+        "mileage": ""
+      },
+      {
+        "date": "2020-03-06",
+        "type": "metro",
+        "amount": "4.15",
+        "mileage": ""
+      }
+    ],
+    "parking_and_tolls": [
+      {
+        "date": "2020-03-08",
+        "type": "airport",
+        "amount": "36.00"
+      }
+    ],
+    "hotel_payment": "nci_paid",
+    "hotel_amount": "",
+    "meals_and_incidentals": "per_diem",
+    "honorarium_requested": true,
+    "reimburse_to": "home",
+    "comments": "Dream big and dare to fail.",
+    "certified": true,
+    "arrival": "2020-03-05",
+    "departure": "2020-03-08",
+    "confirmation_email": "lucille.field@example.com",
+    "total_amount": "",
+    "nights_stayed": "1"
+  }
+]

@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_travel_theme($existing, $type, $theme, $path): array {
+  return [
+    'hotel_request_notification' => [
+      'variables' => [
+        'request' => NULL,
+      ],
+    ],
+    'reimbursement_request_notification' => [
+      'variables' => [
+        'request' => NULL,
+        'user_notification' => FALSE,
+      ],
+    ],
+  ];
+}

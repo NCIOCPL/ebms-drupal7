@@ -1,0 +1,17 @@
+<div class="unreviewed-packets">
+  <h2>
+    {% if packets %}
+    Packets ({{ packets|length }}, {{ sort }})
+    {% else %}
+    No packets match the filtering criteria
+    {% endif %}
+  </h2>
+  {% for packet in packets %}
+  <div class="unreviewed-packet">
+    <div class="packet-title">
+      <a href="{{ packet.url }}">{{ packet.title }} [Packet #{{ packet.id }}]</a>
+    </div>
+    <div class="packet-">Created {{ packet.created }} for {{ packet.reviewers|join(', ') }}</div>
+  </div>
+  {% endfor %}
+</div>

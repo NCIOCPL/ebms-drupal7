@@ -1,0 +1,6 @@
+<?php
+
+function ebms_doc_install() {
+  $config = \Drupal::configFactory()->getEditable('file.settings');
+  $config->set('description.length', 255)->save();
+}

@@ -1,0 +1,23 @@
+name: EBMS
+description: 'Theme for the PDQ® Editorial Board Management System'
+type: theme
+base theme: uswds_base
+version: 1.0.0
+core_version_requirement: ^9
+screenshot: 'screenshot.png'
+libraries:
+  - 'ebms/assets'
+  - 'ebms/custom'
+
+# We need to do this because of https://www.drupal.org/project/drupal/issues/2635978.
+# See also https://www.drupal.org/docs/theming-drupal/creating-sub-themes#s-inheriting-block-placement.
+regions:
+  header_top: 'Above Header'
+  header: 'Header'
+  primary_menu: 'Primary Menu'
+  sidebar_first: 'First sidebar'
+  sidebar_second: 'Second sidebar'
+  breadcrumb: 'Breadcrumb'
+  highlighted: 'Highlighted'
+  help: 'Help'
+  content: 'Content'

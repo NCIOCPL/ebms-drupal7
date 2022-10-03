@@ -1,0 +1,11 @@
+name: EBMS Import Tracking
+description: Tracks history of batch imports of articles from PubMed.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ebms_article
+  - ebms_board
+  - ebms_topic
+  - taxonomy
+  - user

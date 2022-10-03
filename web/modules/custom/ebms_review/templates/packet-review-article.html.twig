@@ -1,0 +1,19 @@
+<div class="packet-review-article">
+  <hr>
+  <h2>Review of PMID {{ article.pmid }}</h2>
+  {% if article.authors %}
+    <span>{{ article.authors }}</span><br>
+  {% endif %}
+  <span><em>{{ article.title }}</em></span><br>
+  <span>{{ article.citation }}</span><br><br>
+  {% if article.meetings %}
+  <span class="mrs">ARTICLE STATE<br>On Agenda: {{ article.meetings}}</span><br><br>
+  {% endif %}
+  <a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank" class="button usa-button">View Abstract</a>
+  {% if article.full_text_url %}
+    <a href="{{ article.full_text_url }}" target="_blank" class="button usa-button">Download Full Text</a>
+  {% endif %}
+  {% if article.other_url %}
+    <a href="{{ article.other_url }}" target="_blank" class="button usa-button">Other Reviews</a>
+  {% endif %}
+</span>

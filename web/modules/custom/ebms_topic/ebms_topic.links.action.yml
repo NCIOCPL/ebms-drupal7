@@ -1,0 +1,5 @@
+entity.ebms_topic.add_form:
+  route_name: entity.ebms_topic.add_form
+  title: 'Add EBMS topic'
+  appears_on:
+    - entity.ebms_topic.collection

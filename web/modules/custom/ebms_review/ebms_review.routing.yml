@@ -1,0 +1,289 @@
+ebms_review.packets:
+  path: /packets/{request_id}
+  defaults:
+    _title: 'Packets'
+    _form: Drupal\ebms_review\Form\Packets
+    request_id: 0
+  requirements:
+    _permission: 'manage review packets'
+  options:
+    parameters:
+      request_id:
+        type: integer
+ebms_review.assigned_packets:
+  path: /packets/assigned-packets
+  defaults:
+    _title: 'Assigned Packets'
+    _controller: Drupal\ebms_review\Controller\AssignedPackets::display
+  requirements:
+    _permission: 'review literature'
+ebms_review.record_assigned_packets:
+  path: /packets/record-assigned-packets
+  defaults:
+    _title: 'Assigned Packets'
+    _controller: Drupal\ebms_review\Controller\AssignedPackets::display
+  requirements:
+    _permission: 'record print responses'
+ebms_review.assigned_packet:
+  path: /packets/assigned-packet/{packet_id}
+  defaults:
+    _title: 'Assigned Packet'
+    _controller: Drupal\ebms_review\Controller\AssignedPacket::display
+  requirements:
+    _permission: 'review literature+record print responses'
+  options:
+    parameters:
+      packet_id:
+        type: integer
+ebms_review.reviewer_doc_form:
+  path: /packets/packet/reviewer-doc/{packet_id}
+  defaults:
+    _title: 'Post Reviewer Document'
+    _form: Drupal\ebms_review\Form\ReviewerDocForm
+  requirements:
+    _permission: 'review literature+record print responses'
+  options:
+    parameters:
+      packet_id:
+        type: integer
+ebms_review.packet_form:
+  path: /packets/packet/add
+  defaults:
+    _title: 'Packet Form'
+    _form: Drupal\ebms_review\Form\PacketForm
+  requirements:
+    _permission: 'manage review packets'
+ebms_review.packet_edit_form:
+  path: /packets/packet/edit/{packet_id}
+  defaults:
+    _title: 'Edit Packet'
+    _form: Drupal\ebms_review\Form\PacketForm
+  requirements:
+    _permission: 'manage review packets'
+  options:
+    parameters:
+      packet_id:
+        type: integer
+ebms_review.add_review:
+  path: /packets/review/add/{packet_id}/{packet_article_id}
+  defaults:
+    _title: 'Review Article'
+    _form: Drupal\ebms_review\Form\ReviewForm
+  requirements:
+    _permission: 'review literature+record print responses'
+  options:
+    parameters:
+      packet_id:
+        type: integer
+      packet_article_id:
+        type: integer
+ebms_review.quick_reject:
+  path: /packets/review/quick-reject/{packet_id}/{packet_article_id}
+  defaults:
+    _title: ''
+    _controller: Drupal\ebms_review\Controller\QuickRejectController::openQuickRejectForm
+  requirements:
+    _permission: 'review literature+record print responses'
+  options:
+    parameters:
+      packet_id:
+        type: integer
+      packet_article_id:
+        type: integer
+ebms_review.other_reviews:
+  path: /packets/assigned-packet/other-reviews/{packet_id}/{packet_article_id}
+  defaults:
+    _title: 'Other Reviews'
+    _controller: Drupal\ebms_review\Controller\OtherReviews::display
+  requirements:
+    _permission: 'review literature+record print responses'
+  options:
+    parameters:
+      packet_article_id:
+        type: integer
+ebms_review.details:
+  path: /packets/reviewed/packet/details/{packet_id}/{packet_article_id}
+  defaults:
+    _title: 'Review Details'
+    _controller: Drupal\ebms_review\Controller\ReviewDetails::display
+  requirements:
+    _permission: 'manage review packets'
+  options:
+    parameters:
+      packet_id:
+        type: integer
+      packet_article_id:
+        type: integer
+ebms_review.review_queue:
+  path: /articles/review/{queue_id}
+  defaults:
+    _title: 'Review Queue'
+    _form: Drupal\ebms_review\Form\ReviewQueue
+    queue_id: 0
+  requirements:
+    _permission: 'perform initial article review+perform abstract article review'
+  options:
+    parameters:
+      results:
+        type: integer
+ebms_review.add_review_topic:
+  path: /articles/add-review-topic/{article_id}
+  defaults:
+    _title: 'Add Topic'
+    _form: Drupal\ebms_review\Form\AddReviewTopic
+    article_id: 0
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      results:
+        type: integer
+ebms_review.publish:
+  path: /articles/review/publish/{queue_id}
+  defaults:
+    _title: 'Publish Articles'
+    _form: Drupal\ebms_review\Form\PublicationForm
+    queue_id: 0
+  requirements:
+    _permission: 'publish articles'
+  options:
+    parameters:
+      queue_id:
+        type: integer
+ebms_review.record_responses:
+  path: /packets/record-responses
+  defaults:
+    _form: Drupal\ebms_review\Form\RecordResponses
+  requirements:
+    _permission: record print responses
+ebms_review.completed_packets:
+  path: /packets/completed
+  defaults:
+    _controller: Drupal\ebms_review\Controller\CompletedPackets::display
+  requirements:
+    _permission: review literature
+ebms_review.completed_packet:
+  path: /packets/completed/{packet_id}
+  defaults:
+    _controller: Drupal\ebms_review\Controller\CompletedPacket::display
+  requirements:
+    _permission: review literature
+  options:
+    parameters:
+      packet_id:
+        type: integer
+ebms_review.fyi_packets:
+  path: /packets/fyi
+  defaults:
+    _controller: Drupal\ebms_review\Controller\InformationalPackets::display
+  requirements:
+    _permission: review literature
+ebms_review.fyi_packet:
+  path: /packets/fyi/{packet_id}
+  defaults:
+    _controller: Drupal\ebms_review\Controller\InformationalPacket::display
+  requirements:
+    _permission: review literature
+  options:
+    parameters:
+      packet_id:
+        type: integer
+ebms_review.reviewed_packets:
+  path: /packets/reviewed/{filter_id}
+  defaults:
+    _form: Drupal\ebms_review\Form\ReviewedPackets
+    filter_id: 0
+  requirements:
+    _permission: manage review packets
+  options:
+    parameters:
+      filter_id:
+        type: integer
+ebms_review.unreviewed_packets:
+  path: /packets/unreviewed/{filter_id}
+  defaults:
+    _form: Drupal\ebms_review\Form\UnreviewedPackets
+    filter_id: 0
+  requirements:
+    _permission: manage review packets
+  options:
+    parameters:
+      filter_id:
+        type: integer
+ebms_review.reviewed_packet:
+  path: /packets/reviewed/packet/{packet_id}
+  defaults:
+    _controller: Drupal\ebms_review\Controller\ReviewedPacket::display
+  requirements:
+    _permission: manage review packets
+  options:
+    parameters:
+      packet_id:
+        type: integer
+ebms_review.unreviewed_packet:
+  path: /packets/unreviewed/packet/{packet_id}
+  defaults:
+    _controller: Drupal\ebms_review\Controller\UnreviewedPacket::display
+  requirements:
+    _permission: manage review packets
+  options:
+    parameters:
+      packet_id:
+        type: integer
+ebms_review.packet_star:
+  path: /packets/packet/star/{packet_id}/{flag}
+  defaults:
+    _controller: Drupal\ebms_review\Controller\PacketStar::update
+  requirements:
+    _permission: manage review packets
+  options:
+    parameters:
+      packet_id:
+        type: integer
+      flag:
+        type: integer
+ebms_review.archive_packet:
+  path: /packets/packet/archive/{ebms_packet}
+  defaults:
+    _title: 'Confirm Packet Archive'
+    _entity_form: ebms_packet.archive
+  requirements:
+    _permission: 'manage review packets'
+  options:
+    parameters:
+      ebms_packet:
+        type: 'entity:ebms_packet'
+ebms_review.mark_unreviewed_articles:
+  path: /admin/mark-unreviewed-articles
+  defaults:
+    _controller: Drupal\ebms_review\Controller\UnreviewedArticles::tag
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE
+ebms_review.print_packet:
+  path: /packets/print/{request_id}
+  defaults:
+    _title: 'Print Packet'
+    _form: Drupal\ebms_review\Form\PrintPacketForm
+    request_id: 0
+  requirements:
+    _permission: print packets
+  options:
+    no_cache: TRUE
+    parameters:
+      request_id:
+        type: integer
+ebms_review.fetch_print_job:
+  path: /packets/fetch-print-job/{request_id}
+  defaults:
+    _title: 'Print Packet'
+    _controller: Drupal\ebms_review\Controller\PrintPacket::retrieve
+    request_id: 0
+  requirements:
+    _permission: print packets
+  options:
+    no_cache: TRUE
+    parameters:
+      request_id:
+        type: integer

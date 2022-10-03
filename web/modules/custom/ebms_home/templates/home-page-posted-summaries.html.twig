@@ -1,0 +1,8 @@
+{% if count == 1 %}
+{% set noun = 'new summary' %}
+{% set verb = 'has been posted' %}
+{% else %}
+{% set noun = 'new summaries' %}
+{% set verb = 'have been posted' %}
+{% endif %}
+<span class="new-summaries">{{ count }} <a href="{{ url }}">{{ noun }}</a> {{ verb }} by the members of your board{% if board_count != 1 %}s{% endif %}.</span>

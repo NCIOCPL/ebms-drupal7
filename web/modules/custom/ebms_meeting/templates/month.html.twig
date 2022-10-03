@@ -1,0 +1,29 @@
+<table class="calendar-month">
+  <tr>
+    <th>Sun</th>
+    <th>Mon</th>
+    <th>Tue</th>
+    <th>Wed</th>
+    <th>Thu</th>
+    <th>Fri</th>
+    <th>Sat</th>
+  </tr>
+  {% for row in rows %}
+  <tr>
+    {% for col in row %}
+    <td{% if col.today %} class="today"{% endif %}>
+      <span class="date-corner">{{ col.day }}</span>
+      {% for meeting in col.meetings %}
+      <div class="meeting{% if meeting.canceled %} canceled{% endif %}"{% if meeting.color %} style="background-color: {{ meeting.color }}"{% endif %}>
+        <div class="meeting-start">{{ meeting.start }}</div>
+        <a href="{{ meeting.url }}">{{ meeting.name }}</a>
+        {% if meeting.canceled %}
+        <span class="canceled">(canceled)</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>

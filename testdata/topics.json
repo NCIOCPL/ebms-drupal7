@@ -1,0 +1,1946 @@
+[
+  {
+    "id": 1,
+    "name": "Adrenocortical Carcinoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 3
+  },
+  {
+    "id": 2,
+    "name": "Adult Acute Lymphoblastic Leukemia",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 3,
+    "name": "Adult Acute Myeloid Leukemia",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 4,
+    "name": "Adult Central Nervous System Tumors",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 11
+  },
+  {
+    "id": 5,
+    "name": "Adult Hodgkin Lymphoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 6,
+    "name": "Adult Non-Hodgkin Lymphoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 7,
+    "name": "Adult Primary Liver Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 8,
+    "name": "Adult Soft Tissue Sarcoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 13
+  },
+  {
+    "id": 9,
+    "name": "AIDS-Related Lymphoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 9
+  },
+  {
+    "id": 10,
+    "name": "Anal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 11,
+    "name": "Anxiety Disorder",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 12,
+    "name": "Bladder and Other Cancers",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 13,
+    "name": "Breast Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 1
+  },
+  {
+    "id": 14,
+    "name": "Breast Cancer and Pregnancy",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 1
+  },
+  {
+    "id": 15,
+    "name": "Cancer Genetics Overview",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 16,
+    "name": "Carcinoma of Unknown Primary",
+    "board": 1,
+    "reviewer": 400,
+    "status": true,
+    "group": 17
+  },
+  {
+    "id": 17,
+    "name": "Cervical Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 18,
+    "name": "Childhood Acute Lymphoblastic Leukemia",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 19,
+    "name": "Childhood Acute Myeloid Leukemia/Other Myeloid Malignancies",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 20,
+    "name": "Childhood Brain Stem Glioma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 21,
+    "name": "Childhood Brain & Spinal Cord Tumors",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 22,
+    "name": "Childhood Cerebellar Astrocytoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 23,
+    "name": "Childhood Cerebral Astrocytoma/ Malignant Glioma",
+    "board": 3,
+    "reviewer": 400,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 24,
+    "name": "Childhood Ependymoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 25,
+    "name": "Childhood Extracranial Germ Cell Tumors",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 26,
+    "name": "Childhood Hodgkin Lymphoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 27,
+    "name": "Childhood Liver Cancer",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 28,
+    "name": "Childhood Medulloblastoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 29,
+    "name": "Childhood Non - Hodgkin Lymphoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 30,
+    "name": "Childhood Rhabdomyosarcoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 31,
+    "name": "Childhood Soft Tissue Sarcoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 32,
+    "name": "Childhood Supratentorial Primitive Neuoectodermal Tumors (PNET)",
+    "board": 3,
+    "reviewer": 400,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 33,
+    "name": "Childhood Visual Pathway and Hypothalamic Glioma",
+    "board": 3,
+    "reviewer": 400,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 34,
+    "name": "Chronic Lymphocytic Leukemia",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 35,
+    "name": "Chronic Myelogenous Leukemia",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 36,
+    "name": "Colon Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 37,
+    "name": "Gastrointestinal Complications",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 38,
+    "name": "Delirium",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 39,
+    "name": "Depression",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 40,
+    "name": "Cancer Genetics Risk Assessment and Counseling",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 41,
+    "name": "Endometrial Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 42,
+    "name": "Esophageal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 43,
+    "name": "Ewing Sarcoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 44,
+    "name": "Extragonadal Germ Cell Tumors",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 4
+  },
+  {
+    "id": 45,
+    "name": "Bile Duct Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 46,
+    "name": "Fatigue",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 47,
+    "name": "Gallbladder Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 48,
+    "name": "Gastric Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 49,
+    "name": "Gastrointestinal Carcinoid Tumor",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 50,
+    "name": "Genetic Testing for Cancer Risk",
+    "board": 4,
+    "reviewer": 375,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 51,
+    "name": "Genetics of Breast and Ovarian Cancer",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 52,
+    "name": "Genetics of Colorectal Cancer",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 53,
+    "name": "Gestational Trophoblastic Tumors and Neoplasia",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 54,
+    "name": "Hairy Cell Leukemia",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 55,
+    "name": "Hodgkin Lymphoma during Pregnancy",
+    "board": 1,
+    "reviewer": 2,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 56,
+    "name": "Hypercalcemia",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 57,
+    "name": "Hypopharyngeal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 58,
+    "name": "Intraocular (Uveal) Melanoma",
+    "board": 1,
+    "reviewer": 400,
+    "status": true,
+    "group": 12
+  },
+  {
+    "id": 59,
+    "name": "Pancreatic Neuroendocrine Tumors (Islet Cell Tumors) Treatment",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 60,
+    "name": "Kaposi Sarcoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 9
+  },
+  {
+    "id": 61,
+    "name": "Laryngeal Cancer",
+    "board": 1,
+    "reviewer": 400,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 62,
+    "name": "Lip and Oral Cavity Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 63,
+    "name": "Grief, Bereavement, and Coping with Loss",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 64,
+    "name": "Lymphedema",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 65,
+    "name": "Male Breast Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 1
+  },
+  {
+    "id": 66,
+    "name": "Malignant Mesothelioma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 7
+  },
+  {
+    "id": 67,
+    "name": "Thymoma and Thymic Carcinoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 7
+  },
+  {
+    "id": 68,
+    "name": "Melanoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 10
+  },
+  {
+    "id": 69,
+    "name": "Merkel Cell Carcinoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 10
+  },
+  {
+    "id": 70,
+    "name": "Metastatic Squamous Neck Cancer with Occult Primary",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 71,
+    "name": "Plasma Cell Neoplasms (Including Multiple Myeloma)",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 72,
+    "name": "Mycosis Fungoides/Sezary Syndrome",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 73,
+    "name": "Myelodysplastic Syndromes",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 74,
+    "name": "Chronic Myeloproliferative Neoplasms",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 75,
+    "name": "Nasopharyngeal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 19
+  },
+  {
+    "id": 76,
+    "name": "Nausea and Vomiting",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 77,
+    "name": "Neuroblastoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 78,
+    "name": "Non-Hodgkin Lymphoma During Pregnancy",
+    "board": 1,
+    "reviewer": 2,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 79,
+    "name": "Non-Small Cell Lung Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 7
+  },
+  {
+    "id": 80,
+    "name": "Nutrition in Cancer Care",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 81,
+    "name": "Oral Complications of Chemotherapy and Head/Neck Radiation",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 82,
+    "name": "Oropharyngeal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 83,
+    "name": "Osteosarcoma and Malignant Fibrous Histiocytoma of Bone",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 84,
+    "name": "Ovarian Epithelial Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 85,
+    "name": "Ovarian Germ Cell Tumors",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 86,
+    "name": "Ovarian Low Malignant Potential Tumors",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 87,
+    "name": "Cancer Pain",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 88,
+    "name": "Pancreatic Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 89,
+    "name": "Paranasal Sinus and Nasal Cavity Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 19
+  },
+  {
+    "id": 90,
+    "name": "Parathyroid Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 3
+  },
+  {
+    "id": 91,
+    "name": "Penile Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 4
+  },
+  {
+    "id": 92,
+    "name": "Pheochromocytoma and Paraganglioma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 3
+  },
+  {
+    "id": 93,
+    "name": "Pituitary Tumors",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 11
+  },
+  {
+    "id": 94,
+    "name": "Cancer-Related Post-traumatic Stress",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 95,
+    "name": "Cigarette Smoking: Health Risks and How to Quit",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 96,
+    "name": "Breast Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 97,
+    "name": "Cervical Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 98,
+    "name": "Colorectal Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 99,
+    "name": "Endometrial Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 100,
+    "name": "Esophageal Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 101,
+    "name": "Stomach Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 102,
+    "name": "Lung Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 103,
+    "name": "Oral Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 104,
+    "name": "Ovarian Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 105,
+    "name": "Prostate Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 106,
+    "name": "Skin Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 107,
+    "name": "Primary Central Nervous System Lymphoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 108,
+    "name": "Prostate Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 4
+  },
+  {
+    "id": 109,
+    "name": "Pruritus",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 110,
+    "name": "Radiation Enteritis",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 111,
+    "name": "Rectal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 112,
+    "name": "Renal Cell Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 4
+  },
+  {
+    "id": 113,
+    "name": "Retinoblastoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 114,
+    "name": "Salivary Gland Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 115,
+    "name": "Bladder and Other Urothelial Cancers Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 116,
+    "name": "Breast Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 117,
+    "name": "Cervical Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 118,
+    "name": "Colorectal Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 119,
+    "name": "Endometrial Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 120,
+    "name": "Esophageal Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 121,
+    "name": "Stomach Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 122,
+    "name": "Liver Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 123,
+    "name": "Lung Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 124,
+    "name": "Neuroblastoma Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 125,
+    "name": "Oral Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 126,
+    "name": "Ovarian Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 127,
+    "name": "Prostate Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 128,
+    "name": "Skin Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 129,
+    "name": "Testicular Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 130,
+    "name": "Sexuality and Reproductive Issues",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 131,
+    "name": "Skin Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 10
+  },
+  {
+    "id": 132,
+    "name": "Sleep Disorders",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 133,
+    "name": "Small Cell Lung Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 7
+  },
+  {
+    "id": 134,
+    "name": "Small Intestine Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 135,
+    "name": "Smoking in Cancer Care",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 136,
+    "name": "Substance Abuse Issues in Cancer",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 137,
+    "name": "Superior Vena Cava Syndrome",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 138,
+    "name": "Testicular Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 4
+  },
+  {
+    "id": 139,
+    "name": "Thyroid Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 140,
+    "name": "Transitional Care Planning",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 141,
+    "name": "Transitional Cell Cancer of the Renal Pelvis and Ureter",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 4
+  },
+  {
+    "id": 142,
+    "name": "Unusual Cancers of Childhood",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 143,
+    "name": "Urethral Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 4
+  },
+  {
+    "id": 144,
+    "name": "Uterine Sarcoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 145,
+    "name": "Vaginal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 146,
+    "name": "Vulvar Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 5
+  },
+  {
+    "id": 147,
+    "name": "Wilms' Tumor and Other Childhood Kidney Tumors",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 148,
+    "name": "Hot Flashes and Night Sweats",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 149,
+    "name": "Adult Lymphoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 150,
+    "name": "Adult Leukemia",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 151,
+    "name": "Colorectal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 152,
+    "name": "Cutaneous T-Cell Lymphoma",
+    "board": 1,
+    "reviewer": 2,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 153,
+    "name": "Lung Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 7
+  },
+  {
+    "id": 154,
+    "name": "Uterine Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 155,
+    "name": "Pharyngeal Cancer",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 156,
+    "name": "Anemia",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 157,
+    "name": "Exercise",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 158,
+    "name": "Spirituality in Cancer Care",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 159,
+    "name": "Childhood Leukemia",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 160,
+    "name": "Childhood Lymphoma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 161,
+    "name": "Pediatric Supportive Care",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 162,
+    "name": "Cancer Prevention Overview",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 163,
+    "name": "Cancer Screening Overview",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 164,
+    "name": "Genetics of Prostate Cancer",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 165,
+    "name": "Genetics of Endocrine and Neuroendocrine Neoplasias",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 166,
+    "name": "Genetics of Skin Cancer",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 167,
+    "name": "Psychosocial Aspects of Cancer Genetics",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 168,
+    "name": "Late Effects of Treatment for Childhood Cancer",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 169,
+    "name": "Childhood Astrocytomas",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 170,
+    "name": "General Supportive Care",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 171,
+    "name": "Neuroblastoma Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 172,
+    "name": "Bladder Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 173,
+    "name": "Liver Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 174,
+    "name": "Testicular Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 175,
+    "name": "Adjustment to Cancer: Anxiety and Distress",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 176,
+    "name": "Nutrition (Anorexia and Cachexia)",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 177,
+    "name": "CAM Overview",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": 16
+  },
+  {
+    "id": 178,
+    "name": "714-x",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 179,
+    "name": "Cancell/Cantron/Protocel",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 180,
+    "name": "Cartilage (Bovine and Shark)",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 181,
+    "name": "Coenzyme Q10",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 182,
+    "name": "Essiac / FlorEssence",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 183,
+    "name": "Gonzalez Regimen",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 184,
+    "name": "Hydrazine Sulfate",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 185,
+    "name": "Laetrile / Amygdalin",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 186,
+    "name": "Milk Thistle",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 187,
+    "name": "Mistletoe Extracts",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 188,
+    "name": "Newcastle Disease Virus",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 189,
+    "name": "PC-SPES",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 190,
+    "name": "Selected Vegetables / Sun's Soup",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 191,
+    "name": "Acupuncture",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 192,
+    "name": "Survivorship",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 193,
+    "name": "Aromatherapy and Essential Oils",
+    "board": 6,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 194,
+    "name": "Phytoestrogens",
+    "board": 6,
+    "reviewer": 10,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 195,
+    "name": "Juicing/Detoxification",
+    "board": 6,
+    "reviewer": 10,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 196,
+    "name": "Antineoplastons",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 197,
+    "name": "Myelodysplastic/Myeloproliferative Neoplasms",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 8
+  },
+  {
+    "id": 198,
+    "name": "General Adult Treatment",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 18
+  },
+  {
+    "id": 199,
+    "name": "General Pediatric Treatment",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 200,
+    "name": "Communication in Cancer Care",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 201,
+    "name": "Last Days of Life",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 202,
+    "name": "Cardiopulmonary Syndromes",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 203,
+    "name": "Langerhans Cell Histiocytosis",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 204,
+    "name": "Saw Palmetto",
+    "board": 6,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 205,
+    "name": "Genetics of Kidney Cancer",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 206,
+    "name": "Gerson Therapy",
+    "board": 6,
+    "reviewer": 10,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 207,
+    "name": "Sun Soup",
+    "board": 6,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 208,
+    "name": "Ukrain",
+    "board": 6,
+    "reviewer": 10,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 209,
+    "name": "Chronotherapy",
+    "board": 6,
+    "reviewer": 10,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 210,
+    "name": "Polysaccharide K",
+    "board": 6,
+    "reviewer": 10,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 211,
+    "name": "Medicinal Mushrooms",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 212,
+    "name": "Childhood Craniopharyngioma",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 213,
+    "name": "Childhood CNS Germ Cell Tumors",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 214,
+    "name": "Childhood CNS Embryonal Tumors",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 215,
+    "name": "Childhood CNS Atypical Teratoid/Rhabdoid Tumors",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 216,
+    "name": "Pediatric Supportive Care (ped)",
+    "board": 3,
+    "reviewer": 400,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 217,
+    "name": "Childhood Hematopoietic Cell Transplantation",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 218,
+    "name": "Informal Caregivers in Cancer: Roles, Burden, and Support",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 219,
+    "name": "Genetics of Pancreatic Cancer",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 220,
+    "name": "Antioxidant Use During Cancer Treatment",
+    "board": 6,
+    "reviewer": 10,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 221,
+    "name": "Cannabis and Cannabinoids",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 222,
+    "name": "Prostate Cancer Nutrition and Dietary Supplements",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 223,
+    "name": "Gastrointestinal Stromal Tumors",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 2
+  },
+  {
+    "id": 224,
+    "name": "High Dose IV Vitamin C",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 225,
+    "name": "Genitourinary and Gynecologic Complications",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 226,
+    "name": "Anal Cancer Prevention",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 227,
+    "name": "Topics in CAM Therapies",
+    "board": 6,
+    "reviewer": 6,
+    "status": false,
+    "group": 16
+  },
+  {
+    "id": 228,
+    "name": "Planning the Transition to End-of-Life Care in Advanced Cancer",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 229,
+    "name": "Genetics of Endometrial Cancer",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 230,
+    "name": "Cognitive Impairment in Adults with Non-CNS Cancers",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 231,
+    "name": "Head and Neck",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 6
+  },
+  {
+    "id": 232,
+    "name": "Financial Toxicity and Cancer Treatment",
+    "board": 1,
+    "reviewer": 2,
+    "status": true,
+    "group": 15
+  },
+  {
+    "id": 235,
+    "name": "Childhood Vascular Tumors",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 237,
+    "name": "Childhood Cancer Genomics",
+    "board": 3,
+    "reviewer": 400,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 238,
+    "name": "Peripheral Neuropathy",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 239,
+    "name": "Thyroid Cancer Screening",
+    "board": 4,
+    "reviewer": 375,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 240,
+    "name": "Aromatherapy with Essential Oils",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 241,
+    "name": "Foods, Dietary Supplements and Cancer Therapy Interactions",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 242,
+    "name": "Informal Caregivers",
+    "board": 5,
+    "reviewer": 6,
+    "status": false,
+    "group": null
+  },
+  {
+    "id": 243,
+    "name": "Curcumin (Curcuma, Turmeric) and Cancer",
+    "board": 6,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 244,
+    "name": "Genetics of Hematologic Cancers",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 245,
+    "name": "Palliative Care Overview",
+    "board": 5,
+    "reviewer": 6,
+    "status": true,
+    "group": null
+  },
+  {
+    "id": 246,
+    "name": "Genetics of Gastric Cancer",
+    "board": 2,
+    "reviewer": 3,
+    "status": true,
+    "group": null
+  }
+]

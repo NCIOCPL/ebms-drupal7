@@ -1,0 +1,12 @@
+services:
+  ebms_core.term_lookup:
+    class: Drupal\ebms_core\TermLookup
+    arguments: ['@entity_type.manager']
+  ebms_core.event_subscriber:
+    class: Drupal\ebms_core\EventSubscriber\RedirectAnonymousUser
+    tags:
+      - { name: event_subscriber }
+  ebms_core.route_subscriber:
+    class: Drupal\ebms_core\Routing\RouteSubscriber
+    tags:
+      - { name: event_subscriber }

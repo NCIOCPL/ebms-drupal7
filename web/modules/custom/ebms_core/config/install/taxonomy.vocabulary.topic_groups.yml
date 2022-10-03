@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Topic Groups'
+vid: topic_groups
+description: 'Used to visually organize topics on the packet creation page when a large number of topics is displayed.'
+weight: 0

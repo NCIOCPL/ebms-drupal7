@@ -1,0 +1,41 @@
+langcode: en
+status: true
+dependencies: {  }
+name: 'Filtered HTML'
+format: filtered_html
+weight: 0
+filters:
+  filter_autop:
+    id: filter_autop
+    provider: filter
+    status: true
+    weight: 0
+    settings: {  }
+  filter_html:
+    id: filter_html
+    provider: filter
+    status: true
+    weight: -10
+    settings:
+      allowed_html: '<a href hreflang target title style id class=""> <blockquote cite style id class=""> <br style id class=""> <caption style id class=""> <cite style id class=""> <code style id class=""> <div align style id class=""> <dd style id class=""> <dl style id class=""> <dt style id class=""> <em style id class=""> <h1 style id class="">  <h2 style id class=""> <h3 style id class=""> <h4 style id class=""> <h5 style id class=""> <h6 style id class=""> <hr style id class=""> <li style id class=""> <ol start type style id class=""> <p align style id class=""> <s style id class=""> <span style id class=""> <strong style id class=""> <table border cellpadding cellspacing style id class=""> <tbody style id class=""> <td style id class=""> <tr style id class=""> <ul type style id class=""> <u> <sup> <sub> <img alt src style id data-entity-type data-entity-uuid class=""> <thead> <tfoot> <th>'
+      filter_html_help: false
+      filter_html_nofollow: true
+  filter_caption:
+    id: filter_caption
+    provider: filter
+    status: true
+    weight: 0
+    settings: {  }
+  filter_align:
+    id: filter_align
+    provider: filter
+    status: true
+    weight: 0
+    settings: {  }
+  filter_url:
+    id: filter_url
+    provider: filter
+    status: true
+    weight: 0
+    settings:
+      filter_url_length: 72

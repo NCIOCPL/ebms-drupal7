@@ -1,0 +1,28 @@
+ebms_journal.maintenance:
+  path: /journals/{queue_id}
+  defaults:
+    _title: 'Journal Maintenance'
+    _form: Drupal\ebms_journal\Form\JournalMaintenanceForm
+    queue_id: 0
+  requirements:
+    _permission: 'manage journals'
+  options:
+    parameters:
+      queue_id:
+        type: integer
+ebms_journal.print_friendly:
+  path: /journals/{saved_request}/print-friendly
+  defaults:
+    _controller: Drupal\ebms_journal\Controller\PrintFriendly::show
+  requirements:
+    _permission: 'manage journals'
+  options:
+    parameters:
+      saved_request:
+        type: entity:saved_request
+ebms_journal.refresh:
+  path: /admin/config/ebms/journals/refresh
+  defaults:
+    _controller: Drupal\ebms_journal\Controller\RefreshController::refresh
+  requirements:
+    _permission: manage journals

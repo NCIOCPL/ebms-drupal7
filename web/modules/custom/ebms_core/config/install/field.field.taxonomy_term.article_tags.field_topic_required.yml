@@ -1,0 +1,25 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_topic_required
+    - taxonomy.vocabulary.article_tags
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.article_tags.field_topic_required
+field_name: field_topic_required
+entity_type: taxonomy_term
+bundle: article_tags
+label: 'Topic Required'
+description: 'Whether a topic must be specified when this tag type is assigned to an article.'
+required: false
+translatable: false
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: 'Yes'
+  off_label: 'No'
+field_type: boolean

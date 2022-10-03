@@ -1,0 +1,35 @@
+ebms_doc.list:
+  path: /docs
+  defaults:
+    _controller: Drupal\ebms_doc\Controller\ListDocs::display
+  requirements:
+    _permission: 'manage documents'
+  options:
+    no_cache: 'TRUE'
+ebms_doc.create:
+  path: /docs/create
+  defaults:
+    _form: Drupal\ebms_doc\Form\DocForm
+  requirements:
+    _permission: 'manage documents'
+ebms_doc.edit:
+  path: /docs/{doc}
+  defaults:
+    _form: Drupal\ebms_doc\Form\DocForm
+  requirements:
+    _permission: 'manage documents'
+  options:
+    parameters:
+      doc:
+        type: entity:ebms_doc
+ebms_doc.archive:
+  path: /docs/archive/{ebms_doc}
+  defaults:
+    _title: 'Confirm Document Archive'
+    _entity_form: ebms_doc.archive
+  requirements:
+    _permission: 'manage documents'
+  options:
+    parameters:
+      ebms_doc:
+        type: 'entity:ebms_doc'

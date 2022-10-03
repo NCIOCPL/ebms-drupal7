@@ -1,0 +1,23 @@
+ebms_core.admin_config_ebms:
+  route_name: ebms_core.admin_config_ebms
+  parent: system.admin_config
+  title: EBMS
+  weight: -100
+ebms_core.valid_values:
+  route_name: entity.taxonomy_vocabulary.collection
+  title: Valid Values
+  parent: ebms_core.admin_config_ebms
+  description: Manage the valid value vocabularies.
+  weight: 100
+ebms_core.about:
+  route_name: ebms_core.about
+  title: About
+  description: Overview of the EBMS web site.
+  menu_name: main
+  weight: 90
+ebms_core.publication_type_hierarchy:
+  route_name: ebms_core.publication_type_hierarchy
+  title: Publication Types
+  description: Post a fresh set of MeSH Publication Type hierarchies.
+  parent: ebms_core.admin_config_ebms
+  weight: 100

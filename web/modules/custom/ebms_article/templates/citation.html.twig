@@ -1,0 +1,80 @@
+<div {{ attributes }}>
+  {% if authors %}
+  <div>{{ authors }}</div>
+  {% endif %}
+  <div><em>{{ article_title }}</em></div>
+  <div>{{ publication }}</div>
+  {% if ids.pubmed %}
+  <div>PubMed ID: {{ ids.pubmed }}</div>
+  {% endif %}
+  <div>EBMS ID: {{ ids.ebms }}</div>
+  {% if ids.legacy %}
+    <div>Legacy CMS ID: {{ ids.legacy }}</div>
+  {% endif %}
+  <div>Imported from PubMed {{ import.date|date('Y-m-d') }} by {{ import.user }}</div>
+  {% if refreshes %}
+    {% if verbose %}
+      {# Use this if we want to display all of the refresh events.#}
+      {% for refresh in refreshes %}
+        <div>Refreshed {{ refresh.date|date('Y-m-d') }} by {{ refresh.user }}</div>
+      {% endfor %}
+    {% else %}
+      {% set refresh = refreshes|last %}
+      <div>Last refreshed from PubMed {{ refresh.date|date('Y-m-d') }} by {{ refresh.user }}</div>
+    {% endif %}
+  {% endif %}
+  <div>Review Cycle{% if cycles|length > 1 %}s{% endif %}: {{ cycles|join(', ') }}</div>
+  {% if full_text.url %}
+    <div>Full Text: <a href="{{ full_text.url }}" target="_blank">{{ full_text.name }}</a> uploaded {{ full_text.date|date('Y-m-d') }} by {{ full_text.user }}</div>
+  {% elseif full_text.user %}
+    <div>Full Text: flagged {{ full_text.date|date('Y-m-d') }} as unavailable by {{ full_text.user }}{% if full_text.note %} ({{ full_text.note }}){% endif %}</div>
+  {% endif %}
+  {% if related %}
+    <h2>Related Articles</h2>
+    {% for r in related %}
+      <div class="related-article">{{ r.type }}: {{ r.pmid }} ({{ r.related }})
+        <a class="button usa-button left-pad-button" href="{{ r.edit }}" title="Edit relationship">Edit</a>
+        <a class="button usa-button" href="{{ r.delete }}" title="Remove relationship">Remove</a>
+        {% if r.comment %}
+        <br><em>{{ r.comment }}</em>
+        {% endif %}
+      </div>
+    {% endfor %}
+  {% endif %}
+  {% if tags %}
+    <h2>Article Tags</h2>
+    {% for tag in tags %}
+      <div class="article-tag">
+        {% if not tag.active %}<s>{% endif %}&ldquo;{{ tag.name }}&rdquo; assigned {{ tag.assigned|date('Y-m-d') }} by {{ tag.user }}{% if not tag.active %}</s>{% endif %}
+        <a class="button usa-button usa-button--base inline-button left-pad-button" href="{{ tag.add_comment }}" title="Add another comment for this tag">Add Comment</a>
+      </div>
+      {% if tag.comments %}
+        <ul>
+          {% for comment in tag.comments %}
+            <li>{{ comment.user }} [{{ comment.entered|date('Y-m-d') }}]: {{ comment.body }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  {% if internal.tags %}
+    <h2>Internal Tags/Comments</h2>
+    {% for tag in internal.tags %}
+      <div>&ldquo;{{ tag.name }}&rdquo; assigned {{ tag.assigned|date('Y-m-d') }}</div>
+    {% endfor %}
+  {% endif %}
+  {% if internal.comments %}
+    {% if not internal.tags %}
+      <div>Internal comments</div>
+    {% endif %}
+    <ul>
+      {% for comment in internal.comments %}
+        <li class="internal-comment">
+          {{ comment.user }} [{{ comment.entered|date('Y-m-d') }}]: {{ comment.body }}
+          <a class="button usa-button left-pad-button" href="{{ comment.edit }}" title="Edit comment">Edit</a>
+          <a class="button usa-button" href="{{ comment.delete }}" title="Delete comment">Delete</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</div>

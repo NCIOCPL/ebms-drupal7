@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Internal Tags'
+vid: internal_tags
+description: 'Tags identifying articles as of interest to NCI staff, not for board member review.'
+weight: 0

@@ -1,0 +1,124 @@
+ebms_summary.board:
+  path: /summaries/board/{board_id}
+  defaults:
+    _title: 'Board Summary Pages'
+    _controller: Drupal\ebms_summary\Controller\BoardSummariesController::display
+    board_id: 0
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+    parameters:
+      board_id:
+        type: integer
+ebms_summary.page:
+  path: /summaries/board/page/{summary_page}
+  defaults:
+    _title: 'Summaries'
+    _controller: Drupal\ebms_summary\Controller\SummaryPageController::display
+  requirements:
+    _user_is_logged_in: 'true'
+  options:
+    no_cache: TRUE
+    parameters:
+      summary_page:
+        type: entity:ebms_summary_page
+ebms_summary.add_page:
+  path: /summaries/board/page/add
+  defaults:
+    _title: 'Add Summaries Page'
+    _form: Drupal\ebms_summary\Form\SummaryPageForm
+  requirements:
+    _permission: 'manage summaries'
+ebms_summary.add_board_doc:
+  path: /summaries/board/doc/{board_id}/add
+  defaults:
+    _title: 'Add Summaries Board Doc'
+    _form: Drupal\ebms_summary\Form\SummaryBoardDocForm
+  requirements:
+    _permission: 'manage summaries'
+  options:
+    parameters:
+      board_id:
+        type: integer
+ebms_summary.add_manager_doc:
+  path: /summaries/board/page/manager-doc/{summary_page}/add
+  defaults:
+    _title: 'Add Summaries NCI Doc'
+    _form: Drupal\ebms_summary\Form\SummaryManagerDocForm
+  requirements:
+    _permission: 'manage summaries'
+  options:
+    parameters:
+      summary_page:
+        type: entity:ebms_summary_page
+ebms_summary.add_member_doc:
+  path: /summaries/board/page/member-doc/{summary_page}/add
+  defaults:
+    _title: 'Add Summaries Member Doc'
+    _form: Drupal\ebms_summary\Form\SummaryMemberDocForm
+  requirements:
+    _permission: 'review literature'
+  options:
+    parameters:
+      summary_page:
+        type: entity:ebms_summary_page
+ebms_summary.edit_page:
+  path: /summaries/board/page/edit/{summary_page}
+  defaults:
+    _title: 'Edit Summaries Page'
+    _form: Drupal\ebms_summary\Form\SummaryPageForm
+  requirements:
+    _permission: 'manage summaries'
+  options:
+    parameters:
+      summary_page:
+        type: entity:ebms_summary_page
+ebms_summary.delete_page:
+  path: /summaries/page/delete/{ebms_summary_page}
+  defaults:
+    _title: 'Confirm Summary Page Deletion'
+    _entity_form: ebms_summary_page.deactivate
+  requirements:
+    _permission: 'manage summaries'
+  options:
+    parameters:
+      ebms_summary_page:
+        type: 'entity:ebms_summary_page'
+ebms_summary.add_summary_link:
+  path: /summaries/board/page/link/add/{summary_page}
+  defaults:
+    _title: 'Add Summary link'
+    _form: Drupal\ebms_summary\Form\SummaryLinkForm
+  requirements:
+    _permission: 'manage summaries'
+  options:
+    parameters:
+      summary_page:
+        type: entity:ebms_summary_page
+ebms_summary.edit_summary_link:
+  path: /summaries/board/page/link/edit/{summary_page}/{delta}
+  defaults:
+    _title: 'Edit Summary link'
+    _form: Drupal\ebms_summary\Form\SummaryLinkForm
+  requirements:
+    _permission: 'manage summaries'
+  options:
+    parameters:
+      summary_page:
+        type: entity:ebms_summary_page
+      delta:
+        type: integer
+ebms_summary.delete_summary_link:
+  path: /summaries/board/page/link/delete/{summary_page}/{delta}
+  defaults:
+    _title: 'Remove Summary link'
+    _form: Drupal\ebms_summary\Form\SummaryLinkDeletionForm
+  requirements:
+    _permission: 'manage summaries'
+  options:
+    parameters:
+      summary_page:
+        type: entity:ebms_summary_page
+      delta:
+        type: integer

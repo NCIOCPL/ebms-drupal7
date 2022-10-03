@@ -1,0 +1,19 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_meeting_theme($existing, $type, $theme, $path): array {
+  return [
+    'month' => [
+      'variables' => [
+        'rows' => [],
+      ],
+    ],
+    'meeting' => [
+      'variables' => [
+        'meeting' => NULL,
+      ],
+    ],
+  ];
+}

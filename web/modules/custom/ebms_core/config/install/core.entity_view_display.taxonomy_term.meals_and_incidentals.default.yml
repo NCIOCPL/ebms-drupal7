@@ -1,0 +1,32 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.meals_and_incidentals.field_text_id
+    - taxonomy.vocabulary.meals_and_incidentals
+  module:
+    - text
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.meals_and_incidentals.default
+targetEntityType: taxonomy_term
+bundle: meals_and_incidentals
+mode: default
+content:
+  description:
+    label: hidden
+    type: text_default
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_text_id:
+    weight: 1
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    type: string
+    region: content
+hidden: {  }

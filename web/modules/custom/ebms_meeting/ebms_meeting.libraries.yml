@@ -1,0 +1,12 @@
+calendar-month:
+  css:
+    theme:
+      css/month.css: {}
+meeting-form:
+  css:
+    theme:
+      css/meeting-form.css: {}
+meeting-display:
+  css:
+    theme:
+      css/meeting-display.css: {}

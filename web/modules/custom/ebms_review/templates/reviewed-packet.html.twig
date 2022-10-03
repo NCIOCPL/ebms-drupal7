@@ -1,0 +1,76 @@
+<div class="top-buttons">
+  <a class="button usa-button" href="{{ report_url }}">Create Report</a>
+  <a class="button usa-button" href="{{ archive_url }}">Archive Packet</a>
+  {% if show_archived_url %}
+  <a class="button usa-button" href="{{ show_archived_url }}">Show Archived Articles</a>
+  {% endif %}
+  {% if hide_archived_url %}
+  <a class="button usa-button" href="{{ hide_archived_url }}">Hide Archived Articles</a>
+  {% endif %}
+  <a class="button usa-button" href="{{ sort_url }}">{{ sort_label }}</a>
+</div>
+<div class="packet-articles">
+  <h2>Articles</h2>
+  {% if not articles %}
+  <div><em>All articles for this packet have been archived.</em></div>
+  {% endif %}
+  {% for article in articles %}
+  <div class="packet-article">
+    <div class="authors">{{ article.authors|join('; ')}}</div>
+    <div class="title"><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></div>
+    <div class="publication">{{ article.publication }}</div>
+    <div class="ids">PMID: <span class="pmid">{{ article.pmid }}</span> EBMS ID: <span class="ebmsid">{{ article.id }}</span></div>
+    {% if article.tags %}
+    <div class="tags">Tags: {{ article.tags|sort|join('; ') }}</div>
+    {% endif %}
+    {% for related in article.related %}
+    <div>
+      Related Article: {{ related.citation }}
+      PMID <a href="https://pubmed.ncbi.nlm.nih.gov/{{ related.pmid }}" target="_blank">{{ related.pmid }}</a>
+      (<a href="{{ related.url }}">{{ related.id }}</a>)
+    </div>
+    {% endfor %}
+    {% if article.high_priority %}
+    <div class="high-priority">High Priority</div>
+    {% endif %}
+    {% for comment in article.comments %}
+    <div class="comment">Comment: {{ comment }}</div>
+    {% endfor %}
+    {% if article.state %}
+    <div class="state">State: {{ article.state }}</div>
+    {% endif %}
+    {% if article.last_review %}
+    <div class="last-review">Latest review posted {{ article.last_review }}</div>
+    {% endif %}
+    <div class="reviewers">
+      {% if article.reviewers.approved %}
+      <div><span class="approved reviewer" title="approved">✅</span> {{ article.reviewers.approved|sort|join(', ')}}</div>
+      {% endif %}
+      {% if article.reviewers.rejected %}
+      <div><span class="rejected reviewer" title="rejected">❌</span> {{ article.reviewers.rejected|sort|join(', ')}}</div>
+      {% endif %}
+      {% if article.reviewers.unreviewed %}
+      <div><span class="unreviewed reviewer" title="not yet reviewed">⏳</span> {{ article.reviewers.unreviewed|sort|join(', ')}}</div>
+      {% endif %}
+      {% if article.reviewers.fyi %}
+      <div><span class="fyi reviewer" title="FYI article">ℹ️</span> {{ article.reviewers.fyi|sort|join(', ')}}</div>
+      {% endif %}
+    </div>
+    <div class="article-buttons">
+      <a class="pmid button usa-button" href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank">View Abstract</a>
+      {% if article.full_text_url %}
+      <a href="{{ article.full_text_url }}" target="_blank" class="full-text button usa-button">Download Full Text</a>
+      {% endif %}
+      {% if article.archive_url %}
+      <a href="{{ article.archive_url }}" class="archive button usa-button">Archive</a>
+      {% endif %}
+      {% if article.revive_url %}
+      <a href="{{ article.revive_url }}" class="revive button usa-button">Revive</a>
+      {% endif %}
+      {% if article.last_review %}
+      <a href="{{ article.details_url }}" class="details button usa-button">Show Details</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>

@@ -1,0 +1,7 @@
+services:
+  ebms_breadcrumb.crumbs:
+    class: Drupal\ebms_breadcrumb\Breadcrumb\Builder
+    arguments:
+      - '@request_stack'
+    tags:
+      - { name: breadcrumb_builder, priority: 100 }

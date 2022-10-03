@@ -1,0 +1,79 @@
+{#
+/**
+ * @file
+ * Default theme implementation for a branding block.
+ *
+ * Override of the base theme's block--system-branding-block.html.twig
+ * to provide our own branding, which is completely custom.
+ */
+#}
+{# Left-hand side has the NIH official logo and links to NIH, NCI, and the home page. #}
+<div id="ebms-banner">
+  <div class="grid-container flex-justify">
+    <img
+      src="/themes/custom/ebms/images/banner.png"
+      alt="National Cancer Institute"
+      usemap="#bannermap">
+    <map id="bannermap" name="bannermap">
+      <area
+        href="https://www.nih.gov"
+        shape="rect"
+        coords="2,15,50,60"
+        alt="NIH">
+      <area
+        href="https://www.cancer.gov"
+        shape="rect"
+        coords="75,15,300,25"
+        alt="NCI">
+      <area
+        href="{{ path('<front>') }}"
+        shape="rect"
+        coords="75,30,255,60"
+        alt="EBMS">
+    </map>
+    {% if logged_in %}
+    <a id="mobile-exit-link" href="/user/logout"><img src="/themes/custom/ebms/images/exit-white.png"></a>
+    {% endif %}
+  </div>
+</div>
+
+{# The right-hand side has a search box, About and Help links, and identification of the user. #}
+<div id="site-name-and-profile" class="grid-container">
+  <div class="grid-row flex-justify">
+    <div>
+      <h1 class="font-body-2xl text-normal margin-bottom-1">
+        <a class="text-no-underline text-base-darkest" href="/" title="Home" rel="home">EBMS</a>
+      </h1>
+      <h2 class="font-body-lg text-normal margin-top-0">PDQ&reg; Editorial Board Management System</h2>
+    </div>
+    <div id="profile">
+      {% if logged_in %}
+      <div id="pmid-search-and-links" class="display-flex flex-justify-end margin-top-3">
+        <form class="usa-search usa-search--small" action="/articles/pmid-search" role="search">
+          <label class="usa-sr-only" for="pmid-search-field">Search PMID</label>
+          <input class="usa-input" id="pmid-search-field" placeholder="PMID" type="search" name="pmid">
+          <button class="usa-button" type="submit">
+            <img src="/themes/custom/ebms/package/dist/img/usa-icons-bg/search--white.svg" class="usa-search__submit-icon" alt="Search">
+          </button>
+        </form>
+      </div>
+      <div id="user-top" class="display-flex flex-justify-end margin-top-1">
+        <img
+          class="flex-align-self-center"
+          id="user-photo-image"
+          alt="{{ user_name }} profile picture"
+          title="{{ user_name }}"
+          src="{{ user_picture_url }}"
+          typeof="foaf:Image">
+        <a id="profile-link" href="/profile/{{ user_id }}" class="font-body-md text-no-underline text-base-darkest flex-align-self-center margin-left-2">{{ user_name }}</a>
+        <a id="exit-link" href="/user/logout" class="text-no-underline margin-left-1" title="Log Out"><img src="/themes/custom/ebms/images/exit-blue.png" alt="Log Out"></a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# Mobile menu button. #}
+{% if logged_in %}
+<button class="usa-menu-btn">{{ 'Menu'|t }}</button>
+{% endif %}

@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Meeting Statuses'
+vid: meeting_statuses
+description: 'Status of the event (e.g., Canceled).'
+weight: 0

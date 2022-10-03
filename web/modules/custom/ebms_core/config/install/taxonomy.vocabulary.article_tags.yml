@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Article Tags'
+vid: article_tags
+description: 'Flexible system for making articles searchable by common characteristics.'
+weight: 0

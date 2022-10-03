@@ -1,0 +1,27 @@
+<div class="docs">
+  <h2>Documents ({{ total }})</h2>
+  {% for doc in docs %}
+  <div class="doc">
+    <div class="filename"><a href="{{ doc.url }}" target="_blank">{{ doc.filename }}</a></div>
+    <div><em>Uploaded {{ doc.uploaded|slice(0, 10)}} by {{ doc.uploader }}</em></div>
+    {% if doc.boards %}
+    <div class="boards"><strong>Boards</strong>: {{ doc.boards|sort|join(', ') }}</div>
+    {% endif %}
+    {% if doc.topics %}
+    <div class="boards"><strong>Topics</strong>: {{ doc.topics|sort|join(', ') }}</div>
+    {% endif %}
+    {% if doc.tags %}
+    <div class="boards"><strong>Tags</strong>: {{ doc.tags|sort|join(', ') }}</div>
+    {% endif %}
+    <div class="buttons">
+      <a href="{{ doc.edit_url }}" class="usa-button" title="Modify document settings">Edit</a>
+      {% if doc.archive_url %}
+      <a href="{{ doc.archive_url }}" class="usa-button" title="Suppress document from appearing on menus">Archive</a>
+      {% endif %}
+      {% if doc.restore_url %}
+      <a href="{{ doc.restore_url }}" class="usa-button" title="Remove document's Archive status">Restore</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>

@@ -1,0 +1,89 @@
+<div class="reimbursement-requests-report">
+  <h2>{{ title }}</h2>
+  <ol class="reimbursement-requests" start="{{ start }}">
+    {% for request in requests %}
+    <li>
+      <div class="request-identification">
+        <a href="{{ request.user_url }}" class="request-user">{{ request.user }}</a>
+        (<span class="request-submitted">{{ request.submitted|slice(0, 10) }}</span>)
+        for {% if request.meeting_url %}<a href="{{ request.meeting_url }}" class="meeting">{% endif %}{{ request.meeting_name }}{% if request.meeting_url %}</a>{% endif %}
+      </div>
+      <dl>
+        {% if request.arrival and request.arrival != '0000-00-00' %}
+        <dt>Arrival</dt>
+        <dd>{{ request.arrival }}</dd>
+        {% endif %}
+        {% if request.departure and request.departure != '0000-00-00' %}
+        <dt>Departure</dt>
+        <dd>{{ request.departure }}</dd>
+        {% endif %}
+        {% if request.transportation %}
+        <dt>Transportation Expenses</dt>
+        <dd>
+          <ul>
+            {% for expense in request.transportation %}
+            <li>{{ expense }}</li>
+            {% endfor %}
+          </ul>
+        </dd>
+        {% endif %}
+        {% if request.parking_and_tolls %}
+        <dt>Parking and Toll Expenses</dt>
+        <dd>
+          <ul>
+            {% for expense in request.parking_and_tolls %}
+            <li>{{ expense }}</li>
+            {% endfor %}
+          </ul>
+        </dd>
+        {% endif %}
+        {% if request.hotel_payment %}
+        <dt>Hotel Payment</dt>
+        <dd>{{ request.hotel_payment }}</dd>
+        {% endif %}
+        {% if request.hotel_amount %}
+        <dt>Hotel Amount</dt>
+        <dd>${{ request.hotel_amount }}</dd>
+        {% endif %}
+        {% if request.nights_stayed %}
+        <dt>Nights Stayed</dt>
+        <dd>{{ request.nights_stayed }}</dd>
+        {% endif %}
+        {% if request.meals_and_incidentals %}
+        <dt>Meals and Incidentals</dt>
+        <dd>{{ request.meals_and_incidentals }}</dd>
+        {% endif %}
+        {% if request.honorarium %}
+        <dt>Honorarium</dt>
+        <dd>{{ request.honorarium }}</dd>
+        {% endif %}
+        {% if request.reimburse_to %}
+        <dt>Reimburse To</dt>
+        <dd>{{ request.reimburse_to }}</dd>
+        {% endif %}
+        {% if request.total %}
+        <dt>Total Requested</dt>
+        <dd>${{ request.total }}</dd>
+        {% endif %}
+        {% if request.comments %}
+        <dt>Comments</dt>
+        <dd>{{ request.comments|nl2br }}</dd>
+        {% endif %}
+        <dt>Certified</dt>
+        {% if request.certified %}
+        <dd>Yes</dd>
+        {% else %}
+        <dd>No</dd>
+        {% endif %}
+        {% if request.confirmation_email %}
+        <dt>Confirmation Email</dt>
+        <dd>{{ request.confirmation_email }}</dd>
+        {% endif %}
+      </dl>
+    </li>
+    {% endfor %}
+    {% if not requests %}
+    <li><em>No requests match the report criteria.</em></li>
+    {% endif %}
+  </ol>
+</div>

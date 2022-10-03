@@ -1,0 +1,1790 @@
+[
+  {
+    "id": 1,
+    "file": 1,
+    "posted": "2013-03-18 16:16:54",
+    "description": "LOE guidelines document",
+    "dropped": 0
+  },
+  {
+    "id": 2,
+    "file": 2,
+    "posted": "2013-03-18 16:16:54",
+    "description": "LOE guidelines document",
+    "dropped": 0
+  },
+  {
+    "id": 3,
+    "file": 3,
+    "posted": "2013-03-18 16:16:54",
+    "description": "LOE guidelines document",
+    "dropped": 0
+  },
+  {
+    "id": 4,
+    "file": 4,
+    "posted": "2013-03-18 16:16:54",
+    "description": "LOE guidelines document",
+    "dropped": 0
+  },
+  {
+    "id": 5,
+    "file": 5,
+    "posted": "2013-03-18 16:16:54",
+    "description": "LOE guidelines document",
+    "dropped": 0
+  },
+  {
+    "id": 2409,
+    "file": 20951,
+    "posted": "2015-03-03 08:55:13",
+    "description": "Extragonadal Germ Cell Tumors Treatment_02_25_2015",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      44
+    ]
+  },
+  {
+    "id": 2411,
+    "file": 20953,
+    "posted": "2015-03-03 09:00:16",
+    "description": "Gestational Trophoblastic Disease Treatment_02_25_2015",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      53
+    ]
+  },
+  {
+    "id": 3972,
+    "file": 33861,
+    "posted": "2016-05-31 12:54:44",
+    "description": "Neuroblastoma HP 5_31_16 for Lit Surv",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      77
+    ]
+  },
+  {
+    "id": 4567,
+    "file": 39876,
+    "posted": "2016-12-18 23:11:26",
+    "description": "Ch Astrocytomas HP 12_18_16 for Lit Surv",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      169
+    ]
+  },
+  {
+    "id": 4701,
+    "file": 41136,
+    "posted": "2017-01-30 12:04:57",
+    "description": "Pancreatic Cancer Treatment_01_26_2017",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      88
+    ]
+  },
+  {
+    "id": 4812,
+    "file": 42756,
+    "posted": "2017-03-06 15:01:55",
+    "description": "Cancer Prevention Overview_02_09_2017",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      162
+    ]
+  },
+  {
+    "id": 4818,
+    "file": 42762,
+    "posted": "2017-03-06 15:06:47",
+    "description": "Endometrial Cancer Screening_02_27_2017",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      119
+    ]
+  },
+  {
+    "id": 4880,
+    "file": 43087,
+    "posted": "2017-03-20 13:49:18",
+    "description": "Skin Cancer Prevention_03_17_2017",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      106
+    ]
+  },
+  {
+    "id": 5038,
+    "file": 44643,
+    "posted": "2017-05-01 10:17:07",
+    "description": "Cigarette Smoking-Health Risks and How to Quit_04_27_2017",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      95
+    ]
+  },
+  {
+    "id": 5323,
+    "file": 47764,
+    "posted": "2017-07-25 15:36:34",
+    "description": "Genetics of Colorectal Cancer for WG 7_25_17",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      52
+    ]
+  },
+  {
+    "id": 5610,
+    "file": 51491,
+    "posted": "2017-10-20 12:19:31",
+    "description": "Nutrition in Cancer Care 102017",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      5
+    ],
+    "topics": [
+      80
+    ]
+  },
+  {
+    "id": 5623,
+    "file": 51590,
+    "posted": "2017-10-26 09:37:04",
+    "description": "Head and Neck Cancers Template_07_19_2017",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      231
+    ]
+  },
+  {
+    "id": 5730,
+    "file": 53019,
+    "posted": "2017-11-24 15:38:25",
+    "description": "Genetics of Breast and Gynecologic Cancers for WG 11_24_17",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      51
+    ]
+  },
+  {
+    "id": 5732,
+    "file": 53021,
+    "posted": "2017-11-24 15:58:36",
+    "description": "Cancer Genetics Risk Assessment and Counseling for WG 11_24_17",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      40
+    ]
+  },
+  {
+    "id": 5819,
+    "file": 55388,
+    "posted": "2018-01-10 09:48:15",
+    "description": "High dose Vitamin C 011018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      6
+    ],
+    "topics": [
+      224
+    ]
+  },
+  {
+    "id": 5868,
+    "file": 55545,
+    "posted": "2018-01-17 11:54:10",
+    "description": "Salivary Gland Cancer Treatment_1_12_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      114,
+      231
+    ]
+  },
+  {
+    "id": 5928,
+    "file": 56310,
+    "posted": "2018-02-06 12:29:16",
+    "description": "Adult Central Nervous System Tumors Treatment_01_31_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      4
+    ]
+  },
+  {
+    "id": 5935,
+    "file": 56317,
+    "posted": "2018-02-06 12:59:00",
+    "description": "Cervical Cancer Treatment_01_31_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      17
+    ]
+  },
+  {
+    "id": 5938,
+    "file": 56320,
+    "posted": "2018-02-06 13:27:27",
+    "description": "Kaposi Sarcoma Treatment_01_30_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      60
+    ]
+  },
+  {
+    "id": 5953,
+    "file": 56336,
+    "posted": "2018-02-07 09:10:25",
+    "description": "Cancer Prevention Overview_02_01_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      162
+    ]
+  },
+  {
+    "id": 5954,
+    "file": 56337,
+    "posted": "2018-02-07 09:11:06",
+    "description": "Cervical Cancer Prevention_02_01_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      97
+    ]
+  },
+  {
+    "id": 5990,
+    "file": 56637,
+    "posted": "2018-02-13 08:30:22",
+    "description": "AIDS Related Lymphoma Treatment_02_04_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      9
+    ]
+  },
+  {
+    "id": 5996,
+    "file": 56643,
+    "posted": "2018-02-13 08:51:32",
+    "description": "Esophageal Cancer Treatment_02_06_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      42
+    ]
+  },
+  {
+    "id": 5999,
+    "file": 56646,
+    "posted": "2018-02-13 08:56:27",
+    "description": "Hypopharyngeal Cancer Treatment_02_07_2018",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      57,
+      231
+    ]
+  },
+  {
+    "id": 6000,
+    "file": 56647,
+    "posted": "2018-02-13 08:59:28",
+    "description": "Intraocular (Uveal) Melanoma Treatment_2_08_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      58
+    ]
+  },
+  {
+    "id": 6001,
+    "file": 56648,
+    "posted": "2018-02-13 09:01:30",
+    "description": "Laryngeal Cancer Treatment_02_08_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      61,
+      231
+    ]
+  },
+  {
+    "id": 6005,
+    "file": 56652,
+    "posted": "2018-02-13 09:23:50",
+    "description": "Metastatic Squamous Neck Cancer With Occult Primary Treatment_02_08_2018",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      70,
+      231
+    ]
+  },
+  {
+    "id": 6006,
+    "file": 56653,
+    "posted": "2018-02-13 09:24:36",
+    "description": "Nasopharyngeal Cancer Treatment_02_07-2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      75,
+      231
+    ]
+  },
+  {
+    "id": 6009,
+    "file": 56656,
+    "posted": "2018-02-13 09:26:53",
+    "description": "Paranasal Sinus and Nasal Cavity Cancer Treatment_02_08_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      89,
+      231
+    ]
+  },
+  {
+    "id": 6010,
+    "file": 56657,
+    "posted": "2018-02-13 09:36:24",
+    "description": "Pheochromocytoma and Paraganglioma Treatment_02_08_2018",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      92
+    ]
+  },
+  {
+    "id": 6068,
+    "file": 57468,
+    "posted": "2018-03-05 11:51:28",
+    "description": "Bladder and Other Urothelial Cancers Screening_03_02_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      115
+    ]
+  },
+  {
+    "id": 6070,
+    "file": 57470,
+    "posted": "2018-03-05 11:52:45",
+    "description": "Breast Cancer Prevention_03_01_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      96
+    ]
+  },
+  {
+    "id": 6071,
+    "file": 57471,
+    "posted": "2018-03-05 11:53:53",
+    "description": "Colorectal Cancer Prevention_03_01_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      98
+    ]
+  },
+  {
+    "id": 6148,
+    "file": 57804,
+    "posted": "2018-03-16 11:33:52",
+    "description": "Genetics of Kidney Cancer for WG 2_15_18",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      205
+    ]
+  },
+  {
+    "id": 6149,
+    "file": 57805,
+    "posted": "2018-03-16 13:16:07",
+    "description": "Genetics of Colorectal Cancer for WG 3_16_18",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      52
+    ]
+  },
+  {
+    "id": 6176,
+    "file": 58112,
+    "posted": "2018-04-02 12:05:09",
+    "description": "Lip and Oral Cavity Cancer Treatment_03_28_2018",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      62,
+      231
+    ]
+  },
+  {
+    "id": 6179,
+    "file": 58115,
+    "posted": "2018-04-02 12:07:13",
+    "description": "Oropharyngeal Cancer Treatment_03_28_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      82,
+      231
+    ]
+  },
+  {
+    "id": 6180,
+    "file": 58116,
+    "posted": "2018-04-02 12:09:16",
+    "description": "Breast Cancer Prevention_03_29_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      96
+    ]
+  },
+  {
+    "id": 6185,
+    "file": 58141,
+    "posted": "2018-04-02 14:47:57",
+    "description": "Ch Ependymoma HP 4_2_18 for Lit Surv",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      24
+    ]
+  },
+  {
+    "id": 6201,
+    "file": 58580,
+    "posted": "2018-04-09 10:45:49",
+    "description": "Colon Cancer Treatment_04_06_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      36,
+      151
+    ]
+  },
+  {
+    "id": 6202,
+    "file": 58581,
+    "posted": "2018-04-09 10:46:35",
+    "description": "Rectal Cancer Treatment_04_06_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      111,
+      151
+    ]
+  },
+  {
+    "id": 6203,
+    "file": 58582,
+    "posted": "2018-04-09 10:47:28",
+    "description": "Renal Cell Cancer Treatment_04_05_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      112
+    ]
+  },
+  {
+    "id": 6209,
+    "file": 58883,
+    "posted": "2018-04-16 11:43:05",
+    "description": "Bladder Cancer Treatment_04_12_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      12
+    ]
+  },
+  {
+    "id": 6211,
+    "file": 58885,
+    "posted": "2018-04-16 11:44:33",
+    "description": "Cigarette Smoking- Health Risks and How to Quit_04_12_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      95
+    ]
+  },
+  {
+    "id": 6213,
+    "file": 58887,
+    "posted": "2018-04-16 11:45:47",
+    "description": "Skin Cancer Prevention_04_12_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      106
+    ]
+  },
+  {
+    "id": 6356,
+    "file": 60501,
+    "posted": "2018-06-01 17:11:46",
+    "description": "Genetics of Kidney Cancer for WG 6_1_18",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      205
+    ]
+  },
+  {
+    "id": 6358,
+    "file": 60503,
+    "posted": "2018-06-01 17:35:23",
+    "description": "Genetics of Colorectal Cancer for WG 6_1_18",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      52
+    ]
+  },
+  {
+    "id": 6359,
+    "file": 60504,
+    "posted": "2018-06-01 17:46:37",
+    "description": "Genetics of Colorectal Cancer Psychosocial for WG 6_1_18",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      167
+    ]
+  },
+  {
+    "id": 6360,
+    "file": 60505,
+    "posted": "2018-06-01 18:26:08",
+    "description": "Genetics of Breast and Gynecologic Cancers for WG 6_1_18",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      51
+    ]
+  },
+  {
+    "id": 6361,
+    "file": 60506,
+    "posted": "2018-06-01 18:36:48",
+    "description": "Genetics of Breast and Gynecologic Cancers Psychosocial for WG 6_1_18",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      167
+    ]
+  },
+  {
+    "id": 6362,
+    "file": 60507,
+    "posted": "2018-06-01 18:40:58",
+    "description": "Genetics of Endocrine Psychosocial for WG 6_1_18",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      167
+    ]
+  },
+  {
+    "id": 6368,
+    "file": 60513,
+    "posted": "2018-06-04 10:11:24",
+    "description": "Planning the Transition to EOL Care 060418",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      5
+    ],
+    "topics": [
+      228
+    ]
+  },
+  {
+    "id": 6374,
+    "file": 60591,
+    "posted": "2018-06-07 16:00:55",
+    "description": "Ovarian Epithelial Cancer Treatment_05_16_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      84
+    ]
+  },
+  {
+    "id": 6390,
+    "file": 60849,
+    "posted": "2018-06-18 11:51:10",
+    "description": "Cervical Cancer Screening_06_14_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      117
+    ]
+  },
+  {
+    "id": 6495,
+    "file": 61868,
+    "posted": "2018-07-13 10:07:15",
+    "description": "Non-Small Cell Lung Cancer Treatment_04_24_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      79,
+      153
+    ]
+  },
+  {
+    "id": 6793,
+    "file": 64435,
+    "posted": "2018-10-15 10:53:54",
+    "description": "Breast Cancer Screening_10_08_2018",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      116
+    ]
+  },
+  {
+    "id": 7255,
+    "file": 68871,
+    "posted": "2019-03-11 11:29:16",
+    "description": "Stomach (Gastric) Cancer Prevention _03_06_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      101
+    ]
+  },
+  {
+    "id": 7365,
+    "file": 69819,
+    "posted": "2019-04-08 11:22:13",
+    "description": "Oral Cavity, Pharyngeal, and Laryngeal Cancer Prevention_04_04_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      103
+    ]
+  },
+  {
+    "id": 7382,
+    "file": 70042,
+    "posted": "2019-04-15 10:44:14",
+    "description": "Cigarette Smoking Health Risks and How to Quit_04_09_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      95
+    ]
+  },
+  {
+    "id": 7383,
+    "file": 70043,
+    "posted": "2019-04-15 10:44:50",
+    "description": "Endometrial Cancer Prevention_04_09_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      99
+    ]
+  },
+  {
+    "id": 7672,
+    "file": 72270,
+    "posted": "2019-06-17 10:11:45",
+    "description": "Lung Cancer Screening_06_11_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      123
+    ]
+  },
+  {
+    "id": 7674,
+    "file": 72320,
+    "posted": "2019-06-18 15:37:17",
+    "description": "Cannabis and Cannabinoids_061819.docx",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      6
+    ],
+    "topics": [
+      221
+    ]
+  },
+  {
+    "id": 7808,
+    "file": 73703,
+    "posted": "2019-08-12 10:10:40",
+    "description": "Breast Cancer Screening_08_02_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      116
+    ]
+  },
+  {
+    "id": 7809,
+    "file": 73704,
+    "posted": "2019-08-12 10:11:18",
+    "description": "Cancer Prevention Overview_08_02_2109",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      162
+    ]
+  },
+  {
+    "id": 8031,
+    "file": 75264,
+    "posted": "2019-10-07 10:33:09",
+    "description": "Cancer Prevention Overview_10_04_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      162
+    ]
+  },
+  {
+    "id": 8048,
+    "file": 75303,
+    "posted": "2019-10-15 09:39:33",
+    "description": "Gastric Cancer Treatment_10_11_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      48
+    ]
+  },
+  {
+    "id": 8053,
+    "file": 75399,
+    "posted": "2019-10-21 12:02:45",
+    "description": "Cervical Cancer Screening_10_16_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      117
+    ]
+  },
+  {
+    "id": 8080,
+    "file": 75633,
+    "posted": "2019-10-31 15:30:36",
+    "description": "Acupuncture 103119",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      6
+    ],
+    "topics": [
+      191
+    ]
+  },
+  {
+    "id": 8081,
+    "file": 75690,
+    "posted": "2019-11-04 08:44:08",
+    "description": "Breast Cancer Screening_10_30_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      116
+    ]
+  },
+  {
+    "id": 8082,
+    "file": 75691,
+    "posted": "2019-11-04 08:44:49",
+    "description": "Colorectal Cancer Screening_10_31_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      118
+    ]
+  },
+  {
+    "id": 8242,
+    "file": 76582,
+    "posted": "2019-12-23 11:18:54",
+    "description": "Breast Cancer Screening_12_18_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      116
+    ]
+  },
+  {
+    "id": 8243,
+    "file": 76583,
+    "posted": "2019-12-23 11:19:41",
+    "description": "Cancer Prevention Overview_12_19_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      162
+    ]
+  },
+  {
+    "id": 8261,
+    "file": 76981,
+    "posted": "2020-01-02 15:48:51",
+    "description": "Late Effects HP 1_2_20 for Lit Surv",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      168
+    ]
+  },
+  {
+    "id": 8416,
+    "file": 77853,
+    "posted": "2020-02-04 14:19:56",
+    "description": "Ch Ext GCT HP 2_4_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      25
+    ]
+  },
+  {
+    "id": 8421,
+    "file": 77869,
+    "posted": "2020-02-05 16:22:48",
+    "description": "Ch Non-Hodgkin Lymphoma HP 2_5_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      29
+    ]
+  },
+  {
+    "id": 8425,
+    "file": 77886,
+    "posted": "2020-02-06 15:56:15",
+    "description": "Neuroblastoma HP 2_6_20 for Lit Surv",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      77
+    ]
+  },
+  {
+    "id": 8428,
+    "file": 77890,
+    "posted": "2020-02-07 11:40:34",
+    "description": "Ewing Sarcoma HP 2_7_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      43
+    ]
+  },
+  {
+    "id": 8441,
+    "file": 77944,
+    "posted": "2020-02-18 12:34:37",
+    "description": "Breast Cancer Treatment_02_12_2020",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      13
+    ]
+  },
+  {
+    "id": 8445,
+    "file": 77948,
+    "posted": "2020-02-18 12:37:51",
+    "description": "Cancer Prevention Overview_02_13_2020",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      162
+    ]
+  },
+  {
+    "id": 8448,
+    "file": 77951,
+    "posted": "2020-02-18 12:40:23",
+    "description": "Prostate Cancer Prevention_02_12_2020",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      105
+    ]
+  },
+  {
+    "id": 8486,
+    "file": 78010,
+    "posted": "2020-02-24 14:27:51",
+    "description": "Genetics of Breast and Gynecologic for WG 2_24_20",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      51
+    ]
+  },
+  {
+    "id": 8487,
+    "file": 78018,
+    "posted": "2020-02-24 15:20:08",
+    "description": "Genetics of Kidney Cancer for WG 2_24_20",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      205
+    ]
+  },
+  {
+    "id": 8490,
+    "file": 78021,
+    "posted": "2020-02-24 16:30:56",
+    "description": "Genetics of Breast and Gynecologic Cancers Psychosocial 2_24_20",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      167
+    ]
+  },
+  {
+    "id": 8496,
+    "file": 78042,
+    "posted": "2020-02-26 08:10:31",
+    "description": "Wilms Tumor HP 2_26_20 for Lit Surv",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      147
+    ]
+  },
+  {
+    "id": 8572,
+    "file": 78730,
+    "posted": "2020-03-18 13:11:39",
+    "description": "Melanoma Treatment_02_28_2020",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      68
+    ]
+  },
+  {
+    "id": 8573,
+    "file": 78907,
+    "posted": "2020-03-23 07:27:17",
+    "description": "Ch ALL HP 3_23_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      18
+    ]
+  },
+  {
+    "id": 8574,
+    "file": 78908,
+    "posted": "2020-03-23 08:11:01",
+    "description": "Langerhans Cell Histiocytosis HP 3_23_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      203
+    ]
+  },
+  {
+    "id": 8578,
+    "file": 78934,
+    "posted": "2020-03-23 14:00:34",
+    "description": "Ch Non-Hodgkin Lymphoma HP 3_23_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      29
+    ]
+  },
+  {
+    "id": 8581,
+    "file": 78945,
+    "posted": "2020-03-25 08:46:07",
+    "description": "Ch Medulloblastoma and Other CNS Embryonal Tumors HP 3_25_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      214
+    ]
+  },
+  {
+    "id": 8583,
+    "file": 78951,
+    "posted": "2020-03-25 13:09:31",
+    "description": "Ch AML HP 3_25_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      19
+    ]
+  },
+  {
+    "id": 8584,
+    "file": 78952,
+    "posted": "2020-03-25 13:19:16",
+    "description": "Osteosarcoma HP 3_25_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      83
+    ]
+  },
+  {
+    "id": 8585,
+    "file": 78959,
+    "posted": "2020-03-25 14:04:15",
+    "description": "Ch Rhabdomyosarcoma HP 3_25_20 for Lit Surv",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      30
+    ]
+  },
+  {
+    "id": 8586,
+    "file": 78969,
+    "posted": "2020-03-26 08:27:18",
+    "description": "Neuroblastoma HP 3_26_20 for Lit Surv",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      77
+    ]
+  },
+  {
+    "id": 8595,
+    "file": 79071,
+    "posted": "2020-04-01 09:28:55",
+    "description": "Unusual Cancers HP 4_1_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      142
+    ]
+  },
+  {
+    "id": 8598,
+    "file": 79312,
+    "posted": "2020-04-02 15:26:40",
+    "description": "Ch Craniopharyngioma HP 4_2_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      212
+    ]
+  },
+  {
+    "id": 8618,
+    "file": 79395,
+    "posted": "2020-04-08 07:34:37",
+    "description": "Ch Rhabdomyosarcoma HP 4_8_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      30
+    ]
+  },
+  {
+    "id": 8619,
+    "file": 79396,
+    "posted": "2020-04-08 08:12:43",
+    "description": "Late Effects HP 4_8_20 for Lit Surv",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      3
+    ],
+    "topics": [
+      168
+    ]
+  },
+  {
+    "id": 108,
+    "file": 513,
+    "posted": "2013-04-04 12:53:03",
+    "description": "Cancer Screening Overview_HP_04_04_13",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      4
+    ],
+    "topics": [
+      163
+    ]
+  },
+  {
+    "id": 5103,
+    "file": 45486,
+    "posted": "2017-05-22 10:26:08",
+    "description": "Levels of Evidence for Adult and Pediatric Cancer Treatment Studies_05_19_2017",
+    "dropped": 0,
+    "tags": [
+      5,
+      6
+    ],
+    "boards": [
+      1
+    ]
+  },
+  {
+    "id": 5107,
+    "file": 45592,
+    "posted": "2017-05-24 16:35:53",
+    "description": "LoE Adult and Pediatric_05_2017",
+    "dropped": 1,
+    "tags": [
+      5,
+      6
+    ],
+    "boards": [
+      1,
+      3
+    ]
+  },
+  {
+    "id": 8352,
+    "file": 77381,
+    "posted": "2020-01-27 12:40:18",
+    "description": "Adult Acute Lymphoblastic Leukemia Treatment_01-22-2020",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      2
+    ]
+  },
+  {
+    "id": 8353,
+    "file": 77382,
+    "posted": "2020-01-27 12:40:58",
+    "description": "Adult Acute Myeloid Leukemia Treatment_01_22_2020",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      3
+    ]
+  },
+  {
+    "id": 8181,
+    "file": 76036,
+    "posted": "2019-11-18 12:06:40",
+    "description": "Adrenocortical Carcinoma Treatment_11_13_2019",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      1
+    ],
+    "topics": [
+      1
+    ]
+  },
+  {
+    "id": 134,
+    "file": 683,
+    "posted": "2013-04-18 20:01:36",
+    "description": "Genetics Levels of Evidence Guidelines",
+    "dropped": 1,
+    "tags": [
+      5,
+      6
+    ],
+    "boards": [
+      2
+    ]
+  },
+  {
+    "id": 4599,
+    "file": 40211,
+    "posted": "2017-01-03 17:13:23",
+    "description": "Cancer Genetics Overview for WG 12_6_16",
+    "dropped": 1,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      15
+    ]
+  },
+  {
+    "id": 5325,
+    "file": 47778,
+    "posted": "2017-07-25 17:54:46",
+    "description": "Cancer Genetics Overview for LS 7_25_17",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      15
+    ]
+  },
+  {
+    "id": 8485,
+    "file": 78009,
+    "posted": "2020-02-24 14:19:06",
+    "description": "Cancer Genetics Overview for LS 2_24_20",
+    "dropped": 0,
+    "tags": [
+      5
+    ],
+    "boards": [
+      2
+    ],
+    "topics": [
+      15
+    ]
+  },
+  {
+    "id": 3937,
+    "file": 33515,
+    "posted": "2016-05-18 11:50:24",
+    "description": "Genetics of Breast and Gynecologic Cancers for WG 3_18_16 (1)",
+    "dropped": 0
+  },
+  {
+    "id": 6154,
+    "file": 57810,
+    "posted": "2018-03-16 22:21:25",
+    "description": "Cancer Genetics Overview for LS 7_25_17_BNP",
+    "dropped": 0
+  },
+  {
+    "id": 6240,
+    "file": 59077,
+    "posted": "2018-04-20 15:59:23",
+    "description": "Cancer Genetics Overview for LS 7_25_17_DA",
+    "dropped": 0
+  },
+  {
+    "id": 8617,
+    "file": 79362,
+    "posted": "2020-04-06 18:23:44",
+    "description": "Genetics of Breast and Gynecoloic Cancer DA edits_4-6-20",
+    "dropped": 0
+  },
+  {
+    "id": 8634,
+    "file": 79555,
+    "posted": "2020-06-22 07:37:17",
+    "description": "Ch Brain Sp Cd Tumors Overview HP 3_17_20 for Lit Surv",
+    "dropped": 0
+  }
+]

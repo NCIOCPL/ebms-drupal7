@@ -1,0 +1,13 @@
+.mrs {
+  color: #2a72a5;
+}
+div[id^="edit-comment-format"] {
+    display: none;
+}
+.form-item-comment-value .form-textarea-wrapper {
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+}
+#edit-comment--description {
+  font-style: italic;
+}

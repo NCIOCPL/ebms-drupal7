@@ -1,0 +1,31 @@
+<div {{ attributes }}>
+  {{ buttons }}
+  {% for comment in comments %}
+    <h3 class="board-manager-comment">Board Manager Comment
+    <a class="button usa-button usa-button--base inline-button left-pad-button" href="{{ comment.edit }}" title="Edit this board manager comment">Edit Comment</a>
+    <a class="button usa-button usa-button--base inline-button left-pad-button" href="{{ comment.delete }}" title="Delete this board manager comment">Delete Comment</a>
+    </h3>
+    <div class="board-manager-comment">{{ comment.body|nl2br }}</div>
+  {% endfor %}
+  {% if tags %}
+    <h3>Tags For This Topic</h3>
+    {% for tag in tags %}
+      <div class="article-tag">
+        {% if not tag.active %}<s>{% endif %}&ldquo;{{ tag.name }}&rdquo; assigned {{ tag.assigned|date('Y-m-d') }} by {{ tag.user }}{% if not tag.active %}</s>{% endif %}
+        <a class="button usa-button usa-button--base left-pad-button" href="{{ tag.add_comment }}" title="Add another comment for this tag"> Comment</a>
+      </div>
+      {% if tag.comments %}
+        <ul>
+          {% for comment in tag.comments %}
+            <li>{{ comment.user }} [{{ comment.entered|date('Y-m-d') }}]: {{ comment.body }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  <h3>Activity For This Topic</h3>
+  {% for import in imports %}
+    <div>[{{ import.date|date('Y-m-d') }}] {{ import.type }} batch&mdash;{{ import.disposition }} ({{ import.user }})<span style="color: green"> &#x2714;</span></div>
+  {% endfor %}
+  {{ states }}
+</div>

@@ -1,0 +1,26 @@
+[
+  {
+    "vid": "relationship_types",
+    "id": 1,
+    "field_text_id": "duplicate",
+    "name": "Duplicate",
+    "description": "This article has a duplicate record (e.g., the PMID has changed).",
+    "status": true
+  },
+  {
+    "vid": "relationship_types",
+    "id": 2,
+    "field_text_id": "article_editorial",
+    "name": "Article/Editorial",
+    "description": "This article (or editorial) has a related editorial (or article).",
+    "status": true
+  },
+  {
+    "vid": "relationship_types",
+    "id": 3,
+    "field_text_id": "other",
+    "name": "Other",
+    "description": "This article is related in some other way to another article.",
+    "status": true
+  }
+]

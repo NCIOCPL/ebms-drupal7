@@ -1,0 +1,247 @@
+<?php
+
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\ebms_core\Controller\SingleSignOn;
+use Drupal\ebms_user\Form\Authname;
+use Drupal\user\Entity\User;
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function ebms_user_entity_base_field_info(\Drupal\Core\Entity\EntityTypeInterface $entity_type): array|null {
+  if ($entity_type->id() === 'user') {
+    return [
+      'boards' => \Drupal\Core\Field\BaseFieldDefinition::create('entity_reference')
+        ->setSetting('target_type', 'ebms_board')
+        ->setLabel('Board(s)')
+        ->setDescription('PDQ Boards to which this user is assigned.')
+        ->setCardinality(\Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED)
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'entity_reference_autocomplete']),
+      'board' => \Drupal\Core\Field\BaseFieldDefinition::create('entity_reference')
+        ->setSetting('target_type', 'ebms_board')
+        ->setLabel('Default Board')
+        ->setDescription('PDQ Board to use by default when the user is assigned to more than one board.')
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'entity_reference_autocomplete']),
+      'topics' => \Drupal\Core\Field\BaseFieldDefinition::create('entity_reference')
+        ->setSetting('target_type', 'ebms_topic')
+        ->setLabel('Topic(s)')
+        ->setDescription('Topics for which this board member is a default reviewer.')
+        ->setCardinality(\Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED)
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'entity_reference_autocomplete']),
+      'groups' => \Drupal\Core\Field\BaseFieldDefinition::create('entity_reference')
+        ->setSetting('target_type', 'ebms_group')
+        ->setLabel('Group(s)')
+        ->setDescription('Groups of which this user is a member.')
+        ->setCardinality(\Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED)
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'entity_reference_autocomplete']),
+      'review_format' => \Drupal\Core\Field\BaseFieldDefinition::create('list_string')
+        ->setLabel('Review Queue Format')
+        ->setDefaultValue('brief')
+        ->setSettings([
+          'allowed_values' => [
+            'brief' => 'Brief',
+            'abstract' => 'Abstract',
+          ],
+        ])
+        ->setDescription('Decide whether to include the abstract in the review display by default.')
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'options_buttons']),
+      'review_per_page' => \Drupal\Core\Field\BaseFieldDefinition::create('list_integer')
+        ->setLabel('Review Queue Items Per Page')
+        ->setDefaultValue(10)
+        ->setSettings([
+          'allowed_values' => [
+            10 => '10',
+            25 => '25',
+            50 => '50',
+            100 => '100',
+          ],
+        ])
+        ->setDescription('Number of articles to display on each review page by default.')
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'options_buttons']),
+      'review_sort' => \Drupal\Core\Field\BaseFieldDefinition::create('list_string')
+        ->setLabel('Review Queue Sort')
+        ->setDefaultValue('id')
+        ->setSettings([
+          'allowed_values' => [
+            'state.article' => 'EBMS ID #',
+            'article.source_id' => 'PMID #',
+            'author' => 'Author',
+            'article.title' => 'Title',
+            'article.journal_title' => 'Journal',
+            'article.year' => 'Publication Date',
+          ],
+        ])
+        ->setDescription('Choose how to sort the articles in the review queues by default.')
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'options_buttons']),
+      'search_per_page' => \Drupal\Core\Field\BaseFieldDefinition::create('list_string')
+        ->setLabel('Search Default Items Per Page')
+        ->setDefaultValue('10')
+        ->setSettings([
+          'allowed_values' => [
+            '10' => '10',
+            '25' => '25',
+            '50' => '50',
+            'all' => 'View All',
+          ],
+        ])
+        ->setDescription('Number of articles to display on each search results page by default.')
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'options_buttons']),
+      'search_sort' => \Drupal\Core\Field\BaseFieldDefinition::create('list_string')
+        ->setLabel('Default Search Sort')
+        ->setDefaultValue('ebms-id')
+        ->setSettings([
+          'allowed_values' => [
+            'ebms-id' => 'EBMS ID',
+            'pmid' => 'PubMed ID',
+            'author' => 'Author',
+            'title' => 'Title',
+            'journal' => 'Journal',
+            'core' => 'Core Journals',
+          ],
+        ])
+        ->setDescription('Choose how to sort the articles in search results by default.')
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'options_buttons']),
+      'packet_article_sort' => \Drupal\Core\Field\BaseFieldDefinition::create('list_string')
+        ->setLabel('Default Packet Article Sort')
+        ->setDefaultValue('Author')
+        ->setSettings([
+          'allowed_values' => [
+            'author' => 'Author',
+            'journal' => 'Journal Title',
+          ],
+        ])
+        ->setDescription('Choose how to sort the articles on the packet creation page by default.')
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'options_buttons']),
+    ];
+  }
+  else {
+    return NULL;
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function ebms_user_form_alter(&$form, $form_state, $form_id) {
+  ebms_debug_log("ebms_user_form_alter(): form ID is $form_id");
+  if ($form_id === 'user_form' || $form_id === 'user_register_form') {
+    $user = User::load(\Drupal::currentUser()->id());
+    unset($form['account']['notify']);
+    unset($form['account']['mail']);
+    if (!$user->hasPermission('administer users')) {
+      unset($form['account']['pass']);
+      unset($form['account']['current_pass']);
+      unset($form['contact']);
+      $form['boards']['#access'] = FALSE;
+      $form['board']['#access'] = FALSE;
+      $form['topics']['#access'] = FALSE;
+      $form['groups']['#access'] = FALSE;
+      $form['review_format']['#access'] = FALSE;
+      $form['review_per_page']['#access'] = FALSE;
+      $form['review_sort']['#access'] = FALSE;
+      $form['search_per_page']['#access'] = FALSE;
+      $form['search_sort']['#access'] = FALSE;
+      $form['packet_article_sort']['#access'] = FALSE;
+      return;
+    }
+    if (!\Drupal::moduleHandler()->moduleExists('externalauth')) {
+      return;
+    }
+    if ($form_id === 'user_form') {
+      $account = $form_state->getFormObject()->getEntity();
+      $authname = \Drupal::database()->select('authmap', 'a')
+        ->condition('a.uid', $account->id())
+        ->condition('a.provider', 'ebms_core')
+        ->fields('a', ['authname'])
+        ->execute()
+        ->fetchField();
+      if (empty($authname)) {
+        return;
+      }
+    }
+    else {
+      $route_name = \Drupal::routeMatch()->getRouteName();
+      if ($route_name !== 'ebms_user.add_sso_user') {
+        return;
+      }
+      $authname = '';
+    }
+    ebms_debug_log("creating SSO form from $form_id");
+    unset($form['account']['pass']);
+    unset($form['account']['current_pass']);
+    $form['account']['authname'] = [
+      '#type' => 'textfield',
+      '#title' => 'NIH SSO Username',
+      '#maxlength' => 128,
+      '#description' => Authname::DESCRIPTION,
+      '#required' => TRUE,
+      '#default_value' => $authname,
+    ];
+    $form['actions']['submit']['#submit'][] = 'ebms_user_user_form_submit';
+  }
+}
+
+/**
+ * Custom submit handler for the user form.
+ */
+function ebms_user_user_form_submit($form, FormStateInterface $form_state) {
+  ebms_debug_log('custom user form submit handler');
+  $authname = $form_state->getValue('authname');
+  if (!empty($authname)) {
+    $account = $form_state->getFormObject()->getEntity();
+    $authmap = \Drupal::service('externalauth.authmap');
+    $authmap->save($account, SingleSignOn::PROVIDER, $authname);
+    ebms_debug_log("Saved SSO authname $authname");
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_user_theme($existing, $type, $theme, $path): array {
+  return [
+    'ebms_user_profile' => [
+      'variables' => [
+        'profile' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Custom access rule for the form to create an SSO user.
+ */
+function ebms_user_create_sso_access(AccountInterface $account) {
+  if (!$account->hasPermission('administer users')) {
+    $answer = AccessResult::forbidden();
+  }
+  elseif (!\Drupal::moduleHandler()->moduleExists('externalauth')) {
+    $answer = AccessResult::forbidden();
+  }
+  else {
+    $answer = AccessResult::allowed();
+  }
+  $answer->setCacheMaxAge(0);
+  return $answer;
+}
+
+/**
+ * Implements hook_menu_local_actions_alter().
+ */
+function ebms_user_menu_local_actions_alter(&$local_actions) {
+  if (\Drupal::moduleHandler()->moduleExists('externalauth')) {
+    $local_actions['user_admin_create']['title'] = 'Add test user';
+  }
+}

@@ -1,0 +1,41 @@
+<?php
+
+function ebms_home_theme($existing, $type, $theme, $path): array {
+  return [
+    'activity_cards' => [
+      'variables' => [
+        'cards' => [],
+      ],
+    ],
+    'home_page_next_meeting' => [
+      'variables' => [
+        'meeting' => [],
+      ],
+    ],
+    'home_page_assigned_for_review' => [
+      'variables' => [
+        'count' => NULL,
+        'url' => NULL,
+      ],
+    ],
+    'home_page_unseen_reviews' => [
+      'variables' => [
+        'count' => NULL,
+        'url' => NULL,
+      ],
+    ],
+    'home_page_hotel_requests' => [
+      'variables' => [
+        'count' => NULL,
+        'url' => NULL,
+      ],
+    ],
+    'home_page_posted_summaries' => [
+      'variables' => [
+        'count' => NULL,
+        'url' => NULL,
+        'board_count' => 0,
+      ],
+    ],
+  ];
+}

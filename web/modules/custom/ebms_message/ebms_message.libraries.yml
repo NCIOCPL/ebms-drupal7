@@ -1,0 +1,4 @@
+activity:
+  css:
+    theme:
+      css/activity.css: {}

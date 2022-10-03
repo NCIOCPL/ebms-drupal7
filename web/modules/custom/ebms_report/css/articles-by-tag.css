@@ -1,0 +1,19 @@
+.articles-by-tag .article {
+  margin-bottom: 2rem;
+}
+.authors {
+  font-weight: bold;
+}
+.title {
+  font-style: italic;
+}
+.topic-comment {
+  color: #a90101;
+  font-weight: bold;
+}
+#edit-options {
+  margin-top: 0;
+}
+#edit-options label {
+  margin-top: .5rem;
+}

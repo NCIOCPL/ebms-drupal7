@@ -1,0 +1,78 @@
+ebms_meeting.calendar:
+  path: /calendar
+  defaults:
+    _title: 'Calendar'
+    _controller: Drupal\ebms_meeting\Controller\Month::display
+    month: ''
+  requirements:
+    _permission: 'view calendar'
+  options:
+    no_cache: 'TRUE'
+ebms_meeting.calendar_month:
+  path: /calendar/{month}
+  defaults:
+    _title: 'Calendar'
+    _controller: Drupal\ebms_meeting\Controller\Month::display
+    month: ''
+  requirements:
+    _permission: 'view calendar'
+  options:
+    no_cache: 'TRUE'
+    parameters:
+      month:
+        type: string
+ebms_meeting.add_meeting:
+  path: /calendar/meeting/add
+  defaults:
+    _title: 'Add Meeting'
+    _form: Drupal\ebms_meeting\Form\MeetingForm
+  requirements:
+    _permission: 'manage meetings'
+ebms_meeting.edit_meeting:
+  path: /calendar/meeting/{meeting}/edit
+  defaults:
+    _title: 'Edit Meeting'
+    _form: Drupal\ebms_meeting\Form\MeetingForm
+  requirements:
+    _permission: 'manage meetings'
+  options:
+    parameters:
+      meeting:
+        type: entity:ebms_meeting
+ebms_meeting.meeting:
+  path: /calendar/meeting/{meeting}
+  defaults:
+    _title: 'Meeting'
+    _controller: Drupal\ebms_meeting\Controller\MeetingDisplay::show
+    meeting: 0
+  requirements:
+    _permission: 'view calendar'
+  options:
+    no_cache: 'TRUE'
+    parameters:
+      meeting:
+        type: entity:ebms_meeting
+ebms_meeting.ical_event:
+  path: /calendar/meeting/{meeting}/ical
+  defaults:
+    _title: 'Meeting Calendar Event'
+    _controller: Drupal\ebms_meeting\Controller\Event::send
+  requirements:
+    _permission: 'view calendar'
+  options:
+    no_cache: 'TRUE'
+    parameters:
+      meeting:
+        type: entity:ebms_meeting
+ebms_meeting.archive:
+  path: /calendar/meeting/{meeting}/archive
+  defaults:
+    _title: 'Download Meeting Files'
+    _controller: Drupal\ebms_meeting\Controller\Archive::send
+  requirements:
+    _permission: 'view calendar'
+  options:
+    no_cache: TRUE
+    parameters:
+      meeting:
+        type: entity:ebms_meeting

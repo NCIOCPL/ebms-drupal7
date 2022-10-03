@@ -1,0 +1,7 @@
+#ebms-import-form fieldset {
+  border: 1px #333 solid;
+  padding: 0 1rem 1rem 1rem;
+}
+#ebms-import-form fieldset legend {
+  padding: .5rem;
+}

@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Review Dispositions'
+vid: dispositions
+description: 'Proposed actions selected during board member article review.'
+weight: 0

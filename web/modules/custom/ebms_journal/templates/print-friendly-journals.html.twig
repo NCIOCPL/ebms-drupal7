@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Journals</title>
+    <style>
+body { font-family: Arial, sans-serif; }
+h1 { font-size: 1.33rem; }
+h2 { font-size: 1.2rem; }
+h3 { font-size: 1.1rem; }
+table { border-collapse: collapse; }
+td, th { border-bottom: 1px black solid; }
+.center { text-align: center; }
+    </style>
+  </head>
+  <body>
+    <h1>{{ title }}</h1>
+    <h2>Report Date: {{ "now"|date("Y-m-d") }}</h2>
+    {% for filter in filters %}
+    <h3>{{ filter }}</h3>
+    {% endfor %}
+    <table>
+      <thead>
+        <tr>
+          <th>Brief Title</th>
+          <th>Full Title</th>
+          <th>Journal ID</th>
+          {% if all %}
+          <th>Excluded?</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for journal in journals %}
+        <tr>
+          <td>{{ journal.brief }}</td>
+          <td>{{ journal.full }}</td>
+          <td>{{ journal.id }}</td>
+          {% if all %}
+          <td class="center">{{ journal.excluded }}</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </body>
+</html>

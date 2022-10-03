@@ -1,0 +1,58 @@
+[
+  {
+    "vid": "import_dispositions",
+    "id": 1,
+    "field_text_id": "imported",
+    "name": "Imported",
+    "description": "First time import into the database",
+    "status": true
+  },
+  {
+    "vid": "import_dispositions",
+    "id": 2,
+    "field_text_id": "review_ready",
+    "name": "Ready for review",
+    "description": "Imported as ready for review",
+    "status": true
+  },
+  {
+    "vid": "import_dispositions",
+    "id": 3,
+    "field_text_id": "not_listed",
+    "name": "NOT listed",
+    "description": "Imported but automatically rejected because the journal was NOT listed",
+    "status": true
+  },
+  {
+    "vid": "import_dispositions",
+    "id": 4,
+    "field_text_id": "duplicate",
+    "name": "Duplicate, not imported",
+    "description": "Article already in database with same topic.  Not re-imported.",
+    "status": true
+  },
+  {
+    "vid": "import_dispositions",
+    "id": 5,
+    "field_text_id": "topic_added",
+    "name": "Summary topic added",
+    "description": "Article already in database.  New summary topic added.",
+    "status": true
+  },
+  {
+    "vid": "import_dispositions",
+    "id": 6,
+    "field_text_id": "replaced",
+    "name": "Replaced",
+    "description": "Article record replaced from updated, newly downloaded, source record",
+    "status": true
+  },
+  {
+    "vid": "import_dispositions",
+    "id": 7,
+    "field_text_id": "error",
+    "name": "Error",
+    "description": "An error occurred in locating or parsing the record.  Not imported.",
+    "status": true
+  }
+]

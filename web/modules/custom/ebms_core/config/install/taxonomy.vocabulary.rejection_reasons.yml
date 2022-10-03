@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Rejection Reasons'
+vid: rejection_reasons
+description: 'Justifications specified during review for deciding not to use information in an article.'
+weight: 0

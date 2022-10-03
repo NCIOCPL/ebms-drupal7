@@ -1,0 +1,51 @@
+<?php
+
+use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\SelectInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_summary_theme($existing, $type, $theme, $path): array {
+  return [
+    'doc_table' => [
+      'variables' => [
+        'caption' => NULL,
+        'header' => [],
+        'rows' => [],
+        'empty' => NULL,
+        'topics' => [],
+      ],
+    ],
+    'summary_pages' => [
+      'variables' => [
+        'pages' => [],
+        'member' => FALSE,
+      ],
+    ],
+    'summary_links' => [
+      'variables' => [
+        'links' => [],
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * We're looking for summary documents posted by the board members for a
+ * board manager's boards.
+ *
+ * See HomePage::postedSummariesAlert().
+ */
+function ebms_review_query_posted_summaries_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $board_ids = $query->getMetaData('boards');
+    $query->join('ebms_summary_page__member_docs', 'member_docs', 'member_docs.member_docs_doc = base_table.id');
+    $query->join('ebms_board_summaries__pages', 'pages', 'pages.pages_target_id = member_docs.entity_id');
+    $query->join('ebms_board_summaries', 'summaries', 'summaries.id = pages.entity_id');
+    $query->condition('summaries.board', $board_ids, 'IN');
+    $query->condition('base_table.posted', date('Y-m-d', strtotime('-30 days')), '>=');
+  }
+}

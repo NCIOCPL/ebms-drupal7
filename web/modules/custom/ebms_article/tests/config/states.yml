@@ -1,0 +1,160 @@
+-
+    id: 1
+    vid: states
+    name: 'Ready for initial review'
+    field_text_id: ready_init_review
+    field_terminal: false
+    status: true
+    field_sequence: 10
+-
+    id: 2
+    vid: states
+    name: 'Rejected by NOT list'
+    field_text_id: reject_journal_title
+    field_terminal: true
+    status: true
+    field_sequence: 20
+-
+    id: 3
+    vid: states
+    name: 'Rejected in initial review'
+    field_text_id: reject_init_review
+    field_terminal: true
+    status: true
+    field_sequence: 30
+-
+    id: 4
+    vid: states
+    name: 'Passed initial review'
+    field_text_id: passed_init_review
+    field_terminal: false
+    status: true
+    field_sequence: 30
+-
+    id: 5
+    vid: states
+    name: Published
+    field_text_id: published
+    field_terminal: false
+    status: true
+    field_sequence: 40
+-
+    id: 6
+    vid: states
+    name: 'Rejected by Board Manager'
+    field_text_id: reject_bm_review
+    field_terminal: true
+    status: true
+    field_sequence: 50
+-
+    id: 7
+    vid: states
+    name: 'Passed Board Manager'
+    field_text_id: passed_bm_review
+    field_terminal: false
+    status: true
+    field_sequence: 50
+-
+    id: 8
+    vid: states
+    name: 'Rejected after full text review'
+    field_text_id: reject_full_review
+    field_terminal: true
+    status: true
+    field_sequence: 60
+-
+    id: 9
+    vid: states
+    name: 'Passed full text review'
+    field_text_id: passed_full_review
+    field_terminal: false
+    status: true
+    field_sequence: 60
+-
+    id: 10
+    vid: states
+    name: 'Flagged as FYI'
+    field_text_id: fyi
+    field_terminal: true
+    status: true
+    field_sequence: 60
+-
+    id: 11
+    vid: states
+    name: 'No further action'
+    field_text_id: full_end
+    field_terminal: true
+    status: true
+    field_sequence: 70
+-
+    id: 12
+    vid: states
+    name: 'Minor changes not for Board review'
+    field_text_id: not_for_agenda
+    field_terminal: false
+    status: true
+    field_sequence: 70
+-
+    id: 13
+    vid: states
+    name: 'Summary changes for Board review (no paper for discussion)'
+    field_text_id: agenda_no_paper_change
+    field_terminal: false
+    status: true
+    field_sequence: 70
+-
+    id: 14
+    vid: states
+    name: 'Paper and summary changes for discussion'
+    field_text_id: agenda_future_change
+    field_terminal: false
+    status: true
+    field_sequence: 70
+-
+    id: 15
+    vid: states
+    name: 'Paper for Board discussion'
+    field_text_id: agenda_board_discuss
+    field_terminal: false
+    status: true
+    field_sequence: 70
+-
+    id: 16
+    vid: states
+    name: 'Paper for Working Group discussion'
+    field_text_id: agenda_work_group_discuss
+    field_terminal: false
+    status: true
+    field_sequence: 70
+-
+    id: 17
+    vid: states
+    name: 'On agenda'
+    field_text_id: on_agenda
+    field_terminal: false
+    status: true
+    field_sequence: 80
+-
+    id: 18
+    vid: states
+    name: 'Final board decision'
+    field_text_id: final_board_decision
+    field_terminal: true
+    status: true
+    field_sequence: 90
+-
+    id: 20
+    vid: states
+    name: 'On Hold'
+    field_text_id: on_hold
+    field_terminal: false
+    status: true
+    field_sequence: 70
+-
+    id: 21
+    vid: states
+    name: 'Held After Full Text Review'
+    field_text_id: full_review_hold
+    field_terminal: false
+    status: true
+    field_sequence: 60

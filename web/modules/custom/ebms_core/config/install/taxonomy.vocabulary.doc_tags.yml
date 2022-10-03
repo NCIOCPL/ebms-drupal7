@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Document Tags'
+vid: doc_tags
+description: 'Tags used to mark posted documents for specific uses.'
+weight: 0

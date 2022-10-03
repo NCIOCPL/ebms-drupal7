@@ -1,0 +1,6 @@
+services:
+  ebms_article.search:
+    class: Drupal\ebms_article\Search
+    arguments:
+      - '@entity_type.manager'
+      - '@database'

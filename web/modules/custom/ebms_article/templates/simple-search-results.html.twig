@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>EBMS Search Results</title>
+    <style>
+body {
+  width: 64rem;
+  margin: 2rem auto;
+  font-family: Arial, sans-serif;
+}
+.filter {
+  font-weight: bold;
+  margin-bottom: .5rem;
+}
+.title {
+  font-style: italic;
+}
+.ids span {
+  margin-right: 1rem;
+}
+.article {
+  margin-top: 1rem;
+}
+    </style>
+  </head>
+  <body>
+    <h1>EBMS Search Results ({{ articles|length }})</h1>
+    <h2>{{ "now"|date("Y-m-d H:i") }}</h2>
+    {% for filter in filters %}
+    <div class="filter">{{ filter }}</div>
+    {% endfor %}
+    <div class="articles">
+      {% for article in articles %}
+      <div class="article">
+        <div class="authors">[{{ loop.index }}] {{ article.authors|join('; ') }}</div>
+        <div class="title">{{ article.title }}</div>
+        <div class="publication">{{ article.publication }}</div>
+        <div class="ids">
+          <span class="pmid">PMID: {{ article.pmid }}</span>
+          <span class="ebmsid">EBMS ID: {{ article.id }}</span>
+          {% if article.legacy_id %}
+          <span class="legacyid">Legacy CMS ID: {{ article.legacy_id }}</span>
+          {% endif %}
+        </div>
+        <div class="topics">{{ article.topics|join('; ') }}</div>
+        <div class="links">
+          <a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank">View Abstract</a>
+          {% if article.full_text_url %}
+          | <a href="{{ article.full_text_url }}" target="_blank">Download Full Text</a>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </body>
+</html>

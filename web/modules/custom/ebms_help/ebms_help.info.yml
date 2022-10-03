@@ -1,0 +1,11 @@
+name: EBMS Help Pages
+description: Manual pages for users of the EBMS.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - block
+  - ebms_core
+  - file
+  - system
+  - user

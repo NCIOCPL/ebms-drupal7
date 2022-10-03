@@ -1,0 +1,44 @@
+[
+  {
+    "vid": "board_decisions",
+    "id": 1,
+    "name": "Cited (citation only)",
+    "status": true
+  },
+  {
+    "vid": "board_decisions",
+    "id": 2,
+    "name": "Cited (legacy)",
+    "status": true
+  },
+  {
+    "vid": "board_decisions",
+    "id": 7,
+    "name": "Hold",
+    "status": true
+  },
+  {
+    "vid": "board_decisions",
+    "id": 3,
+    "name": "Not cited",
+    "status": true
+  },
+  {
+    "vid": "board_decisions",
+    "id": 4,
+    "name": "Text approved",
+    "status": true
+  },
+  {
+    "vid": "board_decisions",
+    "id": 6,
+    "name": "Text needs to be revised",
+    "status": true
+  },
+  {
+    "vid": "board_decisions",
+    "id": 5,
+    "name": "Text needs to be written",
+    "status": true
+  }
+]

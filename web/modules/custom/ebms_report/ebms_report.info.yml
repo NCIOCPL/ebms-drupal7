@@ -1,0 +1,10 @@
+name: EBMS Report Requests
+description: Reports for EBMS system
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ebms_core
+  - ebms_group
+  - file
+  - user

@@ -1,0 +1,17 @@
+.user-profile {
+  margin-top: 2rem;
+}
+.user-profile dt {
+  font-weight: bold;
+}
+.user-profile dt,
+.user-profile dd {
+  margin-bottom: 1rem;
+}
+.profile-picture {
+  max-width: 15rem;
+  margin-top: 2rem;
+}
+.user-profile .usa-button {
+  margin-top: 1rem;
+}

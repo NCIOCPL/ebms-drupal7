@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Hotel Payment Methods'
+vid: hotel_payment_methods
+description: 'How hotel expenses were initially paid.'
+weight: 0

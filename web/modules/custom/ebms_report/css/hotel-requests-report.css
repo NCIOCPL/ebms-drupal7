@@ -1,0 +1,5 @@
+#edit-requests td:nth-child(1),
+#edit-requests td:nth-child(4),
+#edit-requests td:nth-child(5) {
+  white-space: nowrap;
+}

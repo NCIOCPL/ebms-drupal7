@@ -1,0 +1,276 @@
+ebms_article.article:
+  path: '/articles/{article}'
+  defaults:
+    _title: 'EBMS Article'
+    _controller: \Drupal\ebms_article\Controller\ArticleController::display
+  requirements:
+    _permission: 'perform full search'
+  options:
+    parameters:
+      article:
+        type: entity:ebms_article
+ebms_article.search_form:
+  path: /articles/search/{search_id}
+  defaults:
+    _title: 'Article Search'
+    _form: Drupal\ebms_article\Form\SearchForm
+    search_id: ''
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    parameters:
+      search_id:
+        type: integer
+ebms_article.search_results:
+  path: '/articles/search/results/{request_id}'
+  defaults:
+    _title: 'Search Results'
+    _controller: \Drupal\ebms_article\Controller\SearchResultsController::display
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    parameters:
+      request_id:
+        type: integer
+ebms_article.simple_search_results:
+  path: '/articles/search/results/simple/{request_id}'
+  defaults:
+    _title: 'Search Results'
+    _controller: \Drupal\ebms_article\Controller\SimpleSearchResults::display
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    parameters:
+      request_id:
+        type: integer
+ebms_article.add_article_topic:
+  path: /articles/topic/add/{article_id}
+  defaults:
+    _title: 'Add Topic To Article'
+    _form: Drupal\ebms_article\Form\AddArticleTopicForm
+    article_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_id:
+        type: integer
+ebms_article.add_new_state:
+  path: /articles/topic/state/add/{article_id}/{article_topic_id}
+  defaults:
+    _title: 'Add New State For Article Topic'
+    _form: Drupal\ebms_article\Form\NewStateForm
+    article_id: ''
+    article_topic_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_id:
+        type: integer
+      article_topic_id:
+        type: integer
+ebms_article.add_state_comment:
+  path: /articles/topic/state/comment/add/{state_id}
+  defaults:
+    _title: 'Add a comment to an article state'
+    _form: Drupal\ebms_article\Form\AddStateCommentForm
+    state_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      state_id:
+        type: integer
+ebms_article.add_article_tag:
+  path: /articles/tag/add/{article_id}
+  defaults:
+    _title: 'Add Tag To Article'
+    _form: Drupal\ebms_article\Form\AddArticleTagForm
+    article_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_id:
+        type: integer
+ebms_article.internal_tags:
+  path: /articles/internal-tags/{article_id}
+  defaults:
+    _title: 'Assign Internal Tags To Article'
+    _form: Drupal\ebms_article\Form\InternalTagsForm
+    article_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_id:
+        type: integer
+ebms_article.add_internal_comment:
+  path: /articles/internal-comment/add/{article_id}
+  defaults:
+    _title: 'Post an Internal Comment To Article'
+    _form: Drupal\ebms_article\Form\InternalCommentForm
+    article_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_id:
+        type: integer
+ebms_article.edit_internal_comment:
+  path: /articles/internal-comment/edit/{article_id}
+  defaults:
+    _title: 'Edit Internal Comment'
+    _form: Drupal\ebms_article\Form\InternalCommentForm
+    article_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_id:
+        type: integer
+ebms_article.delete_internal_comment:
+  path: /articles/internal-comment/delete/{article_id}
+  defaults:
+    _title: 'Delete Internal Comment'
+    _form: Drupal\ebms_article\Form\InternalCommentDeleteForm
+    article_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_id:
+        type: integer
+ebms_article.add_article_tag_comment:
+  path: /articles/tag-comment/add/{tag_id}
+  defaults:
+    _title: 'Add Comment To Article Tag'
+    _form: Drupal\ebms_article\Form\AddArticleTagCommentForm
+    tag_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      tag_id:
+        type: integer
+ebms_article.add_manager_topic_comment:
+  path: /articles/topic/comment/add/{article_topic_id}
+  defaults:
+    _title: 'Add Manager Comment'
+    _form: Drupal\ebms_article\Form\ManagerCommentForm
+    article_topic: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_topic_id:
+        type: integer
+ebms_article.edit_manager_topic_comment:
+  path: /articles/topic/comment/edit/{article_topic_id}
+  defaults:
+    _title: 'Edit Manager Comment'
+    _form: Drupal\ebms_article\Form\ManagerCommentForm
+    article_topic: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_topic_id:
+        type: integer
+ebms_article.delete_manager_topic_comment:
+  path: /articles/topic/comment/delete/{article_topic_id}
+  defaults:
+    _title: 'Delete Manager Comment'
+    _form: Drupal\ebms_article\Form\ManagerCommentDeleteForm
+    article_topic: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      article_topic_id:
+        type: integer
+ebms_article.add_full_text:
+  path: /articles/full-text/add/{article_id}
+  defaults:
+    _title: 'Add Full Text To Article'
+    _form: Drupal\ebms_article\Form\FullTextForm
+    article_id: ''
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      results:
+        type: integer
+ebms_article.add_article_relationship:
+  path: /articles/related/add
+  defaults:
+    _title: 'Link Related Articles'
+    _form: Drupal\ebms_article\Form\RelatedArticlesForm
+  requirements:
+    _permission: 'manage articles'
+ebms_article.edit_article_relationship:
+  path: /articles/related/edit/{relationship_id}
+  defaults:
+    _title: 'Link Related Articles'
+    _form: Drupal\ebms_article\Form\RelatedArticlesForm
+    relationship_id: 0
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      relationship_id:
+        type: integer
+ebms_article.delete_article_relationship:
+  path: /articles/related/deactivate/{ebms_article_relationship}
+  defaults:
+    _title: 'Confirm Relationship Deletion'
+    _entity_form: ebms_article_relationship.deactivate
+  requirements:
+    _permission: 'manage articles'
+  options:
+    parameters:
+      ebms_article_relationship:
+        type: 'entity:ebms_article_relationship'
+ebms_article.show_abstract:
+  path: /articles/abstract/{article}
+  defaults:
+    _controller: \Drupal\ebms_article\Controller\ShowAbstract::display
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    parameters:
+      article:
+        type: 'entity:ebms_article'
+ebms_article.pmid_search:
+  path: /articles/pmid-search
+  defaults:
+    _controller: Drupal\ebms_article\Controller\SearchPubMed::search
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+ebms_article.full_text_queue:
+  path: /articles/full-text-queue/{queue_id}
+  defaults:
+    _title: Full Text Queue
+    _form: Drupal\ebms_article\Form\FullTextQueue
+    queue_id: 0
+  requirements:
+    _permission: view full text retrieval queue
+  options:
+    parameters:
+      queue_id:
+        type: integer
+ebms_article.internal_articles:
+  path: /articles/internal/{request_id}
+  defaults:
+    _title: Internal Articles
+    _form: Drupal\ebms_article\Form\InternalArticles
+    request_id: 0
+  requirements:
+    _permission: manage articles
+  options:
+    parameters:
+      request_id:
+        type: integer

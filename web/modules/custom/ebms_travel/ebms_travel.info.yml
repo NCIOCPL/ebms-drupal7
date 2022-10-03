@@ -1,0 +1,11 @@
+name: EBMS Travel Pages
+description: Pages for board members traveling to the NCI for meetings.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - block
+  - ebms_core
+  - file
+  - system
+  - user

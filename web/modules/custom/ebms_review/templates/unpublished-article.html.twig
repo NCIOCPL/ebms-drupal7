@@ -1,0 +1,17 @@
+<div class="unpublished-article">
+  {% if article.authors %}
+  <div><strong>{{ article.authors }}</strong></div>
+  {% else %}
+  <div><strong>[No authors listed]</strong></div>
+  {% endif %}
+  <div><em>{{ article.title }}</em></div>
+  {% if article.publication %}
+    <div>{{ article.publication }}</div>
+  {% endif %}
+  <div>PMID: <span class="pmid">{{ article.pmid }}</span> <span class="ebmsid">EBMS ID: {{ article.id }}</span></div>
+  {% if article.topics %}
+  <div class="unpublished-topics">
+    {{ article.topics }}
+  <div>
+  {% endif %}
+</div>

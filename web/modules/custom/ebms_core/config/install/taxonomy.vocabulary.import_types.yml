@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Import Types'
+vid: import_types
+description: 'How a batch of articles was imported (e.g., "regular-import" or "data-refresh")'
+weight: 0

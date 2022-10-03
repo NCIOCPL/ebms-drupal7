@@ -1,0 +1,39 @@
+<div class="report">
+  <h2>{{ title }}</h2>
+  {% if articles %}
+  <div class="articles">
+    {% for article in articles %}
+    <div class="article">
+      {% include '@ebms_report/report-article.html.twig' %}
+      {% for packet in article.packets %}
+      <div class="packet">
+        <div class="topic">Topic: <span class="topic-name">{{ packet.topic }}</span>{% if packet.high_priority %} (tagged <span class="high-priority"> High Priority</span>){% endif %}</div>
+        <div class="packet-info">Assigned {{ packet.assigned }} to {{ packet.reviewers|join(', ') }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% elseif topics %}
+  <div class="topics">
+    {% for topic in topics %}
+      <h3>{{ topic.name }}</h3>
+      {% for article in topic.articles %}
+      <div class="article">
+        {% include '@ebms_report/report-article.html.twig' %}
+        {% if article.high_priority %}
+        <div class="high-priority">High Priority</div>
+        {% endif %}
+        {% for packet in article.packets %}
+        <div class="packet">
+          <div class="packet-info">Assigned {{ packet.assigned }} to {{ packet.reviewers|join(', ') }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-report"><em>No articles match the selected criteria.</em></div>
+  {% endif %}
+</div>

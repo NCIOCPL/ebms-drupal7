@@ -1,0 +1,50 @@
+[
+  {
+    "vid": "doc_tags",
+    "id": 2,
+    "field_text_id": "agenda",
+    "name": "Agenda",
+    "description": "Documents linkable from a meeting agenda node",
+    "status": true
+  },
+  {
+    "vid": "doc_tags",
+    "id": 3,
+    "field_text_id": "minutes",
+    "name": "Minutes",
+    "description": "Documents linkable from a meeting minutes node",
+    "status": true
+  },
+  {
+    "vid": "doc_tags",
+    "id": 4,
+    "field_text_id": "roster",
+    "name": "Roster",
+    "description": "Document which should appear on the Roster page",
+    "status": true
+  },
+  {
+    "vid": "doc_tags",
+    "id": 5,
+    "field_text_id": "summary",
+    "name": "Summary",
+    "description": "Documents linkable from the Summaries pages",
+    "status": true
+  },
+  {
+    "vid": "doc_tags",
+    "id": 6,
+    "field_text_id": "support",
+    "name": "Support",
+    "description": "Used by board managers in combination with the \"summary\" tag for general-information documents to appear on the Summaries pages",
+    "status": true
+  },
+  {
+    "vid": "doc_tags",
+    "id": 7,
+    "field_text_id": "help",
+    "name": "Help",
+    "description": "Documents to be listed on user help landing page",
+    "status": true
+  }
+]

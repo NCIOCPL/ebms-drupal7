@@ -1,0 +1,5 @@
+name: EBMS Menus
+description: Workarounds for flaws in Drupal's menu handling.
+type: module
+package: EBMS
+core_version_requirement: ^9

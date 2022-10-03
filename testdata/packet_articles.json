@@ -1,0 +1,2097 @@
+[
+  {
+    "id": 1,
+    "article": 650240,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 2,
+    "article": 536576,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 3,
+    "article": 560131,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 4,
+    "article": 536580,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 5,
+    "article": 509963,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 6,
+    "article": 573453,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 7,
+    "article": 512015,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 8,
+    "article": 502799,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 9,
+    "article": 509980,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 10,
+    "article": 613403,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68531
+    ]
+  },
+  {
+    "id": 11,
+    "article": 539680,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 12,
+    "article": 437283,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 13,
+    "article": 556071,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 14,
+    "article": 560169,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 15,
+    "article": 554031,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 16,
+    "article": 554036,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 17,
+    "article": 546869,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 18,
+    "article": 179258,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 19,
+    "article": 539708,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 20,
+    "article": 657000,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69497,
+      69788
+    ]
+  },
+  {
+    "id": 21,
+    "article": 543811,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 22,
+    "article": 486468,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 23,
+    "article": 532549,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 24,
+    "article": 293297,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 25,
+    "article": 587192,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 26,
+    "article": 547915,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 27,
+    "article": 611403,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68623,
+      68125,
+      67755
+    ]
+  },
+  {
+    "id": 28,
+    "article": 528464,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 29,
+    "article": 520280,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      63651,
+      63638
+    ]
+  },
+  {
+    "id": 30,
+    "article": 520280,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 31,
+    "article": 531565,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 32,
+    "article": 621706,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68363,
+      68192,
+      67941
+    ]
+  },
+  {
+    "id": 33,
+    "article": 621708,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68652
+    ]
+  },
+  {
+    "id": 34,
+    "article": 544915,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 35,
+    "article": 544918,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 36,
+    "article": 587926,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 37,
+    "article": 587927,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 38,
+    "article": 554149,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 39,
+    "article": 507048,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 40,
+    "article": 649695,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69266,
+      69479
+    ]
+  },
+  {
+    "id": 41,
+    "article": 611506,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 42,
+    "article": 630961,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69722
+    ]
+  },
+  {
+    "id": 43,
+    "article": 531639,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 44,
+    "article": 536759,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 45,
+    "article": 606393,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 46,
+    "article": 521406,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 47,
+    "article": 544960,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 48,
+    "article": 413888,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 49,
+    "article": 552135,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 50,
+    "article": 584903,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 51,
+    "article": 584907,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 52,
+    "article": 584908,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 53,
+    "article": 615629,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68056,
+      67811
+    ]
+  },
+  {
+    "id": 54,
+    "article": 428237,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 55,
+    "article": 584910,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 56,
+    "article": 587220,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      66424,
+      66374,
+      66405
+    ]
+  },
+  {
+    "id": 57,
+    "article": 584921,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 58,
+    "article": 590044,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 59,
+    "article": 584929,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 60,
+    "article": 540901,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 61,
+    "article": 584934,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 62,
+    "article": 300264,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 63,
+    "article": 650479,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69422,
+      69570,
+      69382
+    ]
+  },
+  {
+    "id": 64,
+    "article": 584943,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 65,
+    "article": 584944,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 66,
+    "article": 584950,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 67,
+    "article": 552184,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 68,
+    "article": 431353,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 69,
+    "article": 600312,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 70,
+    "article": 552188,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 71,
+    "article": 600314,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 72,
+    "article": 554239,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 73,
+    "article": 650496,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69393,
+      69383
+    ]
+  },
+  {
+    "id": 74,
+    "article": 651520,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69368
+    ]
+  },
+  {
+    "id": 75,
+    "article": 651521,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69367
+    ]
+  },
+  {
+    "id": 76,
+    "article": 651529,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69360,
+      69292
+    ]
+  },
+  {
+    "id": 77,
+    "article": 643337,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69147,
+      69122
+    ]
+  },
+  {
+    "id": 78,
+    "article": 651532,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69283,
+      69438
+    ]
+  },
+  {
+    "id": 79,
+    "article": 554255,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 80,
+    "article": 552429,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 81,
+    "article": 554258,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 82,
+    "article": 425241,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      57280,
+      57315,
+      57363
+    ]
+  },
+  {
+    "id": 83,
+    "article": 526618,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 84,
+    "article": 643356,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69148,
+      69123
+    ]
+  },
+  {
+    "id": 85,
+    "article": 651549,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 86,
+    "article": 538913,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 87,
+    "article": 651557,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69265
+    ]
+  },
+  {
+    "id": 88,
+    "article": 651558,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69267
+    ]
+  },
+  {
+    "id": 89,
+    "article": 476460,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 90,
+    "article": 502063,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 91,
+    "article": 544047,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 92,
+    "article": 552239,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 93,
+    "article": 645424,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 94,
+    "article": 502067,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 95,
+    "article": 502067,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 96,
+    "article": 502067,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      65037
+    ]
+  },
+  {
+    "id": 97,
+    "article": 527670,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 98,
+    "article": 607543,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 99,
+    "article": 651581,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69357,
+      69522,
+      69569,
+      69334,
+      69295,
+      69440
+    ]
+  },
+  {
+    "id": 100,
+    "article": 651581,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 101,
+    "article": 651584,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69201
+    ]
+  },
+  {
+    "id": 102,
+    "article": 536898,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 103,
+    "article": 559428,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 104,
+    "article": 651591,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69421,
+      69571,
+      69381
+    ]
+  },
+  {
+    "id": 105,
+    "article": 588105,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68182
+    ]
+  },
+  {
+    "id": 106,
+    "article": 651607,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 107,
+    "article": 637274,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68749,
+      68777
+    ]
+  },
+  {
+    "id": 108,
+    "article": 11610,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 109,
+    "article": 179546,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 110,
+    "article": 592335,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 111,
+    "article": 651618,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69781
+    ]
+  },
+  {
+    "id": 112,
+    "article": 637282,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68794,
+      68846,
+      68780
+    ]
+  },
+  {
+    "id": 113,
+    "article": 602470,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 114,
+    "article": 531817,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 115,
+    "article": 526698,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 116,
+    "article": 463211,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 117,
+    "article": 637293,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 118,
+    "article": 512363,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 119,
+    "article": 512367,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 120,
+    "article": 220529,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 121,
+    "article": 535926,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 122,
+    "article": 555390,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 123,
+    "article": 555393,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 124,
+    "article": 186756,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 125,
+    "article": 497061,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      62108
+    ]
+  },
+  {
+    "id": 126,
+    "article": 497061,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 127,
+    "article": 501173,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 128,
+    "article": 544181,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 129,
+    "article": 511413,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 130,
+    "article": 511415,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 131,
+    "article": 548281,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 132,
+    "article": 505286,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 133,
+    "article": 548308,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 134,
+    "article": 530903,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 135,
+    "article": 506334,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 136,
+    "article": 5596,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      1718
+    ]
+  },
+  {
+    "id": 137,
+    "article": 5596,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      1802,
+      1803,
+      1804
+    ]
+  },
+  {
+    "id": 138,
+    "article": 502272,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 139,
+    "article": 502273,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 140,
+    "article": 476673,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 141,
+    "article": 631242,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68759,
+      68711,
+      68410
+    ]
+  },
+  {
+    "id": 142,
+    "article": 656917,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 143,
+    "article": 656924,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 144,
+    "article": 656923,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 145,
+    "article": 552482,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 146,
+    "article": 656936,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69792
+    ]
+  },
+  {
+    "id": 147,
+    "article": 502314,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 148,
+    "article": 580141,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      66908,
+      65826
+    ]
+  },
+  {
+    "id": 149,
+    "article": 566733,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 150,
+    "article": 656945,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 151,
+    "article": 511541,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 152,
+    "article": 583223,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 153,
+    "article": 656953,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69471,
+      69770,
+      69457,
+      69532
+    ]
+  },
+  {
+    "id": 154,
+    "article": 568890,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 155,
+    "article": 548413,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 156,
+    "article": 662081,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 157,
+    "article": 511556,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 158,
+    "article": 656971,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 159,
+    "article": 656972,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 160,
+    "article": 542289,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 161,
+    "article": 625229,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 162,
+    "article": 546389,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 163,
+    "article": 608853,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 164,
+    "article": 608856,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 165,
+    "article": 608864,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 166,
+    "article": 534114,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 167,
+    "article": 656999,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69498,
+      69789
+    ]
+  },
+  {
+    "id": 168,
+    "article": 542312,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 169,
+    "article": 642664,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68853,
+      69521
+    ]
+  },
+  {
+    "id": 170,
+    "article": 642663,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68854
+    ]
+  },
+  {
+    "id": 171,
+    "article": 642666,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68852
+    ]
+  },
+  {
+    "id": 172,
+    "article": 642662,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68855
+    ]
+  },
+  {
+    "id": 173,
+    "article": 662128,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69953
+    ]
+  },
+  {
+    "id": 174,
+    "article": 642668,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68851
+    ]
+  },
+  {
+    "id": 175,
+    "article": 662127,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69950
+    ]
+  },
+  {
+    "id": 176,
+    "article": 631415,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68750,
+      68587,
+      68497
+    ]
+  },
+  {
+    "id": 177,
+    "article": 591480,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      66839,
+      66764
+    ]
+  },
+  {
+    "id": 178,
+    "article": 552569,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 179,
+    "article": 642682,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69504
+    ]
+  },
+  {
+    "id": 180,
+    "article": 348796,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 181,
+    "article": 534141,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 182,
+    "article": 608894,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 183,
+    "article": 637373,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68978,
+      68915
+    ]
+  },
+  {
+    "id": 184,
+    "article": 546433,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 185,
+    "article": 534160,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 186,
+    "article": 598672,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 187,
+    "article": 534162,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 188,
+    "article": 642709,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68986,
+      69001
+    ]
+  },
+  {
+    "id": 189,
+    "article": 542363,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 190,
+    "article": 542363,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 191,
+    "article": 136860,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 192,
+    "article": 136860,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      26648,
+      26659,
+      26680
+    ]
+  },
+  {
+    "id": 193,
+    "article": 515749,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 194,
+    "article": 645800,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 195,
+    "article": 598702,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 196,
+    "article": 380598,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 197,
+    "article": 637384,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68719
+    ]
+  },
+  {
+    "id": 198,
+    "article": 559803,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      70000
+    ]
+  },
+  {
+    "id": 199,
+    "article": 549564,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 200,
+    "article": 549565,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 201,
+    "article": 663227,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 202,
+    "article": 574140,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 203,
+    "article": 642752,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68994,
+      69074,
+      69023,
+      68971
+    ]
+  },
+  {
+    "id": 204,
+    "article": 559816,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69999
+    ]
+  },
+  {
+    "id": 205,
+    "article": 667341,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 206,
+    "article": 549583,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 207,
+    "article": 549586,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 208,
+    "article": 591579,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 209,
+    "article": 667357,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 210,
+    "article": 617185,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68648
+    ]
+  },
+  {
+    "id": 211,
+    "article": 642786,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69416,
+      69257,
+      69373
+    ]
+  },
+  {
+    "id": 212,
+    "article": 513763,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 213,
+    "article": 642788,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69415,
+      69256,
+      69372
+    ]
+  },
+  {
+    "id": 214,
+    "article": 642788,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69707,
+      69379
+    ]
+  },
+  {
+    "id": 215,
+    "article": 300778,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 216,
+    "article": 591599,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 217,
+    "article": 564977,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 218,
+    "article": 601575,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      67203
+    ]
+  },
+  {
+    "id": 219,
+    "article": 598774,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 220,
+    "article": 591617,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 221,
+    "article": 606979,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68442,
+      67494,
+      67579
+    ]
+  },
+  {
+    "id": 222,
+    "article": 549638,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      65057,
+      64939
+    ]
+  },
+  {
+    "id": 223,
+    "article": 549638,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 224,
+    "article": 553738,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 225,
+    "article": 647577,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69231
+    ]
+  },
+  {
+    "id": 226,
+    "article": 645901,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69418,
+      69262,
+      69378
+    ]
+  },
+  {
+    "id": 227,
+    "article": 647578,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69232
+    ]
+  },
+  {
+    "id": 228,
+    "article": 565008,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 229,
+    "article": 617238,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69060,
+      68607
+    ]
+  },
+  {
+    "id": 230,
+    "article": 537367,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 231,
+    "article": 544536,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 232,
+    "article": 647580,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 233,
+    "article": 592668,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      66706,
+      66648,
+      66575
+    ]
+  },
+  {
+    "id": 234,
+    "article": 592668,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      66686,
+      66863
+    ]
+  },
+  {
+    "id": 235,
+    "article": 637403,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68993,
+      69076,
+      68973
+    ]
+  },
+  {
+    "id": 236,
+    "article": 617246,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68444,
+      67839,
+      67911
+    ]
+  },
+  {
+    "id": 237,
+    "article": 550678,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 238,
+    "article": 571170,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      65556,
+      67134
+    ]
+  },
+  {
+    "id": 239,
+    "article": 658216,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 240,
+    "article": 533290,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 241,
+    "article": 571179,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 242,
+    "article": 420651,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 243,
+    "article": 574252,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 244,
+    "article": 539035,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      63753,
+      63774
+    ]
+  },
+  {
+    "id": 245,
+    "article": 449333,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 246,
+    "article": 650048,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69366
+    ]
+  },
+  {
+    "id": 247,
+    "article": 650049,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69197
+    ]
+  },
+  {
+    "id": 248,
+    "article": 546627,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 249,
+    "article": 556873,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 250,
+    "article": 534347,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 251,
+    "article": 449364,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      58888,
+      58868,
+      58872
+    ]
+  },
+  {
+    "id": 252,
+    "article": 449364,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 253,
+    "article": 614234,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 254,
+    "article": 515939,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 255,
+    "article": 595811,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 256,
+    "article": 533366,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 257,
+    "article": 533376,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 258,
+    "article": 542596,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 259,
+    "article": 583557,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      66529
+    ]
+  },
+  {
+    "id": 260,
+    "article": 585605,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 261,
+    "article": 582538,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 262,
+    "article": 555407,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 263,
+    "article": 522137,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 264,
+    "article": 535455,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 265,
+    "article": 555410,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 266,
+    "article": 527272,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 267,
+    "article": 555949,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 268,
+    "article": 647610,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      69142,
+      69254,
+      69313
+    ]
+  },
+  {
+    "id": 269,
+    "article": 439217,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 270,
+    "article": 488369,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      61307,
+      61272
+    ]
+  },
+  {
+    "id": 271,
+    "article": 506804,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 272,
+    "article": 459701,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 273,
+    "article": 549819,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 274,
+    "article": 555964,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 275,
+    "article": 546751,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 276,
+    "article": 573376,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 277,
+    "article": 312257,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 278,
+    "article": 179141,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 279,
+    "article": 621514,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 280,
+    "article": 627659,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68515,
+      68677
+    ]
+  },
+  {
+    "id": 281,
+    "article": 555983,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 282,
+    "article": 527313,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 283,
+    "article": 621523,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 284,
+    "article": 621524,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 285,
+    "article": 621525,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 286,
+    "article": 333782,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 287,
+    "article": 621526,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 288,
+    "article": 621527,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 289,
+    "article": 631765,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 290,
+    "article": 492506,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 291,
+    "article": 546791,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 292,
+    "article": 637927,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68955,
+      68912,
+      69089
+    ]
+  },
+  {
+    "id": 293,
+    "article": 637927,
+    "dropped": 0,
+    "archived": null,
+    "reviews": [
+      68956,
+      68904,
+      69088
+    ]
+  },
+  {
+    "id": 294,
+    "article": 539627,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 295,
+    "article": 539631,
+    "dropped": 0,
+    "archived": null
+  },
+  {
+    "id": 296,
+    "article": 539632,
+    "dropped": 0,
+    "archived": null
+  }
+]

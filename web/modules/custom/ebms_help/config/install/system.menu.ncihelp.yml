@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_help
+id: ncihelp
+label: Help
+description: 'User manual for NCI staff.'
+locked: false

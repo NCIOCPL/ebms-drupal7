@@ -1,0 +1,40 @@
+landing-page:
+  css:
+    theme:
+      css/report-links.css: {}
+documents-report:
+  css:
+    theme:
+      css/documents-report.css: {}
+hotel-requests-report:
+  css:
+    theme:
+      css/hotel-requests-report.css: {}
+reimbursement-requests-report:
+  css:
+    theme:
+      css/reimbursement-requests-report.css: {}
+articles-reports:
+  css:
+    theme:
+      css/articles-reports.css: {}
+articles-by-status:
+  css:
+    theme:
+      css/articles-by-status.css: {}
+articles-by-tag:
+  css:
+    theme:
+      css/articles-by-tag.css: {}
+literature-reviews:
+  css:
+    theme:
+      css/literature-reviews.css: {}
+reviewer-responses:
+  css:
+    theme:
+      css/reviewer-responses.css: {}
+no-responses:
+  css:
+    theme:
+      css/no-responses.css: {}

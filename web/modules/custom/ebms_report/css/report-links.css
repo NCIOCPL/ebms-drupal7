@@ -1,0 +1,15 @@
+dd {
+  font-style: italic;
+  margin-bottom: 0.5em;
+}
+
+dt a {
+  text-decoration: none;
+  color: black;
+  font-weight: bold;
+}
+
+dt a:hover {
+  color: #a90101;
+  text-decoration: underline;
+}

@@ -1,0 +1,5 @@
+entity.ebms_doc.add_form:
+  route_name: entity.ebms_doc.add_form
+  title: Add Document
+  appears_on:
+    - entity.ebms_doc.collection

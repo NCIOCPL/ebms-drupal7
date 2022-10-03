@@ -1,0 +1,110 @@
+h1 {
+  text-align: center;
+}
+a.button {
+  margin-right: 0;
+}
+.calendar-month th {
+  background: #696559;
+  color: white;
+  font-weight: bold;
+  text-align: center
+}
+.calendar-month td {
+  height: 2rem;
+  min-height: 2rem;
+  width: 14.27%;
+  vertical-align: top;
+  background: #f4f4f4;
+  padding: 3px;
+}
+.calendar-month td.today {
+  background: #e8e8e8;
+}
+.calendar-month .date-corner {
+  display: block;
+  text-align: right;
+  padding-right: .5rem;
+}
+.calendar-month .meeting {
+  background-color: grey;
+  color: white;
+  padding: 4px;
+  border-radius: 5px;
+  margin-bottom: 3px;
+}
+.calendar-month .meeting.canceled {
+  opacity: 30%;
+}
+.calendar-month .meeting-start,
+.calendar-month span.canceled {
+  display: none;
+}
+.calendar-month a {
+  display: inline-block;
+  white-space: nowrap;
+  width: 1.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.calendar-month a,
+.calendar-month a:link {
+  border: none;
+  color: white;
+  text-decoration: none;
+}
+.calendar-month th {
+  line-height: 2;
+}
+@media only screen and (min-width: 400px) {
+  .calendar-month td {
+    height: 3rem;
+    min-height: 3rem;
+  }
+  .calendar-month a {
+    width: 2rem;
+  }
+}
+@media only screen and (min-width: 600px) {
+  .calendar-month td {
+    height: 4rem;
+    min-height: 4rem;
+  }
+  .calendar-month a {
+    width: 4rem;
+  }
+}
+@media only screen and (min-width: 800px) {
+  .calendar-month td {
+    height: 5rem;
+    min-height: 5rem;
+  }
+  .calendar-month a {
+    display: inline;
+    white-space: inherit;
+    width: auto;
+    overflow: inherit;
+    text-overflow: inherit;
+  }
+}
+@media only screen and (min-width: 1000px) {
+  .calendar-month td {
+    height: 6rem;
+    min-height: 6rem;
+  }
+  .calendar-month .meeting-start {
+    display: block;
+  }
+  .calendar-month span.canceled {
+      display: inline;
+  }
+}
+@media only screen and (min-width: 1200px) {
+  .calendar-month td {
+    height: 7rem;
+    min-height: 7rem;
+  }
+}
+#upcoming-meetings {
+  margin-top: 5rem;
+}

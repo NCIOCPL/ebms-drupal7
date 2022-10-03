@@ -1,0 +1,25 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_sequence
+    - taxonomy.vocabulary.states
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.states.field_sequence
+field_name: field_sequence
+entity_type: taxonomy_term
+bundle: states
+label: Sequence
+description: 'Used to identify the position a given state occupies in the normal processing of articles. More than one state can share a given sequence value. Sequence values are typically spaced apart by intervals of 10, to allow for easy insertion of new values between the existing values. In theory we could use the weight field for the terms to represent the processing sequence, but that would be too easy to corrupt in the administrative web user interface.'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: integer

@@ -1,0 +1,5 @@
+name: EBMS Group
+description: EBMS group, which can be optionally associated with one or more PDQ boards.
+type: module
+package: EBMS
+core_version_requirement: ^9

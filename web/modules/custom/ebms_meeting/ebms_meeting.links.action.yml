@@ -1,0 +1,5 @@
+ebms_meeting.add_meeting_button:
+  route_name: ebms_meeting.add_meeting
+  title: Add Meeting
+  appears_on:
+    - entity.ebms_meeting.collection

@@ -1,0 +1,10 @@
+.other-reviews dt {
+  font-weight: bold;
+}
+.other-reviews dd ul {
+  margin-top: 0;
+}
+.other-reviews dd p {
+  margin-top: 0;
+  margin-bottom: 0;
+}

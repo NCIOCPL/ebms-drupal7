@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_text_id
+    - taxonomy.vocabulary.reimbursement_to
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.reimbursement_to.field_text_id
+field_name: field_text_id
+entity_type: taxonomy_term
+bundle: reimbursement_to
+label: 'Text ID'
+description: 'Stable machine name for the value.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

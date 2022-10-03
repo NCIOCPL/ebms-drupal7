@@ -1,0 +1,84 @@
+<div class="review-queue-article">
+  {% if article.authors %}
+    <div><strong>{{ article.authors }}</strong></div>
+  {% endif %}
+  <div><em>{{ article.link }}</em></div>
+  {% if article.publication %}
+    <div>{{ article.publication }}</div>
+  {% endif %}
+  <div>PubMed ID: <a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank">{{ article.pmid }}</a></div>
+  <div>EBMS ID: {{ article.ebms_id }}</div>
+  {% if article.legacy_id %}
+    <div>Legacy ID: {{ article.legacy_id }}</div>
+  {% endif %}
+  {% if article.tags %}
+    <div>Tags: {{ article.tags }}</div>
+  {% endif %}
+  {% if article.types %}
+    <div>Publication types: {{ article.types }}</div>
+  {% endif %}
+  {% if article.abstract %}
+    {% for paragraph in article.abstract %}
+      <h4>{{ paragraph.label }}</h4>
+      <p>{{ paragraph.text }}</p>
+    {% endfor %}
+  {% endif %}
+  <div class="article-review-buttons">
+    <button class="button usa-button usa-button--outline">
+      <a href="{{ article.add_article_tag_url }}">Add Article Tag</a>
+    </button>
+    <button class="button usa-button usa-button--outline">
+      <a href="{{ article.add_topic_url }}">Add Topic</a>
+    </button>
+    {% if article.abstract_url %}
+      <button class="button usa-button usa-button--outline">
+        <a href="{{ article.abstract_url }}" class="use-ajax"
+           data-dialog-options="{&quot;width&quot;:&quot;80%&quot;}"
+           data-dialog-type="modal">View Abstract
+        </a>
+      </button>
+    {% endif %}
+    {% if article.full_text_url %}
+      <button class="button usa-button usa-button--outline">
+        <a href="{{ article.full_text_url }}">Download Full Text</a>
+      </button>
+    {% endif %}
+  </div>
+    {# { article.abstract_link } #}
+    {# <div><a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank">View Abstract</a></div> #}
+    {# <div><a class="use-ajax"
+            data-dialog-options="{&quot;width&quot;:400}"
+            data-dialog-type="modal"
+            href="/article/{{ article.ebms_id }}">
+            View Abstract
+        </a>
+        </div> #}
+  {% if topics %}
+    <h3><em>Topics</em></h3>
+  {% endif %}
+  {% for topic in topics %}
+    <div class="review-topic">
+      <div class="review-topic-name"><strong>{{ topic.name }}</strong> ({{ topic.board }}) <a href="{{ topic.add_tag_url }}" class="button usa-button usa-button--outline">Add Topic Tag</a></div>
+      {% if topic.tags %}
+        <div>Tags: {{ topic.tags }}</div>
+      {% endif %}
+      {% for comment in topic.comments %}
+        <div>Board Manager Comment: {{ comment }}</div>
+      {% endfor %}
+      {# <div class="topic-buttons">{{ topic.buttons }}</div> #}
+      {% if topic.buttons %}
+        <div class="topic-buttons">
+          <fieldset class="form-wrapper">
+            <legend><span class="fieldset-legend">Decision</span></legend>
+            {% for button in topic.buttons %}
+              <div class="topic-button">
+              <input type="radio" class="form-radio" id="{{ button.id }}"{% if button.checked %} checked{% endif %} name="{{ button.name }}" value="{{ button.value }}">
+              <label class="option" for="{{ button.id }}">{{ button.label }}</label>
+              </div>
+            {% endfor %}
+          </fieldset>
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>

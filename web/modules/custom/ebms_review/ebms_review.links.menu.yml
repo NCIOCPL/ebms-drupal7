@@ -1,0 +1,61 @@
+ebms_review.packets:
+  title: Packets
+  description: Packets of articles assigned for review.
+  route_name: <nolink>
+  menu_name: main
+  weight: 40
+ebms_review.packet_form:
+  title: Create Packet
+  description: Assign articles for a specific topic for review.
+  route_name: ebms_review.packet_form
+  parent: ebms_review.packets
+ebms_review.packet_list:
+  title: View/Edit Packets
+  description: List of existing literature review packets.
+  route_name: ebms_review.packets
+  parent: ebms_review.packets
+ebms_review.assigned_packets:
+  title: Assigned Packets
+  description: Placeholder stub for assigned packets list.
+  route_name: ebms_review.assigned_packets
+  parent: ebms_review.packets
+ebms_review.print_packet:
+  title: Print Packet
+  description: Create paper versions of the documents in a packet.
+  route_name: ebms_review.print_packet
+  parent: ebms_review.packets
+ebms_review.publish:
+  title: Batch Publish
+  description: Publish article topics to the abstract review queue.
+  route_name: ebms_review.publish
+  parent: ebms_article.articles
+ebms_review.review_queue:
+  title: Review Queues
+  description: Review by NCI staff of articles from abstracts or full-text PDFs.
+  route_name: ebms_review.review_queue
+  parent: ebms_article.articles
+ebms_review.record_responses:
+  title: Record Responses
+  description: Record literature reviews on behalf of a board member.
+  route_name: ebms_review.record_responses
+  parent: ebms_review.packets
+ebms_review.completed_packets:
+  title: Completed Packets
+  description: Packets for which the current review has reviewed all assigned articles.
+  route_name: ebms_review.completed_packets
+  parent: ebms_review.packets
+ebms_review.fyi_packets:
+  title: FYI Packets
+  description: Packets not intended for review by this board member.
+  route_name: ebms_review.fyi_packets
+  parent: ebms_review.packets
+ebms_review.reviewed_packets:
+  title: Reviewed Packets
+  description: Packets which have at least one review.
+  route_name: ebms_review.reviewed_packets
+  parent: ebms_review.packets
+ebms_review.unreviewed_packets:
+  title: Unreviewed Packets
+  description: Packets which have no reviews.
+  route_name: ebms_review.unreviewed_packets
+  parent: ebms_review.packets

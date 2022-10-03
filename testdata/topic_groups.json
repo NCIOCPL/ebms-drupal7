@@ -1,0 +1,116 @@
+[
+  {
+    "vid": "topic_groups",
+    "id": 1,
+    "name": "Breast Cancer",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 2,
+    "name": "Digestive/Gastrointestinal Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 3,
+    "name": "Endocrine Gland Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 4,
+    "name": "Genitourinary Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 5,
+    "name": "Gynecologic Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 6,
+    "name": "Head and Neck Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 7,
+    "name": "Thorax/Respiratory Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 8,
+    "name": "Hematologic and Lymph Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 9,
+    "name": "AIDS-Related Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 10,
+    "name": "Skin Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 11,
+    "name": "Neurologic Cancers",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 12,
+    "name": "Eye Cancer",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 13,
+    "name": "Musculoskeletal Cancer",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 14,
+    "name": "Other",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 15,
+    "name": "Financial Toxicity and Cancer Care",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 16,
+    "name": "Topics In CAM Therapies",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 17,
+    "name": "Carcinoma of Unknown Primary",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 18,
+    "name": "General Adult Treatment",
+    "status": true
+  },
+  {
+    "vid": "topic_groups",
+    "id": 19,
+    "name": "Neck and Head Cancers",
+    "status": true
+  }
+]

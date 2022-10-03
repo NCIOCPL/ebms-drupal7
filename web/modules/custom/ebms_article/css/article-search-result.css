@@ -1,0 +1,15 @@
+.article-authors {
+  font-weight: normal;
+}
+.article-title,
+.article-title a {
+  font-style: italic;
+}
+.article-search-result .buttons a.usa-button {
+  margin-top: .5rem;
+  font-size: .9rem;
+}
+.article-id,
+.legacy-id {
+  margin-left: 1rem;
+}

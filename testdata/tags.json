@@ -1,0 +1,132 @@
+[
+  {
+    "vid": "article_tags",
+    "id": 1,
+    "field_text_id": "q_search",
+    "name": "Questionable search",
+    "description": "This article was imported as a result of a search, but the article appears to be out of scope and the search criteria may have been too broad.",
+    "field_topic_required": false,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 2,
+    "field_text_id": "q_init_review",
+    "name": "Borderline initial review",
+    "description": "This was examined in initial review but no judgment made.  It was a borderline case.  Look at it again later.",
+    "field_topic_required": false,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 3,
+    "field_text_id": "q_bm_review",
+    "name": "Borderline board manager review",
+    "description": "This was examined by a board manager but no judgment made.  It was a borderline case.  Look at it again later.  A specific topic must be identified.",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 4,
+    "field_text_id": "i_fasttrack",
+    "name": "Import fast track",
+    "description": "The article was imported as part of a fast track import process.  A specific topic must be identified.",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 5,
+    "field_text_id": "i_specialsearch",
+    "name": "Import special search",
+    "description": "The article was imported as part of a special search import process.  A specific topic must be identified.",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 6,
+    "field_text_id": "conversion_note",
+    "name": "Legacy conversion note",
+    "description": "Information about the article recorded during conversion from the legacy CiteMS",
+    "field_topic_required": false,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 7,
+    "field_text_id": "manager_added",
+    "name": "Added by board manager",
+    "description": "Used when board managers assign a new board and topic to an article",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 8,
+    "field_text_id": "i_core_journals",
+    "name": "Core journals search",
+    "description": "The article was imported as part of a core journals search. A specific topic must be identified.",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 9,
+    "field_text_id": "not_reviewed",
+    "name": "Not reviewed",
+    "description": "The article has been waiting for review with no activity for at least two years.",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 10,
+    "field_text_id": "high_priority",
+    "name": "High priority",
+    "description": "The article needs expedited review by the board (for example, because it has been provided by the EIC or another channel or in the press).",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 11,
+    "field_text_id": "librarian_cmt",
+    "name": "Comment for librarian",
+    "description": "Feedback for the medical librarians.",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  },
+  {
+    "vid": "article_tags",
+    "id": 12,
+    "field_text_id": "preliminary",
+    "name": "Preliminary PDF",
+    "description": "Article in a non-final state.",
+    "field_topic_required": false,
+    "status": true,
+    "field_topic_allowed": false
+  },
+  {
+    "vid": "article_tags",
+    "id": 13,
+    "field_text_id": "comp_review",
+    "name": "Comprehensive review",
+    "description": "Identifies articles to be sent to a board member for review.",
+    "field_topic_required": true,
+    "status": true,
+    "field_topic_allowed": true
+  }
+]

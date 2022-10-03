@@ -1,0 +1,31 @@
+<div class="internal-article">
+  <div class="article-authors">{{ article.authors|join('; ') }}</div>
+  <div class="article-title"><a href="{{ article.url }}">{{ article.title }}</a></div>
+  <div class="article-citation">{{ article.publication }}</div>
+  <div class="article-ids">
+    <span class="pmid">PMID: {{ article.pmid }}</span>
+    <span class="article-id">EBMS ID: {{ article.id }}</span>
+    {% if article.legacy_id %}
+    <span class="legacy-id">Legacy CMS ID: {{ article.legacy_id }}</span>
+    {% endif %}
+  </div>
+  <div class="article-tags">
+    <div class="tags-label">Tags</div>
+    {% for tag in article.tags %}
+    <div>{{ tag }}</div>
+    {% endfor %}
+  </div>
+  {% if article.comments %}
+  <div class="comments">
+    {% for comment in article.comments %}
+    <div><span class="comment-author">{{ comment.user }}</span>: {{ comment.body }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="internal-article-buttons-buttons">
+    <a href="https:///pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank" class="usa-button">View Abstract</a>
+    {% if article.full_text_url %}
+    <a href="{{ article.full_text_url }}" target="_blank" class="usa-button">Download Full Text</a>
+    {% endif %}
+  </div>
+</div>

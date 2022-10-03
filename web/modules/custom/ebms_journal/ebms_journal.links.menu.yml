@@ -1,0 +1,12 @@
+ebms_journal.maintenance:
+  title: Journals
+  description: Determine which journals are excluded from the review process by default.
+  route_name: ebms_journal.maintenance
+  menu_name: main
+  weight: 20
+ebms_journal.refresh:
+  title: Refresh Journals
+  description: Update journal information with fresh data from NLM.
+  route_name: ebms_journal.refresh
+  parent: ebms_core.admin_config_ebms
+  weight: 100

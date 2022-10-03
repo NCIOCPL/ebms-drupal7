@@ -1,0 +1,8 @@
+{% if count == 1 %}
+{% set noun = 'hotel request' %}
+{% set verb = 'has been submitted' %}
+{% else %}
+{% set noun = 'hotel requests' %}
+{% set verb = 'have been submitted' %}
+{% endif %}
+<span class="hotel-requests">{{ count }} <a href="{{ url }}">{{ noun }}</a> {{ verb }} by your board members in the past 60 days.</span>

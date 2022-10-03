@@ -1,0 +1,41 @@
+.packet-articles {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+}
+.top-buttons,
+.packet-article {
+  margin-bottom: 2rem;
+}
+.packet-article .authors {
+  font-weight: bold;
+}
+.packet-article .title {
+  font-style: italic;
+}
+.packet-article .article-buttons {
+  margin-top: 1rem;
+}
+.ids .pmid {
+  margin-right: 1rem;
+}
+.reviewers div {
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+}
+.state {
+  color: #2a72a5;
+}
+.high-priority {
+  color: #a90101;
+  font-weight: bold;
+}
+.comment {
+  color: #a90101;
+}
+.packet-assignment-info {
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+span.reviewer {
+  padding-right: .5rem;
+}

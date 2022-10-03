@@ -1,0 +1,222 @@
+[
+  {
+    "vid": "states",
+    "id": 1,
+    "field_text_id": "ready_init_review",
+    "name": "Ready for initial review",
+    "description": "Article is associated with a summary topic, typically by a new import or an attempted import of a duplicate.  It is now ready for initial review",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 10,
+    "weight": 10
+  },
+  {
+    "vid": "states",
+    "id": 2,
+    "field_text_id": "reject_journal_title",
+    "name": "Rejected by NOT list",
+    "description": "Article appeared in a \"NOT listed\" journal, rejected without review",
+    "field_terminal": true,
+    "status": true,
+    "field_sequence": 20,
+    "weight": 20
+  },
+  {
+    "vid": "states",
+    "id": 3,
+    "field_text_id": "reject_init_review",
+    "name": "Rejected in librarian review",
+    "description": "Rejected in initial review, before publication to board managers",
+    "field_terminal": true,
+    "status": true,
+    "field_sequence": 30,
+    "weight": 30
+  },
+  {
+    "vid": "states",
+    "id": 4,
+    "field_text_id": "passed_init_review",
+    "name": "Passed librarian review",
+    "description": "Article ready for \"publishing\" for board manager review",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 30,
+    "weight": 30
+  },
+  {
+    "vid": "states",
+    "id": 5,
+    "field_text_id": "published",
+    "name": "Published",
+    "description": "Article \"published\" for board manager review",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 40,
+    "weight": 40
+  },
+  {
+    "vid": "states",
+    "id": 6,
+    "field_text_id": "reject_bm_review",
+    "name": "Rejected by abstract review",
+    "description": "Board manager rejected article",
+    "field_terminal": true,
+    "status": true,
+    "field_sequence": 50,
+    "weight": 50
+  },
+  {
+    "vid": "states",
+    "id": 7,
+    "field_text_id": "passed_bm_review",
+    "name": "Passed abstract review",
+    "description": "Board manager accepted article for further review",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 50,
+    "weight": 50
+  },
+  {
+    "vid": "states",
+    "id": 8,
+    "field_text_id": "reject_full_review",
+    "name": "Rejected after full text review",
+    "description": "Full text examined at OCE, article rejected",
+    "field_terminal": true,
+    "status": true,
+    "field_sequence": 60,
+    "weight": 60
+  },
+  {
+    "vid": "states",
+    "id": 9,
+    "field_text_id": "passed_full_review",
+    "name": "Passed full text review",
+    "description": "Full text examined at OCE, article approved for board member review",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 60,
+    "weight": 60
+  },
+  {
+    "vid": "states",
+    "id": 10,
+    "field_text_id": "fyi",
+    "name": "Flagged as FYI",
+    "description": "Article is being sent out without being linked to a specific topic",
+    "field_terminal": true,
+    "status": true,
+    "field_sequence": 60,
+    "weight": 60
+  },
+  {
+    "vid": "states",
+    "id": 11,
+    "field_text_id": "full_end",
+    "name": "No further action",
+    "description": "Decision after board member review is do not discuss.  Do not put on agenda.",
+    "field_terminal": true,
+    "status": true,
+    "field_sequence": 70,
+    "weight": 70
+  },
+  {
+    "vid": "states",
+    "id": 12,
+    "field_text_id": "not_for_agenda",
+    "name": "Minor changes not for Board review",
+    "description": "Changes may be made to summary but no board meeting required.  Do not put on agenda.",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 70,
+    "weight": 70
+  },
+  {
+    "vid": "states",
+    "id": 13,
+    "field_text_id": "agenda_no_paper_change",
+    "name": "Summary changes for Board review (no paper for discussion)",
+    "description": "Show this on the picklist of articles that can be added to agenda.  Summary changes have been proposed, but no paper exists.",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 70,
+    "weight": 70
+  },
+  {
+    "vid": "states",
+    "id": 14,
+    "field_text_id": "agenda_future_change",
+    "name": "Paper and summary changes for discussion",
+    "description": "Show this on the picklist of articles that can be added to agenda.  Summary changes have been proposed.",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 70,
+    "weight": 70
+  },
+  {
+    "vid": "states",
+    "id": 15,
+    "field_text_id": "agenda_board_discuss",
+    "name": "Paper for Board discussion",
+    "description": "Show this on the picklist of articles that can be added to agenda.  No changes proposed, discuss with Board.",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 70,
+    "weight": 70
+  },
+  {
+    "vid": "states",
+    "id": 16,
+    "field_text_id": "agenda_work_group_discuss",
+    "name": "Paper for Working Group discussion",
+    "description": "Show this on the picklist of articles that can be added to agenda.  No changes proposed, discuss with Working Group.",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 70,
+    "weight": 70
+  },
+  {
+    "vid": "states",
+    "id": 17,
+    "field_text_id": "on_agenda",
+    "name": "On agenda",
+    "description": "Article is on the agenda for an upcoming meeting.",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 80,
+    "weight": 80
+  },
+  {
+    "vid": "states",
+    "id": 18,
+    "field_text_id": "final_board_decision",
+    "name": "Final board decision",
+    "description": "Article was discussed at a board meeting and a decision was reached",
+    "field_terminal": true,
+    "status": true,
+    "field_sequence": 90,
+    "weight": 90
+  },
+  {
+    "vid": "states",
+    "id": 20,
+    "field_text_id": "on_hold",
+    "name": "On hold",
+    "description": "Article has been reviewed but should not yet be eligible for inclusion on meeting agendas.",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 70,
+    "weight": 70
+  },
+  {
+    "vid": "states",
+    "id": 21,
+    "field_text_id": "full_review_hold",
+    "name": "Held After full text review",
+    "description": "Article should not yet be eligible for inclusion in review packets.",
+    "field_terminal": false,
+    "status": true,
+    "field_sequence": 60,
+    "weight": 60
+  }
+]

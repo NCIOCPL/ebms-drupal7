@@ -1,0 +1,4 @@
+home:
+  css:
+    theme:
+      css/home.css: {}

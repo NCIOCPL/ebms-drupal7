@@ -1,0 +1,61 @@
+review-queue:
+  js:
+    js/review-queue.js: {}
+  css:
+    theme:
+      css/review-queue.css: {}
+  dependencies:
+    - core/jquery
+    - core/drupal.dialog.ajax
+packet-form:
+  css:
+    theme:
+      css/packet-form.css: {}
+review-form:
+  js:
+    js/packet-review.js: {}
+  css:
+    theme:
+      css/review-form.css: {}
+unpublished-articles:
+  js:
+    js/publishing-queue.js: {}
+  css:
+    theme:
+      css/unpublished-articles.css: {}
+assigned-packet:
+  css:
+    theme:
+      css/assigned-packet.css: {}
+completed-packet:
+  css:
+    theme:
+      css/completed-packet.css: {}
+other-reviews:
+  css:
+    theme:
+      css/other-reviews.css: {}
+packets:
+  css:
+    theme:
+      css/packet-list-packet.css: {}
+reviewed-packets:
+  css:
+    theme:
+      css/reviewed-packets.css: {}
+  js:
+    js/packet-star.js: {}
+  dependencies:
+    - core/drupal.ajax
+unreviewed-packets:
+  css:
+    theme:
+      css/unreviewed-packets.css: {}
+reviewed-packet:
+  css:
+    theme:
+      css/reviewed-packet.css: {}
+reviewed-article:
+  css:
+    theme:
+      css/reviewed-article.css: {}

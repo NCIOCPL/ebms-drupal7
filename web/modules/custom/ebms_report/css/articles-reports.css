@@ -1,0 +1,22 @@
+.report-header {
+  margin-top: 3rem;
+  margin-bottom: 3rem;
+}
+form table.usa-table {
+  margin-bottom: 5rem;
+}
+.articles-imported-table th:last-child,
+.articles-published-table th:last-child,
+.journal-rejections-table th:last-child,
+.journal-rejections-table td:last-child,
+.librarian-review-table th:last-child,
+.librarian-review-table td:last-child,
+.abstract-approved-table th:last-child,
+.abstract-approved-table td:last-child {
+    width: 30%;
+  /* text-align: right; pushes columns too far apart? */
+}
+.initial-review-table th:nth-child(2),
+.initial-review-table th:last-child {
+  width: 20%;
+}

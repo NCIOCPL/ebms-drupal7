@@ -1,0 +1,16 @@
+.meeting-display dt {
+  font-weight: bold;
+}
+.meeting-display .submitted {
+  font-style: italic;
+  margin-top: 1rem;
+}
+.meeting-display .download-files {
+  margin-top: 1rem;
+}
+a.button {
+  margin-right: 0;
+}
+.meeting-display .download-files {
+  margin-top: 1rem;
+}

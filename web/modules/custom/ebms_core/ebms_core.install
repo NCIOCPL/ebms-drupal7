@@ -1,0 +1,26 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function ebms_core_schema(): array {
+  return [
+    'on_demand_config' => [
+      'description' => 'Configuration values which we only want loaded when they are explicitly requested, and which we do not want to be controlled by the Drupal cache system.',
+      'fields' => [
+        'name' => [
+          'description' => 'Unique name of the configuration (for example, article-type-ancestors).',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+        ],
+        'value' => [
+          'description' => 'JSON-encoded value for the configuration.',
+          'type' => 'text',
+          'size' => 'normal',
+        ],
+      ],
+      'primary key' => ['name'],
+    ],
+  ];
+}

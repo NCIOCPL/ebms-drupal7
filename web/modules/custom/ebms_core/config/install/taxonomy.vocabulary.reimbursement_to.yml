@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Reimbursement To'
+vid: reimbursement_to
+description: 'Whether the reimbursement should be sent to the board member''s home, office, or other location.'
+weight: 0

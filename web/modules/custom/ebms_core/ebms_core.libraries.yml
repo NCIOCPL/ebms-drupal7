@@ -1,0 +1,4 @@
+login:
+  css:
+    theme:
+      css/login.css: {}

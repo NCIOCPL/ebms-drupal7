@@ -1,0 +1,15 @@
+assets:
+  version: 1.0.0
+  css:
+    theme:
+      package/dist/css/uswds.css: {}
+  js:
+    package/dist/js/uswds.min.js: {}
+
+custom:
+  version: 1.0.0
+  css:
+    theme:
+      css/ebms.css: {}
+  js:
+    js/ebms.js: {}

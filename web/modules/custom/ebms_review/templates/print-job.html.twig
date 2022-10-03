@@ -1,0 +1,63 @@
+<div class="print-job">
+  <h3>Print Job Documents ({{ total }})</h3>
+  {% if documents %}
+  <ul>
+    {% for document in documents %}
+    <li>{{ document }}</li>
+    {% endfor %}
+  </ul>
+  <a class="button usa-button" href="{{ url }}">Download</a>
+  <div class="instructions" style="margin-top: 1.5rem">
+    <fieldset>
+      <legend><strong>Instructions</strong></legend>
+      <p>Before printing, make sure that ...</p>
+      <ul>
+        <li>you have set the <strong>EBMS_PACKET_PRINTER</strong> environment variable to the name of the printer on which the packet should be printed (see below)</li>
+        <li>CBIIT has installed <strong>Libre Office</strong> and <strong>PDF Printer</strong> and the commands <strong>swriter</strong> and <strong>pdfprinter</strong> can be found on your computer (see below)</li>
+      </ul>
+      <p>Steps for printing:</p>
+      <ol>
+        <li>Click the <strong>Download</strong> button.</li>
+        <li>Click <strong>Show in folder</strong> for the newly downloaded file.</li>
+        <li>Right-click the new file in the Explorer window.</li>
+        <li>Click <strong>Extract All ...</strong> from the popup context menu.</li>
+        <li>Confirm that the <strong>Show extracted files when complete</strong> checkbox is checked.</li>
+        <li>Click the <strong>Extract</strong> button.</li>
+        <li>Double-click on the <strong>print-packets</strong> file.</li>
+        <li>Confirm that you want to execute the script (for some computers, you may need to click on <strong>More info</strong> to proceed with this confirmation).</li>
+        <li>Review the output window for any error messages.</li>
+        <li>Press any key to dismiss the console window.</li>
+        <li>Retrieve the printed output.</li>
+      </ol>
+      <p>Steps for setting the <strong>EBMS_PACKET_PRINTER</strong> environment variable:</p>
+      <ol>
+        <li>Click the <strong>Windows</strong> logo in the lower left corner of your computer screen.</li>
+        <li>Type the word <strong>environment</strong>.</li>
+        <li>Select <strong>Edit environment variables for your account</strong>.</li>
+        <li>If the <strong>EBMS_PACKET_PRINTER</strong> variable has already been set, select it and click the <strong>Edit...</strong> button in the upper (<em>User variables ...</em>) portion of the <em>Environment Variables</em> dialog window.</li>
+        <li>Otherwise, click the <strong>New...</strong> button in the upper (<em>User variables ...</em>) portion of the <em>Environment Variables</em> dialog window and enter <strong>EBMS_PACKET_PRINTER</strong> in the <strong>Variable name</strong> field.</li>
+        <li>Enter the printer name in the <strong>Variable value</strong> field.</li>
+        <li>Click the <strong>OK</strong> button to close the value editing form.</li>
+        <li>Click the <strong>OK</strong> button at the bottom of the <em>Environment Variables</em> dialog box to save your changes.</li>
+      </ol>
+      <p>Steps for making sure Windows can find the printing helper programs <strong>swriter.exe</strong> and <strong>pdfprinter.exe</strong>:</p>
+      <ol>
+        <li>Click the <strong>Windows</strong> logo in the lower left corner of your computer screen.</li>
+        <li>Type the word <strong>environment</strong>.</li>
+        <li>Select <strong>Edit environment variables for your account</strong>.</li>
+        <li>Select the <strong>Path</strong> environment variable in the upper (<em>User variables ...</em>) portion of the <em>Environment Variables</em> dialog window</li>
+        <li>Click the <strong>Edit...</strong> button in the upper (<em>User variables ...</em>) portion of the <em>Environment Variables</em> dialog window</li>
+        <li>Check the existing paths to see if there is one with <strong>LibreOffice</strong> in the path value</li>
+        <li>If not, click the <strong>New</strong> button and enter the correct path for the <strong>Libre Office</strong> programs (<em>e.g.</em>, <strong>C:\Program Files\LibreOffice\program</strong>)</li>
+        <li>If a <strong>LibreOffice</strong> path already appears, make sure it is correct, editing it if necessary using the <strong>Edit</strong> button</li>
+        <li>Repeat the previous three steps for the <strong>PDFPrint</strong> path (for example, <strong>L:\OCPL\_Cross\CDR\EBMS\bin\pdfprint_cmd</strong>)</li>
+        <li>Click the <strong>OK</strong> button to close the <em>Edit environment variable</em> dialog window</li>
+        <li>Click the <strong>OK</strong> button for the <em>Environment Variables</em> dialog window to save your changes and close the window</li>
+      </ol>
+      <p>These instructions will be moved to the new <em>Help</em> pages when they have been written.</p>
+    </fieldset>
+  </div>
+  {% else %}
+  <p><em>No documents found to print</em></p>
+  {% endif %}
+</div>

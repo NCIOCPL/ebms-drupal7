@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Board Decisions'
+vid: board_decisions
+description: 'Final determinations made for article/topic combinations.'
+weight: 0

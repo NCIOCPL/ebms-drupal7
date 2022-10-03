@@ -1,0 +1,12 @@
+entity.ebms_meeting.collection:
+  title: 'Meetings'
+  route_name: entity.ebms_meeting.collection
+  description: 'Manage meetings.'
+  parent: ebms_core.admin_config_ebms
+  weight: 100
+ebms_meeting.calendar:
+  title: 'Calendar'
+  route_name: ebms_meeting.calendar
+  description: 'Display of meetings scheduled for a given month.'
+  menu_name: main
+  weight: 80

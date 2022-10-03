@@ -1,0 +1,12 @@
+name: EBMS Documents
+description: Word-processing and other documents posted to the EBMS.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ebms_board
+  - ebms_core
+  - ebms_topic
+  - file
+  - taxonomy
+  - user

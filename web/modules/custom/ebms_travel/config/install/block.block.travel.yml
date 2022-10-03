@@ -1,0 +1,31 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - system.menu.travel
+  module:
+    - system
+  theme:
+    - ebms
+  enforced:
+    module:
+      - ebms_travel
+id: travel
+region: sidebar_first
+weight: 0
+provider: null
+plugin: 'system_menu_block:travel'
+theme: ebms
+settings:
+  id: 'system_menu_block:travel'
+  label: Travel
+  label_display: '0'
+  provider: system
+  level: 1
+  depth: 0
+  expand_all_items: false
+visibility:
+  request_path:
+    id: request_path
+    negate: false
+    pages: "/travel\r\n/travel/*"

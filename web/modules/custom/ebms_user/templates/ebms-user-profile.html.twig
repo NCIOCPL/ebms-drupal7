@@ -1,0 +1,72 @@
+<div class="user-profile">
+  <dl>
+    <dt>Account Status</dt>
+    <dd>{{ profile.status }}</dd>
+    <dt>EBMS User Since</dt>
+    <dd>{{ profile.joined }}</dd>
+    <dt>Most Recent Login</dt>
+    <dd>{% if profile.login %}{{ profile.login|slice(0, 10) }}{% else %}Never{% endif %}</dd>
+    <dt>Last Access</dt>
+    <dd>{% if profile.access %}{{ profile.access|slice(0, 10) }}{% else %}Never{% endif %}</dd>
+    <dt>Roles</dt>
+    <dd>
+      <ul class="usa-list--unstyled">
+        {% for role in profile.roles|sort %}
+        <li>{{ role }}</li>
+        {% endfor %}
+        {% if not profile.roles %}
+        <li>None</li>
+        {% endif %}
+      </ul>
+    </dd>
+    <dt>Boards</dt>
+    <dd>
+      <ul class="usa-list--unstyled">
+        {% for board in profile.boards %}
+        <li>{{ board }}</li>
+        {% endfor %}
+        {% if not profile.boards %}
+        <li>None</li>
+        {% endif %}
+      </ul>
+    </dd>
+    {% if profile.board %}
+    <dt>Default Board</dt>
+    <dd>{{ profile.board }}</dd>
+    {% endif %}
+    <dt>Groups</dt>
+    <dd>
+      <ul class="usa-list--unstyled">
+        {% for group in profile.groups|sort %}
+        <li>{{ group }}</li>
+        {% endfor %}
+        {% if not profile.groups %}
+        <li>None</li>
+        {% endif %}
+      </ul>
+    </dd>
+    <dt>Default Reviewer For Topics</dt>
+    <dd>
+      <ul class="usa-list--unstyled">
+        {% for topic in profile.topics|sort %}
+        <li>{{ topic }}</li>
+        {% endfor %}
+        {% if not profile.topics %}
+        <li>None</li>
+        {% endif %}
+      </ul>
+    </dd>
+    {% if profile.picture %}
+    <dt>Profile Picture</dt>
+    <dd class="profile-picture">
+      <img src="{{ profile.picture }}" alt="profile picture">
+    </dd>
+    {% endif %}
+  </dl>
+  {% if profile.add %}
+  <a class="add-button button usa-button" href="{{ profile.add }}">Add Profile Picture</a>
+  {% endif %}
+  {% if profile.remove %}
+  <a class="remove-button button usa-button" href="{{ profile.remove }}">Remove Profile Picture</a>
+  {% endif %}
+</div>

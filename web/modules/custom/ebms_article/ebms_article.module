@@ -1,0 +1,229 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\ebms_article\Entity\Article;
+use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\SelectInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_presave().
+ */
+function ebms_article_ebms_article_presave(EntityInterface $entity): void {
+  if (!empty($entity->title->value)) {
+    if (empty($entity->search_title->value)) {
+      $search_title = substr(Article::normalize($entity->title->value), 0, 512);
+      $entity->set('search_title', $search_title);
+    }
+  }
+  $last_author_name = '';
+  foreach ($entity->authors as $author) {
+    if (empty($author->display_name)) {
+      $author->set('display_name', Article::getAuthorDisplayName($author));
+    }
+    if (empty($author->search_name)) {
+      $author->set('search_name', Article::normalize($author->display_name));
+    }
+    $last_author_name = $author->search_name;
+  }
+  if (empty($entity->last_author_name->value)) {
+    $entity->set('last_author_name', $last_author_name);
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_article_theme($existing, $type, $theme, $path): array {
+  return [
+    'citation' => [
+      'variables' => [
+        'article_title' => NULL,
+        'authors' => NULL,
+        'journal' => NULL,
+        'ids' => NULL,
+        'publication' => NULL,
+        'abstract_link' => FALSE,
+        'cycles' => NULL,
+        'full_text' => NULL,
+        'related' => NULL,
+        'tags' => NULL,
+        'internal' => NULL,
+        'import' => NULL,
+        'refreshes' => NULL,
+      ],
+    ],
+    'board_article_states' => [
+      'variables' => [
+        'board' => NULL,
+        'topics' => NULL,
+      ],
+    ],
+    'topic_article_states' => [
+      'variables' => [
+        'topic' => NULL,
+        'buttons' => NULL,
+        'comments' => NULL,
+        'tags' => NULL,
+        'states' => NULL,
+        'imports' => NULL,
+      ],
+    ],
+    'article_state' => [
+      'variables' => [
+        'state' => NULL,
+        'date' => NULL,
+        'user' => NULL,
+        'current' => FALSE,
+        'active' => TRUE,
+        'comments' => NULL,
+        'notes' => NULL,
+        'legend' => NULL,
+        'button' => NULL,
+      ],
+    ],
+    'state_comment' => [
+      'variables' => [
+        'body' => NULL,
+        'entered' => NULL,
+        'user' => NULL,
+      ],
+    ],
+    'show_abstract' => [
+      'variables' => [
+        'abstract' => [],
+        'pmid' => NULL,
+      ],
+    ],
+    'article_search_result' => [
+      'variables' => [
+        'article' => NULL,
+        'restricted' => FALSE,
+      ],
+    ],
+    'internal_article' => [
+      'variables' => [
+        'article' => NULL,
+      ],
+    ],
+    'simple_search_results' => [
+      'variables' => [
+        'articles' => NULL,
+        'filters' => FALSE,
+      ],
+    ],
+    'full_text_queue_article' => [
+      'variables' => [
+        'article' => NULL,
+      ],
+    ],
+    'article_info' => [
+      'variables' => [
+        'title' => NULL,
+        'citation' => NULL,
+      ],
+    ],
+    'related_articles_info' => [
+      'variables' => [
+        'title' => NULL,
+        'citation' => NULL,
+        'related_title' => NULL,
+        'related_citation' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Default preprocess for the citation theme hook.
+ *
+ * @param $variables
+ */
+function template_preprocess_citation(&$variables): void {
+  $variables['attributes'] = ['class' => ['citation']];
+}
+
+/**
+ * Default theme preprocess hook for the collection of per-board states.
+ *
+ * @param $variables
+ */
+function template_preprocess_board_article_states(&$variables): void {
+  $variables['attributes'] = ['class' => ['board-states']];
+}
+
+/**
+ * Default theme preprocess hook for the collection of per-topic states.
+ *
+ * @param $variables
+ */
+function template_preprocess_topic_article_states(&$variables): void {
+  $variables['attributes'] = ['class' => ['topic-states']];
+}
+
+/**
+ * Default theme preprocess hook for an article state.
+ *
+ * @param $variables
+ */
+function template_preprocess_article_state(&$variables): void {
+  $variables['attributes'] = ['class' => ['article-state']];
+}
+
+/**
+ * Default theme preprocess hook for an article state comment.
+ *
+ * @param $variables
+ */
+function template_preprocess_state_comment(&$variables): void {
+  $variables['attributes'] = ['class' => ['state-comment']];
+}
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function ebms_article_entity_base_field_info(EntityTypeInterface $entity_type): array {
+  if ($entity_type->id() === 'ebms_state') {
+    return [
+      'article' => BaseFieldDefinition::create('entity_reference')
+        ->setSetting('target_type', 'ebms_article')
+        ->setLabel('Article')
+        ->setDescription('Article to which this state belongs.')
+        ->setDisplayOptions('view', ['label' => 'above']),
+    ];
+  }
+  return [];
+}
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * This is needed because of a bug the core Drupal team forgot about.
+ * See https://www.drupal.org/project/drupal/issues/2497457.
+ */
+function ebms_article_preprocess_page(&$variables): void {
+  if (\Drupal::routeMatch()->getRouteName() === 'ebms_article.search_results') {
+    \Drupal::service('plugin.manager.menu.local_action')->clearCachedDefinitions();
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * We're altering the query sort to put articles which are published in "core"
+ * journals ahead of other articles, using information which is not stored in
+ * the `Article` entity.
+ *
+ * See ReviewQueue::buildForm() and SearchQuery::buildForm().
+ */
+function ebms_article_query_core_journal_sort_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    if (count($query->getFields()) === 2) {
+      $query->leftJoin('ebms_journal', 'core_journal_test', 'core_journal_test.source_id = base_table.source_journal_id');
+      $query->groupBy('core_journal_test.core');
+      $query->orderBy('core_journal_test.core', 'DESC');
+      $query->orderBy('base_table.title');
+    }
+  }
+}

@@ -1,0 +1,20 @@
+<div class="full-text-queue-article">
+  {% if article.authors %}
+  <div><strong>{{ article.authors }}</strong></div>
+  {% else %}
+  <div><strong>[No authors listed]</strong></div>
+  {% endif %}
+  <div><em>{{ article.title }}</em></div>
+  {% if article.publication %}
+    <div>{{ article.publication }}</div>
+  {% endif %}
+  <div>PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank" class="pmid">{{ article.pmid }}</a> <span class="ebmsid">EBMS ID: {{ article.id }}</span></div>
+  {% if article.related %}
+  <div class="related-articles">
+    {{ article.related }}
+  <div>
+  {% endif %}
+  {% if article.boards %}
+  <div class="article-boards">Boards: {{ article.boards|join('; ') }}</div>
+  {% endif %}
+</div>

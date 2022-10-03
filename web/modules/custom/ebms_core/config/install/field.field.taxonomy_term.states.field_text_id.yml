@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_text_id
+    - taxonomy.vocabulary.states
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.states.field_text_id
+field_name: field_text_id
+entity_type: taxonomy_term
+bundle: states
+label: 'Text ID'
+description: 'Stable identifier for an article state type. Used to support specific processing for a given state, using a state identifier which is not dependent on the display string used to show a given state, which might need to be changed, and not dependent on a system-supplied integer ID, over which we might not have complete control.'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

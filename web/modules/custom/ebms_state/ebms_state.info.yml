@@ -1,0 +1,11 @@
+name: EBMS Article State
+description: Per-topic state for an article at a given moment in time.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ebms_board
+  - ebms_meeting
+  - ebms_message
+  - ebms_topic
+  - taxonomy

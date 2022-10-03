@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_text_id
+    - taxonomy.vocabulary.import_types
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.import_types.field_text_id
+field_name: field_text_id
+entity_type: taxonomy_term
+bundle: import_types
+label: 'Text ID'
+description: 'Single-character code for import type (e.g., "R" for regular imports)'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

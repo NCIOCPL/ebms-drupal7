@@ -1,0 +1,19 @@
+.unstarred-packet {
+  color: #c1c1c1;
+}
+.starred-packet {
+  color: #74a5d7;
+}
+.starred-packet:hover,
+.unstarred-packet:hover {
+  cursor: pointer;
+}
+.packet-reviews {
+  font-style: italic;
+  margin-left: 1.25rem;
+  margin-bottom: 1rem;
+}
+.new {
+  font-weight: bold;
+  color: #a90101;
+}

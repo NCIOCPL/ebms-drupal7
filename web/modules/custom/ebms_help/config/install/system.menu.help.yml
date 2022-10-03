@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_help
+id: help
+label: Help
+description: 'User manual for PDQ® Board members.'
+locked: false

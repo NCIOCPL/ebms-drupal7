@@ -1,0 +1,14 @@
+name: EBMS Review Packets
+description: Packets of published articles assigned for board member review.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ebms_board
+  - ebms_core
+  - ebms_doc
+  - ebms_message
+  - ebms_topic
+  - file
+  - taxonomy
+  - user
