@@ -1,0 +1,39 @@
+<div class="other-reviews">
+  {% for review in reviews %}
+    <hr>
+    <dl>
+      <dt>Reviewer</dt>
+      <dd>{{ review.reviewer }}</dd>
+      <dt>Review Date</dt>
+      <dd>{{ review.date }}</dd>
+      {% if review.dispositions %}
+        <dt>Review Dispositions</dt>
+        <dd>
+          <ul class="usa-list">
+          {% for disposition in review.dispositions %}
+            <li>{{ disposition }}</li>
+          {% endfor %}
+          </ul>
+        </dd>
+      {% endif %}
+      {% if review.reasons %}
+        <dt>Rejection Reason(s)</dt>
+        <dd>
+          <ul class="usa-list">
+          {% for reason in review.reasons %}
+            <li>{{ reason }}</li>
+          {% endfor %}
+          </ul>
+        </dd>
+      {% endif %}
+      {% if review.comments %}
+        <dt>Comments</dt>
+        <dd>{{ review.comments|raw }}</dd>
+      {% endif %}
+      {% if review.loe %}
+        <dt>LOE Information</dt>
+        <dd>{{ review.loe }}</dd>
+      {% endif %}
+    </dl>
+  {% endfor %}
+</div>

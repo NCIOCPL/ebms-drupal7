@@ -1,0 +1,11 @@
+{% if abstract %}
+  {% for paragraph in abstract %}
+    <h4>{{ paragraph.label }}</h4>
+    <p>{{ paragraph.text }}</p>
+  {% endfor %}
+{% else %}
+  <p><em>Article has no abstract</em></p>
+{% endif %}
+<div>
+  <a href="https://pubmed.ncbi.nlm.nih.gov/{{ pmid }}" class="usa-button" target="_blank">View Abstract on PubMed</a>
+</div>

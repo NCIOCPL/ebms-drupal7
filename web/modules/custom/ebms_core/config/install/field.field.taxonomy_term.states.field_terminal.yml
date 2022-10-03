@@ -1,0 +1,25 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_terminal
+    - taxonomy.vocabulary.states
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.states.field_terminal
+field_name: field_terminal
+entity_type: taxonomy_term
+bundle: states
+label: Terminal
+description: 'Processing for a given article/topic combination has typically completed when a state is entered with this flag set.'
+required: false
+translatable: false
+default_value:
+  -
+    value: 0
+default_value_callback: ''
+settings:
+  on_label: 'Yes'
+  off_label: 'No'
+field_type: boolean

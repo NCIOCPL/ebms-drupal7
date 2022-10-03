@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Transportation Expense Types'
+vid: transportation_expense_types
+description: 'For example, taxi or metro.'
+weight: 0

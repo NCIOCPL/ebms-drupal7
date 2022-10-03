@@ -1,0 +1,54 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - filter.format.board_member_html
+  module:
+    - ckeditor
+_core:
+format: board_member_html
+editor: ckeditor
+settings:
+  toolbar:
+    rows:
+      -
+        -
+          name: 'Block Formatting'
+          items:
+            - Format
+        -
+          name: Formatting
+          items:
+            - Bold
+            - Italic
+        -
+          name: Lists
+          items:
+            - BulletedList
+            - NumberedList
+        -
+          name: Linking
+          items:
+            - DrupalLink
+            - DrupalUnlink
+        -
+          name: Media
+          items:
+            - Blockquote
+            - DrupalImage
+  plugins:
+    language:
+      language_list: un
+    stylescombo:
+      styles: ''
+    drupallink:
+      linkit_enabled: false
+      linkit_profile: ''
+image_upload:
+  status: true
+  scheme: public
+  directory: inline-images
+  max_size: ''
+  max_dimensions:
+    width: null
+    height: null

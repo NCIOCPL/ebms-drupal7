@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Print Job Types'
+vid: print_job_types
+description: 'Method used to select what is to be printed (e.g., "Packet").'
+weight: 0

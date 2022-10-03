@@ -1,0 +1,30 @@
+.article {
+  margin-bottom: 3rem;
+}
+.authors {
+  font-weight: bold;
+}
+.title,
+.topic-name,
+.packet-name {
+  font-style: italic;
+}
+.topic-name,
+.packet-name {
+  font-weight: bold;
+}
+.packet {
+  margin-top: 1rem;
+}
+.review {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f4f4f4;
+}
+.review-symbol {
+  padding-right: 1rem;
+}
+.high-priority {
+  color: red;
+  font-weight: bold;
+}

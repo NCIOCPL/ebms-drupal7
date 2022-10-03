@@ -1,84 +1,82 @@
 <?php
 
 /**
- *
  * Find EBMS Pubmed records which have been dropped by NLM, and report them.
  *
- * JIRA::OCEEBMS-270
+ * See https://tracker.nci.nih.gov/browse/OCEEBMS-270.
  */
+
+use Drupal\ebms_report\Form\AbandonedArticlesReport;
 
 /**
- * Record a fatal error and bail.
- */
-function fail($why) {
-    log_write($why);
-    exit(1);
-}
-
-/**
- * Record what's happening.
- */
-function log_write($what) {
-    $path = '/home/drupal/logs/pubmed-drops.log';
-    $now = date('c');
-    @file_put_contents($path, "$now $what\n", FILE_APPEND);
-    echo "$what\n";
-}
-
-/*
  * Email the report to the usual suspects.
  */
-function send_report($checked, $missing, $elapsed) {
-    $lines = array(
-        "Checked $checked",
-        '',
-        count($missing) . ' articles missing from NLM',
-        '======================',
-    );
-    foreach ($missing as $m)
-        $lines[] = "$m missing";
-    $lines[] = '';
-    $lines[] = "Processing time: $elapsed seconds";
-    $message = implode("\r\n", $lines) . "\r\n";
-    $default_recips = variable_get('dev_notif_addr');
-    $to = variable_get('pubmed_missing_article_report_recips', $default_recips);
-    $headers = "From: ebms@nci.nih.gov\r\nTo: $to\r\n";
-    $subject = 'PMIDs missing from NLM (' . php_uname('n') . ')';
-    mail($to, $subject, $message, $headers);
+function send_report(string $recips) {
+
+  // Fetch the information from NLM.
+  ebms_debug_log('Starting Dropped PubMed Articles report', 1);
+  $start = microtime(TRUE);
+  $report = AbandonedArticlesReport::report();
+
+  // Assemble a rich-text message body.
+  $checked = 'Checked ' . $report['checked'] . ' Active Articles';
+  $missing_count = count($report['missing']);
+  $missing_s = $missing_count === 1 ? '' : 's';
+  $items = [];
+  foreach ($report['missing'] as $id => $pmid) {
+    $items[] = "$pmid (EBMS ID $id)";
+  }
+  $list = [
+    '#theme' => 'item_list',
+    '#title' => "$missing_count Invalid PubMed ID$missing_s ($checked)",
+    '#items' => $items,
+    '#empty' => 'No invalid PubMed IDs were found.',
+  ];
+  $elapsed = microtime(TRUE) - $start;
+  $message = \Drupal::service('renderer')->renderPlain($list);
+  $message .= "\n";
+  $message .= '<p style="color: green; font-size: .8rem; font-style: italic;">Processing time: ';
+  $message .= $elapsed;
+  $message .= ' seconds.</p>';
+
+  // Send the report.
+  $site_mail = \Drupal::config('system.site')->get('mail');
+  $site_name = \Drupal::config('system.site')->get('name');
+  $from = "$site_name <$site_mail>";
+  $server = php_uname('n');
+  $subject = "PMIDs missing from NLM ($server)";
+  $headers = implode("\r\n", [
+    'MIME-Version: 1.0',
+    'Content-type: text/html; charset=utf-8',
+    "From: $from",
+  ]);
+  $rc = mail($recips, $subject, $message, $headers);
+  if (empty($rc)) {
+    \Drupal::logger('ebms_report')->error('Unable to send Dropped PubMed Articles report.');
+    ebms_debug_log('Failure sending report', 1);
+  }
+  ebms_debug_log('Finished Dropped PubMed Articles report', 1);
 }
 
 /**
  * Top-level processing logic.
  *
- *  1. Parse the command-line arguments.
- *  2. Find out which PMIDs NLM has lost.
- *  3. Send out the report.
+ *  1. Verify that we have recipients.
+ *  2. Send out the report.
  */
 function main() {
-    module_load_include('inc', 'ebms', 'reports');
-    // 1. Parse the command-line arguments.
-    $start = time();
-    $opts = getopt('', array('all', 'batch-size:'));
-    $active_only = !isset($opts['all']);
 
-    // 2. Find out which PMIDs NLM has lost.
-    if (empty($opts['batch-size']))
-        $report = EbmsReports::lost_by_nlm($active_only);
-    else
-        $report = EbmsReports::lost_by_nlm($active_only, $opts['batch-size']);
-
-    // 3. Send out the report.
-    if ($active_only)
-        $checked = $report->checked . ' active Pubmed IDs';
-    else
-        $checked = 'all ' . $report->checked . ' Pubmed IDs';
-    log_write("Checked $checking");
-    log_write(count($report->missing) . ' articles dropped');
-    foreach ($missing as $m)
-        log_write("$m dropped");
-    $elapsed = time() - $start;
-    log_write("processing time: $elapsed seconds");
-    send_report($checked, $report->missing, $elapsed);
+  // Make sure we have at least one receipient.
+  $to = \Drupal::config('ebms_core.settings')->get('pubmed_missing_article_report_recips');
+  if (empty($to)) {
+    $to = \Drupal::config('ebms_core.settings')->get('dev_notif_addr');
+  }
+  if (empty($to)) {
+    \Drupal::logger('ebms_report')->error('No recipients for dropped articles report.');
+  }
+  else {
+    send_report($to);
+  }
 }
 
 main();

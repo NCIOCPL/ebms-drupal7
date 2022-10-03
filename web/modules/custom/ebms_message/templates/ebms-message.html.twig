@@ -1,0 +1,30 @@
+{% set message_type = message.message_type.value|replace({' ': '-'}) %}
+{% set values = message.getExtraValues() %}
+<div  class="grid-row flex-justify flex-no-wrap flex-align-start">
+  <span class="message {{ message_type }}" id="{{ message_type }}-{{ message.id() }}">
+    {# Unfortunately, Drupal doesn't use a version of Twig which supports switch statements. Someday, ... #}
+    {% if message_type == 'agenda-published' %}
+      Agenda published for <a href="/calendar/meeting/{{ values.meeting_id }}">{{ values.title }}</a>.
+    {% elseif message_type == 'articles-published' %}
+      <a href="/review">New {{ message.boards.entity.name.value }} articles posted</a>.
+    {% elseif message_type == 'meeting-canceled' %}
+      {{ values.title }} canceled.
+    {% elseif message_type == 'meeting-changed' %}
+      <a href="/calendar/meeting/{{ values.meeting_id }}">{{ values.title }}</a> date or time updated.
+    {% elseif message_type == 'meeting-published' %}
+      New meeting <a href="/calendar/meeting/{{ values.meeting_id }}">{{ values.title }}</a> posted.
+    {% elseif message_type == 'meeting-type-changed' %}
+      <a href="/calendar/meeting/{{ values.meeting_id }}">{{ values.title }}</a> changed to {{ values.meeting_type }}.
+    {% elseif message_type == 'packet-created' %}
+      <a href="/packets/assigned-packet/{{ values.packet_id }}">{{ values.title }}</a> literature posted.
+    {% elseif message_type == 'summary-posted' %}
+      {{ message.user.entity.name.value }} posted <a href="{{ values.summary_url }}">{{ values.title }}</a>.
+    {% else %}
+      Internal error: unable to render message of type {{ message.message_type.value }}.
+    {% endif %}
+    {{ message.posted.value[:10]|replace({'-': '‑'}) }}
+  </span>
+  {% if message_type == 'summary-posted' and values.notes %}
+  <img class="document-activity-note-icon" src="/themes/custom/ebms/images/note.ico" title="{{ values.notes }}">
+  {% endif %}
+</div>

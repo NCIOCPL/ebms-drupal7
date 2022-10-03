@@ -1,0 +1,117 @@
+assign abstract_reviewer role:
+  title: Assign Abstract Reviewer Rôle
+  description: Grant permissions needed by reviewers of articles by abstract.
+assign admin_assistant role:
+  title: Assign Administrative Assistant Rôle
+  description: Grant permissions needed by administrative assistants.
+assign board_manager role:
+  title: Assign Board Manager Rôle
+  description: Grant permissions needed by board managers.
+assign board_member role:
+  title: Assign Board Member Rôle
+  description: Grant permissions needed by board members.
+assign medical_librarian role:
+  title: Assign Medical Librarian Rôle
+  description: Grant permissions needed by the medical librarians.
+assign site_manager role:
+  title: Assign Site Manager Rôle
+  description: Grant permissions needed by the site managers.
+assign travel_admin role:
+  title: Assign Travel Administrator Rôle
+  description: Grant permissions needed by travel adminstrators.
+enter travel requests:
+  title: Enter Travel Requests
+  description: Enter travel requests on behalf of a board member.
+import articles:
+  title: Import Articles
+  description: Fetch articles from PubMed and import them into the EBMS.
+manage articles:
+  title: Manage Articles
+  description: Assign any state to an article, and record final disposition decisions.
+manage boards:
+  title: Manage Boards
+  description: Create and modify information about PDQ boards.
+manage documents:
+  title: Manage Documents
+  description: Post documents (e.g., word-processing documents) to the EBMS.
+manage journals:
+  title: Manage Journals
+  description: Import journal information from NLM, mark journals as core journals and/or journals whose articles should be rejected by default for individual boards.
+manage meetings:
+  title: Manage Meetings
+  description: Add meetings to the calendar, edit them, archive them.
+manage review packets:
+  title: Manage Review Packets
+  description: Assign batches of published literature reviews.
+manage summaries:
+  title: Manage Summaries
+  description: Create and modify summary topic pages.
+manage topics:
+  title: Manage Topics
+  description: Create, modify, and retire topics for each PDQ board.
+manage travel:
+  title: Manage Travel
+  description: Handle hotel/reimbursement requests.
+manage users:
+  title: Manage Users
+  description: Create new users, manage their board, topic, and group assignments, and disable accounts.
+perform abstract article review:
+  title: Perform Abstract Article Review
+  description: Decide, based on an article's abstract, whether a review of the article's full text is warranted.
+perform all topic reviews:
+  title: Perform All Topic Reviews
+  description: Make review queue decisions even for topics with which the user is not associated.
+perform full search:
+  title: Perform Full Search
+  description: Use the unrestricted version of the search form.
+perform full text article review:
+  title: Perform Full-Text Article Review
+  description: Decide whether an article should be eligible for inclusion in a packet for board member review.
+perform initial article review:
+  title: Perform Initial Article Review
+  description: Decide which articles should be reviewed from their abstracts.
+print packets:
+  title: Print Packets
+  description: Create paper versions of the documents in a packet for a board member who is unable to use the web interface for reviewing articles.
+publish articles:
+  title: Publish Articles
+  description: Release articles to the queue for review from the article abstracts.
+record print responses:
+  title: Record Print Responses
+  description: Enter article review from print responses on behalf of board members.
+review literature:
+  title: Review Literature
+  description: Review journal articles on cancer and make recommendations for incorporation information from those articles into PDQ® Cancer Summaries.
+submit travel requests:
+  title: Submit Travel Requests
+  description: Request hotel reservations and expense reimbursements for PDQ meetings.
+view alerts:
+  title: View Alerts
+  description: See alert cards on the home page.
+view all meetings:
+  title: View All Meetings
+  description: See meetings to which the user is not invited.
+view calendar:
+  title: View Calendar
+  description: Access to calendar, meetings, and agendas.
+view full text retrieval queue:
+  title: View Full-Text Retrieval Queue
+  description: Use the page for fetching PDF files for the articles which need them.
+view hotel request alerts:
+  title: View Hotel Request Alerts
+  description: View hotel request alerts on the home page.
+view posted summaries alerts:
+  title: View Posted Summaries Alerts
+  description: View posted summaries alerts on the home page.
+view all reports:
+  title: View All Reports
+  description: Run all the reports on the Reports menu.
+view librarian reports:
+  title: View Librarian Reports
+  description: Run the subset of reports provided for the medical librarians.
+view travel reports:
+  title: View Travel Reports
+  description: Run the subset of reports which support travel management.
+view review alerts:
+  title: View Review Alerts
+  description: View review alerts on the home page.

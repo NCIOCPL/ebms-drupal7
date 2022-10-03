@@ -1,0 +1,22 @@
+<div id="summary-page-list" class="item-list">
+  {% if member %}
+  <p><em>Access the pages below to view the current summaries on Cancer.gov, view and download Word versions of the summaries, post summaries with your changes, and view summaries with recent changes from other Board members. You may also post other documents related to the summaries.</em></p>
+  {% endif %}
+  <h3>Summary Pages</h3>
+  <ul>
+    {% for page in pages %}
+    <li>
+      {% if page.delete %}
+      <a href="{{ page.delete }}" class="button usa-button">Delete</a>
+      {% endif %}
+      {% if page.edit %}
+      <a href="{{ page.edit }}" class="button usa-button">Edit</a>
+      {% endif %}
+      <a href="{{ page.url }}">{{ page.name }}</a>
+    </li>
+    {% endfor %}
+    {% if not pages %}
+    <li>This board has no summary pages yet.</li>
+    {% endif %}
+  </ul>
+</div>

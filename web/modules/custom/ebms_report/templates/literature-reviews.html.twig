@@ -1,0 +1,33 @@
+<div class="literature-reviews">
+  <h2>{{ title }}</h2>
+  {% for article in articles %}
+  <div class="article">
+    {% include '@ebms_report/report-article.html.twig' %}
+    {% if article.high_priority %}
+    <div class="high-priority">High Priority</div>
+    {% endif %}
+    {% for topic in article.topics %}
+    <div class="topic">
+      {# <div class="topic-details">Topic <span class="topic-name">{{ topic.name }}</span> for cycle {{ topic.cycle }}</div> #}
+      {% for packet in topic.packets %}
+      <div class="packet">
+        <div class="packet-details">Packet <span class="packet-name">{{ packet.name }}</span> created {{ packet.created|slice(0, 10) }} for cycle {{ topic.cycle }}</div>
+        {% for review in packet.reviews %}
+        <div class="review">
+          <div class="review-details"><span class="review-symbol">{{ review.symbol }}</span> Review posted {{ review.posted|slice(0, 10) }} by {{ review.reviewer }}</div>
+          <div class="dispositions">Disposition(s): {{ review.dispositions|join('; ') }}</div>
+          {% if review.reasons %}
+          <div class="reasons">Reason(s) for rejection: {{ review.reasons|join('; ') }}</div>
+          {% endif %}
+          {% for comment in review.comments %}
+          <div class="comment">Comment: {{ comment|raw }}</div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>

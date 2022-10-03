@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Meeting Categories'
+vid: meeting_categories
+description: 'Whether an event is for a subgroup or a board as a whole.'
+weight: 0

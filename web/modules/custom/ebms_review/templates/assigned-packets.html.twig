@@ -1,0 +1,8 @@
+<ul class="usa-list--unstyled usa-list assigned-packets">
+  {% for packet in packets %}
+  <li><a href="{{ packet.url }}">{{ packet.name }} <strong>({{ packet.count }})</strong></a></li>
+  {% endfor %}
+  {% if not packets %}
+  <li>There are no review packets in your queue.</li>
+  {% endif %}
+</ul>

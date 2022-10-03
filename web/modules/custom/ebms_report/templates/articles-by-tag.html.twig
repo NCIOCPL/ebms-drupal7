@@ -1,0 +1,24 @@
+<div class="articles-by-tag">
+  <h2>{{ title }}</h2>
+  {% for topic in topics %}
+  <div class="topic">
+    <h3>{{ topic.name }}</h3>
+    {% for article in topic.articles %}
+    <div class="article">
+      {% include '@ebms_report/report-article.html.twig' %}
+      <div class="state">Current state: {{ article.state }}</div>
+      {% for comment in article.topic_comments %}
+      <div class="topic-comment">Board manager comment: {{ comment }}</div>
+      {% endfor %}
+      <div class="assigned">Tag assigned {{ article.tag_added|join(', ') }}</div>
+      {% for comment in article.state_comments %}
+      <div class="state-comment">Comment: {{ comment }}</div>
+      {% endfor %}
+      {% for comment in article.tag_comments %}
+      <div class="tag-comment">Comment for librarian: {{ comment }}</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>

@@ -1,0 +1,65 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.states.field_sequence
+    - field.field.taxonomy_term.states.field_terminal
+    - field.field.taxonomy_term.states.field_text_id
+    - taxonomy.vocabulary.states
+  module:
+    - text
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.states.default
+targetEntityType: taxonomy_term
+bundle: states
+mode: default
+content:
+  description:
+    type: text_textarea
+    weight: 2
+    region: content
+    settings:
+      placeholder: ''
+      rows: 5
+    third_party_settings: {  }
+  field_sequence:
+    weight: 3
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+    type: number
+    region: content
+  field_terminal:
+    weight: 4
+    settings:
+      display_label: true
+    third_party_settings: {  }
+    type: boolean_checkbox
+    region: content
+  field_text_id:
+    weight: 0
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+    type: string_textfield
+    region: content
+  name:
+    type: string_textfield
+    weight: 1
+    region: content
+    settings:
+      size: 64
+      placeholder: ''
+    third_party_settings: {  }
+  status:
+    type: boolean_checkbox
+    settings:
+      display_label: true
+    weight: 5
+    region: content
+    third_party_settings: {  }
+hidden:
+  path: true

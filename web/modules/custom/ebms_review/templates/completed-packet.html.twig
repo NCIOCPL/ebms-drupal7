@@ -1,0 +1,92 @@
+<h3>Summary Documents</h3>
+<ul class="summaries usa-list--unstyled">
+  {% for summary in summaries %}
+  <li><a href="{{ summary.url }}" target="_blank">{{ summary.title }}</a></li>
+  {% endfor %}
+  {% if not summaries %}
+  <li>No summaries have been posted for this packet.</li>
+  {% endif %}
+</ul>
+<h3>Articles</h3>
+{% for article in articles %}
+<div class="reviewed-article">
+  {% if article.authors %}
+  <div class="authors">{{ article.authors|join('; ') }}</div>
+  {% else %}
+  <div class="authors">[No authors identified for this article.]</div>
+  {% endif %}
+  <div class="title">{{ article.title }}</div>
+  <div class="publication">{{ article.publication }}</div>
+  <div class="pmid">PMID: {{ article.pmid }}</div>
+  {% if article.high_priority %}
+  <div class="high-priority">High priority.</div>
+  {% endif %}
+  {% if article.dropped %}
+  <div class="dropped">This article was removed from the packet by your board manager.</div>
+  {% endif %}
+  {% if article.fyi %}
+  <div class="fyi">FYI article.</div>
+  {% endif %}
+  {% if article.comments %}
+  <div class="board-manager-comments">Board manager comments:</div>
+  <ul class="usa-list">
+    {% for comment in article.comments %}
+    <li>{{ comment }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  <div class="links">
+    <a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank" class="pmid button usa-button">View Abstract</a>
+    {% if article.full_text_url %}
+    <a href="{{ article.full_text_url }}" target="_blank" class="full-text button usa-button">Download Full Text</a>
+    {% endif %}
+  </div>
+  {% for review in article.reviews %}
+  <div class="review-header">Review posted {{ review.posted }} by {{ review.reviewer }}</div>
+  <h4>Review Disposition(s)</h4>
+  <ul class="usa-list">
+    {% for disposition in review.dispositions %}
+    <li>{{ disposition }}</li>
+    {% endfor %}
+  </ul>
+  {% if review.reasons %}
+  <h4>Rejection Reason(s)</h4>
+  <ul class="usa-list">
+    {% for reason in review.reasons %}
+    <li>{{ reason }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% if review.comments %}
+  <h4>Comments</h4>
+  <div class="comments">{{ review.comments|raw }}</div>
+  {% endif %}
+  {% if review.loe_info %}
+  <div class="loe-info"><strong>LOE Info:</strong> {{ review.loe_info }}</div>
+  {% endif %}
+  {% endfor %}
+</div>
+<hr>
+{% endfor %}
+<h3>Reviewer Uploads</h3>
+<table class="usa-table usa-table--borderless">
+  <thead>
+    <th>File Name</th>
+    <th>Notes</th>
+    <th>Uploaded By</th>
+    <th>When Posted</th>
+  </thead>
+  <tbody>
+    {% for upload in uploads %}
+    <tr>
+      <td><a href="{{ upload.url }}">{{ upload.filename }}</a></td>
+      <td>{{ upload.notes }}</td>
+      <td>{{ upload.user }}</td>
+      <td>{{ upload.date|slice(0, 10) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<div>
+  <a class="button usa-button" href="{{ upload_url }}">Post Document</a>
+</div>

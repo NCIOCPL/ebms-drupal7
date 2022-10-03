@@ -1,0 +1,68 @@
+[
+  {
+    "vid": "internal_tags",
+    "id": 1,
+    "name": "PDQ",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 2,
+    "name": "Caregivers",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 3,
+    "name": "Best Practices",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 4,
+    "name": "Health Literacy",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 5,
+    "name": "Cancer Risk Communication",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 6,
+    "name": "SEO",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 7,
+    "name": "Shared Decision Making",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 8,
+    "name": "Cancer Screening Interventions",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 9,
+    "name": "Health Information Communication",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 10,
+    "name": "EBMS Testing",
+    "status": true
+  },
+  {
+    "vid": "internal_tags",
+    "id": 11,
+    "name": "In The News",
+    "status": true
+  }
+]

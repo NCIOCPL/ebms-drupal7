@@ -1,0 +1,2872 @@
+[
+  {
+    "id": 17876,
+    "topic": 105,
+    "created_by": 25,
+    "created": "2020-06-19 13:32:08",
+    "title": "Prostate Cancer Prevention (June 2020)",
+    "articles": [
+      1,
+      142,
+      209
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      352
+    ],
+    "summaries": [
+      8448
+    ]
+  },
+  {
+    "id": 16821,
+    "topic": 17,
+    "created_by": 2,
+    "created": "2018-06-07 15:25:31",
+    "title": "Cervical Cancer (July 2018)",
+    "articles": [
+      2,
+      4,
+      68,
+      116
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      91,
+      163
+    ],
+    "summaries": [
+      5935
+    ]
+  },
+  {
+    "id": 16852,
+    "topic": 52,
+    "created_by": 3,
+    "created": "2018-07-01 18:16:26",
+    "title": "Genetics of Colorectal Cancer (July 2018) - Group B",
+    "articles": [
+      3
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      157,
+      190,
+      227,
+      377
+    ],
+    "summaries": [
+      6358
+    ]
+  },
+  {
+    "id": 16810,
+    "topic": 12,
+    "created_by": 2,
+    "created": "2018-06-07 12:30:42",
+    "title": "Bladder Cancer (July 2018)",
+    "articles": [
+      5,
+      9,
+      121,
+      134
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      243
+    ],
+    "summaries": [
+      6209
+    ]
+  },
+  {
+    "id": 17873,
+    "topic": 219,
+    "created_by": 3,
+    "created": "2020-04-15 09:31:35",
+    "title": "Genetics of Pancreatic Cancer (Reviewed Literature)",
+    "articles": [
+      6,
+      8,
+      18,
+      23,
+      25,
+      28,
+      31,
+      36,
+      37,
+      38,
+      39,
+      41,
+      45,
+      48,
+      54,
+      69,
+      71,
+      86,
+      103,
+      108,
+      109,
+      110,
+      113,
+      118,
+      119,
+      120,
+      124,
+      149,
+      151,
+      152,
+      154,
+      155,
+      157,
+      163,
+      164,
+      165,
+      182,
+      208,
+      212,
+      216,
+      220,
+      228,
+      237,
+      241,
+      242,
+      243,
+      253,
+      255,
+      261,
+      262,
+      263,
+      265,
+      266,
+      276,
+      277,
+      278,
+      279,
+      283,
+      284,
+      285,
+      287,
+      288
+    ],
+    "last_seen": null,
+    "active": false,
+    "starred": 0
+  },
+  {
+    "id": 17874,
+    "topic": 165,
+    "created_by": 3,
+    "created": "2020-04-15 09:32:49",
+    "title": "Genetics of Endocrine and Neuroendocrine Neoplasias (Suggested by Advisory Board)",
+    "articles": [
+      7,
+      21,
+      24,
+      50,
+      51,
+      52,
+      55,
+      59,
+      62,
+      64,
+      65,
+      72,
+      161,
+      180,
+      196,
+      202,
+      215,
+      217,
+      286
+    ],
+    "last_seen": null,
+    "active": false,
+    "starred": 0
+  },
+  {
+    "id": 17506,
+    "topic": 101,
+    "created_by": 375,
+    "created": "2019-08-16 13:51:06",
+    "title": "Stomach Cancer Prevention (August 2019)",
+    "articles": [
+      10
+    ],
+    "last_seen": "2019-09-17 14:36:57",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      73,
+      202
+    ],
+    "summaries": [
+      7255
+    ]
+  },
+  {
+    "id": 16727,
+    "topic": 95,
+    "created_by": 375,
+    "created": "2018-04-06 15:47:40",
+    "title": "Cigarette Smoking: Health Risks and How to Quit (April 2018)",
+    "articles": [
+      11,
+      19,
+      166,
+      181,
+      185,
+      187,
+      294,
+      295,
+      296
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      247,
+      312,
+      382
+    ],
+    "summaries": [
+      5038
+    ]
+  },
+  {
+    "id": 15934,
+    "topic": 88,
+    "created_by": 2,
+    "created": "2017-03-22 16:18:09",
+    "title": "Pancreatic Cancer (March 2017)",
+    "articles": [
+      12,
+      272
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      122
+    ],
+    "summaries": [
+      4701
+    ]
+  },
+  {
+    "id": 16804,
+    "topic": 80,
+    "created_by": 6,
+    "created": "2018-06-04 09:59:34",
+    "title": "Nutrition in Cancer Care (June 2018)",
+    "articles": [
+      13
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      344,
+      370
+    ],
+    "summaries": [
+      5610
+    ]
+  },
+  {
+    "id": 16853,
+    "topic": 205,
+    "created_by": 3,
+    "created": "2018-07-01 18:16:53",
+    "title": "Genetics of Kidney Cancer (July 2018)",
+    "articles": [
+      14
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      89,
+      301,
+      306,
+      393
+    ],
+    "summaries": [
+      6356
+    ]
+  },
+  {
+    "id": 16793,
+    "topic": 51,
+    "created_by": 3,
+    "created": "2018-06-01 18:27:35",
+    "title": "Genetics of Breast and Ovarian Cancer (May 2018) - Group C",
+    "articles": [
+      15,
+      16,
+      131,
+      133
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      104,
+      287
+    ],
+    "summaries": [
+      6360
+    ]
+  },
+  {
+    "id": 16827,
+    "topic": 96,
+    "created_by": 375,
+    "created": "2018-06-08 16:33:48",
+    "title": "Breast Cancer Prevention (June 2018)",
+    "articles": [
+      17,
+      206,
+      207,
+      291
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      164,
+      380
+    ],
+    "summaries": [
+      6180
+    ]
+  },
+  {
+    "id": 17771,
+    "topic": 123,
+    "created_by": 375,
+    "created": "2020-02-07 14:58:03",
+    "title": "Lung Cancer Screening (February 2020)",
+    "articles": [
+      20,
+      167
+    ],
+    "last_seen": "2020-03-17 10:54:56",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      202,
+      209,
+      346,
+      350,
+      352
+    ],
+    "summaries": [
+      7672
+    ]
+  },
+  {
+    "id": 16822,
+    "topic": 53,
+    "created_by": 2,
+    "created": "2018-06-07 15:26:28",
+    "title": "Gestational Trophoblastic Tumors and Neoplasia (July 2018)",
+    "articles": [
+      22,
+      135,
+      138,
+      139,
+      254
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      91,
+      163
+    ],
+    "summaries": [
+      2411
+    ]
+  },
+  {
+    "id": 16820,
+    "topic": 58,
+    "created_by": 2,
+    "created": "2018-06-07 14:08:13",
+    "title": "Intraocular (Uveal) Melanoma (July 2018)",
+    "articles": [
+      26,
+      89,
+      230
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      91
+    ],
+    "summaries": [
+      6000
+    ]
+  },
+  {
+    "id": 17307,
+    "topic": 18,
+    "created_by": 400,
+    "created": "2019-04-30 08:16:57",
+    "title": "Childhood Acute Lymphoblastic Leukemia (May 2019)",
+    "articles": [
+      27
+    ],
+    "last_seen": "2020-02-06 12:57:15",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      156,
+      165,
+      170,
+      192,
+      340
+    ],
+    "summaries": [
+      8573
+    ],
+    "reviewer_docs": [
+      957
+    ]
+  },
+  {
+    "id": 16538,
+    "topic": 40,
+    "created_by": 3,
+    "created": "2018-01-05 15:54:52",
+    "title": "Cancer Genetics Risk Assessment and Counseling (December 2017)",
+    "articles": [
+      29
+    ],
+    "last_seen": "2018-04-16 12:05:36",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      146,
+      240,
+      327
+    ],
+    "summaries": [
+      5732
+    ]
+  },
+  {
+    "id": 16546,
+    "topic": 51,
+    "created_by": 3,
+    "created": "2018-01-05 16:19:10",
+    "title": "Genetics of Breast and Ovarian Cancer (December 2017) - Group A",
+    "articles": [
+      30
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      182,
+      249,
+      365
+    ],
+    "summaries": [
+      5730
+    ]
+  },
+  {
+    "id": 17453,
+    "topic": 29,
+    "created_by": 400,
+    "created": "2019-06-28 13:19:16",
+    "title": "Childhood Non - Hodgkin Lymphoma (July 2019)",
+    "articles": [
+      32
+    ],
+    "last_seen": "2020-02-05 16:33:03",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      153,
+      156,
+      170,
+      200,
+      226,
+      244,
+      340
+    ],
+    "summaries": [
+      8421
+    ],
+    "reviewer_docs": [
+      946,
+      962
+    ]
+  },
+  {
+    "id": 17483,
+    "topic": 116,
+    "created_by": 375,
+    "created": "2019-08-15 11:17:24",
+    "title": "Breast Cancer Screening (August 2019)",
+    "articles": [
+      33,
+      210
+    ],
+    "last_seen": "2019-10-02 13:14:31",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      123,
+      164,
+      346,
+      350,
+      380
+    ],
+    "summaries": [
+      7808
+    ]
+  },
+  {
+    "id": 16842,
+    "topic": 95,
+    "created_by": 375,
+    "created": "2018-06-22 09:09:33",
+    "title": "Cigarette Smoking: Health Risks and How to Quit (June 2018)",
+    "articles": [
+      34,
+      35,
+      223
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      247,
+      312,
+      382
+    ],
+    "summaries": [
+      6211
+    ]
+  },
+  {
+    "id": 17703,
+    "topic": 168,
+    "created_by": 400,
+    "created": "2019-12-31 08:21:08",
+    "title": "Late Effects of Treatment for Childhood Cancer (January 2020)",
+    "articles": [
+      40,
+      87,
+      88
+    ],
+    "last_seen": "2020-02-10 07:06:44",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      185,
+      200,
+      226
+    ],
+    "summaries": [
+      8619
+    ],
+    "reviewer_docs": [
+      1003,
+      1010
+    ]
+  },
+  {
+    "id": 17800,
+    "topic": 167,
+    "created_by": 3,
+    "created": "2020-02-24 16:48:35",
+    "title": "Psychosocial Aspects of Cancer Genetics (January/February 2020) - Group B",
+    "articles": [
+      42
+    ],
+    "last_seen": "2020-03-09 15:51:33",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      66,
+      146
+    ],
+    "summaries": [
+      8490
+    ]
+  },
+  {
+    "id": 16818,
+    "topic": 42,
+    "created_by": 2,
+    "created": "2018-06-07 13:42:32",
+    "title": "Esophageal Cancer (July 2018)",
+    "articles": [
+      43,
+      189
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      122
+    ],
+    "summaries": [
+      5996
+    ]
+  },
+  {
+    "id": 16690,
+    "topic": 52,
+    "created_by": 3,
+    "created": "2018-03-16 13:18:31",
+    "title": "Genetics of Colorectal Cancer (March 2018) - Group B",
+    "articles": [
+      44,
+      256
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      157,
+      190,
+      227,
+      377
+    ],
+    "summaries": [
+      6149
+    ]
+  },
+  {
+    "id": 16881,
+    "topic": 231,
+    "created_by": 2,
+    "created": "2018-07-12 17:32:27",
+    "title": "Head and Neck (July 2018)",
+    "articles": [
+      46,
+      83,
+      114,
+      115,
+      147,
+      258,
+      290
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      194,
+      289
+    ],
+    "summaries": [
+      5623,
+      5868,
+      5999,
+      6001,
+      6005,
+      6006,
+      6009,
+      6176,
+      6179
+    ]
+  },
+  {
+    "id": 16732,
+    "topic": 98,
+    "created_by": 375,
+    "created": "2018-04-09 12:31:11",
+    "title": "Colorectal Cancer Prevention (April 2018)",
+    "articles": [
+      47,
+      160
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      73,
+      352
+    ],
+    "summaries": [
+      6071
+    ]
+  },
+  {
+    "id": 16892,
+    "topic": 96,
+    "created_by": 375,
+    "created": "2018-07-24 10:29:34",
+    "title": "Breast Cancer Prevention (July 2018)",
+    "articles": [
+      49,
+      267,
+      274,
+      281
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      164,
+      380
+    ],
+    "summaries": [
+      6070
+    ]
+  },
+  {
+    "id": 17392,
+    "topic": 203,
+    "created_by": 400,
+    "created": "2019-05-31 09:38:01",
+    "title": "Langerhans Cell Histiocytosis (June 2019)",
+    "articles": [
+      53
+    ],
+    "last_seen": "2020-02-11 14:43:56",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      63,
+      153,
+      226,
+      244
+    ],
+    "summaries": [
+      8574
+    ]
+  },
+  {
+    "id": 17104,
+    "topic": 212,
+    "created_by": 4,
+    "created": "2018-11-26 09:24:39",
+    "title": "Childhood Craniopharyngioma (December 2018)",
+    "articles": [
+      56
+    ],
+    "last_seen": "2020-02-07 13:50:40",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      151,
+      170,
+      218
+    ],
+    "summaries": [
+      8598
+    ]
+  },
+  {
+    "id": 17878,
+    "topic": 13,
+    "created_by": 401,
+    "created": "2020-07-29 09:46:55",
+    "title": "Breast Cancer (July 2020)",
+    "articles": [
+      57,
+      58,
+      61,
+      66,
+      85,
+      98,
+      158,
+      159,
+      186,
+      195,
+      219,
+      239,
+      260
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      134,
+      391,
+      415
+    ],
+    "summaries": [
+      8441
+    ]
+  },
+  {
+    "id": 16882,
+    "topic": 4,
+    "created_by": 2,
+    "created": "2018-07-12 17:49:22",
+    "title": "Adult Central Nervous System Tumors (July 2018)",
+    "articles": [
+      60,
+      127,
+      132,
+      245,
+      252,
+      264
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      194,
+      288
+    ],
+    "summaries": [
+      5928
+    ]
+  },
+  {
+    "id": 17687,
+    "topic": 18,
+    "created_by": 400,
+    "created": "2019-12-31 08:12:16",
+    "title": "Childhood Acute Lymphoblastic Leukemia (January 2020)",
+    "articles": [
+      63,
+      104
+    ],
+    "last_seen": "2020-02-22 12:43:43",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      156,
+      165,
+      170,
+      192,
+      340
+    ],
+    "summaries": [
+      8573
+    ]
+  },
+  {
+    "id": 16899,
+    "topic": 117,
+    "created_by": 375,
+    "created": "2018-07-27 16:22:37",
+    "title": "Cervical Cancer Screening (July 2018)",
+    "articles": [
+      67
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      119,
+      154,
+      164,
+      352,
+      381
+    ],
+    "summaries": [
+      6390
+    ]
+  },
+  {
+    "id": 16898,
+    "topic": 97,
+    "created_by": 375,
+    "created": "2018-07-27 16:22:20",
+    "title": "Cervical Cancer Prevention (July 2018)",
+    "articles": [
+      70,
+      92
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      119,
+      154,
+      164,
+      352,
+      381
+    ],
+    "summaries": [
+      5954
+    ]
+  },
+  {
+    "id": 17688,
+    "topic": 19,
+    "created_by": 400,
+    "created": "2019-12-31 08:12:40",
+    "title": "Childhood Acute Myeloid Leukemia/Other Myeloid Malignancies (January 2020)",
+    "articles": [
+      73
+    ],
+    "last_seen": "2020-01-21 07:42:16",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      165,
+      170,
+      192,
+      340
+    ],
+    "summaries": [
+      8583
+    ]
+  },
+  {
+    "id": 17675,
+    "topic": 116,
+    "created_by": 375,
+    "created": "2019-12-13 16:04:47",
+    "title": "Breast Cancer Screening (December 2019)",
+    "articles": [
+      74,
+      75,
+      246,
+      247
+    ],
+    "last_seen": "2020-02-07 15:14:53",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      123,
+      164,
+      346,
+      350,
+      380
+    ],
+    "summaries": [
+      8081
+    ]
+  },
+  {
+    "id": 17697,
+    "topic": 30,
+    "created_by": 400,
+    "created": "2019-12-31 08:17:55",
+    "title": "Childhood Rhabdomyosarcoma (January 2020)",
+    "articles": [
+      76
+    ],
+    "last_seen": "2020-01-15 12:47:22",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      43,
+      59,
+      100,
+      208,
+      226,
+      233,
+      357
+    ],
+    "summaries": [
+      8618
+    ]
+  },
+  {
+    "id": 17655,
+    "topic": 30,
+    "created_by": 400,
+    "created": "2019-12-03 09:24:39",
+    "title": "Childhood Rhabdomyosarcoma (December 2019)",
+    "articles": [
+      77,
+      84
+    ],
+    "last_seen": "2019-12-09 08:11:45",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      43,
+      59,
+      100,
+      208,
+      226,
+      233,
+      357
+    ],
+    "summaries": [
+      8618
+    ]
+  },
+  {
+    "id": 17692,
+    "topic": 214,
+    "created_by": 400,
+    "created": "2019-12-31 08:14:12",
+    "title": "Childhood CNS Embryonal Tumors (January 2020)",
+    "articles": [
+      78
+    ],
+    "last_seen": "2020-02-04 12:56:17",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      151,
+      170,
+      218,
+      226
+    ],
+    "summaries": [
+      8581
+    ]
+  },
+  {
+    "id": 16819,
+    "topic": 92,
+    "created_by": 2,
+    "created": "2018-06-07 14:01:28",
+    "title": "Pheochromocytoma and Paraganglioma (July 2018)",
+    "articles": [
+      79,
+      81,
+      282
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      91,
+      374
+    ],
+    "summaries": [
+      6010
+    ]
+  },
+  {
+    "id": 16791,
+    "topic": 52,
+    "created_by": 3,
+    "created": "2018-06-01 17:37:56",
+    "title": "Genetics of Colorectal Cancer (May 2018) - Group A",
+    "articles": [
+      80
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      155,
+      205,
+      349
+    ],
+    "summaries": [
+      6358
+    ]
+  },
+  {
+    "id": 15176,
+    "topic": 77,
+    "created_by": 4,
+    "created": "2016-01-31 19:14:43",
+    "title": "Neuroblastoma (February 2016)",
+    "articles": [
+      82
+    ],
+    "last_seen": "2016-03-31 11:51:17",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      68,
+      142,
+      191,
+      200,
+      233
+    ],
+    "summaries": [
+      3972
+    ]
+  },
+  {
+    "id": 16170,
+    "topic": 229,
+    "created_by": 3,
+    "created": "2017-07-19 17:55:54",
+    "title": "Genetics of Endometrial Cancer (July 2017)",
+    "articles": [
+      90,
+      94,
+      126
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      104,
+      284,
+      287
+    ]
+  },
+  {
+    "id": 16728,
+    "topic": 96,
+    "created_by": 375,
+    "created": "2018-04-06 16:21:01",
+    "title": "Breast Cancer Prevention (April 2018)",
+    "articles": [
+      91,
+      231
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      164,
+      380
+    ],
+    "summaries": [
+      6070
+    ]
+  },
+  {
+    "id": 17794,
+    "topic": 205,
+    "created_by": 3,
+    "created": "2020-02-24 15:20:28",
+    "title": "Genetics of Kidney Cancer (January/February 2020)",
+    "articles": [
+      93,
+      194
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      301,
+      306,
+      393
+    ],
+    "summaries": [
+      8487
+    ]
+  },
+  {
+    "id": 16189,
+    "topic": 52,
+    "created_by": 3,
+    "created": "2017-07-25 15:39:35",
+    "title": "Genetics of Colorectal Cancer (July 2017) - Group A",
+    "articles": [
+      95
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      155,
+      205,
+      349,
+      377
+    ],
+    "summaries": [
+      5323
+    ]
+  },
+  {
+    "id": 16330,
+    "topic": 119,
+    "created_by": 375,
+    "created": "2017-10-05 12:08:38",
+    "title": "Endometrial Cancer Screening (September 2017)",
+    "articles": [
+      96
+    ],
+    "last_seen": "2018-06-25 10:32:43",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      164,
+      347,
+      381
+    ],
+    "summaries": [
+      4818
+    ]
+  },
+  {
+    "id": 16809,
+    "topic": 112,
+    "created_by": 2,
+    "created": "2018-06-07 12:29:18",
+    "title": "Renal Cell Cancer (July 2018)",
+    "articles": [
+      97
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      243
+    ],
+    "summaries": [
+      6203
+    ]
+  },
+  {
+    "id": 17701,
+    "topic": 199,
+    "created_by": 400,
+    "created": "2019-12-31 08:20:21",
+    "title": "General Pediatric Treatment (January 2020)",
+    "articles": [
+      99
+    ],
+    "last_seen": "2020-02-22 12:43:04",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      59,
+      68,
+      156,
+      170,
+      200,
+      208,
+      218,
+      233
+    ]
+  },
+  {
+    "id": 17855,
+    "topic": 162,
+    "created_by": 375,
+    "created": "2020-04-02 16:42:08",
+    "title": "Cancer Prevention Overview (April 2020)",
+    "articles": [
+      100
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      57,
+      73,
+      80,
+      154,
+      164,
+      312,
+      350,
+      352,
+      398
+    ],
+    "summaries": [
+      8445
+    ]
+  },
+  {
+    "id": 17676,
+    "topic": 162,
+    "created_by": 375,
+    "created": "2019-12-13 16:05:33",
+    "title": "Cancer Prevention Overview (December 2019)",
+    "articles": [
+      101
+    ],
+    "last_seen": "2019-12-18 10:03:39",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      57,
+      73,
+      80,
+      119,
+      154,
+      164,
+      202,
+      312,
+      350,
+      352,
+      398
+    ],
+    "summaries": [
+      8031
+    ],
+    "reviewer_docs": [
+      998
+    ]
+  },
+  {
+    "id": 16813,
+    "topic": 151,
+    "created_by": 2,
+    "created": "2018-06-07 12:43:55",
+    "title": "Colorectal Cancer (July 2018)",
+    "articles": [
+      102
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      74,
+      122,
+      222,
+      387
+    ],
+    "summaries": [
+      6201,
+      6202
+    ]
+  },
+  {
+    "id": 17345,
+    "topic": 221,
+    "created_by": 6,
+    "created": "2019-05-14 10:17:58",
+    "title": "Cannabis and Cannabinoids (May 2019)",
+    "articles": [
+      105
+    ],
+    "last_seen": "2020-03-24 11:23:40",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      79,
+      116,
+      198,
+      385
+    ],
+    "summaries": [
+      7674
+    ]
+  },
+  {
+    "id": 17788,
+    "topic": 51,
+    "created_by": 3,
+    "created": "2020-02-24 15:02:24",
+    "title": "Genetics of Breast and Ovarian Cancer (January/February 2020) - Ovarian Systemic Therapy",
+    "articles": [
+      106,
+      150
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      104
+    ],
+    "summaries": [
+      8486
+    ]
+  },
+  {
+    "id": 17567,
+    "topic": 30,
+    "created_by": 400,
+    "created": "2019-10-02 09:21:02",
+    "title": "Childhood Rhabdomyosarcoma (October 2019)",
+    "articles": [
+      107
+    ],
+    "last_seen": "2020-04-01 15:16:25",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      43,
+      59,
+      100,
+      208,
+      226,
+      233,
+      357
+    ],
+    "summaries": [
+      8585
+    ]
+  },
+  {
+    "id": 17780,
+    "topic": 239,
+    "created_by": 375,
+    "created": "2020-02-07 15:01:33",
+    "title": "Thyroid Cancer Screening (February 2020)",
+    "articles": [
+      111
+    ],
+    "last_seen": "2020-03-17 10:56:00",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      202,
+      346,
+      398
+    ]
+  },
+  {
+    "id": 17560,
+    "topic": 19,
+    "created_by": 400,
+    "created": "2019-10-02 08:50:57",
+    "title": "Childhood Acute Myeloid Leukemia/Other Myeloid Malignancies (October 2019)",
+    "articles": [
+      112
+    ],
+    "last_seen": "2019-10-25 13:22:58",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      165,
+      170,
+      192,
+      340
+    ],
+    "summaries": [
+      8583
+    ]
+  },
+  {
+    "id": 17606,
+    "topic": 101,
+    "created_by": 375,
+    "created": "2019-10-31 14:36:38",
+    "title": "Stomach Cancer Prevention (October 2019)",
+    "articles": [
+      117
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      73,
+      202
+    ],
+    "summaries": [
+      7255
+    ]
+  },
+  {
+    "id": 16788,
+    "topic": 205,
+    "created_by": 3,
+    "created": "2018-06-01 17:12:58",
+    "title": "Genetics of Kidney Cancer (May 2018)",
+    "articles": [
+      122,
+      123
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      89,
+      301,
+      306
+    ],
+    "summaries": [
+      6356
+    ]
+  },
+  {
+    "id": 16106,
+    "topic": 119,
+    "created_by": 375,
+    "created": "2017-06-08 16:17:27",
+    "title": "Endometrial Cancer Screening (June 2017)",
+    "articles": [
+      125
+    ],
+    "last_seen": "2020-02-13 13:57:13",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      164,
+      347,
+      381
+    ],
+    "summaries": [
+      4818
+    ]
+  },
+  {
+    "id": 16741,
+    "topic": 106,
+    "created_by": 375,
+    "created": "2018-04-09 14:46:55",
+    "title": "Skin Cancer Prevention (April 2018)",
+    "articles": [
+      128,
+      250
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      119,
+      247
+    ],
+    "summaries": [
+      4880
+    ]
+  },
+  {
+    "id": 16823,
+    "topic": 84,
+    "created_by": 2,
+    "created": "2018-06-07 15:34:48",
+    "title": "Ovarian Epithelial Cancer (July 2018)",
+    "articles": [
+      129,
+      130
+    ],
+    "last_seen": "2018-09-14 09:10:49",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      91,
+      163
+    ],
+    "summaries": [
+      6374
+    ]
+  },
+  {
+    "id": 329,
+    "topic": 168,
+    "created_by": 26,
+    "created": "2002-11-25 13:53:49",
+    "title": "Late Effects of Treatment for Childhood Cancer - Legacy (November 2002)",
+    "articles": [
+      136
+    ],
+    "last_seen": null,
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      226
+    ]
+  },
+  {
+    "id": 347,
+    "topic": 159,
+    "created_by": 26,
+    "created": "2002-11-25 14:41:37",
+    "title": "Childhood Leukemia - Legacy (November 2002)",
+    "articles": [
+      137
+    ],
+    "last_seen": null,
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      102,
+      108,
+      156,
+      170,
+      187,
+      195
+    ]
+  },
+  {
+    "id": 16883,
+    "topic": 79,
+    "created_by": 2,
+    "created": "2018-07-13 10:45:25",
+    "title": "Non-Small Cell Lung Cancer (July 2018)",
+    "articles": [
+      140,
+      271
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      110,
+      298,
+      305,
+      319,
+      323
+    ],
+    "summaries": [
+      6495
+    ]
+  },
+  {
+    "id": 17514,
+    "topic": 18,
+    "created_by": 400,
+    "created": "2019-08-30 08:46:36",
+    "title": "Childhood Acute Lymphoblastic Leukemia (September 2019)",
+    "articles": [
+      141
+    ],
+    "last_seen": "2019-10-08 08:50:17",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      156,
+      165,
+      170,
+      192,
+      340
+    ],
+    "summaries": [
+      8573
+    ]
+  },
+  {
+    "id": 17798,
+    "topic": 219,
+    "created_by": 3,
+    "created": "2020-02-24 15:56:10",
+    "title": "Genetics of Pancreatic Cancer (January/February 2020)",
+    "articles": [
+      143,
+      144
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      349,
+      377
+    ]
+  },
+  {
+    "id": 16792,
+    "topic": 52,
+    "created_by": 3,
+    "created": "2018-06-01 17:38:12",
+    "title": "Genetics of Colorectal Cancer (May 2018) - Group B",
+    "articles": [
+      145
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      157,
+      190,
+      227,
+      377
+    ],
+    "summaries": [
+      6358
+    ]
+  },
+  {
+    "id": 17759,
+    "topic": 116,
+    "created_by": 375,
+    "created": "2020-02-07 14:53:08",
+    "title": "Breast Cancer Screening (February 2020)",
+    "articles": [
+      146
+    ],
+    "last_seen": "2020-03-17 10:54:35",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      123,
+      164,
+      346,
+      350,
+      380
+    ],
+    "summaries": [
+      8242
+    ]
+  },
+  {
+    "id": 17029,
+    "topic": 147,
+    "created_by": 4,
+    "created": "2018-09-13 12:01:40",
+    "title": "Wilms' Tumor and Other Childhood Kidney Tumors (October 2018)",
+    "articles": [
+      148
+    ],
+    "last_seen": "2020-02-26 08:15:25",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      68,
+      200,
+      226,
+      233,
+      357
+    ],
+    "summaries": [
+      8496
+    ],
+    "reviewer_docs": [
+      868
+    ]
+  },
+  {
+    "id": 17744,
+    "topic": 83,
+    "created_by": 400,
+    "created": "2020-01-31 13:20:04",
+    "title": "Osteosarcoma and Malignant Fibrous Histiocytoma of Bone (February 2020)",
+    "articles": [
+      153
+    ],
+    "last_seen": "2020-03-13 13:10:21",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      100,
+      142,
+      200,
+      208,
+      245
+    ],
+    "summaries": [
+      8584
+    ],
+    "reviewer_docs": [
+      1013
+    ]
+  },
+  {
+    "id": 17826,
+    "topic": 68,
+    "created_by": 2,
+    "created": "2020-03-19 08:22:40",
+    "title": "Melanoma (March 2020)",
+    "articles": [
+      156,
+      205
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      44,
+      222
+    ],
+    "summaries": [
+      8572
+    ]
+  },
+  {
+    "id": 16812,
+    "topic": 60,
+    "created_by": 2,
+    "created": "2018-06-07 12:36:32",
+    "title": "Kaposi Sarcoma (July 2018)",
+    "articles": [
+      162
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      90,
+      194
+    ],
+    "summaries": [
+      5938
+    ]
+  },
+  {
+    "id": 16808,
+    "topic": 44,
+    "created_by": 2,
+    "created": "2018-06-07 12:22:09",
+    "title": "Extragonadal Germ Cell Tumors (July 2018)",
+    "articles": [
+      168,
+      193
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      243
+    ],
+    "summaries": [
+      2409
+    ]
+  },
+  {
+    "id": 17598,
+    "topic": 162,
+    "created_by": 375,
+    "created": "2019-10-31 14:34:55",
+    "title": "Cancer Prevention Overview (October 2019)",
+    "articles": [
+      169,
+      170,
+      171,
+      172,
+      174
+    ],
+    "last_seen": "2020-02-18 09:33:15",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      57,
+      73,
+      80,
+      119,
+      154,
+      164,
+      202,
+      312,
+      350,
+      352,
+      398
+    ],
+    "summaries": [
+      8031
+    ],
+    "reviewer_docs": [
+      990
+    ]
+  },
+  {
+    "id": 17854,
+    "topic": 116,
+    "created_by": 375,
+    "created": "2020-04-02 15:23:02",
+    "title": "Breast Cancer Screening (April 2020)",
+    "articles": [
+      173,
+      175
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      123,
+      164,
+      346,
+      350,
+      380
+    ]
+  },
+  {
+    "id": 17528,
+    "topic": 77,
+    "created_by": 400,
+    "created": "2019-08-30 08:52:53",
+    "title": "Neuroblastoma (September 2019)",
+    "articles": [
+      176
+    ],
+    "last_seen": "2020-03-26 08:50:15",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      68,
+      142,
+      200,
+      233,
+      357
+    ],
+    "summaries": [
+      8586
+    ]
+  },
+  {
+    "id": 17156,
+    "topic": 25,
+    "created_by": 400,
+    "created": "2018-12-31 09:58:15",
+    "title": "Childhood Extracranial Germ Cell Tumors (January 2019)",
+    "articles": [
+      177
+    ],
+    "last_seen": "2020-02-07 14:00:10",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      59,
+      233,
+      245
+    ],
+    "summaries": [
+      8416
+    ]
+  },
+  {
+    "id": 16923,
+    "topic": 98,
+    "created_by": 375,
+    "created": "2018-07-27 17:15:21",
+    "title": "Colorectal Cancer Prevention (July 2018)",
+    "articles": [
+      178
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      73,
+      352
+    ],
+    "summaries": [
+      6071
+    ]
+  },
+  {
+    "id": 17760,
+    "topic": 162,
+    "created_by": 375,
+    "created": "2020-02-07 14:53:49",
+    "title": "Cancer Prevention Overview (February 2020)",
+    "articles": [
+      179
+    ],
+    "last_seen": "2020-02-11 13:39:28",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      57,
+      73,
+      80,
+      154,
+      164,
+      202,
+      312,
+      350,
+      352,
+      398
+    ],
+    "summaries": [
+      8243
+    ],
+    "reviewer_docs": [
+      1015
+    ]
+  },
+  {
+    "id": 17631,
+    "topic": 30,
+    "created_by": 400,
+    "created": "2019-11-04 12:54:56",
+    "title": "Childhood Rhabdomyosarcoma (November 2019)",
+    "articles": [
+      183
+    ],
+    "last_seen": "2019-11-11 12:35:37",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      43,
+      59,
+      100,
+      208,
+      226,
+      233,
+      357
+    ],
+    "summaries": [
+      8618
+    ],
+    "reviewer_docs": [
+      988
+    ]
+  },
+  {
+    "id": 16811,
+    "topic": 9,
+    "created_by": 2,
+    "created": "2018-06-07 12:34:42",
+    "title": "AIDS-Related Lymphoma (July 2018)",
+    "articles": [
+      184
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      90,
+      194
+    ],
+    "summaries": [
+      5990
+    ]
+  },
+  {
+    "id": 17625,
+    "topic": 214,
+    "created_by": 400,
+    "created": "2019-11-04 12:49:40",
+    "title": "Childhood CNS Embryonal Tumors (November 2019)",
+    "articles": [
+      188
+    ],
+    "last_seen": "2020-02-06 12:40:25",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      151,
+      170,
+      218,
+      226
+    ],
+    "summaries": [
+      8581
+    ]
+  },
+  {
+    "id": 17708,
+    "topic": 48,
+    "created_by": 2,
+    "created": "2019-12-31 14:01:58",
+    "title": "Gastric Cancer (December 2019)",
+    "articles": [
+      190
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      387
+    ],
+    "summaries": [
+      8048
+    ]
+  },
+  {
+    "id": 6934,
+    "topic": 168,
+    "created_by": 26,
+    "created": "2008-03-10 09:55:41",
+    "title": "Late Effects of Treatment for Childhood Cancer - Legacy (March 2008)",
+    "articles": [
+      191
+    ],
+    "last_seen": null,
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      76,
+      226
+    ]
+  },
+  {
+    "id": 7165,
+    "topic": 18,
+    "created_by": 26,
+    "created": "2008-05-12 16:55:43",
+    "title": "Childhood Acute Lymphoblastic Leukemia - Legacy (May 2008)",
+    "articles": [
+      192
+    ],
+    "last_seen": null,
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      61,
+      108,
+      156,
+      165,
+      170
+    ]
+  },
+  {
+    "id": 17548,
+    "topic": 162,
+    "created_by": 375,
+    "created": "2019-10-01 16:03:47",
+    "title": "Cancer Prevention Overview (September 2019)",
+    "articles": [
+      197
+    ],
+    "last_seen": "2020-02-18 09:32:35",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      57,
+      73,
+      80,
+      119,
+      154,
+      164,
+      202,
+      312,
+      350,
+      352,
+      398
+    ],
+    "summaries": [
+      7809
+    ],
+    "reviewer_docs": [
+      980
+    ]
+  },
+  {
+    "id": 17875,
+    "topic": 133,
+    "created_by": 294,
+    "created": "2020-05-26 12:06:32",
+    "title": "Small Cell Lung Cancer (May 2020) EBMS SmokeTest",
+    "articles": [
+      198,
+      204
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      110,
+      284,
+      298,
+      305,
+      319
+    ]
+  },
+  {
+    "id": 16826,
+    "topic": 115,
+    "created_by": 375,
+    "created": "2018-06-08 16:33:30",
+    "title": "Bladder and Other Urothelial Cancers Screening (June 2018)",
+    "articles": [
+      199,
+      200
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      352
+    ],
+    "summaries": [
+      6068
+    ]
+  },
+  {
+    "id": 17877,
+    "topic": 142,
+    "created_by": 294,
+    "created": "2020-06-22 07:31:01",
+    "title": "Unusual Cancers of Childhood (June 2020)",
+    "articles": [
+      201
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      43,
+      63,
+      142,
+      156,
+      208,
+      233,
+      245,
+      339,
+      426
+    ],
+    "summaries": [
+      8595
+    ]
+  },
+  {
+    "id": 17621,
+    "topic": 18,
+    "created_by": 400,
+    "created": "2019-11-04 12:48:31",
+    "title": "Childhood Acute Lymphoblastic Leukemia (November 2019)",
+    "articles": [
+      203,
+      235
+    ],
+    "last_seen": "2019-12-03 08:36:14",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      156,
+      165,
+      170,
+      192,
+      340
+    ],
+    "summaries": [
+      8573
+    ]
+  },
+  {
+    "id": 17644,
+    "topic": 18,
+    "created_by": 400,
+    "created": "2019-12-03 09:22:23",
+    "title": "Childhood Acute Lymphoblastic Leukemia (December 2019)",
+    "articles": [
+      211,
+      213,
+      226
+    ],
+    "last_seen": "2020-02-05 10:55:52",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      156,
+      165,
+      170,
+      192,
+      340
+    ],
+    "summaries": [
+      8573
+    ],
+    "reviewer_docs": [
+      1001
+    ]
+  },
+  {
+    "id": 17645,
+    "topic": 19,
+    "created_by": 400,
+    "created": "2019-12-03 09:22:37",
+    "title": "Childhood Acute Myeloid Leukemia/Other Myeloid Malignancies (December 2019)",
+    "articles": [
+      214
+    ],
+    "last_seen": "2020-03-09 09:26:18",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      165,
+      170,
+      192,
+      340
+    ],
+    "summaries": [
+      8583
+    ]
+  },
+  {
+    "id": 17251,
+    "topic": 116,
+    "created_by": 375,
+    "created": "2019-03-09 11:45:56",
+    "title": "Breast Cancer Screening (February 2019)",
+    "articles": [
+      218
+    ],
+    "last_seen": "2019-03-21 14:21:17",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      80,
+      123,
+      164,
+      346,
+      350,
+      380
+    ],
+    "summaries": [
+      6793
+    ]
+  },
+  {
+    "id": 17323,
+    "topic": 77,
+    "created_by": 400,
+    "created": "2019-04-30 08:22:03",
+    "title": "Neuroblastoma (May 2019)",
+    "articles": [
+      221
+    ],
+    "last_seen": "2020-03-26 08:47:11",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      68,
+      142,
+      200,
+      233,
+      357
+    ],
+    "summaries": [
+      8425
+    ],
+    "reviewer_docs": [
+      924,
+      925,
+      926
+    ]
+  },
+  {
+    "id": 16828,
+    "topic": 162,
+    "created_by": 375,
+    "created": "2018-06-08 16:34:02",
+    "title": "Cancer Prevention Overview (June 2018)",
+    "articles": [
+      222
+    ],
+    "last_seen": "2018-06-28 18:09:05",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      73,
+      80,
+      119,
+      154,
+      164,
+      202,
+      247,
+      312,
+      346,
+      350,
+      352
+    ],
+    "summaries": [
+      5953
+    ]
+  },
+  {
+    "id": 16888,
+    "topic": 106,
+    "created_by": 375,
+    "created": "2018-07-23 12:34:46",
+    "title": "Skin Cancer Prevention (July 2018)",
+    "articles": [
+      224
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      119
+    ],
+    "summaries": [
+      6213
+    ]
+  },
+  {
+    "id": 17680,
+    "topic": 118,
+    "created_by": 375,
+    "created": "2019-12-13 16:06:45",
+    "title": "Colorectal Cancer Screening (December 2019)",
+    "articles": [
+      225,
+      227
+    ],
+    "last_seen": "2019-12-19 14:50:22",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      73,
+      209,
+      350,
+      352
+    ],
+    "summaries": [
+      8082
+    ]
+  },
+  {
+    "id": 17500,
+    "topic": 99,
+    "created_by": 375,
+    "created": "2019-08-15 16:07:49",
+    "title": "Endometrial Cancer Prevention (August 2019)",
+    "articles": [
+      229
+    ],
+    "last_seen": "2019-11-20 10:54:12",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      164,
+      347,
+      381
+    ],
+    "summaries": [
+      7383
+    ]
+  },
+  {
+    "id": 17679,
+    "topic": 117,
+    "created_by": 375,
+    "created": "2019-12-13 16:06:19",
+    "title": "Cervical Cancer Screening (December 2019)",
+    "articles": [
+      232
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      119,
+      154,
+      164,
+      352,
+      381
+    ],
+    "summaries": [
+      8053
+    ]
+  },
+  {
+    "id": 17154,
+    "topic": 212,
+    "created_by": 400,
+    "created": "2018-12-31 09:57:21",
+    "title": "Childhood Craniopharyngioma (January 2019)",
+    "articles": [
+      233
+    ],
+    "last_seen": "2020-02-07 13:52:09",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      142,
+      151,
+      170,
+      218
+    ],
+    "summaries": [
+      8598
+    ]
+  },
+  {
+    "id": 17163,
+    "topic": 168,
+    "created_by": 400,
+    "created": "2018-12-31 10:03:13",
+    "title": "Late Effects of Treatment for Childhood Cancer (January 2019)",
+    "articles": [
+      234
+    ],
+    "last_seen": "2020-02-04 16:26:29",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      185,
+      200,
+      226
+    ],
+    "summaries": [
+      8261
+    ],
+    "reviewer_docs": [
+      890
+    ]
+  },
+  {
+    "id": 17394,
+    "topic": 77,
+    "created_by": 400,
+    "created": "2019-05-31 09:38:58",
+    "title": "Neuroblastoma (June 2019)",
+    "articles": [
+      236
+    ],
+    "last_seen": "2020-03-26 08:49:57",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      68,
+      142,
+      200,
+      233,
+      357
+    ],
+    "summaries": [
+      8425
+    ],
+    "reviewer_docs": [
+      944,
+      945
+    ]
+  },
+  {
+    "id": 16916,
+    "topic": 168,
+    "created_by": 4,
+    "created": "2018-07-27 16:33:24",
+    "title": "Late Effects of Treatment for Childhood Cancer (August 2018)",
+    "articles": [
+      238
+    ],
+    "last_seen": "2020-02-04 16:27:56",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      185,
+      200,
+      226
+    ],
+    "summaries": [
+      8261
+    ],
+    "reviewer_docs": [
+      861
+    ]
+  },
+  {
+    "id": 16688,
+    "topic": 205,
+    "created_by": 3,
+    "created": "2018-03-16 11:34:22",
+    "title": "Genetics of Kidney Cancer (March 2018)",
+    "articles": [
+      240
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      89,
+      301,
+      306
+    ],
+    "summaries": [
+      6148
+    ]
+  },
+  {
+    "id": 16586,
+    "topic": 24,
+    "created_by": 4,
+    "created": "2018-01-30 16:41:54",
+    "title": "Childhood Ependymoma (February 2018)",
+    "articles": [
+      244
+    ],
+    "last_seen": "2018-02-01 10:59:48",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      151,
+      170,
+      218,
+      226
+    ],
+    "summaries": [
+      6185
+    ]
+  },
+  {
+    "id": 16794,
+    "topic": 51,
+    "created_by": 3,
+    "created": "2018-06-01 18:30:04",
+    "title": "Genetics of Breast and Ovarian Cancer (May 2018) - Group A",
+    "articles": [
+      248,
+      275
+    ],
+    "last_seen": "2018-11-03 11:59:36",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      182,
+      249,
+      365
+    ],
+    "summaries": [
+      6360
+    ]
+  },
+  {
+    "id": 16805,
+    "topic": 228,
+    "created_by": 6,
+    "created": "2018-06-04 10:11:47",
+    "title": "Planning the Transition to End-of-Life Care in Advanced Cancer (June 2018)",
+    "articles": [
+      249
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      159,
+      317,
+      344,
+      370
+    ],
+    "summaries": [
+      6368
+    ]
+  },
+  {
+    "id": 15501,
+    "topic": 169,
+    "created_by": 4,
+    "created": "2016-07-26 16:18:02",
+    "title": "Childhood Astrocytomas (August 2016)",
+    "articles": [
+      251
+    ],
+    "last_seen": "2016-08-05 14:28:06",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      142,
+      151,
+      170,
+      218,
+      226
+    ],
+    "summaries": [
+      4567
+    ],
+    "reviewer_docs": [
+      585
+    ]
+  },
+  {
+    "id": 16797,
+    "topic": 167,
+    "created_by": 3,
+    "created": "2018-06-01 18:43:17",
+    "title": "Psychosocial Aspects of Cancer Genetics (May 2018) - Group B",
+    "articles": [
+      257
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      66,
+      238,
+      239
+    ],
+    "summaries": [
+      6359,
+      6361,
+      6362
+    ]
+  },
+  {
+    "id": 17095,
+    "topic": 224,
+    "created_by": 6,
+    "created": "2018-11-02 13:36:44",
+    "title": "High Dose IV Vitamin C (November 2018)",
+    "articles": [
+      259
+    ],
+    "last_seen": "2020-03-24 10:55:07",
+    "active": false,
+    "starred": 0,
+    "reviewers": [
+      116,
+      198
+    ],
+    "summaries": [
+      5819
+    ]
+  },
+  {
+    "id": 17654,
+    "topic": 29,
+    "created_by": 400,
+    "created": "2019-12-03 09:24:30",
+    "title": "Childhood Non - Hodgkin Lymphoma (December 2019)",
+    "articles": [
+      268
+    ],
+    "last_seen": "2020-01-09 13:52:51",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      153,
+      156,
+      170,
+      200,
+      226,
+      244,
+      340
+    ],
+    "summaries": [
+      8578
+    ]
+  },
+  {
+    "id": 17671,
+    "topic": 191,
+    "created_by": 6,
+    "created": "2019-12-03 14:38:30",
+    "title": "Acupuncture (December 2019)",
+    "articles": [
+      269
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      206,
+      303,
+      394,
+      405
+    ],
+    "summaries": [
+      8080
+    ]
+  },
+  {
+    "id": 15992,
+    "topic": 162,
+    "created_by": 375,
+    "created": "2017-04-05 10:47:12",
+    "title": "Cancer Prevention Overview (April 2017)",
+    "articles": [
+      270
+    ],
+    "last_seen": "2020-02-13 13:49:57",
+    "active": false,
+    "starred": 1,
+    "reviewers": [
+      73,
+      80,
+      119,
+      154,
+      164,
+      202,
+      247,
+      312,
+      346,
+      350,
+      352
+    ],
+    "summaries": [
+      4812
+    ]
+  },
+  {
+    "id": 16830,
+    "topic": 97,
+    "created_by": 375,
+    "created": "2018-06-08 16:34:29",
+    "title": "Cervical Cancer Prevention (June 2018)",
+    "articles": [
+      273
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      119,
+      154,
+      164,
+      352,
+      381
+    ],
+    "summaries": [
+      5954
+    ]
+  },
+  {
+    "id": 17505,
+    "topic": 103,
+    "created_by": 375,
+    "created": "2019-08-16 13:50:11",
+    "title": "Oral Cancer Prevention (August 2019)",
+    "articles": [
+      280
+    ],
+    "last_seen": "2019-10-03 09:17:46",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      202,
+      398
+    ],
+    "summaries": [
+      7365
+    ]
+  },
+  {
+    "id": 17600,
+    "topic": 95,
+    "created_by": 375,
+    "created": "2019-10-31 14:35:19",
+    "title": "Cigarette Smoking: Health Risks and How to Quit (October 2019)",
+    "articles": [
+      289
+    ],
+    "last_seen": null,
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      312,
+      382
+    ],
+    "summaries": [
+      7382
+    ]
+  },
+  {
+    "id": 17634,
+    "topic": 43,
+    "created_by": 400,
+    "created": "2019-11-04 12:56:05",
+    "title": "Ewing Sarcoma (November 2019)",
+    "articles": [
+      292
+    ],
+    "last_seen": "2019-11-25 14:06:08",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      100,
+      142,
+      200,
+      208,
+      245,
+      357
+    ],
+    "summaries": [
+      8428
+    ],
+    "reviewer_docs": [
+      987
+    ]
+  },
+  {
+    "id": 17638,
+    "topic": 83,
+    "created_by": 400,
+    "created": "2019-11-04 12:57:29",
+    "title": "Osteosarcoma and Malignant Fibrous Histiocytoma of Bone (November 2019)",
+    "articles": [
+      293
+    ],
+    "last_seen": "2019-11-25 14:08:05",
+    "active": true,
+    "starred": 0,
+    "reviewers": [
+      100,
+      142,
+      200,
+      208,
+      245
+    ],
+    "summaries": [
+      8584
+    ]
+  }
+]

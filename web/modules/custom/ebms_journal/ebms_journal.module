@@ -1,0 +1,40 @@
+<?php
+
+use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\SelectInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_journal_theme($existing, $type, $theme, $path): array {
+  return [
+    'print_friendly_journals' => [
+      'variables' => [
+        'title' => NULL,
+        'filters' => [],
+        'journals' => [],
+        'all' => NULL,
+      ],
+    ],
+    'journal_refresh_cron_report' => [
+      'variables' => [
+        'report' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * We want to find journals for which the specified board includes article
+ * for review by default. The way we do this is to rule out journals which
+ * this board has flagged as excluded (in user parlance, "NOT-listed").
+ */
+function ebms_journal_query_journal_included_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $board_id = $query->getMetaData('board_id');
+    $query->leftJoin('ebms_journal__not_lists', 'not_lists', 'not_lists.entity_id = base_table.id AND not_lists.not_lists_board = :board_id', [':board_id' => $board_id]);
+    $query->isNull('not_lists.not_lists_board');
+  }
+}

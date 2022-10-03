@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Relationship Types'
+vid: relationship_types
+description: 'Types of relationships from one article to another.'
+weight: 0

@@ -1,0 +1,8 @@
+<div {{ attributes }}>
+  <nav class="buttons">
+  {% for button in buttons %}
+    {# Ignore 'Closing tag matches nothing' warning. It is bogus and there's no way to turn it off in PHPStorm. #}
+    <a href="{{ button.url }}" class="button usa-button"{% for name, value in button.attributes %} {{ name }}="{{ value }}"{% endfor %}>{{ button.label }}</a>
+  {% endfor %}
+  </nav>
+</div>

@@ -1,0 +1,13 @@
+name: EBMS Article
+description: Candidate Article for Literature Surveillance Review.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ebms_core
+  - ebms_journal
+  - ebms_state
+  - ebms_topic
+  - file
+  - taxonomy
+  - user

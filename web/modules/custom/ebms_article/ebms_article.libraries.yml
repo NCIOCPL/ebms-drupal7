@@ -1,0 +1,20 @@
+article:
+  css:
+    theme:
+      css/article.css: {}
+search-form:
+  css:
+    theme:
+      css/search-form.css: {}
+search-result:
+  css:
+    theme:
+      css/article-search-result.css: {}
+full-text-queue:
+  css:
+    theme:
+      css/full-text-queue.css: {}
+internal-articles:
+  css:
+    theme:
+      css/internal-articles.css: {}

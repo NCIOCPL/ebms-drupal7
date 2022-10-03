@@ -1,0 +1,54 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.taxonomy_term.article_tags.field_text_id
+    - field.field.taxonomy_term.article_tags.field_topic_allowed
+    - field.field.taxonomy_term.article_tags.field_topic_required
+    - taxonomy.vocabulary.article_tags
+  module:
+    - text
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.article_tags.default
+targetEntityType: taxonomy_term
+bundle: article_tags
+mode: default
+content:
+  description:
+    label: hidden
+    type: text_default
+    weight: 0
+    region: content
+    settings: {  }
+    third_party_settings: {  }
+  field_text_id:
+    weight: 1
+    label: above
+    settings:
+      link_to_entity: false
+    third_party_settings: {  }
+    type: string
+    region: content
+  field_topic_allowed:
+    weight: 3
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    type: boolean
+    region: content
+  field_topic_required:
+    weight: 2
+    label: above
+    settings:
+      format: default
+      format_custom_false: ''
+      format_custom_true: ''
+    third_party_settings: {  }
+    type: boolean
+    region: content
+hidden: {  }

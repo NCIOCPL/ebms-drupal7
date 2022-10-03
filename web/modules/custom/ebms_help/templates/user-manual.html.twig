@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+    <style>
+body {
+  font-family: Arial, sans-serif;
+  width: 95%;
+  margin: 1rem auto;
+}
+h1.main-title {
+  font-size: 1.7rem;
+  text-align: center;
+}
+h1.section-title {
+  font-size: 1.5rem;
+  border-bottom: black 2px solid;
+  margin-top: 2rem;
+}
+h2 {
+  font-size: 1.3rem;
+}
+    </style>
+  </head>
+  <body>
+    <h1 class="main-title">{{ title }}</h1>
+    {% for section in sections %}
+    <h1 class="section-title">{{ section.title }}</h1>
+    <div class="section-body">
+      {{ section.body|raw }}
+    </div>
+    {% endfor %}
+  </body>
+</html>

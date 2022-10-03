@@ -1,0 +1,8 @@
+<div class="packet-list-packet">
+  <div class="packet-name-and-id"><span class="packet-name">{{ packet.name }}</span> <span class="packet-id">[Packet #{{ packet.id }}]</span></div>
+  <div class="packet-creation">Posted {{ packet.posted|slice(0, 10) }} by {{ packet.user }} for the {{ packet.board }} Board</div>
+  <div class="buttons">
+    <a href="{{ packet.edit_url }}" class="button usa-button">Edit</a>
+    <a href="{{ packet.action_url }}" class="button usa-button">{{ packet.action_label }}</a>
+  </div>
+</div>

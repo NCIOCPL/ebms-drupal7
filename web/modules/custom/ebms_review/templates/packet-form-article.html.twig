@@ -1,0 +1,29 @@
+<span class="packet-form-article">
+  {% if author %}
+    <span>{{ author }}; </span>
+  {% endif %}
+  <span><a href="{{ article_url }}" target="_blank">{{ title }}</a> </span>
+  {% if journal %}
+    <span>{{ journal }}; </span>
+  {% endif %}
+  {% if date %}
+    <span>{{ date }}; </span>
+  {% endif %}
+  {% if pmid %}
+    <span>{{ pmid }}</span>
+  {% endif %}
+  {% for article in related %}
+  [Related Article: {{ article.citation }}
+  PMID <a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank">{{ article.pmid }}</a>
+  (<a href="{{ article.url }}">{{ article.id }}</a>)]
+  {% endfor %}
+  {% if full_text_url %}
+    <a class="button usa-button inline-button margin-left-1" href="{{ full_text_url }}" target="_blank">Download Full Text</a>
+  {% endif %}
+  {% if high_priority %}
+    <div class="high-priority">High Priority</div>
+  {% endif %}
+  {% for comment in comments %}
+    <div>Board Manager Comment: <em>{{ comment }}</em></div>
+  {% endfor %}
+</span>

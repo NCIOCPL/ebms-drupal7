@@ -1,0 +1,11 @@
+name: EBMS
+description: Common resources for the EBMS.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ckeditor
+  - editor
+  - linkit
+  - taxonomy
+  - user

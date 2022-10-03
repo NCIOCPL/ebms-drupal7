@@ -1,0 +1,25 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_topic_allowed
+    - taxonomy.vocabulary.article_tags
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.article_tags.field_topic_allowed
+field_name: field_topic_allowed
+entity_type: taxonomy_term
+bundle: article_tags
+label: 'Topic Allowed'
+description: 'Whether a topic may be selected when this tag is assigned to an article.'
+required: false
+translatable: false
+default_value:
+  -
+    value: 1
+default_value_callback: ''
+settings:
+  on_label: 'Yes'
+  off_label: 'No'
+field_type: boolean

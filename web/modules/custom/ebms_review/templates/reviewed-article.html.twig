@@ -1,0 +1,54 @@
+<div class="reviewed-article">
+  <h2>Reviews for Article</h2>
+  <div class="article">
+    <div class="authors">{{ authors|join('; ')}}</div>
+    <div class="title"><a href="{{ url }}" target="_blank">{{ title }}</a></div>
+    <div class="publication">{{ publication }}</div>
+    <div class="ids">PMID: <span class="pmid">{{ pmid }}</span> EBMS ID: <span class="ebmsid">{{ id }}</span></div>
+    <div class="article-buttons">
+      <a class="pmid button usa-button" href="https://pubmed.ncbi.nlm.nih.gov/{{ pmid }}" target="_blank">View Abstract</a>
+      {% if full_text_url %}
+      <a href="{{ full_text_url }}" target="_blank" class="full-text button usa-button">Download Full Text</a>
+      {% endif %}
+    </div>
+  </div>
+  {% for review in reviews %}
+  <div class="review">
+    <hr>
+    <dl>
+      <dt>Reviewer</dt>
+      <dd>{{ review.reviewer }}</dd>
+      <dt>Review Date</dt>
+      <dd>{{ review.posted|slice(0, 10) }}</dd>
+      {% if review.dispositions %}
+      <dt>Review Dispositions</dt>
+      <dd>
+        <ul class="usa-list">
+          {% for disposition in review.dispositions %}
+          <li>{{ disposition }}</li>
+          {% endfor %}
+        </ul>
+      </dd>
+      {% endif %}
+      {% if review.reasons %}
+      <dt>Rejection Reasons</dt>
+      <dd>
+        <ul class="usa-list">
+          {% for reason in review.reasons %}
+          <li>{{ reason }}</li>
+          {% endfor %}
+        </ul>
+      </dd>
+      {% endif %}
+      {% if review.comments %}
+      <dt>Comments</dt>
+      <dd>{{ review.comments|raw }}</dd>
+      {% endif %}
+      {% if review.loe_info %}
+      <dt>LOE Information</dt>
+      <dd>{{ review.loe_info }}</dd>
+      {% endif %}
+    </dl>
+  </div>
+  {% endfor %}
+</div>

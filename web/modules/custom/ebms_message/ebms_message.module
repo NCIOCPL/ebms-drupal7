@@ -1,0 +1,11 @@
+<?php
+
+function ebms_message_theme($existing, $type, $theme, $path): array {
+  return [
+    'ebms_message' => [
+      'variables' => [
+        'message' => NULL,
+      ],
+    ],
+  ];
+}

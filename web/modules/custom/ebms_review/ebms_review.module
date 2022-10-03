@@ -1,0 +1,233 @@
+<?php
+
+use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\SelectInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_review_theme($existing, $type, $theme, $path): array {
+  return [
+    'review_queue_article' => [
+      'variables' => [
+        'article' => NULL,
+        'topics' => [],
+      ],
+    ],
+    'packet_form_article' => [
+      'variables' => [
+        'author' => NULL,
+        'title' => NULL,
+        'article_url' => NULL,
+        'journal' => NULL,
+        'date' => NULL,
+        'pmid' => NULL,
+        'full_text_url' => NULL,
+        'related' => NULL,
+        'high_priority' => NULL,
+        'comments' => NULL,
+      ],
+    ],
+    'packet_review_article' => [
+      'variables' => [
+        'article' => NULL,
+      ],
+    ],
+    'other_reviews' => [
+      'variables' => [
+        'reviews' => NULL,
+      ],
+    ],
+    'unpublished_article' => [
+      'variables' => [
+        'article' => NULL,
+      ],
+    ],
+    'packet_list_packet' => [
+      'variables' => [
+        'packet' => [],
+      ],
+    ],
+    'assigned_article' => [
+      'variables' => [
+        'article' => NULL,
+      ],
+    ],
+    'assigned_packets' => [
+      'variables' => [
+        'packets' => NULL,
+      ],
+    ],
+    'completed_packet' => [
+      'variables' => [
+        'summaries' => [],
+        'articles' => [],
+        'uploads' => [],
+        'upload_url' => NULL,
+      ],
+    ],
+    'reviewed_packets' => [
+      'variables' => [
+        'packets' => [],
+        'sort' => NULL,
+      ],
+    ],
+    'unreviewed_packets' => [
+      'variables' => [
+        'packets' => [],
+        'sort' => NULL,
+      ],
+    ],
+    'reviewed_packet' => [
+      'variables' => [
+        'report_url' => NULL,
+        'archive_url' => NULL,
+        'show_archived_url' => NULL,
+        'hide_archived_url' => NULL,
+        'sort_url' => NULL,
+        'sort_label' => NULL,
+        'articles' => [],
+      ],
+    ],
+    'unreviewed_packet' => [
+      'variables' => [
+        'archive_url' => NULL,
+        'reviewers' => [],
+        'articles' => [],
+        'created' => NULL,
+      ],
+    ],
+    'reviewed_article' => [
+      'variables' => [
+        'authors' => NULL,
+        'title' => NULL,
+        'publication' => NULL,
+        'url' => NULL,
+        'pmid' => NULL,
+        'id' => NULL,
+        'full_text_url' => NULL,
+        'reviews' => [],
+      ],
+    ],
+    'packet_star' => [
+      'variables' => [
+        'id' => 0,
+        'starred' => FALSE,
+      ],
+    ],
+    'print_job' => [
+      'variables' => [
+        'url' => '',
+        'documents' => [],
+        'total' => 0,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * We need to eliminate articles which are already in a packet for the selected topic.
+ * See PacketForm::makeTopicQuery().
+ */
+function ebms_review_query_not_in_packet_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $query->leftJoin('ebms_packet_article', 'epa', 'epa.article = base_table.id AND epa.dropped = 0');
+    $query->leftJoin('ebms_packet__articles', 'epas', 'epas.articles_target_id = epa.id');
+    $query->leftJoin('ebms_packet', 'ep', 'ep.id = epas.entity_id AND ep.topic = ebms_article_topic.topic');
+    $query->isNull('epa.article');
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * We're narrowing the query to articles which
+ *  1. are in a packet which has been assigned to a given reviewer
+ *  2. and the packet is still active
+ *  3. and the reviewer has not yet submitted a review
+ *
+ * See Packet::getReviewerArticleCount().
+ */
+function ebms_review_query_articles_awaiting_review_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $uid = $query->getMetaData('uid');
+    $query->join('ebms_packet_article', 'packet_article', 'packet_article.article = base_table.id AND packet_article.dropped = 0');
+    $query->join('ebms_packet__articles', 'articles', 'articles.articles_target_id = packet_article.id');
+    $query->join('ebms_packet', 'packet', 'packet.id = articles.entity_id AND packet.topic = ebms_article_topic.topic');
+    $query->join('ebms_packet__reviewers', 'reviewers', 'reviewers.entity_id = packet.id AND reviewers.deleted = 0 AND reviewers.reviewers_target_id = :uid1', [':uid1' => $uid]);
+    $query->leftJoin('ebms_packet_article__reviews', 'reviews', 'reviews.entity_id = packet_article.id AND reviews.deleted = 0');
+    $query->leftJoin('ebms_review', 'review', 'review.id = reviews.reviews_target_id AND review.reviewer = :uid2', [':uid2' => $uid]);
+    $query->isNull('reviews.entity_id');
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * Building a board memeber's list of assigned packets.
+ *
+ * We need to know if a packet assigned to the board member has at least one article which
+ *  1. the board member has not yet reviewed
+ *  2. is not in the FYI or Final Board Decision state
+ *  3. has not been dropped from the packet (handled in the unaltered query).
+ */
+function ebms_review_query_packets_with_unreviewed_articles_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $query->join('ebms_state', 'state', 'state.article = ebms_packet_article.article AND state.topic = ebms_packet.topic');
+    $query->join('taxonomy_term__field_text_id', 'state_text_id', 'state_text_id.entity_id = state.value');
+    $query->leftJoin('ebms_packet_article__reviews', 'reviews', 'reviews.entity_id = ebms_packet_article.id');
+    $query->leftJoin('ebms_review', 'review', 'review.id = reviews.reviews_target_id AND review.reviewer = ebms_packet__reviewers.reviewers_target_id');
+    $query->condition('state.current', 1);
+    $query->condition('state_text_id.field_text_id_value', ['fyi', 'final_board_decision'], 'NOT IN');
+    $query->isNull('review.id');
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * Finding the packets which have at least on article whose current state for
+ * the packet's topic is anything except FYI. We do this as a preliminary step
+ * toward identifying the articles which have /only/ FYI articles.
+ */
+function ebms_review_query_packet_has_non_fyi_article_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $query->join('ebms_packet__articles', 'packet_articles', 'packet_articles.entity_id = base_table.id');
+    $query->join('ebms_packet_article', 'packet_article', 'packet_article.id = packet_articles.articles_target_id');
+    $query->join('ebms_state', 'state', 'state.article = packet_article.article AND state.topic = base_table.topic');
+    $query->join('taxonomy_term__field_text_id', 'state_text_id', 'state_text_id.entity_id = state.value');
+    $query->condition('state.current', 1);
+    $query->condition('state_text_id.field_text_id_value', 'fyi', '<>');
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * We're looking for reviews for this board manager's packets which haven't
+ * yet been seen. To do this, we answer the following questions:
+ *  1. Is the review for a packet for this manager's board?
+ *  2. Was the review posted since the last time the board
+ *     manager looked at the packet?
+ *  3. Is the packet is still active?
+ *
+ * See HomePage::reviewAlert().
+ */
+function ebms_review_query_unseen_reviews_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $uid = $query->getMetaData('uid');
+    $query->join('ebms_packet_article__reviews', 'reviews', 'reviews.reviews_target_id = base_table.id');
+    $query->join('ebms_packet__articles', 'articles', 'articles.articles_target_id = reviews.entity_id');
+    $query->join('ebms_packet', 'packet', 'packet.id = articles.entity_id');
+    $query->join('ebms_topic', 'topic', 'topic.id = packet.topic');
+    $query->join('ebms_board', 'board', 'board.id = topic.board');
+    $query->condition('board.manager', $uid);
+    $query->condition('packet.active', 1);
+    $or = $query->orConditionGroup()
+      ->isNull('packet.last_seen')
+      ->where('packet.last_seen < base_table.posted');
+    $query->condition($or);
+  }
+}

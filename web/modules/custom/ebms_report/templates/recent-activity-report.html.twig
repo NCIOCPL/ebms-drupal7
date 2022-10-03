@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{ title }} | EBMS</title>
+    <style>
+body {
+  width: 64rem;
+  margin: 2rem auto;
+  font-family: Arial, sans-serif;
+}
+.prefix {
+  font-weight: bold;
+}
+li.event {
+  margin-bottom: 1rem;
+}
+.title {
+  font-style: italic;
+}
+.comments p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+h3 {
+  border-bottom: 1px solid black;
+}
+    </style>
+  </head>
+  <body>
+    <h1>{{ title }}</h1>
+    {% for board in boards %}
+    <div class="board">
+      <h2>Recent Activity for the {{ board.name }} Board</h2>
+      {% for group in board.groups %}
+      {% if group.name %}
+      <h3>{{ group.name }} Activity</h3>
+      {% endif %}
+      <ul>
+      {% for event in group.events %}
+      <li class="event {{ event.type }}">
+
+        {# Show an article review. #}
+        {% if event.type == 'literature' %}
+        <div><span class="prefix">Review posted {{ event.when }}</span> by {{ event.user }}</div>
+        <div class="packet">[Packet: {{ event.packet_title }}]</div>
+        <div class="authors">{{ event.authors }}</div>
+        <div class="title">
+        {% if event.full_text_url %}
+        <a href="{{ event.full_text_url }}" target="_blank">{{ event.article_title }}</a>
+        {% else %}
+        {{ event.article_title }}
+        {% endif %}
+        </div>
+        <div class="publication">{{ event.publication }}</div>
+        <div class="pmid">PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/{{ event.pmid }}" target="_blank">{{ event.pmid }}</a></div>
+        {% if event.dispositions %}
+        <div class="dispositions">Disposition(s): {{ event.dispositions|join('; ') }}</div>
+        {% endif %}
+        {% if event.reasons %}
+        <div class="reasons">Exclusion Reasons: {{ event.reasons|join('; ') }}</div>
+        {% endif %}
+        {% if event.comments %}
+        <div class="comments">Comments: {{ event.comments|raw }}</div>
+        {% endif %}
+        {% if event.loe_info %}
+        <div class="loe_info">LOE Info: {{ event.loe_info }}</div>
+        {% endif %}
+        {% endif %}
+
+        {# Show a document posting. #}
+        {% if event.type == 'document' %}
+        <div><span class="prefix">Document posted {{ event.when }}</span> by {{ event.user }}</div>
+        <div><a class="title" href="{{ event.url }}">{{ event.title }}</a>
+        {% if event.notes %}
+        ({{ event.notes }})
+        {% endif %}
+        </div>
+        {% endif %}
+
+        {# Show a meeting activity. #}
+        {% if event.type == 'meeting' %}
+        <div><span class="prefix">Meeting {{ event.what }} {{ event.when }}</span> by {{ event.user }}</div>
+        <div><span class="title">{{ event.meeting_name }}</span> - {{ event.meeting_date }} - {{ event.meeting_type }}</div>
+        {% endif %}
+      </li>
+      {% endfor %}
+      </ul>
+      {% endfor %}
+    </div>
+    {% endfor %}
+  </body>
+</html>

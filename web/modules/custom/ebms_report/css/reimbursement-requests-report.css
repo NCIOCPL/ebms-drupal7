@@ -1,0 +1,11 @@
+.request-identification .request-submitted,
+.request-identification .meeting,
+.request-identification .request-user {
+  font-weight: bold;
+}
+.reimbursement-requests ul {
+  padding-left: 1rem;
+}
+.reimbursement-requests dt {
+  font-weight: bold;
+}

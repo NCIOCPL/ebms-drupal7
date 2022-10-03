@@ -1,0 +1,6 @@
+#ebms-document-table td:last-child {
+  min-width: 10rem;
+}
+#ebms-document-table td:nth-child(2) {
+  min-width: 8rem;
+}

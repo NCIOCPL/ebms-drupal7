@@ -1,0 +1,6 @@
+ebms_report.main:
+  title: Reports
+  description: Available EBMS Reports
+  route_name: ebms_report.landing_page
+  menu_name: main
+  weight: 60

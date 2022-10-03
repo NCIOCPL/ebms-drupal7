@@ -1,0 +1,5 @@
+entity.ebms_board.add_form:
+  route_name: entity.ebms_board.add_form
+  title: 'Add PDQ Board'
+  appears_on:
+    - entity.ebms_board.collection

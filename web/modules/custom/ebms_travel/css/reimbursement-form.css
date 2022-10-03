@@ -1,0 +1,28 @@
+.travel-expense-fields .usa-input {
+  display: inline-block;
+}
+#edit-certification {
+  margin-top: 0;
+}
+.travel-expense-fields .container-inline div {
+  display: block;
+}
+.travel-expense-fields .container-inline input,
+.travel-expense-fields .container-inline select {
+  width: 100%;
+}
+@media (min-width: 80em) {
+  .travel-expense-fields .container-inline input,
+  .travel-expense-fields .container-inline select {
+    width: auto;
+  }
+  .travel-expense-fields .container-inline div {
+    display: inline-block;
+  }
+  .travel-expense-fields .container-inline div.hidden {
+    display: none;
+  }
+  .travel-expense-fields label {
+    display: none;
+  }
+}

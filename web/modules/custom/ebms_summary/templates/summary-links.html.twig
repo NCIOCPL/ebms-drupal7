@@ -1,0 +1,19 @@
+<div id="summary-links" class="item-list">
+  <h3>Cancer.gov Summaries</h3>
+  <ul>
+    {% for link in links %}
+    <li>
+      {% if link.delete %}
+      <a href="{{ link.delete }}" class="button usa-button">Delete</a>
+      {% endif %}
+      {% if link.edit %}
+      <a href="{{ link.edit }}" class="button usa-button">Edit</a>
+      {% endif %}
+      <a href="{{ link.url }}" target="_blank">{{ link.text }}</a>
+    </li>
+    {% endfor %}
+    {% if not links %}
+    <li>No summary links are available for this page yet.</li>
+    {% endif %}
+  </ul>
+</div>

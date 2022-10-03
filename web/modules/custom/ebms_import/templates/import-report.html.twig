@@ -1,0 +1,8 @@
+<div {{ attributes.addClass(classes) }}>
+  <h2>{{ title }}</h2>
+  {% if errors %}
+    <h3>Error Messages</h3>
+    {{ errors }}
+  {% endif %}
+  {{ blocks }}
+</div>

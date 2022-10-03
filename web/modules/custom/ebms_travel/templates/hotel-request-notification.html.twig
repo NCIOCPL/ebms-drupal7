@@ -1,0 +1,36 @@
+{# Mail clients are weak at standards compliance, so we put style rules inline. #}
+<table style="border-collapse: collapse; color: #3b3b3b; background: #292929; width: 100%;">
+  <caption style="font-weight: bold; xfont-size: 1rem;">Hotel Request for {{ request.user }}</caption>
+  <tbody>
+  <tr style="background: #e4e4e4; padding: 4px 9px;">
+    <th style="text-align: right; padding: 4px 9px; border: 1px solid white;">Submitted</th>
+    <td style="padding: 4px 9px; border: 1px solid white;">{{ request.submitted }}</td>
+  </tr>
+  <tr style="background: #efefef; padding: 4px 9px;">
+    <th style="text-align: right; padding: 4px 9px; border: 1px solid white;">Meeting</th>
+    <td style="padding: 4px 9px; border: 1px solid white;">{{ request.meeting }}</td>
+  </tr>
+  <tr style="background: #e4e4e4; padding: 4px 9px;">
+    <th style="text-align: right; padding: 4px 9px; border: 1px solid white;">Meeting Date</th>
+    <td style="padding: 4px 9px; border: 1px solid white;">{{ request.date }}</td>
+  </tr>
+  <tr style="background: #efefef; padding: 4px 9px;">
+    <th style="text-align: right; padding: 4px 9px; border: 1px solid white;">Check In</th>
+    <td style="padding: 4px 9px; border: 1px solid white;">{{ request.check_in }}</td>
+  </tr>
+  <tr style="background: #e4e4e4; padding: 4px 9px;">
+    <th style="text-align: right; padding: 4px 9px; border: 1px solid white;">Check Out</th>
+    <td style="padding: 4px 9px; border: 1px solid white;">{{ request.check_out }}</td>
+  </tr>
+  <tr style="background: #efefef; padding: 4px 9px;">
+    <th style="text-align: right; padding: 4px 9px; border: 1px solid white;">Preferred Hotel</th>
+    <td style="padding: 4px 9px; border: 1px solid white;">{{ request.preferred_hotel }}</td>
+  </tr>
+  {% if request.comments %}
+  <tr style="background: #e4e4e4; padding: 4px 9px;">
+    <th style="text-align: right; padding: 4px 9px; border: 1px solid white;">Comments</th>
+    <td style="padding: 4px 9px; border: 1px solid white;">{{ request.comments }}</td>
+  </tr>
+  {% endif %}
+  </tbody>
+</table>

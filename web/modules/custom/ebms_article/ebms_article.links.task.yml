@@ -1,0 +1,4 @@
+ebms_article.admin:
+  title: Articles
+  route_name: entity.ebms_article.collection
+  base_route: system.admin_content

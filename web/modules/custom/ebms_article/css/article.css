@@ -1,0 +1,27 @@
+.citation {
+  margin-bottom: 1rem;
+}
+.action-links .button,
+.action-links .button:first-child {
+  margin-left: 0;
+  margin-right: 1em;
+}
+.action-links .button:last-child {
+  margin-right: 0;
+}
+.related-article .button {
+  margin-right: 0;
+  margin-left: 1rem;
+}
+.article-tag .button.left-pad-button:first-child,
+h3.board-manager-comment .button.left-pad-button:first-child,
+.internal-comment .button.left-pad-button:first-child {
+  margin-left: 1em;
+}
+.article-state p {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.inactive {
+  text-decoration: line-through;
+}

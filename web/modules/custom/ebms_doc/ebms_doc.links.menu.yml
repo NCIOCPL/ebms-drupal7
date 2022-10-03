@@ -1,0 +1,6 @@
+ebms_doc.collection:
+  title: 'Documents'
+  route_name: ebms_doc.list
+  description: 'Upload/configure EBMS documents'
+  menu_name: main
+  weight: 30

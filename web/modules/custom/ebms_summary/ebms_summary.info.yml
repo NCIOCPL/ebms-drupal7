@@ -1,0 +1,11 @@
+name: EBMS Summary
+description: Pages with links to PDQ® Summary Documents.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ebms_board
+  - ebms_doc
+  - ebms_message
+  - ebms_topic
+  - user

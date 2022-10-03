@@ -1,0 +1,56 @@
+[
+  {
+    "id": 1,
+    "name": "Adult Treatment",
+    "manager": 2,
+    "loe_guidelines": {
+      "target_id": 1
+    },
+    "auto_imports": 1
+  },
+  {
+    "id": 2,
+    "name": "Cancer Genetics",
+    "manager": 3,
+    "loe_guidelines": {
+      "target_id": 2
+    },
+    "auto_imports": 1
+  },
+  {
+    "id": 3,
+    "name": "Pediatric Treatment",
+    "manager": 400,
+    "loe_guidelines": {
+      "target_id": 1
+    },
+    "auto_imports": 0
+  },
+  {
+    "id": 4,
+    "name": "Screening and Prevention",
+    "manager": 375,
+    "loe_guidelines": {
+      "target_id": 3
+    },
+    "auto_imports": 1
+  },
+  {
+    "id": 5,
+    "name": "Supportive and Palliative Care",
+    "manager": 6,
+    "loe_guidelines": {
+      "target_id": 4
+    },
+    "auto_imports": 0
+  },
+  {
+    "id": 6,
+    "name": "Integrative, Alternative, and Complementary Therapies",
+    "manager": 6,
+    "loe_guidelines": {
+      "target_id": 5
+    },
+    "auto_imports": 0
+  }
+]

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Articles AWaiting Reviews</title>
+    <style>
+body {
+  font-family: Arial, sans-serif;
+  width: 95%;
+  margin: 1rem auto;
+}
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.2rem; }
+h1, h2 { text-align: center; }
+.authors {
+  font-weight: bold;
+}
+.title,
+.topic-name {
+  font-style: italic;
+}
+.article {
+  margin-bottom: 2rem;
+}
+.topic {
+  border-top: 1px #222 solid;
+}
+.high-priority {
+  color: red;
+  font-weight: bold;
+}
+    </style>
+  </head>
+  <body>
+    <h1>Articles Awaiting Reviews</h1>
+    {% include '@ebms_report/articles-without-reviews.html.twig' %}
+  </body>
+</html>

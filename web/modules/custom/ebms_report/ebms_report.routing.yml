@@ -1,0 +1,222 @@
+ebms_report.landing_page:
+  path: '/report'
+  defaults:
+    _controller: Drupal\ebms_report\Controller\ReportRequestController::listReports
+    _title: 'Reports'
+  requirements:
+    _permission: 'view all reports+view librarian reports+view travel reports'
+  options:
+    no_cache: TRUE
+ebms_report.documents:
+  path: '/report/documents/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\DocumentsReport
+    _title: 'Documents'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports+view librarian reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.meeting_dates:
+  path: '/report/meeting-dates'
+  defaults:
+    _form: Drupal\ebms_report\Form\ToBeImplemented
+    _title: 'Meeting Dates'
+  requirements:
+    _permission: 'view all reports+view librarian reports'
+  options:
+    no_cache: TRUE
+ebms_report.hotel_requests:
+  path: '/report/hotel-requests/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\HotelRequestsReport
+    _title: 'Hotel Requests'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports+view travel reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.reimbursement_requests:
+  path: '/report/reimbursement-requests/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\ReimbursementRequestsReport
+    _title: 'Reimbursement Requests'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports+view travel reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.board_members:
+  path: '/report/board-members/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\BoardMembersReport
+    _title: 'Board Members'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports+view travel reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.board_member_logins:
+  path: '/report/board-member-logins'
+  defaults:
+    _controller: Drupal\ebms_report\Controller\BoardMemberLastLogins::report
+    _title: 'Board Member Logins'
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+ebms_report.recent_activity:
+  path: '/report/recent-activity'
+  defaults:
+    _form: Drupal\ebms_report\Form\RecentActivityReport
+    _title: 'Recent Activity'
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+ebms_report.recent_activity_report:
+  path: '/report/recent-activity/{report_id}'
+  defaults:
+    _controller: Drupal\ebms_report\Controller\RecentActivityReport::display
+    _title: 'Recent Activity'
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.import:
+  path: '/report/import/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\ImportReport
+    _title: 'Import'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports+view librarian reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.articles:
+  path: '/report/articles'
+  defaults:
+    _form: Drupal\ebms_report\Form\ArticlesReports
+    _title: 'Articles Reports'
+  requirements:
+    _permission: 'view all reports+view librarian reports'
+  options:
+    no_cache: TRUE
+ebms_report.articles_by_status:
+  path: '/report/articles-by-status/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\ArticlesByStatusReports
+    _title: 'Articles by Status'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.articles_by_tag:
+  path: '/report/articles-by-tag/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\ArticlesByTagReport
+    _title: 'Articles by Tag'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports+view librarian reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.literature_reviews:
+  path: '/report/literature-reviews/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\LiteratureReviewsReport
+    _title: 'Literature Reviews'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.responses_by_reviewer:
+  path: '/report/responses-by-reviewer/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\ReviewerResponsesReport
+    _title: 'Responses by Reviewer'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.articles_without_responses:
+  path: '/report/articles-without-responses/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\ArticlesWithoutResponsesReport
+    _title: 'Articles without Responses'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.topic_reviewers:
+  path: '/report/topic-reviewers/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\TopicReviewersReport
+    _title: 'Topic Reviewers'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer
+ebms_report.abandoned_articles:
+  path: '/report/abandoned-articles'
+  defaults:
+    _form: Drupal\ebms_report\Form\AbandonedArticlesReport
+    _title: 'Invalid Pubmed IDs'
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+ebms_report.statistics:
+  path: '/report/statistics/{report_id}'
+  defaults:
+    _form: Drupal\ebms_report\Form\ArticleStatisticsReport
+    _title: 'Statistics'
+    report_id: 0
+  requirements:
+    _permission: 'view all reports'
+  options:
+    no_cache: TRUE
+    parameters:
+      report_id:
+        type: integer

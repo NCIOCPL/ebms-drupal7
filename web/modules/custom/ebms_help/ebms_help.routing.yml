@@ -1,0 +1,91 @@
+ebms_help.help:
+  path: /help
+  defaults:
+    _controller: Drupal\ebms_help\Controller\Help::display
+    _title: 'How To Use PDQ®'
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.ncihelp:
+  path: /ncihelp
+  defaults:
+    _controller: Drupal\ebms_help\Controller\StaffHelp::display
+    _title: 'How To Use PDQ®'
+  requirements:
+    _permission: 'perform full search+manage travel'
+ebms_help.help_single_page:
+  path: /help/single-page
+  defaults:
+    _controller: Drupal\ebms_help\Controller\BoardMemberManualSinglePage::display
+    _title: 'Board Members User Manual'
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.login:
+  path: '/help/login'
+  defaults:
+    _title: Login
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.nci_login:
+  path: '/ncihelp/login'
+  defaults:
+    _title: Login
+    _entity_view: node.full
+  requirements:
+    _permission: 'perform full search+manage travel'
+ebms_help.home:
+  path: '/help/home'
+  defaults:
+    _title: 'Home Page'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.nci_home:
+  path: '/ncihelp/home'
+  defaults:
+    _title: 'Home Page'
+    _entity_view: node.full
+  requirements:
+    _permission: 'perform full search+manage travel'
+ebms_help.search:
+  path: '/help/search'
+  defaults:
+    _title: 'Article Search'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.calendar:
+  path: '/help/calendar'
+  defaults:
+    _title: 'Calendar'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.packets:
+  path: '/help/packets'
+  defaults:
+    _title: 'Review Packets'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.summaries:
+  path: '/help/summaries'
+  defaults:
+    _title: 'Summaries'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.travel:
+  path: '/help/travel'
+  defaults:
+    _title: 'Travel'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_help.profile:
+  path: '/help/profile'
+  defaults:
+    _title: 'Profile'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'

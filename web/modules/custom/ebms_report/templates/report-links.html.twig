@@ -1,0 +1,6 @@
+<dl>
+  {% for report in reports %}
+  <dt><a href="{{ report.url }}">{{ report.name }}</a></dt>
+  <dd>{{ report.description }}</dd>
+  {% endfor %}
+</dl>

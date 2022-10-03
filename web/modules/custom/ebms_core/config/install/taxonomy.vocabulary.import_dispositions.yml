@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Import Dispositions'
+vid: import_dispositions
+description: 'Values identifying what happened to an article during an import job'
+weight: 0

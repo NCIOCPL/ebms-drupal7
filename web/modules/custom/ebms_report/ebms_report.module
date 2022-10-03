@@ -1,0 +1,146 @@
+<?php
+
+use Drupal\Core\Database\Query\AlterableInterface;
+use Drupal\Core\Database\Query\SelectInterface;
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_report_theme($existing, $type, $theme, $path): array {
+  return [
+    'report_links' => [
+      'variables' => [
+        'reports' => [],
+      ],
+    ],
+    'doc_report' => [
+      'variables' => [
+        'docs' => [],
+        'total' => 0,
+      ],
+    ],
+    'recent_activity_report' => [
+      'variables' => [
+        'title' => NULL,
+        'boards' => [],
+      ],
+    ],
+    'articles_by_status' => [
+      'variables' => [
+        'title' => NULL,
+        'articles' => [],
+      ],
+    ],
+    'articles_by_tag' => [
+      'variables' => [
+        'title' => NULL,
+        'topics' => [],
+      ],
+    ],
+    'literature_reviews' => [
+      'variables' => [
+        'title' => NULL,
+        'articles' => [],
+      ],
+    ],
+    'articles_without_reviews' => [
+      'variables' => [
+        'title' => NULL,
+        'articles' => [],
+        'topics' => [],
+      ],
+    ],
+    'no_responses_board_member_version' => [
+      'variables' => [
+        'title' => NULL,
+        'articles' => [],
+        'topics' => [],
+      ],
+    ],
+    'topic_reviewers_print_version' => [
+      'variables' => [
+        'report' => NULL,
+      ],
+    ],
+    'reimbursement_requests_report' => [
+      'variables' => [
+        'title' => NULL,
+        'requests' => [],
+        'start' => 1,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * Restrict results to states with topics assigned to specific cycle(s).
+ * Base table is ebms_state.
+ *
+ * See ArticlesReports::publishedReport() and many others.
+ */
+function ebms_report_query_states_for_cycle_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $cycle = $query->getMetaData('cycle');
+    $operator = $query->getMetaData('operator');
+    $query->join('ebms_article__topics', 'topics', 'topics.entity_id = base_table.article');
+    $query->join('ebms_article_topic', 'topic', 'topic.id = topics.topics_target_id');
+    $query->condition('topic.cycle', $cycle, $operator);
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * Find article with at least one topic having been approved based on review
+ * from the article abstract, havinb bypassed the initial librarian review.
+ *
+ * Base table is ebms_article.
+ *
+ * See ArticlesReports::topicChangesReport().
+ */
+function ebms_report_query_skipped_librarian_approval_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $query->leftJoin('ebms_state', 'librarian_state', "librarian_state.article = ebms_state.article AND librarian_state.topic = ebms_state.topic AND librarian_state.value = (SELECT entity_id FROM taxonomy_term__field_text_id WHERE field_text_id_value = 'passed_init_review')");
+    $query->isNull('librarian_state.id');
+  }
+}
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * Tricky code needed to narrow by meeting date or type.  This is because
+ * there are no meetings directly connected to the "editorial board decision"
+ * state rows.  Instead, we have to find the latest "on agenda" row for the
+ * same article/topic and check the meeting linked to *that* row! TIR 2446.
+ *
+ * Base table is ebms_state.
+ *
+ * See ArticlesByStatusReports::boardDecisionReport().
+ */
+function ebms_report_query_meetings_for_board_decision_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+    $meeting_start = $query->getMetaData('meeting-start');
+    $meeting_end = $query->getMetaData('meeting-end');
+    $meeting_category = $query->getMetaData('meeting-category');
+    $query->join('ebms_state', 'on_agenda_state', 'on_agenda_state.article = base_table.article AND on_agenda_state.topic = base_table.topic');
+    $query->join('taxonomy_term__field_text_id', 'on_agenda_id', 'on_agenda_id.entity_id = on_agenda_state.value');
+    $query->join('ebms_state__meetings', 'meetings', 'meetings.entity_id = on_agenda_state.id');
+    $query->join('ebms_meeting', 'meeting', 'meeting.id = meetings.meetings_target_id');
+    $query->condition('on_agenda_state.active', 1);
+    $query->condition('on_agenda_id.field_text_id_value', 'on_agenda');
+    if (!empty($meeting_start)) {
+      $query->condition('meeting.dates__value', $meeting_start, '>=');
+    }
+    if (!empty($meeting_end)) {
+      if (strlen($meeting_end) === 10) {
+        $meeting_end .= ' 23:59:59';
+      }
+      $query->condition('meeting.dates__value', $meeting_end, '<=');
+    }
+    if (!empty($meeting_category)) {
+      $query->condition('meeting.category', $meeting_category);
+    }
+  }
+}

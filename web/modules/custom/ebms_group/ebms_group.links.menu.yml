@@ -1,0 +1,6 @@
+entity.ebms_group.collection:
+  title: 'Groups'
+  route_name: entity.ebms_group.collection
+  description: 'Configure Groups.'
+  parent: ebms_core.admin_config_ebms
+  weight: 100

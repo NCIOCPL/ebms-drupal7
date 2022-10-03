@@ -1,0 +1,39 @@
+version: "3.7"
+
+services:
+
+  web:
+    build: .
+    volumes:
+      - ./:/var/www:cached
+      - ./000-default.conf:/etc/apache2/sites-available/000-default.conf
+      - ./apache2.conf:/etc/apache2/apache2.conf
+    ports:
+      - 8081:80
+    networks:
+      net:
+    depends_on:
+      - db
+
+  db:
+    image: mariadb
+    restart: always
+    ports:
+      - 3308:3306
+    environment:
+      MYSQL_ROOT_PASSWORD: ebms
+      MYSQL_DATABASE: ebms
+      MYSQL_USER: ebms
+      MYSQL_PASSWORD: ebms
+    networks:
+      net:
+
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - 8025:8025
+    networks:
+      net:
+
+networks:
+  net:

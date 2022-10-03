@@ -1,0 +1,1178 @@
+PMID- 31661213
+STAT- Publisher
+CTDT- 20210917
+PB  - National Cancer Institute (US)
+DP  - 2002
+TI  - Childhood Adrenocortical Carcinoma Treatment (PDQ®): Health Professional Version.
+BTI - PDQ Cancer Information Summaries
+AB  - This PDQ cancer information summary for health professionals provides comprehensive, 
+      peer-reviewed, evidence-based information about the treatment of pediatric 
+      adrenocortical carcinoma. It is intended as a resource to inform and assist 
+      clinicians who care for cancer patients. It does not provide formal guidelines or 
+      recommendations for making health care decisions. This summary is reviewed regularly 
+      and updated as necessary by the PDQ Pediatric Treatment Editorial Board, which is 
+      editorially independent of the National Cancer Institute (NCI). The summary reflects 
+      an independent review of the literature and does not represent a policy statement of 
+      NCI or the National Institutes of Health (NIH).
+CN  - PDQ Pediatric Treatment Editorial Board
+LA  - eng
+PT  - Review
+PT  - Book Chapter
+PL  - Bethesda (MD)
+OTO - NOTNLM
+OT  - Adrenocortical carcinoma
+OT  - pediatric adrenocortical carcinoma
+OT  - pediatric adrenocortical cancer
+OT  - pediatric cancer of the adrenal cortex
+OTO - NLM
+OT  - adrenocortical carcinoma
+EDAT- 2021/09/17 00:00
+CRDT- 2021/09/17 00:00
+AID - NBK549129 [bookaccession]
+
+PMID- 34536950
+OWN - NLM
+STAT- Publisher
+LR  - 20210918
+IS  - 1945-4589 (Electronic)
+IS  - 1945-4589 (Linking)
+VI  - 13
+IP  - undefined
+DP  - 2021 Sep 18
+TI  - ASXL1 promotes adrenocortical carcinoma and is associated with chemoresistance to 
+      EDP regimen.
+LID - 10.18632/aging.203534 [doi]
+AB  - Adrenocortical carcinoma (ACC) is a rare but aggressive disease that lacks 
+      definitive treatment. We aim to evaluate role of ASXL1 in ACC and exploit its 
+      therapeutic merits therein. We performed in silico reproduction of datasets of the 
+      Cancer Genome Atlas (TCGA), GDSC (Genomics of Drug Sensitivity in Cancer) and Human 
+      Protein Atlas using platforms of cBioPortal, UALCAN, NET-GE, GSEA and GEPIA. 
+      Validation in ACC was performed in tissue, in vitro and in vivo using the NCI-H295R 
+      and SW-13 cells. ASXL1 was gained in over 50% of ACC cases with its mRNA 
+      overexpressed in DNA gained cases. ASXL1 overexpression was associated with 
+      recurrence and worsened prognosis in ACC. ASXL1 gain was associated with resistance 
+      to etoposide, doxorubicin and cisplatin (EDP). ASXL1 expression was positively 
+      correlated with FSCN1 expression. Targeting ASXL1 significantly impaired fitness of 
+      ACC cells, which could be in part rescued by FSCN1 overexpression. Targeting FSCN1 
+      however could not rescue resistance to EDP induced by ASXL1 overexpression. 
+      Targeting ASXL1 sensitized ACC cells to EDP regimen but constitutive ASXL3 
+      overexpression in SW-13 cells could induce resistance upon prolonged treatment. 
+      Functional gain of ASXL1 was common in ACC and exerted pro-tumorigenic and 
+      chemoresistance role. Targeting ASXL1 hold promise to ACC treatment.
+FAU - Wang, Liang
+AU  - Wang L
+AD  - Department of Urology, Tianjin Medical University General Hospital, Tianjin 300052, 
+      P.R. China.
+FAU - Lyu, Yinfeng
+AU  - Lyu Y
+AD  - Department of Urology, Huashan Hospital, Fudan University, Shanghai 200040, P.R. 
+      China.
+FAU - Li, Yuqing
+AU  - Li Y
+AD  - Department of Urology, Huashan Hospital, Fudan University, Shanghai 200040, P.R. 
+      China.
+FAU - Li, Kunping
+AU  - Li K
+AD  - Department of Urology, Huashan Hospital, Fudan University, Shanghai 200040, P.R. 
+      China.
+FAU - Wen, Hui
+AU  - Wen H
+AD  - Department of Urology, Huashan Hospital, Fudan University, Shanghai 200040, P.R. 
+      China.
+FAU - Feng, Chenchen
+AU  - Feng C
+AD  - Department of Urology, Huashan Hospital, Fudan University, Shanghai 200040, P.R. 
+      China.
+FAU - Li, Ning
+AU  - Li N
+AD  - Department of Urology, Fourth Affiliated Hospital of China Medical University, 
+      Shenyang 100032, Liaoning Province, P.R. China.
+LA  - eng
+PT  - Journal Article
+DEP - 20210918
+PL  - United States
+TA  - Aging (Albany NY)
+JT  - Aging
+JID - 101508617
+SB  - IM
+OTO - NOTNLM
+OT  - ASXL1
+OT  - adrenocortical carcinoma
+OT  - chemoresistance
+EDAT- 2021/09/19 06:00
+MHDA- 2021/09/19 06:00
+CRDT- 2021/09/18 20:30
+PHST- 2021/07/19 00:00 [received]
+PHST- 2021/09/02 00:00 [accepted]
+PHST- 2021/09/18 20:30 [entrez]
+PHST- 2021/09/19 06:00 [pubmed]
+PHST- 2021/09/19 06:00 [medline]
+AID - 203534 [pii]
+AID - 10.18632/aging.203534 [doi]
+PST - aheadofprint
+SO  - Aging (Albany NY). 2021 Sep 18;13(undefined). doi: 10.18632/aging.203534.
+
+PMID- 34484430
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210907
+IS  - 1758-8340 (Print)
+IS  - 1758-8359 (Electronic)
+IS  - 1758-8340 (Linking)
+VI  - 13
+DP  - 2021
+TI  - Management of adrenocortical carcinoma: are we making progress?
+PG  - 17588359211038409
+LID - 10.1177/17588359211038409 [doi]
+LID - 17588359211038409
+AB  - Adrenocortical carcinoma (ACC) is a rare malignancy characterized by aggressive 
+      biology and potential endocrine activity. Surgery can offer cure for localized 
+      disease but more than half of patients relapse and primary unresectable or 
+      metastasized disease is frequent. Prognosis of metastatic ACC is still limited, with 
+      less than 15% of patients alive at 5 years. Recent advances in understanding the 
+      molecular profile of ACC underline the high complexity of this disease, which is 
+      characterized by limited drugable molecular targets as well as by a complex 
+      interplay between a yet scarcely understood microenvironment and potential endocrine 
+      activity. Particularly steroid-excess further complicates therapeutic concepts such 
+      as immunotherapy, which have markedly improved outcome in other disease entities. To 
+      date, mitotane remains the only approved drug for adjuvant and palliative care in 
+      ACC. Standard chemotherapy-based protocols with cisplatin, doxorubicin and etoposide 
+      offer only marginal improvement in long-term outcome and the number of clinical 
+      trials conducted is low due to the rarity of the disease. In the current review, we 
+      summarize principles of oncological management for ACC from localized to advanced 
+      disease and discuss novel therapeutic strategies, including targeted therapies such 
+      as tyrosine kinase inhibitors and antibodies, immunotherapy with a focus on 
+      checkpoint inhibitors, individualized treatment concepts based on molecular 
+      characterization by next generation sequencing methods, the role of theranostics and 
+      evolvement of adjuvant therapy.
+CI  - © The Author(s), 2021.
+FAU - Kiesewetter, Barbara
+AU  - Kiesewetter B
+AUID- ORCID: 0000-0002-5490-2371
+AD  - Department of Medicine I, Division of Oncology, Medical University of Vienna, 
+      Waehringer Guertel 18-20, Vienna, A-1090, Austria.
+FAU - Riss, Philipp
+AU  - Riss P
+AUID- ORCID: 0000-0003-1472-6606
+AD  - Department of General Surgery, Division of Visceral Surgery, Medical University of 
+      Vienna, Vienna, Austria.
+FAU - Scheuba, Christian
+AU  - Scheuba C
+AD  - Department of General Surgery, Division of Visceral Surgery, Medical University of 
+      Vienna, Vienna, Austria.
+FAU - Mazal, Peter
+AU  - Mazal P
+AD  - Department of Pathology, Medical University of Vienna, Vienna, Austria.
+FAU - Kretschmer-Chott, Elisabeth
+AU  - Kretschmer-Chott E
+AD  - Department of Radiology and Nuclear Medicine, Medical University of Vienna, Vienna, 
+      Austria.
+FAU - Haug, Alexander
+AU  - Haug A
+AD  - Department of Radiology and Nuclear Medicine, Medical University of Vienna, Vienna, 
+      Austria.
+FAU - Raderer, Markus
+AU  - Raderer M
+AUID- ORCID: 0000-0002-3248-5802
+AD  - Department of Medicine I, Division of Oncology, Medical University of Vienna, 
+      Vienna, Austria.
+LA  - eng
+PT  - Journal Article
+PT  - Review
+DEP - 20210831
+TA  - Ther Adv Med Oncol
+JT  - Therapeutic advances in medical oncology
+JID - 101510808
+PMC - PMC8411624
+OTO - NOTNLM
+OT  - adrenocortical cancer
+OT  - chemotherapy
+OT  - immunotherapy
+OT  - tyrosine kinase inhibitors
+COIS- Conflict of interest statement: The authors declare that there is no conflict of 
+      interest.
+EDAT- 2021/09/07 06:00
+MHDA- 2021/09/07 06:01
+CRDT- 2021/09/06 05:57
+PHST- 2021/05/22 00:00 [received]
+PHST- 2021/07/22 00:00 [accepted]
+PHST- 2021/09/06 05:57 [entrez]
+PHST- 2021/09/07 06:00 [pubmed]
+PHST- 2021/09/07 06:01 [medline]
+AID - 10.1177_17588359211038409 [pii]
+AID - 10.1177/17588359211038409 [doi]
+PST - epublish
+SO  - Ther Adv Med Oncol. 2021 Aug 31;13:17588359211038409. doi: 
+      10.1177/17588359211038409. eCollection 2021.
+
+PMID- 34476265
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210904
+IS  - 2345-2005 (Electronic)
+IS  - 2322-181X (Print)
+IS  - 2322-181X (Linking)
+VI  - 10
+IP  - 3
+DP  - 2021 Sep
+TI  - Telomeric zinc-finger associated protein (TZAP) in cancer biology: friend or foe?
+PG  - 121-129
+LID - 10.22099/mbrc.2021.40106.1607 [doi]
+AB  - The new identified protein telomeric zinc-finger associated protein (TZAP) is a 
+      negative regulator of telomere length. Since telomere length and telomere 
+      maintenance mechanisms are essential to cancer progression, TZAP is considered a new 
+      player in cancer biology. Here we aimed to analyze TZAP using the Cancer Genome 
+      Atlas data in a Pan-Cancer approach. We gathering data from TCGA Pan-Cancer studies 
+      utilizing cBioPortal, GEPIA and UALCAN. In total we analyzed 33 types of cancer 
+      (n=9664) and their respective controls (n=711). TZAP is transcribed in all cancers 
+      but less than 5% of all tumors show any somatic changes. TZAP was downregulated in 
+      kidney chromophobe carcinoma, and upregulated in esophageal cancer, head and neck 
+      squamous cell carcinomas, kidney renal clear cell carcinoma and in liver 
+      hepatocellular carcinoma. Globally, TZAP expression is related to favorable 
+      prognosis, associated to better overall and disease-free survival. Looking to 
+      specific tumors, TZAP expression has a dual behavior. Its downregulation is 
+      associated with poor prognosis in cervical squamous cell carcinoma, in kidney renal 
+      clear cell carcinoma, kidney papillary cell carcinoma, lung adenocarcinoma and 
+      pancreas adenocarcinoma. On the contrary, in adrenocortical carcinoma, colon and 
+      rectal cancer, brain lower grade glioma and prostate adenocarcinoma the upregulation 
+      of TZAP is related with poor prognosis. TZAP expression has a positive correlation 
+      with TRF1 and TRF2 in normal tissue but not in cancer. Our analyses indicate that 
+      TZAP has an important role in oncology and may be considered as a potential 
+      biomarker.
+FAU - Dos Santos, Gabriel Arantes
+AU  - Dos Santos GA
+AD  - Urology Department, Laboratory of Medical Investigation (LIM55), Faculdade de 
+      Medicina FMUSP, Universidade de Sao Paulo, Sao Paulo, SP, Brazil.
+AD  - D'Or Institute for Research and Education (IDOR), Sao Paulo, Brazil.
+FAU - Viana, Nayara Izabel
+AU  - Viana NI
+AD  - Urology Department, Laboratory of Medical Investigation (LIM55), Faculdade de 
+      Medicina FMUSP, Universidade de Sao Paulo, Sao Paulo, SP, Brazil.
+AD  - Minas Gerais State University (UEMG), Passos, Minas Gerais, Brazil.
+FAU - Pimenta, Ruan
+AU  - Pimenta R
+AD  - Urology Department, Laboratory of Medical Investigation (LIM55), Faculdade de 
+      Medicina FMUSP, Universidade de Sao Paulo, Sao Paulo, SP, Brazil.
+AD  - D'Or Institute for Research and Education (IDOR), Sao Paulo, Brazil.
+FAU - de Camargo, Juliana Alves
+AU  - de Camargo JA
+AD  - Urology Department, Laboratory of Medical Investigation (LIM55), Faculdade de 
+      Medicina FMUSP, Universidade de Sao Paulo, Sao Paulo, SP, Brazil.
+FAU - T Reis, Sabrina
+AU  - T Reis S
+AD  - Urology Department, Laboratory of Medical Investigation (LIM55), Faculdade de 
+      Medicina FMUSP, Universidade de Sao Paulo, Sao Paulo, SP, Brazil.
+AD  - Minas Gerais State University (UEMG), Passos, Minas Gerais, Brazil.
+AD  - Athens University Center (UniAtenas), Passos, Minas Gerais, Brazil.
+FAU - Moreira Leite, Katia Ramos
+AU  - Moreira Leite KR
+AD  - Urology Department, Laboratory of Medical Investigation (LIM55), Faculdade de 
+      Medicina FMUSP, Universidade de Sao Paulo, Sao Paulo, SP, Brazil.
+FAU - Srougi, Miguel
+AU  - Srougi M
+AD  - Urology Department, Laboratory of Medical Investigation (LIM55), Faculdade de 
+      Medicina FMUSP, Universidade de Sao Paulo, Sao Paulo, SP, Brazil.
+AD  - D'Or Institute for Research and Education (IDOR), Sao Paulo, Brazil.
+LA  - eng
+PT  - Journal Article
+TA  - Mol Biol Res Commun
+JT  - Molecular biology research communications
+JID - 101613459
+PMC - PMC8340314
+OTO - NOTNLM
+OT  - Cancer Biomarker
+OT  - Pan-Cancer
+OT  - Telomere Binding Proteins
+OT  - Telomere Length
+OT  - Telomere Maintenance Mechanisms
+COIS- The authors declare that they have no conflict of interest.
+EDAT- 2021/09/04 06:00
+MHDA- 2021/09/04 06:01
+CRDT- 2021/09/03 06:53
+PHST- 2021/09/03 06:53 [entrez]
+PHST- 2021/09/04 06:00 [pubmed]
+PHST- 2021/09/04 06:01 [medline]
+AID - 10.22099/mbrc.2021.40106.1607 [doi]
+PST - ppublish
+SO  - Mol Biol Res Commun. 2021 Sep;10(3):121-129. doi: 10.22099/mbrc.2021.40106.1607.
+
+PMID- 34532252
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210918
+IS  - 2223-4691 (Print)
+IS  - 2223-4691 (Electronic)
+IS  - 2223-4683 (Linking)
+VI  - 10
+IP  - 8
+DP  - 2021 Aug
+TI  - High TNFSF13B expression as a predictor of poor prognosis in adrenocortical 
+      carcinoma.
+PG  - 3275-3285
+LID - 10.21037/tau-21-232 [doi]
+AB  - BACKGROUND: Adrenocortical carcinoma (ACC) is an extremely rare malignant tumor with 
+      poor prognosis. Existing treatment options have limited effects, and new therapeutic 
+      targets urgently need to be discovered. TNFSF13B has been reported to be associated 
+      with the prognosis of clear cell renal cell carcinoma, but it has not been studied 
+      in ACC. METHODS: TNFSF13B expression was analyzed and compared between ACC tumors 
+      and normal tissues by using public datasets from TCGA and GTEx. Kaplan-Meier 
+      analysis was employed to evaluate survival, and Cox regression was employed to 
+      evaluate clinicopathologic features. The upstream and downstream regulatory 
+      mechanisms of TNFSF13B were also analyzed. GSEA was performed to explore the 
+      mechanisms of TNFSF13B in ACC. Finally, 14 ACC clinical samples were used to verify 
+      the relationships between TNFSF13B expression and disease-free survival (DFS) and 
+      overall survival (OS). RESULTS: TNFSF13B expression was significantly higher in ACC 
+      tissues than in normal tissues. The prognosis of ACC patients with high TNFSF13B 
+      expression was worse than that of patients with low TNFSF13B expression. High 
+      TNFSF13B expression was strongly correlated with poor prognosis, and TNFSF13B was a 
+      prognostic factor. TNFSF13B expression is modified by upstream miRNAs, methylation 
+      and ubiquitination, and downstream, it interacts with other proteins. GSEA showed 
+      that regulation of cholesterol biosynthesis by SREBP and SREBF, downstream signaling 
+      events of the B cell receptor (BCR) and activation of gene expression by SREBF and 
+      SREBP were significantly enriched in the TNFSF13B high-expression phenotype. 
+      Clinical samples confirmed that TNFSF13B expression was significantly associated 
+      with DFS but not with OS. CONCLUSIONS: TNFSF13B may be a potential prognostic 
+      molecular marker of poor survival in ACC patients, offering a new therapeutic 
+      target.
+CI  - 2021 Translational Andrology and Urology. All rights reserved.
+FAU - Mao, Yongxin
+AU  - Mao Y
+AD  - Department of Urology, Ruijin Hospital, Shanghai Jiao Tong University School of 
+      Medicine, Shanghai, China.
+FAU - Alimu, Parehe
+AU  - Alimu P
+AD  - Department of Urology, Ruijin Hospital, Shanghai Jiao Tong University School of 
+      Medicine, Shanghai, China.
+FAU - Wang, Chenghe
+AU  - Wang C
+AD  - Department of Urology, Ruijin Hospital, Shanghai Jiao Tong University School of 
+      Medicine, Shanghai, China.
+FAU - Ma, Wenming
+AU  - Ma W
+AD  - Department of Urology, Ruijin Hospital, Shanghai Jiao Tong University School of 
+      Medicine, Shanghai, China.
+FAU - Zhuo, Ran
+AU  - Zhuo R
+AD  - Department of Urology, Ruijin Hospital, Shanghai Jiao Tong University School of 
+      Medicine, Shanghai, China.
+FAU - Sun, Fukang
+AU  - Sun F
+AD  - Department of Urology, Ruijin Hospital, Shanghai Jiao Tong University School of 
+      Medicine, Shanghai, China.
+LA  - eng
+PT  - Journal Article
+TA  - Transl Androl Urol
+JT  - Translational andrology and urology
+JID - 101581119
+PMC - PMC8421843
+OTO - NOTNLM
+OT  - Tumor necrosis factor ligand superfamily member 13B (TNFSF13B)
+OT  - adrenocortical carcinoma (ACC)
+OT  - prognosis
+COIS- Conflicts of Interest: All authors have completed the ICMJE uniform disclosure form 
+      (available at https://dx.doi.org/10.21037/tau-21-232). The authors have no conflicts 
+      of interest to declare.
+EDAT- 2021/09/18 06:00
+MHDA- 2021/09/18 06:01
+CRDT- 2021/09/17 07:17
+PHST- 2021/03/17 00:00 [received]
+PHST- 2021/06/30 00:00 [accepted]
+PHST- 2021/09/17 07:17 [entrez]
+PHST- 2021/09/18 06:00 [pubmed]
+PHST- 2021/09/18 06:01 [medline]
+AID - tau-10-08-3275 [pii]
+AID - 10.21037/tau-21-232 [doi]
+PST - ppublish
+SO  - Transl Androl Urol. 2021 Aug;10(8):3275-3285. doi: 10.21037/tau-21-232.
+
+PMID- 34512018
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210914
+IS  - 1179-1322 (Print)
+IS  - 1179-1322 (Electronic)
+IS  - 1179-1322 (Linking)
+VI  - 13
+DP  - 2021
+TI  - Role of Bclaf1 in Promoting Adrenocortical Carcinoma Proliferation: A Study 
+      Combining the Use of Bioinformatics and Molecular Events.
+PG  - 6785-6795
+LID - 10.2147/CMAR.S316599 [doi]
+AB  - PURPOSE: Adrenocortical carcinoma (ACC) is a rare malignancy with poor prognosis, 
+      and researchers are interested in further studying its diagnosis and treatment. Our 
+      study aims to identify new potential therapeutic targets in ACC. PATIENTS AND 
+      METHODS: The core genes CDK1 and CCNB1 were previously screened using ACC data from 
+      The Cancer Genome Atlas (TCGA) as the most relevant to Bclaf1 and tumour prognosis. 
+      We used siRNA- or shRNA-based models to explore the role of Bcl-2-associated 
+      transcription factor 1 (Bclaf1) in SW-13 cell lines. Western blotting and qPCR were 
+      used to determine the effects of Bclaf1 on CDK1 and Cyclin B1. RESULTS: Based on 
+      biological information analysis, we found that Bcl-2-associated transcription factor 
+      1 (Bclaf1) affected the progression of ACC and was associated with the cell cycle. 
+      Downregulated Bclaf1 expression inhibited the proliferation of SW-13 cells and 
+      affected the cell cycle process of SW-13 cells. BCLAF1 was correlated with CDK1 and 
+      CCNB1 and can regulate their mRNA and protein levels. CONCLUSION: Bclaf1 might 
+      promote the development of ACC by regulating CDK1 and Cyclin B1 to drive mitosis.
+CI  - © 2021 Zhou et al.
+FAU - Zhou, Hui
+AU  - Zhou H
+AUID- ORCID: 0000-0002-2615-8071
+AD  - Department of Occupational Health and Occupational Medicine, School of Public 
+      Health, Southern Medical University, Guangzhou, People's Republic of China.
+FAU - Zou, Mengchen
+AU  - Zou M
+AUID- ORCID: 0000-0003-1409-4645
+AD  - Department of Endocrinology and Metabolism, Nanfang Hospital, Southern Medical 
+      University, Guangzhou, People's Republic of China.
+FAU - Ding, Xinyi
+AU  - Ding X
+AUID- ORCID: 0000-0002-0867-788X
+AD  - Department of Occupational Health and Occupational Medicine, School of Public 
+      Health, Southern Medical University, Guangzhou, People's Republic of China.
+FAU - Zou, Fei
+AU  - Zou F
+AUID- ORCID: 0000-0002-1144-7540
+AD  - Department of Occupational Health and Occupational Medicine, School of Public 
+      Health, Southern Medical University, Guangzhou, People's Republic of China.
+LA  - eng
+PT  - Journal Article
+DEP - 20210831
+TA  - Cancer Manag Res
+JT  - Cancer management and research
+JID - 101512700
+PMC - PMC8418367
+OTO - NOTNLM
+OT  - Bcl-2-associated transcription factor 1
+OT  - prognostic and predictive value
+OT  - therapeutic targets
+COIS- The authors declare that they have no competing of interests.
+EDAT- 2021/09/14 06:00
+MHDA- 2021/09/14 06:01
+CRDT- 2021/09/13 06:38
+PHST- 2021/04/20 00:00 [received]
+PHST- 2021/07/28 00:00 [accepted]
+PHST- 2021/09/13 06:38 [entrez]
+PHST- 2021/09/14 06:00 [pubmed]
+PHST- 2021/09/14 06:01 [medline]
+AID - 316599 [pii]
+AID - 10.2147/CMAR.S316599 [doi]
+PST - epublish
+SO  - Cancer Manag Res. 2021 Aug 31;13:6785-6795. doi: 10.2147/CMAR.S316599. eCollection 
+      2021.
+
+PMID- 34531868
+OWN - NLM
+STAT- In-Data-Review
+LR  - 20210918
+IS  - 1664-3224 (Electronic)
+IS  - 1664-3224 (Linking)
+VI  - 12
+DP  - 2021
+TI  - Pan-Cancer Analysis of PARP1 Alterations as Biomarkers in the Prediction of 
+      Immunotherapeutic Effects and the Association of Its Expression Levels and 
+      Immunotherapy Signatures.
+PG  - 721030
+LID - 10.3389/fimmu.2021.721030 [doi]
+LID - 721030
+AB  - BACKGROUND: Poly (ADP-ribose) polymerases-1 (PARP1) alterations are associated with 
+      PARP1 inhibitor resistance, regulating the function of Treg cells and PDL1 
+      expression in tumor cells, and high PARP1 expression is significantly associated 
+      with aggressive behavior and chemotherapeutic resistance in several tumors. However, 
+      a comprehensive analysis of the predictive values of PARP1 alteration for immune 
+      checkpoint inhibitor (ICI) effectiveness in tumors remains unclear, and the 
+      associations between its expression and immunotherapy signatures also needs to be 
+      explored further. METHODS: We performed some analyses with the cBioPortal online 
+      database (https://www.cbioportal.org), TIMER2.0 (Tumor Immune Estimation Resource 
+      2.0, http://timer.comp-genomics.org/) and TCGA database (https://xenabrowser.net or 
+      https://portal.gdc.cancer.gov/). Survival analysis was conducted using Kaplan-Meier 
+      method, and the associations between PARP1 transcription levels and immune 
+      checkpoint gene expression, the number of neoantigens, tumor mutation burden (TMB) 
+      levels, and microsatellite instability (MSI) event are analyzed by spearman 
+      correlation analysis and visualization of those mentioned above is performed using 
+      R, version 3.6.3 (http://www.r-project.org/). RESULTS: We found that PARP1 was 
+      altered in 1338 (2.9%) out of 45604 patients with diverse tumors, which was 
+      associated with markedly higher TMB levels in a variety of tumors (P < 0.01). 
+      Impressively, patients with PARP1 alterations in advanced tumors showed better 
+      overall survival (OS) in the ICI-treated cohort (P = 0.016). PARP1 altered group was 
+      substantially correlated with higher immune infiltrates across most tumors, 
+      including CD8+ T cells in colorectal adenocarcinoma (P = 0.0061), endometrial 
+      carcinoma (P = 0.0033), stomach cancer (P = 0.033), and cervical cancer (P = 0.026), 
+      respectively. The PARP1 altered group showed high expression in transcription (P < 
+      0.001), and higher expression of LAG3, PDCD1, CTLA-4, and TIGIT (P < 0.05). Higher 
+      PARP1 expression was present in 27 tumor compared the corresponding normal tissues 
+      using the GTEx and TCGA databases and it had a worse OS in several tumors (P < 
+      0.05). Further, high PARP1 expression was significantly associated with six immune 
+      cells (B cells, CD4+ T cells, CD8+ T cells, macrophages, neutrophils, and dendritic 
+      cells) in most tumors, including colon adenocarcinoma (COAD), head and neck squamous 
+      cell carcinoma (HNSC), kidney renal clear cell carcinoma (KIRC), and liver 
+      hepatocellular carcinoma (LIHC) (P < 0.05). In particular, CD8+T cell infiltration, 
+      was also positively correlated with high PARP1 expression in bladder urothelial 
+      carcinoma (BLCA), breast invasive carcinoma (BRCA), kidney renal papillary cell 
+      carcinoma (KIRP), brain lower grade glioma (LGG), LIHC, pancreatic adenocarcinoma 
+      (PAAD), pheochromocytoma and paraganglioma (PCPG), prostate adenocarcinoma (PRAD), 
+      rectum adenocarcinoma (READ), testicular germ cell tumors (TGCT), thymoma (THYM), 
+      uterine corpus endometrial carcinoma (UCEC), uveal melanoma (UVM) (P < 0.05, no data 
+      shown), and PARP1 expression was significantly positively correlated with the 
+      transcription levels of some of the 47 immune checkpoint genes, such as CD274, 
+      CTLA4, and PDCD1 in several tumors, including PAAD, LIHC, KIRC, HNSC, and BLCA (P < 
+      0.05). A significant positive association between PARP1 expression and the number of 
+      immune neoantigen was found within COAD, KIRC, lung adenocarcinoma (LUAD), PAAD and 
+      THYM (P < 0.05), and there were also significantly positive correlations between 
+      PARP1 expression and TMB in many tumors like adrenocortical carcinoma (ACC), COAD, 
+      kidney chromophobe (KICH), LGG, LUAD, READ, skin cutaneous melanoma (SKCM) and 
+      stomach adenocarcinoma (STAD) (P < 0.05). In addition, high PARP1 expression was 
+      positively associated with microsatellite instability event in COAD, KIRP, BRCA, 
+      glioblastoma multiforme (GBM), lung squamous cell carcinoma (LUSC), LGG, READ, UCEC, 
+      SKCM and LUAD (P < 0.05). CONCLUSIONS: Our results highlight the significance of 
+      PARP1 alterations as pan-cancer predictive biomarkers for ICI treatment, and its 
+      expression levels seem to be correlated with the status of immunotherapy-associated 
+      signatures, thus may be a promising biomarker for predicting ICI response in several 
+      tumors.
+CI  - Copyright © 2021 Zhang, Wang, A, Qu and Chen.
+FAU - Zhang, Xinke
+AU  - Zhang X
+AD  - State Key Laboratory of Oncology in South China, Collaborative Innovation Center for 
+      Cancer Medicine, Sun Yat-sen University Cancer Center, Guangzhou, China.
+AD  - Department of Pathology, Sun Yat-sen University Cancer Center, Guangzhou, China.
+FAU - Wang, Yingying
+AU  - Wang Y
+AD  - Department of Scientific Research Management, Affiliated Cancer Hospital and 
+      Institute of Guangzhou Medical University, Guangzhou, China.
+FAU - A, Gari
+AU  - A G
+AD  - State Key Laboratory of Oncology in South China, Collaborative Innovation Center for 
+      Cancer Medicine, Sun Yat-sen University Cancer Center, Guangzhou, China.
+AD  - Department of Pathology, Sun Yat-sen University Cancer Center, Guangzhou, China.
+FAU - Qu, Chunhua
+AU  - Qu C
+AD  - State Key Laboratory of Oncology in South China, Collaborative Innovation Center for 
+      Cancer Medicine, Sun Yat-sen University Cancer Center, Guangzhou, China.
+AD  - Department of Pathology, Sun Yat-sen University Cancer Center, Guangzhou, China.
+FAU - Chen, Jiewei
+AU  - Chen J
+AD  - State Key Laboratory of Oncology in South China, Collaborative Innovation Center for 
+      Cancer Medicine, Sun Yat-sen University Cancer Center, Guangzhou, China.
+AD  - Department of Pathology, Sun Yat-sen University Cancer Center, Guangzhou, China.
+LA  - eng
+PT  - Journal Article
+DEP - 20210831
+TA  - Front Immunol
+JT  - Frontiers in immunology
+JID - 101560960
+SB  - IM
+PMC - PMC8438309
+OTO - NOTNLM
+OT  - PARP1
+OT  - biomarkers
+OT  - immunotherapeutic
+OT  - immunotherapy signatures
+OT  - pan-cancer
+COIS- The authors declare that the research was conducted in the absence of any commercial 
+      or financial relationships that could be construed as a potential conflict of 
+      interest.
+EDAT- 2021/09/18 06:00
+MHDA- 2021/09/18 06:00
+CRDT- 2021/09/17 07:13
+PHST- 2021/06/05 00:00 [received]
+PHST- 2021/08/13 00:00 [accepted]
+PHST- 2021/09/17 07:13 [entrez]
+PHST- 2021/09/18 06:00 [pubmed]
+PHST- 2021/09/18 06:00 [medline]
+AID - 10.3389/fimmu.2021.721030 [doi]
+PST - epublish
+SO  - Front Immunol. 2021 Aug 31;12:721030. doi: 10.3389/fimmu.2021.721030. eCollection 
+      2021.
+
+PMID- 34514280
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210914
+IS  - 2472-1972 (Electronic)
+IS  - 2472-1972 (Linking)
+VI  - 5
+IP  - 11
+DP  - 2021 Nov 1
+TI  - Oncocytic Adrenocortical Carcinoma With Low (18)F-FDG Uptake and the Absence of 
+      Glucose Transporter 1 Expression.
+PG  - bvab143
+LID - 10.1210/jendso/bvab143 [doi]
+LID - bvab143
+AB  - Adrenocortical carcinoma (ACC) is a rare tumor, and some histological variants 
+      (oncocytic, myxoid, and sarcomatoid ACCs) have been reported in addition to the 
+      conventional ACC. Among these subtypes, oncocytic ACC is histologically 
+      characterized by the presence of abundant eosinophilic granular cytoplasm in the 
+      carcinoma cells owing to the accumulation of mitochondria, which generally yields 
+      high (18)F-fluorodeoxyglucose (FDG) uptake on positron emission tomography (PET). 
+      Herein, we report the case of a 21-year-old woman with oncocytic ACC with low FDG 
+      uptake on PET scan. Her circulating levels of androgens were high, and 
+      androgen-synthesis enzymes were detected in carcinoma cells. The patient also had 
+      hypocholesterolemia. However, glucose transporter 1 (GLUT1) was not detected in the 
+      tumor, which was considered to account for the low FDG uptake by the tumor. To the 
+      best of our knowledge, this is the first case of low FDG uptake by oncocytic ACC 
+      without GLUT1 expression. Additionally, since hypocholesterolemia was reported in 3 
+      previous reports of androgen-producing tumors, a possible correlation between 
+      androgenicity in adrenal tumors and the development of hypocholesterolemia could be 
+      postulated; however, further investigations are needed for clarification. This case 
+      highlights important information regarding the diversity of ACC and its impact on 
+      hypocholesterolemia.
+CI  - © The Author(s) 2021. Published by Oxford University Press on behalf of the 
+      Endocrine Society.
+FAU - Babaya, Naru
+AU  - Babaya N
+AUID- ORCID: 0000-0003-2466-1228
+AD  - Department of Endocrinology, Metabolism and Diabetes, Kindai University Faculty of 
+      Medicine, Osaka-sayama, Osaka 589-8511, Japan.
+FAU - Noso, Shinsuke
+AU  - Noso S
+AUID- ORCID: 0000-0002-0943-8450
+AD  - Department of Endocrinology, Metabolism and Diabetes, Kindai University Faculty of 
+      Medicine, Osaka-sayama, Osaka 589-8511, Japan.
+FAU - Hiromine, Yoshihisa
+AU  - Hiromine Y
+AUID- ORCID: 0000-0002-7317-236X
+AD  - Department of Endocrinology, Metabolism and Diabetes, Kindai University Faculty of 
+      Medicine, Osaka-sayama, Osaka 589-8511, Japan.
+FAU - Taketomo, Yasunori
+AU  - Taketomo Y
+AUID- ORCID: 0000-0003-1366-2049
+AD  - Department of Endocrinology, Metabolism and Diabetes, Kindai University Faculty of 
+      Medicine, Osaka-sayama, Osaka 589-8511, Japan.
+FAU - Niwano, Fumimaru
+AU  - Niwano F
+AUID- ORCID: 0000-0003-4673-9401
+AD  - Department of Endocrinology, Metabolism and Diabetes, Kindai University Faculty of 
+      Medicine, Osaka-sayama, Osaka 589-8511, Japan.
+FAU - Monobe, Keisuke
+AU  - Monobe K
+AD  - Department of Endocrinology, Metabolism and Diabetes, Kindai University Faculty of 
+      Medicine, Osaka-sayama, Osaka 589-8511, Japan.
+FAU - Imamura, Shuzo
+AU  - Imamura S
+AD  - Department of Endocrinology, Metabolism and Diabetes, Kindai University Faculty of 
+      Medicine, Osaka-sayama, Osaka 589-8511, Japan.
+FAU - Ueda, Kazuki
+AU  - Ueda K
+AUID- ORCID: 0000-0001-7139-4404
+AD  - Department of Surgery, Kindai University Faculty of Medicine, Osaka-sayama, Osaka 
+      589-8511, Japan.
+FAU - Yamazaki, Yuto
+AU  - Yamazaki Y
+AD  - Department of Pathology, Tohoku University Graduate School of Medicine, Sendai, 
+      Miyagi 980-8575, Japan.
+FAU - Sasano, Hironobu
+AU  - Sasano H
+AUID- ORCID: 0000-0002-6600-8641
+AD  - Department of Pathology, Tohoku University Graduate School of Medicine, Sendai, 
+      Miyagi 980-8575, Japan.
+FAU - Ikegami, Hiroshi
+AU  - Ikegami H
+AUID- ORCID: 0000-0001-8808-4605
+AD  - Department of Endocrinology, Metabolism and Diabetes, Kindai University Faculty of 
+      Medicine, Osaka-sayama, Osaka 589-8511, Japan.
+LA  - eng
+PT  - Case Reports
+DEP - 20210823
+TA  - J Endocr Soc
+JT  - Journal of the Endocrine Society
+JID - 101697997
+PMC - PMC8423427
+OTO - NOTNLM
+OT  - DHEA-S
+OT  - ENSAT
+OT  - SUVmax
+OT  - adrenal incidentaloma
+OT  - androgen
+OT  - cholesterol
+EDAT- 2021/09/14 06:00
+MHDA- 2021/09/14 06:01
+CRDT- 2021/09/13 07:00
+PHST- 2021/07/18 00:00 [received]
+PHST- 2021/09/13 07:00 [entrez]
+PHST- 2021/09/14 06:00 [pubmed]
+PHST- 2021/09/14 06:01 [medline]
+AID - bvab143 [pii]
+AID - 10.1210/jendso/bvab143 [doi]
+PST - epublish
+SO  - J Endocr Soc. 2021 Aug 23;5(11):bvab143. doi: 10.1210/jendso/bvab143. eCollection 
+      2021 Nov 1.
+
+PMID- 34490347
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210908
+IS  - 2296-889X (Print)
+IS  - 2296-889X (Electronic)
+IS  - 2296-889X (Linking)
+VI  - 8
+DP  - 2021
+TI  - Pan-Cancer Analysis Identified C1ORF112 as a Potential Biomarker for Multiple Tumor 
+      Types.
+PG  - 693651
+LID - 10.3389/fmolb.2021.693651 [doi]
+LID - 693651
+AB  - C1ORF112 is an evolutionarily conserved gene across vertebrates. Over the last 
+      decade, studies have suggested that C1ORF112 may play a role in tumorigenesis. Using 
+      The Cancer Genome Atlas datasets, we explored the role of C1ORF112 across various 
+      tumor types in this study. In most tumor types, C1ORF112 expression was increased in 
+      tumor tissues compared to corresponding non-tumor tissues. In patients with certain 
+      tumor types, higher C1ORF112 expression was correlated with shorter overall 
+      survival, disease-free survival, and progression-free survival. Further analyses of 
+      C1ORF112 genetic alteration data showed that C1ORF112 amplification and mutations 
+      may have an impact on liver hepatocellular carcinoma and uterine corpus endometrial 
+      carcinoma prognosis. In cancers including lower grade glioma and adrenocortical 
+      carcinoma, C1ORF112 expression was linked to cancer-associated fibroblast 
+      infiltration. Gene Ontology analysis showed that C1ORF112 was co-expressed with 
+      genes involved in biological processes such as cell cycle and mitotic regulation. 
+      The protein interaction network demonstrated that C1ORF112 physically interacted 
+      with RAD51, DMC1, and FIGNL1, which have well characterized functions in DNA repair 
+      and cell cycle regulation. This pan-cancer study revealed the prognostic value and 
+      oncogenic role of C1ORF112 across multiple tumor types.
+CI  - Copyright © 2021 Chen, Mai, Chen, Zhou, Hou and Jiang.
+FAU - Chen, Jiaxuan
+AU  - Chen J
+AD  - State Key Laboratory of Organ Failure Research, Guangdong Key Laboratory of Viral 
+      Hepatitis Research, Guangdong Institute of Liver Diseases, Department of Infectious 
+      Diseases and Hepatology Unit, Nanfang Hospital, Southern Medical University, 
+      Guangzhou, China.
+FAU - Mai, Haoming
+AU  - Mai H
+AD  - State Key Laboratory of Organ Failure Research, Guangdong Key Laboratory of Viral 
+      Hepatitis Research, Guangdong Institute of Liver Diseases, Department of Infectious 
+      Diseases and Hepatology Unit, Nanfang Hospital, Southern Medical University, 
+      Guangzhou, China.
+FAU - Chen, Haitao
+AU  - Chen H
+AD  - State Key Laboratory of Organ Failure Research, Guangdong Key Laboratory of Viral 
+      Hepatitis Research, Guangdong Institute of Liver Diseases, Department of Infectious 
+      Diseases and Hepatology Unit, Nanfang Hospital, Southern Medical University, 
+      Guangzhou, China.
+FAU - Zhou, Bin
+AU  - Zhou B
+AD  - State Key Laboratory of Organ Failure Research, Guangdong Key Laboratory of Viral 
+      Hepatitis Research, Guangdong Institute of Liver Diseases, Department of Infectious 
+      Diseases and Hepatology Unit, Nanfang Hospital, Southern Medical University, 
+      Guangzhou, China.
+FAU - Hou, Jinlin
+AU  - Hou J
+AD  - State Key Laboratory of Organ Failure Research, Guangdong Key Laboratory of Viral 
+      Hepatitis Research, Guangdong Institute of Liver Diseases, Department of Infectious 
+      Diseases and Hepatology Unit, Nanfang Hospital, Southern Medical University, 
+      Guangzhou, China.
+FAU - Jiang, De-Ke
+AU  - Jiang DK
+AD  - State Key Laboratory of Organ Failure Research, Guangdong Key Laboratory of Viral 
+      Hepatitis Research, Guangdong Institute of Liver Diseases, Department of Infectious 
+      Diseases and Hepatology Unit, Nanfang Hospital, Southern Medical University, 
+      Guangzhou, China.
+LA  - eng
+PT  - Journal Article
+DEP - 20210819
+TA  - Front Mol Biosci
+JT  - Frontiers in molecular biosciences
+JID - 101653173
+PMC - PMC8416665
+OTO - NOTNLM
+OT  - C1ORF112
+OT  - biomarker
+OT  - cell cycle
+OT  - pan-cancer
+OT  - prognosis
+COIS- The authors declare that the research was conducted in the absence of any commercial 
+      or financial relationships that could be construed as a potential conflict of 
+      interest.
+EDAT- 2021/09/08 06:00
+MHDA- 2021/09/08 06:01
+CRDT- 2021/09/07 07:46
+PHST- 2021/04/11 00:00 [received]
+PHST- 2021/07/26 00:00 [accepted]
+PHST- 2021/09/07 07:46 [entrez]
+PHST- 2021/09/08 06:00 [pubmed]
+PHST- 2021/09/08 06:01 [medline]
+AID - 693651 [pii]
+AID - 10.3389/fmolb.2021.693651 [doi]
+PST - epublish
+SO  - Front Mol Biosci. 2021 Aug 19;8:693651. doi: 10.3389/fmolb.2021.693651. eCollection 
+      2021.
+
+PMID- 34497994
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210910
+IS  - 2577-171X (Electronic)
+IS  - 2577-171X (Linking)
+VI  - 4
+IP  - 5
+DP  - 2021 Sep
+TI  - A case of estrogen-secreting adrenocortical carcinoma: Comprehensive 
+      immunohistochemical analysis of disorganized steroid genesis.
+PG  - 318-321
+LID - 10.1002/iju5.12336 [doi]
+AB  - INTRODUCTION: Adrenocortical carcinoma rarely secretes estrogens, and little is 
+      known regarding the mechanism of intra-tumor estrogen production. We report an 
+      estrogen-secreting adrenocortical carcinoma in a postmenopausal woman, where 
+      comprehensive immunohistochemical analyses of the resected tumor revealed 
+      disorganized steroidogenesis. CASE PRESENTATION: A 68-year-old woman presented with 
+      postmenopausal vaginal bleeding and was found to have a left adrenal tumor. Serum 
+      estradiol and testosterone were elevated but they normalized after resection of the 
+      tumor, suggestive of adrenocortical carcinoma with disorganized steroidogenesis. 
+      Immunohistochemical analyses revealed that the tumor expressed aromatase which 
+      converts androgens into estrogens. Furthermore, the tumor lacked 17βHSD2, which 
+      converts estradiol to estrone, suggesting that estradiol accumulated as the final 
+      product of the tumor's steroidogenic pathway. CONCLUSION: The capability of 
+      adrenocortical carcinoma to produce estrogen can be demonstrated by comprehensive 
+      immunohistochemical analyses of steroidogenic enzymes, such as those reported here.
+CI  - © 2021 The Authors. IJU Case Reports published by John Wiley & Sons Australia, Ltd 
+      on behalf of the Japanese Urological Association.
+FAU - Yokoyama, Megumi
+AU  - Yokoyama M
+AD  - Departments of Urology Dokkyo Medical University Shimotsuga Tochigi Japan.
+FAU - Kijima, Toshiki
+AU  - Kijima T
+AUID- ORCID: 0000-0002-4380-9294
+AD  - Departments of Urology Dokkyo Medical University Shimotsuga Tochigi Japan.
+FAU - Takada-Owada, Atsuko
+AU  - Takada-Owada A
+AD  - Department of Diagnostic Pathology Dokkyo Medical University Shimotsuga Tochigi 
+      Japan.
+FAU - Sakamoto, Kazumasa
+AU  - Sakamoto K
+AD  - Departments of Urology Dokkyo Medical University Shimotsuga Tochigi Japan.
+FAU - Suzuki, Issei
+AU  - Suzuki I
+AD  - Departments of Urology Dokkyo Medical University Shimotsuga Tochigi Japan.
+FAU - Nishihara, Daisaku
+AU  - Nishihara D
+AD  - Departments of Urology Dokkyo Medical University Shimotsuga Tochigi Japan.
+FAU - Nakamura, Yasuhiro
+AU  - Nakamura Y
+AD  - Division of Pathology Tohoku Medical and Pharmaceutical University Sendai Miyagi 
+      Japan.
+FAU - Ishida, Kazuyuki
+AU  - Ishida K
+AD  - Department of Diagnostic Pathology Dokkyo Medical University Shimotsuga Tochigi 
+      Japan.
+FAU - Kamai, Takao
+AU  - Kamai T
+AD  - Departments of Urology Dokkyo Medical University Shimotsuga Tochigi Japan.
+LA  - eng
+PT  - Case Reports
+DEP - 20210628
+TA  - IJU Case Rep
+JT  - IJU case reports
+JID - 101764958
+PMC - PMC8413203
+OTO - NOTNLM
+OT  - adrenocortical carcinoma
+OT  - aromatase
+OT  - estrogen
+OT  - immunohistochemistry
+OT  - steroid genesis
+COIS- The authors declare no conflict of interest.
+EDAT- 2021/09/10 06:00
+MHDA- 2021/09/10 06:01
+CRDT- 2021/09/09 06:54
+PHST- 2021/04/03 00:00 [received]
+PHST- 2021/05/17 00:00 [revised]
+PHST- 2021/06/10 00:00 [accepted]
+PHST- 2021/09/09 06:54 [entrez]
+PHST- 2021/09/10 06:00 [pubmed]
+PHST- 2021/09/10 06:01 [medline]
+AID - IJU512336 [pii]
+AID - 10.1002/iju5.12336 [doi]
+PST - epublish
+SO  - IJU Case Rep. 2021 Jun 28;4(5):318-321. doi: 10.1002/iju5.12336. eCollection 2021 
+      Sep.
+
+PMID- 34471502
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210903
+IS  - 2001-0370 (Print)
+IS  - 2001-0370 (Electronic)
+IS  - 2001-0370 (Linking)
+VI  - 19
+DP  - 2021
+TI  - The molecular feature of macrophages in tumor immune microenvironment of glioma 
+      patients.
+PG  - 4603-4618
+LID - 10.1016/j.csbj.2021.08.019 [doi]
+AB  - BACKGROUND: Gliomas are one of the most common types of primary tumors in central 
+      nervous system. Previous studies have found that macrophages actively participate in 
+      tumor growth. METHODS: Weighted gene co-expression network analysis was used to 
+      identify meaningful macrophage-related gene genes for clustering. Pamr, SVM, and 
+      neural network were applied for validating clustering results. Somatic mutation and 
+      methylation were used for defining the features of identified clusters. 
+      Differentially expressed genes (DEGs) between the stratified groups after performing 
+      elastic regression and principal component analyses were used for the construction 
+      of MScores. The expression of macrophage-specific genes were evaluated in tumor 
+      microenvironment based on single cell sequencing analysis. A total of 2365 samples 
+      from 15 glioma datasets and 5842 pan-cancer samples were used for external 
+      validation of MScore. RESULTS: Macrophages were identified to be negatively 
+      associated with the survival of glioma patients. Twenty-six macrophage-specific DEGs 
+      obtained by elastic regression and PCA were highly expressed in macrophages at 
+      single-cell level. The prognostic value of MScores in glioma was validated by the 
+      active proinflammatory and metabolic profile of infiltrating microenvironment and 
+      response to immunotherapies of samples with this signature. MScores managed to 
+      stratify patient survival probabilities in 15 external glioma datasets and 
+      pan-cancer datasets, which predicted worse survival outcome. Sequencing data and 
+      immunohistochemistry of Xiangya glioma cohort confirmed the prognostic value of 
+      MScores. A prognostic model based on MScores demonstrated high accuracy rate. 
+      CONCLUSION: Our findings strongly support a modulatory role of macrophages, 
+      especially M2 macrophages in glioma progression and warrants further experimental 
+      studies.
+CI  - © 2021 The Authors. Published by Elsevier B.V. on behalf of Research Network of 
+      Computational and Structural Biotechnology.
+FAU - Zhang, Hao
+AU  - Zhang H
+AD  - Department of Neurosurgery, Xiangya Hospital, Central South University, China.
+FAU - Luo, Yue-Bei
+AU  - Luo YB
+AD  - Department of Neurology, Xiangya Hospital, Central South University, China.
+FAU - Wu, Wantao
+AU  - Wu W
+AD  - Department of Oncology, Xiangya Hospital, Central South University, Changsha, Hunan 
+      410008, China.
+FAU - Zhang, Liyang
+AU  - Zhang L
+AD  - Department of Neurosurgery, Xiangya Hospital, Central South University, China.
+FAU - Wang, Zeyu
+AU  - Wang Z
+AD  - Department of Neurosurgery, Xiangya Hospital, Central South University, China.
+FAU - Dai, Ziyu
+AU  - Dai Z
+AD  - Department of Neurosurgery, Xiangya Hospital, Central South University, China.
+FAU - Feng, Songshan
+AU  - Feng S
+AD  - Department of Neurosurgery, Xiangya Hospital, Central South University, China.
+FAU - Cao, Hui
+AU  - Cao H
+AD  - Department of Psychiatry, The Second People's Hospital of Hunan Province, The 
+      Hospital of Hunan University of Chinese Medicine, China.
+FAU - Cheng, Quan
+AU  - Cheng Q
+AD  - Department of Neurosurgery, Xiangya Hospital, Central South University, China.
+AD  - Department of Clinical Pharmacology, Xiangya Hospital, Central South University, 
+      China.
+AD  - National Clinical Research Center for Geriatric Disorders, Xiangya Hospital, Central 
+      South University, China.
+FAU - Liu, Zhixiong
+AU  - Liu Z
+AD  - Department of Neurosurgery, Xiangya Hospital, Central South University, China.
+AD  - National Clinical Research Center for Geriatric Disorders, Xiangya Hospital, Central 
+      South University, China.
+AD  - Clinical Diagnosis and Therapy Center for Glioma of Xiangya Hospital, Central South 
+      University, China.
+LA  - eng
+PT  - Journal Article
+DEP - 20210814
+TA  - Comput Struct Biotechnol J
+JT  - Computational and structural biotechnology journal
+JID - 101585369
+PMC - PMC8383063
+OTO - NOTNLM
+OT  - ACC, Adrenocortical carcinoma
+OT  - BBB, brain blood barrier
+OT  - BLCA, Bladder Urothelial Carcinoma
+OT  - BRCA, Breast invasive carcinoma
+OT  - CDF, cumulative distribution function
+OT  - CESC, Cervical squamous cell carcinoma and endocervical adenocarcinoma
+OT  - CGGA, Chinese Glioma Genome Atlas
+OT  - CHOL, Cholangiocarcinoma
+OT  - CNA, copy number alternations
+OT  - CNV, copy number variation
+OT  - COAD, Colon adenocarcinoma
+OT  - CSF-1, colony-stimulating factor-1
+OT  - DLBC, Lymphoid Neoplasm Diffuse Large B-cell Lymphoma
+OT  - DMP, differentially methylated position
+OT  - ESCA, Esophageal carcinoma
+OT  - GBM, glioblastoma
+OT  - GEO, Gene Expression Omnibus
+OT  - GO, gene ontology
+OT  - GSEA, gene set enrichment analysis
+OT  - GSVA, gene set variation analysis
+OT  - Glioma microenvironment
+OT  - HNSC, Head and Neck squamous cell carcinoma
+OT  - IGR, intergenic region
+OT  - IHC, immunohistochemistry
+OT  - IL, interleukin
+OT  - Immunotherapy
+OT  - KEGG, Kyoto Encyclopaedia of Genes and Genomes
+OT  - KICH, Kidney Chromophobe
+OT  - KIRC, Kidney renal clear cell carcinoma
+OT  - KIRP, Kidney renal papillary cell carcinoma
+OT  - LGG, low grade glioma
+OT  - LIHC, Liver hepatocellular carcinoma
+OT  - LUAD, Lung adenocarcinoma
+OT  - LUSC, Lung squamous cell carcinoma
+OT  - MMP-2, matrix metalloproteinase-2
+OT  - MT1, MMP membrane type 1 matrix metalloprotease
+OT  - Machine learning
+OT  - Macrophage
+OT  - OV, Ovarian serous cystadenocarcinoma
+OT  - PAAD, Pancreatic adenocarcinoma
+OT  - PAM, partition around medoids
+OT  - PCA, principal component analysis
+OT  - PCPG, Pheochromocytoma and Paraganglioma
+OT  - PRAD, Prostate adenocarcinoma
+OT  - Prognostic model
+OT  - READ, Rectum adenocarcinoma
+OT  - SARC, Sarcoma
+OT  - SKCM, Skin Cutaneous Melanoma
+OT  - SNP, single-nucleotide polymorphism
+OT  - SNV, single-nucleotide variant
+OT  - STAD, Stomach adenocarcinoma
+OT  - SVM, Support Vector Machines
+OT  - TAM, tumor associated macrophage
+OT  - TCGA, The Cancer Genome Atlas
+OT  - TGF-β, tumor growth factor-β
+OT  - THCA, Thyroid carcinoma
+OT  - THYM, Thymoma
+OT  - TIMP-2, tissue inhibitor of metalloproteinase-2
+OT  - TLR2, toll-like receptor 2
+OT  - TME, tumor microenvironment
+OT  - TNFα, tumor necrosis factor α
+OT  - TSS, transcription start site
+OT  - UCEC, Uterine Corpus Endometrial Carcinoma
+OT  - UCS, Uterine Carcinosarcoma
+OT  - WGCNA, weighted gene co-expression network analysis
+OT  - pamr, prediction analysis for microarrays
+COIS- The authors declare that they have no known competing financial interests or 
+      personal relationships that could have appeared to influence the work reported in 
+      this paper.
+EDAT- 2021/09/03 06:00
+MHDA- 2021/09/03 06:01
+CRDT- 2021/09/02 06:55
+PHST- 2021/03/31 00:00 [received]
+PHST- 2021/08/11 00:00 [revised]
+PHST- 2021/08/12 00:00 [accepted]
+PHST- 2021/09/02 06:55 [entrez]
+PHST- 2021/09/03 06:00 [pubmed]
+PHST- 2021/09/03 06:01 [medline]
+AID - S2001-0370(21)00350-0 [pii]
+AID - 10.1016/j.csbj.2021.08.019 [doi]
+PST - epublish
+SO  - Comput Struct Biotechnol J. 2021 Aug 14;19:4603-4618. doi: 
+      10.1016/j.csbj.2021.08.019. eCollection 2021.
+
+PMID- 34522492
+OWN - NLM
+STAT- PubMed-not-MEDLINE
+LR  - 20210916
+IS  - 2168-8184 (Print)
+IS  - 2168-8184 (Electronic)
+IS  - 2168-8184 (Linking)
+VI  - 13
+IP  - 8
+DP  - 2021 Aug
+TI  - An Adrenocortical Carcinoma Evolving After Nine Years of Latency From a Small 
+      Adrenal Incidentaloma.
+PG  - e16851
+LID - 10.7759/cureus.16851 [doi]
+LID - e16851
+AB  - Adrenal incidentalomas (AIs) are common incidental findings in medical practice with 
+      clinical significance. Although most AIs are nonsecretory and nonmalignant, they 
+      require a short course of follow-up over one to two years to rule out malignancy or 
+      hormonal secretion according to clinical practice guidelines. However, this can 
+      result in some adrenocortical carcinomas (ACCs) being missed if they transform at a 
+      later stage or evolve slowly. Here, we report one such case of an AI, which although 
+      remained indolent, eventually transformed into an ACC many years after the initial 
+      detection.
+CI  - Copyright © 2021, Kohli et al.
+FAU - Kohli, Harpreet S
+AU  - Kohli HS
+AD  - Department of Hospital Medicine, Saint Vincent Hospital, Erie, USA.
+FAU - Manthri, Sukesh
+AU  - Manthri S
+AD  - Department of Oncology, Mary Bird Perkins Cancer Center, Houma, USA.
+FAU - Jain, Shikha
+AU  - Jain S
+AD  - Department of Internal Medicine, MVJ Medical College, Bengaluru, IND.
+FAU - Kashyap, Rahul
+AU  - Kashyap R
+AD  - Department of Anesthesiology and Critical Care Medicine, Mayo Clinic, Rochester, 
+      USA.
+FAU - Chen, Sheng
+AU  - Chen S
+AD  - Department of Pathology, Memorial Medical Center, Springfield, USA.
+FAU - Koritala, Thoyaja
+AU  - Koritala T
+AD  - Department of Internal Medicine, Mayo Clinic Health System, Mankato, USA.
+FAU - Tekin, Aysun
+AU  - Tekin A
+AD  - Department of Anesthesiology and Critical Care Medicine, Mayo Clinic, Rochester, 
+      USA.
+FAU - Adhikari, Ramesh
+AU  - Adhikari R
+AD  - Department of Hospital Medicine, Franciscan Health, Lafayette, USA.
+AD  - Department of Geriatrics, Brown University, Providence, USA.
+FAU - Tirupathi, Raghavendra
+AU  - Tirupathi R
+AD  - Department of Internal Medicine, Keystone Health, Chambersburg, USA.
+FAU - Barbaryan, Aram
+AU  - Barbaryan A
+AD  - Department of Internal Medicine, University of Kansas Health System, Kansas City, 
+      USA.
+FAU - Zec, Simon
+AU  - Zec S
+AD  - Department of Critical Care Medicine, Mayo Clinic, Rochester, USA.
+FAU - Wang, Hanyin
+AU  - Wang H
+AD  - Department of Hospital Medicine, Mayo Clinic Health System, Mankato, USA.
+FAU - Welle, Stephanie
+AU  - Welle S
+AD  - Department of Cardiology, Mayo Clinic Health System, Mankato, USA.
+FAU - Devulapally, Pavan
+AU  - Devulapally P
+AD  - Nephrology, Methodist Hospital, San Antonio, USA.
+FAU - Sheraton, Mack
+AU  - Sheraton M
+AD  - Emergency Medicine, Johns Hopkins University, Baltimore, USA.
+FAU - Kaur, Manpreet
+AU  - Kaur M
+AD  - Department of Medicine, Drishti Advanced Eye and Diabetes Care Center, Patiala, IND.
+FAU - Pattan, Vishwanath
+AU  - Pattan V
+AD  - Division of Endocrinology, Wyoming Medical Center, Casper, USA.
+FAU - Mamillapalli, Chaitanya K
+AU  - Mamillapalli CK
+AD  - Division of Endocrinology, Southern Illinois University School of Medicine, 
+      Springfield, USA.
+AD  - Department of Endocrinology, Springfield Clinic, Springfield, USA.
+FAU - Surani, Salim R
+AU  - Surani SR
+AD  - Department of Pulmonary and Critical Care Medicine, Texas A&M University, Corpus 
+      Christi, USA.
+FAU - Khan, Syed Anjum
+AU  - Khan SA
+AD  - Department of Critical Care Medicine, Mayo Clinic Health System, Mankato, USA.
+FAU - Jain, Nitesh K
+AU  - Jain NK
+AD  - Department of Critical Care Medicine, Mayo Clinic Health System, Mankato, USA.
+LA  - eng
+PT  - Case Reports
+DEP - 20210803
+TA  - Cureus
+JT  - Cureus
+JID - 101596737
+PMC - PMC8425154
+OTO - NOTNLM
+OT  - adrenal carcinoma
+OT  - adrenal disease
+OT  - adrenal disorders
+OT  - adrenal incidentaloma
+OT  - adrenal pheochromocytoma
+OT  - adrenal surgery
+OT  - benign adrenal tumor
+OT  - clinical guidelines
+OT  - indeterminate adrenal nodule
+OT  - secretory tumors of adrenal gland
+COIS- The authors have declared that no competing interests exist.
+EDAT- 2021/09/16 06:00
+MHDA- 2021/09/16 06:01
+CRDT- 2021/09/15 07:17
+PHST- 2021/08/03 00:00 [accepted]
+PHST- 2021/09/15 07:17 [entrez]
+PHST- 2021/09/16 06:00 [pubmed]
+PHST- 2021/09/16 06:01 [medline]
+AID - 10.7759/cureus.16851 [doi]
+PST - epublish
+SO  - Cureus. 2021 Aug 3;13(8):e16851. doi: 10.7759/cureus.16851. eCollection 2021 Aug.

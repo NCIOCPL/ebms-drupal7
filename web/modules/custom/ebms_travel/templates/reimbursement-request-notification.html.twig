@@ -1,0 +1,79 @@
+{# Mail clients are weak at standards compliance, so we put style rules inline. #}
+{% set dtstyle = 'font-weight: bold;' %}
+{% set ddstyle = 'margin-bottom: 1rem;' %}
+{% set ulstyle = 'padding-left: 1rem; margin: 0' %}
+<div>
+{% if user_notification %}
+<p>Here are the details of the reimbursement request you just submitted.</p>
+{% endif %}
+<dl>
+  <dt style="{{ dtstyle }}">Submitted</dt>
+  <dd style="{{ ddstyle }}">{{ request.submitted.value }}</dd>
+  <dt style="{{ dtstyle }}">Submitted For</dt>
+  <dd style="{{ ddstyle }}">{{ request.user.entity.name.value }}</dd>
+  <dt style="{{ dtstyle }}">Meeting Name</dt>
+  <dd style="{{ ddstyle }}">{{ request.meeting.entity.name.value }}</dd>
+  <dt style="{{ dtstyle }}">Meeting Date</dt>
+  <dd style="{{ ddstyle }}">{{ request.meeting.entity.dates.value|slice(0, 10) }}</dd>
+  <dt style="{{ dtstyle }}">Arrival Date</dt>
+  <dd style="{{ ddstyle }}">{{ request.arrival.value|slice(0, 10) }}</dd>
+  <dt style="{{ dtstyle }}">Departure Date</dt>
+  <dd style="{{ ddstyle }}">{{ request.departure.value|slice(0, 10) }}</dd>
+  {% if request.transportation.date %}
+  <dt style="{{ dtstyle }}">Transportation Expenses</dt>
+  <dd style="{{ ddstyle }}">
+    <ul style="{{ ulstyle }}">
+      {% for expense in request.transportation %}
+      <li>{{ expense }}</li>
+      {% endfor %}
+    </ul>
+  </dd>
+  {% endif %}
+  {% if not request.parking_and_tolls.isEmpty() %}
+  <dt style="{{ dtstyle }}">Parking And Toll Expenses</dt>
+  <dd style="{{ ddstyle }}">
+    <ul style="{{ ulstyle }}">
+      {% for expense in request.parking_and_tolls %}
+      <li>{{ expense }}</li>
+      {% endfor %}
+    </ul>
+  </dd>
+  {% endif %}
+  <dt style="{{ dtstyle }}">Hotel Payment</dt>
+  <dd style="{{ ddstyle }}">{{ request.hotel_payment.entity.name.value }}</dd>
+  {% if request.hotel_amount.value %}
+  <dt style="{{ dtstyle }}">Hotel Amount (52-02)</dt>
+  <dd style="{{ ddstyle }}">${{ request.hotel_amount.value }}</dd>
+  {% endif %}
+  {% if request.nights_stayed.value %}
+  <dt style="{{ dtstyle }}">Nights Stayed</dt>
+  <dd style="{{ ddstyle }}">{{ request.nights_stayed.value }}</dd>
+  {% endif %}
+  <dt style="{{ dtstyle }}">Meals And Incidentals (52-03)</dt>
+  <dd style="{{ ddstyle }}">{{ request.meals_and_incidentals.entity.name.value }}</dd>
+  <dt style="{{ dtstyle }}">Honorarium</dt>
+  {% if request.honorarium_requested.value %}
+  <dd style="{{ ddstyle }}">Requested</dd>
+  {% else %}
+  <dd style="{{ ddstyle }}">Declined</dd>
+  {% endif %}
+  <dt style="{{ dtstyle }}">Reimburse To</dt>
+  <dd style="{{ ddstyle }}">{{ request.reimburse_to.entity.name.value }}</dd>
+  {% if request.total_amount.value %}
+  <dt style="{{ dtstyle }}">Total Requested</dt>
+  <dd style="{{ ddstyle }}">${{ request.total_amount.value }}</dd>
+  {% endif %}
+  {% if request.comments.value %}
+  <dt style="{{ dtstyle }}">Comments</dt>
+  <dd style="{{ ddstyle }}">{{ request.comments.value|replace({"\r": "", "\n\n": "\n" })|nl2br }}</dd>
+  {% endif %}
+  <dt style="{{ dtstyle }}">Certification</dt>
+  {% if request.certified.value %}
+  <dd style="{{ ddstyle }}">I certify that the above information is true and correct to the best of my knowledge.</dd>
+  {% else %}
+  <dd style="{{ ddstyle }}">Request not certified</dd>
+  {% endif %}
+  <dt style="{{ dtstyle }}">Confirmation Email</dt>
+  <dd style="{{ ddstyle }}">{{ request.confirmation_email.value }}</dd>
+</dl>
+</div>

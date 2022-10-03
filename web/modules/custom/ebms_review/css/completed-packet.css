@@ -1,0 +1,44 @@
+.reviewed-article {
+  margin-bottom: 2rem;
+}
+.reviewed-article .authors {
+  font-weight: bold;
+}
+.reviewed-article .title {
+  font-style: italic;
+}
+.reviewed-article .fyi {
+  font-weight: bold;
+  color: red;
+  display: inline-block;
+  margin-right: 1rem;
+}
+.reviewed-article .links {
+  margin-top: 1rem;
+}
+.reviewed-article .review-header {
+  font-style: italic;
+  border: 1px black solid;
+  border-radius: .3rem;
+  margin-top: 1rem;
+  padding: .5rem;
+}
+.reviewed-article .high-priority {
+  font-weight: bold;
+  color: green;
+}
+.reviewed-article .dropped {
+  font-weight: bold;
+  color: red;
+}
+.reviewed-article .board-manager-comments {
+  margin-top: .5rem;
+  font-weight: bold;
+}
+.reviewed-article ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.reviewed-article h4 {
+  margin-bottom: 0;
+}

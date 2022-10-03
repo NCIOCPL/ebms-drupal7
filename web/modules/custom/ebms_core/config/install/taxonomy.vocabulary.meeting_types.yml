@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Meeting Types'
+vid: meeting_types
+description: 'Whether an event is in-person or remote (e.g., WebEx).'
+weight: 0

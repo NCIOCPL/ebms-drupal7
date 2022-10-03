@@ -1,2 +1,0 @@
-ALTER TABLE ebms_packet
-  ADD starred INTEGER NOT NULL DEFAULT 0;

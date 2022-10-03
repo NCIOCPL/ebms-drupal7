@@ -1,0 +1,44 @@
+<div class="packet-assignment-info"><strong>Assigned {{ created|slice(0, 10)}} for review to:</strong> {{ reviewers|join(', ')}}</div>
+<div class="top-buttons">
+  <a class="button usa-button" href="{{ archive_url }}">Archive Packet</a>
+</div>
+<div class="packet-articles">
+  <h2>Articles</h2>
+  {% if not articles %}
+  <div><em>All articles for this packet have been archived.</em></div>
+  {% endif %}
+  {% for article in articles %}
+  <div class="packet-article">
+    <div class="authors">{{ article.authors|join('; ')}}</div>
+    <div class="title"><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></div>
+    <div class="publication">{{ article.publication }}</div>
+    <div class="ids">PMID: <span class="pmid">{{ article.pmid }}</span> EBMS ID: <span class="ebmsid">{{ article.id }}</span></div>
+    {% if article.tags %}
+    <div class="tags">Tags: {{ article.tags|sort|join('; ') }}</div>
+    {% endif %}
+    {% for related in article.related %}
+    <div>
+      Related Article: {{ related.citation }}
+      PMID <a href="https://pubmed.ncbi.nlm.nih.gov/{{ related.pmid }}" target="_blank">{{ related.pmid }}</a>
+      (<a href="{{ related.url }}">{{ related.id }}</a>)
+    </div>
+    {% endfor %}
+    {% if article.high_priority %}
+    <div class="high-priority">High Priority</div>
+    {% endif %}
+    {% for comment in article.comments %}
+    <div class="comment">Comment: {{ comment }}</div>
+    {% endfor %}
+    {% if article.state %}
+    <div class="state">State: {{ article.state }}</div>
+    {% endif %}
+    <div class="article-buttons">
+      <a class="pmid button usa-button" href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank">View Abstract</a>
+      {% if article.full_text_url %}
+      <a href="{{ article.full_text_url }}" target="_blank" class="full-text button usa-button">Download Full Text</a>
+      {% endif %}
+      <a href="{{ article.archive_url }}" class="archive button usa-button">Archive</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>

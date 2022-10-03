@@ -1,6 +1,0 @@
-; $Id$
-name = EBMS API Tester Theme
-description = Basically no theming at all
-core = 7.x
-engine = phptemplate
-stylesheets[all][] = css/apitest.css

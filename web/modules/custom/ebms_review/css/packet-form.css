@@ -1,0 +1,8 @@
+.button a, .button a:hover {
+  text-decoration: none;
+  border-bottom: none;
+}
+.high-priority {
+  font-weight: bold;
+  color: #a90101;
+}

@@ -1,0 +1,6 @@
+reimbursement:
+  js:
+    js/reimbursement-form.js: {}
+  css:
+    theme:
+      css/reimbursement-form.css: {}

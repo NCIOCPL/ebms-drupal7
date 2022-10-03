@@ -1,0 +1,8 @@
+name: EBMS Board
+description: PDQ® Editorial Board.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - file
+  - user

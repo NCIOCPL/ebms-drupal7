@@ -1,0 +1,49 @@
+/*noinspection Stylelint*/
+#block-bartik-content div.topic-buttons label.option {
+  margin-right: 2rem;
+}
+#block-bartik-content div.topic-buttons div.topic-button {
+  display: inline-block;
+}
+#block-bartik-content #queued-decisions-list .item-list ul {
+  list-style: disc;
+  margin-left: 2rem;
+}
+#block-bartik-content div.article-review-buttons {
+  margin-top: .5rem;
+}
+#block-bartik-content div.article-review-buttons a {
+  border-bottom: none;
+  color: #3a3a3a;
+}
+#block-bartik-content #board-controlled select {
+  max-width: 90%;
+}
+@media only screen and (max-width: 650px) {
+  #block-bartik-content div.topic-buttons div.topic-button {
+    display: block;
+  }
+}
+#block-bartik-content #ebms-review-queue button {
+  margin-right: 0;
+}
+#ebms-review-queue #edit-decisions {
+  display: none;
+}
+#ebms-review-queue #edit-topic.usa-select {
+  height: 6.5rem;
+}
+.review-queue-article {
+  margin-bottom: 4rem;
+}
+.topic-buttons {
+  margin-top: .5rem;
+  margin-bottom: .5rem;
+}
+.topic-button {
+  display: inline-block;
+  margin-right: 2rem;
+}
+.review-topic-name a {
+  margin-left: 1.5rem;
+}

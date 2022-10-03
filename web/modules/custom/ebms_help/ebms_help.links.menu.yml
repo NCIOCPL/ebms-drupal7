@@ -1,0 +1,67 @@
+ebms_help.help:
+  route_name: ebms_help.help
+  title: Help
+  description: Documentation for using the EBMS web site.
+  menu_name: main
+  weight: 110
+ebms_help.ncihelp:
+  route_name: ebms_help.ncihelp
+  title: Help
+  description: Documentation for using the EBMS web site.
+  menu_name: main
+  weight: 110
+ebms_help.login:
+  route_name: ebms_help.login
+  menu_name: help
+  title: Login
+  weight: 0
+ebms_help.nci_login:
+  route_name: ebms_help.nci_login
+  menu_name: ncihelp
+  title: Login
+  weight: 0
+ebms_help.home:
+  route_name: ebms_help.home
+  menu_name: help
+  title: Home Page
+  weight: 1
+ebms_help.nci_home:
+  route_name: ebms_help.nci_home
+  menu_name: ncihelp
+  title: Home Page
+  weight: 1
+ebms_help.search:
+  route_name: ebms_help.search
+  title: Article Search
+  menu_name: help
+  weight: 2
+ebms_help.calendar:
+  route_name: ebms_help.calendar
+  title: Calendar
+  menu_name: help
+  weight: 3
+ebms_help.packets:
+  route_name: ebms_help.packets
+  title: Packets
+  menu_name: help
+  weight: 4
+ebms_help.summaries:
+  route_name: ebms_help.summaries
+  title: Summaries
+  menu_name: help
+  weight: 5
+ebms_help.travel:
+  route_name: ebms_help.travel
+  title: Travel
+  menu_name: help
+  weight: 6
+ebms_help.profile:
+  route_name: ebms_help.profile
+  title: Profile
+  menu_name: help
+  weight: 7
+ebms_help.help_single_page:
+  route_name: ebms_help.help_single_page
+  title: Single Page Manual
+  menu_name: help
+  weight: 8

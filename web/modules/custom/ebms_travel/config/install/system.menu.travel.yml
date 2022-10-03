@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_travel
+id: travel
+label: Travel
+description: 'Pages for board members traveling to the NCI for meetings.'
+locked: false

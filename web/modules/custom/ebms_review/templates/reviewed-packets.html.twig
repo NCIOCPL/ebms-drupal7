@@ -1,0 +1,21 @@
+<div class="reviewed-packets">
+  <h2>
+    {% if packets %}
+    Packets ({{ packets|length }}, {{ sort }})
+    {% else %}
+    No packets match the filtering criteria
+    {% endif %}
+  </h2>
+  {% for packet in packets %}
+  <div class="reviewed-packet">
+    <div class="packet-title">
+      <span id="packet-star-{{ packet.id }}">{{ packet.star }}</span>
+      <a href="{{ packet.url }}">{{ packet.title }} [Packet #{{ packet.id }}]</a>
+    </div>
+    <div class="packet-reviews">Reviewed by
+      {% for reviewer in packet.reviewers %}{% if not loop.first %}, {% endif %}{{ reviewer.name }}{% if reviewer.new %} (<span class="new">{{ reviewer.new }} new</span>){% endif %}{% endfor %}
+      (latest review {{ packet.updated|slice(0, 10) }})
+    </div>
+  </div>
+  {% endfor %}
+</div>

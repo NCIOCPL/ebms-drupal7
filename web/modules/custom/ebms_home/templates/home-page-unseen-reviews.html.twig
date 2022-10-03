@@ -1,0 +1,8 @@
+{% if count == 1 %}
+{% set noun = 'new review' %}
+{% set verb = 'has been posted' %}
+{% else %}
+{% set noun = 'new reviews' %}
+{% set verb = 'have been posted' %}
+{% endif %}
+<span class="unseen-reviews">{{ count }} <a href="{{ url }}">{{ noun }}</a> {{ verb }} for your board's review packets.</span>

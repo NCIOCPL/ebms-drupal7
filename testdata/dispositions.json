@@ -1,0 +1,34 @@
+[
+  {
+    "vid": "dispositions",
+    "id": 1,
+    "name": "Warrants no changes to the summary",
+    "description": null,
+    "weight": 1,
+    "status": true
+  },
+  {
+    "vid": "dispositions",
+    "id": 2,
+    "name": "Deserves citation in the summary",
+    "description": "indicate placement in the summary document",
+    "weight": 2,
+    "status": true
+  },
+  {
+    "vid": "dispositions",
+    "id": 3,
+    "name": "Merits revision of the text",
+    "description": "indicate changes in the summary document",
+    "weight": 3,
+    "status": true
+  },
+  {
+    "vid": "dispositions",
+    "id": 4,
+    "name": "Merits discussion",
+    "description": null,
+    "weight": 4,
+    "status": true
+  }
+]

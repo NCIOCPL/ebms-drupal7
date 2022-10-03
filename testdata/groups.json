@@ -1,0 +1,1397 @@
+{
+  "ad_hoc_groups": {
+    "1": {
+      "name": "Editors-in-Chief"
+    },
+    "3": {
+      "name": "Skin Cancer Working Group",
+      "boards": [
+        2
+      ]
+    },
+    "4": {
+      "name": "Colorectal Cancer Working Group",
+      "boards": [
+        2
+      ]
+    },
+    "5": {
+      "name": "Psychosocial Working Group",
+      "boards": [
+        2
+      ]
+    },
+    "6": {
+      "name": "Kidney Cancer Working Group",
+      "boards": [
+        2
+      ]
+    },
+    "7": {
+      "name": "Endocrine Working Group",
+      "boards": [
+        2
+      ]
+    },
+    "8": {
+      "name": "Prostate Cancer Working Group",
+      "boards": [
+        2
+      ]
+    },
+    "9": {
+      "name": "Clinical Sequencing WG",
+      "boards": [
+        2
+      ]
+    },
+    "10": {
+      "name": "Hematologic Cancers Working Group",
+      "boards": [
+        2
+      ]
+    }
+  },
+  "subgroups": {
+    "29": {
+      "name": "Genetics of Breast and Ovarian Cancer",
+      "boards": [
+        2
+      ]
+    },
+    "31": {
+      "name": "Genetics of Colorectal Cancer",
+      "boards": [
+        2
+      ]
+    },
+    "32": {
+      "name": "Genetics of Endocrine and Neuroendocrine Neoplasias",
+      "boards": [
+        2
+      ]
+    },
+    "38": {
+      "name": "Genetics of Gastric Cancer",
+      "boards": [
+        2
+      ]
+    },
+    "37": {
+      "name": "Genetics of Hematologic Cancers",
+      "boards": [
+        2
+      ]
+    },
+    "28": {
+      "name": "Genetics of Kidney Cancer",
+      "boards": [
+        2
+      ]
+    },
+    "36": {
+      "name": "Genetics of Pancreatic Cancer",
+      "boards": [
+        2
+      ]
+    },
+    "34": {
+      "name": "Genetics of Prostate Cancer",
+      "boards": [
+        2
+      ]
+    },
+    "33": {
+      "name": "Genetics of Skin Cancer",
+      "boards": [
+        2
+      ]
+    },
+    "30": {
+      "name": "Psychosocial/Behavioral Issues",
+      "boards": [
+        2
+      ]
+    },
+    "16": {
+      "name": "Ch ALL",
+      "boards": [
+        3
+      ]
+    },
+    "25": {
+      "name": "Ch AML",
+      "boards": [
+        3
+      ]
+    },
+    "22": {
+      "name": "Ch Astrocytomas",
+      "boards": [
+        3
+      ]
+    },
+    "18": {
+      "name": "Ch Brain Sp Cd Tumors Overview",
+      "boards": [
+        3
+      ]
+    },
+    "9": {
+      "name": "Ch Brain Stem Glioma",
+      "boards": [
+        3
+      ]
+    },
+    "2": {
+      "name": "Ch CNS AT RT",
+      "boards": [
+        3
+      ]
+    },
+    "10": {
+      "name": "Ch CNS Embryonal Tumors",
+      "boards": [
+        3
+      ]
+    },
+    "13": {
+      "name": "Ch CNS GCT",
+      "boards": [
+        3
+      ]
+    },
+    "3": {
+      "name": "Ch Cranio",
+      "boards": [
+        3
+      ]
+    },
+    "8": {
+      "name": "Ch Ependymoma",
+      "boards": [
+        3
+      ]
+    },
+    "14": {
+      "name": "Ch Ext GCT",
+      "boards": [
+        3
+      ]
+    },
+    "23": {
+      "name": "Ch HCT",
+      "boards": [
+        3
+      ]
+    },
+    "20": {
+      "name": "Ch Hodgkin Lymphoma",
+      "boards": [
+        3
+      ]
+    },
+    "24": {
+      "name": "Ch Liver Cancer",
+      "boards": [
+        3
+      ]
+    },
+    "5": {
+      "name": "Ch Non-Hodgkin Lymphoma",
+      "boards": [
+        3
+      ]
+    },
+    "26": {
+      "name": "Ch Rhabdomyosarcoma",
+      "boards": [
+        3
+      ]
+    },
+    "12": {
+      "name": "Ch Soft Tissue Sarcoma",
+      "boards": [
+        3
+      ]
+    },
+    "35": {
+      "name": "Ch Vascular Tumors",
+      "boards": [
+        3
+      ]
+    },
+    "7": {
+      "name": "Ewing Sarcoma FOT",
+      "boards": [
+        3
+      ]
+    },
+    "19": {
+      "name": "Langerhans Cell Histiocytosis",
+      "boards": [
+        3
+      ]
+    },
+    "4": {
+      "name": "Late Effects",
+      "boards": [
+        3
+      ]
+    },
+    "17": {
+      "name": "Neuroblastoma",
+      "boards": [
+        3
+      ]
+    },
+    "1": {
+      "name": "Osteosarcoma",
+      "boards": [
+        3
+      ]
+    },
+    "11": {
+      "name": "Retinoblastoma",
+      "boards": [
+        3
+      ]
+    },
+    "21": {
+      "name": "Unusual Cancers",
+      "boards": [
+        3
+      ]
+    },
+    "6": {
+      "name": "Wilms Tumor",
+      "boards": [
+        3
+      ]
+    }
+  },
+  "memberships": {
+    "91": [
+      [
+        "ad_hoc_group",
+        1
+      ]
+    ],
+    "116": [
+      [
+        "ad_hoc_group",
+        1
+      ]
+    ],
+    "119": [
+      [
+        "ad_hoc_group",
+        1
+      ]
+    ],
+    "156": [
+      [
+        "ad_hoc_group",
+        1
+      ],
+      [
+        "subgroup",
+        5
+      ],
+      [
+        "subgroup",
+        16
+      ],
+      [
+        "subgroup",
+        20
+      ],
+      [
+        "subgroup",
+        21
+      ]
+    ],
+    "159": [
+      [
+        "ad_hoc_group",
+        1
+      ]
+    ],
+    "182": [
+      [
+        "ad_hoc_group",
+        1
+      ],
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "349": [
+      [
+        "ad_hoc_group",
+        1
+      ],
+      [
+        "subgroup",
+        31
+      ],
+      [
+        "subgroup",
+        36
+      ]
+    ],
+    "3": [
+      [
+        "ad_hoc_group",
+        3
+      ],
+      [
+        "ad_hoc_group",
+        4
+      ],
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "ad_hoc_group",
+        6
+      ],
+      [
+        "ad_hoc_group",
+        7
+      ],
+      [
+        "ad_hoc_group",
+        8
+      ],
+      [
+        "ad_hoc_group",
+        9
+      ]
+    ],
+    "47": [
+      [
+        "ad_hoc_group",
+        3
+      ],
+      [
+        "subgroup",
+        33
+      ]
+    ],
+    "124": [
+      [
+        "ad_hoc_group",
+        3
+      ],
+      [
+        "subgroup",
+        33
+      ]
+    ],
+    "160": [
+      [
+        "ad_hoc_group",
+        3
+      ],
+      [
+        "subgroup",
+        33
+      ]
+    ],
+    "269": [
+      [
+        "ad_hoc_group",
+        3
+      ],
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "ad_hoc_group",
+        6
+      ],
+      [
+        "ad_hoc_group",
+        8
+      ]
+    ],
+    "155": [
+      [
+        "ad_hoc_group",
+        4
+      ],
+      [
+        "subgroup",
+        31
+      ]
+    ],
+    "157": [
+      [
+        "ad_hoc_group",
+        4
+      ],
+      [
+        "subgroup",
+        31
+      ]
+    ],
+    "190": [
+      [
+        "ad_hoc_group",
+        4
+      ],
+      [
+        "subgroup",
+        31
+      ]
+    ],
+    "205": [
+      [
+        "ad_hoc_group",
+        4
+      ],
+      [
+        "ad_hoc_group",
+        9
+      ],
+      [
+        "subgroup",
+        31
+      ]
+    ],
+    "227": [
+      [
+        "ad_hoc_group",
+        4
+      ],
+      [
+        "subgroup",
+        31
+      ]
+    ],
+    "66": [
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "subgroup",
+        30
+      ]
+    ],
+    "77": [
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "ad_hoc_group",
+        9
+      ]
+    ],
+    "120": [
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "subgroup",
+        30
+      ]
+    ],
+    "146": [
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "ad_hoc_group",
+        8
+      ],
+      [
+        "subgroup",
+        30
+      ],
+      [
+        "subgroup",
+        34
+      ]
+    ],
+    "238": [
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "subgroup",
+        30
+      ]
+    ],
+    "239": [
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "subgroup",
+        30
+      ]
+    ],
+    "240": [
+      [
+        "ad_hoc_group",
+        5
+      ],
+      [
+        "subgroup",
+        30
+      ]
+    ],
+    "89": [
+      [
+        "ad_hoc_group",
+        6
+      ],
+      [
+        "subgroup",
+        28
+      ]
+    ],
+    "246": [
+      [
+        "ad_hoc_group",
+        6
+      ],
+      [
+        "subgroup",
+        28
+      ]
+    ],
+    "121": [
+      [
+        "ad_hoc_group",
+        7
+      ],
+      [
+        "subgroup",
+        32
+      ]
+    ],
+    "279": [
+      [
+        "ad_hoc_group",
+        7
+      ],
+      [
+        "subgroup",
+        32
+      ]
+    ],
+    "175": [
+      [
+        "ad_hoc_group",
+        8
+      ],
+      [
+        "subgroup",
+        34
+      ]
+    ],
+    "250": [
+      [
+        "ad_hoc_group",
+        8
+      ],
+      [
+        "ad_hoc_group",
+        9
+      ],
+      [
+        "subgroup",
+        34
+      ]
+    ],
+    "410": [
+      [
+        "ad_hoc_group",
+        10
+      ],
+      [
+        "subgroup",
+        37
+      ]
+    ],
+    "411": [
+      [
+        "ad_hoc_group",
+        10
+      ],
+      [
+        "subgroup",
+        37
+      ]
+    ],
+    "100": [
+      [
+        "subgroup",
+        1
+      ],
+      [
+        "subgroup",
+        7
+      ],
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        26
+      ],
+      [
+        "subgroup",
+        35
+      ]
+    ],
+    "142": [
+      [
+        "subgroup",
+        1
+      ],
+      [
+        "subgroup",
+        2
+      ],
+      [
+        "subgroup",
+        3
+      ],
+      [
+        "subgroup",
+        7
+      ],
+      [
+        "subgroup",
+        9
+      ],
+      [
+        "subgroup",
+        11
+      ],
+      [
+        "subgroup",
+        13
+      ],
+      [
+        "subgroup",
+        16
+      ],
+      [
+        "subgroup",
+        17
+      ],
+      [
+        "subgroup",
+        21
+      ],
+      [
+        "subgroup",
+        22
+      ],
+      [
+        "subgroup",
+        24
+      ],
+      [
+        "subgroup",
+        25
+      ]
+    ],
+    "200": [
+      [
+        "subgroup",
+        1
+      ],
+      [
+        "subgroup",
+        4
+      ],
+      [
+        "subgroup",
+        5
+      ],
+      [
+        "subgroup",
+        6
+      ],
+      [
+        "subgroup",
+        7
+      ],
+      [
+        "subgroup",
+        11
+      ],
+      [
+        "subgroup",
+        17
+      ]
+    ],
+    "208": [
+      [
+        "subgroup",
+        1
+      ],
+      [
+        "subgroup",
+        7
+      ],
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        21
+      ],
+      [
+        "subgroup",
+        26
+      ],
+      [
+        "subgroup",
+        35
+      ]
+    ],
+    "245": [
+      [
+        "subgroup",
+        1
+      ],
+      [
+        "subgroup",
+        7
+      ],
+      [
+        "subgroup",
+        11
+      ],
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        14
+      ],
+      [
+        "subgroup",
+        21
+      ],
+      [
+        "subgroup",
+        24
+      ],
+      [
+        "subgroup",
+        35
+      ]
+    ],
+    "151": [
+      [
+        "subgroup",
+        2
+      ],
+      [
+        "subgroup",
+        3
+      ],
+      [
+        "subgroup",
+        8
+      ],
+      [
+        "subgroup",
+        9
+      ],
+      [
+        "subgroup",
+        10
+      ],
+      [
+        "subgroup",
+        13
+      ],
+      [
+        "subgroup",
+        18
+      ],
+      [
+        "subgroup",
+        22
+      ]
+    ],
+    "170": [
+      [
+        "subgroup",
+        2
+      ],
+      [
+        "subgroup",
+        3
+      ],
+      [
+        "subgroup",
+        5
+      ],
+      [
+        "subgroup",
+        8
+      ],
+      [
+        "subgroup",
+        9
+      ],
+      [
+        "subgroup",
+        10
+      ],
+      [
+        "subgroup",
+        13
+      ],
+      [
+        "subgroup",
+        16
+      ],
+      [
+        "subgroup",
+        18
+      ],
+      [
+        "subgroup",
+        20
+      ],
+      [
+        "subgroup",
+        22
+      ],
+      [
+        "subgroup",
+        25
+      ]
+    ],
+    "218": [
+      [
+        "subgroup",
+        2
+      ],
+      [
+        "subgroup",
+        3
+      ],
+      [
+        "subgroup",
+        8
+      ],
+      [
+        "subgroup",
+        9
+      ],
+      [
+        "subgroup",
+        10
+      ],
+      [
+        "subgroup",
+        13
+      ],
+      [
+        "subgroup",
+        18
+      ],
+      [
+        "subgroup",
+        22
+      ]
+    ],
+    "185": [
+      [
+        "subgroup",
+        4
+      ],
+      [
+        "subgroup",
+        20
+      ]
+    ],
+    "226": [
+      [
+        "subgroup",
+        4
+      ],
+      [
+        "subgroup",
+        5
+      ],
+      [
+        "subgroup",
+        6
+      ],
+      [
+        "subgroup",
+        8
+      ],
+      [
+        "subgroup",
+        10
+      ],
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        18
+      ],
+      [
+        "subgroup",
+        19
+      ],
+      [
+        "subgroup",
+        20
+      ],
+      [
+        "subgroup",
+        22
+      ],
+      [
+        "subgroup",
+        26
+      ],
+      [
+        "subgroup",
+        35
+      ]
+    ],
+    "61": [
+      [
+        "subgroup",
+        5
+      ],
+      [
+        "subgroup",
+        16
+      ],
+      [
+        "subgroup",
+        19
+      ],
+      [
+        "subgroup",
+        25
+      ]
+    ],
+    "153": [
+      [
+        "subgroup",
+        5
+      ],
+      [
+        "subgroup",
+        19
+      ],
+      [
+        "subgroup",
+        20
+      ]
+    ],
+    "244": [
+      [
+        "subgroup",
+        5
+      ],
+      [
+        "subgroup",
+        19
+      ],
+      [
+        "subgroup",
+        20
+      ],
+      [
+        "subgroup",
+        23
+      ]
+    ],
+    "340": [
+      [
+        "subgroup",
+        5
+      ],
+      [
+        "subgroup",
+        16
+      ],
+      [
+        "subgroup",
+        20
+      ],
+      [
+        "subgroup",
+        25
+      ]
+    ],
+    "68": [
+      [
+        "subgroup",
+        6
+      ],
+      [
+        "subgroup",
+        11
+      ],
+      [
+        "subgroup",
+        17
+      ],
+      [
+        "subgroup",
+        24
+      ]
+    ],
+    "233": [
+      [
+        "subgroup",
+        6
+      ],
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        14
+      ],
+      [
+        "subgroup",
+        17
+      ],
+      [
+        "subgroup",
+        21
+      ],
+      [
+        "subgroup",
+        24
+      ],
+      [
+        "subgroup",
+        26
+      ],
+      [
+        "subgroup",
+        35
+      ]
+    ],
+    "357": [
+      [
+        "subgroup",
+        6
+      ],
+      [
+        "subgroup",
+        7
+      ],
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        17
+      ],
+      [
+        "subgroup",
+        24
+      ],
+      [
+        "subgroup",
+        26
+      ]
+    ],
+    "63": [
+      [
+        "subgroup",
+        11
+      ],
+      [
+        "subgroup",
+        19
+      ],
+      [
+        "subgroup",
+        21
+      ]
+    ],
+    "43": [
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        21
+      ],
+      [
+        "subgroup",
+        26
+      ],
+      [
+        "subgroup",
+        35
+      ]
+    ],
+    "59": [
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        14
+      ],
+      [
+        "subgroup",
+        21
+      ],
+      [
+        "subgroup",
+        26
+      ],
+      [
+        "subgroup",
+        35
+      ]
+    ],
+    "191": [
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        17
+      ],
+      [
+        "subgroup",
+        26
+      ]
+    ],
+    "339": [
+      [
+        "subgroup",
+        12
+      ],
+      [
+        "subgroup",
+        21
+      ],
+      [
+        "subgroup",
+        24
+      ],
+      [
+        "subgroup",
+        35
+      ]
+    ],
+    "165": [
+      [
+        "subgroup",
+        16
+      ],
+      [
+        "subgroup",
+        25
+      ]
+    ],
+    "192": [
+      [
+        "subgroup",
+        16
+      ],
+      [
+        "subgroup",
+        23
+      ],
+      [
+        "subgroup",
+        25
+      ]
+    ],
+    "301": [
+      [
+        "subgroup",
+        28
+      ]
+    ],
+    "306": [
+      [
+        "subgroup",
+        28
+      ]
+    ],
+    "393": [
+      [
+        "subgroup",
+        28
+      ]
+    ],
+    "104": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "236": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "249": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "284": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "287": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "310": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "333": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "365": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "408": [
+      [
+        "subgroup",
+        29
+      ]
+    ],
+    "327": [
+      [
+        "subgroup",
+        30
+      ]
+    ],
+    "362": [
+      [
+        "subgroup",
+        30
+      ],
+      [
+        "subgroup",
+        33
+      ]
+    ],
+    "98": [
+      [
+        "subgroup",
+        31
+      ]
+    ],
+    "141": [
+      [
+        "subgroup",
+        31
+      ]
+    ],
+    "377": [
+      [
+        "subgroup",
+        31
+      ],
+      [
+        "subgroup",
+        36
+      ]
+    ],
+    "212": [
+      [
+        "subgroup",
+        32
+      ]
+    ],
+    "328": [
+      [
+        "subgroup",
+        32
+      ]
+    ],
+    "421": [
+      [
+        "subgroup",
+        32
+      ]
+    ],
+    "150": [
+      [
+        "subgroup",
+        33
+      ]
+    ],
+    "172": [
+      [
+        "subgroup",
+        33
+      ]
+    ],
+    "147": [
+      [
+        "subgroup",
+        34
+      ]
+    ],
+    "416": [
+      [
+        "subgroup",
+        37
+      ]
+    ],
+    "420": [
+      [
+        "subgroup",
+        38
+      ]
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_text_id
+    - taxonomy.vocabulary.import_dispositions
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.import_dispositions.field_text_id
+field_name: field_text_id
+entity_type: taxonomy_term
+bundle: import_dispositions
+label: 'Text ID'
+description: 'Stable known identifier usable in the code to recognize specific disposition values for custom processing/reports.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

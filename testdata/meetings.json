@@ -1,0 +1,969 @@
+[
+  {
+    "id": 440,
+    "user": 4,
+    "entered": "2015-07-26 13:04:54",
+    "name": "PDQ Pediatric Treatment Meeting",
+    "dates": {
+      "value": "2016-11-17T13:00:00",
+      "end_value": "2016-11-17T17:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      220
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      38615
+    ]
+  },
+  {
+    "id": 648,
+    "user": 3,
+    "entered": "2016-12-22 12:18:26",
+    "name": "Colorectal WG",
+    "dates": {
+      "value": "2017-04-20T08:30:00",
+      "end_value": "2017-04-20T15:00:00"
+    },
+    "type": "in_person",
+    "category": "subgroup",
+    "status": "scheduled",
+    "boards": [],
+    "groups": {
+      "subgroups": [
+        31
+      ],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      3
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      44339
+    ]
+  },
+  {
+    "id": 704,
+    "user": 4,
+    "entered": "2017-02-08 08:55:45",
+    "name": "PDQ Pediatric Treatment Meeting",
+    "dates": {
+      "value": "2018-11-01T13:00:00",
+      "end_value": "2018-11-01T17:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      4,
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      64391,
+      65288
+    ]
+  },
+  {
+    "id": 729,
+    "user": 375,
+    "entered": "2017-12-01 12:58:14",
+    "name": "Screening and Prevention Board Meeting",
+    "dates": {
+      "value": "2018-03-14T12:30:00",
+      "end_value": "2018-03-14T15:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      4
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      2
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": []
+  },
+  {
+    "id": 736,
+    "user": 2,
+    "entered": "2018-01-05 11:16:51",
+    "name": "PDQ Adult Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2018-03-06T10:30:00",
+      "end_value": "2018-03-06T13:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      1
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      116
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": []
+  },
+  {
+    "id": 747,
+    "user": 4,
+    "entered": "2018-01-18 09:23:16",
+    "name": "Pediatric Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2019-05-17T08:30:00",
+      "end_value": "2019-05-17T14:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      75,
+      166
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      71099,
+      71100,
+      71808
+    ]
+  },
+  {
+    "id": 750,
+    "user": 4,
+    "entered": "2018-01-18 09:27:36",
+    "name": "Pediatric Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2019-09-20T08:30:00",
+      "end_value": "2019-09-20T14:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      57,
+      243
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      74651,
+      74654,
+      74662,
+      75299
+    ]
+  },
+  {
+    "id": 751,
+    "user": 4,
+    "entered": "2018-01-18 09:28:49",
+    "name": "Pediatric Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2019-11-14T13:00:00",
+      "end_value": "2019-11-14T17:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      112,
+      122,
+      222
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      75906,
+      76578
+    ]
+  },
+  {
+    "id": 771,
+    "user": 3,
+    "entered": "2018-03-29 11:07:53",
+    "name": "Colorectal WG",
+    "dates": {
+      "value": "2018-05-01T08:30:00",
+      "end_value": "2018-05-01T11:00:00"
+    },
+    "type": "in_person",
+    "category": "subgroup",
+    "status": "scheduled",
+    "boards": [],
+    "groups": {
+      "subgroups": [
+        31
+      ],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      4
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      59033,
+      59031,
+      59217
+    ]
+  },
+  {
+    "id": 784,
+    "user": 3,
+    "entered": "2018-04-30 22:14:30",
+    "name": "Kidney WG",
+    "dates": {
+      "value": "2018-05-11T13:00:00",
+      "end_value": "2018-05-11T14:00:00"
+    },
+    "type": "remote",
+    "category": "subgroup",
+    "status": "scheduled",
+    "boards": [],
+    "groups": {
+      "subgroups": [
+        28
+      ],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      142,
+      151,
+      170,
+      218,
+      226
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      59837
+    ]
+  },
+  {
+    "id": 800,
+    "user": 6,
+    "entered": "2018-06-18 10:11:19",
+    "name": "Integrative, Alternative, and Complementary Therapies Editorial Board Meeting",
+    "dates": {
+      "value": "2019-03-08T11:00:00",
+      "end_value": "2019-03-08T14:00:00"
+    },
+    "type": "remote",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      6
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      100,
+      142,
+      200,
+      208,
+      245,
+      25
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      68520,
+      68521,
+      68522,
+      68523,
+      68524,
+      68525,
+      68526,
+      68527,
+      68528,
+      68529,
+      68530,
+      68531,
+      68532,
+      68533,
+      68534,
+      68535,
+      68536,
+      68537,
+      68538,
+      68539,
+      68540,
+      68541,
+      68542,
+      68543,
+      68544,
+      68545,
+      68546,
+      68547,
+      68548,
+      68549,
+      68550,
+      68551,
+      68552,
+      68553,
+      68554,
+      68555,
+      68556,
+      68557,
+      68558
+    ]
+  },
+  {
+    "id": 802,
+    "user": 6,
+    "entered": "2018-06-18 11:20:02",
+    "name": "Integrative, Alternative, and Complementary Therapies Editorial Board Meeting",
+    "dates": {
+      "value": "2019-09-13T10:30:00",
+      "end_value": "2019-09-13T14:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      6
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      43,
+      59,
+      63,
+      142,
+      156,
+      208,
+      233,
+      245,
+      25
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      74565,
+      74566,
+      74567,
+      74568,
+      74569,
+      74570,
+      74571,
+      74572,
+      74573,
+      74574,
+      74575,
+      74576,
+      74577,
+      74578,
+      74579,
+      74580,
+      74581,
+      74582,
+      74583,
+      74584,
+      74585,
+      74586,
+      74587,
+      74588,
+      74589,
+      74590,
+      74591,
+      74592,
+      74593,
+      74594,
+      74595,
+      74596,
+      74597,
+      74598,
+      74686
+    ]
+  },
+  {
+    "id": 840,
+    "user": 375,
+    "entered": "2018-12-12 11:31:35",
+    "name": "PDQ Screening and Prevention Board Meeting",
+    "dates": {
+      "value": "2019-09-18T12:30:00",
+      "end_value": "2019-09-18T15:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      4
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      5
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      74684,
+      74771,
+      74818
+    ]
+  },
+  {
+    "id": 841,
+    "user": 375,
+    "entered": "2018-12-12 11:32:59",
+    "name": "PDQ Screening and Prevention Board Meeting WebEx",
+    "dates": {
+      "value": "2019-11-20T12:30:00",
+      "end_value": "2019-11-20T15:30:00"
+    },
+    "type": "remote",
+    "category": null,
+    "status": "scheduled",
+    "boards": [
+      4
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      73,
+      114,
+      130,
+      209,
+      221
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      76006,
+      76038
+    ]
+  },
+  {
+    "id": 851,
+    "user": 2,
+    "entered": "2019-01-10 16:53:30",
+    "name": "PDQ Adult Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2019-06-25T10:30:00",
+      "end_value": "2019-06-25T13:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      1
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      80,
+      103,
+      114,
+      130,
+      148,
+      201,
+      209,
+      221
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": []
+  },
+  {
+    "id": 852,
+    "user": 2,
+    "entered": "2019-01-10 16:54:36",
+    "name": "PDQ Adult Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2019-09-10T10:30:00",
+      "end_value": "2019-09-10T13:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      1
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      43,
+      59,
+      63,
+      142,
+      156,
+      208,
+      233,
+      245
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": []
+  },
+  {
+    "id": 871,
+    "user": 400,
+    "entered": "2019-03-17 16:32:20",
+    "name": "Pediatric Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2019-03-28T13:00:00",
+      "end_value": "2019-03-28T17:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": [
+        3
+      ]
+    },
+    "individuals": [],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      69053,
+      69253,
+      70532
+    ]
+  },
+  {
+    "id": 902,
+    "user": 6,
+    "entered": "2019-06-04 16:34:41",
+    "name": "Integrative, Alternative, and Complementary Therapies Editorial Board Meeting",
+    "dates": {
+      "value": "2020-03-13T11:00:00",
+      "end_value": "2020-03-13T14:00:00"
+    },
+    "type": "remote",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      6
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      4,
+      25
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      78372,
+      78373,
+      78374,
+      78375,
+      78376,
+      78377,
+      78378,
+      78379,
+      78380,
+      78381,
+      78382,
+      78383,
+      78384,
+      78385,
+      78386,
+      78387,
+      78388,
+      78389,
+      78390,
+      78391,
+      78392,
+      78393,
+      78394,
+      78395,
+      78396,
+      78397,
+      78398,
+      78399,
+      78400,
+      78401,
+      78402,
+      78403,
+      78404,
+      78452,
+      78453,
+      78454
+    ]
+  },
+  {
+    "id": 918,
+    "user": 400,
+    "entered": "2019-06-19 11:47:43",
+    "name": "Pediatric Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2020-01-17T08:30:00",
+      "end_value": "2020-01-17T14:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      146,
+      175,
+      250
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      77073,
+      77117,
+      77120,
+      77133,
+      77204,
+      77874
+    ]
+  },
+  {
+    "id": 943,
+    "user": 400,
+    "entered": "2019-09-17 14:33:29",
+    "name": "Pediatric Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2020-03-05T13:00:00",
+      "end_value": "2020-03-05T17:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      68,
+      200,
+      226,
+      233
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      77993,
+      78024,
+      78285,
+      78405,
+      78413,
+      78414,
+      78960
+    ]
+  },
+  {
+    "id": 944,
+    "user": 400,
+    "entered": "2019-09-17 14:35:02",
+    "name": "Pediatric Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2020-03-06T08:30:00",
+      "end_value": "2020-03-06T14:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      3
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      4
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      77994,
+      78025,
+      78286,
+      78406,
+      78412,
+      78415,
+      78961
+    ]
+  },
+  {
+    "id": 984,
+    "user": 375,
+    "entered": "2019-11-20 15:41:50",
+    "name": "PDQ Screening and Prevention Board Meeting",
+    "dates": {
+      "value": "2020-01-29T12:30:00",
+      "end_value": "2020-01-29T15:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      4
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      270,
+      4
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      77318
+    ]
+  },
+  {
+    "id": 985,
+    "user": 375,
+    "entered": "2019-11-20 15:43:13",
+    "name": "PDQ Screening and Prevention Board Meeting",
+    "dates": {
+      "value": "2020-03-18T12:30:00",
+      "end_value": "2020-03-18T15:30:00"
+    },
+    "type": "remote",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      4
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      80,
+      103,
+      114,
+      130,
+      148,
+      201,
+      221
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      78480
+    ]
+  },
+  {
+    "id": 986,
+    "user": 375,
+    "entered": "2019-11-20 15:44:03",
+    "name": "PDQ Screening and Prevention Board Meeting",
+    "dates": {
+      "value": "2020-05-06T12:30:00",
+      "end_value": "2020-05-06T15:30:00"
+    },
+    "type": "in_person",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      4
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      148,
+      25
+    ],
+    "agenda_published": "1",
+    "published": 0,
+    "documents": []
+  },
+  {
+    "id": 993,
+    "user": 2,
+    "entered": "2019-12-10 10:53:23",
+    "name": "PDQ Adult Treatment Editorial Board Meeting",
+    "dates": {
+      "value": "2020-04-21T10:30:00",
+      "end_value": "2020-04-21T13:30:00"
+    },
+    "type": "remote",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      1
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": [
+        8
+      ]
+    },
+    "individuals": [],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": []
+  },
+  {
+    "id": 1008,
+    "user": 3,
+    "entered": "2020-01-27 10:55:44",
+    "name": "Prostate WG",
+    "dates": {
+      "value": "2020-02-03T13:00:00",
+      "end_value": "2020-02-03T14:00:00"
+    },
+    "type": "remote",
+    "category": "subgroup",
+    "status": "scheduled",
+    "boards": [],
+    "groups": {
+      "subgroups": [
+        34
+      ],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      73,
+      114
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      77578
+    ]
+  },
+  {
+    "id": 1030,
+    "user": 3,
+    "entered": "2020-03-06 14:02:29",
+    "name": "Breast/Gyn WG",
+    "dates": {
+      "value": "2020-04-22T09:30:00",
+      "end_value": "2020-04-22T11:00:00"
+    },
+    "type": "remote",
+    "category": "subgroup",
+    "status": "scheduled",
+    "boards": [],
+    "groups": {
+      "subgroups": [
+        29
+      ],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      270,
+      4
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": [
+      79360,
+      79444
+    ]
+  },
+  {
+    "id": 1033,
+    "user": 3,
+    "entered": "2020-03-06 14:04:14",
+    "name": "Genetics Board Meeting",
+    "dates": {
+      "value": "2020-04-22T11:30:00",
+      "end_value": "2020-04-22T14:30:00"
+    },
+    "type": "remote",
+    "category": "board",
+    "status": "scheduled",
+    "boards": [
+      2
+    ],
+    "groups": {
+      "subgroups": [],
+      "ad_hoc_groups": []
+    },
+    "individuals": [
+      68,
+      142,
+      191,
+      200,
+      233
+    ],
+    "agenda_published": "1",
+    "published": 1,
+    "documents": []
+  }
+]

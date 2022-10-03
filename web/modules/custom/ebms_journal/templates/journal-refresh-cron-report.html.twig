@@ -1,0 +1,23 @@
+{# Mail clients are weak at standards compliance, so we put style rules inline. #}
+{% set dtstyle = 'font-weight: bold;' %}
+{% set ddstyle = 'margin-bottom: 1rem;' %}
+{% set h1style = 'font-size: 1.5rem;' %}
+{% set ptstyle = 'color: green; font-size: .8rem; font-style: italic;' %}
+<div>
+  <h1>Journal Refresh</h1>
+  {% if report.error %}
+  <p style="color: red; font-size: 1rem;">{{ report.error }}</p>
+  {% else %}
+  <dl>
+    <dt style="{{ dtstyle }}">Checked</dt>
+    <dd style="{{ ddstyle }}">{{ report.checked }}</dd>
+    <dt style="{{ dtstyle }}">Fetched</dt>
+    <dd style="{{ ddstyle }}">{{ report.fetched }}</dd>
+    <dt style="{{ dtstyle }}">Updated</dt>
+    <dd style="{{ ddstyle }}">{{ report.updated }}</dd>
+    <dt style="{{ dtstyle }}">Added</dt>
+    <dd style="{{ ddstyle }}">{{ report.added }}</dd>
+  </dl>
+  {% endif %}
+  <p style="{{ ptstyle }}">Processing time: {{ report.elapsed }} seconds.</p>
+</div>

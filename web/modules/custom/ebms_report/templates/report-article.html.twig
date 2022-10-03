@@ -1,0 +1,6 @@
+<div class="article-citation">
+  <div class="authors">{{ article.authors }}</div>
+  <div class="title">{% if article.url %}<a href="{{ article.url }}" target="_blank">{% endif %}{{ article.title }}{% if article.url %}</a>{% endif %}</div>
+  <div class="publication">{{ article.publication }}</div>
+  <div class="pmid">PMID: <a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank">{{ article.pmid }}</a></div>
+</div>

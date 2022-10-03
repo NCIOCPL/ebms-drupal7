@@ -1,0 +1,21 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.taxonomy_term.field_text_id
+    - taxonomy.vocabulary.hotel_payment_methods
+  enforced:
+    module:
+      - ebms_core
+id: taxonomy_term.hotel_payment_methods.field_text_id
+field_name: field_text_id
+entity_type: taxonomy_term
+bundle: hotel_payment_methods
+label: 'Text ID'
+description: 'Used to specify who paid for hotel accomodations during a meeting.'
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

@@ -1,0 +1,28 @@
+<table class="usa-table usa-table--borderless">
+  <caption>{{ caption }}</caption>
+  <thead>
+    <tr>
+      {% for label in header %}
+      <th>{{ label }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td><a href="{{ row.url }}" target="_blank">{{ row.text }}</a></td>
+      <td>{{ row.notes }}</td>
+      <td>{{ row.user }}</td>
+      <td>{{ row.date }}</td>
+      {% if row.onclick %}
+      <td style="text-align: center"><input type="checkbox"{% if row.archived %} checked{% endif %} onclick="{{ row.onclick }}"></td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+    {% if empty and not rows %}
+    <tr>
+      <td colspan="{{ header|length }}">{{ empty }}</td>
+    </tr>
+    {% endif %}
+  </tbody>
+</table>

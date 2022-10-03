@@ -1,0 +1,41 @@
+{%
+  set classes = [
+    active ? 'active' : 'inactive',
+    current ? 'current' : 'previous',
+  ]
+%}
+{# no entry: &#x26D4; #}
+{# lighter check mark: &#x2713; #}
+{# info symbol: &#x24d8; #}
+{% if legend == 'yes'%}
+  {% set flag = '<span style="color: green"> &#x2714;</span>' %}
+{% elseif legend == 'no' %}
+  {% set flag = '<span style="color: red"> &#x2718;</span>' %}
+{% elseif legend == 'info' %}
+  {% set flag = '<span style="color: maroon; font-weight: bold"> &#x273B;</span>' %}
+{% elseif legend == 'hold' %}
+  {% set flag = '<span style="color: brown"> &#x270B;</span>' %}
+{% elseif legend == 'write' %}
+  {% set flag = '<span> &#x270D;</span>' %}
+{% else %}
+  {% set flag = '<span style="color: green"> &#x2714;</span>' %}
+{% endif %}
+<div {{ attributes.addClass(classes) }}>
+  <div class="state">[{{ date|date('Y-m-d') }}] {{ state }} ({{ user }}){{ flag|raw }}
+    {% if button %}
+      <a class="button usa-button usa-button--base left-pad-button inline-button" href="{{ button }}" title="Add new state comment">Add Comment</a>
+    {% endif %}
+  </div>
+  {% if comments or notes %}
+    <ul>
+      {% for note in notes %}
+      {% if note.raw %}
+      <li>{{ note.value|raw }}</li>
+      {% else %}
+      <li>{{ note }}</li>
+      {% endif %}
+      {% endfor %}
+      {{ comments }}
+    </ul>
+  {% endif %}
+</div>

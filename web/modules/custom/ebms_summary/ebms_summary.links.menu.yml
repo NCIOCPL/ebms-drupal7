@@ -1,0 +1,6 @@
+ebms_summary.summaries:
+  title: Summaries
+  description: Landing page for PDQ® board summaries.
+  route_name: ebms_summary.board
+  menu_name: main
+  weight: 50

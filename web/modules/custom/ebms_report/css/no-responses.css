@@ -1,0 +1,23 @@
+#edit-tags {
+  margin-top: 0;
+}
+#edit-tags label {
+  margin-top: .5rem;
+}
+.authors {
+  font-weight: bold;
+}
+.title,
+.topic-name {
+  font-style: italic;
+}
+.article {
+  margin-bottom: 2rem;
+}
+.topic {
+  border-top: 1px #222 solid;
+}
+.high-priority {
+  color: red;
+  font-weight: bold;
+}

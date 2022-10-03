@@ -1,0 +1,36 @@
+ebms_travel.overview:
+  title: Travel
+  description: Overview of board member travel to the NCI.
+  route_name: ebms_travel.landing_page
+  menu_name: main
+  weight: 70
+ebms_travel.landing_page:
+  route_name: ebms_travel.landing_page
+  menu_name: travel
+  title: Travel Overview
+  weight: 0
+ebms_travel.directions:
+  route_name: ebms_travel.directions
+  title: Directions
+  menu_name: travel
+  weight: 1
+ebms_travel.policies_and_procedures:
+  route_name: ebms_travel.policies_and_procedures
+  title: Policies & Procedures
+  menu_name: travel
+  weight: 3
+ebms_travel.hotel_request:
+  route_name: ebms_travel.hotel_request
+  title: Hotel Request
+  menu_name: travel
+  weight: 4
+ebms_travel.reimbursement_request:
+  route_name: ebms_travel.reimbursement_request
+  title: Reimbursement Request
+  menu_name: travel
+  weight: 5
+ebms_travel.configuration:
+  route_name: ebms_travel.configuration
+  title: Edit Travel Configuration
+  menu_name: travel
+  weight: 6

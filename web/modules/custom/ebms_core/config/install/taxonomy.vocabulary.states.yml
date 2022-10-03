@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: States
+vid: states
+description: 'Per-topic processing states recorded for articles.'
+weight: 0

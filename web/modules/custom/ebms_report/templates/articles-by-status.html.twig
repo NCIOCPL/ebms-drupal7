@@ -1,0 +1,90 @@
+<h2 class="report-title">{{ title }}</h2>
+<div class="articles-by-status">
+  {% for article in articles %}
+  <div class="article">
+    {% include '@ebms_report/report-article.html.twig' %}
+    {% for decision in article.decisions %}
+    <div class="decision">
+      <div class="decision-details"><span class="decision-label">{{ decision.label }}</span> for <span class="topic-name">{{ decision.topic }}</span> {{ decision.when|slice(0, 10) }} by {{ decision.user }} in the {{ decision.cycle }} review cycle.</div>
+      {% if decision.comments %}
+      <ul class="comments">
+        {% for comment in decision.comments %}
+        <li>{{ comment }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% for topic in article.topics %}
+    <div class="topic">Topic <span class="topic-name">{{ topic.name }}</span> for the {{ topic.cycle }} review cycle</div>
+    {% endfor %}
+    {% for packet in article.packets %}
+    <div class="packet">
+      <div class="packet-details"><strong>Assigned</strong> {{ packet.assigned|slice(0, 10) }} by {{ packet.user }} for <span class="topic-name">{{ packet.topic }}</span></div>
+      <div class="review-cycle">Review Cycle: {{ packet.cycle }}</div>
+      <div class="reviewers">Reviewers: {{ packet.reviewers|join(', ') }}</div>
+    </div>
+    {% endfor %}
+    {% for review in article.reviews %}
+    <div class="review">
+      <div class="review-details">Reviewed {{ review.reviewed|slice(0, 10) }} by {{ review.reviewer }} for <span class="topic-name">{{ review.topic }}</span></div>
+      <div class="dispositions">Dispositions: {{ review.dispositions|join('; ')}}</div>
+      {% for comment in review.comments %}
+      <div class="comment">{{ comment|raw }}</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% for action in article.actions %}
+    <div class="action">
+      <div class="action-details">Assigned disposition <span class="action-name">{{ action.name }}</span> {{ action.when|slice(0, 10) }} by {{ action.user }} for <span class="topic-name">{{ action.topic}}</span> (review cycle {{ action.cycle }})</div>
+      {% if action.comments %}
+      <ul class="comments">
+        {% for comment in action.comments %}
+        <li>{{ comment }}</li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% if action.discussion_proponents %}
+      <div class="discussion-proponents">Discussion recommended by {{ action.discussion_proponents|join(', ') }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% for agenda_topic in article.agenda_topics %}
+    <div class="agenda-topic">
+      <div "agenda-topic-details">On agenda for <span class="topic-name">{{ agenda_topic.name }}</span> in review cycle {{ agenda_topic.cycle }}</div>
+      {% for meeting in agenda_topic.meetings %}
+      <div class="agenda-topic-meeting">{{ meeting.category }} meeting <span class="meeting-name">{{ meeting.name }}</span> scheduled for {{ meeting.date|slice(0, 10) }}</div>
+      {% endfor %}
+      {% for comment in agenda_topic.comments %}
+      <div class="comment">{{ comment }}</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% for decision_topic in article.board_decision_topics %}
+    <div class="board-decision-topic">
+      <div class="board-decision-topic-details">Final decisions for <span class="topic-name">{{ decision_topic.name }}</span> taken {{ decision_topic.when|slice(0, 10) }} in review cycle {{ decision_topic.cycle }}</div>
+      <ul>
+        {% for decision in decision_topic.decisions %}
+        <li class="board-decision">{{ decision }}</li>
+        {% endfor %}
+        {% if not decision_topic.decisions %}
+        <li class="board-decision no-board-decisions">[No decisions made]</li>
+        {% endif %}
+      </ul>
+      {% if decision_topic.deciders %}
+      <div class="deciders">Discussed by: {{ decision_topic.deciders|join(', ') }}</div>
+      {% endif %}
+      {% for comment in decision_topic.comments %}
+      <div class="comment">{{ comment }}</div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    {% if article.comment %}
+    <div class="unavailable-comment">Comment: {{ article.comment }}</div>
+    {% endif %}
+    {% if article.filename %}
+    <div class="filename">{{ article.filename }} retrieved {{ article.retrieved }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>

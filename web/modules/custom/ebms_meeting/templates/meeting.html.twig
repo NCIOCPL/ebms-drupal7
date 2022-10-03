@@ -1,0 +1,41 @@
+<div class="meeting-display">
+  <dl>
+    <dt>When</dt>
+    <dd>{{ meeting.scheduled }} (Eastern Time)</dd>
+    <dt>How</dt>
+    <dd>{{ meeting.type }}</dd>
+    {% if meeting.participants %}
+    <dt>Who</dt>
+    <dd>{{ meeting.participants }}</dd>
+    {% endif %}
+    {% if meeting.agenda %}
+    <dt>What</dt>
+    <dd>{{ meeting.agenda | raw }}</dd>
+    {% endif %}
+    {% if meeting.notes %}
+    <dt>Notes</dt>
+    <dd>{{ meeting.notes | raw }}</dd>
+    {% endif %}
+    {% if meeting.docs %}
+    <dt>Meeting Documents</dt>
+    <dd>
+      {% for doc in meeting.docs %}
+      <div><a href="{{ doc.url }}">{{ doc.name }}</a></div>
+      {% endfor %}
+    </dd>
+    {% endif %}
+    {% if meeting.archive %}
+    <div class="download-files">
+      <nav class="buttons">
+        <a href="{{ meeting.archive }}" class="button usa-button">Download Meeting Documents</a>
+      </nav>
+    </div>
+    {% endif %}
+  </dl>
+  <div>
+    <nav class="buttons">
+      <a href="{{ meeting.ical }}" class="button usa-button">Add To Personal Calendar</a>
+    </nav>
+  </div>
+  <p class="submitted">Submitted by {{ meeting.user }} on {{ meeting.submitted }}.</p>
+</div>

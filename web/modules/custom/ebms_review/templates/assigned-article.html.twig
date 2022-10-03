@@ -1,0 +1,33 @@
+<div class="assigned-article">
+  <div class="authors">{{ article.authors|join('; ') }}</div>
+  <div class="title">{{ article.title }}</div>
+  <div class="publication">{{ article.publication }}</div>
+  <div class="pmid">PMID: {{ article.pmid }}</div>
+  {% if article.agendas %}
+  <div class="state">Article state: {{ article.agendas }}</div>
+  {% endif %}
+  <div class="links">
+    <a href="https://pubmed.ncbi.nlm.nih.gov/{{ article.pmid }}" target="_blank" class="pmid button usa-button">View Abstract</a>
+    {% if article.full_text_url %}
+    <a href="{{ article.full_text_url }}" target="_blank" class="full-text button usa-button">Download Full Text</a>
+    {% endif %}
+    {% if article.review_url %}
+    <a href="{{ article.review_url }}" class="button usa-button">Review</a>
+    {% endif %}
+    {% if article.quick_rejection %}
+    <a href="{{ article.quick_rejection }}" class="button usa-button use-ajax">Reject</a>
+    {% endif %}
+    {% if article.review_posted %}
+    <div class="review-posted">Review posted {{ article.review_posted|slice(0, 10) }}</div>
+    {% endif %}
+    {% if article.fyi %}
+    <div class="fyi">FYI article</div>
+    {% endif %}
+    {% if article.board_reviewed %}
+    <div class="board-reviewed">Reviewed by Editorial Board</div>
+    {% endif %}
+    {% if article.other_reviews %}
+    <a href="{{ article.other_reviews }}" class="other-reviews button usa-button">Other Reviews</a>
+    {% endif %}
+  </div>
+</div>

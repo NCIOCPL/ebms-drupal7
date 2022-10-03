@@ -1,0 +1,17 @@
+ebms_user.profile:
+  title: User Profile
+  description: Information about the current logged-in user.
+  enabled: true
+  route_name: ebms_user.profile
+  menu_name: main
+  weight: 100
+  options:
+    attributes:
+      id: user-profile-menu-link
+ebms_user.users:
+  title: Users
+  description: Searchable list of all users.
+  enabled: true
+  route_name: entity.user.collection
+  menu_name: main
+  weight: 105

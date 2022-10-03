@@ -1,0 +1,6 @@
+maintenance:
+  js:
+    js/journal-maintenance.js: {}
+  css:
+    theme:
+      css/journal-maintenance.css: {}

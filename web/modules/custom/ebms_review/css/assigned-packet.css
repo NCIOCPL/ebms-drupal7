@@ -1,0 +1,30 @@
+.assigned-article {
+  margin-bottom: 2rem;
+}
+.assigned-article .authors {
+  font-weight: bold;
+}
+.assigned-article .title,
+.assigned-article .review-posted,
+.assigned-article .board-reviewed {
+  font-style: italic;
+}
+.assigned-article .fyi {
+  font-weight: bold;
+  color: red;
+  display: inline-block;
+  margin-right: 1rem;
+}
+.assigned-article .links {
+  margin-top: 1rem;
+}
+.assigned-article .review-posted {
+  display: inline-block;
+  margin-right: 1rem;
+  font-weight: bold;
+}
+.assigned-article .board-reviewed {
+  display: inline-block;
+  font-weight: bold;
+  margin-right: 1rem;
+}

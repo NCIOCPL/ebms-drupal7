@@ -1,0 +1,26 @@
+[
+  {
+    "vid": "print_job_types",
+    "name": "board",
+    "description": "Job run for all board members that receive printouts on one board",
+    "status": true
+  },
+  {
+    "vid": "print_job_types",
+    "name": "meeting",
+    "description": "Printing all documents for a board meeting",
+    "status": true
+  },
+  {
+    "vid": "print_job_types",
+    "name": "package",
+    "description": "Printing all packets (one package) for one user on one board",
+    "status": true
+  },
+  {
+    "vid": "print_job_types",
+    "name": "packet",
+    "description": "Printing a single packet for a user",
+    "status": true
+  }
+]

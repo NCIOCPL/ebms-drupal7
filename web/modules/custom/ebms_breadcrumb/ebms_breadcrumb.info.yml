@@ -1,0 +1,20 @@
+name: EBMS Breadcrumbs
+description: Controls the site's breadcrumb paths.
+type: module
+package: EBMS
+core_version_requirement: ^9
+dependencies:
+  - ebms_article
+  - ebms_core
+  - ebms_doc
+  - ebms_group
+  - ebms_home
+  - ebms_import
+  - ebms_journal
+  - ebms_meeting
+  - ebms_report
+  - ebms_review
+  - ebms_state
+  - ebms_summary
+  - ebms_topic
+  - ebms_travel

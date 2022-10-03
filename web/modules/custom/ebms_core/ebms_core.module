@@ -1,0 +1,270 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
+use Drupal\user\Entity\Role;
+
+/**
+ * Implements hook_user_logout().
+ */
+function ebms_core_user_logout(AccountInterface $account) {
+  if (\Drupal::moduleHandler()->moduleExists('externalauth')) {
+    ebms_debug_log('wiping out SiteMinder cookies');
+    setcookie('NIHSMSESSION', '', 1, '/', '.nih.gov');
+    setcookie('NIHSMPROFILE', '', 1, '/', '.nih.gov');
+  }
+}
+
+/**
+ * Implements hook_install().
+ */
+function ebms_core_install($is_syncing) {
+  $roles = _ebms_core_roles();
+  _ebms_core_drop_roles();
+  foreach ($roles as $values) {
+    $role = Role::create($values);
+    $role->save();
+  }
+  $role_permissions = _ebms_core_role_permissions();
+  $role_storage = \Drupal::entityTypeManager()->getStorage('user_role');
+  $roles = $role_storage->loadMultiple(array_keys($role_permissions));
+  foreach ($role_permissions as $role_id => $permissions) {
+    foreach ($permissions as $permission) {
+      $roles[$role_id]->grantPermission($permission);
+    }
+    $roles[$role_id]->save();
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function ebms_core_uninstall($is_syncing) {
+  _ebms_core_drop_roles();
+}
+
+function _ebms_core_drop_roles() {
+  $roles = _ebms_core_roles();
+  $factory = \Drupal::configFactory();
+  foreach ($roles as $role) {
+    $rid = $role['id'];
+    $role = $factory->getEditable("user.role.$rid");
+    if (!empty($role)) {
+      $role->delete();
+    }
+  }
+}
+
+function _ebms_core_roles(): array {
+  return [
+    ['id' => 'admin_assistant', 'label' => 'Admin Assistant'],
+    ['id' => 'board_manager', 'label' => 'Board Manager'],
+    ['id' => 'board_member', 'label' => 'Board Member'],
+    ['id' => 'branch_manager', 'label' => 'Branch Manager'],
+    ['id' => 'medical_librarian', 'label' => 'Medical Librarian'],
+    ['id' => 'site_manager', 'label' => 'Site Manager'],
+    ['id' => 'travel_admin', 'label' => 'Travel Admin'],
+  ];
+}
+
+function _ebms_core_role_permissions(): array {
+  return [
+    'authenticated' => [
+      'use text format board_member_html',
+      'view calendar',
+    ],
+    'admin_assistant' => [
+      'enter travel requests',
+      'perform full search',
+      'print packets',
+      'record print responses',
+      'view alerts',
+      'view all meetings',
+      'view full text retrieval queue',
+      'view all reports',
+    ],
+    'board_manager' => [
+      'enter travel requests',
+      'import articles',
+      'manage articles',
+      'manage documents',
+      'manage meetings',
+      'manage review packets',
+      'manage summaries',
+      'perform abstract article review',
+      'perform full search',
+      'perform full text article review',
+      'print packets',
+      'record print responses',
+      'use text format filtered_html',
+      'view alerts',
+      'view all meetings',
+      'view hotel request alerts',
+      'view posted summaries alerts',
+      'view all reports',
+      'view review alerts',
+      'view the administration theme',
+    ],
+    'board_member' => [
+      'review literature',
+      'submit travel requests',
+      'view alerts',
+      'view review alerts',
+    ],
+    'branch_manager' => [
+      'enter travel requests',
+      'import articles',
+      'manage articles',
+      'manage documents',
+      'manage meetings',
+      'manage review packets',
+      'manage summaries',
+      'perform abstract article review',
+      'perform all topic reviews',
+      'perform full search',
+      'perform full text article review',
+      'print packets',
+      'record print responses',
+      'use text format filtered_html',
+      'view alerts',
+      'view all meetings',
+      'view all reports',
+      'view hotel request alerts',
+      'view posted summaries alerts',
+      'view review alerts',
+      'view the administration theme',
+    ],
+    'medical_librarian' => [
+      'import articles',
+      'manage articles',
+      'manage journals',
+      'manage summaries',
+      'perform full search',
+      'perform initial article review',
+      'publish articles',
+      'view librarian reports',
+      'view the administration theme',
+    ],
+    'site_manager' => [
+      'access taxonomy overview',
+      'administer users',
+      'assign abstract_reviewer role',
+      'assign admin_assistant role',
+      'assign board_manager role',
+      'assign board_member role',
+      'assign branch_manager role',
+      'assign medical_librarian role',
+      'assign site_manager role',
+      'assign travel_admin role',
+      'create terms in article_tags',
+      'create terms in doc_tags',
+      'create terms in hotels',
+      'create terms in internal_tags',
+      'create terms in parking_or_toll_expense_types',
+      'create terms in rejection_reasons',
+      'create terms in relationship_types',
+      'create terms in topic_groups',
+      'create terms in transportation_expense_types',
+      'delete terms in article_tags',
+      'edit terms in article_tags',
+      'edit terms in doc_tags',
+      'edit terms in hotels',
+      'edit terms in internal_tags',
+      'edit terms in parking_or_toll_expense_types',
+      'edit terms in rejection_reasons',
+      'edit terms in relationship_types',
+      'edit terms in topic_groups',
+      'edit terms in transportation_expense_types',
+      'enter travel requests',
+      'manage boards',
+      'manage journals',
+      'manage topics',
+      'manage users',
+      'perform full search',
+      'use text format filtered_html',
+      'view alerts',
+      'view all meetings',
+      'view review alerts',
+      'view all reports',
+      'view the administration theme',
+    ],
+    'travel_admin' => [
+      'enter travel requests',
+      'manage travel',
+      'view alerts',
+      'view all meetings',
+      'view travel reports',
+      'view review alerts',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_theme().
+ */
+function ebms_core_theme($existing, $type, $theme, $path): array {
+  return [
+    'ebms_local_actions' => [
+      'variables' => [
+        'actions' => NULL,
+      ],
+    ],
+    'ebms_buttons' => [
+      'variables' => [
+        'buttons' => [],
+      ],
+    ],
+    'ebms_login' => [
+      'variables' => [
+        'url' => '',
+      ],
+    ],
+  ];
+}
+
+/**
+ * Default preprocess for the ebms_local_actions theme hook.
+ *
+ * @param $variables
+ */
+function template_preprocess_ebms_local_actions(&$variables) {
+  $variables['attributes'] = ['class' => ['ebms-local-actions']];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function ebms_core_form_user_login_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+  $form['#submit'][] = 'ebms_core_user_login_form_submit';
+}
+
+/**
+ * Custom submit handler for the login form.
+ */
+function ebms_core_user_login_form_submit($form, FormStateInterface $form_state) {
+  $url = Url::fromRoute('<front>');
+  $form_state->setRedirectUrl($url);
+}
+
+/**
+ * Capture information needed for troubleshooting.
+ *
+ * @param string|array $what
+ *   Information to be logged.
+ * @param string $level
+ *   Only log if configured log level is equal to or higher than this value.
+ */
+function ebms_debug_log(string|array $what, int $level = 2) {
+  $config_level = \Drupal::config('ebms_core.settings')->get('debug_level');
+  if (!empty($config_level) && $level <= $config_level) {
+    $levels = [1 => 'INFO', 2 => 'DEBUG', 3 => 'TRACE'];
+    $label = $levels[$level] ?? 'TRACE';
+    $base = \Drupal::service('file_system')->realpath('public://');
+    $filename = "$base/ebms_debug.log";
+    if (is_array($what)) {
+      $what = print_r($what, TRUE);
+    }
+    @file_put_contents($filename, date('Y-m-d H:i:s') . " [{$label}] {$what}\n", FILE_APPEND);
+  }
+}

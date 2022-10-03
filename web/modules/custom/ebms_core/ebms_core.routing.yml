@@ -1,0 +1,44 @@
+ebms_core.admin_config_ebms:
+  path: '/admin/config/ebms'
+  defaults:
+    _controller:
+      '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
+    _title: 'EBMS'
+  requirements:
+    _permission: 'access administration pages'
+ebms_core.publication_type_hierarchy:
+  path: '/admin/config/publication-type-hierarchy'
+  defaults:
+    _form:
+      '\Drupal\ebms_core\Form\PubtypeAncestors'
+    _title: 'MeSH Publication Type Hierarchy'
+  requirements:
+    _permission: 'administer site configuration'
+ebms_core.about:
+  path: /about
+  defaults:
+    _title: 'About PDQ®'
+    _entity_view: node.full
+  requirements:
+    _user_is_logged_in: 'TRUE'
+ebms_core.login:
+  path: /login
+  defaults:
+    _controller: Drupal\ebms_core\Controller\Login::display
+    _title: 'Log In'
+  requirements:
+    _user_is_logged_in: 'FALSE'
+ebms_core.log-tail:
+  path: /log-tail
+  defaults:
+    _controller: Drupal\ebms_core\Controller\LogTail::display
+  requirements:
+    _permission: 'administer site configuration'
+ebms_core.ssologin:
+  path: /ssologin
+  defaults:
+    _controller: Drupal\ebms_core\Controller\SingleSignOn::login
+  requirements:
+    _access: 'TRUE'
+  options:
+    no_cache: TRUE

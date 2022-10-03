@@ -1,0 +1,130 @@
+[
+  {
+    "vid": "rejection_reasons",
+    "id": 1,
+    "name": "Already cited in the PDQ summary",
+    "description": null,
+    "status": false,
+    "weight": 1
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 2,
+    "name": "Not relevant to the PDQ summary topic",
+    "description": null,
+    "status": true,
+    "weight": 2
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 3,
+    "name": "Findings not clinically important",
+    "description": null,
+    "status": true,
+    "weight": 3
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 4,
+    "name": "Preliminary findings; need confirmation",
+    "description": null,
+    "status": true,
+    "weight": 4
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 5,
+    "name": "Provides no new information/novel findings",
+    "description": null,
+    "status": true,
+    "weight": 5
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 6,
+    "name": "Review/expert opinion/commentary",
+    "description": "no new primary data",
+    "status": true,
+    "weight": 6
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 7,
+    "name": "Inadequate study population",
+    "description": "small number of patients; underpowered study; accrual target not met",
+    "status": true,
+    "weight": 7
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 8,
+    "name": "Inadequate follow-up",
+    "description": null,
+    "status": true,
+    "weight": 8
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 9,
+    "name": "Inappropriate interpretation of subgroup analyses",
+    "description": null,
+    "status": false,
+    "weight": 9
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 10,
+    "name": "Inappropriate statistical analysis",
+    "description": "incorrect tests; lack of intent-to-treat analysis",
+    "status": false,
+    "weight": 10
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 11,
+    "name": "Inappropriate study design or analyses",
+    "description": null,
+    "status": true,
+    "weight": 11
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 12,
+    "name": "Missing/incomplete outcome data; major protocol deviations",
+    "description": null,
+    "status": false,
+    "weight": 12
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 13,
+    "name": "Randomized trial with flawed or insufficiently described randomization process",
+    "description": null,
+    "status": false,
+    "weight": 13
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 14,
+    "name": "Unvalidated outcome measure(s) used",
+    "description": "e.g., unvalidated surrogate endpoint[s]",
+    "status": false,
+    "weight": 14
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 15,
+    "name": "Other",
+    "description": "specify reason(s) in the Comments field",
+    "status": true,
+    "weight": 16
+  },
+  {
+    "vid": "rejection_reasons",
+    "id": 16,
+    "name": "Conflict of interest",
+    "description": "e.g., article author, competing financial, commercial, or professional interests",
+    "status": true,
+    "weight": 15
+  }
+]

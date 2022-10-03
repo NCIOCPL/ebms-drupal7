@@ -1,0 +1,126 @@
+[
+  {
+    "id": 106,
+    "name": "Acute Leukemias",
+    "topics": [
+      2,
+      3
+    ],
+    "links": [
+      {
+        "uri": "https://cancer.gov/cancertopics/pdq/treatment/adultALL/HealthProfessional/page1/AllPages",
+        "title": "Adult Acute Lymphoblastic Leukemia Treatment"
+      },
+      {
+        "uri": "https://cancer.gov/cancertopics/pdq/treatment/adultAML/healthprofessional/page1/AllPages",
+        "title": "Adult Acute Myeloid Leukemia Treatment"
+      }
+    ],
+    "manager_docs": [
+      {
+        "doc": 8352,
+        "active": true
+      },
+      {
+        "doc": 8353,
+        "active": true
+      }
+    ],
+    "member_docs": [],
+    "active": true
+  },
+  {
+    "id": 105,
+    "name": "Adrenocortical Carcinoma",
+    "topics": [
+      1
+    ],
+    "links": [
+      {
+        "uri": "https://cancer.gov/cancertopics/pdq/treatment/adrenocortical/HealthProfessional/page1/AllPages",
+        "title": "Adrenocortical Carcinoma Treatment"
+      }
+    ],
+    "manager_docs": [
+      {
+        "doc": 8181,
+        "active": true
+      }
+    ],
+    "member_docs": [],
+    "active": true
+  },
+  {
+    "id": 51,
+    "name": "Cancer Genetics Overview",
+    "topics": [
+      15
+    ],
+    "links": [
+      {
+        "uri": "https://www.cancer.gov/about-cancer/causes-prevention/genetics/overview-pdq#section/all",
+        "title": "Cancer Genetics Overview"
+      }
+    ],
+    "manager_docs": [
+      {
+        "doc": 4599,
+        "active": false
+      },
+      {
+        "doc": 5325,
+        "active": true
+      },
+      {
+        "doc": 8485,
+        "active": true
+      }
+    ],
+    "member_docs": [
+      {
+        "doc": 3937,
+        "active": false
+      },
+      {
+        "doc": 6154,
+        "active": true
+      },
+      {
+        "doc": 6240,
+        "active": true
+      }
+    ],
+    "active": true
+  },
+  {
+    "id": 53,
+    "name": "Genetics of Breast and Gynecologic Cancers",
+    "topics": [
+      51,
+      229
+    ],
+    "links": [
+      {
+        "uri": "https://www.cancer.gov/types/breast/hp/breast-ovarian-genetics-pdq#section/all",
+        "title": "Genetics of Breast and Gynecologic Cancers"
+      }
+    ],
+    "manager_docs": [
+      {
+        "doc": 8486,
+        "active": true
+      }
+    ],
+    "member_docs": [
+      {
+        "doc": 8617,
+        "active": true
+      },
+      {
+        "doc": 8634,
+        "active": true
+      }
+    ],
+    "active": true
+  }
+]

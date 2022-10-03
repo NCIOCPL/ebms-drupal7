@@ -1,0 +1,9 @@
+{% if meeting %}
+<span class="next-meeting">Next meeting: <a href="{{ meeting.url }}">{{ meeting.name }}</a> at {{ meeting.when }} — {{ meeting.type }}
+{% if meeting.agenda_posted %}
+(Agenda posted)
+{% endif %}
+</span>
+{% else %}
+<span class="next-meeting">No upcoming meetings</span>
+{% endif %}

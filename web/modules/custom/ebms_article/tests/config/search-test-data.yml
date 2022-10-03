@@ -1,0 +1,1030 @@
+--- # Values for testing the SearchQuery class.
+
+entities: # Used in common by many of the tests.
+
+  boards:
+    -
+      id: 1
+      name: 'Board 1'
+    -
+      id: 2
+      name: 'Board 2'
+
+  topics:
+    -
+      id: 1
+      name: 'Topic 1'
+      board: 1
+    -
+      id: 2
+      name: 'Topic 2'
+      board: 1
+    -
+      id: 3
+      name: 'Topic 3'
+      board: 2
+    -
+      id: 4
+      name: 'Topic 4'
+      board: 2
+
+  states:
+    -
+      id: 1
+      vid: states
+      name: 'Ready for initial review'
+      field_text_id: ready_init_review
+      field_terminal: false
+      status: true
+      field_sequence: 10
+    -
+      id: 2
+      vid: states
+      name: 'Rejected by NOT list'
+      field_text_id: reject_journal_title
+      field_terminal: true
+      status: true
+      field_sequence: 20
+    -
+      id: 3
+      vid: states
+      name: 'Rejected in initial review'
+      field_text_id: reject_init_review
+      field_terminal: true
+      status: true
+      field_sequence: 30
+    -
+      id: 4
+      vid: states
+      name: 'Passed initial review'
+      field_text_id: passed_init_review
+      field_terminal: false
+      status: true
+      field_sequence: 30
+    -
+      id: 5
+      vid: states
+      name: Published
+      field_text_id: published
+      field_terminal: false
+      status: true
+      field_sequence: 40
+    -
+      id: 6
+      vid: states
+      name: 'Rejected by Board Manager'
+      field_text_id: reject_bm_review
+      field_terminal: true
+      status: true
+      field_sequence: 50
+    -
+      id: 7
+      vid: states
+      name: 'Passed Board Manager'
+      field_text_id: passed_bm_review
+      field_terminal: false
+      status: true
+      field_sequence: 50
+    -
+      id: 8
+      vid: states
+      name: 'Rejected after full text review'
+      field_text_id: reject_full_review
+      field_terminal: true
+      status: true
+      field_sequence: 60
+    -
+      id: 9
+      vid: states
+      name: 'Passed full text review'
+      field_text_id: passed_full_review
+      field_terminal: false
+      status: true
+      field_sequence: 60
+    -
+      id: 10
+      vid: states
+      name: 'Flagged as FYI'
+      field_text_id: fyi
+      field_terminal: true
+      status: true
+      field_sequence: 60
+    -
+      id: 11
+      vid: states
+      name: 'No further action'
+      field_text_id: full_end
+      field_terminal: true
+      status: true
+      field_sequence: 70
+    -
+      id: 12
+      vid: states
+      name: 'Minor changes not for Board review'
+      field_text_id: not_for_agenda
+      field_terminal: false
+      status: true
+      field_sequence: 70
+    -
+      id: 13
+      vid: states
+      name: 'Summary changes for Board review (no paper for discussion)'
+      field_text_id: agenda_no_paper_change
+      field_terminal: false
+      status: true
+      field_sequence: 70
+    -
+      id: 14
+      vid: states
+      name: 'Paper and summary changes for discussion'
+      field_text_id: agenda_future_change
+      field_terminal: false
+      status: true
+      field_sequence: 70
+    -
+      id: 15
+      vid: states
+      name: 'Paper for Board discussion'
+      field_text_id: agenda_board_discuss
+      field_terminal: false
+      status: true
+      field_sequence: 70
+    -
+      id: 16
+      vid: states
+      name: 'Paper for Working Group discussion'
+      field_text_id: agenda_work_group_discuss
+      field_terminal: false
+      status: true
+      field_sequence: 70
+    -
+      id: 17
+      vid: states
+      name: 'On agenda'
+      field_text_id: on_agenda
+      field_terminal: false
+      status: true
+      field_sequence: 80
+    -
+      id: 18
+      vid: states
+      name: 'Final board decision'
+      field_text_id: final_board_decision
+      field_terminal: true
+      status: true
+      field_sequence: 90
+    -
+      id: 20
+      vid: states
+      name: 'On Hold'
+      field_text_id: on_hold
+      field_terminal: false
+      status: true
+      field_sequence: 70
+    -
+      id: 21
+      vid: states
+      name: 'Held After Full Text Review'
+      field_text_id: full_review_hold
+      field_terminal: false
+      status: true
+      field_sequence: 60
+
+tests: # Individual value sets used by each test method.
+
+  agendas:
+    meeting-categories:
+      - { id: 1001, vid: 'meeting_categories', name: 'Board' }
+      - { id: 1002, vid: 'meeting_categories', name: 'Subgroup' }
+    meeting:
+      dates: { value: '2000-01-01T13:00:00', end_value: '2000-01-01T17:30:00' }
+      category: 1001
+      published: true
+    article: { id: 1, topic: 1 }
+    searches:
+      -
+        parms: { meeting-category: 1001 }
+        expected: [ 1 ]
+        message: 'Search should find the article using the correct meeting type.'
+      -
+        parms: { meeting-category: 1002 }
+        expected: [  ]
+        message: 'Search should not find the article using the wrong meeting type.'
+      -
+        parms: { meeting-start: '2000-01-01', meeting-end: '2000-01-31' }
+        expected: [ 1 ]
+        message: 'Search should find the article using the correct date range.'
+      -
+        parms: { meeting-start: '2000-01-01', meeting-end: '2000-01-01' }
+        expected: [ 1 ]
+        message: 'Search should match a meeting held at any time on the last day of the date range.'
+      -
+        parms: { meeting-category: 1001, meeting-start: '2000-01-01', meeting-end: '2000-01-31' }
+        expected: [ 1 ]
+        message: 'Search should match all three correct meeting parameters.'
+      -
+        parms: { meeting-category: 1001, meeting-start: '2000-01-01', meeting-end: '2000-01-31', topic: 1 }
+        expected: [ 1 ]
+        message: 'Search should match all three correct meeting parameters combined with the right topic.'
+      -
+        parms: { meeting-category: 1001, meeting-start: '2000-01-01', meeting-end: '2000-01-31', topic: 2 }
+        expected: [ 1 ]
+        message: 'Search should not find the article with the wrong topic, even if all three meeting parameters are a match.'
+
+  article-reviewers:
+    users:
+      - { uid: 1, name: 'Reviewer 1', status: 1 }
+      - { uid: 2, name: 'Reviewer 2', status: 1 }
+    articles:
+      - { id: 1, topic: 1 }
+      - { id: 2, topic: 1 }
+      - { id: 3, topic: 2 }
+      - { id: 4, topic: 2 }
+    reviews:
+      - { id: 1, reviewer: 1, posted: '2000-01-01', dispositions: [ 1 ] }
+    packets:
+      - { id: 1, articles: [ { id: 1, article: 1, dropped: false } ], reviewers: [ 1 ] }
+      - { id: 2, articles: [ { id: 2, article: 2, dropped: false } ], reviewers: [ 2 ] }
+      - { id: 3, articles: [ { id: 3, article: 3, dropped: true } ], reviewers: [ 2 ] }
+      - { id: 4, articles: [ { id: 4, article: 4, dropped: true, reviews: [ 1 ] } ], reviewers: [ 1, 2 ] }
+    searches:
+      -
+        parms: { reviewer: 1 }
+        expected: [ 1, 4 ]
+        message: 'Should find an active assignment and a dropped assignment for which a review has already been submitted.'
+      -
+        parms: { reviewer: 2 }
+        expected: [ 2 ]
+        message: 'Should only the assigned article which has not been dropped from its review packet.'
+
+  article-titles:
+    articles:
+      - { id: 1, title: 'Survival and causes of death in patients with von Hippel-Lindau disease.' }
+      - { id: 2, title: 'Intravesical Bacillus Calmette-Guérin with interferon-alpha.' }
+      - { id: 3, title: 'Quality of Life in Long-term Survivors of Muscle-Invasive Bladder Cancer.' }
+    searches:
+      -
+        parms: { title: 'Intravesical Bacillus Calmette-Guérin with interferon-alpha.' }
+        expected: [ 2 ]
+        message: 'Article should be found by exact match with title.'
+      -
+        parms: { title: 'Intravesical Bacillus Calmette-Guerin with interferon-alpha.' }
+        expected: [ 2 ]
+        message: 'Search for ASCII characters should find equivalents non-ASCII characters.'
+      -
+        parms: { title: 'intravesical bacillus CALMETTE-GUÉRIN with interferon-alpha.' }
+        expected: [ 2 ]
+        message: 'Search should ignore case differences in titles.'
+      -
+        parms: { title: '%Surviv%' }
+        expected: [ 1, 3 ]
+        message: 'Search should support wildcards.'
+      -
+        parms: { title: 'Surviv%' }
+        expected: [ 1 ]
+        message: 'Search should be able to search by the start of the titles.'
+      -
+        parms: { title: '%Bladder Cancer.' }
+        expected: [ 3 ]
+        message: 'User should be able to search by the end of the titles.'
+
+  authors:
+    articles:
+      - id: 1
+        authors:
+          - { last_name: 'Barber', initials: 'L' }
+          - { last_name: 'Mohelníková-Duchoňová', initials: 'B' }
+          - { last_name: 'Talar-Wojnarowska', initials: 'R' }
+      - id: 2
+        authors:
+          - { last_name: 'Smith', initials: 'MJ' }
+          - { last_name: 'Hackert', initials: 'T' }
+          - { last_name: 'Tjaden', initials: 'C' }
+      - id: 3
+        authors:
+          - { last_name: 'Pezzilli', initials: 'R' }
+          - { last_name: 'Barber', initials: 'L' }
+          - { last_name: 'Smyth', initials: 'JM' }
+          - { last_name: 'Scarpa', initials: 'A' }
+    searches:
+      -
+        parms: { authors: 'Barber L' }
+        expected: [ 1, 3 ]
+        message: 'Should find an exact match with the author, in any position.'
+      -
+        parms: { authors: 'barber l' }
+        expected: [ 1, 3 ]
+        message: 'Should ignore lowercasing of characters in the search string.'
+      -
+        parms: { authors: 'BARBER L' }
+        expected: [ 1, 3 ]
+        message: 'Should ignore uppercasing of characters in the search term.'
+      -
+        parms: { authors: "\nBarber \t L   " }
+        expected: [ 1, 3 ]
+        message: 'Whitespace in the search term should be normalized.'
+      -
+        parms: { authors: 'Barber L', author-position: first }
+        expected: [ 1 ]
+        message: 'Should only find matching authors when listed first on the article.'
+      -
+        parms: { authors: 'Scarpa A', author-position: last }
+        expected: [ 3 ]
+        message: 'Should only find matching authors when listed last on the article.'
+      -
+        parms: { authors: 'Scarpa A', author-position: first }
+        expected: {  }
+        message: 'Should skip authors when not listed first on the article.'
+      -
+        parms: { authors: 'Barber L', author-position: last }
+        expected: {  }
+        message: 'Should skip authors when not listed last on the article.'
+      -
+        parms: { authors: 'Pezzilli R;Barber L' }
+        expected: [ 3 ]
+        message: 'Should only match articles which have both authors.'
+      -
+        parms: { authors: 'Smith MJ;Hackert T;Tjaden C' }
+        expected: [ 2 ]
+        message: 'Should only match articles which have all authors.'
+      -
+        parms: { authors: 'Hackert T;Tjaden C;Smith MJ' }
+        expected: [ 2 ]
+        message: "Order of authors' names should be ignored."
+      -
+        parms: { authors: 'Pezzilli R ; Barber L' }
+        expected: [ 3 ]
+        message: 'Whitespace around the delimiter between authors should be ignored.'
+      -
+        parms: { authors: 'Mohelníková-Duchoňová B' }
+        expected: [ 1 ]
+        message: 'Should match a name containing non-ASCII characters.'
+      -
+        parms: { authors: 'Mohelnikova-Duchonova B' }
+        expected: [ 1 ]
+        message: 'Name with non-ASCII characters should match the equivalent ASCII characters.'
+      -
+        parms: { authors: '%a%a%a%' }
+        expected: [ 1, 3 ]
+        message: 'Should honor percent-sign (%) wildcards.'
+      -
+        parms: { authors: 'Sm_th __' }
+        expected: [ 2, 3 ]
+        message: 'Should honor underscore (_) wildcards.'
+
+  comments:
+    articles:
+      -
+        id: 1
+        topics:
+          - topic: 1
+            comments:
+              - [ "Here's looking at you, kid!", '2000-01-01' ]
+      -
+        id: 2
+        topics:
+          - topic: 1
+            comments:
+              - [ "Here's looking at you, kid!", '2000-01-02' ]
+              - [ 'Play it again, Sam.', '2000-01-03' ]
+      -
+        id: 3
+        topics:
+          - topic: 3
+            comments:
+              - [ "We'll always have Paris.", '2000-01-04' ]
+              - [ 'Play it again, Sam.', '2000-01-05' ]
+      -
+        id: 4
+        topics:
+          - topic: 1
+            comments:
+              - [ 'Round up the usual suspects.', '2000-01-06 23:59:59' ]
+      -
+        id: 5
+        topics:
+          - topic: 4
+            comments:
+              - [ 'Of all the gin joints in all the towns in all the world, she walks into mine.', '2000-01-06 23:59:59' ]
+      -
+        id: 6
+        topics:
+          - topic: 3
+            topic-comment:
+              comment: 'I think this is the beginning of a beautiful friendship.'
+              user: 0
+              entered: '2030-02-01'
+          - topic: 1
+    searches:
+      -
+        parms: { comment: "Here's looking at you, kid!" }
+        expected: [ 1, 2 ]
+        message: 'Search should find multiple articles using exact match.'
+      -
+        parms: { comment: "here's looking at you, kid!" }
+        expected: [ 1, 2 ]
+        message: 'Search should ignore case in comments.'
+      -
+        parms: { comment: 'Round up the usual suspects.' }
+        expected: [ 4 ]
+        message: 'Search should find a single article using exact match.'
+      -
+        parms: { comment: '%gin joints%' }
+        expected: [ 5 ]
+        message: 'Comment searching should support wildcards.'
+      -
+        parms: { comment-start: '2000-01-01', comment-end: '2000-01-02' }
+        expected: [ 1, 2 ]
+        message: 'Search should find articles with comments entered in the specified date range.'
+      -
+        parms: { comment-start: '2000-01-05', comment-end: '2000-01-06' }
+        expected: [ 3, 4, 5 ]
+        message: 'Search should include articles with comments entered any time on the last date in the specified range.'
+      -
+        parms: { comment-start: '2000-01-05', comment-end: '2000-01-06', topics: [ 1 ] }
+        expected: [ 4 ]
+        message: 'Search should restrict results to the specified topic.'
+      -
+        parms: { comment-start: '2000-01-05', comment-end: '2000-01-06', topics: [ 1, 4 ] }
+        expected: [ 4, 5 ]
+        message: 'Comment searching should always apply OR for multiple topics.'
+      -
+        parms: { board-manager-comment: 'I think this is the beginning of a beautiful friendship.' }
+        expected: [ 6 ]
+        message: 'Search should find article with specified topic-specific comment.'
+      -
+        parms: { board-manager-comment: '%beautiful%' }
+        expected: [ 6 ]
+        message: 'Search for topic comments should support wildcards.'
+      -
+        parms: { board-manager-comment: '%BEAUTIFUL%' }
+        expected: [ 6 ]
+        message: 'Search for topic comments should ignore case.'
+      -
+        parms: { board-manager-comment: "Here's looking at you, kid!" }
+        expected: {  }
+        message: 'Search for topic comments should not find state comments.'
+      -
+        parms: { board-manager-comment: 'I think this is the beginning of a beautiful friendship.', topics: [ 3 ] }
+        expected: [ 6 ]
+        message: 'Topic comment searches should find comments for a specific topic.'
+      -
+        parms: { board-manager-comment: 'I think this is the beginning of a beautiful friendship.', topics: [ 4 ] }
+        expected: {  }
+        message: 'Topic comment searches with topics specified should not find comments for other topics.'
+      -
+        parms: { board-manager-comment: '%ship%', topics: [ 3, 4 ] }
+        expected: [ 6 ]
+        message: 'Topic comment searches should find comments for any topic when multiple topics are specified.'
+      -
+        parms: { board-manager-comment: 'I think this is the beginning of a beautiful friendship.', boards: [ 2 ] }
+        expected: [ 6 ]
+        message: 'Topic comment searches should find comments for a specific board.'
+      -
+        parms: { board-manager-comment: 'I think this is the beginning of a beautiful friendship.', boards: [ 1 ] }
+        expected: {  }
+        message: 'Topic comment searches with boards specified should not find comments for other boards.'
+      -
+        parms: { board-manager-comment: '%ship%', boards: [ 1, 2 ] }
+        expected: [ 6 ]
+        message: 'Topic comment searches should find comments for any board when multiple boards are specified.'
+      -
+        parms: { board-manager-comment: '%ship%', boards: [ 1 ], topics: [ 3, 4 ] }
+        expected: [ 6 ]
+        message: 'Topic comment searches should ignore boards when topics are specified.'
+
+  cycles:
+    articles:
+      - { id: 1, topics: [ { id: 1, cycle: '2000-01-01' } ] }
+      - { id: 2, topics: [ { id: 2, cycle: '2000-01-01' } ] }
+      - { id: 3, topics: [ { id: 1, cycle: '2000-02-01' } ] }
+      - { id: 4, topics: [ { id: 2, cycle: '2000-02-01' } ] }
+      - { id: 5, topics: [ { id: 1, cycle: '2000-01-01' }, { id: 2, cycle: '2000-02-01' } ] }
+      - { id: 6, topics: [ { id: 3, cycle: '2000-01-01' } ] }
+      - { id: 7, topics: [ { id: 4, cycle: '2000-02-01' } ] }
+      - { id: 8, topics: [ { id: 1, cycle: '2000-01-01' }, { id: 4, cycle: '2000-01-01' } ] }
+      - { id: 9, topics: [ { id: 1, cycle: '2000-03-01' } ] }
+      - { id: 10, topics: [ { id: 1, cycle: '2000-04-01' } ] }
+      - { id: 11, topics: [ { id: 1, cycle: '2000-05-01' } ] }
+      - { id: 12, topics: [ { id: 1, cycle: '2000-06-01' }, { id: 2, cycle: '2000-06-01' } ] }
+    searches:
+      -
+        parms: { cycle-start: '2000-04-01' }
+        expected: [ 10, 11, 12 ]
+        message: 'Search should find articles with a cycle at or after the one specified.'
+      -
+        parms: { cycle-end: '2000-03-01' }
+        expected: [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+        message: 'Search should find articles with a cycle at or before the one specified.'
+      -
+        parms: { cycle-start: '2000-02-01', cycle-end: '2000-03-01' }
+        expected: [ 3, 4, 5, 7, 9 ]
+        message: 'Search should find articles with a cycle in the cycle range.'
+      -
+        parms: { cycle: '2000-05-01', cycle-start: '2000-02-01', cycle-end: '2000-03-01' }
+        expected: [ 11 ]
+        message: 'Search should ignore a cycle range when a specific cycle is give.'
+      -
+        parms: { cycle: '2000-01-01', boards: [ 2 ] }
+        expected: [ 6, 8 ]
+        message: 'Search should find only articles with the specified cycle and board.'
+      -
+        parms: { cycle: '2000-01-01', boards: [ 1, 2 ] }
+        expected: [ 8 ]
+        message: 'Search should find only articles with the specified cycle paired with both boards.'
+      -
+        parms: { cycle: '2000-01-01', topics: [ 1 ], boards: [ 2 ] }
+        expected: [ 1, 5, 8 ]
+        message: 'Search should ignore the boards parameter when one or more topic is specified.'
+      -
+        parms: { cycle: '2000-02-01' }
+        expected: [ 3, 4, 5, 7 ]
+        message: 'Search should find only articles with the specified cycle.'
+      -
+        parms: { cycle: '2000-02-01', topics: [ 1 ] }
+        expected: [ 3 ]
+        message: 'Search should find only articles with the specified cycle and topic.'
+      -
+        parms: { cycle: '2000-02-01', topics: [ 1, 2 ], topic-logic: or }
+        expected: [ 3, 4, 5 ]
+        message: 'Search should find only articles with the specified cycle and either topic.'
+      -
+        parms: { cycle: '2000-06-01', topics: [ 1, 2 ], topic-logic: and }
+        expected: [ 12 ]
+        message: 'Search should find only articles with the specified cycle paired with both topics.'
+      -
+        parms: { cycle: '2000-02-01' }
+        expected: [ 3, 4, 5, 7 ]
+        message: 'Search should find only articles with the specified cycle.'
+      -
+        parms: { cycle: '2000-02-01' }
+        expected: [ 3, 4, 5, 7 ]
+        message: 'Search should find only articles with the specified cycle.'
+      -
+        parms: { cycle: '2000-02-01' }
+        expected: [ 3, 4, 5, 7 ]
+        message: 'Search should find only articles with the specified cycle.'
+
+  decisions:
+    terms:
+      - { id: => 2001, vid: 'board_decision', name: 'Not cited' }
+      - { id: => 2002, vid: 'board_decision', name: 'Text approved' }
+    article: { id: 1, state: 'final_board_decision', topic: 1, decision: 2002 }
+    searches:
+      -
+        parms: { decision: 2002 }
+        expected: [ 1 ]
+        message: 'Search should find the article with the right decision.'
+      -
+        parms: { decision: 2001 }
+        expected: [  ]
+        message: 'Search should not find the article using the wrong decision.'
+      -
+        parms: { decision: 2002, topics: [ 1 ] }
+        expected: [ 1 ]
+        message: 'Search should find the article when the right topic is added to the parameters.'
+      -
+        parms: { decision: 2002, topics: [ 2 ] }
+        expected: [  ]
+        message: 'Search should not find the article when the wrong topic is added to the parameters.'
+
+  full-text:
+    articles:
+      - { id: 1, full_text: { file: 1000 } }
+      - { id: 2, full_text: { file: null } }
+      - { id: 3 }
+    searches:
+      -
+        parms: { full-text: 'yes' }
+        expected: [ 1 ]
+        message: 'Search should only find the articles with full-text PDF files.'
+      -
+        parms: { full-text: 'no' }
+        expected: [ 2, 3 ]
+        message: 'Search should only find the articles without full-text PDF files.'
+      -
+        parms: { full-text: '' }
+        expected: [ 1, 2, 3 ]
+        message: 'Search should ignore whether articles have full-text PDFs.'
+
+  ids:
+    articles:
+      - { id: 1, source: 'Pubmed', source_id: '40000001' }
+      - { id: 2, source: 'Pubmed', source_id: '40000002' }
+    searches:
+      -
+        parms: { ebms_id: 1 }
+        expected: [ 1 ]
+        message: 'Search should find the article which has the specified EBMS ID.'
+      -
+        parms: { ebms_id: 3 }
+        expected: [  ]
+        message: 'Search should not find any articles for an unused EBMS ID.'
+      -
+        parms: { pmid: '40000001' }
+        expected: [ 1 ]
+        message: 'Search should find the article which has the specified PubMed ID.'
+      -
+        parms: { pmid: '40000003' }
+        expected: [  ]
+        message: 'Search should not find any articles when searching for a PubMed ID which is not in the system.'
+      -
+        parms: { ebms_id: 2, pmid: '40000002' }
+        expected: [ 2 ]
+        message: 'Search should find the article which has both specified IDs.'
+      -
+        parms: { ebms_id: 1, pmid: '40000002' }
+        expected: [  ]
+        message: 'Search should find not find any articles when the requested IDs are not in the same article.'
+
+  import-dates:
+    articles:
+      - { id: 1, import_date: '2000-01-01' }
+      - { id: 2, import_date: '2000-02-01' }
+      - { id: 3, import_date: '2000-03-01' }
+      - { id: 4, import_date: '2000-04-01 23:59:59' }
+    searches:
+      -
+        parms: { import-start: '2000-01-02' }
+        expected: [ 2, 3, 4 ]
+        message: 'Search should match articles imported on or after the specified date.'
+      -
+        parms: { import-end: '2000-01-01' }
+        expected: [ 1 ]
+        message: 'Search should match articles imported on or before the specified date.'
+      -
+        parms: { import-start: '2000-02-01', import-end: '2000-03-01' }
+        expected: [ 2, 3 ]
+        message: 'Search should match articles imported on or after the specified date.'
+      -
+        parms: { import-start: '2000-04-02' }
+        expected: [  ]
+        message: 'Search should return an empty set when none of the articles match the date search criteria.'
+      -
+        parms: { import-start: '2000-03-31', import-end: '2000-04-01' }
+        expected: [ 4 ]
+        message: 'Search should match articles imported at any time on the last day of the specified range.'
+
+  journals:
+    values:
+      - { id: 1, title: JAMA, source_id: '7501160', core: true }
+      - { id: 2, title: Cancer, source_id: '0374236', core: true }
+      - { id: 3, title: Pathology, source_id: '0175411', core: false }
+      - { id: 4, title: Pathologica, source_id: '0401123', core: false }
+    articles:
+      - { id: 1, source_journal_id: '7501160', journal_title: JAMA }
+      - { id: 2, source_journal_id: '0374236', journal_title: Cancer }
+      - { id: 3, source_journal_id: '0175411', journal_title: Pathology }
+      - { id: 4, source_journal_id: '0401123', journal_title: Pathologica }
+    searches:
+      -
+        parms: { journal: JAMA }
+        expected: [ 1 ]
+        message: 'Search should find article by exact journal title match.'
+      -
+        parms: { journal: cAnCeR }
+        expected: [ 2 ]
+        message: 'Journal title search should ignore case.'
+      -
+        parms: { journal: Patholog% }
+        expected: [ 3, 4 ]
+        message: 'Journal title search should support wildcards.'
+      -
+        parms: { core-journals: 'yes' }
+        expected: [ 1, 2 ]
+        message: 'Search should return only articles published in core journals.'
+      -
+        parms: { core-journals: 'no' }
+        expected: [ 3, 4 ]
+        message: 'Search should return only articles not published in core journals.'
+      -
+        parms: { core-journals: null }
+        expected: [ 1, 2, 3, 4 ]
+        message: 'Search should ignore whether articles were published in core journals.'
+
+  modification-dates:
+    tags:
+      - { tid: 20001, vid: 'article_tags', name: 'Ponies', field_text_id: 'ponies', field_topic_allowed: true }
+      - { tid: 20002, vid: 'article_tags', name: 'Puppies', field_text_id: 'puppies', field_topic_allowed: true }
+    articles:
+      1: '2000-01-01'
+      2: '2000-02-01'
+      3: '2000-03-01'
+      4: '2000-04-01'
+      5: '2000-05-01'
+      6: '2000-06-01'
+      7: '1999-12-30 23:59:59'
+    searches:
+      -
+        parms: { modified-start: '2000-01-01', modified-end: '2000-01-01', filters: { unpublished: true } }
+        expected: [ 1 ]
+        message: 'Search should find the article whose state changed within the date range.'
+      -
+        parms: { modified-start: '2000-02-01', modified-end: '2000-02-01', filters: { unpublished: true } }
+        expected: [ 2 ]
+        message: 'Search should find the article for which a state comment was added within the date range.'
+      -
+        parms: { modified-start: '2000-03-01', modified-end: '2000-03-01', filters: { unpublished: true } }
+        expected: [ 3 ]
+        message: 'Search should find the article for which a tag as added to the article within the date range.'
+      -
+        parms: { modified-start: '2000-04-01', modified-end: '2000-04-01', filters: { unpublished: true } }
+        expected: [ 4 ]
+        message: 'Search should find the article for which a comment was added to an article tag within the date range.'
+      -
+        parms: { modified-start: '2000-05-01', modified-end: '2000-05-01', filters: { unpublished: true } }
+        expected: [ 5 ]
+        message: 'Search should find the article for which a tag was added to an article topic within the date range.'
+      -
+        parms: { modified-start: '2000-06-01', modified-end: '2000-06-01', filters: { unpublished: true } }
+        expected: [ 6 ]
+        message: 'Search should find the article for which a comment was added to a topic-specific tag within the date range.'
+      -
+        parms: { modified-start: '2000-04-01', filters: { unpublished: true } }
+        expected: [ 4, 5, 6 ]
+        message: 'Search should find the articles modified on or after the specified start date.'
+      -
+        parms: { modified-end: '1999-12-30', filters: { unpublished: true } }
+        expected: [ 7 ]
+        message: 'Search should find articles modified at any time on the specified end date.'
+
+  publication-dates:
+    articles:
+      - { id: 1, year: 2000, pub_date: { year: 2000, month: 'Jan' } }
+      - { id: 2, year: 2001, pub_date: { year: 2001, month: 'Jan' } }
+      - { id: 3, year: 2000, pub_date: { year: 2000, month: 'Feb' } }
+      - { id: 4, year: 2000, pub_date: { year: 2000, month: 'FEB' } }
+      - { id: 5, year: 2000, pub_date: { year: 2000, month: 'Mar' } }
+      - { id: 6, year: 2000, pub_date: { year: 2000, month: '03' } }
+    searches:
+      -
+        parms: { publication-year: 2000 }
+        expected: [ 1, 3, 4, 5, 6 ]
+        message: 'Search should find only articles published in the specified year.'
+      -
+        parms: { publication-year: 2000, publication-month: 1 }
+        expected: [ 1 ]
+        message: 'Search should find only articles published in the specified year and month.'
+      -
+        parms: { publication-year: 2000, publication-month: 2 }
+        expected: [ 3, 4 ]
+        message: 'Search should ignore case when matching the specified month.'
+      -
+        parms: { publication-year: 2000, publication-month: 3 }
+        expected: [ 5, 6 ]
+        message: 'Search should match months stored as MMM in the two-digit form.'
+      -
+        parms: { publication-month: 3 }
+        expected: [ 1, 2, 3, 4, 5, 6 ]
+        message: 'Search should ignore month searches when no year is specified.'
+
+  responses:
+    users:
+      - { id: 1, name: Reviewer 1, status: 1 }
+      - { id: 2, name: Reviewer 2, status: 1 }
+    articles:
+      - { id: 1, topic: 1 }
+      - { id: 2, topic: 1 }
+      - { id: 3, topic: 2 }
+      - { id: 4, topic: 2 }
+    dispositions:
+      - { id: 103, vid: 'dispositions', name: 'Warrants no changes to the summary' }
+      - { id: 104, vid: 'dispositions', name: 'Deserves citation in the summary' }
+      - { id: 105, vid: 'dispositions', name: 'Merits revision of the text' }
+      - { id: 106, vid: 'dispositions', name: 'Merits discussion' }
+    reviews:
+      - { id: 1, reviewer: 1, posted: '2000-01-01', dispositions: [ 103 ] }
+      - { id: 2, reviewer: 1, posted: '2000-01-01', dispositions: [ 104, 105 ] }
+      - { id: 3, reviewer: 1, posted: '2000-01-01', dispositions: [ 105 ] }
+      - { id: 4, reviewer: 2, posted: '2000-01-01', dispositions: [ 106 ] }
+    packet-articles:
+      - { id: 1, article: 1, dropped: false, reviews: [ 1 ] }
+      - { id: 2, article: 2, dropped: false, reviews: [ 2 ] }
+      - { id: 3, article: 3, dropped: false, reviews: [ 3, 4 ] }
+      - { id: 4, article: 4, dropped: false, reviews: [  ] }
+    packets:
+      - { id: 1, topic: 1, articles: [ 1, 2 ], reviewers: [ 1, 2 ] }
+      - { id: 2, topic: 2, articles: [ 3 ], reviewers: [ 1, 2 ] }
+    searches:
+      -
+        parms: { disposition: 103 }
+        expected: [ 1 ]
+        message: 'Should find the article which has been assigned the specified disposition.'
+      -
+        parms: { disposition: 105 }
+        expected: [ 2, 3 ]
+        message: 'Should match the requested disposition even if other reviews disagree.'
+
+  sorts:
+    articles:
+      -
+        id: 1
+        source_id: '40000001'
+        title: 'B'
+        journal_title: 'Z'
+        authors:
+          - { last_name: 'Connors', initials: 'J' }
+          - { last_name: 'Smith', initials: 'J' }
+          - { last_name: 'Axelrod', initials: 'A' }
+      -
+        id: 2
+        source_id: '40000003'
+        title: 'A'
+        journal_title: 'X'
+        authors:
+          - { last_name: 'Smith', initials: 'J' }
+          - { last_name: 'Axelrod', initials: 'A' }
+      -
+        id: 3
+        source_id: '40000002'
+        title: 'C'
+        journal_title: 'Y'
+        authors:
+          - { last_name: 'Axelrod', initials: 'A' }
+          - { last_name: 'Smith', initials: 'J' }
+    searches:
+      -
+        parms: {  }
+        expected: [ 1, 2, 3 ]
+        message: 'Default search should order the articles by EBMS ID.'
+      -
+        parms: { sort: 'ebms-id' }
+        expected: [ 1, 2, 3 ]
+        message: 'Search should order the articles by EBMS ID.'
+      -
+        parms: { sort: 'pmid' }
+        expected: [ 1, 3, 2 ]
+        message: 'Search should order the articles by PubMed ID.'
+      -
+        parms: { sort: 'title' }
+        expected: [ 2, 1, 3 ]
+        message: 'Search should order the articles by article title.'
+      -
+        parms: { sort: 'journal' }
+        expected: [ 2, 3, 1 ]
+        message: 'Search should order the articles by full journal title.'
+      -
+        parms: { sort: 'author' }
+        expected: [ 3, 1, 2 ]
+        message: "Search should order the articles by the first author's display name."
+
+  states:
+    articles:
+      1: [ { state: 'ready_init_review', topic: 1 } ]
+      2: [ { state: 'ready_init_review', topic: 1 }, { state: 'reject_journal_title', topic: 2 } ]
+      3: [ { state: 'reject_init_review', topic: 1 } ]
+      4: [ { state: 'passed_init_review', topic: 1 } ]
+      5: [ { state: 'published', topic: 1 } ]
+      6: [ { state: 'reject_bm_review', topic: 1 } ]
+      7: [ { state: 'passed_bm_review', topic: 1 } ]
+      8: [ { state: 'passed_bm_review', topic: 1 }, { state: 'reject_full_review', topic: 1 } ]
+      9: [ { state: 'passed_bm_review', topic: 1 }, { state: 'passed_full_review', topic: 1 } ]
+      10: [ { state: 'fyi', topic: 1 } ]
+      11: [  ]
+    searches:
+      -
+        parms: { }
+        expected: [ 5, 6, 7, 8, 9, 10 ]
+        message: 'Should return all articles "published" to the NCI reviewer''s queue for review by abstract.'
+      -
+        parms: { filters: { not-listed: true } }
+        expected: [ 2, 5, 6, 7, 8, 9, 10 ]
+        message: 'Checking "NOT-listed" should add those to "published" articles.'
+      -
+        parms: { filters: { only-not-listed: true } }
+        expected: [ 2 ]
+        message: 'Should only return articles with a current state indicating rejection because of journal.'
+      -
+        parms: { filters: { rejected: true } }
+        expected: [ 3, 5, 6, 7, 8, 9, 10 ]
+        message: 'Should add articles rejected in the initial review to "published" articles.'
+      -
+        parms: { filters: { only-rejected: true } }
+        expected: [ 3 ]
+        message: 'Should only return articles with a current "Rejected by initial review" state.'
+      -
+        parms: { filters: { rejected: true, not-listed: true } }
+        expected: [ 2, 3, 5, 6, 7, 8, 9, 10 ]
+        message: 'Should return "published" articles plus pre-publication journal or review rejections.'
+      -
+        parms: { filters: { unpublished: true } }
+        expected: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+        message: 'Checking just the "Unpublished" box should return all non-internal articles.'
+      -
+        parms: { filters: { only-unpublished: true } }
+        expected: [ 1, 2, 3, 4 ]
+        message: 'Should include all article with a current state before "published."'
+      -
+        parms: { abstract-decision: reject_bm_review }
+        expected: [ 6 ]
+        message: 'Should include all articles rejected in the review by abstract.'
+      -
+        parms: { abstract-decision: passed_bm_review }
+        expected: [ 7, 8, 9 ]
+        message: 'Should include articles which passed the review abstract, even if later states have been added.'
+      -
+        parms: { full-text-decision: reject_full_review }
+        expected: [ 8 ]
+        message: 'Should include articles rejected by the full-text review.'
+      -
+        parms: { full-text-decision: passed_full_review }
+        expected: [ 9 ]
+        message: 'Should include articles which passed the full-text review.'
+      -
+        parms: { filters: { only-unpublished: true }, topics: [ 1, 2 ], topic-logic: 'or' }
+        expected: [ 1, 2, 3, 4 ]
+        message: 'Should return articles with a current unpublished state for any of these topics.'
+      -
+        parms: { filters: { only-unpublished: true }, topics: [ 1, 2 ], topic-logic: 'and' }
+        expected: [ 2 ]
+        message: 'Should only return the article with an unpublished state for both of these topics.'
+
+  tags:
+    values:
+      - { tid: 20001, vid: 'article_tags', name: 'Ponies', field_text_id: 'ponies', field_topic_allowed: true }
+      - { tid: 20002, vid: 'article_tags', name: 'Puppies', field_text_id: 'puppies', field_topic_allowed: true }
+    articles:
+      1: { name: 'ponies', topic-specific: false, date: '2000-01-01 00:00:00' }
+      2: { name: 'puppies', topic-specific: true, date: '2000-01-31 23:59:59' }
+    searches:
+      -
+        parms: { article-tag: 20001, unpublished: true }
+        expected: [ 1 ]
+        message: 'Search should find the article with the article-level tag.'
+      -
+        parms: { article-tag: 20002 }
+        expected: [ 2 ]
+        message: 'Search should find the article with the topic-specific tag when no topic is specified.'
+      -
+        parms: { article-tag: 20002, topics: [ 1 ] }
+        expected: [ 2 ]
+        message: 'Search should find the article with the topic-specific tag when the right topic is specified.'
+      -
+        parms: { article-tag: 20002, topics: [ 2 ] }
+        expected: [ ]
+        message: 'Search should not find the article with the topic-specific tag when the wrong topic is specified.'
+      -
+        parms: { article-tag: 20002, boards: [ 1 ] }
+        expected: [ 2 ]
+        message: 'Search should find the article with the topic-specific tag when the right board is specified.'
+      -
+        parms: { article-tag: 20002, boards: [ 2 ] }
+        expected: [ ]
+        message: 'Search should not find the article with the topic-specific tag when the wrong board is specified.'
+      -
+        parms: { article-tag: 20001, tag-start: '2000-01-01', tag-end: '2000-01-31' }
+        expected: [ 1 ]
+        message: 'Search should find the article with the article-level tag created during the specified date range.'
+      -
+        parms: { article-tag: 20001, tag-start: '2000-01-02', tag-end: '2000-01-31' }
+        expected: [ ]
+        message: 'Search should find the article with the article-level tag created outside the specified date range.'
+      -
+        parms: { article-tag: 20002, tag-start: '2000-01-01', tag-end: '2000-01-31' }
+        expected: [ 2 ]
+        message: 'Search should find articles whose tags were created any time during the last day of the date range.'
+      -
+        parms: { tag-start: '2000-01-01', tag-end: '2000-01-31' }
+        expected: [ 1, 2 ]
+        message: 'Search should find articles tagged during the date range if no tag is selected.'
+      -
+        parms: { tag-start: '2000-01-15' }
+        expected: [ 2 ]
+        message: 'Tag searching should find the correct set of articles when only the start of the date range is given.'
+      -
+        parms: { tag-end: '2000-01-01' }
+        expected: [ 1 ]
+        message: 'Tag searching should find the correct set of articles when only the end of the date range is given.'
+
+  topics-and-boards:
+    articles:
+      1: [ 1 ]
+      2: [ 1, 2 ]
+      3: [ 1, 2, 3 ]
+      4: [ 2, 3 ]
+      5: [ 3 ]
+    searches:
+      -
+        parms: { topics: [ 1 ], topic-logic: 'or' }
+        expected: [ 1, 2, 3 ]
+        message: 'Should return all articles with the specified topic.'
+      -
+        parms: { topics: [ 4 ], topic-logic: 'or' }
+        expected: [ ]
+        message: 'Should return an empty results set, since no articles have been assigned this topic.'
+      -
+        parms: { topics: [ 1, 2 ], topic-logic: 'or' }
+        expected: [ 1, 2, 3, 4 ]
+        message: 'Should return all articles with any of the specified topics.'
+      -
+        parms: { topics: [ 1, 2 ], topic-logic: 'and' }
+        expected: [ 2, 3 ]
+        message: 'Should return only articles with both specified topics.'
+      -
+        parms: { boards: [ 1 ], topic-logic: 'or' }
+        expected: [ 1, 2, 3, 4 ]
+        message: "Should return all articles with any of this board's topics."
+      -
+        parms: { boards: [ 1, 2 ], topic-logic: 'or' }
+        expected: [ 3, 4 ]
+        message: 'Should return only articles linked to both boards, ignoring the topic logic flag.'

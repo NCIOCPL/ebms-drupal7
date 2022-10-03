@@ -1,0 +1,45 @@
+<?php
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\ebms_message\Entity\Message;
+
+
+/**
+ * Implements hook_ENTITY_TYPE_presave().
+ *
+ * Add notification that more articles have been published for a given
+ * board. One message per day per board is sufficient.
+ */
+function ebms_state_ebms_state_presave(EntityInterface $entity): void {
+
+  // Don't do anything unless this is a 'published' state.
+  if ($entity->value->entity->field_text_id->value === 'published') {
+
+    // If we're migrating from EBMS 3.x the existing messages will be
+    // loaded separately.
+    $migrating = getenv('EBMS_MIGRATION_LOAD');
+    if (empty($migrating)) {
+
+      // Don't do anything if there's already a message for this board.
+      $cutoff = new \DateTime();
+      $cutoff->sub(new \DateInterval('P1D'));
+      $storage = \Drupal::entityTypeManager()->getStorage('ebms_message');
+      $ids = $storage->getQuery()->accessCheck(FALSE)
+        ->condition('message_type', Message::ARTICLES_PUBLISHED)
+        ->condition('boards', $entity->board->target_id)
+        ->condition('posted', $cutoff->format('Y-m-d H:i:s'), '>=')
+        ->execute();
+
+      // No messages posted during the past hour, so add one.
+      if (empty($ids)) {
+        Message::create([
+          'message_type' => Message::ARTICLES_PUBLISHED,
+          'user' => $entity->user->target_id,
+          'posted' => $entity->entered->value,
+          'boards' => [$entity->board->target_id],
+          'extra_values' => json_encode(['board_name' => $entity->board->entity->name->value]),
+        ])->save();
+      }
+    }
+  }
+}

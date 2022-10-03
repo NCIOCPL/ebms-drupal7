@@ -1,0 +1,9 @@
+ebms_home.home:
+  path: /home
+  defaults:
+    _controller: Drupal\ebms_home\Controller\HomePage::display
+  requirements:
+    # Leave this as _access: 'TRUE' to avoid endless redirect loop.
+    _access: 'TRUE'
+  options:
+    no_cache: 'TRUE'

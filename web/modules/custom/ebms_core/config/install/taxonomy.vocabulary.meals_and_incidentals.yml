@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Meals and Incidentals'
+vid: meals_and_incidentals
+description: 'Information about whether the board member is eligible for a per-diem reimbursement, and if so, whether it is requested.'
+weight: 0

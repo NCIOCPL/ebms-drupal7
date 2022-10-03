@@ -1,0 +1,10 @@
+ebms_user.add_sso_user:
+  route_name: ebms_user.add_sso_user
+  title: Add SSO user
+  appears_on:
+    - entity.user.collection
+ebms_user.switch_to_sso:
+  route_name: ebms_user.switch_to_sso
+  title: Convert to SSO user
+  appears_on:
+    - entity.user.edit_form

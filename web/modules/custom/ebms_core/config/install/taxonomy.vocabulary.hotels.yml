@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: Hotels
+vid: hotels
+description: 'Hotels for which board members can request reservations.'
+weight: 0

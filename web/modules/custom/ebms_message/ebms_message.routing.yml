@@ -1,0 +1,11 @@
+ebms_message.recent_activity:
+  path: /recent-activity/{group}
+  defaults:
+    _controller: Drupal\ebms_message\Controller\RecentActivity::display
+  requirements:
+    _user_is_logged_in: 'TRUE'
+  options:
+    no_cache: 'TRUE'
+    parameters:
+      group:
+        type: string

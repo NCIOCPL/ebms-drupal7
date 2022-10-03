@@ -1,0 +1,6 @@
+entity.ebms_board.collection:
+  title: 'Boards'
+  route_name: entity.ebms_board.collection
+  description: 'Configure PDQ Boards.'
+  parent: ebms_core.admin_config_ebms
+  weight: 100

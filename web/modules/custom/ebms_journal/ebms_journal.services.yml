@@ -1,0 +1,4 @@
+services:
+  ebms_journal.not_list:
+    class: Drupal\ebms_journal\NotList
+    arguments: ['@entity_type.manager']

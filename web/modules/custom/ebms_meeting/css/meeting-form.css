@@ -1,0 +1,35 @@
+#ebms-meeting-form .form-item-end,
+#ebms-meeting-form .form-item-start,
+#ebms-meeting-form .form-item-date {
+  display: inline-block;
+}
+#ebms-meeting-form .form-item-start,
+#ebms-meeting-form .form-item-date {
+  margin-right: .5rem;
+}
+#ebms-meeting-form #edit-schedule-content label.usa-label {
+  margin-top: 0;
+}
+#ebms-meeting-form .usa-label.form-item-date,
+#ebms-meeting-form .usa-label.form-item-start,
+#ebms-meeting-form .usa-label.form-item-end {
+  width: 8rem;
+}
+#ebms-meeting-form .form-type-radio,
+#ebms-meeting-form .form-category-radio,
+#ebms-meeting-form .form-status-radio {
+  display: inline-block;
+}
+#ebms-meeting-form .form-type-radio label,
+#ebms-meeting-form .form-category-radio label,
+#ebms-meeting-form .form-status-radio label {
+  margin-right: 1rem;
+}
+#ebms-meeting-form #edit-agenda-format,
+#ebms-meeting-form #edit-notes-format {
+    display: none;
+}
+#ebms-meeting-form .form-item-agenda-published {
+  font-weight: bold;
+  color: red;
+}

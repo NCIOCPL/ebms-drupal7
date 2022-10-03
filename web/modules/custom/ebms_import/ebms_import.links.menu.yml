@@ -1,0 +1,10 @@
+ebms_import.request:
+  title: Import Articles
+  route_name: ebms_import.import_form
+  description: Fetch articles from PubMed and add them to the EBMS.
+  parent: ebms_article.articles
+ebms_import.internal:
+  title: Import Internal Articles
+  route_name: ebms_import.import_internal_articles
+  description: Fetch articles articles intended for internal use, not review, and add them to the EBMS.
+  parent: ebms_article.articles

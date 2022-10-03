@@ -1,0 +1,10 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - ebms_core
+name: 'Parking Or Toll Expense Types'
+vid: parking_or_toll_expense_types
+description: 'For example, "airport parking."'
+weight: 0

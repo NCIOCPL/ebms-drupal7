@@ -1,0 +1,80 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - filter.format.filtered_html
+  module:
+    - ckeditor
+format: filtered_html
+editor: ckeditor
+settings:
+  toolbar:
+    rows:
+      -
+        -
+          name: Formats
+          items:
+            - Format
+        -
+          name: Edit
+          items:
+            - Copy
+            - Cut
+            - Paste
+            # - PasteText
+            # - PasteFromWord
+            - Undo
+            - Redo
+        -
+          name: Inline Formatting
+          items:
+            - Bold
+            - Italic
+            - Underline
+            - Strike
+            - Superscript
+            - Subscript
+            - RemoveFormat
+        -
+          name: Alignment
+          items:
+            - JustifyLeft
+            - JustifyCenter
+            - JustifyRight
+            - JustifyBlock
+            - Outdent
+            - Indent
+        -
+          name: Links
+          items:
+            - DrupalLink
+            - DrupalUnlink
+        -
+          name: Lists
+          items:
+            - BulletedList
+            - NumberedList
+        -
+          name: Miscellaneous
+          items:
+            - HorizontalRule
+            - Blockquote
+            - DrupalImage
+            - Table
+            - SpecialChar
+  plugins:
+    language:
+      language_list: un
+    stylescombo:
+      styles: 'h2.centered|Centered Title'
+    drupallink:
+      linkit_enabled: true
+      linkit_profile: ebms
+image_upload:
+  status: true
+  scheme: public
+  directory: inline-images
+  max_size: ''
+  max_dimensions:
+    width: null
+    height: null

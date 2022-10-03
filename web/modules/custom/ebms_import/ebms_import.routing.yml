@@ -1,0 +1,24 @@
+ebms_import.import_form:
+  path: /articles/import/{request_id}
+  defaults:
+    _form: Drupal\ebms_import\Form\ImportForm
+    _title: 'Import'
+    request_id: 0
+  requirements:
+    _permission: 'import articles'
+  options:
+    parameters:
+      request_id:
+        type: integer
+ebms_import.import_internal_articles:
+  path: /articles/import/internal/{request_id}
+  defaults:
+    _form: Drupal\ebms_import\Form\ImportInternalArticles
+    _title: 'Import Internal Articles'
+    request_id: 0
+  requirements:
+    _permission: 'import articles'
+  options:
+    parameters:
+      request_id:
+        type: integer

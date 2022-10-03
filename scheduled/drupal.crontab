@@ -1,4 +1,0 @@
-0 2 * * 0 $HOME/cron/find-pubmed-drops.sh
-0 3 1 * * $HOME/cron/mark-unreviewed-articles.py @@HOST@@
-0 4 * * * $HOME/cron/update-pubmed-data.py @@HOST@@
-0 5 * * 0 $HOME/cron/refresh-journal-list.sh

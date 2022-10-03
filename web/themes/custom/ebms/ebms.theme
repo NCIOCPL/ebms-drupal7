@@ -1,0 +1,127 @@
+<?php
+
+/**
+ * @file
+ * Preprocess functions for the theme.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\user\Entity\User;
+
+/**
+ * Provide the banner template with needed user information.
+ *
+ * Also make sure cached user-specific information isn't used for every user.
+ */
+function ebms_preprocess_block__ebms_branding(array &$variables) {
+  $variables['#cache']['contexts'][] = 'user';
+  $variables['user_id'] = $user_id = $variables['user']->id();
+  $user = User::load($user_id);
+  $variables['user_name'] = $user->name->value;
+  if ($user->user_picture->isEmpty()) {
+    $variables['user_picture_url'] = '/themes/custom/ebms/images/avatar.png';
+  }
+  else {
+    $variables['user_picture_url'] = $user->user_picture->entity->createFileUrl();
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Both Drupal core and the base theme contribute to flawed styling of the
+ * cancel button. https://www.drupal.org/project/uswds_base/issues/3278092.
+ */
+function ebms_form_alter(array &$form, FormStateInterface $form_state, string $form_id) {
+  if (!empty($form['actions']['cancel']['#attributes']['class'])) {
+    if (!in_array('usa-button', $form['actions']['cancel']['#attributes']['class'])) {
+      $form['actions']['cancel']['#attributes']['class'][] = 'usa-button';
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_item_list().
+ *
+ * The base theme neglected to add this class.
+ */
+function ebms_preprocess_item_list(array &$variables) {
+  $variables['attributes']['class'][] = 'usa-list';
+}
+
+/**
+ * Do some pruning of the main menu.
+ *
+ * There are plenty of links for getting to the home page always
+ * available, and the users don't want another one cluttering
+ * up the main menu.
+ *
+ * Also, we don't want to make it impossible for NCI staff to
+ * view the board member's manual pages, but we don't need to
+ * have a second "Help" menu. If an NCI staff member wants to
+ * see the board member help pages, the way to do so is to enter
+ * the URLs directly.
+ */
+function ebms_preprocess_menu__primary_menu(array &$variables) {
+  if (!empty($variables['items']['standard.front_page'])) {
+    unset($variables['items']['standard.front_page']);
+  }
+  $user = User::load($variables['user']->id());
+  if ($variables['is_admin'] || !$user->hasPermission('review literature')) {
+    if (!empty($variables['items']['ebms_help.help'])) {
+      unset($variables['items']['ebms_help.help']);
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_page().
+ *
+ * Prune blocks assigned to the left sidebar which we don't want.
+ * Do this here instead of at a lower level in order to ensure
+ * that the page template knows that it shouldn't include the
+ * left sidebar at all when we're not going to leave any blocks
+ * for the region.
+ */
+function ebms_preprocess_page(array &$variables) {
+  if (!empty($variables['page']['sidebar_first'])) {
+    $keepers = [];
+    $losers = ['ebms_footer', 'ebms_powered'];
+    foreach (array_keys($variables['page']['sidebar_first']) as $key) {
+      if (!in_array($key, $losers) && !str_starts_with($key, '#')) {
+        $keepers[] = $key;
+      }
+      if (in_array($key, $losers))
+        unset($variables['page']['sidebar_first'][$key]);
+    }
+    if (empty($keepers))
+      unset($variables['page']['sidebar_first']);
+  }
+}
+
+/**
+ * Implements hook_preprocess_table().
+ *
+ * We don't want table borders by default.
+ */
+function ebms_preprocess_table(array &$variables) {
+  $variables['attributes']['class'][] = 'usa-table--borderless';
+}
+
+/**
+ * Provide more information to the template if this is for inline fields.
+ */
+function ebms_preprocess_container(array &$variables) {
+  if (!empty($variables['element']['#attributes']['class']) && in_array('inline-fields', $variables['element']['#attributes']['class'])) {
+    $variables['inline_container'] = TRUE;
+    if (!empty($variables['element']['#title'])) {
+      $variables['container_title'] = $variables['element']['#title'];
+    }
+    if (!empty($variables['element']['#description'])) {
+      $variables['description'] = $variables['element']['#description'];
+    }
+    if (!empty($variables['element']['#required'])) {
+      $variables['required'] = TRUE;
+    }
+  }
+}

@@ -1,0 +1,23 @@
+.article-authors,
+.comment-author,
+.tags-label {
+  font-weight: bold;
+}
+.article-title a {
+  font-style: italic;
+}
+.internal-article .buttons a.usa-button {
+  margin-top: .5rem;
+  font-size: .9rem;
+}
+.article-id,
+.legacy-id {
+  margin-left: 1rem;
+}
+.tags-label,
+.comments-label {
+  margin-top: .5rem;
+}
+.internal-article {
+  margin-bottom: 1rem;
+}

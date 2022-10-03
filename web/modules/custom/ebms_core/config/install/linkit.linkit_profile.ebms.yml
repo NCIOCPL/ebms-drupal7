@@ -1,0 +1,26 @@
+uuid: a0f4574e-23aa-43c3-8f31-5193aba7fcd0
+langcode: en
+status: true
+dependencies:
+  module:
+    - file
+label: EBMS
+id: ebms
+description: 'Supports linking to files stored on the site.'
+matchers:
+  cbaca1d6-9586-441d-88c4-929c239ae91d:
+    id: 'entity:file'
+    uuid: cbaca1d6-9586-441d-88c4-929c239ae91d
+    settings:
+      metadata: '[file:name]'
+      bundles: null
+      group_by_bundle: null
+      substitution_type: file
+      limit: 100
+      file_extensions: 'docx doc pdf xlsx'
+      file_status: 1
+      images:
+        show_dimensions: false
+        show_thumbnail: false
+        thumbnail_image_style: null
+    weight: 0
