@@ -1241,7 +1241,7 @@ function pdq_ebms_refresh_xml($source, $max=null) {
     if (!empty($pmids)) {
         $comment = 'BATCH REPLACEMENT OF UPDATED ARTICLES FROM PUBMED';
         $batch = Ebms\importArticlesFromNLM('live', $pmids, null, null,
-                                            comment, false);
+                                            $comment, false);
         if ($batch->status != 'Success') {
             print '0';
             exit(0);

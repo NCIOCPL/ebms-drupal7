@@ -5341,10 +5341,6 @@ function pdq_ebms_edit_packet_form_validate($form, &$form_state) {
             $article_count++;
     if (!$article_count)
         form_set_error('articles', 'At least one article must be selected.');
-    $form_state['redirect'] = array(
-        EbmsReview::$url . '/packets',
-        'query' => drupal_get_query_parameters(),
-    );
 }
 
 /**
@@ -5520,6 +5516,10 @@ function pdq_ebms_edit_packet_form_submit($form, &$form_state) {
             )
             ->execute();
     }
+
+    // Go back to the packets page.
+    $opts = array('query' => drupal_get_query_parameters());
+    drupal_goto(EbmsReview::$url . '/packets', $opts);
 
 // XXX DEBUGGING FOR QA TEAM
 //     $status = db_select('ebms_packet', 'p')

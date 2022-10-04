@@ -62,8 +62,7 @@ $report_access = user_access('access all webform results');
         <ul>
             <?php
             foreach ($tree as $idBranch => $branch):
-
-                if ($idBranch[0] != '#'):
+                if (substr($idBranch, 0, 1) !=='#'):
                     $branchActive = url($activeURL) == url($branch['#href']) ? TRUE : FALSE;
                     ?>
                     <li class="parent <?php print $branchActive ? 'active' : 'inactive'; ?>">
@@ -73,7 +72,7 @@ $report_access = user_access('access all webform results');
                     // If there is a subnav
                     if (count($branch['#below']) > 0):
                         foreach ($branch['#below'] as $idSubnav => $subnav):
-                            if ($idSubnav[0] != '#'):
+                            if (substr($idSubnav, 0, 1) !== '#'):
                                 $href = $subnav['#href'];
                                 $pos = strpos($href, 'webform-results');
                                 $is_report = $pos !== false;

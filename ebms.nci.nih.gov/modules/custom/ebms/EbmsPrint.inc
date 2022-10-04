@@ -1947,7 +1947,7 @@ EOS;
 
         // Preserve any error messages as part of the comment text
         global $print_job_errmsgs;
-        if (count($print_job_errmsgs) > 0) {
+        if (!empty($print_job_errmsgs)) {
             $errStr = "Msgs: " . implode('; ', $print_job_errmsgs);
             $this->comment .= "  [$errStr]";
         }
@@ -2137,7 +2137,7 @@ function runPrintJob() {
 
   // And error messages, if any
   global $print_job_errmsgs;
-  if (count($print_job_errmsgs) > 0)
+  if (!empty($print_job_errmsgs))
       $retValues['msgs'] = $print_job_errmsgs;
 
   return $retValues;

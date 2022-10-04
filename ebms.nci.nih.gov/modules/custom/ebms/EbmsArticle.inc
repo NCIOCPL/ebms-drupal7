@@ -534,7 +534,7 @@ class EbmsArticle {
      * all message, or null.
      */
     public function getErrorMsgs() {
-        if (count($this->errorMsgs) == 0)
+        if (empty($this->errorMsgs))
             return null;
         return implode('; ', $this->errorMsgs);
     }
@@ -1168,12 +1168,8 @@ class EbmsArticle {
                     $query->condition('a.initials', $author->initials);
                 else
                     $query->isNull('a.initials');
-                $result = $query->execute();
-                if (count($result) > 0) {
-                    // This author is known already
-                    $author->author_id = $result->fetchField();
-                }
-                if (!$author->author_id) {
+                $author->author_id = $query->execute()->fetchField();
+                if (empty($author->author_id)) {
 
                     // Still no author_id. Create an author record
                     $query = db_insert('ebms_article_author')
@@ -1187,7 +1183,7 @@ class EbmsArticle {
                     $author->author_id = $query->execute();
 
                     // Test for success
-                    if (!$author->author_id)
+                    if (empty($author->author_id))
                         $this->addError(
                                 "EbmsArticle.storeAuthors: " .
                                 "Could not create author record for " .
