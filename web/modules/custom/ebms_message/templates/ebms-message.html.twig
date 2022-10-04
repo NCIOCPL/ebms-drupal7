@@ -6,7 +6,7 @@
     {% if message_type == 'agenda-published' %}
       Agenda published for <a href="/calendar/meeting/{{ values.meeting_id }}">{{ values.title }}</a>.
     {% elseif message_type == 'articles-published' %}
-      <a href="/review">New {{ message.boards.entity.name.value }} articles posted</a>.
+      <a href="/articles/review">New {{ message.boards.entity.name.value }} articles posted</a>.
     {% elseif message_type == 'meeting-canceled' %}
       {{ values.title }} canceled.
     {% elseif message_type == 'meeting-changed' %}
