@@ -19,3 +19,91 @@ The steps, at a broad level, include:
 6. The script to install Drupal 9, enable the modules, and load the data is run (about 9 hours)
 7. The Drupal 7 EBMS site is put into maintenance mode
 8. The files, XML, and extracted database values are refreshed and applied
+
+## Server Provisioning
+
+CBIIT creates a virtual server for each of the four tiers, using the
+requirements attached to ServiceNow ticket NCI-RITM0368065 (the ticket
+for the DEV tier's server). While we are still running the Drupal 7
+system in parallel with development and testing of the new Drupal 9
+rewrite, the new servers will be given temporary DNS names which will
+be flipped over to the canonical names. The exception is the STAGE
+tier, which for Drupal 7 uses a name which does not match the standard
+naming convention for the tiers (ebms-test.nci.nih.gov).
+
+* ebms4-dev.nci.nih.gov (will become ebms-dev.nci.nih.gov)
+* ebms4-qa.nci.nih.gov (will become ebms-qa.nci.nih.gov)
+* ebms-stage.nci.nih.gov (will keep this name)
+* ebms4.nci.nih.gov (will become ebms.nci.nih.gov)
+
+## Install Software From GitHub
+
+Execute the following commands on the new server.
+
+```
+cd /local/drupal/ebms
+curl -L https://api.github.com/repos/NCIOCPL/ebms/tarball/ebms4 | tar -xzf -
+mv NCIOCPL-ebms-*/* .
+rm -rf NCIOCPL-ebms-*
+```
+
+## Fetch Archive of EBMS User Files
+
+Execute these commands (or commands which produce the same result more
+effectively, given the permissions/accounts to which you have access)
+on the new server.
+
+```
+cd /local/drupal/ebms/unversioned
+scp nciws-d2387-v:/local/drupal/ebms/unversioned/files.tar .
+```
+
+## Copy Article XML
+
+Execute these commands (or their equivalent).
+
+```
+cd /local/drupal/ebms/unversioned
+rsync -a nciws-d2387-v:/local/drupal/ebms/unversioned/Articles ./
+```
+
+## Copy EBMS Data
+
+Execute these commands on the new server.
+
+```
+cd /local/drupal/ebms/unversioned
+scp nciws-d2387-v:/local/drupal/ebms/unversioned/ebms3db.json .
+cd ../migration
+./export.py
+```
+
+adminpw
+dburl
+ebms3db.json
+sitehost
+userpw
+migration/about.html
+migration/articles
+migration/articles.manifest
+migration/articles.sums ?
+migration/authmap.json ?
+migration/baseline ?
+migration/deltas ?
+migration/developers
+migration/exported ?
+migration/files ?
+migration/files.manifest ?
+migration/files.sums ?
+migration/files.tar
+migration/fix-reimbursement-values.php
+migration/help
+migration/hotel-form.html
+migration/inline-images
+migration/ncihelp
+migration/packet_article_ids ?
+migration/reimbursement-form.html
+migration/travel-directions.html
+migration/travel-directions.html
+migration/travel-manager
+migration/travel-policies.html

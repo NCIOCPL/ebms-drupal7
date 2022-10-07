@@ -7,18 +7,19 @@ To create a local development environment for this project, perform the followin
 
 1. Clone the repository.
 2. Change current directory to the cloned repository.
-3. Run `composer install`.
-4. Copy `dburl.example` to `dburl`.
-5. Create an admin password, copy `adminpw.example` to `adminpw`  and put the admin password in the `adminpw` file.
-6. Create a user password, copy `userpw.example` to `userpw`  and put the user password in the `userpw` file.
-7. Copy `sitehost.example` to `sitehost` and replace the host name if appropriate.
-8. Run `docker compose up -d`.
-9. Run `docker exec -it ebms4-web-1 bash`.
-10. Inside the container, run `./install.sh`.
-11. Point your favorite browser to http://ebms.localhost:8081.
-12. Log in as admin using the password you created in step 5.
+3. Create a new `unversioned` directory.
+4. Run `composer install`.
+5. Copy `dburl.example` to `unversioned/dburl`.
+6. Create an admin password, copy `adminpw.example` to `unversioned/adminpw`  and put the admin password in the copied file.
+7. Create a user password, copy `userpw.example` to `unversioned/userpw`  and put the user password in the copied file.
+8. Copy `sitehost.example` to `unversioned/sitehost` and replace the host name if appropriate.
+9. Run `docker compose up -d`.
+10. Run `docker exec -it ebms4-web-1 bash`.
+11. Inside the container, run `./install.sh`.
+12. Point your favorite browser to http://ebms.localhost:8081.
+13. Log in as admin using the password you created in step 5.
 
-On a non-Docker server running Apache or Nginx, instead of step 4, create a MySQL database using a secure database password, skip steps 8-10, and for step 11 substitute the appropriate URL. Adjust the `dburl` file to use the correct database hostname and password.
+On a non-Docker server running Apache or Nginx, instead of step 4, create a MySQL database using a secure database password, skip steps 8-10, and for step 11 substitute the appropriate URL. Adjust the `unversioned/dburl` file to use the correct database hostname, port, and password. In the following commands, replace "localhost" with the name of the database server if appropriate.
 
 ```
 CREATE DATABASE ebms;

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+start_time=${SECONDS}
+date
 if grep --quiet drupal /etc/passwd;
 then
     echo Running on CBIIT hosting.
@@ -21,25 +23,17 @@ do
         r) REPO_BASE=${OPTARG};;
     esac
 done
-export REPO_BASE
 export EBMS_MIGRATION_LOAD=1
-DBURL=$(cat ${REPO_BASE}/dburl)
-ADMINPW=$(cat ${REPO_BASE}/adminpw)
-SITEHOST=$(cat ${REPO_BASE}/sitehost)
-echo options: > ${REPO_BASE}/drush/drush.yml
-case $SITEHOST in
-    *localhost*)
-        echo "  uri: http://$SITEHOST" >> ${REPO_BASE}/drush/drush.yml
-        ;;
-    *)
-        echo "  uri: https://$SITEHOST" >> ${REPO_BASE}/drush/drush.yml
-        ;;
-esac
+export REPO_BASE
 DRUSH=${REPO_BASE}/vendor/bin/drush
 MIGRATION=${REPO_BASE}/migration
 SITE=${REPO_BASE}/web/sites/default
-start_time=${SECONDS}
-date
+UNVERSIONED=${REPO_BASE}/unversioned
+DBURL=$(cat ${UNVERSIONED}/dburl)
+ADMINPW=$(cat ${UNVERSIONED}/adminpw)
+SITEHOST=$(cat ${UNVERSIONED}/sitehost)
+echo options: > ${REPO_BASE}/drush/drush.yml
+echo "  uri: https://$SITEHOST" >> ${REPO_BASE}/drush/drush.yml
 $SUDO chmod a+w ${SITE}
 [ -d ${SITE}/files ] && $SUDO chmod -R a+w ${SITE}/files
 $SUDO rm -rf ${SITE}/files
@@ -53,8 +47,8 @@ $DRUSH si -y --site-name EBMS --account-pass=${ADMINPW} --db-url=${DBURL} \
        --site-mail=ebms@cancer.gov
 $SUDO chmod -w ${SITE}/settings.php
 pushd ${SITE} >/dev/null
-$SUDO tar -xf ${MIGRATION}/files.tar
-$SUDO rsync -a ${MIGRATION}/inline-images ${SITE}/files/
+$SUDO tar -xf ${UNVERSIONED}/files.tar
+$SUDO rsync -a ${UNVERSIONED}/inline-images ${SITE}/files/
 $SUDO chmod -R 777 ${SITE}/files
 popd >/dev/null
 $DRUSH pmu contact

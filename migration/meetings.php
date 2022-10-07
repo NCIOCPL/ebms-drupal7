@@ -7,7 +7,7 @@ $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 // Get the mappings we'll need.
 $start = microtime(TRUE);
-$json = file_get_contents("$repo_base/migration/maps.json");
+$json = file_get_contents("$repo_base/unversioned/maps.json");
 $maps = json_decode($json, TRUE);
 $meeting_categories = [
   'Board' => 'board',
@@ -50,7 +50,7 @@ foreach ($terms as $term) {
 
 // Load the meetings.
 $n = 0;
-$fp = fopen("$repo_base/migration/exported/meetings.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/meetings.json", 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
   if (!empty($values['category'])) {

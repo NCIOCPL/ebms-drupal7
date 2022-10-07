@@ -5,9 +5,9 @@ require(__DIR__ . '/console-log.php');
 // Find out where the data is.
 $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
-$json = file_get_contents("$repo_base/migration/maps.json");
+$json = file_get_contents("$repo_base/unversioned/maps.json");
 $groups = json_decode($json, true)['topic_groups'];
-$fp = fopen("$repo_base/migration/exported/topics.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/topics.json", 'r');
 $n = 0;
 $start = microtime(TRUE);
 while (($line = fgets($fp)) !== FALSE) {

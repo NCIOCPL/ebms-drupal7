@@ -6,7 +6,7 @@ require(__DIR__ . '/console-log.php');
 $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 // Load the maps.
-$json = file_get_contents("$repo_base/migration/maps.json");
+$json = file_get_contents("$repo_base/unversioned/maps.json");
 $maps = json_decode($json, true);
 
 // Add extra indexes. Can't do this in the ebms_state module, as recommended
@@ -37,7 +37,7 @@ if (empty($count)) {
 // Load the states.
 $n = 0;
 $top_start = $start = microtime(TRUE);
-$fp = fopen("$repo_base/migration/exported/states.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/states.json", 'r');
 $sql = 'SELECT MAX(id) FROM ebms_state';
 $last_loaded = \Drupal::database()->query($sql)->fetchField();
 while (($line = fgets($fp)) !== FALSE) {
@@ -64,7 +64,7 @@ log_success("Successfully loaded: $n article states", $elapsed);
 
 // Load the tags.
 $start = microtime(TRUE);
-$fp = fopen("$repo_base/migration/exported/article_tags.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/article_tags.json", 'r');
 $n = 0;
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
@@ -79,7 +79,7 @@ log_success("Successfully loaded: $n article tags", $elapsed);
 // Load the topics.
 $n = 0;
 $start = microtime(TRUE);
-$fp = fopen("$repo_base/migration/exported/article_topics.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/article_topics.json", 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
   $topic = \Drupal\ebms_article\Entity\ArticleTopic::create($values);
@@ -92,11 +92,11 @@ log_success("Successfully loaded: $n article topics", $elapsed);
 // Load the articles.
 $n = 0;
 $start = microtime(TRUE);
-$fp = fopen("$repo_base/migration/exported/articles.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/articles.json", 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
   $id = $values['id'];
-  $xml = file_get_contents("$repo_base/migration/articles/$id.xml");
+  $xml = file_get_contents("$repo_base/unversioned/articles/$id.xml");
   $pubmed_values = \Drupal\ebms_article\Entity\Article::parse($xml);
   $values = array_merge($values, $pubmed_values);
   if (!empty($values['internal_tags'])) {
@@ -117,7 +117,7 @@ log_success("Successfully loaded: $n articles", $elapsed);
 $start = microtime(TRUE);
 $n = 0;
 $map = $maps['relationship_types'];
-$path = "$repo_base/migration/exported/article_relationships.json";
+$path = "$repo_base/unversioned/exported/article_relationships.json";
 $fp = fopen($path, 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);

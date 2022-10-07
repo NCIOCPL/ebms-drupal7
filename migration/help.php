@@ -7,7 +7,7 @@ $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 // Load the image files.
 $start = microtime(TRUE);
-$paths = array_filter(glob("$repo_base/migration/inline-images/*"), 'is_file');
+$paths = array_filter(glob("$repo_base/unversioned/inline-images/*"), 'is_file');
 $count = 0;
 $mime_map = ['jpg' => 'image/jpeg', 'png' => 'image/png'];
 foreach ($paths as $path) {
@@ -70,7 +70,7 @@ foreach ($pages as $section => $titles) {
     $name = strtolower($title);
     $name = str_replace(' ', '-', $name);
     $name = str_replace('/', '-', $name);
-    $path = "$repo_base/migration/$top/$name.html";
+    $path = "$repo_base/unversioned/$top/$name.html";
     $values = [
       'title' => "$prefix $title",
       'uid' => 1,

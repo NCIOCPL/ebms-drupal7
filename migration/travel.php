@@ -20,7 +20,7 @@ $config_sources = [
 foreach ($config_sources as $set_name => $values) {
   $config = $config_factory->getEditable("ebms_travel.$set_name");
   foreach ($values as $name => $filename) {
-    $path = "$repo_base/migration/$filename";
+    $path = "$repo_base/unversioned/$filename";
     $config->set($name, trim(file_get_contents($path)));
   }
   $config->save();
@@ -44,7 +44,7 @@ $values = [
   'type' => 'page',
   'path' => ['alias' => '/travel'],
   'body' => [
-    'value' => file_get_contents("$repo_base/migration/travel-landing.html"),
+    'value' => file_get_contents("$repo_base/unversioned/travel-landing.html"),
     'format' => 'filtered_html',
   ],
 ];
@@ -56,7 +56,7 @@ $values = [
   'type' => 'page',
   'path' => ['alias' => '/travel/directions'],
   'body' => [
-    'value' => file_get_contents("$repo_base/migration/travel-directions.html"),
+    'value' => file_get_contents("$repo_base/unversioned/travel-directions.html"),
     'format' => 'filtered_html',
   ],
 ];
@@ -68,7 +68,7 @@ $values = [
   'type' => 'page',
   'path' => ['alias' => '/travel/policies-and-procedures'],
   'body' => [
-    'value' => file_get_contents("$repo_base/migration/travel-policies.html"),
+    'value' => file_get_contents("$repo_base/unversioned/travel-policies.html"),
     'format' => 'filtered_html',
   ],
 ];
@@ -86,7 +86,7 @@ $terms = $storage->loadMultiple($query->execute());
 $hotels = [];
 foreach ($terms as $term)
   $hotels[$term->field_text_id->value] = $term->id();
-$fp = fopen("$repo_base/migration/exported/hotel_requests.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/hotel_requests.json", 'r');
 $created = 0;
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
@@ -132,7 +132,7 @@ $terms = $storage->loadMultiple($query->execute());
 $meals_and_incidentals = [];
 foreach ($terms as $term)
   $meals_and_incidentals[$term->field_text_id->value] = $term->id();
-$fp = fopen("$repo_base/migration/exported/reimbursement_requests.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/reimbursement_requests.json", 'r');
 $created = 0;
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);

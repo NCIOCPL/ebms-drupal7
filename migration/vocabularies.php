@@ -149,7 +149,7 @@ $vocabularies = [
 ];
 foreach ($vocabularies as $name) {
   $start = microtime(TRUE);
-  $path = "$repo_base/migration/exported/$name" . '_vocabulary.json';
+  $path = "$repo_base/unversioned/exported/$name" . '_vocabulary.json';
   $fp = fopen($path, 'r');
   $n = 0;
   while (($line = fgets($fp)) !== FALSE) {
@@ -184,6 +184,6 @@ foreach ($vocabularies as $name) {
 }
 
 // Make the ID maps available to other loaders.
-$fp = fopen("$repo_base/migration/maps.json", 'w');
+$fp = fopen("$repo_base/unversioned/maps.json", 'w');
 fwrite($fp, json_encode($maps, JSON_PRETTY_PRINT));
 fclose($fp);

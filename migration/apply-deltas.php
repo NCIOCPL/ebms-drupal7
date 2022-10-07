@@ -11,11 +11,11 @@ if (empty(getenv('EBMS_MIGRATION_LOAD'))) {
 
 // Find out where the data is.
 $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
-$deltas = "$repo_base/migration/deltas";
+$deltas = "$repo_base/unversioned/deltas";
 $start_top = microtime(TRUE);
 
 // Load the ID mappings.
-$json = file_get_contents("$repo_base/migration/maps.json");
+$json = file_get_contents("$repo_base/unversioned/maps.json");
 $maps = json_decode($json, TRUE);
 $meeting_vocabularies = [
   'meeting_categories' => ['Board' => 'board', 'Subgroup' => 'subgroup'],
@@ -51,7 +51,7 @@ foreach ($vocabularies as $vid) {
 // Map the user's group membership IDs and clear out empty picture fields.
 function map_user_values(array &$values, array &$maps, string $repo_base) {
   if (!\Drupal::moduleHandler()->moduleExists('externalauth')) {
-    $values['pass'] = trim(file_get_contents("$repo_base/userpw"));
+    $values['pass'] = trim(file_get_contents("$repo_base/unversioned/userpw"));
   }
   $groups = [];
   foreach (['subgroups', 'ad_hoc_groups'] as $key) {
@@ -76,7 +76,7 @@ function map_ad_hoc_groups(array &$values, array &$maps, string $repo_base) {
   if (empty($maps['ad_hoc_groups'][$original_id])) {
     $id = \Drupal::database()->query('SELECT MAX(id) FROM ebms_group')->fetchField() + 1;
     $maps['ad_hoc_groups'][$original_id] = $id;
-    $fp = fopen("$repo_base/migration/maps.json", 'w');
+    $fp = fopen("$repo_base/unversioned/maps.json", 'w');
     fwrite($fp, json_encode($maps, JSON_PRETTY_PRINT));
     fclose($fp);
   }
@@ -89,7 +89,7 @@ function map_subgroups(array &$values, array &$maps, string $repo_base) {
   if (empty($maps['subgroups'][$original_id])) {
     $id = \Drupal::database()->query('SELECT MAX(id) FROM ebms_group')->fetchField() + 1;
     $maps['subgroups'][$original_id] = $id;
-    $fp = fopen("$repo_base/migration/maps.json", 'w');
+    $fp = fopen("$repo_base/unversioned/maps.json", 'w');
     fwrite($fp, json_encode($maps, JSON_PRETTY_PRINT));
     fclose($fp);
   }
@@ -161,7 +161,7 @@ function map_article_tags(array &$values, array &$maps, string $repo_base) {
 // Map internal tags and merge in values from PubMed.
 function assemble_article(array &$values, array &$maps, string $repo_base) {
   $id = $values['id'];
-  $xml = file_get_contents("$repo_base/migration/articles/$id.xml");
+  $xml = file_get_contents("$repo_base/unversioned/articles/$id.xml");
   $pubmed_values = \Drupal\ebms_article\Entity\Article::parse($xml);
   unset($pubmed_values['comments_corrections']);
   $values = array_merge($values, $pubmed_values);
@@ -421,7 +421,7 @@ foreach ($entity_types as $type_name => $entity_type) {
 if (\Drupal::moduleHandler()->moduleExists('externalauth')) {
   $db = \Drupal::database();
   $db->query('DELETE FROM authmap')->execute();
-  $fp = fopen("$repo_base/migration/exported/authmap.json", 'r');
+  $fp = fopen("$repo_base/unversioned/exported/authmap.json", 'r');
   while (($line = fgets($fp)) !== FALSE) {
     $values = json_decode($line, TRUE);
     $db->insert('authmap')->fields($values)->execute();

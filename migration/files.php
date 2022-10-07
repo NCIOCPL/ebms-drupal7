@@ -7,7 +7,7 @@ $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 $start = microtime(TRUE);
 $n = 0;
-$fp = fopen("$repo_base/migration/exported/files.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/files.json", 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
   if (empty($values['uri'])) {

@@ -6,7 +6,7 @@ require(__DIR__ . '/console-log.php');
 $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 $start = microtime(TRUE);
-$fp = fopen("$repo_base/migration/exported/boards.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/boards.json", 'r');
 $n = 0;
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);

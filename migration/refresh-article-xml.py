@@ -3,16 +3,17 @@
 """
 Get new and changed PubMed article XML from the production Drupal 7 EBMS.
 
-1. load the information from the manifest written by the previous run
+1. Load the information from the manifest written by the previous run
    into a dictionary indexed by the articles' integer IDs, each record
    containing a tuple of the following values:
      * hex representation of the SHA1 checksum for the XML document's bytes
      * string representation of the article's unique EBMS ID
      * string representation of the size of the XML document (in UTF-8 bytes)
      * date/time when the article was last added/refreshed (YYYYMMDDhhmmss)
-2. Move the manifest file we just loaded to articles.manifest.TIMESTAMP,
-   and open new files for writing a fresh manifest, as well as a checksum
-   file which can be used by "sha1sum -c articles.sums"
+2. Move the manifest file we just loaded to articles.manifest.TIMESTAMP
+   in the ../unversioned directory and open new files for writing a fresh
+   manifest, as well as a checksum file which can be used by the command
+   "sha1sum -c articles.sums"
 3. Fetch the EBMS article IDs and SHA1 checksum for the PubMed XML from the
    database
 4. For each row in the set fetched in step 3:
@@ -43,18 +44,19 @@ start = datetime.now()
 parser = ArgumentParser()
 parser.add_argument("--report-only", "-r", action="store_true")
 opts = parser.parse_args()
-with open("articles.manifest", encoding="utf-8") as fp:
+with open("../unversioned/articles.manifest", encoding="utf-8") as fp:
     articles = {}
     for line in fp:
         sha1, article_id, filesize, timestamp = line.strip().split()
         articles[int(article_id)] = sha1, article_id, filesize, timestamp
 if not opts.report_only:
-    path = Path("articles.manifest")
+    path = Path("../unversioned/articles.manifest")
     stamp = int(path.stat().st_mtime)
-    name = f"articles.manifest.{stamp}"
+    name = f"../unversioned/articles.manifest.{stamp}"
     path.rename(name)
-    manifest_fp = open("articles.manifest", "w", encoding="utf-8")
-    sums_fp = open("articles.sums", "w", encoding="utf-8")
+    path = "../unversioned/articles.manifest"
+    manifest_fp = open(path, "w", encoding="utf-8")
+    sums_fp = open("../unversioned/articles.sums", "w", encoding="utf-8")
 cursor = DBMS().connect().cursor()
 cursor.execute("SELECT article_id, SHA1(source_data) AS sha1_hash "
                "FROM ebms_article ORDER BY article_id")
@@ -83,9 +85,7 @@ for row in cursor.fetchall():
         article_xml = cursor.fetchone()["source_data"].encode("utf-8")
         filesize = len(article_xml)
         now = datetime.now().strftime("%Y%m%d%H%M%S")
-        #with open(f"articles.updated/{article_id}.xml", "wb") as fp:
-        #    fp.write(article_xml)
-        with open(f"articles/{article_id}.xml", "wb") as fp:
+        with open(f"../unversioned/articles/{article_id}.xml", "wb") as fp:
             fp.write(article_xml)
         manifest_fp.write(f"{sha1} {article_id} {filesize} {now}\n")
         sums_fp.write(f"{sha1} articles/{article_id}.xml\n")

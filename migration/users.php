@@ -6,7 +6,7 @@ require(__DIR__ . '/console-log.php');
 $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 // Load the group ID mappings.
-$json = file_get_contents("$repo_base/migration/maps.json");
+$json = file_get_contents("$repo_base/unversioned/maps.json");
 $maps = json_decode($json, true);
 
 // Find out if we're creating SSO logins.
@@ -17,7 +17,7 @@ if ($sso) {
   $db = \Drupal::database();
   $db->query('DELETE FROM authmap')->execute();
   $authmap = [];
-  $fp = fopen("$repo_base/migration/exported/authmap.json", 'r');
+  $fp = fopen("$repo_base/unversioned/exported/authmap.json", 'r');
   while (($line = fgets($fp)) !== FALSE) {
     $values = json_decode($line, TRUE);
     $db->insert('authmap')->fields($values)->execute();
@@ -26,9 +26,9 @@ if ($sso) {
 }
 
 // Load the users.
-$password = trim(file_get_contents("$repo_base/userpw"));
+$password = trim(file_get_contents("$repo_base/unversioned/userpw"));
 $n = 0;
-$fp = fopen("$repo_base/migration/exported/users.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/users.json", 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
   if (!$sso) {

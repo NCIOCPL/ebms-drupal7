@@ -1,5 +1,7 @@
 #!/bin/bash
 
+start_time=${SECONDS}
+date
 SUDO=$(which sudo)
 REPO_BASE=$(pwd)
 while getopts r: flag
@@ -9,9 +11,13 @@ do
     esac
 done
 export REPO_BASE
-DBURL=$(cat ${REPO_BASE}/dburl)
-ADMINPW=$(cat ${REPO_BASE}/adminpw)
-SITEHOST=$(cat ${REPO_BASE}/sitehost)
+DRUSH=${REPO_BASE}/vendor/bin/drush
+DATA=${REPO_BASE}/testdata
+SITE=${REPO_BASE}/web/sites/default
+UNVERSIONED=${REPO_BASE}/unversioned
+DBURL=$(cat ${UNVERSIONED}/dburl)
+ADMINPW=$(cat ${UNVERSIONED|/adminpw)
+SITEHOST=$(cat ${UNVERSIONED}/sitehost)
 echo options: > ${REPO_BASE}/drush/drush.yml
 case $SITEHOST in
     *localhost*)
@@ -21,11 +27,6 @@ case $SITEHOST in
         echo "  uri: https://$SITEHOST" >> ${REPO_BASE}/drush/drush.yml
         ;;
 esac
-DRUSH=${REPO_BASE}/vendor/bin/drush
-DATA=${REPO_BASE}/testdata
-SITE=${REPO_BASE}/web/sites/default
-start_time=${SECONDS}
-date
 $SUDO chmod a+w ${SITE}
 $SUDO chmod -R a+w ${SITE}/files
 rm -rf ${SITE}/files/*
@@ -65,6 +66,9 @@ $DRUSH en ebms_breadcrumb
 $DRUSH en ebms_help
 $DRUSH cset -y -q system.theme default ebms
 $DRUSH cset -y -q system.site page.front /home
+$DRUSH cset -y -q system.date country.default US
+$DRUSH cset -y -q system.date timezone.default America/New_York
+$DRUSH cset -y -q system.date timezone.user.configurable false
 $DRUSH scr --script-path=$DATA vocabularies
 $DRUSH scr --script-path=$DATA users
 $DRUSH scr --script-path=$DATA files

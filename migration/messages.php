@@ -7,11 +7,11 @@ $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 // Load the group ID mappings.
 $start = microtime(TRUE);
-$json = file_get_contents("$repo_base/migration/maps.json");
+$json = file_get_contents("$repo_base/unversioned/maps.json");
 $maps = json_decode($json, TRUE);
 
 // Load the messages.
-$fp = fopen("$repo_base/migration/exported/messages.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/messages.json", 'r');
 $n = 0;
 $legacy_group_types = ['subgroups', 'ad_hoc_groups'];
 while (($line = fgets($fp)) !== FALSE) {

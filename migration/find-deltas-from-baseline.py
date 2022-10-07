@@ -2,17 +2,18 @@
 
 """Determine what needs to happen to bring the EBMS 4 database up to date.
 
-This script in run when one of the following sequence has occurred:
+This script in run when the following sequence has occurred:
 
   1. The export.py script is run, extracting records from EBMS PROD
   2. The results of that script are imported into the Drupal 9 EBMS
-  3. The "exported" directory is renamed "baseline"
+  3. The "../unversioned/exported" directory is renamed "baseline"
   4. Time passes and EBMS PROD data evolves
   5. The export.py script is run again
 
-The job of this script is to create and populate a fres "deltas" directory,
-which will contain new and changed records derived by comparing the contents
-of the "baseline" directory with the just-populated "exported" directory.
+The job of this script is to create and populate a fresh "deltas" subdirectory
+under ../unversioned, containing new and changed records derived by comparing
+the contents of the "../unversioned/baseline" directory with the just-
+populated "../unversioned/exported" directory.
 
 Two other things need to happen at this point:
 
@@ -48,14 +49,14 @@ ID_KEYS = dict(
 )
 
 start = datetime.now()
-path = Path("deltas")
+path = Path("../unversioned/deltas")
 if path.exists():
     stamp = datetime.now().strftime("%Y%m%d%H%M%S")
-    path.rename(f"deltas-{stamp}")
-Path("deltas").mkdir()
-Path("deltas/mod").mkdir()
-Path("deltas/new").mkdir()
-for path in sorted(Path("baseline").glob("*.json")):
+    path.rename(f"../unversioned/deltas-{stamp}")
+Path("../unversioned/deltas").mkdir()
+Path("../unversioned/deltas/mod").mkdir()
+Path("../unversioned/deltas/new").mkdir()
+for path in sorted(Path("../unversioned/baseline").glob("*.json")):
     hashes = {}
     name = path.name.replace(".json", "")
     print(f"comparing {name}")
@@ -64,17 +65,17 @@ for path in sorted(Path("baseline").glob("*.json")):
         for line in fp:
             record_id = loads(line)[key]
             hashes[record_id] = sha1(line.encode("utf-8")).hexdigest()
-    with open(f"exported/{name}.json", encoding="utf-8") as fp:
+    with open(f"../unversioned/exported/{name}.json", encoding="utf-8") as fp:
         for line in fp:
             record_id = loads(line)[key]
             if record_id not in hashes:
-                new_path = f"deltas/new/{name}.json"
+                new_path = f"../unversioned/deltas/new/{name}.json"
                 with open(new_path, "a", encoding="utf-8") as new_fp:
                     new_fp.write(line)
             else:
                 h = sha1(line.encode("utf-8")).hexdigest()
                 if h != hashes[record_id]:
-                    mod_path = f"deltas/mod/{name}.json"
+                    mod_path = f"../unversioned/deltas/mod/{name}.json"
                     with open(mod_path, "a", encoding="utf-8") as mod_fp:
                         mod_fp.write(line)
 elapsed = datetime.now() - start

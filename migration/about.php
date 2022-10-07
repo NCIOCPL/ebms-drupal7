@@ -13,7 +13,7 @@ $values = [
   'type' => 'page',
   'path' => ['alias' => '/about'],
   'body' => [
-    'value' => file_get_contents("$repo_base/migration/about.html"),
+    'value' => file_get_contents("$repo_base/unversioned/about.html"),
     'format' => 'filtered_html',
   ],
 ];

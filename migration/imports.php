@@ -30,7 +30,7 @@ foreach ($terms as $term) {
 // Load the import batch entities.
 $start = microtime(TRUE);
 $count = 0;
-$fp = fopen("$repo_base/migration/exported/import_batches.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/import_batches.json", 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
   $actions = [];
@@ -52,7 +52,7 @@ log_success("Successfully loaded: $count import batches", $elapsed);
 // Load the import request entities.
 $count = 0;
 $start = microtime(TRUE);
-$fp = fopen("$repo_base/migration/exported/import_requests.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/import_requests.json", 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
   $report = json_decode($values['report'], TRUE);

@@ -7,9 +7,9 @@ $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 $start = microtime(TRUE);
 $n = 0;
-$json = file_get_contents("$repo_base/migration/maps.json");
+$json = file_get_contents("$repo_base/unversioned/maps.json");
 $map = json_decode($json, TRUE)['doc_tags'];
-$fp = fopen("$repo_base/migration/exported/docs.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/docs.json", 'r');
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
   if (!empty($values['tags'])) {

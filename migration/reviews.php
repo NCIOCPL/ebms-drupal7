@@ -6,12 +6,12 @@ require(__DIR__ . '/console-log.php');
 $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 # Load the ID maps.
-$json = file_get_contents("$repo_base/migration/maps.json");
+$json = file_get_contents("$repo_base/unversioned/maps.json");
 $maps = json_decode($json, true);
 
 # Load the reviewer documents.
 $start = microtime(TRUE);
-$fp = fopen("$repo_base/migration/exported/reviewer_docs.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/reviewer_docs.json", 'r');
 $count = 0;
 while (($line = fgets($fp)) !== FALSE) {
   $values = json_decode($line, TRUE);
@@ -23,7 +23,7 @@ $elapsed = round(microtime(TRUE) - $start);
 log_success("Successfully loaded: $count reviewer documents", $elapsed);
 
 # Load the reviews.
-$fp = fopen("$repo_base/migration/exported/reviews.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/reviews.json", 'r');
 $count = 0;
 $start = microtime(TRUE);
 while (($line = fgets($fp)) !== FALSE) {
@@ -54,7 +54,7 @@ $elapsed = round(microtime(TRUE) - $start);
 log_success("Successfully loaded: $count reviews", $elapsed);
 
 # Load the packet articles.
-$fp = fopen("$repo_base/migration/exported/packet_articles.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/packet_articles.json", 'r');
 $count = 0;
 $start = microtime(TRUE);
 while (($line = fgets($fp)) !== FALSE) {
@@ -67,7 +67,7 @@ $elapsed = round(microtime(TRUE) - $start);
 log_success("Successfully loaded: $count packet articles", $elapsed);
 
 # Load the packets.
-$fp = fopen("$repo_base/migration/exported/packets.json", 'r');
+$fp = fopen("$repo_base/unversioned/exported/packets.json", 'r');
 $count = 0;
 $start = microtime(TRUE);
 while (($line = fgets($fp)) !== FALSE) {

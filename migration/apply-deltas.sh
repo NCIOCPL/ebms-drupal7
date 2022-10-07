@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Must be run from the git repository directory.
-if [ ! -f "dburl" ]; then
-    echo Must be run from the git repository directory
+# Must be run from the git repository's top-level directory.
+if [ ! -f "unversioned/dburl" ]; then
+    echo Must be run from the git repository root directory
     exit 1
 fi
 

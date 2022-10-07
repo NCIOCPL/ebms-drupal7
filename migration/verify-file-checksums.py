@@ -31,12 +31,12 @@ for line in stdin:
     checksum, path = line.strip().split(None, 1)
     old_sums[path] = checksum
 new_sums = {}
-with open("files.sums", encoding="utf-8") as fp:
+with open("../unversioned/files.sums", encoding="utf-8") as fp:
     for line in fp:
         checksum, path = line.strip().split(None, 1)
         new_sums[path] = checksum
 tested = 0
-with open("exported/files.json", encoding="utf-8") as fp:
+with open("../unversioned/exported/files.json", encoding="utf-8") as fp:
     for line in fp:
         values = loads(line)
         if opts.cutoff:
