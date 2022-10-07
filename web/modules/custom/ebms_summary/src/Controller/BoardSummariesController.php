@@ -116,6 +116,8 @@ class BoardSummariesController extends ControllerBase {
         $pages[] = $values;
       }
     }
+    $name = array_column($pages, 'name');
+    array_multisort($name, SORT_ASC, $pages);
     $page = [
       '#title' => $board->name->value,
       '#cache' => ['max-age' => 0],
