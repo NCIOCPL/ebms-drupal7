@@ -1,0 +1,12 @@
+@media (min-width: 64em) {
+  #select-board {
+    display: flex;
+  }
+  #image-wrapper {
+    flex: 1;
+  }
+  #boards-wrapper {
+    width: 70rem;
+    margin-left: 2rem;
+  }
+}

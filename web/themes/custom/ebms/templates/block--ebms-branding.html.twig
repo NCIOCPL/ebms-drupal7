@@ -49,6 +49,9 @@
     <div id="profile">
       {% if logged_in %}
       <div id="pmid-search-and-links" class="display-flex flex-justify-end margin-top-3">
+        {% if can_post_doc %}
+        <a class="usa-button post-doc-button" href="/docs/create">Post&nbsp;Document</a>
+        {% endif %}
         <form class="usa-search usa-search--small" action="/articles/pmid-search" role="search">
           <label class="usa-sr-only" for="pmid-search-field">Search PMID</label>
           <input class="usa-input" id="pmid-search-field" placeholder="PMID" type="search" name="pmid">
@@ -58,13 +61,6 @@
         </form>
       </div>
       <div id="user-top" class="display-flex flex-justify-end margin-top-1">
-        <img
-          class="flex-align-self-center"
-          id="user-photo-image"
-          alt="{{ user_name }} profile picture"
-          title="{{ user_name }}"
-          src="{{ user_picture_url }}"
-          typeof="foaf:Image">
         <a id="profile-link" href="/profile/{{ user_id }}" class="font-body-md text-no-underline text-base-darkest flex-align-self-center margin-left-2">{{ user_name }}</a>
         <a id="exit-link" href="/user/logout" class="text-no-underline margin-left-1" title="Log Out"><img src="/themes/custom/ebms/images/exit-blue.png" alt="Log Out"></a>
       </div>

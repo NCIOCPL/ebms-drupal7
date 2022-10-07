@@ -63,7 +63,7 @@ class ReviewQueue extends FormBase {
   /**
    * Decisions the reviewer can make about each article-topic combination.
    */
-  const DECISIONS = ['Undecided', 'Approved', 'Rejected', 'FYI', 'On Hold'];
+  const DECISIONS = ['None', 'Approve', 'Reject', 'FYI', 'On Hold'];
 
   /**
    * States used when applying decisions.

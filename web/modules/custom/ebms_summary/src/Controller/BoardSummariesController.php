@@ -243,18 +243,30 @@ class BoardSummariesController extends ControllerBase {
       $links[] = Link::createFromRoute($name, $route, $parms);
     }
     return [
+      '#attached' => ['library' => ['ebms_summary/select-board']],
       '#title' => 'Summaries',
-      'image' => [
-        '#theme' => 'image',
-        '#attributes' => [
-          'src' => '/themes/custom/ebms/images/typewriter.jpg',
+      'wrapper' => [
+        '#type' => 'container',
+        '#attributes' => ['id' => 'select-board'],
+        'image-wrapper' => [
+          '#type' => 'container',
+          'image' => [
+            '#theme' => 'image',
+            '#attributes' => [
+              'src' => '/themes/custom/ebms/images/typewriter.jpg',
+            ],
+          ],
         ],
-      ],
-      'boards' => [
-        '#theme' => 'item_list',
-        '#title' => 'Select a board.',
-        '#list_type' => 'ul',
-        '#items' => $links,
+        'boards-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['id' => 'boards-wrapper'],
+          'boards' => [
+            '#theme' => 'item_list',
+            '#title' => 'Select a board.',
+            '#list_type' => 'ul',
+            '#items' => $links,
+          ],
+        ],
       ],
     ];
   }

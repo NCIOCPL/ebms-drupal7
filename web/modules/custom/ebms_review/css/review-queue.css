@@ -47,3 +47,30 @@
 .review-topic-name a {
   margin-left: 1.5rem;
 }
+.review-topic {
+  margin-bottom: 3rem;
+}
+@media (min-width: 64em) {
+  .review-topic {
+    clear: both;
+    margin-bottom: 2rem;
+  }
+  .name-and-tags {
+    float: left;
+    width: auto;
+    padding-top: .5rem;
+  }
+  .topic-button-wrapper {
+    float: right;
+    width: auto;
+  }
+  .add-topic-tag,
+  .topic-buttons {
+    display: inline-block;
+    width: auto;
+    margin-top: 0;
+  }
+  .usa-form .add-topic-tag a.usa-button {
+    margin-top: 0;
+  }
+}

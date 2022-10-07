@@ -18,12 +18,7 @@ function ebms_preprocess_block__ebms_branding(array &$variables) {
   $variables['user_id'] = $user_id = $variables['user']->id();
   $user = User::load($user_id);
   $variables['user_name'] = $user->name->value;
-  if ($user->user_picture->isEmpty()) {
-    $variables['user_picture_url'] = '/themes/custom/ebms/images/avatar.png';
-  }
-  else {
-    $variables['user_picture_url'] = $user->user_picture->entity->createFileUrl();
-  }
+  $variables['can_post_doc'] = $user->hasPermission('manage documents');
 }
 
 /**

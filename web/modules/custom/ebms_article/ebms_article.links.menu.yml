@@ -20,6 +20,7 @@ ebms_article.full_text_queue:
   route_name: ebms_article.full_text_queue
   description: Bulk upload of article full text.
   parent: ebms_article.articles
+  weight: -1
 entity.ebms_article.collection:
   title: 'EBMS Articles'
   route_name: entity.ebms_article.collection

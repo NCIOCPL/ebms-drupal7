@@ -321,7 +321,7 @@ class DocForm extends FormBase {
       $form_state->setRedirectUrl(Url::fromUri("$base/$url"));
     }
     else {
-      $form_state->setRedirect('ebms_doc.list', [], $options);
+      $form_state->setRedirect('ebms_report.documents');
     }
   }
 }

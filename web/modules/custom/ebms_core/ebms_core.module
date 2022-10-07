@@ -76,6 +76,8 @@ function _ebms_core_role_permissions(): array {
     ],
     'admin_assistant' => [
       'enter travel requests',
+      'import articles',
+      'manage articles',
       'perform full search',
       'print packets',
       'record print responses',

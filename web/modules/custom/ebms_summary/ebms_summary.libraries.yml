@@ -1,0 +1,4 @@
+select-board:
+  css:
+    theme:
+      css/select-board.css: {}

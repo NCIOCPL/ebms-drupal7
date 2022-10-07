@@ -76,11 +76,11 @@ height: auto;
 #ebms-help-link {
   white-space: nowrap;
 }
+.post-doc-button {
+  margin-top: 0.07rem;
+}
 #profile {
   margin-top: .5rem;
-}
-#user-photo-image {
-  width: 45px;
 }
 #exit-link {
   position: relative;
@@ -159,6 +159,9 @@ height: auto;
 #main-menu-wrapper nav ul {
   justify-content: center;
 }
+.usa-nav__primary-item li.usa-nav__submenu-item {
+  text-align: left;
+}
 #main-menu-wrapper > nav.usa-nav {
   border-top: none;
 }
@@ -183,6 +186,12 @@ a:hover,
 .usa-pagination__button.usa-current:visited,
 .usa-pagination__button.usa-current {
   color: white;
+}
+@media (min-width: 64em) {
+  .usa-nav__primary > .usa-nav__primary-item,
+  .usa-nav__primary button {
+    font-size: 1.04rem;
+  }
 }
 
 /* Form elements */
