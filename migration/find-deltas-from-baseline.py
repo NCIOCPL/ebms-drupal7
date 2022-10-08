@@ -40,6 +40,7 @@ from json import loads
 from pathlib import Path
 
 ID_KEYS = dict(
+    authmap="uid",
     board_summaries="board",
     files="fid",
     journals="source_id",
