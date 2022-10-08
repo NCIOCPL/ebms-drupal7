@@ -172,7 +172,7 @@ class Exporter:
         path = Path("../unversioned/exported")
         if not path.exists():
             path.mkdir()
-        self.cursor = DBMS(self.opts.tier).connect().cursor()
+        self.cursor = DBMS().connect().cursor()
         sets = self.opts.include or self.SETS
         for function in sets:
             if function in self.SETS:
