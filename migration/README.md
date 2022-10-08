@@ -13,12 +13,12 @@ The steps, at a broad level, include:
 
 1. Linux server is provisioned
 2. The software for the new EBMS is installed on the server from the repository
-3. A tar file with the old EBMS /files directory is copied to the new server
-4. The article XML is copied to the new server
-5. The script to extract the data from the existing EBMS is run (~ 1/2 hour)
-6. The script to install Drupal 9, enable the modules, and load the data is run (about 9 hours)
-7. The Drupal 7 EBMS site is put into maintenance mode
-8. The files, XML, and extracted database values are refreshed and applied
+3. The files which are not under version control are copied to the new server
+4. The script to extract the data from the existing EBMS is run (~ 1/2 hour)
+5. The script to install Drupal 9, enable the modules, and load the data is run (about 9 hours)
+6. The Drupal 7 EBMS site is put into maintenance mode
+7. The files, XML, and extracted database values are refreshed and applied
+8. The DNS name ebms.nci.nih.gov is pointed to the new server
 
 ## Server Provisioning
 
@@ -47,63 +47,71 @@ mv NCIOCPL-ebms-*/* .
 rm -rf NCIOCPL-ebms-*
 ```
 
-## Fetch Archive of EBMS User Files
+## Fetch the unversioned files
 
-Execute these commands (or commands which produce the same result more
-effectively, given the permissions/accounts to which you have access)
-on the new server.
+Execute these commands on the new server.
 
 ```
-cd /local/drupal/ebms/unversioned
-scp nciws-d2387-v:/local/drupal/ebms/unversioned/files.tar .
+cd /local/drupal/ebms
+rsync -a nciws-d2387-v:/local/drupal/ebms/unversioned ./
 ```
 
-## Copy Article XML
-
-Execute these commands (or their equivalent).
-
-```
-cd /local/drupal/ebms/unversioned
-rsync -a nciws-d2387-v:/local/drupal/ebms/unversioned/Articles ./
-```
+Edit the file `unversioned/dburl` so that it contains the correct database credentials, host name, and port number. Similarly, edit the file `unversioned/sitehost` so that it contains the correct name for the web host (_e.g._, `ebms4.nci.nih.gov`).
 
 ## Copy EBMS Data
 
 Execute these commands on the new server.
 
 ```
-cd /local/drupal/ebms/unversioned
-scp nciws-d2387-v:/local/drupal/ebms/unversioned/ebms3db.json .
-cd ../migration
+cd /local/drupal/ebms/migration
 ./export.py
 ```
 
-adminpw
-dburl
-ebms3db.json
-sitehost
-userpw
-migration/about.html
-migration/articles
-migration/articles.manifest
-migration/articles.sums ?
-migration/authmap.json ?
-migration/baseline ?
-migration/deltas ?
-migration/developers
-migration/exported ?
-migration/files ?
-migration/files.manifest ?
-migration/files.sums ?
-migration/files.tar
-migration/fix-reimbursement-values.php
-migration/help
-migration/hotel-form.html
-migration/inline-images
-migration/ncihelp
-migration/packet_article_ids ?
-migration/reimbursement-form.html
-migration/travel-directions.html
-migration/travel-directions.html
-migration/travel-manager
-migration/travel-policies.html
+## Create the Web Site
+
+Execute these commands on the new server.
+
+```
+cd /local/drupal/ebms
+migration/migrate.sh
+cd unversioned
+rm -rf baseline
+mv exported baseline
+```
+
+## Turn Off User Access
+
+Everything from this point on is done at the time determined by consulting the users as to when it will be best to switch over to the new server. Perform the following steps:
+
+* log onto https://ebms.nci.nih.gov as an administrator
+* navigate to /admin/config/development/maintenance
+* check the "Put site into maintenance mode" box
+* click the "Save configuration" button
+
+As an alternate method, this can be done from the command line using `drush`.
+
+* log onto nciws-p2154-v using ssh
+* `sudo` to the drupal account
+* change to the /local/drupal/sites/ebms.nci.nih.gov directory
+* run the command `drush vset maintenance_mode 1`
+
+## Top Up the New Server
+
+At this point we need to fetch all of the changes which have been made to the production data since we captured our initial snapshot (see "Copy EBMS Data" above). Run the following steps on the new server:
+
+```
+cd /local/drupal/ebms/migration
+./export.py
+./refresh-article-xml.py
+rm -rf ../unversioned/files
+mkdir ../unversioned/files
+./get-new-files.py
+rsync -a ../unversioned/files ../web/sites/default/
+./find-deltas-from-baseline.py
+cd ..
+./apply-deltas.sh
+```
+
+## Bring the New Server Online
+
+After the development team has done some spot-checking to make sure everything has landed safely, CBIIT can do their magic to have ebms.nci.nih.gov point to the new server, and we can let the users know it's ready.

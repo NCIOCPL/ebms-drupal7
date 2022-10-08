@@ -23,7 +23,7 @@ Two other things need to happen at this point:
 Each of those scripts has detailed explanations at the top describing what
 they do and how they are to be executed.
 
-Finally, the apply-updates.sh script can be run, bringing the Drupal 9
+Finally, the apply-deltas.sh script can be run, bringing the Drupal 9
 EBMS up to date with the running Drupal 7 production EBMS.
 
 Of course, the only time when the new Drupal 9 EBMS is guaranteed to be
