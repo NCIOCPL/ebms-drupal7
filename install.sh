@@ -16,7 +16,7 @@ DATA=${REPO_BASE}/testdata
 SITE=${REPO_BASE}/web/sites/default
 UNVERSIONED=${REPO_BASE}/unversioned
 DBURL=$(cat ${UNVERSIONED}/dburl)
-ADMINPW=$(cat ${UNVERSIONED|/adminpw)
+ADMINPW=$(cat ${UNVERSIONED}/adminpw)
 SITEHOST=$(cat ${UNVERSIONED}/sitehost)
 echo options: > ${REPO_BASE}/drush/drush.yml
 case $SITEHOST in
@@ -28,9 +28,8 @@ case $SITEHOST in
         ;;
 esac
 $SUDO chmod a+w ${SITE}
-$SUDO chmod -R a+w ${SITE}/files
-rm -rf ${SITE}/files/*
-$SUDO chmod +w ${SITE}/settings.php
+[ -d ${SITE}/files ] && $SUDO chmod -R a+w ${SITE}/files && rm -rf ${SITE}/files/*
+[ -f ${SITE}/settings.php ] && $SUDO chmod +w ${SITE}/settings.php
 cp -f ${SITE}/default.settings.php ${SITE}/settings.php
 $SUDO chmod +w ${SITE}/settings.php
 echo "\$settings['trusted_host_patterns'] = ['^$SITEHOST\$'];" >> ${SITE}/settings.php
