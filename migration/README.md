@@ -126,3 +126,9 @@ cd ..
 ## Bring the New Server Online
 
 After the development team has done some spot-checking to make sure everything has landed safely, CBIIT can do their magic to have ebms.nci.nih.gov point to the new server, and we can let the users know it's ready.
+
+When the server name is changed, be sure to edit the line near the bottom of `web/sites/default/settings.php' to reflect the new host name. For example:
+
+```
+$settings['trusted_host_patterns'] = ['^ebms.nci.nih.gov$'];
+```
