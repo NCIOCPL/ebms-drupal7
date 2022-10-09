@@ -80,15 +80,6 @@ $vocabularies = [
     'label' => 'parking/toll expense values',
   ],
   [
-    'vid' => 'print_job_modes',
-    'values' => [
-      ['', 'live'],
-      ['', 'test'],
-      ['', 'report'],
-    ],
-    'label' => 'print job modes',
-  ],
-  [
     'vid' => 'reimbursement_to',
     'values' => [
       ['work', 'Work'],
@@ -137,8 +128,6 @@ $vocabularies = [
   ['document_tags.json', 'doc_tags', 'document tags'],
   ['import_dispositions.json', 'import_dispositions', 'import dispositions'],
   ['internal_tags.json', 'internal_tags', 'internal tags'],
-  ['print_statuses.json', '', 'print job statuses'],
-  ['print_job_types.json', '', 'print job types'],
   ['rejection_reasons.json', 'rejection_reasons', 'rejection reasons'],
   ['relationship_types.json', 'relationship_types', 'relationship types'],
   ['dispositions.json', 'dispositions', 'review dispositions'],

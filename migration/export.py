@@ -1438,8 +1438,6 @@ class Exporter:
         self.__doc_tag_vocabulary()
         self.__import_disposition_vocabulary()
         self.__internal_tag_vocabulary()
-        self.__print_job_status_vocabulary()
-        self.__print_job_type_vocabulary()
         self.__rejection_reason_vocabulary()
         self.__relationship_type_vocabulary()
         self.__review_disposition_vocabulary()
@@ -1545,42 +1543,6 @@ class Exporter:
                     id=row["tag_id"],
                     name=row["tag_name"].strip(),
                     status=row["active_status"]=="A",
-                )
-                fp.write(f"{dumps(values)}\n")
-
-    def __print_job_status_vocabulary(self):
-        """Export JSON for the print job status vocabulary."""
-
-        self.__announce("print job status vocabulary")
-        self.cursor.execute(
-            "SELECT * FROM ebms_print_status_type ORDER BY print_job_status_id"
-        )
-        path = "../unversioned/exported/print_job_statuses_vocabulary.json"
-        with open(path, "w", encoding="utf-8") as fp:
-            for row in self.cursor.fetchall():
-                values = dict(
-                    vid="print_job_statuses",
-                    name=row["print_job_status_id"].strip(),
-                    description=row["description"],
-                    status=True,
-                )
-                fp.write(f"{dumps(values)}\n")
-
-    def __print_job_type_vocabulary(self):
-        """Export JSON for the print job type vocabulary."""
-
-        self.__announce("print job type vocabulary")
-        self.cursor.execute(
-            "SELECT * FROM ebms_print_job_type ORDER BY print_job_type_id"
-        )
-        path = "../unversioned/exported/print_job_types_vocabulary.json"
-        with open(path, "w", encoding="utf-8") as fp:
-            for row in self.cursor.fetchall():
-                values = dict(
-                    vid="print_job_types",
-                    name=row["print_job_type_id"].strip(),
-                    description=row["description"],
-                    status=True,
                 )
                 fp.write(f"{dumps(values)}\n")
 

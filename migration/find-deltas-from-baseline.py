@@ -44,8 +44,6 @@ ID_KEYS = dict(
     board_summaries="board",
     files="fid",
     journals="source_id",
-    print_job_statuses_vocabulary="name",
-    print_job_types_vocabulary="name",
     users="uid",
 )
 
