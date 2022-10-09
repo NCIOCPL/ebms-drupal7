@@ -38,7 +38,7 @@ naming convention for the tiers (ebms-test.nci.nih.gov).
 
 ## Install Software From GitHub
 
-Execute the following commands on the new server.
+Execute the following commands on the new server. From this point on all commands should be run as the `drupal` account (`sudo su - drupal`).
 
 ```
 cd /local/drupal/ebms
