@@ -16,10 +16,10 @@ To create a local development environment for this project, perform the followin
 2. Change current directory to the cloned repository.
 3. Create a new `unversioned` directory.
 4. Run `composer install`.
-5. Copy `dburl.example` to `unversioned/dburl`.
-6. Create an admin password, copy `adminpw.example` to `unversioned/adminpw`  and put the admin password in the copied file.
-7. Create a user password, copy `userpw.example` to `unversioned/userpw`  and put the user password in the copied file.
-8. Copy `sitehost.example` to `unversioned/sitehost` and replace the host name if appropriate.
+5. Copy `templates/dburl.example` to `unversioned/dburl`.
+6. Create an admin password, copy `templates/adminpw.example` to `unversioned/adminpw`  and put the admin password in the copied file.
+7. Create a user password, copy `templates/userpw.example` to `unversioned/userpw`  and put the user password in the copied file.
+8. Copy `templates/sitehost.example` to `unversioned/sitehost` and replace the host name if appropriate.
 9. Run `docker compose up -d`.
 10. Run `docker exec -it ebms-web-1 bash`.
 11. Inside the container, run `./install.sh`.

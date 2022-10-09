@@ -6,8 +6,8 @@ services:
     build: .
     volumes:
       - ./:/var/www:cached
-      - ./000-default.conf:/etc/apache2/sites-available/000-default.conf
-      - ./apache2.conf:/etc/apache2/apache2.conf
+      - ./templates/000-default.conf:/etc/apache2/sites-available/000-default.conf
+      - ./templates/apache2.conf:/etc/apache2/apache2.conf
     ports:
       - 8081:80
     networks:

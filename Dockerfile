@@ -41,8 +41,8 @@ RUN DEBIAN_FRONTEND=noninteractive \
     p7zip \
     zip
 
-ADD php.ini /etc/php/8.1/apache2/php.ini
-ADD ssmtp.conf /etc/ssmtp/ssmtp.conf
+ADD templates/php.ini /etc/php/8.1/apache2/php.ini
+ADD templates/ssmtp.conf /etc/ssmtp/ssmtp.conf
 RUN chmod 666 /etc/ssmtp/ssmtp.conf
 RUN a2enmod rewrite
 
