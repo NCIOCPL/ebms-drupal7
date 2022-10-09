@@ -21,7 +21,7 @@ To create a local development environment for this project, perform the followin
 7. Create a user password, copy `userpw.example` to `unversioned/userpw`  and put the user password in the copied file.
 8. Copy `sitehost.example` to `unversioned/sitehost` and replace the host name if appropriate.
 9. Run `docker compose up -d`.
-10. Run `docker exec -it ebms4-web-1 bash`.
+10. Run `docker exec -it ebms-web-1 bash`.
 11. Inside the container, run `./install.sh`.
 12. Point your favorite browser to http://ebms.localhost:8081.
 13. Log in as admin using the password you created in step 5.
