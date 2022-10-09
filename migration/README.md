@@ -15,9 +15,9 @@ The steps, at a broad level, include:
 2. The software for the new EBMS is installed on the server from the repository
 3. The files which are not under version control are copied to the new server
 4. The script to extract the data from the existing EBMS is run (~ 1/2 hour)
-5. The script to install Drupal 9, enable the modules, and load the data is run (about 9 hours)
+5. The script to install Drupal 9, enable the modules, and load the data is run (between 9 and 14 hours)
 6. The Drupal 7 EBMS site is put into maintenance mode
-7. The files, XML, and extracted database values are refreshed and applied
+7. The files, XML, and extracted database values are refreshed and applied (approximately an hour)
 8. The DNS name ebms.nci.nih.gov is pointed to the new server
 
 ## Server Provisioning
@@ -56,11 +56,16 @@ cd /local/drupal/ebms
 rsync -a nciws-d2387-v:/local/drupal/ebms/unversioned ./
 ```
 
-Edit the file `unversioned/dburl` so that it contains the correct database credentials, host name, and port number. Similarly, edit the file `unversioned/sitehost` so that it contains the correct name for the web host (_e.g._, `ebms4.nci.nih.gov`).
+Edit the file `unversioned/dburl` so that it contains the correct
+database credentials, host name, and port number. Similarly, edit the
+file `unversioned/sitehost` so that it contains the correct name for
+the web host (_e.g._, `ebms4.nci.nih.gov`).
 
 ## Copy EBMS Data
 
-Execute these commands on the new server.
+Execute these commands on the new server. They will extract the
+necessary values from the Drupal 7 EBMS database tables into
+JSON-serialized lines, one line for each database table row.
 
 ```
 cd /local/drupal/ebms/migration
@@ -69,11 +74,17 @@ cd /local/drupal/ebms/migration
 
 ## Create the Web Site
 
-Execute these commands on the new server.
+Execute these commands on the new server. The `migrate.sh` command can
+take over thirteen hours to complete on the CBIIT-hosted servers, so
+it is necessary to start the job early in the morning so that it
+completes before midnight, when CBIIT performs database and/or network
+maintenance which would cause the job to fail. Even though this step
+is run in the background, it is necessary to wait until it has
+finished before proceeding with the next commands.
 
 ```
 cd /local/drupal/ebms
-migration/migrate.sh
+nohup migration/migrate.sh &
 cd unversioned
 rm -rf baseline
 mv exported baseline
