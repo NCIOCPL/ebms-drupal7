@@ -1411,8 +1411,6 @@ class Exporter:
                         ad_hoc_groups=ad_hoc_groups.get(uid),
                         topics=topics.get(uid),
                     )
-                    if row["picture"]:
-                        user["user_picture"] = row["picture"]
                     for field in defaults:
                         user[field] = defaults[field].get(uid)
                     fp.write(f"{dumps(user)}\n")

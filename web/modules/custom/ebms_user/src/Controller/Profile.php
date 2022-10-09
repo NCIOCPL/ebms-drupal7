@@ -19,21 +19,12 @@ class Profile extends ControllerBase {
     if (empty($user)) {
       $user = $current_user;
     }
-    if (\Drupal::request()->query->get('delete') === 'picture') {
-      if (!empty($user->user_picture->target_id)) {
-        $file_usage = \Drupal::service('file.usage');
-        $file_usage->delete($user->user_picture->entity, 'user', 'user', $user->id());
-        $user->user_picture->removeItem(0);
-        $user->save();
-        $this->messenger()->addMessage('Acccount picture successfully removed.');
-      }
-    }
     $can_edit = $user->id() == $current_user->id() || $current_user->hasPermission('administer users');
     $roles = [];
     $boards = [];
     $groups = [];
     $topics = [];
-    $default_board = $picture = $remove = $add = '';
+    $default_board = '';
     foreach ($user->roles as $role) {
       $roles[] = $role->entity->get('label');
     }
@@ -49,16 +40,6 @@ class Profile extends ControllerBase {
     if (!empty($user->board->target_id)) {
       $default_board = $user->board->entity->name->value;
     }
-    if (!empty($user->user_picture->target_id)) {
-      $picture = $user->user_picture->entity->createFileUrl();
-      if ($can_edit) {
-        $remove = Url::fromRoute('ebms_user.profile', ['user' => $user->id()], ['query' => ['delete' => 'picture']]);
-      }
-    }
-    elseif ($can_edit) {
-      $add = Url::fromRoute('ebms_user.add_picture', ['user' => $user->id()]);
-    }
-    //return ['#markup' => '<h2>whatever</h2>'];
     return [
       '#title' => $user->name->value,
       '#attached' => ['library' => ['ebms_user/user-profile']],
@@ -75,9 +56,6 @@ class Profile extends ControllerBase {
           'board' => $default_board,
           'groups' => $groups,
           'topics' => $topics,
-          'picture' => $picture,
-          'remove' => $remove,
-          'add' => $add,
         ],
       ],
     ];

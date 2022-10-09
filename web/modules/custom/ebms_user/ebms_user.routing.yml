@@ -11,32 +11,6 @@ ebms_user.profile:
     parameters:
       user:
         type: entity:user
-ebms_user.add_picture:
-  path: '/profile/{user}/add-picture'
-  defaults:
-    _form: Drupal\ebms_user\Form\ProfilePictureForm
-    _title: 'Add Profile Picture'
-  requirements:
-    _user_is_logged_in: 'TRUE'
-  options:
-    no_cache: TRUE
-    parameters:
-      user:
-        type: entity:user
-ebms_user.crop:
-  path: '/profile/{user}/add-picture/crop/{file}'
-  defaults:
-    _form: Drupal\ebms_user\Form\CropForm
-    _title: Crop Picture
-  requirements:
-    _user_is_logged_in: 'TRUE'
-  options:
-    no_cache: TRUE
-    parameters:
-      user:
-        type: entity:user
-      file:
-        type: entity:file
 ebms_user.add_sso_user:
   path: '/admin/people/create_sso'
   defaults:

@@ -140,6 +140,7 @@ function ebms_user_form_alter(&$form, $form_state, $form_id) {
     $user = User::load(\Drupal::currentUser()->id());
     unset($form['account']['notify']);
     unset($form['account']['mail']);
+    unset($form['user_picture']);
     if (!$user->hasPermission('administer users')) {
       unset($form['account']['pass']);
       unset($form['account']['current_pass']);

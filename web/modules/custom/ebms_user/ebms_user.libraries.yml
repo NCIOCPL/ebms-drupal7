@@ -2,16 +2,3 @@ user-profile:
   css:
     theme:
       css/user-profile.css: {}
-profile-picture:
-  js:
-    js/profile-picture.js: {}
-  dependencies:
-    - core/jquery
-picture-crop:
-  css:
-    theme:
-      css/cropper.min.css: {}
-      css/picture-crop.css: {}
-  js:
-    js/cropper.min.js: {}
-    js/picture-crop.js: {}
