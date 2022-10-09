@@ -6,7 +6,7 @@ require(__DIR__ . '/console-log.php');
 $repo_base = getenv('REPO_BASE') ?: '/var/www/ebms';
 
 $json = file_get_contents("$repo_base/testdata/users.json");
-$password = trim(file_get_contents("$repo_base/userpw"));
+$password = trim(file_get_contents("$repo_base/unversioned/userpw"));
 $users = json_decode($json, true);
 foreach ($users as $values) {
   unset($values['mail']);
