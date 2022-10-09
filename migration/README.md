@@ -92,7 +92,9 @@ mv exported baseline
 
 ## Turn Off User Access
 
-Everything from this point on is done at the time determined by consulting the users as to when it will be best to switch over to the new server. Perform the following steps:
+Everything from this point on is done at the time determined by
+consulting the users as to when it will be best to switch over to the
+new server. Perform the following steps:
 
 * log onto https://ebms.nci.nih.gov as an administrator
 * navigate to /admin/config/development/maintenance
@@ -108,7 +110,9 @@ As an alternate method, this can be done from the command line using `drush`.
 
 ## Top Up the New Server
 
-At this point we need to fetch all of the changes which have been made to the production data since we captured our initial snapshot (see "Copy EBMS Data" above). Run the following steps on the new server:
+At this point we need to fetch all of the changes which have been made
+to the production data since we captured our initial snapshot (see
+"Copy EBMS Data" above). Run the following steps on the new server:
 
 ```
 cd /local/drupal/ebms/migration
@@ -125,9 +129,14 @@ cd ..
 
 ## Bring the New Server Online
 
-After the development team has done some spot-checking to make sure everything has landed safely, CBIIT can do their magic to have ebms.nci.nih.gov point to the new server, and we can let the users know it's ready.
+After the development team has done some spot-checking to make sure
+everything has landed safely, CBIIT can do their magic to have
+ebms.nci.nih.gov point to the new server, and we can let the users
+know it's ready.
 
-When the server name is changed, be sure to edit the line near the bottom of `web/sites/default/settings.php' to reflect the new host name. For example:
+When the server name is changed, be sure to edit the line near the
+bottom of `web/sites/default/settings.php` to reflect the new host
+name. For example:
 
 ```
 $settings['trusted_host_patterns'] = ['^ebms.nci.nih.gov$'];
