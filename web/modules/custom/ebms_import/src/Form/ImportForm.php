@@ -50,56 +50,24 @@ class ImportForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, $request_id = NULL): array {
 
-    // Start with a tabular rasa.
-    $board = $topic = $disposition = $bma_disposition = $meeting = 0;
-    $cycle = $pmids = $comment = $mgr_comment = $placement = $fast_track_comments = '';
-    $override_not_list = $test_mode = $fast_track = $special_search = $core_journals_search = $hi_priority = FALSE;
-    $request = NULL;
-
-    // See if we have overrides for these values.
-    if (!empty($request_id)) {
-      $request = ImportRequest::load($request_id);
+    // The only default we provide is for the PubMed IDs field.
+    $request = empty($request_id) ? NULL : ImportRequest::load($request_id);
+    $pmids = $this->getRequest()->get('pmid') ?: '';
+    if (!empty($request)) {
       $params = json_decode($request->params->value, TRUE);
-      $board = $params['board'];
-      $topic = $params['topic'];
-      $cycle = $params['cycle'];
-      $pmids = $params['pmids'];
       if (!empty($params['followup-pmids'])) {
         $pmids = implode(' ', $params['followup-pmids']);
       }
-      $comment = $params['import-comments'];
-      $mgr_comment = $params['mgr-comment'];
-      $override_not_list = $params['override-not-list'];
-      $test_mode = $params['test-mode'];
-      $fast_track = $params['fast-track'];
-      $special_search = $params['special-search'];
-      $core_journals_search = $params['core-journals-search'];
-      $hi_priority = $params['hi-priority'];
-      $placement = $params['placement'];
-      $disposition = $params['disposition'];
-      $bma_disposition = $params['bma-disposition'];
-      $meeting = $params['meeting'];
-      $fast_track_comments = $params['fast-track-comments'];
     }
 
+    // Populate the picklists.
     $storage = $this->entityTypeManager->getStorage('ebms_board');
     $query = $storage->getQuery()->accessCheck(FALSE);
     $query->sort('name');
     $entities = $storage->loadMultiple($query->execute());
     $boards = [];
     foreach ($entities as $entity) {
-      $id = $entity->id();
-      if (empty($board)) {
-        $board = $id;
-      }
-      $boards[$id] = $entity->name->value;
-    }
-    $topics = ['' => 'Select a board'];
-    if (!empty($board)) {
-      $topics = $this->getTopics($board);
-    }
-    if (!empty($topic) && !array_key_exists($topic, $topics)) {
-      $topic = '';
+      $boards[$entity->id()] = $entity->name->value;
     }
     $storage = $this->entityTypeManager->getStorage('taxonomy_term');
     $dispositions = [];
@@ -137,19 +105,11 @@ class ImportForm extends FormBase {
     $query->sort('dates.value', 'DESC');
     $ids = $query->execute();
     $meetings = [];
-    $have_placeholder = FALSE;
     $entities = $storage->loadMultiple($ids);
     foreach ($entities as $entity) {
       $date = substr($entity->dates->value, 0, 10);
-      if (!$have_placeholder && strcmp($now, $date) > 0) {
-        $meetings[] = '';
-        $have_placeholder = TRUE;
-      }
       $name = $entity->name->value;
       $meetings[$entity->id()] = "$name - $date";
-    }
-    if (!$have_placeholder) {
-      $meetings[] = '';
     }
 
     // Populate the cycle picklist.
@@ -164,116 +124,91 @@ class ImportForm extends FormBase {
     // Assemble the form.
     $form = [
       '#title' => 'Import Articles from PubMed',
-      'required' => [
-        '#type' => 'details',
-        '#title' => 'Required Values',
-        '#attached' => [
-          'library' => ['ebms_import/import-form'],
+      '#attached' => ['library' => ['ebms_import/import-form']],
+      'board' => [
+        '#type' => 'select',
+        '#title' => 'Board',
+        '#required' => TRUE,
+        '#description' => 'Select a board to populate the Topic picklist.',
+        '#options' => $boards,
+        '#empty_value' => '',
+        '#ajax' => [
+          'callback' => '::getTopicsCallback',
+          'wrapper' => 'board-controlled',
+          'event' => 'change',
         ],
-        'board' => [
+      ],
+      'board-controlled' => [
+        '#type' => 'container',
+        '#attributes' => ['id' => 'board-controlled'],
+        'topic' => [
           '#type' => 'select',
-          '#title' => 'Board',
+          '#title' => 'Topic',
           '#required' => TRUE,
-          '#description' => 'Select a board to populate the Topic picklist.',
-          '#options' => $boards,
-          '#default_value' => $board,
-          '#ajax' => [
-            'callback' => '::getTopicsCallback',
-            'wrapper' => 'board-controlled',
-            'event' => 'change',
-          ],
-        ],
-        'board-controlled' => [
-          '#type' => 'container',
-          '#attributes' => ['id' => 'board-controlled'],
-          'topic' => [
-            '#type' => 'select',
-            '#title' => 'Topic',
-            '#required' => TRUE,
-            '#states' => [
-              'required' => [':input[name="board"]' => ['empty' => FALSE]],
-            ],
-            '#description' => 'The topic assigned to articles imported in this batch.',
-            '#options' => $topics,
-            '#default_value' => $topic,
+          '#description' => 'The topic assigned to articles imported in this batch.',
+          '#options' => [],
+          '#empty_value' => '',
 
-            // See http://drupaldummies.blogspot.com/2012/01/solved-illegal-choice-has-been-detected.html.
-            '#validated' => TRUE,
-          ],
-        ],
-        'cycle' => [
-          '#type' => 'select',
-          '#title' => 'Cycle',
-          '#options' => $cycles,
-          '#required' => TRUE,
-          '#description' => 'Review cycle for which these articles are to be imported.',
-          '#default_value' => $cycle,
+          // See http://drupaldummies.blogspot.com/2012/01/solved-illegal-choice-has-been-detected.html.
+          '#validated' => TRUE,
         ],
       ],
-      'optional' => [
-        '#type' => 'details',
-        '#title' => 'Article Selection',
-        'pmids' => [
-          '#type' => 'textfield',
-          '#title' => 'PubMed IDs',
-          '#description' => 'Enter article IDs here, separated by space, or post PubMed search results below.',
-          '#default_value' => $pmids,
-        ],
+      'cycle' => [
+        '#type' => 'select',
+        '#title' => 'Cycle',
+        '#options' => $cycles,
+        '#required' => TRUE,
+        '#description' => 'Review cycle for which these articles are to be imported.',
+        '#empty_value' => '',
       ],
-      'comment' => [
-        '#type' => 'details',
-        '#title' => 'Comments',
-        'import-comments' => [
-          '#type' => 'textfield',
-          '#title' => 'Import Comment',
-          '#description' => 'Notes about the import job.',
-          '#default_value' => $comment,
-        ],
-        'mgr-comment' => [
-          '#type' => 'textfield',
-          '#title' => 'Manager Comments',
-          '#description' => 'Information stored with each article for its topic assignment.',
-          '#default_value' => $mgr_comment,
-        ],
+      'pmids' => [
+        '#type' => 'textfield',
+        '#title' => 'PubMed IDs',
+        '#description' => 'Enter article IDs here, separated by space, or post PubMed search results below.',
+        '#default_value' => $pmids,
+      ],
+      'import-comments' => [
+        '#type' => 'textfield',
+        '#title' => 'Import Comment',
+        '#description' => 'Notes about the import job.',
+      ],
+      'mgr-comment' => [
+        '#type' => 'textfield',
+        '#title' => 'Manager Comments',
+        '#description' => 'Information stored with each article for its topic assignment.',
       ],
       'options' => [
-        '#type' => 'details',
+        '#type' => 'fieldset',
         '#title' => 'Options',
         'override-not-list' => [
           '#type' => 'checkbox',
           '#title' => 'Override NOT List',
           '#description' => "Don't reject articles even from journals we don't usually accept for the selected board.",
-          '#default_value' => $override_not_list,
         ],
         'test-mode' => [
           '#type' => 'checkbox',
           '#title' => 'Test Mode',
           '#description' => 'If checked, only show what we would have imported.',
-          '#default_value' => $test_mode,
         ],
         'fast-track' => [
           '#type' => 'checkbox',
           '#title' => 'Fast Track',
           '#description' => 'Skip some of the earlier reviews.',
-          '#default_value' => $fast_track,
         ],
         'special-search' => [
           '#type' => 'checkbox',
           '#title' => 'Special Search',
           '#description' => 'Mark these articles as the result of a custom search.',
-          '#default_value' => $special_search,
         ],
         'core-journals-search' => [
           '#type' => 'checkbox',
           '#title' => 'Core Journals',
           '#description' => 'Importing articles from a PubMed search of the "core" journals.',
-          '#default_value' => $core_journals_search,
         ],
         'hi-priority' => [
           '#type' => 'checkbox',
           '#title' => 'High Priority',
           '#description' => 'Tag the articles in this import batch as high-priority articles.',
-          '#default_value' => $hi_priority,
         ],
         'fast-track-fieldset' => [
           '#type' => 'fieldset',
@@ -289,13 +224,13 @@ class ImportForm extends FormBase {
             ],
             '#description' => 'Assign this state to the imported articles.',
             '#options' => $placements,
-            '#default_value' => $placement,
+            '#empty_value' => '',
           ],
           'disposition' => [
             '#type' => 'select',
             '#title' => 'Disposition',
             '#options' => $dispositions,
-            '#default_value' => $disposition,
+            '#empty_value' => '',
             '#states' => [
               'visible' => [':input[name="placement"]' => ['value' => 'final_board_decision']],
               'required' => [
@@ -310,7 +245,7 @@ class ImportForm extends FormBase {
             '#type' => 'select',
             '#title' => 'Disposition',
             '#options' => $bma_dispositions,
-            '#default_value' => $bma_disposition,
+            '#empty_value' => '',
             '#states' => [
               'visible' => [':input[name="placement"]' => ['value' => 'bma']],
               'required' => [
@@ -325,7 +260,7 @@ class ImportForm extends FormBase {
             '#type' => 'select',
             '#title' => 'Meeting',
             '#options' => $meetings,
-            '#default_value' => $meeting,
+            '#empty_value' => '',
             '#description' => 'Select the meeting for the on-agenda placement state.',
             '#states' => [
               'visible' => [
@@ -346,28 +281,23 @@ class ImportForm extends FormBase {
             '#type' => 'textfield',
             '#title' => 'Fast Track Comments',
             '#description' => 'Enter notes to be attached to the "fast-track" tag.',
-            '#default_value' => $fast_track_comments,
           ],
         ],
       ],
-      'files' => [
-        '#type' => 'details',
-        '#title' => 'Files',
-        'file' => [
-          '#title' => 'PubMed Search Results',
-          '#type' => 'file',
-          '#attributes' => ['class' => ['usa-file-input']],
-          '#description' => 'Articles found in the uploaded PUBMED-formatted search results will be retrieved.',
+      'file' => [
+        '#title' => 'PubMed Search Results',
+        '#type' => 'file',
+        '#attributes' => ['class' => ['usa-file-input']],
+        '#description' => 'Articles found in the uploaded PUBMED-formatted search results will be retrieved.',
+      ],
+      'full-text' => [
+        '#title' => 'Full Text',
+        '#type' => 'file',
+        '#attributes' => [
+          'class' => ['usa-file-input'],
+          'accept' => ['.pdf'],
         ],
-        'full-text' => [
-          '#title' => 'Full Text',
-          '#type' => 'file',
-          '#attributes' => [
-            'class' => ['usa-file-input'],
-            'accept' => ['.pdf'],
-          ],
-          '#description' => 'Only suitable for single-article import requests.',
-        ],
+        '#description' => 'Only suitable for single-article import requests.',
       ],
       'submit' => [
         '#type' => 'submit',
@@ -457,9 +387,12 @@ class ImportForm extends FormBase {
    */
   public function getTopicsCallback(array &$form, FormStateInterface $form_state): array {
     $board = $form_state->getValue('board');
-    $options = empty($board) ? ['' => 'Select a board'] : $this->getTopics($board);
-    $form['required']['board-controlled']['topic']['#options'] = $options;
-    return $form['required']['board-controlled'];
+    $options = empty($board) ? [] : $this->getTopics($board);
+
+    // The #empty_option setting is broken in AJAX.
+    // See https://www.drupal.org/project/drupal/issues/3180011.
+    $form['board-controlled']['topic']['#options'] = ['' => '- Select -'] + $options;
+    return $form['board-controlled'];
   }
 
   /**

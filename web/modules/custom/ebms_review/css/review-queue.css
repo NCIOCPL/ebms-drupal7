@@ -5,10 +5,6 @@
 #block-bartik-content div.topic-buttons div.topic-button {
   display: inline-block;
 }
-#block-bartik-content #queued-decisions-list .item-list ul {
-  list-style: disc;
-  margin-left: 2rem;
-}
 #block-bartik-content div.article-review-buttons {
   margin-top: .5rem;
 }
@@ -72,5 +68,6 @@
   }
   .usa-form .add-topic-tag a.usa-button {
     margin-top: 0;
+    margin-left: 1rem;
   }
 }

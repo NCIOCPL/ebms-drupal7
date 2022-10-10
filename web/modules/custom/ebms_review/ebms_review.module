@@ -11,7 +11,7 @@ function ebms_review_theme($existing, $type, $theme, $path): array {
     'review_queue_article' => [
       'variables' => [
         'article' => NULL,
-        'topics' => [],
+        'boards' => [],
       ],
     ],
     'packet_form_article' => [

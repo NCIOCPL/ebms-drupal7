@@ -397,6 +397,7 @@ class ReviewQueue extends FormBase {
       'queue-selection' => $queue_selection,
       'filters' => [
         '#type' => 'details',
+        '#open' => TRUE,
         '#title' => 'Filter Options',
         'board' => [
           '#type' => 'select',
@@ -487,6 +488,7 @@ class ReviewQueue extends FormBase {
       ],
       'display-options' => [
         '#type' => 'details',
+        '#open' => TRUE,
         '#title' => 'Display Options',
         'sort' => [
           '#type' => 'select',
@@ -512,13 +514,9 @@ class ReviewQueue extends FormBase {
           '#default_value' => $per_page,
           '#description' => 'Decide how many articles to display on each page.',
         ],
-        'apply-options' => [
-          '#type' => 'submit',
-          '#value' => 'Apply Display Options',
-        ],
         'preserve-options' => [
           '#type' => 'submit',
-          '#value' => 'Preserve Display Options',
+          '#value' => 'Save as Default',
         ],
       ],
       'submit' => [
@@ -533,7 +531,7 @@ class ReviewQueue extends FormBase {
       ],
       'apply-decisions' => [
         '#type' => 'submit',
-        '#value' => 'Apply Queued Decisions',
+        '#value' => 'Submit',
         '#states' => [
           'invisible' => [
             ':input[name="decisions"]' => ['value' => '{}'],
@@ -542,7 +540,7 @@ class ReviewQueue extends FormBase {
       ],
       'queued-decisions-list' => [
         '#type' => 'container',
-        '#attributes' => ['id' => 'queued-decisions-list'],
+        '#attributes' => ['id' => 'queued-decisions-list', 'class' => ['hidden']],
         'decisions-list' => [
           '#theme' => 'item_list',
           '#title' => 'Queued Decisions',
@@ -557,7 +555,7 @@ class ReviewQueue extends FormBase {
       ],
       'apply-decisions-bottom' => [
         '#type' => 'submit',
-        '#value' => 'Apply Queued Decisions',
+        '#value' => 'Submit',
         '#states' => [
           'invisible' => [
             ':input[name="decisions"]' => ['value' => '{}'],
@@ -573,8 +571,8 @@ class ReviewQueue extends FormBase {
   public function submitForm(array &$form, FormStateInterface $form_state) {
 
     $trigger = $form_state->getTriggeringElement()['#value'];
-    if ($trigger === 'Filter' || $trigger === 'Apply Queued Decisions') {
-      if ($trigger === 'Apply Queued Decisions') {
+    if ($trigger === 'Filter' || $trigger === 'Submit') {
+      if ($trigger === 'Submit') {
         $uid = $this->currentUser()->id();
         $now = date('Y-m-d H:i:s');
         $queue_type = $form_state->getValue('type');
@@ -596,7 +594,7 @@ class ReviewQueue extends FormBase {
       $parameters = ['queue_id' => $queue->id()];
       $form_state->setRedirect($route, $parameters);
     }
-    if ($trigger === 'Apply Display Options' || $trigger === 'Preserve Display Options') {
+    if ($trigger === 'Save as Default') {
       $queue_id = $form_state->getValue('queue-id');
       $sort = $form_state->getValue('sort');
       $format = $form_state->getValue('format');
@@ -609,13 +607,11 @@ class ReviewQueue extends FormBase {
       $params_json = json_encode($params);
       $queue->set('parameters', $params_json);
       $queue->save();
-      if ($trigger === 'Preserve Display Options') {
-        $user = User::load($this->currentUser()->id());
-        $user->set('review_format', $format);
-        $user->set('review_per_page', $per_page);
-        $user->set('review_sort', $sort);
-        $user->save();
-      }
+      $user = User::load($this->currentUser()->id());
+      $user->set('review_format', $format);
+      $user->set('review_per_page', $per_page);
+      $user->set('review_sort', $sort);
+      $user->save();
     }
   }
 
@@ -726,7 +722,7 @@ class ReviewQueue extends FormBase {
    * property instead of the #options property the documentation tells us to
    * use. See https://www.drupal.org/project/drupal/issues/3246825. It's
    * possible that if/when the bug gets fixed the fix might break our
-   * workaround, in which case we're go back to setting the '#options
+   * workaround, in which case we'll go back to setting the '#options
    * property the way we should have been able to do all along.
    *
    * We use Javascript to attach change listeners on each of the radio
@@ -773,27 +769,28 @@ class ReviewQueue extends FormBase {
     else {
       $actions = array_slice(self::DECISIONS, 0, 3);
     }
-    $topics = [];
+    $boards = [];
 
     // Walk through each of the article's topics.
     foreach ($article->topics as $article_topic) {
 
-      // Only show topics whose current state belongs to this review queue.
+      // Figure out whether the topic needs decision buttons.
       $article_topic = $article_topic->entity;
-      $topic_state = $article_topic->getCurrentState();
-      if ($topic_state->value->entity->field_text_id->value !== $state) {
-        continue;
-      }
       $topic = $article_topic->topic->entity;
       $topic_id = $topic->id();
-      $board_id = $topic->board->target_id;
-      $show_buttons = ($state === 'ready_init_review') || $this->canReviewAllTopics;
-      if (!$show_buttons) {
+      $topic_state = $article_topic->getCurrentState();
+      if ($topic_state->value->entity->field_text_id->value !== $state) {
+        $show_buttons = FALSE;
+      }
+      elseif ($state === 'ready_init_review' || $this->canReviewAllTopics) {
+        $show_buttons = TRUE;
+      }
+      else {
         if (in_array($topic_id, $this->userTopics)) {
           $show_buttons = TRUE;
         }
-        elseif (in_array($board_id, $this->userBoards)) {
-          $show_buttons = TRUE;
+        else {
+          $show_buttons = in_array($topic->board->target_id, $this->userBoards);
         }
       }
       $field_name = "topic-action-$article_id|$topic_id";
@@ -826,24 +823,32 @@ class ReviewQueue extends FormBase {
       foreach ($article_topic->comments as $topic_comment) {
         $comments[] = $topic_comment->comment;
       }
-      $topics[] = [
+      $board = $topic->board->entity->name->value;
+      $boards[$board][] = [
         'name' => $topic->name->value,
-        'board' => $topic->board->entity->name->value,
         'buttons' => $buttons,
         'tags' => $tags,
         'add_tag_url' => $add_tag_url,
         'comments' => $comments,
       ];
     }
-    usort($topics, function ($a, $b): int {
-      if (empty($a['buttons']) && !empty($b['buttons'])) {
-        return 1;
-      }
-      elseif (!empty($a['buttons']) && empty($b['buttons'])) {
-        return -1;
-      }
-      return $a['name'] <=> $b['name'];
-    });
+    $board_array = [];
+    ksort($boards);
+    foreach ($boards as $name => $topics) {
+      usort($topics, function ($a, $b): int {
+        if (empty($a['buttons']) && !empty($b['buttons'])) {
+          return 1;
+        }
+        elseif (!empty($a['buttons']) && empty($b['buttons'])) {
+          return -1;
+        }
+        return $a['name'] <=> $b['name'];
+      });
+      $board_array[] = [
+        'name' => $name,
+        'topics' => $topics,
+      ];
+    }
     $tags = [];
     foreach ($article->tags as $article_tag) {
       if (!empty($article_tag->entity->active->value)) {
@@ -912,7 +917,7 @@ class ReviewQueue extends FormBase {
         'add_article_tag_url' => $add_tag_url,
         'add_topic_url' => $add_topic_url,
       ],
-      '#topics' => $topics,
+      '#boards' => $board_array,
     ];
   }
 

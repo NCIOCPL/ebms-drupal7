@@ -281,7 +281,11 @@ class AddReviewTopic extends FormBase {
   private function returnToReview($queue_id, FormStateInterface $form_state) {
     $route = 'ebms_review.review_queue';
     $parameters = ['queue_id' => $queue_id];
-    $options = ['query' => $this->getRequest()->query->all()];
+    $article_id = $this->getRequest()->get('article_id');
+    $options = [
+      'query' => $this->getRequest()->query->all(),
+      'fragment' => "review-queue-article-$article_id",
+    ];
     $form_state->setRedirect($route, $parameters, $options);
   }
 

@@ -1,4 +1,4 @@
-<div class="review-queue-article">
+<div class="review-queue-article" id="review-queue-article-{{ article.ebms_id}}">
   {% if article.authors %}
   <div><strong>{{ article.authors }}</strong></div>
   {% endif %}
@@ -44,10 +44,9 @@
     </button>
     {% endif %}
   </div>
-  {% if topics %}
-  <h3><em>Topics</em></h3>
-  {% endif %}
-  {% for topic in topics %}
+  {% for board in boards %}
+  <h3><em>{{ board.name }} Topics</em></h3>
+  {% for topic in board.topics %}
   <div class="review-topic clearfix">
     <div class="name-and-tags">
       <div class="review-topic-name"><strong>{{ topic.name }}</strong></div>
@@ -59,9 +58,6 @@
       {% endfor %}
     </div>
     <div class="topic-button-wrapper">
-      <div class="add-topic-tag">
-        <a href="{{ topic.add_tag_url }}" class="button usa-button usa-button--outline">Add Topic Tag</a>
-      </div>
       {% if topic.buttons %}
       <div class="topic-buttons">
         <fieldset class="form-wrapper">
@@ -75,7 +71,11 @@
         </fieldset>
       </div>
       {% endif %}
+      <div class="add-topic-tag">
+        <a href="{{ topic.add_tag_url }}" class="button usa-button usa-button--outline">Add Topic Tag</a>
+      </div>
     </div>
   </div>
+  {% endfor %}
   {% endfor %}
 </div>
