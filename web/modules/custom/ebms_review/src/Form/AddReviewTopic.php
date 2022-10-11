@@ -29,7 +29,7 @@ class AddReviewTopic extends FormBase {
    * State used to populate the queue for each review queue type.
    */
   const STATES = [
-    'Librarian Review' => 'passed_init_review',
+    'Librarian Review' => 'ready_init_review',
     'Abstract Review' => 'published',
     'Full Text Review' => 'passed_bm_review',
     'On Hold Review' => 'on_hold',
