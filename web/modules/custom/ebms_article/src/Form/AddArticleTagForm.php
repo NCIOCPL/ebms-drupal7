@@ -195,7 +195,11 @@ class AddArticleTagForm extends FormBase {
   private function returnToQueue(int $queue_id, FormStateInterface $form_state) {
     $route = 'ebms_review.review_queue';
     $parameters = ['queue_id' => $queue_id];
-    $options = ['query' => $this->getRequest()->query->all()];
+    $article_id = $this->getRequest()->get('article_id');
+    $options = [
+      'query' => $this->getRequest()->query->all(),
+      'fragment' => "review-queue-article-$article_id",
+    ];
     unset($options['query']['queue']);
     if (!empty($options['query']['topic'])) {
       unset($options['query']['topic']);

@@ -397,7 +397,7 @@ class ReviewQueue extends FormBase {
       'queue-selection' => $queue_selection,
       'filters' => [
         '#type' => 'details',
-        '#open' => TRUE,
+        '#open' => $params['filtered'],
         '#title' => 'Filter Options',
         'board' => [
           '#type' => 'select',
@@ -488,7 +488,7 @@ class ReviewQueue extends FormBase {
       ],
       'display-options' => [
         '#type' => 'details',
-        '#open' => TRUE,
+        '#open' => $params['filtered'],
         '#title' => 'Display Options',
         'sort' => [
           '#type' => 'select',
@@ -589,7 +589,7 @@ class ReviewQueue extends FormBase {
           $this->messenger()->addMessage('Queued decisions have been applied.');
         }
       }
-      $queue = $this->createQueue($form_state);
+      $queue = $this->createQueue($form_state, $trigger === 'Filter');
       $route = 'ebms_review.review_queue';
       $parameters = ['queue_id' => $queue->id()];
       $form_state->setRedirect($route, $parameters);
@@ -672,10 +672,13 @@ class ReviewQueue extends FormBase {
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The object tracking the current state of the form.
    *
+   * @param $filtered bool
+   *   Flag indicating whether the user has filtered the queue.
+   *
    * @return \Drupal\ebms_core\Entity\SavedRequest
    *   The newly created entity for tracking the current queue.
    */
-  private function createQueue(FormStateInterface $form_state): SavedRequest {
+  private function createQueue(FormStateInterface $form_state, bool $filtered = FALSE): SavedRequest {
     $user = User::load($this->currentUser()->id());
     $default_sort = $user->review_sort->value;
     $default_format = $user->review_format->value;
@@ -709,6 +712,7 @@ class ReviewQueue extends FormBase {
       'decisions' => '{}',
       'type' => $parameters['type'] ?? $default_queue_type,
       'form_id' => 'ebms_review_queue',
+      'filtered' => $filtered,
     ];
     return SavedRequest::saveParameters('review queue', $spec);
   }

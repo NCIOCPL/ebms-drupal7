@@ -704,6 +704,7 @@ class ArticleController extends ControllerBase {
     if (!empty($options['query']['queue'])) {
       $queue_id = $options['query']['queue'];
       unset($options['query']['queue']);
+      $options['fragment'] = 'review-queue-article-' . $article->id();
       $actions[] = [
         'url' => Url::fromRoute('ebms_review.review_queue', ['queue_id' => $queue_id], $options),
         'label' => 'Review Queue',
