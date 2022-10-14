@@ -112,7 +112,10 @@ As an alternate method, this can be done from the command line using `drush`.
 
 At this point we need to fetch all of the changes which have been made
 to the production data since we captured our initial snapshot (see
-"Copy EBMS Data" above). Run the following steps on the new server:
+"Copy EBMS Data" above). Run the following steps on the new server (after
+confirming that the `exported` subdirectory of the `unversioned` directory
+from the previous export run has been moved to `baseline`, which should
+already have happened in the *Create the Web Site* steps above):
 
 ```
 cd /local/drupal/ebms/migration
