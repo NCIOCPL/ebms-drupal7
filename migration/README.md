@@ -127,7 +127,7 @@ mkdir ../unversioned/files
 rsync -a ../unversioned/files ../web/sites/default/
 ./find-deltas-from-baseline.py
 cd ..
-./apply-deltas.sh
+migration/apply-deltas.sh
 ```
 
 ## Bring the New Server Online
