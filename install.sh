@@ -36,6 +36,7 @@ echo "\$settings['trusted_host_patterns'] = ['^$SITEHOST\$'];" >> ${SITE}/settin
 $DRUSH si -y --site-name EBMS --account-pass=${ADMINPW} --db-url=${DBURL} \
        --site-mail=ebms@cancer.gov
 $SUDO chmod -w ${SITE}/settings.php
+$DRUSH state:set system.maintenance_mode 1
 $DRUSH pmu contact
 $DRUSH then uswds_base
 $DRUSH then ebms
@@ -88,6 +89,7 @@ $DRUSH scr --script-path=$DATA assets
 $DRUSH scr --script-path=$DATA pubtypes
 $DRUSH scr --script-path=$DATA help
 $DRUSH scr --script-path=$DATA about
+$DRUSH state:set system.maintenance_mode 0
 $SUDO chmod -R 777 ${SITE}/files
 date
 elapsed=$(( SECONDS - start_time ))

@@ -15,7 +15,7 @@ The steps, at a broad level, include:
 2. The software for the new EBMS is installed on the server from the repository
 3. The files which are not under version control are copied to the new server
 4. The script to extract the data from the existing EBMS is run (~ 1/2 hour)
-5. The script to install Drupal 9, enable the modules, and load the data is run (between 9 and 14 hours)
+5. The script to install Drupal 9, enable the modules, and load the data is run (between 9 and 15 hours)
 6. The Drupal 7 EBMS site is put into maintenance mode
 7. The files, XML, and extracted database values are refreshed and applied (approximately an hour)
 8. The DNS name ebms.nci.nih.gov is pointed to the new server
@@ -74,13 +74,17 @@ cd /local/drupal/ebms/migration
 
 ## Create the Web Site
 
-Execute these commands on the new server. The `migrate.sh` command can
+Creation of the new production site should probably happen a few days
+before the planned cutover to the new site. To create the site,
+execute these commands on the new server. The `migrate.sh` command can
 take 14-15 hours to complete on the CBIIT-hosted servers, so it is
 necessary to start the job early in the morning so that it completes
 before midnight, when CBIIT performs database and/or network
 maintenance which would cause the job to fail. Even though this step
 is run in the background, it is necessary to wait until it has
-finished before proceeding with the next commands.
+finished before proceeding with the next commands. You can monitor
+progress while `migrate.sh` is running by executing `cat nohup.out`
+from time to time.
 
 ```
 cd /local/drupal/ebms
@@ -88,13 +92,37 @@ nohup migration/migrate.sh &
 cd unversioned
 rm -rf baseline
 mv exported baseline
+cd ..
+TODAY=`/bin/date +"%Y%m%d"`
+drush sql:dump | gzip > ~/ebms-$TODAY.sql.gz
 ```
+
+At this point the new site has been left in maintenance mode. When
+testing these steps on lower tiers it is generally safe to take the
+site out of maintenance mode. To do this using the web interface,
+perform the following steps (replacing "-stage" with "-qa" or "-dev"
+if appropriate for the current tier):
+
+* log onto https://ebms-stage.nci.nih.gov as `admin`
+* navigate to /admin/config/development/maintenance
+* uncheck the "Put site into maintenance mode" box
+* click the "Save configuration" button
+
+As an alternate method, this can be done from the command line using `drush`.
+
+* log onto the web server using ssh
+* `sudo` to the drupal account
+* change to the /local/drupal/ebms directory
+* run the command `drush state:set system.maintenance_mode 0`
 
 ## Turn Off User Access
 
-Everything from this point on is done at the time determined by
-consulting the users as to when it will be best to switch over to the
-new server. Perform the following steps:
+Everything from this point on is done at the time agreed with the users
+for switching over to the new production site. We need to block all activity
+on the old production server which might change any data. To do this we
+put the Drupal 7 production site into maintenance mode. The process for
+doing that is very similar to the instructions given above for taking a
+new Drupal 9 site *out* of maintennce mode. Perform the following steps:
 
 * log onto https://ebms.nci.nih.gov as an administrator
 * navigate to /admin/config/development/maintenance
@@ -110,12 +138,13 @@ As an alternate method, this can be done from the command line using `drush`.
 
 ## Top Up the New Server
 
-At this point we need to fetch all of the changes which have been made
-to the production data since we captured our initial snapshot (see
-"Copy EBMS Data" above). Run the following steps on the new server (after
-confirming that the `exported` subdirectory of the `unversioned` directory
-from the previous export run has been moved to `baseline`, which should
-already have happened in the *Create the Web Site* steps above):
+Next we need to fetch all of the changes which have been made to the
+production data since we captured our initial snapshot (see *Copy EBMS
+Data* above). Run the following steps on the new server (after
+confirming that the `exported` subdirectory of the `unversioned`
+directory from the previous export run has been moved to `baseline`,
+which should already have happened in the *Create the Web Site* steps
+above):
 
 ```
 cd /local/drupal/ebms/migration
@@ -135,7 +164,8 @@ migration/apply-deltas.sh
 After the development team has done some spot-checking to make sure
 everything has landed safely, CBIIT can do their magic to have
 ebms.nci.nih.gov point to the new server, and we can let the users
-know it's ready.
+know it's ready. Use the instructions given above in the *Create the
+Web Site* section to take the site out of maintenance mode.
 
 When the server name is changed, be sure to edit the line near the
 bottom of `web/sites/default/settings.php` to reflect the new host

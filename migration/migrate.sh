@@ -51,6 +51,7 @@ $SUDO tar -xf ${UNVERSIONED}/files.tar
 $SUDO rsync -a ${UNVERSIONED}/inline-images ${SITE}/files/
 $SUDO chmod -R 777 ${SITE}/files
 popd >/dev/null
+$DRUSH state:set system.maintenance_mode 1
 $DRUSH pmu contact
 $DRUSH then uswds_base
 $DRUSH then ebms
