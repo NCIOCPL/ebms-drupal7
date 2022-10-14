@@ -75,9 +75,9 @@ cd /local/drupal/ebms/migration
 ## Create the Web Site
 
 Execute these commands on the new server. The `migrate.sh` command can
-take over thirteen hours to complete on the CBIIT-hosted servers, so
-it is necessary to start the job early in the morning so that it
-completes before midnight, when CBIIT performs database and/or network
+take 14-15 hours to complete on the CBIIT-hosted servers, so it is
+necessary to start the job early in the morning so that it completes
+before midnight, when CBIIT performs database and/or network
 maintenance which would cause the job to fail. Even though this step
 is run in the background, it is necessary to wait until it has
 finished before proceeding with the next commands.
