@@ -273,6 +273,7 @@ class DocForm extends FormBase {
       $doc->set('topics', $topic_ids);
       $doc->save();
     }
+    $this->messenger()->addMessage('Document successfully saved.');
     $this->doRedirect($form_state);
   }
 
