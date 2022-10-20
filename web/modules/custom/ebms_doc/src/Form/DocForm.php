@@ -127,7 +127,7 @@ class DocForm extends FormBase {
     // Add the fields which are always present.
     $form['description'] = [
       '#type' => 'textfield',
-      '#title' => 'Description',
+      '#title' => 'EBMS Name',
       '#description' => 'This will be used as the title of the document in the EBMS.',
       '#default_value' => $description,
       '#required' => TRUE,

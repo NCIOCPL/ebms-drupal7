@@ -78,6 +78,7 @@ function _ebms_core_role_permissions(): array {
       'enter travel requests',
       'import articles',
       'manage articles',
+      'manage documents',
       'perform full search',
       'print packets',
       'record print responses',
@@ -140,6 +141,7 @@ function _ebms_core_role_permissions(): array {
     'medical_librarian' => [
       'import articles',
       'manage articles',
+      'manage documents',
       'manage journals',
       'manage summaries',
       'perform full search',
@@ -180,6 +182,7 @@ function _ebms_core_role_permissions(): array {
       'edit terms in transportation_expense_types',
       'enter travel requests',
       'manage boards',
+      'manage documents',
       'manage journals',
       'manage topics',
       'manage users',
@@ -193,6 +196,7 @@ function _ebms_core_role_permissions(): array {
     ],
     'travel_admin' => [
       'enter travel requests',
+      'manage documents',
       'manage travel',
       'view alerts',
       'view all meetings',
