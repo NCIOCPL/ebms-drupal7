@@ -8,6 +8,7 @@ use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountProxyInterface;
 use Drupal\ebms_article\Entity\Article;
 use Drupal\ebms_core\TermLookup;
+use Drupal\user\Entity\User;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 /**
@@ -79,11 +80,17 @@ class NewStateForm extends FormBase {
     }
 
     // Get the state options.
-    $published = $this->termLookup->getState('published');
+    $user = User::load($this->account->id());
+    $text_id = 'published';
+    if ($user->hasRole('medical_librarian') || $user->hasRole('admin') || $user->id() == 1) {
+        $text_id = 'reject_journal_title';
+    }
+    $state = $this->termLookup->getState($text_id);
+    $threshold = $state->field_sequence->value;
     $storage = $this->entityTypeManager->getStorage('taxonomy_term');
     $query = $storage->getQuery()->accessCheck(FALSE);
     $query->condition('vid', 'states');
-    $query->condition('field_sequence', $published->field_sequence->value, '>');
+    $query->condition('field_sequence', $threshold, '>');
     $query->sort('field_sequence');
     $query->sort('name');
     $entities = $storage->loadMultiple($query->execute());
