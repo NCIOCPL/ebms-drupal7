@@ -1,6 +1,11 @@
-.usa-card__body li {
+.home-page-cards li {
   list-style-type: disc;
 }
 .card-title {
   color: #2b8bba;
+}
+@media (min-width: 64em) {
+  .home-page-cards {
+    margin-left: 10rem; margin-right: 5rem;
+  }
 }
