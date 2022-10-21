@@ -72,7 +72,7 @@ class HomePage extends ControllerBase {
       $capped_name = ucfirst($name);
       $cards[] = [
         'title' => "$capped_name Activity",
-        'img' => "$name-activity.jpg",
+        'img' => "istock-$name-activity.jpg",
         'items' => $messages,
         'url' => $url,
         'empty' => "There is no $name activity to display from the past $days days.",
@@ -115,7 +115,7 @@ class HomePage extends ControllerBase {
     }
     return [
       'title' => 'Alerts',
-      'img' => 'alert.jpg',
+      'img' => 'istock-alerts.jpg',
       'items' => $items,
     ];
   }
