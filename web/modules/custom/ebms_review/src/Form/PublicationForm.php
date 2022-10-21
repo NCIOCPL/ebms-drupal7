@@ -353,7 +353,7 @@ class PublicationForm extends FormBase {
         '#type' => 'checkbox',
         '#checked' => in_array($key, $queued),
         '#id' => $checkbox_id,
-        '#title' => "$name ($board)",
+        '#title' => "$board: $name",
       ];
     }
 
