@@ -19,8 +19,7 @@
   {% endif %}
   {% if article.abstract %}
   {% for paragraph in article.abstract %}
-  <h4>{{ paragraph.label }}</h4>
-  <p>{{ paragraph.text }}</p>
+  <p><strong>{{ paragraph.label}}</strong> {{ paragraph.text }}</p>
   {% endfor %}
   {% endif %}
   <div class="article-review-buttons">
@@ -56,6 +55,9 @@
       {% for comment in topic.comments %}
       <div>Board Manager Comment: {{ comment }}</div>
       {% endfor %}
+      <div class="add-topic-tag">
+        <a href="{{ topic.add_tag_url }}" class="button usa-button usa-button--outline">Add Topic Tag</a>
+      </div>
     </div>
     <div class="topic-button-wrapper">
       {% if topic.buttons %}
@@ -71,9 +73,6 @@
         </fieldset>
       </div>
       {% endif %}
-      <div class="add-topic-tag">
-        <a href="{{ topic.add_tag_url }}" class="button usa-button usa-button--outline">Add Topic Tag</a>
-      </div>
     </div>
   </div>
   {% endfor %}
