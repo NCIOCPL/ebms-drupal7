@@ -92,7 +92,16 @@ class SearchForm extends FormBase {
     $publication_year = $params['publication-year'] ?? '';
     $publication_month = $params['publication-month'] ?? '';
     $sort = $params['sort'] ?? $user->search_sort->value ?? $restricted ? 'pmid' : 'ebms-id';
+    $per_page_options = [
+      '10' => '10',
+      '25' => '25',
+      '50' => '50',
+      'all' => 'View All',
+    ];
     $per_page = $params['per-page'] ?? $user->search_per_page->value ?? 10;
+    if (!array_key_exists($per_page, $per_page_options)) {
+      $per_page = 10;
+    }
 
     // We only need these for the full version of the search page.
     if (!$restricted) {
@@ -609,6 +618,9 @@ class SearchForm extends FormBase {
         '#value' => 'yes',
       ];
     }
+    if (!array_key_exists($sort, $sort_options)) {
+      $sort = $restricted ? 'pmid' : 'ebms-id';
+    }
     $form['display-options'] = [
       '#type' => 'details',
       '#title' => 'Display Options',
@@ -624,12 +636,7 @@ class SearchForm extends FormBase {
         '#type' => 'radios',
         '#title' => 'Per Page',
         '#required' => TRUE,
-        '#options' => [
-          '10' => '10',
-          '25' => '25',
-          '50' => '50',
-          'all' => 'View All',
-        ],
+        '#options' => $per_page_options,
         '#default_value' => $per_page,
         '#description' => 'Specify how many articles should be shown per page.',
       ],
