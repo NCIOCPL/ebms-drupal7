@@ -4,3 +4,7 @@ reimbursement:
   css:
     theme:
       css/reimbursement-form.css: {}
+landing:
+  css:
+    theme:
+      css/travel-landing.css: {}

@@ -16,5 +16,8 @@ function ebms_travel_theme($existing, $type, $theme, $path): array {
         'user_notification' => FALSE,
       ],
     ],
+    'travel_landing_page' => [
+      'variables' => [],
+    ],
   ];
 }

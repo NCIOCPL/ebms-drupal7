@@ -33,14 +33,6 @@ class ActiveTrail extends MenuActiveTrail {
       '/help' => 'ebms_help.help',
       '/ncihelp' => 'ebms_help.ncihelp',
     ],
-    'travel' => [
-      '/travel' => 'ebms_travel.landing_page',
-      '/travel/directions' => 'ebms_travel.directions',
-      '/travel/policies-and-procedures' => 'ebms_travel.policies_and_procedures',
-      '/travel/hotel-request' => 'ebms_travel.hotel_request',
-      '/travel/reiumbursement-request' => 'ebms_travel.reiumbursement_request',
-      '/travel/manage-configuration' => 'ebms_travel.configuration',
-    ],
     'help' => [
       '/help/login' => 'ebms_help.login',
       '/help/home' => 'ebms_help.home',

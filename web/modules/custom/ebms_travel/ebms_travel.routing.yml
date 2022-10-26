@@ -2,7 +2,7 @@ ebms_travel.landing_page:
   path: '/travel'
   defaults:
     _title: 'Travel'
-    _entity_view: node.full
+    _controller: Drupal\ebms_travel\Controller\MenuCards::display
   requirements:
     _user_is_logged_in: 'TRUE'
 ebms_travel.directions:

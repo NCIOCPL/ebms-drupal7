@@ -1,0 +1,9 @@
+.card-title,
+.card-title a {
+  color: #2b8bba;
+}
+@media (min-width: 64em) {
+  .travel-menu-cards {
+    margin-left: 10rem; margin-right: 5rem;
+  }
+}
