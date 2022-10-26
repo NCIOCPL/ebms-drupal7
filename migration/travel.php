@@ -39,18 +39,6 @@ foreach ($storage->loadMultiple($query->execute()) as $block) {
 
 // Load the pages.
 $values = [
-  'title' => 'Travel',
-  'uid' => 1,
-  'type' => 'page',
-  'path' => ['alias' => '/travel'],
-  'body' => [
-    'value' => file_get_contents("$repo_base/unversioned/travel-landing.html"),
-    'format' => 'filtered_html',
-  ],
-];
-$page = \Drupal\node\Entity\Node::create($values);
-$page->save();
-$values = [
   'title' => 'Directions',
   'uid' => 1,
   'type' => 'page',
@@ -75,7 +63,7 @@ $values = [
 $page = \Drupal\node\Entity\Node::create($values);
 $page->save();
 $elapsed = round(microtime(TRUE) - $start);
-log_success('Successfully loaded: 3 static travel pages', $elapsed);
+log_success('Successfully loaded: 2 static travel pages', $elapsed);
 
 // Load the hotel requests.
 $start = microtime(TRUE);

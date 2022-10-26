@@ -35,32 +35,6 @@ $config->save();
 log_success('Successfully loaded: 4 travel config values');
 
 // Install the travel pages.
-$data = file_get_contents("$repo_base/testdata/images/travel.jpg");
-file_put_contents("$repo_base/web/sites/default/files/travel.jpg", $data);
-$values = [
-  'filename' => 'travel.jpg',
-  'uid' => 1,
-  'uri' => 'public://travel.jpg',
-  'filemime' => 'image/jpeg',
-  'filesize' => strlen($data),
-  'status' => 1,
-];
-$file = \Drupal\file\Entity\File::create($values);
-$file->save();
-$values = [
-  'title' => 'Travel',
-  'uid' => 1,
-  'type' => 'page',
-  'path' => ['alias' => '/travel'],
-  'body' => [
-    'value' => file_get_contents("$repo_base/testdata/travel-landing.html"),
-    'format' => 'filtered_html',
-  ],
-];
-$page = \Drupal\node\Entity\Node::create($values);
-$page->save();
-$file_usage = \Drupal::service('file.usage');
-$file_usage->add($file, 'node', 'node', $page->id());
 $values = [
   'title' => 'Directions',
   'uid' => 1,
