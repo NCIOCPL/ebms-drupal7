@@ -64,6 +64,7 @@ $filenames = [
   'participant-info-202009.doc',
   'expense-statement-202111.docx',
 ];
+$file_usage = \Drupal::service('file.usage');
 foreach ($filenames as $filename) {
   $data = file_get_contents("$repo_base/testdata/$filename");
   file_put_contents("$repo_base/web/sites/default/files/$filename", $data);
