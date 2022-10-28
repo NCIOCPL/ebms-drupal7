@@ -3,6 +3,11 @@ ebms_core.admin_config_ebms:
   parent: system.admin_config
   title: EBMS
   weight: -100
+ebms_core.admin:
+  route_name: ebms_core.admin_config_ebms
+  description: EBMS configuration settings
+  title: Admin
+  menu_name: main
 ebms_core.valid_values:
   route_name: entity.taxonomy_vocabulary.collection
   title: Valid Values

@@ -34,7 +34,7 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     }
  *   },
  *   base_table = "ebms_topic",
- *   admin_permission = "administer site configuration",
+ *   admin_permission = "manage topics",
  *   entity_keys = {
  *     "id" = "id",
  *     "label" = "name",

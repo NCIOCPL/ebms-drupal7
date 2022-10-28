@@ -5,7 +5,7 @@ ebms_core.admin_config_ebms:
       '\Drupal\system\Controller\SystemController::systemAdminMenuBlockPage'
     _title: 'EBMS'
   requirements:
-    _permission: 'access administration pages'
+    _permission: 'access administration pages+manage topics+manage journals'
 ebms_core.publication_type_hierarchy:
   path: '/admin/config/publication-type-hierarchy'
   defaults:

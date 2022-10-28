@@ -2,10 +2,12 @@
 
 namespace Drupal\ebms_board\Entity;
 
+use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Entity\ContentEntityBase;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Session\AccountInterface;
 
 /**
  * Defines the PDQ Board entity.
@@ -52,6 +54,16 @@ use Drupal\Core\Field\BaseFieldDefinition;
  * )
  */
 class Board extends ContentEntityBase implements ContentEntityInterface {
+
+  /**
+   * {@inheritdoc}
+   */
+  public function access($operation, $account = NULL, $return_as_object = FALSE) {
+    if ($operation === 'view label') {
+      return $return_as_object ? AccessResult::allowed() : TRUE;
+    }
+    return parent::access($operation, $account, $return_as_object);
+  }
 
   /**
    * {@inheritdoc}
