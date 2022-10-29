@@ -10,7 +10,7 @@ documentation](migration/README.md).
 
 ## Developer Setup
 
-To create a local development environment for this project, perform the following steps. You will need a recent PHP (8.1 is recommended) and composer 2.x.
+To create a local development environment for this project, perform the following steps. You will need a recent PHP (8.1 is recommended), composer 2.x, and Docker.
 
 1. Clone the repository.
 2. Change current directory to the cloned repository.
@@ -26,12 +26,12 @@ To create a local development environment for this project, perform the followin
 12. Point your favorite browser to http://ebms.localhost:8081.
 13. Log in as admin using the password you created in step 5.
 
-On a non-Docker server running Apache or Nginx, instead of step 4,
-create a MySQL database using a secure database password, skip steps
-8-10, and for step 11 substitute the appropriate URL. Adjust the
-`unversioned/dburl` file to use the correct database hostname, port,
-and password. In the following commands, replace "localhost" with the
-name of the database server if appropriate.
+On a non-Docker server running Apache or Nginx, create a MySQL database
+using a secure database password, skip steps 9 and 10, run `./install.sh`
+directly on the server, and for step 12 substitute the appropriate URL.
+Adjust the `unversioned/dburl` file to use the correct database hostname,
+port, and password. In the following commands, replace "localhost" with
+the name of the database server if appropriate.
 
 ```
 CREATE DATABASE ebms;
