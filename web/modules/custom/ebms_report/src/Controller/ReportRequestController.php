@@ -106,7 +106,7 @@ class ReportRequestController extends ControllerBase {
         'name' => 'Topic Reviewers',
         'route' => 'ebms_report.topic_reviewers',
         'description' => 'Shows which Board members are assigned to which topics. A print-friendly version of this report is available.',
-        'permissions' => ['view all reports'],
+        'permissions' => ['view all reports', 'manage topics'],
       ],
       [
         'name' => 'Invalid PubMed IDs',

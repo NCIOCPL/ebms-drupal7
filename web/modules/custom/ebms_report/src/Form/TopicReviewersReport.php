@@ -238,12 +238,20 @@ class TopicReviewersReport extends FormBase {
       }
       $storage = \Drupal::entityTypeManager()->getStorage('ebms_topic');
       $query = $storage->getQuery()->accessCheck(FALSE);
-      $query->condition('id', array_keys($topic_reviewers), 'IN');
+      if (!empty($params['topics'])) {
+        $query->condition('id', $params['topics'], 'IN');
+      }
+      else {
+        $query->condition('board', $params['board']);
+      }
+      if (!empty($params['reviewers'])) {
+        $query->condition('id', array_keys($topic_reviewers), 'IN');
+      }
       $query->sort('name');
       foreach ($storage->loadMultiple($query->execute()) as $topic) {
         $reviewers = [
           '#theme' => 'item_list',
-          '#items' => $topic_reviewers[$topic->id()],
+          '#items' => $topic_reviewers[$topic->id()] ?? [],
           '#attributes' => ['class' => ['usa-list--unstyled']],
         ];
         $rows[] = [
@@ -260,7 +268,7 @@ class TopicReviewersReport extends FormBase {
         $topics = [];
         foreach ($user->topics as $topic) {
           $topic_id = $topic->target_id;
-          if (empty($params['topics']) || array_key_exists($topic_id, $params['topics'])) {
+          if (empty($params['topics']) && $topic->entity->board->target_id == $params['board'] || !empty($params['topics']) && array_key_exists($topic_id, $params['topics'])) {
             $topic_name = $topic->entity->name->value;
             $topic_ids[$topic_id] = $topic_id;
             $topics[$topic_name] = $print_version ? $topic_name : Link::createFromRoute($topic_name, $route, ['topic_id' => $topic_id], $options);
