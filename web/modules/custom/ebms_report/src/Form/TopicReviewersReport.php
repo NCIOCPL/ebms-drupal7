@@ -149,7 +149,7 @@ class TopicReviewersReport extends FormBase {
         '#title' => 'Print Version',
         '#attributes' => ['class' => ['usa-button'], 'target' => '_blank', 'title' => $tooltip],
       ];
-      $form['report'] = $this->report($params);
+      $form['report'] = $this->report($params, FALSE, $report_id);
     }
     return $form;
   }
@@ -193,7 +193,7 @@ class TopicReviewersReport extends FormBase {
    * @return array
    *   Render array for the report.
    */
-  private function report(array $params, bool $print_version = FALSE): array {
+  private function report(array $params, bool $print_version = FALSE, int $report_id = 0): array {
 
     // Get the entities for the topic reviewers.
     $storage = \Drupal::entityTypeManager()->getStorage('user');
@@ -216,7 +216,10 @@ class TopicReviewersReport extends FormBase {
     $rows = [];
     $renderer = \Drupal::service('renderer');
     $tooltip = 'Edit this topic.';
-    $options = ['attributes' => ['target' => '_blank', 'title' => $tooltip]];
+    $options = [
+      'attributes' => ['target' => '_blank', 'title' => $tooltip],
+      'query' => ['report' => $report_id],
+    ];
     $route = 'ebms_topic.reviewers';
     $grouping = $params['grouping'] ?? 'topic';
     if ($grouping === 'topic') {

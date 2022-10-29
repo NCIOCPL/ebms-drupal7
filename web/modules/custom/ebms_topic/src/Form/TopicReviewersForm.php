@@ -84,6 +84,9 @@ class TopicReviewersForm extends FormBase {
         $this->getLogger('ebms_topic')->info("Added $user_name as default reviewer for topic $topic_name.");
       }
     }
+    $this->messenger()->addMessage('Saved changes to reviewer list.');
+    $report_id = $this->getRequest()->query->get('report');
+    $form_state->setRedirect('ebms_report.topic_reviewers', ['report_id' => $report_id]);
   }
 
 }
