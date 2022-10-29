@@ -4,7 +4,7 @@ ebms_topic.reviewers:
     _form: Drupal\ebms_topic\Form\TopicReviewersForm
     _title: 'Topic Reviewers'
   requirements:
-    _permission: 'manage review packets'
+    _permission: 'manage review packets+manage topics'
   options:
     no_cache: TRUE
     parameters:
