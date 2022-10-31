@@ -27,7 +27,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *       "default" = "Drupal\ebms_topic\Form\TopicForm",
  *       "add" = "Drupal\ebms_topic\Form\TopicForm",
  *       "edit" = "Drupal\ebms_topic\Form\TopicForm",
- *       "delete" = "Drupal\Core\Entity\ContentEntityDeleteForm",
  *     },
  *     "route_provider" = {
  *       "html" = "Drupal\Core\Entity\Routing\AdminHtmlRouteProvider",
@@ -43,7 +42,6 @@ use Drupal\Core\Field\BaseFieldDefinition;
  *     "canonical" = "/admin/config/ebms/topic/{ebms_topic}",
  *     "add-form" = "/admin/config/ebms/topic/add",
  *     "edit-form" = "/admin/config/ebms/topic/{ebms_topic}/edit",
- *     "delete-form" = "/admin/config/ebms/topic/{ebms_topic}/delete",
  *     "collection" = "/admin/config/ebms/topic",
  *   }
  * )
