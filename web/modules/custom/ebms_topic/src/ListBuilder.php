@@ -17,8 +17,8 @@ class ListBuilder extends EntityListBuilder {
    * {@inheritdoc}
    */
   public function buildHeader(): array {
-    $header['name'] = $this->t('Name');
     $header['board'] = $this->t('Board');
+    $header['name'] = $this->t('Name');
     return $header + parent::buildHeader();
   }
 
@@ -26,12 +26,12 @@ class ListBuilder extends EntityListBuilder {
    * {@inheritdoc}
    */
   public function buildRow(EntityInterface $entity): array {
+    $row['board'] = $entity->board->entity->name->value;
     $row['name'] = Link::createFromRoute(
       $entity->label(),
       'entity.ebms_topic.edit_form',
       ['ebms_topic' => $entity->id()]
     );
-    $row['board'] = $entity->board->entity->name->value;
     return $row + parent::buildRow($entity);
   }
 
@@ -41,6 +41,7 @@ class ListBuilder extends EntityListBuilder {
   public function getEntityIds() {
     $storage = $this->getStorage();
     $query = $storage->getQuery()->accessCheck(FALSE);
+    $query->sort('board.entity.name', 'ASC');
     $query->sort('name', 'ASC');
     $parms = \Drupal::request()->query;
     return $query->execute();
