@@ -5,7 +5,7 @@ ebms_summary.board:
     _controller: Drupal\ebms_summary\Controller\BoardSummariesController::display
     board_id: 0
   requirements:
-    _user_is_logged_in: 'TRUE'
+    _permission: 'view summary pages'
   options:
     no_cache: 'TRUE'
     parameters:

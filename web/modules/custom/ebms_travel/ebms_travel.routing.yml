@@ -4,21 +4,21 @@ ebms_travel.landing_page:
     _title: 'Travel'
     _controller: Drupal\ebms_travel\Controller\MenuCards::display
   requirements:
-    _user_is_logged_in: 'TRUE'
+    _permission: 'view travel pages'
 ebms_travel.directions:
   path: '/travel/directions'
   defaults:
     _title: 'Directions'
     _entity_view: node.full
   requirements:
-    _user_is_logged_in: 'TRUE'
+    _permission: 'view travel pages'
 ebms_travel.policies_and_procedures:
   path: '/travel/policies-and-procedures'
   defaults:
     _title: 'Policies and Procedures'
     _entity_view: node.full
   requirements:
-    _user_is_logged_in: 'TRUE'
+    _permission: 'view travel pages'
 ebms_travel.hotel_request:
   path: /travel/hotel-request
   defaults:

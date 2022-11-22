@@ -88,6 +88,8 @@ function _ebms_core_role_permissions(): array {
       'view all meetings',
       'view full text retrieval queue',
       'view all reports',
+      'view summary pages',
+      'view travel pages',
     ],
     'board_manager' => [
       'enter travel requests',
@@ -111,12 +113,16 @@ function _ebms_core_role_permissions(): array {
       'view all reports',
       'view review alerts',
       'view the administration theme',
+      'view summary pages',
+      'view travel pages',
     ],
     'board_member' => [
       'review literature',
       'submit travel requests',
       'view alerts',
       'view review alerts',
+      'view summary pages',
+      'view travel pages',
     ],
     'branch_manager' => [
       'enter travel requests',
@@ -139,6 +145,8 @@ function _ebms_core_role_permissions(): array {
       'view hotel request alerts',
       'view posted summaries alerts',
       'view review alerts',
+      'view summary pages',
+      'view travel pages',
       'view the administration theme',
     ],
     'medical_librarian' => [
@@ -146,7 +154,6 @@ function _ebms_core_role_permissions(): array {
       'manage articles',
       'manage documents',
       'manage journals',
-      'manage summaries',
       'manage topics',
       'perform full search',
       'perform initial article review',
@@ -196,7 +203,9 @@ function _ebms_core_role_permissions(): array {
       'view all meetings',
       'view review alerts',
       'view all reports',
+      'view summary pages',
       'view the administration theme',
+      'view travel pages',
     ],
     'travel_admin' => [
       'enter travel requests',
@@ -204,8 +213,9 @@ function _ebms_core_role_permissions(): array {
       'manage travel',
       'view alerts',
       'view all meetings',
-      'view travel reports',
       'view review alerts',
+      'view travel pages',
+      'view travel reports',
     ],
   ];
 }

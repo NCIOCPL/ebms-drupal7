@@ -91,6 +91,9 @@ view alerts:
 view all meetings:
   title: View All Meetings
   description: See meetings to which the user is not invited.
+view all reports:
+  title: View All Reports
+  description: Run all the reports on the Reports menu.
 view calendar:
   title: View Calendar
   description: Access to calendar, meetings, and agendas.
@@ -100,18 +103,21 @@ view full text retrieval queue:
 view hotel request alerts:
   title: View Hotel Request Alerts
   description: View hotel request alerts on the home page.
-view posted summaries alerts:
-  title: View Posted Summaries Alerts
-  description: View posted summaries alerts on the home page.
-view all reports:
-  title: View All Reports
-  description: Run all the reports on the Reports menu.
 view librarian reports:
   title: View Librarian Reports
   description: Run the subset of reports provided for the medical librarians.
-view travel reports:
-  title: View Travel Reports
-  description: Run the subset of reports which support travel management.
+view posted summaries alerts:
+  title: View Posted Summaries Alerts
+  description: View posted summaries alerts on the home page.
 view review alerts:
   title: View Review Alerts
   description: View review alerts on the home page.
+view summary pages:
+  title: View Summary Pages
+  description: Access to the Summary main menu.
+view travel pages:
+  title: View Travel Pages
+  description: Access to the Travel main menu.
+view travel reports:
+  title: View Travel Reports
+  description: Run the subset of reports which support travel management.

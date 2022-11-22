@@ -67,6 +67,11 @@ function ebms_preprocess_menu__primary_menu(array &$variables) {
       unset($variables['items']['ebms_help.help']);
     }
   }
+  if ($user->hasRole('medical_librarian')) {
+    if (!empty($variables['items']['ebms_review.packets'])) {
+      unset($variables['items']['ebms_review.packets']);
+    }
+  }
 }
 
 /**
