@@ -155,7 +155,7 @@ class ImportForm extends FormBase {
       ],
       'cycle' => [
         '#type' => 'select',
-        '#title' => 'Cycle',
+        '#title' => 'Review Cycle',
         '#options' => $cycles,
         '#required' => TRUE,
         '#description' => 'Review cycle for which these articles are to be imported.',
