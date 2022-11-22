@@ -153,12 +153,18 @@ class Topic extends ContentEntityBase implements ContentEntityInterface {
    * @param int|array $board_id
    *   Optional board ID to limit topics to a single board.
    *
+   * @param bool $active_only
+   *   If FALSE (the default) include inactive topics.
+   *
    * @return array
    *   Array of topic names indexed by their entity IDs.
    */
-  public static function topics(int|array $boards = []): array {
+  public static function topics(int|array $boards = [], bool $active_only = FALSE): array {
     $storage = \Drupal::entityTypeManager()->getStorage('ebms_topic');
     $query = $storage->getQuery()->accessCheck(FALSE);
+    if ($active_only) {
+      $query->condition('active', TRUE);
+    }
     $query->sort('name');
     if (!empty($boards)) {
       $operator = is_array($boards) ? 'IN' : '=';

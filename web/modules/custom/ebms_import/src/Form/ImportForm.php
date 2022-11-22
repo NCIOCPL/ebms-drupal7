@@ -372,6 +372,7 @@ class ImportForm extends FormBase {
     $storage = $this->entityTypeManager->getStorage('ebms_topic');
     $query = $storage->getQuery()->accessCheck(FALSE);
     $query->condition('board', $board);
+    $query->condition('active', 1);
     $query->sort('name');
     $ids = $query->execute();
     $topics = $storage->loadMultiple($ids);
