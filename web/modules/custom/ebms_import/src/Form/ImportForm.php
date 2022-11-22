@@ -166,6 +166,7 @@ class ImportForm extends FormBase {
         '#title' => 'PubMed IDs',
         '#description' => 'Enter article IDs here, separated by space, or post PubMed search results below.',
         '#default_value' => $pmids,
+        '#maxlength' => NULL,
       ],
       'import-comments' => [
         '#type' => 'textfield',
