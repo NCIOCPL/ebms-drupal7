@@ -310,6 +310,12 @@ class ImportForm extends FormBase {
         '#submit' => ['::resetSubmit'],
         '#limit_validation_errors' => [],
       ],
+      'report' => [
+        '#type' => 'submit',
+        '#value' => 'Import Report',
+        '#submit' => ['::importReport'],
+        '#limit_validation_errors' => [],
+      ],
     ];
 
     // Append the report, if we have one (and this is not an AJAX request).
@@ -538,6 +544,13 @@ class ImportForm extends FormBase {
    */
   public function resetSubmit(array &$form, FormStateInterface $form_state) {
     $form_state->setRedirect('ebms_import.import_form');
+  }
+
+  /**
+   * Navigate to the import report.
+   */
+  public function importReport(array &$form, FormStateInterface $form_state) {
+    $form_state->setRedirect('ebms_report.import');
   }
 
 }
