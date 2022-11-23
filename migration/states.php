@@ -33,6 +33,26 @@ if (empty($count)) {
     'ON ebms_state (value, current, topic, article)'
   );
 }
+$count = \Drupal::database()->query(
+  'SELECT COUNT(*) FROM information_schema.statistics ' .
+  "WHERE INDEX_NAME = 'ebms_state__comments__entered'"
+)->fetchField();
+if (empty($count)) {
+  \Drupal::database()->query(
+    'CREATE INDEX ebms_state__comments__entered ' .
+    'ON ebms_state__comments (comments_entered, entity_id)'
+  );
+}
+$count = \Drupal::database()->query(
+  'SELECT COUNT(*) FROM information_schema.statistics ' .
+  "WHERE INDEX_NAME = 'ebms_article_tag__comments__entered'"
+)->fetchField();
+if (empty($count)) {
+  \Drupal::database()->query(
+    'CREATE INDEX ebms_article_tag__comments__entered ' .
+    'ON ebms_article_tag__comments (comments_entered, entity_id)'
+  );
+}
 
 // Load the states.
 $n = 0;

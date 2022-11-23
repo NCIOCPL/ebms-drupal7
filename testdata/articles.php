@@ -21,6 +21,14 @@ $maps = json_decode($json, true);
   'CREATE INDEX ebms_state__current_by_topic ' .
   'ON ebms_state (value, current, topic, article)'
 );
+\Drupal::database()->query(
+  'CREATE INDEX ebms_state__comments__entered ' .
+  'ON ebms_state__comments (comments_entered, entity_id)'
+);
+\Drupal::database()->query(
+  'CREATE INDEX ebms_article_tag__comments__entered ' .
+  'ON ebms_article_tag__comments (comments_entered, entity_id)'
+);
 
 // Load the states.
 $path = "$repo_base/testdata/article_states.json";
