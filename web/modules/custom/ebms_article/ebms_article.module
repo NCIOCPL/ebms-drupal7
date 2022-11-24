@@ -247,12 +247,12 @@ function ebms_article_query_search_modified_date_alter(AlterableInterface $query
     $join_arguments = [];
     if (!empty($topics)) {
       ebms_debug_log('topics = ' . print_r($topics, TRUE));
-      $join_clause .= ' AND modified_date_state.topic IN :modified_date_state_topics[]';
+      $join_clause .= ' AND modified_date_state.topic IN (:modified_date_state_topics[])';
       $join_arguments[':modified_date_state_topics[]'] = $topics;
     }
     elseif (!empty($boards)) {
       ebms_debug_log('boards = ' . print_r($boards, TRUE));
-      $join_clause .= ' AND modified_date_state.board IN :modified_date_state_boards[]';
+      $join_clause .= ' AND modified_date_state.board IN (:modified_date_state_boards[])';
       $join_arguments[':modified_date_state_boards[]'] = $boards;
     }
     $query->leftJoin('ebms_state', 'modified_date_state', $join_clause, $join_arguments);
@@ -266,11 +266,11 @@ function ebms_article_query_search_modified_date_alter(AlterableInterface $query
     // Create the joins for the tags assigned to article topics.
     $query->leftJoin('ebms_article__topics', 'modified_date_article_topics', 'modified_date_article_topics.entity_id = base_table.id');
     if (!empty($topics)) {
-      $query->leftJoin('ebms_article_topic', 'modified_date_article_topic', 'modified_date_article_topic.id = modified_date_article_topics.topics_target_id AND modified_date_article_topic.topic IN :modified_date_topic_tag_topics[]', [':modified_date_topic_tag_topics[]' => $topics]);
+      $query->leftJoin('ebms_article_topic', 'modified_date_article_topic', 'modified_date_article_topic.id = modified_date_article_topics.topics_target_id AND modified_date_article_topic.topic IN (:modified_date_topic_tag_topics[])', [':modified_date_topic_tag_topics[]' => $topics]);
     }
     elseif (!empty($boards)) {
       $query->leftJoin('ebms_article_topic', 'modified_date_article_topic', 'modified_date_article_topic.id = modified_date_article_topics.topics_target_id');
-      $query->leftJoin('ebms_topic', 'modified_date_topic', 'modified_date_topic.id = modified_date_article_topic.topic AND modified_date_topic.board IN :modified_date_article_topic_tag_boards[]', [':modified_date_article_topic_tag_boards[]' => $boards]);
+      $query->leftJoin('ebms_topic', 'modified_date_topic', 'modified_date_topic.id = modified_date_article_topic.topic AND modified_date_topic.board IN (:modified_date_article_topic_tag_boards[])', [':modified_date_article_topic_tag_boards[]' => $boards]);
     }
     $query->leftJoin('ebms_article_topic__tags', 'modified_date_article_topic_tags', 'modified_date_article_topic_tags.entity_id = modified_date_article_topics.topics_target_id');
     $query->leftJoin('ebms_article_tag', 'modified_date_article_topic_tag', 'modified_date_article_topic_tag.id = modified_date_article_topic_tags.tags_target_id');
