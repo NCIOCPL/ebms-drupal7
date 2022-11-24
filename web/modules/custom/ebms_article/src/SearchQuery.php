@@ -1085,73 +1085,13 @@ class SearchQuery {
       $end .= ' 23:59:59';
     }
 
-    // Look for state changes.
-    $states = $this->query->andConditionGroup();
-    if (!empty($start)) {
-      $states->condition('topics.entity.states.entity.entered', $start, '>=');
-    }
-    if (!empty($end)) {
-      $states->condition('topics.entity.states.entity.entered', $end, '<=');
-    }
-    $this->addTopicOrBoardCondition($states);
-
-    // Look for state comment changes.
-    $state_comments = $this->query->andConditionGroup();
-    if (!empty($start)) {
-      $state_comments->condition('topics.entity.states.entity.comments.entered', $start, '>=');
-    }
-    if (!empty($end)) {
-      $state_comments->condition('topics.entity.states.entity.comments.entered', $end, '<=');
-    }
-    $this->addTopicOrBoardCondition($state_comments);
-
-    // Check tags attached directly to articles.
-    $article_tags = $this->query->andConditionGroup();
-    if (!empty($start)) {
-      $article_tags->condition('tags.entity.assigned', $start, '>=');
-    }
-    if (!empty($end)) {
-      $article_tags->condition('tags.entity.assigned', $end, '<=');
-    }
-
-    // Check comments on those tags.
-    $article_tags_comments = $this->query->andConditionGroup();
-    if (!empty($start)) {
-      $article_tags_comments->condition('tags.entity.comments.entered', $start, '>=');
-    }
-    if (!empty($end)) {
-      $article_tags_comments->condition('tags.entity.comments.entered', $end, '<=');
-    }
-
-    // Check tags attached to topics.
-    $topic_tags = $this->query->andConditionGroup();
-    if (!empty($start)) {
-      $topic_tags->condition('topics.entity.tags.entity.assigned', $start, '>=');
-    }
-    if (!empty($end)) {
-      $topic_tags->condition('topics.entity.tags.entity.assigned', $end, '<=');
-    }
-    $this->addTopicOrBoardCondition($topic_tags);
-
-    // Check comments on the topic-specific tags.
-    $topic_tag_comments = $this->query->andConditionGroup();
-    if (!empty($start)) {
-      $topic_tag_comments->condition('topics.entity.tags.entity.comments.entered', $start, '>=');
-    }
-    if (!empty($end)) {
-      $topic_tag_comments->condition('topics.entity.tags.entity.comments.entered', $end, '<=');
-    }
-    $this->addTopicOrBoardCondition($topic_tag_comments);
-
-    // Roll up the tests into the master query.
-    $groups = $this->query->orConditionGroup()
-                   ->condition($states)
-                   ->condition($state_comments)
-                   ->condition($article_tags)
-                   ->condition($article_tags_comments)
-                   ->condition($topic_tags)
-                   ->condition($topic_tag_comments);
-    $this->query->condition($groups);
+    // Do the real work at a lower level. otherwise the query will never
+    // finish.
+    $this->query->addTag('search_modified_date');
+    $this->query->addMetaData('search_modified_date_start', $start);
+    $this->query->addMetaData('search_modified_date_end', $end);
+    $this->query->addMetaData('search_modified_topics', $this->topics);
+    $this->query->addMetaData('search_modified_boards', $this->boards);
   }
 
   /**

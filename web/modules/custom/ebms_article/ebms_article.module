@@ -227,3 +227,86 @@ function ebms_article_query_core_journal_sort_alter(AlterableInterface $query) {
     }
   }
 }
+
+/**
+ * Implements hook_query_TAG_alter.
+ *
+ * The entity query API times out, so use the Database API.
+ */
+function ebms_article_query_search_modified_date_alter(AlterableInterface $query) {
+  if ($query instanceof SelectInterface) {
+
+    // Collect the values to be used.
+    $start = $query->getMetaData('search_modified_date_start');
+    $end = $query->getMetaData('search_modified_date_end');
+    $topics = $query->getMetaData('search_modified_topics');
+    $boards = $query->getMetaData('search_modified_boards');
+
+    // Create the joins for the article's states.
+    $join_clause = 'modified_date_state.article = base_table.id';
+    $join_arguments = [];
+    if (!empty($topics)) {
+      ebms_debug_log('topics = ' . print_r($topics, TRUE));
+      $join_clause .= ' AND modified_date_state.topic IN :modified_date_state_topics[]';
+      $join_arguments[':modified_date_state_topics[]'] = $topics;
+    }
+    elseif (!empty($boards)) {
+      ebms_debug_log('boards = ' . print_r($boards, TRUE));
+      $join_clause .= ' AND modified_date_state.board IN :modified_date_state_boards[]';
+      $join_arguments[':modified_date_state_boards[]'] = $boards;
+    }
+    $query->leftJoin('ebms_state', 'modified_date_state', $join_clause, $join_arguments);
+    $query->leftJoin('ebms_state__comments', 'modified_date_state_comment', 'modified_date_state_comment.entity_id = modified_date_state.id');
+
+    // Create the joins for the tags assigned directly to the articles.
+    $query->leftJoin('ebms_article__tags', 'modified_date_article_tags', 'modified_date_article_tags.entity_id = base_table.id');
+    $query->leftJoin('ebms_article_tag', 'modified_date_article_tag', 'modified_date_article_tag.id = modified_date_article_tags.tags_target_id');
+    $query->leftJoin('ebms_article_tag__comments', 'modified_date_article_tag_comment', 'modified_date_article_tag_comment.entity_id = modified_date_article_tag.id');
+
+    // Create the joins for the tags assigned to article topics.
+    $query->leftJoin('ebms_article__topics', 'modified_date_article_topics', 'modified_date_article_topics.entity_id = base_table.id');
+    if (!empty($topics)) {
+      $query->leftJoin('ebms_article_topic', 'modified_date_article_topic', 'modified_date_article_topic.id = modified_date_article_topics.topics_target_id AND modified_date_article_topic.topic IN :modified_date_topic_tag_topics[]', [':modified_date_topic_tag_topics[]' => $topics]);
+    }
+    elseif (!empty($boards)) {
+      $query->leftJoin('ebms_article_topic', 'modified_date_article_topic', 'modified_date_article_topic.id = modified_date_article_topics.topics_target_id');
+      $query->leftJoin('ebms_topic', 'modified_date_topic', 'modified_date_topic.id = modified_date_article_topic.topic AND modified_date_topic.board IN :modified_date_article_topic_tag_boards[]', [':modified_date_article_topic_tag_boards[]' => $boards]);
+    }
+    $query->leftJoin('ebms_article_topic__tags', 'modified_date_article_topic_tags', 'modified_date_article_topic_tags.entity_id = modified_date_article_topics.topics_target_id');
+    $query->leftJoin('ebms_article_tag', 'modified_date_article_topic_tag', 'modified_date_article_topic_tag.id = modified_date_article_topic_tags.tags_target_id');
+    $query->leftJoin('ebms_article_tag__comments', 'modified_date_article_topic_tag_comment', 'modified_date_article_topic_tag_comment.entity_id = modified_date_article_topic_tag.id');
+
+    // Now look for the dates.
+    $group = $query->orConditionGroup();
+    if (!empty($start)) {
+      if (!empty($end)) {
+        $range = [$start, $end];
+        $group->condition('modified_date_state.entered', $range, 'BETWEEN');
+        $group->condition('modified_date_state_comment.comments_entered', $range, 'BETWEEN');
+        $group->condition('modified_date_article_tag.assigned', $range, 'BETWEEN');
+        $group->condition('modified_date_article_tag_comment.comments_entered', $range, 'BETWEEN');
+        $group->condition('modified_date_article_topic_tag.assigned', $range, 'BETWEEN');
+        $group->condition('modified_date_article_topic_tag_comment.comments_entered', $range, 'BETWEEN');
+      }
+      else {
+        $group->condition('modified_date_state.entered', $start, '>=');
+        $group->condition('modified_date_state_comment.comments_entered', $start, '>=');
+        $group->condition('modified_date_article_tag.assigned', $start, '>=');
+        $group->condition('modified_date_article_tag_comment.comments_entered', $start, '>=');
+        $group->condition('modified_date_article_topic_tag.assigned', $start, '>=');
+        $group->condition('modified_date_article_topic_tag_comment.comments_entered', $start, '>=');
+      }
+    }
+    elseif (!empty($end)) {
+      $group->condition('modified_date_state.entered', $end, '<=');
+      $group->condition('modified_date_state_comment.comments_entered', $end, '<=');
+      $group->condition('modified_date_article_tag.assigned', $end, '<=');
+      $group->condition('modified_date_article_tag_comment.comments_entered', $end, '<=');
+      $group->condition('modified_date_article_topic_tag.assigned', $end, '<=');
+      $group->condition('modified_date_article_topic_tag_comment.comments_entered', $end, '<=');
+    }
+    $query->condition($group);
+    ebms_debug_log((string)$query);
+  }
+
+}
