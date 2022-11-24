@@ -14,11 +14,10 @@ The steps, at a broad level, include:
 1. Linux server is provisioned
 2. The software for the new EBMS is installed on the server from the repository
 3. The files which are not under version control are copied to the new server
-4. The script to extract the data from the existing EBMS is run (~ 1/2 hour)
-5. The script to install Drupal 9, enable the modules, and load the data is run (between 9 and 15 hours)
-6. The Drupal 7 EBMS site is put into maintenance mode
-7. The files, XML, and extracted database values are refreshed and applied (approximately an hour)
-8. The DNS name ebms.nci.nih.gov is pointed to the new server
+4. The script to install Drupal 9, enable the modules, and load the data is run (between 9 and 15 hours)
+5. The Drupal 7 EBMS site is put into maintenance mode
+6. The files, XML, and extracted database values are refreshed and applied (approximately an hour)
+7. The DNS name ebms.nci.nih.gov is pointed to the new server
 
 ## Server Provisioning
 
@@ -44,7 +43,8 @@ Execute the following commands on the new server. From this point on all command
 cd /local/drupal/ebms
 curl -L https://api.github.com/repos/NCIOCPL/ebms/tarball/ebms4 | tar -xzf -
 mv NCIOCPL-ebms-*/* .
-rm -rf NCIOCPL-ebms-*
+mv NCIOCPL-ebms-*/.??* .
+rmdir NCIOCPL-ebms-*
 ```
 
 ## Fetch the unversioned files
@@ -56,21 +56,21 @@ cd /local/drupal/ebms
 rsync -a nciws-d2387-v:/local/drupal/ebms/unversioned ./
 ```
 
+If you have the password for the `drupal` account on nciws-d2387-v,
+then the `rsync` command will work as written. Otherwise, you will
+need to
+- run `chmod -R 777 /local/drupal/ebms/unversioned` on nciws-d2387-v
+- prepend "some-other-account@" to "nciws-d2387-v" in the `rsync` command,
+  using an account for which you have the password on nciws-d2387-v,
+  or the ability to log in with SSH keys.
+- run `chmod -R 777 /local/drupal/ebms/unversioned` as root or
+  as the other account used for the `rsync` command (assuming
+  that account exists on the new server)
+
 Edit the file `unversioned/dburl` so that it contains the correct
 database credentials, host name, and port number. Similarly, edit the
 file `unversioned/sitehost` so that it contains the correct name for
 the web host (_e.g._, `ebms4.nci.nih.gov`).
-
-## Copy EBMS Data
-
-Execute these commands on the new server. They will extract the
-necessary values from the Drupal 7 EBMS database tables into
-JSON-serialized lines, one line for each database table row.
-
-```
-cd /local/drupal/ebms/migration
-./export.py
-```
 
 ## Create the Web Site
 
