@@ -32,8 +32,6 @@ class ImportReport extends FormBase {
 
     // Set some default values.
     $params = empty($report_id) ? [] : SavedRequest::loadParameters($report_id);
-    $end_date = $params['date-end'] ?? date('Y-m-d');
-    $start_date = $params['date-start'] ?? date('Y-m-d', strtotime("$end_date -1 month +1 day"));
     $per_page = $params['per-page'] ?? 10;
 
     // Assemble the render array for the form's fields.
@@ -71,14 +69,8 @@ class ImportReport extends FormBase {
           '#attributes' => ['class' => ['inline-fields']],
           '#title' => 'Import Date Range',
           '#description' => 'Show import jobs performed during the specified date range.',
-          'date-start' => [
-            '#type' => 'date',
-            '#default_value' => $start_date,
-          ],
-          'date-end' => [
-            '#type' => 'date',
-            '#default_value' => $end_date,
-          ],
+          'date-start' => ['#type' => 'date'],
+          'date-end' => ['#type' => 'date'],
         ],
       ],
       'display-options' => [

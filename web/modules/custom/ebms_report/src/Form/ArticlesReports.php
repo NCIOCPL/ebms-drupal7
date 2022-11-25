@@ -62,7 +62,7 @@ class ArticlesReports extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state): array {
 
-    // We need this in multiple place, so fetch them once here.
+    // We need this in multiple places, so fetch them once here.
     $cycles = Batch::cycles();
 
     // Assemble the form fields.
