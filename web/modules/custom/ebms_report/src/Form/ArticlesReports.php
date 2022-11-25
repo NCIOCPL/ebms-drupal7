@@ -426,7 +426,7 @@ class ArticlesReports extends FormBase {
         '#attributes' => ['class' => ['report-header']],
         'heading' => [
           '#theme' => 'item_list',
-          '#title' => 'Preliminary Review Results',
+          '#title' => 'Articles Rejected/Accepted for Publication',
           '#items' => [
             'Report Date: ' . date('Y-m-d'),
             $cycle_display,
