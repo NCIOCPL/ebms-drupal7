@@ -55610,26 +55610,5 @@
     ],
     "deciders": null,
     "meetings": null
-  },
-  {
-    "id": 3360724,
-    "value": 5,
-    "article": 662104,
-    "board": 3,
-    "topic": 20,
-    "user": 400,
-    "entered": "2022-06-21 06:12:14",
-    "active": true,
-    "current": true,
-    "comments": [
-      {
-        "user": 1,
-        "entered": "2022-06-21 06:31:43",
-        "body": "Testing the Invalid PubMed IDs report."
-      }
-    ],
-    "decisions": null,
-    "deciders": null,
-    "meetings": null
   }
 ]

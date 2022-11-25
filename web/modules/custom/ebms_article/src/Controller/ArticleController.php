@@ -690,6 +690,7 @@ class ArticleController extends ControllerBase {
     if (!empty($options['query']['search'])) {
       $search_id = $options['query']['search'];
       unset($options['query']['search']);
+      $options['fragment'] = 'article-search-result-' . $article->id();
       $actions[] = [
         'url' => Url::fromRoute('ebms_article.search_form', ['search_id' => $search_id]),
         'label' => 'Refine Search',
