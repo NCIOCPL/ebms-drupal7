@@ -105,6 +105,12 @@ class ImportReport extends FormBase {
     // Show the details of a single job is so requested.
     $request_id = $this->getRequest()->query->get('request');
     if (!empty($request_id)) {
+      $form['return-to-job-list'] = [
+        '#type' => 'submit',
+        '#value' => 'Return to Report Job List',
+        '#submit' => ['::backToJobList'],
+        '#limit_validation_errors' => [],
+      ];
       $request = ImportRequest::load($request_id);
       $batch_id = $request->batch->target_id;
       $importer = $request->batch->entity->user->entity->name->value;
@@ -180,11 +186,14 @@ class ImportReport extends FormBase {
         $request_id = $request->id();
         $batch_id = $request->batch->target_id;
         $rows[] = [
-          Link::createFromRoute($batch_id, 'ebms_report.import', ['report_id' => $report_id], ['query' => ['request' => $request_id]]),
-          substr($request->batch->entity->imported->value, 0, 10),
-          $request->batch->entity->topic->entity->board->entity->name->value,
-          $request->batch->entity->topic->entity->name->value,
-          $request->batch->entity->article_count->value,
+          'id' => "import-request-$request_id",
+          'data' => [
+            Link::createFromRoute($batch_id, 'ebms_report.import', ['report_id' => $report_id], ['query' => ['request' => $request_id]]),
+            substr($request->batch->entity->imported->value, 0, 10),
+            $request->batch->entity->topic->entity->board->entity->name->value,
+            $request->batch->entity->topic->entity->name->value,
+            $request->batch->entity->article_count->value,
+          ],
         ];
       }
 
@@ -216,6 +225,17 @@ class ImportReport extends FormBase {
    */
   public function resetSubmit(array &$form, FormStateInterface $form_state) {
     $form_state->setRedirect('ebms_report.import');
+  }
+
+  /**
+   * Go back to the list of import jobs, positioned on this job.
+   */
+  public function backToJobList(array &$form, FormStateInterface $form_state) {
+    $request_id = $this->getRequest()->query->get('request');
+    $report_id = $this->getRouteMatch()->getRawParameter('report_id');
+    $parms = ['report_id' => $report_id];
+    $options = ['fragment' => "import-request-$request_id"];
+    $form_state->setRedirect('ebms_report.import', $parms, $options);
   }
 
 }
