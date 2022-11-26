@@ -171,12 +171,10 @@ class ImportForm extends FormBase {
       'import-comments' => [
         '#type' => 'textfield',
         '#title' => 'Import Comment',
-        '#description' => 'Notes about the import job.',
       ],
       'mgr-comment' => [
         '#type' => 'textfield',
         '#title' => 'Manager Comments',
-        '#description' => 'Information stored with each article for its topic assignment.',
       ],
       'options' => [
         '#type' => 'fieldset',
