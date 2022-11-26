@@ -33,6 +33,16 @@ class ImportReport extends FormBase {
     // Set some default values.
     $params = empty($report_id) ? [] : SavedRequest::loadParameters($report_id);
     $per_page = $params['per-page'] ?? 10;
+    $board = $form_state->getValue('board', $params['board'] ?? '');
+    $topic = $params['topic'] ?? '';
+
+    // The topic picklist is driven by the board selection.
+    $topics = empty($board) ? [] : Topic::topics($board);
+    if (!empty($topic)) {
+      if (!array_key_exists($topic, $topics)) {
+        $topic = '';
+      }
+    }
 
     // Assemble the render array for the form's fields.
     $form = [
@@ -44,17 +54,26 @@ class ImportReport extends FormBase {
           '#type' => 'select',
           '#title' => 'Editorial Board',
           '#options' => Board::boards(),
-          '#default_value' => $params['board'] ?? '',
+          '#default_value' => $board,
           '#description' => 'Optionally restrict the report to imports for a specific board.',
           '#empty_value' => '',
+          '#ajax' => [
+            'callback' => '::boardChangeCallback',
+            'wrapper' => 'board-controlled',
+            'event' => 'change',
+          ],
         ],
-        'topic' => [
-          '#type' => 'select',
-          '#title' => 'Summary Topic',
-          '#options' => Topic::topics(),
-          '#default_value' => $params['topic'] ?? '',
-          '#description' => 'Optionally restrict the report to imports for a specific topic.',
-          '#empty_value' => '',
+        'board-controlled' => [
+          '#type' => 'container',
+          '#attributes' => ['id' => 'board-controlled'],
+          'topic' => [
+            '#type' => 'select',
+            '#title' => 'Summary Topic',
+            '#options' => $topics,
+            '#default_value' => $topic,
+            '#description' => 'Optionally restrict the report to imports for a specific topic.',
+            '#empty_value' => '',
+          ],
         ],
         'cycle' => [
           '#type' => 'select',
@@ -236,6 +255,18 @@ class ImportReport extends FormBase {
     $parms = ['report_id' => $report_id];
     $options = ['fragment' => "import-request-$request_id"];
     $form_state->setRedirect('ebms_report.import', $parms, $options);
+  }
+
+  /**
+   * Fill in the portion of the form driven by board selection.
+   *
+   * @param array $form
+   *   Render array we are adjusting.
+   * @param FormStateInterface $form_state
+   *   Access to the form's values.
+   */
+  public function boardChangeCallback(array &$form, FormStateInterface $form_state) {
+    return $form['filters']['board-controlled'];
   }
 
 }
