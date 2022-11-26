@@ -55,9 +55,11 @@
       {% for comment in topic.comments %}
       <div>Board Manager Comment: {{ comment }}</div>
       {% endfor %}
+      {% if topic.add_tag_url %}
       <div class="add-topic-tag">
         <a href="{{ topic.add_tag_url }}" class="button usa-button usa-button--outline">Add Topic Tag</a>
       </div>
+      {% endif %}
     </div>
     <div class="topic-button-wrapper">
       {% if topic.buttons %}

@@ -792,6 +792,7 @@ class ReviewQueue extends FormBase {
       $topic = $article_topic->topic->entity;
       $topic_id = $topic->id();
       $topic_state = $article_topic->getCurrentState();
+      $mine = in_array($topic_id, $this->userTopics) || in_array($topic->board->target_id, $this->userBoards) || $this->canReviewAllTopics;
       if ($topic_state->value->entity->field_text_id->value !== $state) {
         $show_buttons = FALSE;
       }
@@ -799,12 +800,7 @@ class ReviewQueue extends FormBase {
         $show_buttons = TRUE;
       }
       else {
-        if (in_array($topic_id, $this->userTopics)) {
-          $show_buttons = TRUE;
-        }
-        else {
-          $show_buttons = in_array($topic->board->target_id, $this->userBoards);
-        }
+        $show_buttons = $mine;
       }
       $field_name = "topic-action-$article_id|$topic_id";
       $checked = (int) ($decisions[$field_name] ?? '0');
@@ -831,7 +827,7 @@ class ReviewQueue extends FormBase {
       $query_copy = $query;
       $query_copy['topic'] = $topic_id;
       $options = ['query' => $query_copy];
-      $add_tag_url = Url::fromRoute('ebms_article.add_article_tag', $article_parm, $options);
+      $add_tag_url = $mine ? Url::fromRoute('ebms_article.add_article_tag', $article_parm, $options) : '';
       $comments = [];
       foreach ($article_topic->comments as $topic_comment) {
         $comments[] = $topic_comment->comment;
