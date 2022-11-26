@@ -362,6 +362,8 @@ class ReviewQueue extends FormBase {
       $page = $this->getRequest()->get('page');
       $start = 1 + $page * $per_page;
       $queue = [
+        '#prefix' => '<div id="queue">',
+        '#suffix' => '</div>',
         '#theme' => 'item_list',
         '#title' => "Articles Waiting for $queue_type ($count)",
         '#empty' => 'No articles match the filtering criteria.',
@@ -560,6 +562,13 @@ class ReviewQueue extends FormBase {
           'invisible' => [
             ':input[name="decisions"]' => ['value' => '{}'],
           ],
+        ],
+      ],
+      'back-to-top' => [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['text-right']],
+        'back-to-top-button' => [
+          '#markup' => '<a href="#queue" class="usa-button">Back to Top</a>',
         ],
       ],
     ];

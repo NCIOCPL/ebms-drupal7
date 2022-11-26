@@ -108,6 +108,15 @@ class SearchResultsController extends ControllerBase {
       'bottom-pager' => [
         '#type' => 'pager',
       ],
+      'back-to-top' => [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['text-right']],
+        'back-to-top-button' => [
+          '#type' => 'button',
+          '#value' => 'Back to Top',
+          '#attributes' => ['onclick' => 'window.scrollTo({ top: 0, behavior: "smooth" });'],
+        ],
+      ],
     ];
   }
 
