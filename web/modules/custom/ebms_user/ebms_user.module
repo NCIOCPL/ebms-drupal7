@@ -82,6 +82,18 @@ function ebms_user_entity_base_field_info(\Drupal\Core\Entity\EntityTypeInterfac
         ->setDescription('Choose how to sort the articles in the review queues by default.')
         ->setDisplayOptions('view', ['label' => 'above'])
         ->setDisplayOptions('form', ['type' => 'options_buttons']),
+      'review_boards' => \Drupal\Core\Field\BaseFieldDefinition::create('list_string')
+        ->setLabel('Review Queue Board Options')
+        ->setDescription('Whether topics for all boards are shown on the review queue page.')
+        ->setDefaultValue('all')
+        ->setSettings([
+          'allowed_values' => [
+            'all' => 'Show topics for all boards',
+            'mine' => 'Show topics for the boards to which this user is assigned'
+          ],
+        ])
+        ->setDisplayOptions('view', ['label' => 'above'])
+        ->setDisplayOptions('form', ['type' => 'options_buttons']),
       'search_per_page' => \Drupal\Core\Field\BaseFieldDefinition::create('list_string')
         ->setLabel('Search Default Items Per Page')
         ->setDefaultValue('10')
@@ -151,6 +163,7 @@ function ebms_user_form_alter(&$form, $form_state, $form_id) {
       $form['groups']['#access'] = FALSE;
       $form['review_format']['#access'] = FALSE;
       $form['review_per_page']['#access'] = FALSE;
+      $form['review_queue_board_options'] = FALSE;
       $form['review_sort']['#access'] = FALSE;
       $form['search_per_page']['#access'] = FALSE;
       $form['search_sort']['#access'] = FALSE;

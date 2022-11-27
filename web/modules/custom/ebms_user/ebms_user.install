@@ -1,0 +1,22 @@
+<?php
+
+/**
+ * Implements hook_update_N().
+ *
+ * Shows how to add a new field after the initial deployment.
+ */
+function ebms_user_update_9401() {
+  $definition = \Drupal\Core\Field\BaseFieldDefinition::create('list_string')
+    ->setLabel('Review Queue Board Options')
+    ->setDescription('Whether topics for all boards are shown on the review queue page.')
+    ->setDefaultValue('all')
+    ->setSettings([
+      'allowed_values' => [
+        'all' => 'Show topics for all boards',
+        'mine' => 'Show topics for the boards to which this user is assigned'
+      ],
+    ])
+    ->setDisplayOptions('view', ['label' => 'above'])
+    ->setDisplayOptions('form', ['type' => 'options_buttons']);
+  \Drupal::entityDefinitionUpdateManager()->installFieldStorageDefinition('review_boards', 'user', 'ebms_user', $definition);
+}

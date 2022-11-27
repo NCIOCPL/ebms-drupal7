@@ -183,6 +183,7 @@ class ReviewQueue extends FormBase {
     $cycle = $params['cycle'];
     $tag = $params['tag'];
     $sort = $params['sort'];
+    $review_boards = $params['review-boards'];
     $format = $params['format'];
     $per_page = $params['per-page'];
     $title = $params['title'];
@@ -357,7 +358,7 @@ class ReviewQueue extends FormBase {
       ebms_debug_log("$per_page articles loaded");
       $items = [];
       foreach ($articles as $article) {
-        $items[] = $this->createArticleRenderArray($article, $queue_id, $decisions, $format, $state);
+        $items[] = $this->createArticleRenderArray($article, $queue_id, $decisions, $format, $state, $review_boards);
       }
       $page = $this->getRequest()->get('page');
       $start = 1 + $page * $per_page;
@@ -516,6 +517,16 @@ class ReviewQueue extends FormBase {
           '#default_value' => $per_page,
           '#description' => 'Decide how many articles to display on each page.',
         ],
+        'review-boards' => [
+          '#type' => 'radios',
+          '#title' => 'Boards',
+          '#options' => [
+            'all' => 'Show topics for all boards',
+            'mine' => 'Show topics for the boards to which I am assigned',
+          ],
+          '#default_value' => $review_boards,
+          '#description' => 'Whether topics for all boards are shown on the review page.',
+        ],
         'preserve-options' => [
           '#type' => 'submit',
           '#value' => 'Save as Default',
@@ -606,6 +617,7 @@ class ReviewQueue extends FormBase {
     if ($trigger === 'Save as Default') {
       $queue_id = $form_state->getValue('queue-id');
       $sort = $form_state->getValue('sort');
+      $review_boards = $form_state->getValue('review-boards');
       $format = $form_state->getValue('format');
       $per_page = $form_state->getValue('per-page');
       $queue = SavedRequest::load($queue_id);
@@ -613,6 +625,7 @@ class ReviewQueue extends FormBase {
       $params['sort'] = $sort;
       $params['format'] = $format;
       $params['per-page'] = $per_page;
+      $params['review-boards'] = $review_boards;
       $params_json = json_encode($params);
       $queue->set('parameters', $params_json);
       $queue->save();
@@ -620,6 +633,7 @@ class ReviewQueue extends FormBase {
       $user->set('review_format', $format);
       $user->set('review_per_page', $per_page);
       $user->set('review_sort', $sort);
+      $user->set('review_boards', $review_boards);
       $user->save();
     }
   }
@@ -689,9 +703,11 @@ class ReviewQueue extends FormBase {
    */
   private function createQueue(FormStateInterface $form_state, bool $filtered = FALSE): SavedRequest {
     $user = User::load($this->currentUser()->id());
+    $default_review_boards = $user->review_boards->value;
     $default_sort = $user->review_sort->value;
     $default_format = $user->review_format->value;
     $default_per_page = $user->review_per_page->value;
+    $default_review_boards = $default_review_boards ?: 'all';
     $default_sort = $default_sort ?: 'state.article';
     $default_format = $default_format ?: 'brief';
     $default_per_page = $default_per_page ?: self::DEFAULT_PAGE_SIZE;
@@ -718,6 +734,7 @@ class ReviewQueue extends FormBase {
       'sort' => $parameters['sort'] ?? $default_sort,
       'format' => $parameters['format'] ?? $default_format,
       'per-page' => $parameters['per-page'] ?? $default_per_page,
+      'review-boards' => $parameters['review-boards'] ?? $default_review_boards,
       'decisions' => '{}',
       'type' => $parameters['type'] ?? $default_queue_type,
       'form_id' => 'ebms_review_queue',
@@ -754,11 +771,13 @@ class ReviewQueue extends FormBase {
    *   Used to determine whether to show the article's abstract.
    * @param string $state
    *   Used to determine which decisions actions to show.
+   * @param string $review_boards
+   *   Whether to show all topics, not just those for this user's boards.
    *
    * @return array
    *   The keyed values for rendering this article.
    */
-  private function createArticleRenderArray(Article $article, int $queue_id, array $decisions, string $format, string $state): array {
+  private function createArticleRenderArray(Article $article, int $queue_id, array $decisions, string $format, string $state, string $review_boards): array {
 
     if ($state === 'published' || empty($article->full_text->file)) {
       $full_text_url = NULL;
@@ -791,8 +810,11 @@ class ReviewQueue extends FormBase {
       $article_topic = $article_topic->entity;
       $topic = $article_topic->topic->entity;
       $topic_id = $topic->id();
-      $topic_state = $article_topic->getCurrentState();
       $mine = in_array($topic_id, $this->userTopics) || in_array($topic->board->target_id, $this->userBoards) || $this->canReviewAllTopics;
+      if (!$mine && $review_boards === 'mine') {
+        continue;
+      }
+      $topic_state = $article_topic->getCurrentState();
       if ($topic_state->value->entity->field_text_id->value !== $state) {
         $show_buttons = FALSE;
       }
