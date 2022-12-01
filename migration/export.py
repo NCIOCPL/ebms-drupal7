@@ -164,6 +164,10 @@ class Exporter:
         in_person="In Person",
         remote="Webex/Phone Conf.",
     )
+    GENETICS_BOARD = 2
+    PEDIATRIC_BOARD = 3
+    PEDIATRIC_GENETICS_BOARD = 7
+    MEDICAL_LIBRARIAN = 13
 
     def run(self):
         """Top-level processing entry point."""
@@ -582,14 +586,34 @@ class Exporter:
             core.add(row["source_jrnl_id"])
         not_lists = {}
         self.cursor.execute("SELECT * FROM ebms_not_list ORDER BY board_id")
+
+        # OCEEBMS-552: create "not" list for new Pediatric Genetics board.
+        genetics_not_list = set()
+        pediatric_genetics_not_list = set()
         for row in self.cursor.fetchall():
             journal_id = row["source_jrnl_id"]
+            board_id = row["board_id"]
             if journal_id not in not_lists:
                 not_lists[journal_id] = []
+            if board_id == self.PEDIATRIC_GENETICS_BOARD:
+                pediatric_genetics_not_list.add(journal_id)
+            else:
+                not_lists[journal_id].append(dict(
+                    board=board_id,
+                    start=str(row["start_date"]),
+                    user=row["user_id"],
+                ))
+            if board_id == self.GENETICS_BOARD:
+                genetics_not_list.add(journal_id)
+            elif board_id == self.PEDIATRIC_BOARD:
+                if journal_id in genetics_not_list:
+                    pediatric_genetics_not_list.add(journal_id)
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for journal_id in sorted(pediatric_genetics_not_list):
             not_lists[journal_id].append(dict(
-                board=row["board_id"],
-                start=str(row["start_date"]),
-                user=row["user_id"],
+                board=self.PEDIATRIC_GENETICS_BOARD,
+                start=now,
+                user=self.MEDICAL_LIBRARIAN,
             ))
         self.cursor.execute("SELECT * FROM ebms_journal ORDER BY "
                             "brf_jrnl_title, source_jrnl_id")
