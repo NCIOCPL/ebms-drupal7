@@ -145,11 +145,11 @@ class Month extends ControllerBase {
     }
     if ($user->hasPermission('view all meetings')) {
       if (!$user->boards->isEmpty()) {
-        $label = 'All Boards';
+        $label = 'Show All Boards';
         $options = ['query' => \Drupal::request()->query->all()];
         if ($options['query']['boards'] === 'all') {
           unset($options['query']['boards']);
-          $label = 'My Boards';
+          $label = 'Restrict To My Boards';
         }
         else {
           $options['query']['boards'] = 'all';
@@ -161,11 +161,11 @@ class Month extends ControllerBase {
       }
       $travel_manager = $user->id() > 1 && $user->hasPermission('manage travel');
       $default = $travel_manager ? 'board' : 'all';
-      $label = 'All Meeting Categories';
+      $label = 'Show All Meeting Categories';
       $options = ['query' => \Drupal::request()->query->all()];
       $meetings = $options['query']['meetings'] ?? $default;
       if ($meetings === 'all') {
-        $label = 'Board Meetings';
+        $label = 'Show Just Board Meetings';
         $meetings = 'board';
       }
       else {
