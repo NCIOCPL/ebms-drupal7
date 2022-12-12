@@ -273,6 +273,8 @@ class ReviewQueue extends FormBase {
     $queue = [];
     if (empty($values)) {
       $query = \Drupal::database()->select('ebms_state', 'state');
+      $query->addField('state', 'article');
+      $query->distinct();
       $query->condition('state.value', State::getStateId($state));
       $query->condition('state.current', 1);
       if ($sort === 'state.article') {
@@ -350,7 +352,6 @@ class ReviewQueue extends FormBase {
         }
         $query->orderBy($sort);
       }
-      $query->addField('state', 'article');
       $query = $query->extend(PagerSelectExtender::class);
       $query->limit($per_page);
       $ids = $query->execute()->fetchCol();
