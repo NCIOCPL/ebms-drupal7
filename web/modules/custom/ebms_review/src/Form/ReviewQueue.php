@@ -311,12 +311,12 @@ class ReviewQueue extends FormBase {
           $query->condition('article.brief_journal_title', "%$journal%", 'LIKE');
         }
       }
-      else {
-        if (!empty($cycle)) {
-          $query->join('ebms_article__topics', 'topics', 'topics.entity_id = state.article');
-          $query->join('ebms_article_topic', 'topic', 'topic.id = topics.topics_target_id');
-          $query->condition('topic.cycle', $cycle);
-        }
+      if (!empty($cycle)) {
+        $query->join('ebms_article__topics', 'topics', 'topics.entity_id = state.article');
+        $query->join('ebms_article_topic', 'topic', 'topic.id = topics.topics_target_id');
+        $query->condition('topic.cycle', $cycle);
+      }
+      if ($queue_type !== 'Librarian Review') {
         if (!empty($tag)) {
           if (empty($cycle)) {
             $query->join('ebms_article__topics', 'topics', 'topics.entity_id = state.article');
@@ -435,17 +435,6 @@ class ReviewQueue extends FormBase {
           '#description' => 'Include articles assigned to at least one reviewable topic for this review cycle.',
           '#default_value' => $cycle,
           '#empty_value' => '',
-          '#states' => [
-            'visible' => [
-              ':input[name="type"]' => [
-                ['value' => 'Abstract Review'],
-                'or',
-                ['value' => 'Full Text Review'],
-                'or',
-                ['value' => 'On Hold Review'],
-              ],
-            ],
-          ],
         ],
         'tag' => [
           '#type' => 'select',
