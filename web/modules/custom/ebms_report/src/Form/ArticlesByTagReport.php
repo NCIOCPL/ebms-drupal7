@@ -120,7 +120,7 @@ class ArticlesByTagReport extends FormBase {
         'dates' => [
           '#type' => 'container',
           '#attributes' => ['class' => ['inline-fields']],
-          '#title' => 'Tag Assigned',
+          '#title' => 'Date Tag Assigned',
           '#description' => 'Optionally specify a data range to narrow the report by when the tags were assigned.',
           'date-start' => [
             '#type' => 'date',
