@@ -210,6 +210,7 @@ class ReviewQueue extends FormBase {
       // See https://www.drupal.org/project/drupal/issues/2758631.
       $queue_selection = [
         '#type' => 'details',
+        '#open' => in_array($queue_type, ['Abstract Review', 'Full Text Review']),
         '#title' => 'Queue Selection',
         'type' => [
           '#type' => 'radios',
@@ -401,7 +402,7 @@ class ReviewQueue extends FormBase {
       'queue-selection' => $queue_selection,
       'filters' => [
         '#type' => 'details',
-        '#open' => $params['filtered'],
+        '#open' => $params['filtered'] || in_array($queue_type, ['Abstract Review', 'Full Text Review']),
         '#title' => 'Filter Options',
         'board' => [
           '#type' => 'select',

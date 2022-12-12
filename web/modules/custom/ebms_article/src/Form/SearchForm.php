@@ -266,6 +266,7 @@ class SearchForm extends FormBase {
       ],
       'basic' => [
         '#type' => 'details',
+        '#open' => TRUE,
         '#title' => $restricted ? 'Filtering Options' : 'Basic Search',
         'board' => [
           '#type' => 'select',
@@ -397,6 +398,7 @@ class SearchForm extends FormBase {
     if (!$restricted) {
       $form['advanced'] = [
         '#type' => 'details',
+        '#open' => TRUE,
         '#title' => 'Advanced Search',
         'article-tag' => [
           '#type' => 'select',
