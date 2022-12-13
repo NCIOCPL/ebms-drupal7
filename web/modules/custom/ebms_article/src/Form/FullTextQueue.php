@@ -240,6 +240,10 @@ class FullTextQueue extends FormBase {
         */
         $items,
       ],
+      'apply-bottom' => [
+        '#type' => 'submit',
+        '#value' => self::UPLOAD,
+      ],
     ];
     if ($per_page !== 'all') {
       $form['pager'] = ['#type' => 'pager'];
