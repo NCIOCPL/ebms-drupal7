@@ -4,6 +4,7 @@ namespace Drupal\ebms_article\Form;
 
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 use Drupal\ebms_article\Entity\Article;
 use Drupal\ebms_board\Entity\Board;
 use Drupal\ebms_core\Entity\SavedRequest;
@@ -110,6 +111,7 @@ class FullTextQueue extends FormBase {
           '#theme' => 'full_text_queue_article',
           '#article' => [
             'id' => $article_id,
+            'url' => Url::fromRoute('ebms_article.article', ['article' => $article_id]),
             'authors' => implode('; ', $authors),
             'title' => $article->title->value,
             'publication' => $article->getLabel(),
