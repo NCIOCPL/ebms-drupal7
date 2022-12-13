@@ -23,7 +23,7 @@ class SearchPubMed extends ControllerBase {
     $pmid =  \Drupal::request()->query->get('pmid');
     $storage = $this->entityTypeManager()->getStorage('ebms_article');
     $query = $storage->getQuery()->accessCheck(FALSE);
-    $query->condition('source_id', $pmid);
+    $query->condition('source_id', trim($pmid));
     $ids = $query->execute();
     if (empty($ids)) {
       if ($user->hasPermission('import articles')) {
