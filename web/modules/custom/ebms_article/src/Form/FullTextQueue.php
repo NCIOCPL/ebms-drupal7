@@ -105,13 +105,15 @@ class FullTextQueue extends FormBase {
           '#title' => 'Related Articles',
         ];
       }
+      $url_parms = ['article' => $article_id];
+      $url_opts = ['query' => ['full-text-queue' => $queue_id]];
       $items[] = [
         '#type' => 'container',
         "article-$article_id" => [
           '#theme' => 'full_text_queue_article',
           '#article' => [
             'id' => $article_id,
-            'url' => Url::fromRoute('ebms_article.article', ['article' => $article_id]),
+            'url' => Url::fromRoute('ebms_article.article', $url_parms, $url_opts),
             'authors' => implode('; ', $authors),
             'title' => $article->title->value,
             'publication' => $article->getLabel(),
