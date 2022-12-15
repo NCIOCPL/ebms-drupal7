@@ -248,15 +248,6 @@ class BoardSummariesController extends ControllerBase {
       'wrapper' => [
         '#type' => 'container',
         '#attributes' => ['id' => 'select-board'],
-        'image-wrapper' => [
-          '#type' => 'container',
-          'image' => [
-            '#theme' => 'image',
-            '#attributes' => [
-              'src' => '/themes/custom/ebms/images/typewriter.jpg',
-            ],
-          ],
-        ],
         'boards-wrapper' => [
           '#type' => 'container',
           '#attributes' => ['id' => 'boards-wrapper'],
