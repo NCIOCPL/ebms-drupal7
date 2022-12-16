@@ -68,7 +68,7 @@ class ArticlesByTagReport extends FormBase {
     $query->condition('vid', 'article_tags');
     $query->condition('field_topic_allowed', 1);
     $query->condition('status', 1);
-    $query->sort('weight');
+    $query->sort('name');
     $tags = [];
     foreach ($storage->loadMultiple($query->execute()) as $tag) {
       $tags[$tag->id()] = $tag->name->value;

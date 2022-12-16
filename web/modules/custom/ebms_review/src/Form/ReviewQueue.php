@@ -823,6 +823,7 @@ class ReviewQueue extends FormBase {
           $tags[] = $topic_tag->entity->tag->entity->name->value;
         }
       }
+      sort($tags);
       $tags = implode(', ', $tags);
       $buttons = [];
       if ($show_buttons) {
