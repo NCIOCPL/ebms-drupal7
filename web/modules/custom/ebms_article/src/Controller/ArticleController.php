@@ -712,16 +712,6 @@ class ArticleController extends ControllerBase {
         'attributes' => ['title' => 'Return to the review queue.'],
       ];
     }
-    if (!empty($options['query']['full-text-queue'])) {
-      $queue_id = $options['query']['full-text-queue'];
-      unset($options['query']['full-text-queue']);
-      $options['fragment'] = 'queue-article-id-' . $article->id();
-      $actions[] = [
-        'url' => Url::fromRoute('ebms_article.full_text_queue', ['queue_id' => $queue_id], $options),
-        'label' => 'Full Text Queue',
-        'attributes' => ['title' => 'Return to the full-text retrieval queue.'],
-      ];
-    }
     return $actions;
   }
 
