@@ -1477,7 +1477,11 @@ class Exporter:
         )
         path = "../unversioned/exported/article_tags_vocabulary.json"
         with open(path, "w", encoding="utf-8") as fp:
+            not_allowed = "conversion_note", "preliminary"
             for row in self.cursor.fetchall():
+                text_id = row["text_id"]
+                if text_id in ("q_init_review", "q_bm_review"):
+                  continue
                 values = dict(
                     vid="article_tags",
                     id=row["tag_id"],
@@ -1485,7 +1489,7 @@ class Exporter:
                     name=row["tag_name"],
                     description=row["description"],
                     field_topic_required=row["topic_required"]=="Y",
-                    field_topic_allowed=row["text_id"]!="preliminary",
+                    field_topic_allowed=text_id not in not_allowed,
                     status=row["active_status"]=="A",
                 )
                 fp.write(f"{dumps(values)}\n")
