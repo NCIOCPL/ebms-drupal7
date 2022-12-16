@@ -16,7 +16,7 @@ ebms_article.internal_articles:
   description: Articles tagged for internal use, not for review
   parent: ebms_article.articles
 ebms_article.full_text_queue:
-  title: Upload Full Text PDFs
+  title: Upload Full Text
   route_name: ebms_article.full_text_queue
   description: Bulk upload of article full text.
   parent: ebms_article.articles
