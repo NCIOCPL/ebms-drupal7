@@ -121,6 +121,15 @@ class ImportForm extends FormBase {
       $month->modify('previous month');
     }
 
+    // Populate the topics picklist.
+    $board = $form_state->getValue('board');
+    ebms_debug_log("board is $board");
+    $options = empty($board) ? [] : $this->getTopics($board);
+
+    // The #empty_option setting is broken in AJAX.
+    // See https://www.drupal.org/project/drupal/issues/3180011.
+    $topics = ['' => '- Select -'] + $options;
+
     // Assemble the form.
     $form = [
       '#title' => 'Import Articles from PubMed',
@@ -146,11 +155,11 @@ class ImportForm extends FormBase {
           '#title' => 'Topic',
           '#required' => TRUE,
           '#description' => 'The topic assigned to articles imported in this batch.',
-          '#options' => [],
+          '#options' => $topics,
           '#empty_value' => '',
 
           // See http://drupaldummies.blogspot.com/2012/01/solved-illegal-choice-has-been-detected.html.
-          '#validated' => TRUE,
+          //'#validated' => TRUE,
         ],
       ],
       'cycle' => [
@@ -392,12 +401,6 @@ class ImportForm extends FormBase {
    * Plug the board's topics into the form.
    */
   public function getTopicsCallback(array &$form, FormStateInterface $form_state): array {
-    $board = $form_state->getValue('board');
-    $options = empty($board) ? [] : $this->getTopics($board);
-
-    // The #empty_option setting is broken in AJAX.
-    // See https://www.drupal.org/project/drupal/issues/3180011.
-    $form['board-controlled']['topic']['#options'] = ['' => '- Select -'] + $options;
     return $form['board-controlled'];
   }
 
