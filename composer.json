@@ -22,7 +22,7 @@
         "drupal/coder": "^8.3",
         "drupal/core-composer-scaffold": "^9.1",
         "drupal/core-recommended": "^9.1",
-        "drupal/editor_advanced_link": "^2.0",
+        "drupal/editor_advanced_link": "^2.1",
         "drupal/entity_browser": "^2.6",
         "drupal/externalauth": "^2.0",
         "drupal/linkit": "^6.0@beta",
@@ -107,7 +107,7 @@
     },
     "require-dev": {
         "behat/mink": "^1.9",
-        "drupal/devel": "^5.0",
+        "drupal/devel": "^5.1",
         "kint-php/kint": "^3.3",
         "mikey179/vfsstream": "^1.6",
         "phpunit/phpunit": "*",
