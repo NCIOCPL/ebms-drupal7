@@ -45,7 +45,9 @@ To update Drupal core (for example, when a new version of Drupal is
 released to address serious bugs or security vulnerabilities), run
 
 ```
+chmod 777 web/sites/default
 composer update drupal/core "drupal/core-*" --with-all-dependencies
+chmod 555 web/sites/default
 ```
 
 Commit the updated `composer.*` files. When other developers pull down
