@@ -42,6 +42,7 @@ $DRUSH then uswds_base
 $DRUSH then ebms
 $DRUSH en datetime_range
 $DRUSH en devel
+$DRUSH en ckeditor
 $DRUSH en linkit
 $DRUSH en role_delegation
 $DRUSH en editor_advanced_link
