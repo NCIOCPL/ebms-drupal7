@@ -382,7 +382,10 @@ class ArticlesReports extends FormBase {
         foreach ($board['topics'] as $topic) {
           $rows[] = [$topic['name'], $topic['count']];
         }
-        $rows[] = ['Total', count($board['articles'])];
+        $rows[] = [
+          'data' => ['Total', count($board['articles'])],
+          'class' => ['totals'],
+        ];
         $report[] = [
           '#type' => 'table',
           '#caption' => $board['name'],
@@ -498,7 +501,10 @@ class ArticlesReports extends FormBase {
         foreach ($board['topics'] as $topic) {
           $rows[] = [$topic['name'], $topic['reject_init_review'], $topic['passed_init_review']];
         }
-        $rows[] = ['Total', count($board['reject_init_review']), count($board['passed_init_review'])];
+        $rows[] = [
+          'data' => ['Total', count($board['reject_init_review']), count($board['passed_init_review'])],
+          'class' => ['totals'],
+        ];
         $report[] = [
           '#type' => 'table',
           '#caption' => $board['name'],
@@ -612,7 +618,10 @@ class ArticlesReports extends FormBase {
         foreach ($board['topics'] as $topic) {
           $rows[] = [$topic['name'], $topic['count']];
         }
-        $rows[] = ['Total', count($board['articles'])];
+        $rows[] = [
+          'data' => ['Total', count($board['articles'])],
+          'class' => ['totals'],
+        ];
         $report[] = [
           '#type' => 'table',
           '#caption' => $board['name'],
@@ -968,7 +977,10 @@ class ArticlesReports extends FormBase {
         foreach ($board['topics'] as $topic) {
           $rows[] = [$topic['name'], $topic['count']];
         }
-        $rows[] = ['Total', count($board['articles'])];
+        $rows[] = [
+          'data' => ['Total', count($board['articles'])],
+          'class' => ['totals'],
+        ];
         $report[] = [
           '#type' => 'table',
           '#caption' => $board['name'],
@@ -984,7 +996,12 @@ class ArticlesReports extends FormBase {
       $report[] = [
         '#type' => 'table',
         '#caption' => 'Grand Total',
-        '#rows' => [['All Boards', count($all_articles)]],
+        '#rows' => [
+          [
+            'data' => ['All Boards', count($all_articles)],
+            'class' => ['totals'],
+          ],
+        ],
         '#attributes' => ['class' => ['journal-rejections-table']],
       ];
     }
@@ -1094,7 +1111,10 @@ class ArticlesReports extends FormBase {
         foreach ($board['topics'] as $topic) {
           $rows[] = [$topic['name'], $topic['count']];
         }
-        $rows[] = ['Total', count($board['articles'])];
+        $rows[] = [
+          'data' => ['Total', count($board['articles'])],
+          'class' => ['totals'],
+        ];
         $report[] = [
           '#type' => 'table',
           '#caption' => $board['name'],
@@ -1110,7 +1130,12 @@ class ArticlesReports extends FormBase {
       $report[] = [
         '#type' => 'table',
         '#caption' => 'Grand Total',
-        '#rows' => [['All Boards', count($all_articles)]],
+        '#rows' => [
+          [
+            'data' => ['All Boards', count($all_articles)],
+            'class' => ['totals'],
+          ],
+        ],
         '#attributes' => ['class' => ['librarian-review-table']],
       ];
     }
@@ -1220,7 +1245,10 @@ class ArticlesReports extends FormBase {
         foreach ($board['topics'] as $topic) {
           $rows[] = [$topic['name'], $topic['count']];
         }
-        $rows[] = ['Total', count($board['articles'])];
+        $rows[] = [
+          'data' => ['Total', count($board['articles'])],
+          'class' => ['totals'],
+        ];
         $report[] = [
           '#type' => 'table',
           '#caption' => $board['name'],
@@ -1236,7 +1264,12 @@ class ArticlesReports extends FormBase {
       $report[] = [
         '#type' => 'table',
         '#caption' => 'Grand Total',
-        '#rows' => [['All Boards', count($all_articles)]],
+        '#rows' => [
+          [
+            'data' => ['All Boards', count($all_articles)],
+            'class' => ['totals'],
+          ],
+        ],
         '#attributes' => ['class' => ['abstract-approved-table']],
       ];
     }
