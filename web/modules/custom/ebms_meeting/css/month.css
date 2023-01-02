@@ -8,7 +8,7 @@ a.button {
   background: #696559;
   color: white;
   font-weight: bold;
-  text-align: center
+  text-align: center;
 }
 .calendar-month td {
   height: 2rem;
@@ -98,6 +98,9 @@ a.button {
   .calendar-month span.canceled {
       display: inline;
   }
+}
+@media only screen and (min-width: 1024px) {
+  h1 { text-align: left; }
 }
 @media only screen and (min-width: 1200px) {
   .calendar-month td {

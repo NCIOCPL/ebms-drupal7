@@ -15,5 +15,10 @@ function ebms_meeting_theme($existing, $type, $theme, $path): array {
         'meeting' => NULL,
       ],
     ],
+    'upcoming_meetings' => [
+      'variables' => [
+        'meetings' => [],
+      ],
+    ],
   ];
 }

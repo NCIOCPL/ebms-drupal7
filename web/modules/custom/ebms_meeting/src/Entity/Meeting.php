@@ -317,7 +317,7 @@ class Meeting extends ContentEntityBase implements ContentEntityInterface {
     $query->sort('dates');
     self::applyMeetingFilters($query, $user);
     $meetings = $storage->loadMultiple($query->execute());
-    $rows = [];
+    $items = [];
     $route = 'ebms_meeting.meeting';
     $options = ['query' => \Drupal::request()->query->all()];
     foreach ($meetings as $meeting) {
@@ -340,19 +340,15 @@ class Meeting extends ContentEntityBase implements ContentEntityInterface {
         $end .= ":$minutes";
       }
       $end .= $am_pm;
-      $rows[] = [
-        "$date $start to $end E.T.",
-        Link::createFromRoute($meeting->name->value, $route, ['meeting' => $meeting->id()], $options),
-        $meeting->type->entity->name->value,
+      $items[] = [
+        'when' => "$date $start to $end E.T.",
+        'link' => Link::createFromRoute($meeting->name->value, $route, ['meeting' => $meeting->id()], $options),
+        'type' => $meeting->type->entity->name->value,
       ];
     }
     return [
-      '#theme' => 'table',
-      '#attributes' => ['id' => 'upcoming-meetings'],
-      '#header' => ['When', 'Meeting Name', 'Meeting Type'],
-      '#rows' => $rows,
-      '#empty' => 'No upcoming meetings found.',
-      '#caption' => 'Upcoming Meetings',
+      '#theme' => 'upcoming_meetings',
+      '#meetings' => $items,
     ];
   }
 

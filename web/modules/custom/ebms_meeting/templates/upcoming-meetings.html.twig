@@ -1,0 +1,11 @@
+<div class="upcoming-meetings grid-col-12 desktop:grid-col-4">
+  <h3>Upcoming Meetings</h3>
+  <ul>
+    {% for meeting in meetings %}
+    <li>{{meeting.when}}<br>{{ meeting.link }}<br>{{ meeting.type }}</li>
+    {% endfor %}
+    {% if not meetings %}
+    <li>No upcoming meetings found.</li>
+    {% endif %}
+  </ul>
+</div>

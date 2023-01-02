@@ -190,12 +190,16 @@ class Month extends ControllerBase {
         '#theme' => 'ebms_buttons',
         '#buttons' => $buttons,
       ],
-      'calendar' => [
-        '#theme' => 'month',
-        '#attached' => ['library' => ['ebms_meeting/calendar-month']],
-        '#rows' => $rows,
+      'wrapper' => [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+        'calendar' => [
+          '#theme' => 'month',
+          '#attached' => ['library' => ['ebms_meeting/calendar-month']],
+          '#rows' => $rows,
+        ],
+        'upcoming' => Meeting::upcomingMeetings($user),
       ],
-      'upcoming' => Meeting::upcomingMeetings($user),
     ];
   }
 
