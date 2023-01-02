@@ -128,95 +128,128 @@ class ImportForm extends FormBase {
 
     // The #empty_option setting is broken in AJAX.
     // See https://www.drupal.org/project/drupal/issues/3180011.
-    $topics = ['' => '- Select -'] + $options;
+    $topics = ['' => '- The topic assigned to articles imported in this batch -'] + $options;
 
     // Assemble the form.
     $form = [
       '#title' => 'Import Articles from PubMed',
       '#attached' => ['library' => ['ebms_import/import-form']],
-      'board' => [
-        '#type' => 'select',
-        '#title' => 'Board',
-        '#required' => TRUE,
-        '#description' => 'Select a board to populate the Topic picklist.',
-        '#options' => $boards,
-        '#empty_value' => '',
-        '#ajax' => [
-          'callback' => '::getTopicsCallback',
-          'wrapper' => 'board-controlled',
-          'event' => 'change',
-        ],
-      ],
-      'board-controlled' => [
+      'board-and-topic' => [
         '#type' => 'container',
-        '#attributes' => ['id' => 'board-controlled'],
-        'topic' => [
-          '#type' => 'select',
-          '#title' => 'Topic',
-          '#required' => TRUE,
-          '#description' => 'The topic assigned to articles imported in this batch.',
-          '#options' => $topics,
-          '#empty_value' => '',
+        '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+        'board-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'board' => [
+            '#type' => 'select',
+            '#title' => 'Board',
+            '#required' => TRUE,
+            '#options' => $boards,
+            '#empty_option' => 'Select a board to populate the Topic picklist',
+            '#empty_value' => '',
+            '#ajax' => [
+              'callback' => '::getTopicsCallback',
+              'wrapper' => 'board-controlled',
+              'event' => 'change',
+            ],
+          ],
+        ],
+        'board-controlled' => [
+          '#type' => 'container',
+          '#attributes' => [
+            'id' => 'board-controlled',
+            'class' => ['grid-col-12', 'desktop:grid-col-6'],
+          ],
+          'topic' => [
+            '#type' => 'select',
+            '#title' => 'Topic',
+            '#required' => TRUE,
+            '#empty_option' => 'The topic assigned to articles imported in this batch',
+            '#options' => $topics,
+            '#empty_value' => '',
 
-          // See http://drupaldummies.blogspot.com/2012/01/solved-illegal-choice-has-been-detected.html.
-          //'#validated' => TRUE,
+            // See http://drupaldummies.blogspot.com/2012/01/solved-illegal-choice-has-been-detected.html.
+            //'#validated' => TRUE,
+          ],
         ],
       ],
-      'cycle' => [
-        '#type' => 'select',
-        '#title' => 'Review Cycle',
-        '#options' => $cycles,
-        '#required' => TRUE,
-        '#description' => 'Review cycle for which these articles are to be imported.',
-        '#empty_value' => '',
+      'cycle-and-pmids' => [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+        'cycle-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'cycle' => [
+            '#type' => 'select',
+            '#title' => 'Review Cycle',
+            '#options' => $cycles,
+            '#required' => TRUE,
+            '#empty_option' => 'Review cycle for which these articles are to be imported.',
+            '#empty_value' => '',
+          ],
+        ],
+        'pmid-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'pmids' => [
+            '#type' => 'textfield',
+            '#title' => 'PubMed IDs',
+            '#placeholder' => 'Article IDs separated by space',
+            '#default_value' => $pmids,
+            '#maxlength' => NULL,
+            '#attributes' => [
+              'class' => ['grid-col-12', 'desktop:grid-col-6'],
+              'title' => 'Enter article IDs here, separated by space, or post PubMed search results below.',
+            ],
+          ],
+        ],
       ],
-      'pmids' => [
-        '#type' => 'textfield',
-        '#title' => 'PubMed IDs',
-        '#description' => 'Enter article IDs here, separated by space, or post PubMed search results below.',
-        '#default_value' => $pmids,
-        '#maxlength' => NULL,
-      ],
-      'import-comments' => [
-        '#type' => 'textfield',
-        '#title' => 'Import Comment',
-      ],
-      'mgr-comment' => [
-        '#type' => 'textfield',
-        '#title' => 'Manager Comments',
+      'comment-wrapper' => [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+        'import-comment-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'import-comments' => [
+            '#type' => 'textfield',
+            '#title' => 'Import Comment',
+          ],
+        ],
+        'mgr-comment-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'mgr-comment' => [
+            '#type' => 'textfield',
+            '#title' => 'Manager Comments',
+          ],
+        ],
       ],
       'options' => [
         '#type' => 'fieldset',
         '#title' => 'Options',
         'override-not-list' => [
           '#type' => 'checkbox',
-          '#title' => 'Override NOT List',
-          '#description' => "Don't reject articles even from journals we don't usually accept for the selected board.",
+          '#title' => "Override NOT List (<em>don't reject articles even from journals we don't usually accept for the selected board</em>)",
         ],
         'test-mode' => [
           '#type' => 'checkbox',
-          '#title' => 'Test Mode',
-          '#description' => 'If checked, only show what we would have imported.',
+          '#title' => 'Test Mode (<em>if checked, only show what we would have imported</em>)',
         ],
         'fast-track' => [
           '#type' => 'checkbox',
-          '#title' => 'Fast Track',
-          '#description' => 'Skip some of the earlier reviews.',
+          '#title' => 'Fast Track (<em>skip some of the earlier reviews</em>)',
         ],
         'special-search' => [
           '#type' => 'checkbox',
-          '#title' => 'Special Search',
-          '#description' => 'Mark these articles as the result of a custom search.',
+          '#title' => 'Special Search (<em>mark these articles as the result of a custom search</em>)',
         ],
         'core-journals-search' => [
           '#type' => 'checkbox',
-          '#title' => 'Core Journals',
-          '#description' => 'Importing articles from a PubMed search of the "core" journals.',
+          '#title' => 'Core Journals (<em>importing articles from a PubMed search of the "core" journals</em>)',
         ],
         'hi-priority' => [
           '#type' => 'checkbox',
-          '#title' => 'High Priority',
-          '#description' => 'Tag the articles in this import batch as high-priority articles.',
+          '#title' => 'High Priority (<em>tag the articles in this import batch as high-priority articles</em>)',
         ],
         'fast-track-fieldset' => [
           '#type' => 'fieldset',
@@ -292,20 +325,34 @@ class ImportForm extends FormBase {
           ],
         ],
       ],
-      'file' => [
-        '#title' => 'PubMed Search Results',
-        '#type' => 'file',
-        '#attributes' => ['class' => ['usa-file-input']],
-        '#description' => 'Articles found in the uploaded PUBMED-formatted search results will be retrieved.',
-      ],
-      'full-text' => [
-        '#title' => 'Full Text',
-        '#type' => 'file',
-        '#attributes' => [
-          'class' => ['usa-file-input'],
-          'accept' => ['.pdf'],
+      'files-wrapper' => [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+        'file-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'file' => [
+            '#title' => 'PubMed Search Results',
+            '#type' => 'file',
+            '#attributes' => [
+              'class' => ['usa-file-input'],
+              'title' => 'Required if no PMIDs have been entered above.',
+            ],
+          ],
         ],
-        '#description' => 'Only suitable for single-article import requests.',
+        'full-text-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'full-text' => [
+            '#title' => 'Full Text',
+            '#type' => 'file',
+            '#attributes' => [
+              'class' => ['usa-file-input'],
+              'accept' => ['.pdf'],
+              'title' => 'Only appropriate for single-article import requests.',
+            ],
+          ],
+        ],
       ],
       'submit' => [
         '#type' => 'submit',
@@ -401,7 +448,7 @@ class ImportForm extends FormBase {
    * Plug the board's topics into the form.
    */
   public function getTopicsCallback(array &$form, FormStateInterface $form_state): array {
-    return $form['board-controlled'];
+    return $form['board-topic-row']['board-controlled'];
   }
 
   /**

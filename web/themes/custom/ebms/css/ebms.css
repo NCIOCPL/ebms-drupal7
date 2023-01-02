@@ -39,7 +39,7 @@
   margin-top: 0;
 }
 main#main-content h1 {
-  margin: 1rem;
+  margin: .5rem;
 }
 
 /* Containers */
@@ -170,7 +170,7 @@ height: auto;
   margin-bottom: 1rem;
 }
 #block-ebms-breadcrumbs {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 a {
   color: #1d1d1d;
