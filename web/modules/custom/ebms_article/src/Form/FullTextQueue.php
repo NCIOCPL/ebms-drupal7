@@ -80,11 +80,20 @@ class FullTextQueue extends FormBase {
     $items = [];
     foreach ($articles as $article) {
       $article_boards = [];
+      $tags = [];
+      foreach ($article->tags as $article_tag) {
+        $tags[] = $article_tag->entity->tag->entity->name->value;
+      }
       foreach ($article->topics as $article_topic) {
         $article_board = $article_topic->entity->topic->entity->board->entity->name->value;
         $article_boards[$article_board] = $article_board;
+        foreach ($article_topic->entity->tags as $topic_tag) {
+          $tags[] = $topic_tag->entity->tag->entity->name->value;
+        }
       }
       sort($article_boards);
+      $tags = array_unique($tags);
+      sort($tags);
       $article_id = $article->id();
       $authors = $article->getAuthors();
       if (empty($authors)) {
@@ -105,6 +114,7 @@ class FullTextQueue extends FormBase {
           '#title' => 'Related Articles',
         ];
       }
+      
       $items[] = [
         '#type' => 'container',
         "article-$article_id" => [
@@ -118,6 +128,7 @@ class FullTextQueue extends FormBase {
             'pmid' => $article->source_id->value,
             'related' => $related,
             'boards' => $article_boards,
+            'tags' => $tags,
           ],
         ],
         "full-text-$article_id" => [

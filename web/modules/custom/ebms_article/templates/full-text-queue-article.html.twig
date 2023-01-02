@@ -17,4 +17,7 @@
   {% if article.boards %}
   <div class="article-boards">Boards: {{ article.boards|join('; ') }}</div>
   {% endif %}
+  {% if article.tags %}
+  <div class="article-tags">Tags: {{ article.tags|join('; ') }}</div>
+  {% endif %}
 </div>
