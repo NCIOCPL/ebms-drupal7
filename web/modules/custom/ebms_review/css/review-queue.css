@@ -44,12 +44,14 @@
   margin-left: 1.5rem;
 }
 .review-topic {
-  margin-bottom: 3rem;
+  margin: 0;
+}
+h3.topic-board {
+  margin-bottom: 0;
 }
 @media (min-width: 64em) {
   .review-topic {
     clear: both;
-    margin-bottom: 2rem;
   }
   .name-and-tags {
     float: left;
@@ -68,6 +70,6 @@
   }
   .usa-form .add-topic-tag a.usa-button {
     margin-top: 0;
-    margin-left: 1rem;
+    margin-left: 0;
   }
 }
