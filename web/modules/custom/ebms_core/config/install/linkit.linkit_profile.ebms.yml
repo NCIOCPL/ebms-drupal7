@@ -1,4 +1,3 @@
-uuid: a0f4574e-23aa-43c3-8f31-5193aba7fcd0
 langcode: en
 status: true
 dependencies:
@@ -10,7 +9,6 @@ description: 'Supports linking to files stored on the site.'
 matchers:
   cbaca1d6-9586-441d-88c4-929c239ae91d:
     id: 'entity:file'
-    uuid: cbaca1d6-9586-441d-88c4-929c239ae91d
     settings:
       metadata: '[file:name]'
       bundles: null

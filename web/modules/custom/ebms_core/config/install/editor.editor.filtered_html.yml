@@ -4,77 +4,105 @@ dependencies:
   config:
     - filter.format.filtered_html
   module:
-    - ckeditor
+    - ckeditor5
 format: filtered_html
-editor: ckeditor
+editor: ckeditor5
 settings:
   toolbar:
-    rows:
-      -
-        -
-          name: Formats
-          items:
-            - Format
-        -
-          name: Edit
-          items:
-            - Copy
-            - Cut
-            - Paste
-            # - PasteText
-            # - PasteFromWord
-            - Undo
-            - Redo
-        -
-          name: Inline Formatting
-          items:
-            - Bold
-            - Italic
-            - Underline
-            - Strike
-            - Superscript
-            - Subscript
-            - RemoveFormat
-        -
-          name: Alignment
-          items:
-            - JustifyLeft
-            - JustifyCenter
-            - JustifyRight
-            - JustifyBlock
-            - Outdent
-            - Indent
-        -
-          name: Links
-          items:
-            - DrupalLink
-            - DrupalUnlink
-        -
-          name: Lists
-          items:
-            - BulletedList
-            - NumberedList
-        -
-          name: Miscellaneous
-          items:
-            - HorizontalRule
-            - Blockquote
-            - DrupalImage
-            - Table
-            - SpecialChar
+    items:
+      - heading
+      - '|'
+      - undo
+      - redo
+      - '|'
+      - bold
+      - italic
+      - underline
+      - strikethrough
+      - superscript
+      - subscript
+      - removeFormat
+      - '|'
+      - alignment
+      - outdent
+      - indent
+      - '|'
+      - link
+      - '|'
+      - bulletedList
+      - numberedList
+      - '|'
+      - horizontalLine
+      - blockQuote
+      - drupalInsertImage
+      - insertTable
+      - specialCharacters
+      - '|'
+      - code
+      - sourceEditing
   plugins:
-    language:
-      language_list: un
-    stylescombo:
-      styles: 'h2.centered|Centered Title'
-    drupallink:
-      linkit_enabled: true
-      linkit_profile: ebms
+    ckeditor5_heading:
+      enabled_headings:
+        - heading1
+        - heading2
+        - heading3
+        - heading4
+        - heading5
+        - heading6
+    ckeditor5_sourceEditing:
+      allowed_tags:
+        - '<cite id class>'
+        - '<code id class>'
+        - '<div align id class>'
+        - '<dd id class>'
+        - '<dl id class>'
+        - '<dt id class>'
+        - '<span id class>'
+        - '<a hreflang target>'
+        - '<blockquote cite id>'
+        - '<br id>'
+        - '<caption id>'
+        - '<em id>'
+        - '<h1 id>'
+        - '<h2 id>'
+        - '<h3 id>'
+        - '<h4 id>'
+        - '<h5 id>'
+        - '<h6 id>'
+        - '<hr id>'
+        - '<li id>'
+        - '<ol type id>'
+        - '<p align id>'
+        - '<s id>'
+        - '<strong id>'
+        - '<table border cellpadding cellspacing id>'
+        - '<tbody id>'
+        - '<td id>'
+        - '<tr id>'
+        - '<ul type id>'
+        - '<img id>'
+    ckeditor5_list:
+      reversed: false
+      startIndex: true
+    ckeditor5_alignment:
+      enabled_alignments:
+        - left
+        - center
+        - right
+        - justify
+    ckeditor5_imageResize:
+      allow_resize: true
+    editor_advanced_link_link:
+      enabled_attributes:
+        - class
+        - id
+        - target
+        - title
 image_upload:
   status: true
   scheme: public
   directory: inline-images
   max_size: ''
   max_dimensions:
-    width: null
-    height: null
+    width: 0
+    height: 0

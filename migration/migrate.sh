@@ -57,7 +57,6 @@ $DRUSH then uswds_base
 $DRUSH then ebms
 $DRUSH en datetime_range
 $DRUSH en devel
-$DRUSH en ckeditor
 if grep --quiet drupal /etc/passwd;
 then
     $DRUSH en externalauth

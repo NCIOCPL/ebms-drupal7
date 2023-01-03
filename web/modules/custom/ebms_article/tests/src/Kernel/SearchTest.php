@@ -63,7 +63,7 @@ class SearchTest extends KernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
-    'ckeditor',
+    'ckeditor5',
     'datetime_range',
     'editor',
     'ebms_article',

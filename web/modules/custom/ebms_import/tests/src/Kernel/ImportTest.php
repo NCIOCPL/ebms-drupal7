@@ -46,7 +46,7 @@ class ImportTest extends KernelTestBase {
    * {@inheritdoc}
    */
   protected static $modules = [
-    'ckeditor',
+    'ckeditor5',
     'datetime',
     'datetime_range',
     'editor',
