@@ -271,7 +271,6 @@ class SearchForm extends FormBase {
         'board' => [
           '#type' => 'select',
           '#title' => 'Board',
-          '#description' => 'Select a board to populate the Topic picklist.',
           '#options' => $boards,
           '#default_value' => $selected_boards,
           '#multiple' => TRUE,
@@ -287,7 +286,6 @@ class SearchForm extends FormBase {
           'topic' => [
             '#type' => 'select',
             '#title' => 'Topic',
-            '#description' => 'Search for articles with these topics.',
             '#options' => $topics,
             '#default_value' => $topic,
             '#multiple' => TRUE,
@@ -314,22 +312,39 @@ class SearchForm extends FormBase {
            * End of broken fragment.
            */
         ],
-        'pmid' => [
-          '#type' => 'textfield',
-          '#title' => 'PubMed ID',
-          '#description' => 'Find the article with this PubMed ID (for example, 34835986).',
-          '#default_value' => $pmid,
-        ],
       ],
     ];
 
     // Only the full search users can search by our internal IDs.
-    if (!$restricted) {
-      $form['basic']['ebms_id'] = [
+    if ($restricted) {
+      $form['basic']['pmid'] = [
         '#type' => 'textfield',
-        '#title' => 'EBMS ID',
-        '#description' => 'Find an article by its EBMS ID.',
-        '#default_value' => $ebms_id,
+        '#title' => 'PubMed ID',
+        '#default_value' => $pmid,
+      ];
+    }
+    else {
+      $form['basic']['article-id-row'] = [
+        '#type' => 'container',
+        '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+        'pmid-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'pmid' => [
+            '#type' => 'textfield',
+            '#title' => 'PubMed ID',
+            '#default_value' => $pmid,
+          ],
+        ],
+        'ebms-id-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+          'pmid' => [
+            '#type' => 'textfield',
+            '#title' => 'EBMS ID',
+            '#default_value' => $ebms_id,
+          ],
+        ],
       ];
     }
     $form['basic']['authors'] = [
@@ -400,98 +415,138 @@ class SearchForm extends FormBase {
         '#type' => 'details',
         '#open' => TRUE,
         '#title' => 'Advanced Search',
-        'article-tag' => [
-          '#type' => 'select',
-          '#title' => 'Tag',
-          '#options' => $article_tags,
-          '#description' => 'Find articles to which this tag has been assigned.',
-          '#default_value' => $article_tag,
-          '#empty_value' => '',
-        ],
-        'tag-date' => [
+        'tag-wrapper' => [
           '#type' => 'container',
-          '#attributes' => ['class' => ['inline-fields']],
-          '#title' => 'Tag Date Range',
-          '#description' => 'Limit results to article to which tags were assigned during the specified date range.',
-          'tag-start' => [
-            '#type' => 'date',
-            '#default_value' => $tag_start,
+          '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+          'article-tag-wrapper' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+            'article-tag' => [
+              '#type' => 'select',
+              '#title' => 'Tag',
+              '#options' => $article_tags,
+              '#default_value' => $article_tag,
+              '#empty_value' => '',
+            ],
           ],
-          'tag-end' => [
-            '#type' => 'date',
-            '#default_value' => $tag_end,
+          'tag-date-wrapper' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+            'tag-date' => [
+              '#type' => 'container',
+              '#attributes' => ['class' => ['inline-fields']],
+              '#title' => 'Tag Date Range',
+              'tag-start' => [
+                '#type' => 'date',
+                '#default_value' => $tag_start,
+              ],
+              'tag-end' => [
+                '#type' => 'date',
+                '#default_value' => $tag_end,
+              ],
+            ],
           ],
         ],
-        'reviewer' => [
-          '#type' => 'select',
-          '#title' => 'Reviewer',
-          '#options' => $reviewers,
-          '#description' => 'Find articles reviewed by this PDQ board member.',
-          '#default_value' => $reviewer,
-          '#empty_value' => '',
-        ],
-        'disposition' => [
-          '#type' => 'select',
-          '#title' => 'Reviewer Response',
-          '#options' => $dispositions,
-          '#description' => 'Find articles for which this review disposition was assigned.',
-          '#default_value' => $disposition,
-          '#empty_value' => '',
-        ],
-        'meeting-category' => [
-          '#type' => 'select',
-          '#title' => 'Meeting Category',
-          '#options' => $meeting_categories,
-          '#description' => 'Find articles on the agenda for a meeting of this type.',
-          '#default_value' => $meeting_category,
-          '#empty_value' => '',
-        ],
-        'meeting-date' => [
+        'reviewer-and-response-wrapper' => [
           '#type' => 'container',
-          '#attributes' => ['class' => ['inline-fields']],
-          '#title' => 'Meeting Date Range',
-          '#description' => 'Find articles connected with meetings occurring during the specified date range.',
-          'meeting-start' => [
-            '#type' => 'date',
-            '#default_value' => $meeting_start,
+          '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+          'reviewer-wrapper' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+            'reviewer' => [
+              '#type' => 'select',
+              '#title' => 'Reviewer',
+              '#options' => $reviewers,
+              '#default_value' => $reviewer,
+              '#empty_value' => '',
+            ],
           ],
-          'meeting-end' => [
-            '#type' => 'date',
-            '#default_value' => $meeting_end,
+          'reviewer-response-wrapper' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+            'disposition' => [
+              '#type' => 'select',
+              '#title' => 'Reviewer Response',
+              '#options' => $dispositions,
+              '#default_value' => $disposition,
+              '#empty_value' => '',
+            ],
+          ],
+        ],
+        'meeting-wrapper' => [
+          '#type' => 'container',
+          '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+          'meeting-category-wrapper' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+            'meeting-category' => [
+              '#type' => 'select',
+              '#title' => 'Meeting Category',
+              '#options' => $meeting_categories,
+              '#default_value' => $meeting_category,
+              '#empty_value' => '',
+            ],
+          ],
+          'meeting-date-wrapper' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+            'meeting-date' => [
+              '#type' => 'container',
+              '#attributes' => ['class' => ['inline-fields']],
+              '#title' => 'Meeting Date Range',
+              'meeting-start' => [
+                '#type' => 'date',
+                '#default_value' => $meeting_start,
+              ],
+              'meeting-end' => [
+                '#type' => 'date',
+                '#default_value' => $meeting_end,
+              ],
+            ],
           ],
         ],
         'decision' => [
           '#type' => 'select',
           '#title' => 'Board Decision',
           '#options' => $board_decisions,
-          '#description' => 'Find articles for which this final board decision was made.',
           '#default_value' => $decision,
           '#empty_value' => '',
         ],
-        'cycle' => [
-          '#type' => 'select',
-          '#title' => 'Review Cycle',
-          '#options' => $cycles,
-          '#description' => 'Find articles assigned to at least one topic for this review cycle.',
-          '#default_value' => $cycle,
-          '#empty_value' => '',
-        ],
-        'cycle-range' => [
+        'cycle-and-date-wrapper' => [
           '#type' => 'container',
-          '#attributes' => ['class' => ['inline-fields']],
-          '#title' => 'Review Cycle Range',
-          '#description' => 'Find articles assigned to cycles within the specified range.',
-          'cycle-start' => [
-            '#type' => 'select',
-            '#options' => $cycles,
-            '#default_value' => $cycle_start,
-            '#empty_value' => '',
-          ],
-          'cycle-end' => [
-            '#type' => 'select',
-            '#options' => $cycles,
-            '#default_value' => $cycle_end,
-            '#empty_value' => '',
+          '#attributes' => ['class' => ['grid-row', 'grid-gap']],
+          'cycle-wrapper' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+            'cycle' => [
+              '#type' => 'select',
+              '#title' => 'Review Cycle',
+              '#options' => $cycles,
+              '#description' => 'Find articles assigned to at least one topic for this review cycle.',
+              '#default_value' => $cycle,
+              '#empty_value' => '',
+            ],
+            ],
+          'cycle-range-wrapper' => [
+            '#type' => 'container',
+            '#attributes' => ['class' => ['grid-col-12', 'desktop:grid-col-6']],
+            'cycle-range' => [
+              '#type' => 'container',
+              '#attributes' => ['class' => ['inline-fields']],
+              '#title' => 'Review Cycle Range',
+              'cycle-start' => [
+                '#type' => 'select',
+                '#options' => $cycles,
+                '#default_value' => $cycle_start,
+                '#empty_value' => '',
+              ],
+              'cycle-end' => [
+                '#type' => 'select',
+                '#options' => $cycles,
+                '#default_value' => $cycle_end,
+                '#empty_value' => '',
+              ],
+            ],
           ],
         ],
         'fyi' => [
@@ -549,7 +604,6 @@ class SearchForm extends FormBase {
           '#type' => 'container',
           '#attributes' => ['class' => ['inline-fields']],
           '#title' => 'Comment Date Range',
-          '#description' => 'Find articles with comments entered during the specified date range.',
           'comment-start' => [
             '#type' => 'date',
             '#default_value' => $comment_start,
@@ -573,7 +627,6 @@ class SearchForm extends FormBase {
           '#type' => 'container',
           '#attributes' => ['class' => ['inline-fields']],
           '#title' => 'Import Date Range',
-          '#description' => 'Find articles imported during the specified date range.',
           'import-start' => [
             '#type' => 'date',
             '#default_value' => $import_start,
@@ -632,7 +685,6 @@ class SearchForm extends FormBase {
         '#required' => TRUE,
         '#options' => $sort_options,
         '#default_value' => $sort,
-        '#description' => 'Select sorting method for search results.',
       ],
       'per-page' => [
         '#type' => 'radios',
@@ -640,7 +692,6 @@ class SearchForm extends FormBase {
         '#required' => TRUE,
         '#options' => $per_page_options,
         '#default_value' => $per_page,
-        '#description' => 'Specify how many articles should be shown per page.',
       ],
     ];
 
