@@ -72,6 +72,7 @@ class AddArticleTagForm extends FormBase {
       $topic_name = $topic->getName();
       $tag_desc = "Select tag to be assigned for topic '$topic_name'.";
     }
+    $query->sort('name');
     $terms = $storage->loadMultiple($query->execute());
     $tags = [];
     foreach ($terms as $term) {
