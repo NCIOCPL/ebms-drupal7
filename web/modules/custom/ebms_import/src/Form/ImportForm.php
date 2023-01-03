@@ -448,7 +448,7 @@ class ImportForm extends FormBase {
    * Plug the board's topics into the form.
    */
   public function getTopicsCallback(array &$form, FormStateInterface $form_state): array {
-    return $form['board-topic-row']['board-controlled'];
+    return $form['board-and-topic']['board-controlled'];
   }
 
   /**
